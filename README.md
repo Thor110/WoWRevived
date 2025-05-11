@@ -6,10 +6,9 @@ A revival project for the classic RAGE game Jeff Wayne's 'The War Of The Worlds'
 - 2 : Copy the Martian disc to your installation folder ( do not replace files of the same name )
 - 3 : Rename the file Human.cd to Human.cd.bak
 - 4 : Create a folder called "FMV-Martian" and copy the contents of the FMV folder from the Martian disc into it.
-- 5 : Copy the Smackw32.dll file from the "WinSys" folder to the installation folder.
-- 6 : Extract and replace WOW.exe in the installation folder from here : https://gamecopyworld.com/games/pc_war_of_the_worlds.shtml
-- 7 : Copy the launcher to your installation folder.
-- 8 : Right click the launcher and run it as administrator.
+- 5 : Extract and replace WOW.exe in the installation folder from here : https://gamecopyworld.com/games/pc_war_of_the_worlds.shtml
+- 6 : Copy the launcher to your installation folder.
+- 7 : Right click the launcher and run it as administrator.
 
 # Road Map
 
