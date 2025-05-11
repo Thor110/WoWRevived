@@ -96,8 +96,8 @@ namespace WoWLauncher
                 Directory.Move("FMV", "FMV-Martian");
                 Directory.Move("FMV-Human", "FMV");
             }
-            Process.Start("WoW_patched.exe");
-            //Close();
+            Process.Start("WOW.exe");
+            Close();
         }
         // This is the event handler for the "Start Martian Game" button
         private void button2_Click(object sender, EventArgs e)
@@ -109,12 +109,14 @@ namespace WoWLauncher
                 Directory.Move("FMV", "FMV-Human");
                 Directory.Move("FMV-Martian", "FMV");
             }
-            Process.Start("WoW_patched.exe");
-            //Close();
+            Process.Start("WOW.exe");
+            Close();
         }
         // This is the event handler for the "Configuration Settings" button
         private void button3_Click(object sender, EventArgs e)
         {
+            MessageBox.Show("This is a placeholder for configuration settings.", "Configuration", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
             button1.Visible = false;
             button2.Visible = false;
             button3.Visible = false;
