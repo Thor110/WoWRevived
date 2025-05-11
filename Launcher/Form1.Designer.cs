@@ -121,7 +121,8 @@
             // 
             // comboBox1
             // 
-            comboBox1.AccessibleDescription = "The language for the game.";
+            comboBox1.AccessibleDescription = "Language options are not available, if you have a version other than English, let us know! Thanks.";
+            comboBox1.BackColor = SystemColors.Window;
             comboBox1.FormattingEnabled = true;
             comboBox1.Location = new Point(291, 318);
             comboBox1.Name = "comboBox1";
@@ -159,7 +160,7 @@
             // 
             // comboBox3
             // 
-            comboBox3.AccessibleDescription = "The refresh rate for the game.";
+            comboBox3.AccessibleDescription = "The refresh rate for the game. ( Higher than 30 might effect game stability )";
             comboBox3.FormattingEnabled = true;
             comboBox3.Location = new Point(291, 376);
             comboBox3.Name = "comboBox3";
