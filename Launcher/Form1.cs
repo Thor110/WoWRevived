@@ -13,6 +13,24 @@ namespace WoWLauncher
         public Form1()
         {
             InitializeComponent();
+            if(mainKey == null)
+            {
+                var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
+                mainKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
+                screenKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\screen", true)!;
+                mainKey.SetValue("Enable Network Version", 0, RegistryValueKind.DWord);
+                mainKey.SetValue("Full Screen", 1, RegistryValueKind.String);
+                mainKey.SetValue("Language", "English");
+                screenKey.SetValue("Size", "640,480");
+                screenKey.SetValue("Support screen size", "640,480");
+                mainKey.SetValue("Game Frequency", "30");
+                // these values are set to default values, required for the game to run correctly.
+                mainKey.SetValue("CD Path", Directory.GetCurrentDirectory().ToString());
+                mainKey.SetValue("Minimum Audible Volume", "0.050000");
+                mainKey.SetValue("Sleeper Enable", "0");
+                mainKey.SetValue("Thread Enable", "1");
+                mainKey.SetValue("Timer Enable", "0");
+            }
             mainKey.SetValue("Install Path", Directory.GetCurrentDirectory().ToString()); // update the install path in the registry automatically.
             checkBox1.Visible = false;
             checkBox2.Visible = false;
@@ -41,24 +59,17 @@ namespace WoWLauncher
         // This method is called when the form is loaded to initialize the registry settings
         private void InitializeRegistry()
         {
-            if (mainKey != null)
+            if ((int)mainKey.GetValue("Enable Network Version")! == 1)
             {
-                if ((int)mainKey.GetValue("Enable Network Version")! == 1)
-                {
-                    checkBox1.Checked = true;
-                }
-                if (Convert.ToInt32(mainKey.GetValue("Full Screen")) == 1)
-                {
-                    checkBox2.Checked = true;
-                }
-                comboBox1.SelectedItem = (string)mainKey.GetValue("Language")!;
-                comboBox2.SelectedItem = ((string)screenKey.GetValue("Size")!).Replace(",", "x");
-                comboBox3.SelectedItem = (string)mainKey.GetValue("Game Frequency")!;
+                checkBox1.Checked = true;
             }
-            else
+            if (Convert.ToInt32(mainKey.GetValue("Full Screen")) == 1)
             {
-                MessageBox.Show("Registry key not found. Please ensure the game is installed correctly.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                checkBox2.Checked = true;
             }
+            comboBox1.SelectedItem = (string)mainKey.GetValue("Language")!;
+            comboBox2.SelectedItem = ((string)screenKey.GetValue("Size")!).Replace(",", "x");
+            comboBox3.SelectedItem = (string)mainKey.GetValue("Game Frequency")!;
         }
         /// <summary>
         /// InitializeTooltips prepares a tooltip for every control in the form.
@@ -173,12 +184,12 @@ namespace WoWLauncher
         }
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
-            screenKey.SetValue("Size", comboBox2.SelectedItem!.ToString()!.Replace("x", ","), RegistryValueKind.String);
-            screenKey.SetValue("Support screen size", comboBox2.SelectedItem!.ToString()!.Replace("x", ","), RegistryValueKind.String);
+            screenKey.SetValue("Size", comboBox2.SelectedItem!.ToString()!.Replace("x", ","));
+            screenKey.SetValue("Support screen size", comboBox2.SelectedItem!.ToString()!.Replace("x", ","));
         }
         private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
-            mainKey.SetValue("Game Frequency", comboBox3.SelectedItem!.ToString()!, RegistryValueKind.String);
+            mainKey.SetValue("Game Frequency", comboBox3.SelectedItem!.ToString()!);
         }
     }
 }
