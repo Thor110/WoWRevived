@@ -93,14 +93,7 @@ namespace WoWLauncher
         void tooltip_MouseLeave(object? sender, EventArgs e) { tooltip.Hide((Control)sender!); }
         private void launchGame()
         {
-            if (File.Exists("WoW_patched.exe"))
-            {
-                Process.Start("WoW_patched.exe");
-            }
-            else
-            {
-                Process.Start("WOW.exe");
-            }
+            Process.Start("WoW_patched.exe");
             Close();
         }
         // This is the event handler for the "Start Human Game" button
