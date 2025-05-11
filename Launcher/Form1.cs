@@ -1,6 +1,4 @@
-using IniParser;
 using Microsoft.Win32;
-using IniParser;
 using System.Diagnostics;
 
 namespace WoWLauncher
@@ -8,34 +6,58 @@ namespace WoWLauncher
     public partial class Form1 : Form
     {
         private bool config;
-        private RegistryKey key;// privilege issue
-        //private RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
+        private RegistryKey mainKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
+        private RegistryKey screenKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\screen", true)!;
         private ToolTip tooltip = new ToolTip();
         private Type[] excludedControlTypes = new Type[] { typeof(PictureBox), typeof(Label), typeof(Button) };
-        //private static readonly IniFile MyIni = new IniFile("swkotor2.ini");
         public Form1()
         {
             InitializeComponent();
             checkBox1.Visible = false;
             checkBox2.Visible = false;
             comboBox1.Visible = false;
+            comboBox2.Visible = false;
+            comboBox3.Visible = false;
             label1.Visible = false;
-            //InitializeRegistry();
+            label2.Visible = false;
+            label3.Visible = false;
+            comboBox1.Items.Add("English");
+            comboBox1.Items.Add("French");
+            comboBox1.Items.Add("German");
+            comboBox1.Items.Add("Italian");
+            comboBox1.Items.Add("Spanish");
+            comboBox2.Items.Add("640x480");
+            comboBox2.Items.Add("800x600");
+            comboBox2.Items.Add("1024x768");
+            comboBox2.Items.Add("1280x1024");
+            comboBox3.Items.Add("30");
+            comboBox3.Items.Add("60");
+            comboBox3.Items.Add("120");
+            comboBox3.Items.Add("240");
+            InitializeRegistry();
             InitializeTooltips();
-            //InitializeParser();
         }
         // This method is called when the form is loaded to initialize the registry settings
         private void InitializeRegistry()
         {
-            if (key != null)
+            if (mainKey != null)
             {
-                //MessageBox.Show(key.GetValue("CD Path")!.ToString());
+                if ((int)mainKey.GetValue("Enable Network Version")! == 1)
+                {
+                    checkBox1.Checked = true;
+                }
+                if (Convert.ToInt32(mainKey.GetValue("Full Screen")) == 1)
+                {
+                    checkBox2.Checked = true;
+                }
+                comboBox1.SelectedItem = (string)mainKey.GetValue("Language")!;
+                comboBox2.SelectedItem = ((string)screenKey.GetValue("Size")!).Replace(",", "x");
+                comboBox3.SelectedItem = (string)mainKey.GetValue("Game Frequency")!;
             }
             else
             {
                 MessageBox.Show("Registry key not found. Please ensure the game is installed correctly.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            key.Close();
         }
         /// <summary>
         /// InitializeTooltips prepares a tooltip for every control in the form.
@@ -69,22 +91,17 @@ namespace WoWLauncher
         /// tooltip_MouseLeave event Handler hides the active tooltip.
         /// </summary>
         void tooltip_MouseLeave(object? sender, EventArgs e) { tooltip.Hide((Control)sender!); }
-        /// <summary>
-        /// InitializeParser parses the relevant settings from swkotor2.ini
-        /// </summary>
-        /// <remarks>
-        /// Only parses the relevant settings.
-        /// </remarks>
-        private void InitializeParser()
+        private void launchGame()
         {
-            if (File.Exists("MARTIAN.cd"))
+            if (File.Exists("WoW_Patched.exe"))
             {
-                
+                Process.Start("WoW_Patched.exe");
             }
             else
             {
-                MessageBox.Show("MARTIAN.cd not found. Please ensure the game is installed correctly.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Process.Start("WOW.exe");
             }
+            Close();
         }
         // This is the event handler for the "Start Human Game" button
         private void button1_Click(object sender, EventArgs e)
@@ -96,8 +113,7 @@ namespace WoWLauncher
                 Directory.Move("FMV", "FMV-Martian");
                 Directory.Move("FMV-Human", "FMV");
             }
-            Process.Start("WOW.exe");
-            Close();
+            launchGame();
         }
         // This is the event handler for the "Start Martian Game" button
         private void button2_Click(object sender, EventArgs e)
@@ -109,14 +125,11 @@ namespace WoWLauncher
                 Directory.Move("FMV", "FMV-Human");
                 Directory.Move("FMV-Martian", "FMV");
             }
-            Process.Start("WOW.exe");
-            Close();
+            launchGame();
         }
         // This is the event handler for the "Configuration Settings" button
         private void button3_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("This is a placeholder for configuration settings.", "Configuration", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            return;
             button1.Visible = false;
             button2.Visible = false;
             button3.Visible = false;
@@ -125,12 +138,16 @@ namespace WoWLauncher
             checkBox1.Visible = true;
             checkBox2.Visible = true;
             comboBox1.Visible = true;
+            comboBox2.Visible = true;
+            comboBox3.Visible = true;
             label1.Visible = true;
+            label2.Visible = true;
+            label3.Visible = true;
         }
         /// This is the event handler for the "Exit" button
         private void button4_Click(object sender, EventArgs e)
         {
-            if(config)
+            if (config)
             {
                 button1.Visible = true;
                 button2.Visible = true;
@@ -140,9 +157,34 @@ namespace WoWLauncher
                 checkBox1.Visible = false;
                 checkBox2.Visible = false;
                 comboBox1.Visible = false;
+                comboBox2.Visible = false;
+                comboBox3.Visible = false;
                 label1.Visible = false;
+                label2.Visible = false;
+                label3.Visible = false;
             }
             else { Close(); }
+        }
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            mainKey.SetValue("Enable Network Version", checkBox1.Checked ? 1 : 0);
+        }
+        private void checkBox2_CheckedChanged(object sender, EventArgs e)
+        {
+            mainKey.SetValue("Full Screen", checkBox2.Checked ? 1 : 0, RegistryValueKind.String);
+        }
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            mainKey.SetValue("Language", comboBox1.SelectedItem!.ToString()!);
+        }
+        private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            screenKey.SetValue("Size", comboBox2.SelectedItem!.ToString()!.Replace("x", ","), RegistryValueKind.String);
+            screenKey.SetValue("Support screen size", comboBox2.SelectedItem!.ToString()!.Replace("x", ","), RegistryValueKind.String);
+        }
+        private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            mainKey.SetValue("Game Frequency", comboBox3.SelectedItem!.ToString()!, RegistryValueKind.String);
         }
     }
 }

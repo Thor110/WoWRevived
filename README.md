@@ -6,9 +6,12 @@ A revival project for the classic RAGE game Jeff Wayne's 'The War Of The Worlds'
 - 2 : Copy the Martian disc to your installation folder ( do not replace files of the same name )
 - 3 : Rename the file Human.cd to Human.cd.bak
 - 4 : Rename the folder "FMV" to "FMV-Human" then copy the FMV folder from the Martian disc into the installation folder.
-- 5 : Extract and replace WOW.exe in the installation folder from here : https://gamecopyworld.com/games/pc_war_of_the_worlds.shtml
+- 5 : Extract and replace WOW.exe in the installation folder from here : https://gamecopyworld.com/games/pc_war_of_the_worlds.shtml ( First or Second Link : "War of the Worlds Fixed Executable" listed as 447kb )
 - 6 : Copy the launcher to your installation folder.
 - 7 : Right click the launcher and run it as administrator.
+- 8 : If the game doesn't launch for you, try the patched exe from : https://www.old-games.ru/forum/threads/patchi-vozvraschajuschie-cd-audio-the-patchs-to-restore-cdda-playback.51778/#post-877625 ( wowpatch.zip )
+
+This appears to be for a slightly different build of the game, I am not sure on the specifics but the first worked for me and the second worked for @RetroKet
 
 # Road Map
 

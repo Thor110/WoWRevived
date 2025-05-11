@@ -38,6 +38,10 @@
             checkBox2 = new CheckBox();
             comboBox1 = new ComboBox();
             label1 = new Label();
+            comboBox2 = new ComboBox();
+            label2 = new Label();
+            comboBox3 = new ComboBox();
+            label3 = new Label();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -101,6 +105,7 @@
             checkBox1.TabIndex = 5;
             checkBox1.Text = "Enable Network Version";
             checkBox1.UseVisualStyleBackColor = true;
+            checkBox1.CheckedChanged += checkBox1_CheckedChanged;
             // 
             // checkBox2
             // 
@@ -112,30 +117,74 @@
             checkBox2.TabIndex = 6;
             checkBox2.Text = "Full Screen";
             checkBox2.UseVisualStyleBackColor = true;
+            checkBox2.CheckedChanged += checkBox2_CheckedChanged;
             // 
             // comboBox1
             // 
             comboBox1.AccessibleDescription = "The language for the game.";
             comboBox1.FormattingEnabled = true;
-            comboBox1.Location = new Point(291, 331);
+            comboBox1.Location = new Point(291, 318);
             comboBox1.Name = "comboBox1";
             comboBox1.Size = new Size(121, 23);
             comboBox1.TabIndex = 7;
+            comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
             // 
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(226, 335);
+            label1.Location = new Point(226, 322);
             label1.Name = "label1";
             label1.Size = new Size(59, 15);
             label1.TabIndex = 8;
             label1.Text = "Language";
+            // 
+            // comboBox2
+            // 
+            comboBox2.AccessibleDescription = "The resolution for the game.";
+            comboBox2.FormattingEnabled = true;
+            comboBox2.Location = new Point(291, 347);
+            comboBox2.Name = "comboBox2";
+            comboBox2.Size = new Size(121, 23);
+            comboBox2.TabIndex = 9;
+            comboBox2.SelectedIndexChanged += comboBox2_SelectedIndexChanged;
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Location = new Point(222, 351);
+            label2.Name = "label2";
+            label2.Size = new Size(63, 15);
+            label2.TabIndex = 10;
+            label2.Text = "Resolution";
+            // 
+            // comboBox3
+            // 
+            comboBox3.AccessibleDescription = "The refresh rate for the game.";
+            comboBox3.FormattingEnabled = true;
+            comboBox3.Location = new Point(291, 376);
+            comboBox3.Name = "comboBox3";
+            comboBox3.Size = new Size(121, 23);
+            comboBox3.TabIndex = 11;
+            comboBox3.SelectedIndexChanged += comboBox3_SelectedIndexChanged;
+            // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new Point(213, 380);
+            label3.Name = "label3";
+            label3.Size = new Size(72, 15);
+            label3.TabIndex = 12;
+            label3.Text = "Refresh Rate";
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(424, 453);
+            Controls.Add(label3);
+            Controls.Add(comboBox3);
+            Controls.Add(label2);
+            Controls.Add(comboBox2);
             Controls.Add(label1);
             Controls.Add(comboBox1);
             Controls.Add(checkBox2);
@@ -147,7 +196,7 @@
             Controls.Add(button1);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "Form1";
-            Text = "Form1";
+            Text = "Jeff Wayne's 'The War Of The Worlds'";
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
             PerformLayout();
@@ -164,5 +213,9 @@
         private CheckBox checkBox2;
         private ComboBox comboBox1;
         private Label label1;
+        private ComboBox comboBox2;
+        private Label label2;
+        private ComboBox comboBox3;
+        private Label label3;
     }
 }
