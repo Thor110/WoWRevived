@@ -17,7 +17,7 @@ This appears to be for a slightly different build of the game, I am not sure on 
 
 The road map for this project.
 
-- 1 : Custom Launcher
+- 1 : Custom Launcher ✅
 - 2 : Music Fix
 - 3 : Decomp/Recomp
 - 4 : Remake

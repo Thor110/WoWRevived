@@ -93,9 +93,9 @@ namespace WoWLauncher
         void tooltip_MouseLeave(object? sender, EventArgs e) { tooltip.Hide((Control)sender!); }
         private void launchGame()
         {
-            if (File.Exists("WoW_Patched.exe"))
+            if (File.Exists("WoW_patched.exe"))
             {
-                Process.Start("WoW_Patched.exe");
+                Process.Start("WoW_patched.exe");
             }
             else
             {
