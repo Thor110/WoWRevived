@@ -10,7 +10,9 @@ The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War O
 - 4 : Copy the Martian disc to your installation folder ( when prompted, choose *not* to replace files — or do, it doesn't matter anymore, but fewer writes are better for SSD longevity )
 - 5 : Download and extract "wowpatch.zip" from : https://www.old-games.ru/forum/threads/patchi-vozvraschajuschie-cd-audio-the-patchs-to-restore-cdda-playback.51778/#post-877625
 - 6 : Download the launcher from the Releases page and and place it in your install folder.
-- 7 : Right-click the launcher and choose **Run as Administrator**.
+- 7 : Right-click the launcher and choose **Send to > Desktop (create shortcut)**, then launch it and enjoy the game!
+
+The launcher will automatically request administrator permissions to ensure registry settings are correctly applied.
 
 # Road Map
 
