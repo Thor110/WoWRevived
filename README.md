@@ -14,7 +14,7 @@ The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War O
 
 The launcher will automatically request administrator permissions to ensure registry settings are correctly applied.
 
-Language options are not available, if you have a version other than English, let us know! Thanks.
+Language options are currently hidden, as no confirmed non-English PC versions of the game have been found. If you happen to own or know of a different language release, please let us know as support can easily be added if needed.
 
 # Road Map
 

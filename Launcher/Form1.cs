@@ -142,10 +142,10 @@ namespace WoWLauncher
             button4.Text = "Back";
             checkBox1.Visible = true;
             checkBox2.Visible = true;
-            comboBox1.Visible = true;
+            //comboBox1.Visible = true;
             comboBox2.Visible = true;
             comboBox3.Visible = true;
-            label1.Visible = true;
+            //label1.Visible = true;
             label2.Visible = true;
             label3.Visible = true;
         }
@@ -161,10 +161,10 @@ namespace WoWLauncher
                 button4.Text = "Exit";
                 checkBox1.Visible = false;
                 checkBox2.Visible = false;
-                comboBox1.Visible = false;
+                //comboBox1.Visible = false;
                 comboBox2.Visible = false;
                 comboBox3.Visible = false;
-                label1.Visible = false;
+                //label1.Visible = false;
                 label2.Visible = false;
                 label3.Visible = false;
             }
