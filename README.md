@@ -17,9 +17,9 @@ This appears to be for a slightly different build of the game, I am not sure on 
 
 The road map for this project.
 
-- 1 : Custom Launcher ✅
-- 2 : Music Fix
-- 3 : Decomp/Recomp
-- 4 : Remake
+- 1 : Custom Launcher	✅
+- 2 : Music Fix			❌
+- 3 : Decomp/Recomp		❌
+- 4 : Remake			❌
 
 This might not all happen but we wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
