@@ -13,6 +13,7 @@ namespace WoWLauncher
         public Form1()
         {
             InitializeComponent();
+            mainKey.SetValue("Install Path", Directory.GetCurrentDirectory().ToString()); // update the install path in the registry automatically.
             checkBox1.Visible = false;
             checkBox2.Visible = false;
             comboBox1.Visible = false;
