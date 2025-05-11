@@ -2,13 +2,15 @@
 
 A revival project for the classic RAGE game Jeff Wayne's 'The War Of The Worlds'
 
-- 1 : Copy the Human disc to your installation folder.
-- 2 : Copy the Martian disc to your installation folder ( do not replace files of the same name )
-- 3 : Rename the file Human.cd to Human.cd.bak
-- 4 : Rename the folder "FMV" to "FMV-Human" then copy the FMV folder from the Martian disc into the installation folder.
-- 5 : Extract and add files to the installation folder from here : https://www.old-games.ru/forum/threads/patchi-vozvraschajuschie-cd-audio-the-patchs-to-restore-cdda-playback.51778/#post-877625 ( wowpatch.zip )
-- 6 : Download the launcher from the releases page and copy it into your installation folder.
-- 7 : Right click the launcher and run it as administrator.
+The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War Of The Worlds'", but you may install it elsewhere if you prefer — for example, into a dedicated folder for modding, preservation, or portable use.
+
+- 1 : Copy the Human disc contents to your installation folder.
+- 2 : Rename the file "Human.cd" to "Human.cd.bak"
+- 3 : Rename the folder "FMV" to "FMV-Human"
+- 4 : Copy the Martian disc to your installation folder ( when prompted, choose *not* to replace files — or do, it doesn't matter anymore, but fewer writes are better for SSD longevity )
+- 5 : Download and extract "wowpatch.zip" from : https://www.old-games.ru/forum/threads/patchi-vozvraschajuschie-cd-audio-the-patchs-to-restore-cdda-playback.51778/#post-877625
+- 6 : Download the launcher from the Releases page and and place it in your install folder.
+- 7 : Right-click the launcher and choose **Run as Administrator**.
 
 # Road Map
 
