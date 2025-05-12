@@ -14,6 +14,8 @@ The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War O
 
 The launcher will automatically request administrator permissions to ensure registry settings are correctly applied.
 
+If anyone really wants to save themselves 15.2mb's of space or wants to save writes that badly, check "unnecessary-files.txt" for a list of files that do not need to be copied from the discs, there are also four files not needed from "wowpatch.zip" which are the four "winmm_driver9x" files.
+
 Language options are currently hidden, as no confirmed non-English PC versions of the game have been found. If you happen to own or know of a different language release, please let us know as support can easily be added if needed.
 
 # Road Map

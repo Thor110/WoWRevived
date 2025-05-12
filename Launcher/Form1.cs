@@ -9,6 +9,7 @@ namespace WoWLauncher
         private RegistryKey mainKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
         private RegistryKey screenKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Screen", true)!;
         private RegistryKey battleKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true)!;
+        private RegistryKey researchKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true)!;
         private ToolTip tooltip = new ToolTip();
         private Type[] excludedControlTypes = new Type[] { typeof(PictureBox), typeof(Label), typeof(Button) };
         public Form1()
@@ -20,15 +21,15 @@ namespace WoWLauncher
                 mainKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
                 screenKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Screen", true)!;
                 battleKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true)!;
+                researchKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true)!;
                 // these values are set because the launcher accesses them.
                 mainKey.SetValue("Enable Network Version", 0, RegistryValueKind.DWord);
-                mainKey.SetValue("Full Screen", 1, RegistryValueKind.String);
+                mainKey.SetValue("Full Screen", "1");
                 mainKey.SetValue("Language", "English");
                 screenKey.SetValue("Size", "640,480");
                 screenKey.SetValue("Support screen size", "640,480");
                 mainKey.SetValue("Game Frequency", "30");
                 // these values are set to default values, required for the game to run correctly.
-                mainKey.SetValue("CD Path", Directory.GetCurrentDirectory().ToString());
                 mainKey.SetValue("Minimum Audible Volume", "0.050000");
                 mainKey.SetValue("Sleeper Enable", "0");
                 mainKey.SetValue("Thread Enable", "1");
@@ -37,7 +38,8 @@ namespace WoWLauncher
                 battleKey.SetValue("EnableFogOfWar", "1");
                 battleKey.SetValue("Damage reduction divisor", "500");
             }
-            mainKey.SetValue("Install Path", Directory.GetCurrentDirectory().ToString()); // update the install path in the registry automatically.
+            registryCompare(mainKey, "CD Path", Directory.GetCurrentDirectory().ToString()); // update the cd path in the registry automatically.
+            registryCompare(mainKey, "Install Path", Directory.GetCurrentDirectory().ToString()); // update the install path in the registry automatically.
             /* // Language options are commented out as they are not used in the game.
             comboBox1.Items.Add("English");
             comboBox1.Items.Add("French");
@@ -58,6 +60,11 @@ namespace WoWLauncher
             comboBox4.Items.Add("Hard");
             InitializeRegistry();
             InitializeTooltips();
+        }
+        private void registryCompare(RegistryKey key, string entry, string value)
+        {
+            if ((string)key.GetValue(entry)! != value)
+                key.SetValue(entry, value);
         }
         /// This method is called when the form is loaded to initialize the registry settings
         private void InitializeRegistry()
@@ -122,25 +129,57 @@ namespace WoWLauncher
         /// This is the event handler for the "Start Human Game" button
         private void button1_Click(object sender, EventArgs e)
         {
-            if (File.Exists("MARTIAN.cd") && Directory.Exists("FMV-Human"))
+            if (File.Exists("MARTIAN.cd") && Directory.Exists("FMV-Human")) // only swap files if martian is enabled and human is disabled
             {
                 File.Move("MARTIAN.cd", "MARTIAN.cd.bak");
                 File.Move("human.cd.bak", "human.cd");
                 Directory.Move("FMV", "FMV-Martian");
                 Directory.Move("FMV-Human", "FMV");
             }
+            // research variance testing
+            string openRate = "20"; // default
+            switch ((string)mainKey.GetValue("Difficulty")!)
+            {
+                case "Easy":
+                    openRate = "25";
+                    break;
+                case "Medium":
+                    openRate = "20"; // default
+                    break;
+                case "Hard":
+                    openRate = "15";
+                    break;
+            }
+            registryCompare(researchKey, "Human Open Rate", openRate);
+            registryCompare(researchKey, "Martian Open Rate", "10"); // default
             launchGame();
         }
         /// This is the event handler for the "Start Martian Game" button
         private void button2_Click(object sender, EventArgs e)
         {
-            if (File.Exists("human.cd") && Directory.Exists("FMV-Martian"))
+            if (File.Exists("human.cd") && Directory.Exists("FMV-Martian")) // only swap files if human is enabled and martian is disabled
             {
                 File.Move("human.cd", "human.cd.bak");
                 File.Move("MARTIAN.cd.bak", "MARTIAN.cd");
                 Directory.Move("FMV", "FMV-Human");
                 Directory.Move("FMV-Martian", "FMV");
             }
+            // research variance testing
+            string openRate = "10"; // default
+            switch ((string)mainKey.GetValue("Difficulty")!)
+            {
+                case "Easy":
+                    openRate = "15";
+                    break;
+                case "Medium":
+                    openRate = "10"; // default
+                    break;
+                case "Hard":
+                    openRate = "5";
+                    break;
+            }
+            registryCompare(researchKey, "Martian Open Rate", openRate);
+            registryCompare(researchKey, "Human Open Rate", "20"); // default
             launchGame();
         }
         /// This is the event handler for the "Configuration Settings" button
@@ -197,12 +236,12 @@ namespace WoWLauncher
         }
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            mainKey.SetValue("Language", comboBox1.SelectedItem!.ToString()!);
+            //mainKey.SetValue("Language", comboBox1.SelectedItem!.ToString()!); // unused code for now
         }
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
-            screenKey.SetValue("Size", comboBox2.SelectedItem!.ToString()!.Replace("x", ","));
-            screenKey.SetValue("Support screen size", comboBox2.SelectedItem!.ToString()!.Replace("x", ","));
+            registryCompare(screenKey, "Size", comboBox2.SelectedItem!.ToString()!.Replace("x", ","));
+            registryCompare(screenKey, "Support screen size", comboBox2.SelectedItem!.ToString()!.Replace("x", ","));
         }
         private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -216,18 +255,18 @@ namespace WoWLauncher
         {
             if (comboBox4.SelectedItem!.ToString()! == "Easy")
             {
-                mainKey.SetValue("Difficulty", "Easy");
-                battleKey.SetValue("Damage reduction divisor", "400");
+                registryCompare(mainKey, "Difficulty", "Easy");
+                registryCompare(mainKey, "Damage reduction divisor", "400");
             }
             else if (comboBox4.SelectedItem!.ToString()! == "Medium")
             {
-                mainKey.SetValue("Difficulty", "Medium");
-                battleKey.SetValue("Damage reduction divisor", "500");
+                registryCompare(mainKey, "Difficulty", "Medium");
+                registryCompare(mainKey, "Damage reduction divisor", "500");
             }
             else if (comboBox4.SelectedItem!.ToString()! == "Hard")
             {
-                mainKey.SetValue("Difficulty", "Hard");
-                battleKey.SetValue("Damage reduction divisor", "600");
+                registryCompare(mainKey, "Difficulty", "Hard");
+                registryCompare(mainKey, "Damage reduction divisor", "600");
             }
         }
     }
