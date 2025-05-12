@@ -42,6 +42,9 @@
             label2 = new Label();
             comboBox3 = new ComboBox();
             label3 = new Label();
+            comboBox4 = new ComboBox();
+            label4 = new Label();
+            checkBox3 = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -105,6 +108,7 @@
             checkBox1.TabIndex = 5;
             checkBox1.Text = "Enable Network Version";
             checkBox1.UseVisualStyleBackColor = true;
+            checkBox1.Visible = false;
             checkBox1.CheckedChanged += checkBox1_CheckedChanged;
             // 
             // checkBox2
@@ -117,6 +121,7 @@
             checkBox2.TabIndex = 6;
             checkBox2.Text = "Full Screen";
             checkBox2.UseVisualStyleBackColor = true;
+            checkBox2.Visible = false;
             checkBox2.CheckedChanged += checkBox2_CheckedChanged;
             // 
             // comboBox1
@@ -128,6 +133,7 @@
             comboBox1.Name = "comboBox1";
             comboBox1.Size = new Size(121, 23);
             comboBox1.TabIndex = 7;
+            comboBox1.Visible = false;
             comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
             // 
             // label1
@@ -138,6 +144,7 @@
             label1.Size = new Size(59, 15);
             label1.TabIndex = 8;
             label1.Text = "Language";
+            label1.Visible = false;
             // 
             // comboBox2
             // 
@@ -147,6 +154,7 @@
             comboBox2.Name = "comboBox2";
             comboBox2.Size = new Size(121, 23);
             comboBox2.TabIndex = 9;
+            comboBox2.Visible = false;
             comboBox2.SelectedIndexChanged += comboBox2_SelectedIndexChanged;
             // 
             // label2
@@ -157,6 +165,7 @@
             label2.Size = new Size(63, 15);
             label2.TabIndex = 10;
             label2.Text = "Resolution";
+            label2.Visible = false;
             // 
             // comboBox3
             // 
@@ -166,6 +175,7 @@
             comboBox3.Name = "comboBox3";
             comboBox3.Size = new Size(121, 23);
             comboBox3.TabIndex = 11;
+            comboBox3.Visible = false;
             comboBox3.SelectedIndexChanged += comboBox3_SelectedIndexChanged;
             // 
             // label3
@@ -176,12 +186,50 @@
             label3.Size = new Size(72, 15);
             label3.TabIndex = 12;
             label3.Text = "Refresh Rate";
+            label3.Visible = false;
+            // 
+            // comboBox4
+            // 
+            comboBox4.AccessibleDescription = "Simple difficulty settings.";
+            comboBox4.FormattingEnabled = true;
+            comboBox4.Location = new Point(86, 376);
+            comboBox4.Name = "comboBox4";
+            comboBox4.Size = new Size(121, 23);
+            comboBox4.TabIndex = 13;
+            comboBox4.Visible = false;
+            comboBox4.SelectedIndexChanged += comboBox4_SelectedIndexChanged;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new Point(25, 380);
+            label4.Name = "label4";
+            label4.Size = new Size(55, 15);
+            label4.TabIndex = 14;
+            label4.Text = "Difficulty";
+            label4.Visible = false;
+            // 
+            // checkBox3
+            // 
+            checkBox3.AccessibleDescription = "Enable or disable fog of war.";
+            checkBox3.AutoSize = true;
+            checkBox3.Location = new Point(101, 343);
+            checkBox3.Name = "checkBox3";
+            checkBox3.Size = new Size(84, 19);
+            checkBox3.TabIndex = 15;
+            checkBox3.Text = "Fog of War";
+            checkBox3.UseVisualStyleBackColor = true;
+            checkBox3.Visible = false;
+            checkBox3.CheckedChanged += checkBox3_CheckedChanged;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(424, 453);
+            Controls.Add(checkBox3);
+            Controls.Add(label4);
+            Controls.Add(comboBox4);
             Controls.Add(label3);
             Controls.Add(comboBox3);
             Controls.Add(label2);
@@ -218,5 +266,8 @@
         private Label label2;
         private ComboBox comboBox3;
         private Label label3;
+        private ComboBox comboBox4;
+        private Label label4;
+        private CheckBox checkBox3;
     }
 }
