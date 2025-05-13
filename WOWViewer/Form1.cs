@@ -6,10 +6,11 @@ namespace WOWViewer
     public partial class WOWViewer : Form
     {
         private string filePath = string.Empty;
-        private string outputPath = string.Empty; // temp testing
+        private string outputPath = string.Empty;
         private string magic = string.Empty;
         private int fileCount = 0;
         private List<WowFileEntry> entries = new List<WowFileEntry>();
+        private WowFileEntry selected = null!;
         public WOWViewer()
         {
             InitializeComponent();
@@ -41,15 +42,14 @@ namespace WOWViewer
                 MessageBox.Show("Please select a file from the list.");
                 return;
             }
-            WowFileEntry selected = entries[listBox1.SelectedIndex];
-            if(magic == "KAT!")
+            if (magic == "KAT!")
             {
-                ExtractKATFile(selected);
+                ExtractToFile(selected, false);
                 MessageBox.Show($"Extracted: {selected.Name}");
             }
             else if (magic == "SfxL")
             {
-                ExtractWAVFile(selected);
+                ExtractToFile(selected, true);
                 MessageBox.Show($"Extracted: {selected.Name}.wav");
             }
         }
@@ -76,14 +76,14 @@ namespace WOWViewer
             {
                 foreach (var entry in entries)
                 {
-                    ExtractKATFile(entry);
+                    ExtractToFile(entry, false);
                 }
             }
             else if (magic == "SfxL")
             {
                 foreach (var entry in entries)
                 {
-                    ExtractWAVFile(entry);
+                    ExtractToFile(entry, true);
                 }
             }
             MessageBox.Show("All files extracted successfully.");
@@ -172,35 +172,27 @@ namespace WOWViewer
                 return ms.ToArray();
             }
         }
-        private void ExtractWAVFile(WowFileEntry entry)
+        private void ExtractToFile(WowFileEntry entry, bool asWav = false)
         {
-            using (BinaryReader br = new BinaryReader(File.OpenRead(filePath)))
+            using var br = new BinaryReader(File.OpenRead(filePath));
+            br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
+            byte[] rawData = br.ReadBytes(entry.Length);
+
+            string filename = asWav ? $"{entry.Name}.wav" : entry.Name;
+            using var fs = new FileStream(Path.Combine(outputPath, filename), FileMode.Create);
+
+            if (asWav)
             {
-                br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
-                byte[] rawData = br.ReadBytes(entry.Length);
                 byte[] wavHeader = CreateWavHeader(entry.Length);
-                string outputFilePath = Path.Combine(outputPath, entry.Name + ".wav");
-
-                using (FileStream fs = new FileStream(outputFilePath, FileMode.Create, FileAccess.Write))
-                {
-                    fs.Write(wavHeader, 0, wavHeader.Length);
-                    fs.Write(rawData, 0, rawData.Length);
-                }
+                fs.Write(wavHeader, 0, wavHeader.Length);
             }
+            fs.Write(rawData, 0, rawData.Length);
         }
-        private void ExtractKATFile(WowFileEntry entry)
+        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            using (BinaryReader br = new BinaryReader(File.OpenRead(filePath)))
-            {
-                br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
-                byte[] rawData = br.ReadBytes(entry.Length);
-                string outputFilePath = Path.Combine(outputPath, entry.Name);
-
-                using (FileStream fs = new FileStream(outputFilePath, FileMode.Create, FileAccess.Write))
-                {
-                    fs.Write(rawData, 0, rawData.Length);
-                }
-            }
+            selected = entries[listBox1.SelectedIndex];
+            label3.Text = $"File Size : {selected.Length} bytes";
+            label4.Text = $"File Offset : {selected.Offset} bytes";
         }
     }
 }

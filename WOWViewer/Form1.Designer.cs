@@ -38,6 +38,8 @@
             button3 = new Button();
             textBox2 = new TextBox();
             button4 = new Button();
+            label3 = new Label();
+            label4 = new Label();
             SuspendLayout();
             // 
             // button1
@@ -66,6 +68,7 @@
             listBox1.Name = "listBox1";
             listBox1.Size = new Size(365, 199);
             listBox1.TabIndex = 3;
+            listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged;
             // 
             // label1
             // 
@@ -126,11 +129,31 @@
             button4.UseVisualStyleBackColor = true;
             button4.Click += button4_Click;
             // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new Point(464, 42);
+            label3.Name = "label3";
+            label3.Size = new Size(54, 15);
+            label3.TabIndex = 10;
+            label3.Text = "File Size :";
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new Point(464, 57);
+            label4.Name = "label4";
+            label4.Size = new Size(66, 15);
+            label4.TabIndex = 11;
+            label4.Text = "File Offset :";
+            // 
             // WOWViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(624, 349);
+            Controls.Add(label4);
+            Controls.Add(label3);
             Controls.Add(button4);
             Controls.Add(textBox2);
             Controls.Add(button3);
@@ -158,5 +181,7 @@
         private Button button3;
         private TextBox textBox2;
         private Button button4;
+        private Label label3;
+        private Label label4;
     }
 }
