@@ -7,6 +7,7 @@ namespace WOWViewer
         private string filePath = string.Empty;
         private string outputPath = string.Empty; // temp testing
         private int fileCount = 0;
+        private bool isKAT;
         private List<WowFileEntry> entries = new List<WowFileEntry>();
         public WOWViewer()
         {
@@ -56,8 +57,15 @@ namespace WOWViewer
                     outputPath += "\\"; // Complete Directory String
                 }
                 textBox2.Text = outputPath;
-                button2.Enabled = true; // Enable extract button
-                button4.Enabled = true; // Enable extract all button
+                if(!isKAT)
+                {
+                    button2.Enabled = true; // Enable extract button
+                    button4.Enabled = true; // Enable extract all button
+                }
+                else
+                {
+                    textBox2.Text = "DAT & MAPS Not supported yet.";
+                }
             }
         }
         // extract all files
@@ -95,6 +103,7 @@ namespace WOWViewer
             {
                 label2.Text = "Data or Maps";
                 // files are stored differently in these files
+                isKAT = true;
             }
             else if (magic == "SfxL")
             {
