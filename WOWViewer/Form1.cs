@@ -1,4 +1,5 @@
 using System.Text;
+using static System.ComponentModel.Design.ObjectSelectorEditor;
 
 namespace WOWViewer
 {
@@ -6,8 +7,8 @@ namespace WOWViewer
     {
         private string filePath = string.Empty;
         private string outputPath = string.Empty; // temp testing
+        private string magic = string.Empty;
         private int fileCount = 0;
-        private bool isKAT;
         private List<WowFileEntry> entries = new List<WowFileEntry>();
         public WOWViewer()
         {
@@ -40,10 +41,17 @@ namespace WOWViewer
                 MessageBox.Show("Please select a file from the list.");
                 return;
             }
-
             WowFileEntry selected = entries[listBox1.SelectedIndex];
-            ExtractFile(selected);
-            MessageBox.Show($"Extracted: {selected.Name}.wav");
+            if(magic == "KAT!")
+            {
+                ExtractKATFile(selected);
+                MessageBox.Show($"Extracted: {selected.Name}");
+            }
+            else if (magic == "SfxL")
+            {
+                ExtractWAVFile(selected);
+                MessageBox.Show($"Extracted: {selected.Name}.wav");
+            }
         }
         // select file output folder
         private void button3_Click(object sender, EventArgs e)
@@ -57,23 +65,26 @@ namespace WOWViewer
                     outputPath += "\\"; // Complete Directory String
                 }
                 textBox2.Text = outputPath;
-                if(!isKAT)
-                {
-                    button2.Enabled = true; // Enable extract button
-                    button4.Enabled = true; // Enable extract all button
-                }
-                else
-                {
-                    textBox2.Text = "DAT & MAPS Not supported yet.";
-                }
+                button2.Enabled = true; // Enable extract button
+                button4.Enabled = true; // Enable extract all button
             }
         }
         // extract all files
         private void button4_Click(object sender, EventArgs e)
         {
-            foreach (var entry in entries)
+            if (magic == "KAT!")
             {
-                ExtractFile(entry);
+                foreach (var entry in entries)
+                {
+                    ExtractKATFile(entry);
+                }
+            }
+            else if (magic == "SfxL")
+            {
+                foreach (var entry in entries)
+                {
+                    ExtractWAVFile(entry);
+                }
             }
             MessageBox.Show("All files extracted successfully.");
         }
@@ -90,20 +101,33 @@ namespace WOWViewer
         }
         private bool ReadHeader(BinaryReader br)
         {
-            string magic = new string(br.ReadChars(4));
+            magic = new string(br.ReadChars(4));
             if (magic != "KAT!" && magic != "SfxL")
                 return false;
 
-            fileCount = br.ReadInt32();
+            fileCount = br.ReadInt32();                 // file count
             label1.Text = "File Count : " + fileCount.ToString();
 
             entries.Clear();
+            listBox1.Items.Clear();
 
             if (magic == "KAT!")
             {
-                label2.Text = "Data or Maps";
-                // files are stored differently in these files
-                isKAT = true;
+                label2.Text = "Container Type : " + "Data or Maps";
+                for (int i = 0; i < fileCount; i++)
+                {
+                    br.ReadInt32();                     // skip 4 bytes
+                    int offset = br.ReadInt32();        // file offset
+                    int length = br.ReadInt32();        // file size
+                    byte[] nameBytes = br.ReadBytes(12);// filename (ASCII padded)
+                    // skip 20 bytes
+                    br.BaseStream.Seek(20, SeekOrigin.Current);
+                    // setup list
+                    int zeroIndex = Array.IndexOf(nameBytes, (byte)0);
+                    string name = Encoding.ASCII.GetString(nameBytes, 0, zeroIndex >= 0 ? zeroIndex : nameBytes.Length);
+                    listBox1.Items.Add($"{name}");
+                    entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset });
+                }
             }
             else if (magic == "SfxL")
             {
@@ -112,13 +136,11 @@ namespace WOWViewer
                 for (int i = 0; i < fileCount; i++)
                 {
                     byte[] nameBytes = br.ReadBytes(8); // filename (ASCII padded)
-                    int length = br.ReadInt32();        // likely the size
-                    int offset = br.ReadInt32();        // likely the offset
-
+                    int length = br.ReadInt32();        // file size
+                    int offset = br.ReadInt32();        // file offset
+                    // setup list
                     string name = Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
-                    //listBox1.Items.Add($"{name} - Offset: {offset} (0x{offset:X}), Size: {length} bytes");
                     listBox1.Items.Add($"{name}");
-
                     entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset });
                 }
             }
@@ -150,19 +172,32 @@ namespace WOWViewer
                 return ms.ToArray();
             }
         }
-        private void ExtractFile(WowFileEntry entry)
+        private void ExtractWAVFile(WowFileEntry entry)
         {
             using (BinaryReader br = new BinaryReader(File.OpenRead(filePath)))
             {
                 br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
                 byte[] rawData = br.ReadBytes(entry.Length);
-
                 byte[] wavHeader = CreateWavHeader(entry.Length);
                 string outputFilePath = Path.Combine(outputPath, entry.Name + ".wav");
 
                 using (FileStream fs = new FileStream(outputFilePath, FileMode.Create, FileAccess.Write))
                 {
                     fs.Write(wavHeader, 0, wavHeader.Length);
+                    fs.Write(rawData, 0, rawData.Length);
+                }
+            }
+        }
+        private void ExtractKATFile(WowFileEntry entry)
+        {
+            using (BinaryReader br = new BinaryReader(File.OpenRead(filePath)))
+            {
+                br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
+                byte[] rawData = br.ReadBytes(entry.Length);
+                string outputFilePath = Path.Combine(outputPath, entry.Name);
+
+                using (FileStream fs = new FileStream(outputFilePath, FileMode.Create, FileAccess.Write))
+                {
                     fs.Write(rawData, 0, rawData.Length);
                 }
             }
