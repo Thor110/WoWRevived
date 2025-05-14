@@ -421,11 +421,7 @@ namespace WOWViewer
                 MessageBox.Show("Please select a file from the list to play.");
                 return;
             }
-            else
-            {
-                PlayRawSound(selected);
-            }
-
+            else { PlayRawSound(selected); }
         }
         // play sound method
         private void PlayRawSound(WowFileEntry entry)
@@ -452,17 +448,12 @@ namespace WOWViewer
             }
         }
         // stop sound button
-        private void button6_Click(object sender, EventArgs e)
-        {
-            soundPlayer?.Stop();
-        }
+        private void button6_Click(object sender, EventArgs e) { soundPlayer?.Stop(); }
         // double click to play sound
         private void listBox1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            if (magic == "SfxL")
-            {
-                PlayRawSound(selected);
-            }
+            if (magic == "SfxL") { PlayRawSound(selected); }
+            // else if (magic == "KAT!") {}
         }
         // draw waveform
         private Bitmap DrawWaveform(byte[] wavData, int width = 156, int height = 137)
@@ -496,27 +487,17 @@ namespace WOWViewer
         {
             using var ms = new MemoryStream(wavData);
             using var br = new BinaryReader(ms);
-
             br.BaseStream.Seek(44, SeekOrigin.Begin); // skip WAV header
             int sampleCount = (wavData.Length - 44) / 2;
             short[] samples = new short[sampleCount];
-
-            for (int i = 0; i < sampleCount; i++)
-            {
-                samples[i] = br.ReadInt16();
-            }
+            for (int i = 0; i < sampleCount; i++) { samples[i] = br.ReadInt16(); }
             // calculate sound length
-            double duration = sampleCount / (double)22050; // seconds
+            double duration = sampleCount / (double)22050; // duration in seconds
             int minutes = (int)duration / 60;
             int seconds = (int)duration % 60;
-            if (duration > 60)
-            {
-                label5.Text = $"Sound Length : {minutes:D2}:{seconds:D2}";
-            }
-            else
-            {
-                label5.Text = $"Sound Length : {duration:F2} seconds"; // update sound length label
-            }
+            // update sound length label
+            if (duration > 60) { label5.Text = $"Sound Length : {minutes:D2}:{seconds:D2}"; }
+            else { label5.Text = $"Sound Length : {duration:F2} seconds"; }
             return samples;
         }
     }
