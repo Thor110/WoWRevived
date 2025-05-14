@@ -44,6 +44,8 @@
             pictureBox1 = new PictureBox();
             label1 = new Label();
             label5 = new Label();
+            button7 = new Button();
+            button8 = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -200,11 +202,33 @@
             label5.Text = "Sound Length :";
             label5.Visible = false;
             // 
+            // button7
+            // 
+            button7.Location = new Point(464, 315);
+            button7.Name = "button7";
+            button7.Size = new Size(75, 23);
+            button7.TabIndex = 16;
+            button7.Text = "Save Editor";
+            button7.UseVisualStyleBackColor = true;
+            button7.Click += button7_Click;
+            // 
+            // button8
+            // 
+            button8.Location = new Point(545, 315);
+            button8.Name = "button8";
+            button8.Size = new Size(75, 23);
+            button8.TabIndex = 17;
+            button8.Text = "Map Editor";
+            button8.UseVisualStyleBackColor = true;
+            button8.Click += button8_Click;
+            // 
             // WOWViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(630, 349);
+            ClientSize = new Size(632, 348);
+            Controls.Add(button8);
+            Controls.Add(button7);
             Controls.Add(label5);
             Controls.Add(pictureBox1);
             Controls.Add(button6);
@@ -245,5 +269,7 @@
         private PictureBox pictureBox1;
         private Label label1;
         private Label label5;
+        private Button button7;
+        private Button button8;
     }
 }

@@ -45,6 +45,8 @@
             comboBox4 = new ComboBox();
             label4 = new Label();
             checkBox3 = new CheckBox();
+            button5 = new Button();
+            button6 = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -222,11 +224,34 @@
             checkBox3.Visible = false;
             checkBox3.CheckedChanged += checkBox3_CheckedChanged;
             // 
+            // button5
+            // 
+            button5.Location = new Point(12, 418);
+            button5.Name = "button5";
+            button5.Size = new Size(75, 23);
+            button5.TabIndex = 16;
+            button5.Text = "Advanced";
+            button5.UseVisualStyleBackColor = true;
+            button5.Visible = false;
+            button5.Click += button5_Click;
+            // 
+            // button6
+            // 
+            button6.Location = new Point(337, 418);
+            button6.Name = "button6";
+            button6.Size = new Size(75, 23);
+            button6.TabIndex = 17;
+            button6.Text = "Editor";
+            button6.UseVisualStyleBackColor = true;
+            button6.Click += button6_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(424, 453);
+            Controls.Add(button6);
+            Controls.Add(button5);
             Controls.Add(checkBox3);
             Controls.Add(label4);
             Controls.Add(comboBox4);
@@ -269,5 +294,7 @@
         private ComboBox comboBox4;
         private Label label4;
         private CheckBox checkBox3;
+        private Button button5;
+        private Button button6;
     }
 }

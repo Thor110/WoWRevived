@@ -201,6 +201,8 @@ namespace WoWLauncher
             label2.Visible = true;
             label3.Visible = true;
             label4.Visible = true;
+            button5.Visible = true;
+            button6.Visible = false; // editor button
         }
         /// This is the event handler for the "Exit" button
         private void button4_Click(object sender, EventArgs e)
@@ -223,6 +225,8 @@ namespace WoWLauncher
                 label2.Visible = false;
                 label3.Visible = false;
                 label4.Visible = false;
+                button5.Visible = false;
+                button6.Visible = true; // editor button
             }
             else { Close(); }
         }
@@ -268,6 +272,20 @@ namespace WoWLauncher
                 registryCompare(mainKey, "Difficulty", "Hard");
                 registryCompare(mainKey, "Damage reduction divisor", "600");
             }
+        }
+        // open advanced settings
+        private void button5_Click(object sender, EventArgs e)
+        {
+            var advanced = new Form2();
+            advanced.Show();
+            this.Hide();
+            advanced.FormClosed += (s, args) => this.Show();
+        }
+        // open editor
+        private void button6_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Process.Start("WOWViewer.exe");
+            Close();
         }
     }
 }

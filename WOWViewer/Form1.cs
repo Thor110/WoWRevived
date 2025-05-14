@@ -411,7 +411,7 @@ namespace WOWViewer
                     lastSelectedListItem = selected.Name;
                 }
             }
-            
+
         }
         // play sound button
         private void button5_Click(object sender, EventArgs e)
@@ -499,6 +499,22 @@ namespace WOWViewer
             if (duration > 60) { label5.Text = $"Sound Length : {minutes:D2}:{seconds:D2}"; }
             else { label5.Text = $"Sound Length : {duration:F2} seconds"; }
             return samples;
+        }
+        // save editor
+        private void button7_Click(object sender, EventArgs e)
+        {
+            var saveEditor = new SaveEditorForm();
+            saveEditor.Show();
+            this.Hide();
+            saveEditor.FormClosed += (s, args) => this.Show();
+        }
+        // map editor
+        private void button8_Click(object sender, EventArgs e)
+        {
+            var mapEditor = new MapEditorForm();
+            mapEditor.Show();
+            this.Hide();
+            mapEditor.FormClosed += (s, args) => this.Show();
         }
     }
 }
