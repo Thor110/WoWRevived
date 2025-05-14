@@ -15,6 +15,7 @@
 \dsetup.dll
 \dsetup16.dll
 \dsetup32.dll
+\ENGLISH.cd
 \lang.dat
 \layout.bin
 \os.dat

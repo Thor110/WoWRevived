@@ -1,20 +1,141 @@
 using System.Text;
-using static System.ComponentModel.Design.ObjectSelectorEditor;
+using System.Media;
+using System.IO;
 
 namespace WOWViewer
 {
     public partial class WOWViewer : Form
     {
+        private SoundPlayer soundPlayer = null!;
+        private ToolTip tooltip = new ToolTip();
+        private Type[] excludedControlTypes = new Type[] { typeof(ListBox), typeof(Label) };
+        private string lastWaveformName = string.Empty;
         private string filePath = string.Empty;
         private string outputPath = string.Empty;
         private string magic = string.Empty;
         private int fileCount = 0;
         private List<WowFileEntry> entries = new List<WowFileEntry>();
         private WowFileEntry selected = null!;
+        private Dictionary<string, Action<WowFileEntry>> handlers = new()
+        {
+            //DAT/Dat.wow
+            { ".DAT", HandleDAT },
+            { ".FNT", HandleFonts },
+            { ".HSH", HandleHSH },
+            { ".HSM", HandleHSM },
+            { ".INT", HandleINT },
+            { ".IOB", HandleIOB },
+            { ".PAL", HandlePalette },
+            { ".RAW", HandleRAW },
+            { ".SHH", HandleSHH },
+            { ".SHL", HandleSHL },
+            { ".SHM", HandleSHM },
+            { ".SPR", HandleSPR },
+            { ".WOF", HandleWOF },
+            //MAPS/MAPS.WoW
+            { ".ATM", HandleATM },
+            { ".CLS", HandleCLS },
+            //SPR also used in MAPS.WoW
+        };
+        //DAT/Dat.wow
+        private static void HandleDAT(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
+        private static void HandleFonts(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
+        private static void HandleHSH(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
+        private static void HandleHSM(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
+        private static void HandleINT(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
+        private static void HandleIOB(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
+        private static void HandlePalette(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
+        private static void HandleRAW(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
+        private static void HandleSHH(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
+        private static void HandleSHL(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
+        private static void HandleSHM(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
+        private static void HandleSPR(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
+        private static void HandleWOF(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
+        //MAPS/MAPS.WoW
+        private static void HandleATM(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
+        private static void HandleCLS(WowFileEntry entry)
+        {
+            throw new NotImplementedException();
+        }
         public WOWViewer()
         {
             InitializeComponent();
+            InitializeTooltips();
         }
+        /// <summary>
+        /// InitializeTooltips prepares a tooltip for every control in the form.
+        /// </summary>
+        /// <remarks>
+        /// Uses excludedControlTypes to exclude certain types of controls from displaying tooltips.
+        /// </remarks>
+        void InitializeTooltips()
+        {
+            components = new System.ComponentModel.Container();
+            tooltip = new ToolTip(components);
+            foreach (Control control in Controls)
+            {
+                if (excludedControlTypes.Contains(control.GetType()) != true)
+                {
+                    control.MouseEnter += new EventHandler(tooltip_MouseEnter);
+                    control.MouseLeave += new EventHandler(tooltip_MouseLeave);
+                }
+            }
+        }
+        /// <summary>
+        /// tooltip_MouseEnter event Handler uses the existing AccessibleDescription property as the tooltip information.
+        /// </summary>
+        void tooltip_MouseEnter(object? sender, EventArgs e)
+        {
+            Control control = (Control)sender!;
+            if (control.AccessibleDescription != null) { tooltip.Show(control.AccessibleDescription.ToString(), control); }
+            else { tooltip.Show("No description available.", control); }
+        }
+        /// <summary>
+        /// tooltip_MouseLeave event Handler hides the active tooltip.
+        /// </summary>
+        void tooltip_MouseLeave(object? sender, EventArgs e) { tooltip.Hide((Control)sender!); }
         // open file
         private void button1_Click(object sender, EventArgs e)
         {
@@ -42,16 +163,13 @@ namespace WOWViewer
                 MessageBox.Show("Please select a file from the list.");
                 return;
             }
-            if (magic == "KAT!")
-            {
-                ExtractToFile(selected, false);
-                MessageBox.Show($"Extracted: {selected.Name}");
-            }
-            else if (magic == "SfxL")
-            {
-                ExtractToFile(selected, true);
-                MessageBox.Show($"Extracted: {selected.Name}.wav");
-            }
+            bool isWav;
+            if (magic == "KAT!") { isWav = false; }
+            else if (magic == "SfxL") { isWav = true; }
+            else { return; }
+            ExtractToFile(selected, isWav);
+            selected.ToString();
+            MessageBox.Show($"Extracted: {selected.Name}{(isWav ? ".WAV" : "")}");
         }
         // select file output folder
         private void button3_Click(object sender, EventArgs e)
@@ -72,22 +190,14 @@ namespace WOWViewer
         // extract all files
         private void button4_Click(object sender, EventArgs e)
         {
-            if (magic == "KAT!")
-            {
-                foreach (var entry in entries)
-                {
-                    ExtractToFile(entry, false);
-                }
-            }
-            else if (magic == "SfxL")
-            {
-                foreach (var entry in entries)
-                {
-                    ExtractToFile(entry, true);
-                }
-            }
+            bool isWav;
+            if (magic == "KAT!") { isWav = false; }
+            else if (magic == "SfxL") { isWav = true; }
+            else { return; }
+            foreach (var entry in entries) { ExtractToFile(entry, isWav); }
             MessageBox.Show("All files extracted successfully.");
         }
+        // parse file count method
         private void parseFileCount()
         {
             using (BinaryReader br = new BinaryReader(File.OpenRead(filePath)))
@@ -99,6 +209,7 @@ namespace WOWViewer
                 }
             }
         }
+        // read header method
         private bool ReadHeader(BinaryReader br)
         {
             magic = new string(br.ReadChars(4));
@@ -128,6 +239,9 @@ namespace WOWViewer
                     listBox1.Items.Add($"{name}");
                     entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset });
                 }
+                button5.Visible = false; // hide audio player play button
+                button6.Visible = false; // hide audio player stop button
+                pictureBox1.Visible = false; // hide the picture box
             }
             else if (magic == "SfxL")
             {
@@ -140,13 +254,17 @@ namespace WOWViewer
                     int offset = br.ReadInt32();        // file offset
                     // setup list
                     string name = Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
-                    listBox1.Items.Add($"{name}");
+                    listBox1.Items.Add($"{name}.WAV");
                     entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset });
                 }
+                button5.Visible = true; // show audio player play button
+                button6.Visible = true; // show audio player stop button
+                pictureBox1.Visible = true; // show the picture box
             }
 
             return true;
         }
+        // create wav header
         public static byte[] CreateWavHeader(int dataSize, int sampleRate = 22050, short bitsPerSample = 16, short channels = 1)
         {
             int byteRate = sampleRate * channels * bitsPerSample / 8;
@@ -172,6 +290,7 @@ namespace WOWViewer
                 return ms.ToArray();
             }
         }
+        // extract to file method
         private void ExtractToFile(WowFileEntry entry, bool asWav = false)
         {
             using var br = new BinaryReader(File.OpenRead(filePath));
@@ -186,13 +305,133 @@ namespace WOWViewer
                 byte[] wavHeader = CreateWavHeader(entry.Length);
                 fs.Write(wavHeader, 0, wavHeader.Length);
             }
+            //if entry.Name ends with extension .RAW, .SHH, .SHL, .SHM, .SPR, .WOF etc add relevant header when they are determined and implemented.
             fs.Write(rawData, 0, rawData.Length);
         }
+        // listbox selection changed
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             selected = entries[listBox1.SelectedIndex];
-            label3.Text = $"File Size : {selected.Length} bytes";
-            label4.Text = $"File Offset : {selected.Offset} bytes";
+            // check selection is new
+            if (selected.Name != lastWaveformName)
+            {
+                label3.Text = $"File Size : {selected.Length} bytes";
+                label4.Text = $"File Offset : {selected.Offset} bytes";
+                // display waveform image if browsing SfxL container
+                if (magic == "SfxL")
+                {
+                    // load the waveform image
+                    using var br = new BinaryReader(File.OpenRead(filePath));
+                    br.BaseStream.Seek(selected.Offset, SeekOrigin.Begin);
+                    byte[] rawData = br.ReadBytes(selected.Length);
+                    byte[] wavHeader = CreateWavHeader(selected.Length);
+
+                    using var ms = new MemoryStream();
+                    ms.Write(wavHeader, 0, wavHeader.Length);
+                    ms.Write(rawData, 0, rawData.Length);
+                    ms.Position = 0;
+
+                    byte[] fullWav = ms.ToArray();
+                    pictureBox1.Image = DrawWaveform(fullWav); // update the waveform
+                    lastWaveformName = selected.Name;
+                }
+            }
+            
+        }
+        // play sound button
+        private void button5_Click(object sender, EventArgs e)
+        {
+            if (selected == null)
+            {
+                MessageBox.Show("Please select a file from the list to play.");
+                return;
+            }
+            else
+            {
+                PlayRawSound(selected);
+            }
+
+        }
+        // play sound method
+        private void PlayRawSound(WowFileEntry entry)
+        {
+            using var br = new BinaryReader(File.OpenRead(filePath));
+            br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
+            byte[] rawData = br.ReadBytes(entry.Length);
+
+            byte[] wavHeader = CreateWavHeader(entry.Length);
+            using var ms = new MemoryStream();
+            ms.Write(wavHeader, 0, wavHeader.Length);
+            ms.Write(rawData, 0, rawData.Length);
+            ms.Position = 0;
+
+            try
+            {
+                soundPlayer?.Stop(); // stop any currently playing sound
+                soundPlayer = new SoundPlayer(ms);
+                soundPlayer.Play();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error playing sound: {ex.Message}");
+            }
+        }
+        // stop sound button
+        private void button6_Click(object sender, EventArgs e)
+        {
+            soundPlayer?.Stop();
+        }
+        // double click to play sound
+        private void listBox1_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            if (magic == "SfxL")
+            {
+                PlayRawSound(selected);
+            }
+        }
+        // draw waveform
+        private Bitmap DrawWaveform(byte[] wavData, int width = 156, int height = 137)
+        {
+            var bmp = new Bitmap(width, height);
+            using var g = Graphics.FromImage(bmp);
+            g.Clear(Color.Black);
+
+            short[] samples = Extract16BitMonoSamples(wavData);
+            int samplesPerPixel = samples.Length / width;
+
+            for (int x = 0; x < width; x++)
+            {
+                int start = x * samplesPerPixel;
+                short max = 0;
+                for (int i = 0; i < samplesPerPixel && (start + i) < samples.Length; i++)
+                {
+                    short val = Math.Abs(samples[start + i]);
+                    if (val > max) max = val;
+                }
+
+                float normalized = max / (float)short.MaxValue;
+                int y = (int)(normalized * height / 2);
+                g.DrawLine(Pens.LimeGreen, x, height / 2 - y, x, height / 2 + y);
+            }
+
+            return bmp;
+        }
+        // extract 16-bit mono samples from WAV data
+        private short[] Extract16BitMonoSamples(byte[] wavData)
+        {
+            using var ms = new MemoryStream(wavData);
+            using var br = new BinaryReader(ms);
+
+            br.BaseStream.Seek(44, SeekOrigin.Begin); // skip WAV header
+            int sampleCount = (wavData.Length - 44) / 2;
+            short[] samples = new short[sampleCount];
+
+            for (int i = 0; i < sampleCount; i++)
+            {
+                samples[i] = br.ReadInt16();
+            }
+
+            return samples;
         }
     }
 }

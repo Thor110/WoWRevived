@@ -40,10 +40,15 @@
             button4 = new Button();
             label3 = new Label();
             label4 = new Label();
+            button5 = new Button();
+            button6 = new Button();
+            pictureBox1 = new PictureBox();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
             // button1
             // 
+            button1.AccessibleDescription = "Select a .wow file to open.";
             button1.Location = new Point(12, 12);
             button1.Name = "button1";
             button1.Size = new Size(75, 23);
@@ -57,7 +62,7 @@
             textBox1.Enabled = false;
             textBox1.Location = new Point(93, 13);
             textBox1.Name = "textBox1";
-            textBox1.Size = new Size(519, 23);
+            textBox1.Size = new Size(525, 23);
             textBox1.TabIndex = 2;
             // 
             // listBox1
@@ -69,6 +74,7 @@
             listBox1.Size = new Size(365, 199);
             listBox1.TabIndex = 3;
             listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged;
+            listBox1.MouseDoubleClick += listBox1_MouseDoubleClick;
             // 
             // label1
             // 
@@ -90,6 +96,7 @@
             // 
             // button2
             // 
+            button2.AccessibleDescription = "Extract selected file.";
             button2.Enabled = false;
             button2.Location = new Point(383, 247);
             button2.Name = "button2";
@@ -101,6 +108,7 @@
             // 
             // button3
             // 
+            button3.AccessibleDescription = "Choose a destination to output files to.";
             button3.Location = new Point(12, 286);
             button3.Name = "button3";
             button3.Size = new Size(75, 23);
@@ -114,12 +122,13 @@
             textBox2.Enabled = false;
             textBox2.Location = new Point(93, 286);
             textBox2.Name = "textBox2";
-            textBox2.Size = new Size(519, 23);
+            textBox2.Size = new Size(527, 23);
             textBox2.TabIndex = 8;
             textBox2.Text = "Please select an output path before files can be extracted.";
             // 
             // button4
             // 
+            button4.AccessibleDescription = "Extract all files.";
             button4.Enabled = false;
             button4.Location = new Point(12, 315);
             button4.Name = "button4";
@@ -147,11 +156,47 @@
             label4.TabIndex = 11;
             label4.Text = "File Offset :";
             // 
+            // button5
+            // 
+            button5.AccessibleDescription = "Play selected sound file.";
+            button5.Location = new Point(464, 218);
+            button5.Name = "button5";
+            button5.Size = new Size(75, 23);
+            button5.TabIndex = 12;
+            button5.Text = "Play";
+            button5.UseVisualStyleBackColor = true;
+            button5.Visible = false;
+            button5.Click += button5_Click;
+            // 
+            // button6
+            // 
+            button6.AccessibleDescription = "Stop playing the sound file.";
+            button6.Location = new Point(545, 218);
+            button6.Name = "button6";
+            button6.Size = new Size(75, 23);
+            button6.TabIndex = 13;
+            button6.Text = "Stop";
+            button6.UseVisualStyleBackColor = true;
+            button6.Visible = false;
+            button6.Click += button6_Click;
+            // 
+            // pictureBox1
+            // 
+            pictureBox1.Location = new Point(464, 75);
+            pictureBox1.Name = "pictureBox1";
+            pictureBox1.Size = new Size(156, 137);
+            pictureBox1.TabIndex = 14;
+            pictureBox1.TabStop = false;
+            pictureBox1.Visible = false;
+            // 
             // WOWViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(624, 349);
+            ClientSize = new Size(630, 349);
+            Controls.Add(pictureBox1);
+            Controls.Add(button6);
+            Controls.Add(button5);
             Controls.Add(label4);
             Controls.Add(label3);
             Controls.Add(button4);
@@ -166,6 +211,7 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "WOWViewer";
             Text = "WOWViewer";
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -183,5 +229,8 @@
         private Button button4;
         private Label label3;
         private Label label4;
+        private Button button5;
+        private Button button6;
+        private PictureBox pictureBox1;
     }
 }
