@@ -277,6 +277,8 @@ namespace WoWLauncher
         private void button5_Click(object sender, EventArgs e)
         {
             var advanced = new Form2();
+            advanced.StartPosition = FormStartPosition.Manual;
+            advanced.Location = this.Location;
             advanced.Show();
             this.Hide();
             advanced.FormClosed += (s, args) => this.Show();

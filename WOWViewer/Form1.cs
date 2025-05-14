@@ -504,6 +504,8 @@ namespace WOWViewer
         private void button7_Click(object sender, EventArgs e)
         {
             var saveEditor = new SaveEditorForm();
+            saveEditor.StartPosition = FormStartPosition.Manual;
+            saveEditor.Location = this.Location;
             saveEditor.Show();
             this.Hide();
             saveEditor.FormClosed += (s, args) => this.Show();
@@ -512,6 +514,8 @@ namespace WOWViewer
         private void button8_Click(object sender, EventArgs e)
         {
             var mapEditor = new MapEditorForm();
+            mapEditor.StartPosition = FormStartPosition.Manual;
+            mapEditor.Location = this.Location;
             mapEditor.Show();
             this.Hide();
             mapEditor.FormClosed += (s, args) => this.Show();
