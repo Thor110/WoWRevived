@@ -1,6 +1,9 @@
 using System.Text;
 using System.Media;
 using System.IO;
+using System.Windows.Forms;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 
 namespace WOWViewer
 {
@@ -9,100 +12,178 @@ namespace WOWViewer
         private SoundPlayer soundPlayer = null!;
         private ToolTip tooltip = new ToolTip();
         private Type[] excludedControlTypes = new Type[] { typeof(ListBox), typeof(Label) };
-        private string lastWaveformName = string.Empty;
+        private string lastSelectedListItem = string.Empty;
         private string filePath = string.Empty;
         private string outputPath = string.Empty;
         private string magic = string.Empty;
         private int fileCount = 0;
         private List<WowFileEntry> entries = new List<WowFileEntry>();
         private WowFileEntry selected = null!;
-        private Dictionary<string, Action<WowFileEntry>> handlers = new()
+        private Dictionary<string, Action<WowFileEntry>> handlers = null!;
+        private void InitializeHandlers()
         {
-            //DAT/Dat.wow
-            { ".DAT", HandleDAT },
-            { ".FNT", HandleFonts },
-            { ".HSH", HandleHSH },
-            { ".HSM", HandleHSM },
-            { ".INT", HandleINT },
-            { ".IOB", HandleIOB },
-            { ".PAL", HandlePalette },
-            { ".RAW", HandleRAW },
-            { ".SHH", HandleSHH },
-            { ".SHL", HandleSHL },
-            { ".SHM", HandleSHM },
-            { ".SPR", HandleSPR },
-            { ".WOF", HandleWOF },
-            //MAPS/MAPS.WoW
-            { ".ATM", HandleATM },
-            { ".CLS", HandleCLS },
-            //SPR also used in MAPS.WoW
-        };
+            handlers = new Dictionary<string, Action<WowFileEntry>>
+            {
+                //DAT/Dat.wow
+                { "DAT", HandleDAT },
+                { "FNT", HandleFonts },
+                { "HSH", HandleHSH },
+                { "HSM", HandleHSM },
+                { "INT", HandleINT },
+                { "IOB", HandleIOB },
+                { "PAL", HandlePalette },
+                { "RAW", HandleRAW },
+                { "SHH", HandleSHH },
+                { "SHL", HandleSHL },
+                { "SHM", HandleSHM },
+                { "SPR", HandleSPR },
+                { "WOF", HandleWOF },
+                //MAPS/MAPS.WoW
+                { "ATM", HandleATM },
+                { "CLS", HandleCLS },
+                //SPR files also in MAPS.WoW
+            };
+        }
         //DAT/Dat.wow
-        private static void HandleDAT(WowFileEntry entry)
+        private void HandleDAT(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            pictureBox1.Image = null;
+            MessageBox.Show("DAT file selected. No action defined.");
         }
-        private static void HandleFonts(WowFileEntry entry)
+        private void HandleFonts(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            pictureBox1.Image = null;
+            MessageBox.Show("Fonts file selected. No action defined.");
         }
-        private static void HandleHSH(WowFileEntry entry)
+        private void HandleHSH(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            pictureBox1.Image = null;
+            MessageBox.Show("HSH file selected. No action defined.");
         }
-        private static void HandleHSM(WowFileEntry entry)
+        private void HandleHSM(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            pictureBox1.Image = null;
+            MessageBox.Show("HSM file selected. No action defined.");
         }
-        private static void HandleINT(WowFileEntry entry)
+        private void HandleINT(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            pictureBox1.Image = null;
+            MessageBox.Show("INT file selected. No action defined.");
         }
-        private static void HandleIOB(WowFileEntry entry)
+        private void HandleIOB(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            pictureBox1.Image = null;
+            MessageBox.Show("IOB file selected. No action defined.");
         }
-        private static void HandlePalette(WowFileEntry entry)
+        private void HandlePalette(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            pictureBox1.Image = null;
+            MessageBox.Show("Palette file selected. No action defined.");
         }
-        private static void HandleRAW(WowFileEntry entry)
+        private void HandleRAW(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            pictureBox1.Image = null;
+            MessageBox.Show("RAW file selected. No action defined.");
         }
-        private static void HandleSHH(WowFileEntry entry)
+        private void HandleSHH(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            pictureBox1.Image = null;
+            MessageBox.Show("SHH file selected. No action defined.");
         }
-        private static void HandleSHL(WowFileEntry entry)
+        private void HandleSHL(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            pictureBox1.Image = null;
+            MessageBox.Show("SHL file selected. No action defined.");
         }
-        private static void HandleSHM(WowFileEntry entry)
+        private void HandleSHM(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            pictureBox1.Image = null;
+            MessageBox.Show("SHM file selected. No action defined.");
         }
-        private static void HandleSPR(WowFileEntry entry)
+        private void HandleSPR(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            pictureBox1.Visible = true; // show the picture box
+            RenderSPR(entry);
         }
-        private static void HandleWOF(WowFileEntry entry)
+        private void RenderSPR(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            using var br = new BinaryReader(File.OpenRead(filePath));
+            br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
+
+            // Read header
+            ushort width = br.ReadUInt16();        // 0x00
+            ushort height = br.ReadUInt16();       // 0x02
+            ushort frameCount = br.ReadUInt16();   // 0x04
+            ushort unknown1 = br.ReadUInt16();     // 0x06 (maybe unused)
+
+            br.ReadBytes(4); // Possibly padding or unused
+
+            uint firstFrameOffset = br.ReadUInt32(); // 0x0C
+
+            long pixelDataStart = entry.Offset + firstFrameOffset;
+            int expectedLength = width * height;
+
+            if (pixelDataStart + expectedLength > br.BaseStream.Length)
+            {
+                MessageBox.Show("Pixel data offset exceeds file size.");
+                return;
+            }
+
+            br.BaseStream.Seek(pixelDataStart, SeekOrigin.Begin);
+            byte[] pixelData = br.ReadBytes(expectedLength);
+
+            if (pixelData.Length != expectedLength)
+            {
+                MessageBox.Show($"Expected {expectedLength} bytes, got {pixelData.Length}. Aborting.");
+                return;
+            }
+
+            Bitmap bmp = new Bitmap(width, height, PixelFormat.Format8bppIndexed);
+
+            // Apply grayscale palette
+            ColorPalette palette = bmp.Palette;
+            for (int i = 0; i < 256; i++)
+                palette.Entries[i] = Color.FromArgb(i, i, i);
+            bmp.Palette = palette;
+
+            // Copy pixels to bitmap
+            BitmapData bmpData = bmp.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, bmp.PixelFormat);
+            IntPtr ptr = bmpData.Scan0;
+
+            for (int y = 0; y < height; y++)
+            {
+                int rowOffset = y * width;
+                if (rowOffset + width > pixelData.Length)
+                    break; // safeguard
+
+                Marshal.Copy(pixelData, rowOffset, ptr + y * bmpData.Stride, width);
+            }
+
+            bmp.UnlockBits(bmpData);
+
+            pictureBox1.Image = bmp;
+        }
+        private void HandleWOF(WowFileEntry entry)
+        {
+            pictureBox1.Image = null;
+            MessageBox.Show("WOF file selected. No action defined.");
         }
         //MAPS/MAPS.WoW
-        private static void HandleATM(WowFileEntry entry)
+        private void HandleATM(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            pictureBox1.Image = null;
+            MessageBox.Show("ATM file selected. No action defined.");
         }
-        private static void HandleCLS(WowFileEntry entry)
+        private void HandleCLS(WowFileEntry entry)
         {
-            throw new NotImplementedException();
+            pictureBox1.Image = null;
+            MessageBox.Show("CLS file selected. No action defined.");
         }
         public WOWViewer()
         {
             InitializeComponent();
             InitializeTooltips();
+            InitializeHandlers();
         }
         /// <summary>
         /// InitializeTooltips prepares a tooltip for every control in the form.
@@ -169,7 +250,7 @@ namespace WOWViewer
             else { return; }
             ExtractToFile(selected, isWav);
             selected.ToString();
-            MessageBox.Show($"Extracted: {selected.Name}{(isWav ? ".WAV" : "")}");
+            MessageBox.Show($"Extracted: {listBox1.SelectedItem!.ToString()}");
         }
         // select file output folder
         private void button3_Click(object sender, EventArgs e)
@@ -313,7 +394,7 @@ namespace WOWViewer
         {
             selected = entries[listBox1.SelectedIndex];
             // check selection is new
-            if (selected.Name != lastWaveformName)
+            if (selected.Name != lastSelectedListItem)
             {
                 label3.Text = $"File Size : {selected.Length} bytes";
                 label4.Text = $"File Offset : {selected.Offset} bytes";
@@ -333,7 +414,16 @@ namespace WOWViewer
 
                     byte[] fullWav = ms.ToArray();
                     pictureBox1.Image = DrawWaveform(fullWav); // update the waveform
-                    lastWaveformName = selected.Name;
+                    lastSelectedListItem = selected.Name;
+                }
+                else if (magic == "KAT!")
+                {
+                    string ext = listBox1.SelectedItem!.ToString()!.Split('.')[1];
+                    if (handlers.ContainsKey(ext))
+                    {
+                        handlers[ext].Invoke(selected);
+                    }
+                    lastSelectedListItem = selected.Name;
                 }
             }
             
