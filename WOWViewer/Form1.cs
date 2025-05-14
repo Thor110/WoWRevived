@@ -110,56 +110,38 @@ namespace WOWViewer
             using var br = new BinaryReader(File.OpenRead(filePath));
             br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
 
-            // Read header
-            ushort width = br.ReadUInt16();        // 0x00
-            ushort height = br.ReadUInt16();       // 0x02
-            ushort frameCount = br.ReadUInt16();   // 0x04
-            ushort unknown1 = br.ReadUInt16();     // 0x06 (maybe unused)
-
-            br.ReadBytes(4); // Possibly padding or unused
-
-            uint firstFrameOffset = br.ReadUInt32(); // 0x0C
-
-            long pixelDataStart = entry.Offset + firstFrameOffset;
-            int expectedLength = width * height;
-
-            if (pixelDataStart + expectedLength > br.BaseStream.Length)
+            string header = Encoding.ASCII.GetString(br.ReadBytes(4));
+            if (header != "FFUH")
             {
-                MessageBox.Show("Pixel data offset exceeds file size.");
+                MessageBox.Show("Unsupported SPR format (no FFUH header).");
                 return;
             }
 
-            br.BaseStream.Seek(pixelDataStart, SeekOrigin.Begin);
-            byte[] pixelData = br.ReadBytes(expectedLength);
+            ushort width = br.ReadUInt16();   // Little endian
+            ushort height = br.ReadUInt16();  // Little endian
 
-            if (pixelData.Length != expectedLength)
+            int imageSize = width * height * 3; // Assuming 24-bit RGB
+
+            byte[] imageData = br.ReadBytes(imageSize);
+            if (imageData.Length < imageSize)
             {
-                MessageBox.Show($"Expected {expectedLength} bytes, got {pixelData.Length}. Aborting.");
+                MessageBox.Show("Incomplete image data.");
                 return;
             }
 
-            Bitmap bmp = new Bitmap(width, height, PixelFormat.Format8bppIndexed);
+            Bitmap bmp = new Bitmap(width, height, PixelFormat.Format24bppRgb);
 
-            // Apply grayscale palette
-            ColorPalette palette = bmp.Palette;
-            for (int i = 0; i < 256; i++)
-                palette.Entries[i] = Color.FromArgb(i, i, i);
-            bmp.Palette = palette;
-
-            // Copy pixels to bitmap
-            BitmapData bmpData = bmp.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, bmp.PixelFormat);
-            IntPtr ptr = bmpData.Scan0;
-
+            int index = 0;
             for (int y = 0; y < height; y++)
             {
-                int rowOffset = y * width;
-                if (rowOffset + width > pixelData.Length)
-                    break; // safeguard
-
-                Marshal.Copy(pixelData, rowOffset, ptr + y * bmpData.Stride, width);
+                for (int x = 0; x < width; x++)
+                {
+                    byte r = imageData[index++];
+                    byte g = imageData[index++];
+                    byte b = imageData[index++];
+                    bmp.SetPixel(x, y, Color.FromArgb(r, g, b));
+                }
             }
-
-            bmp.UnlockBits(bmpData);
 
             pictureBox1.Image = bmp;
         }
@@ -323,6 +305,7 @@ namespace WOWViewer
                 button5.Visible = false; // hide audio player play button
                 button6.Visible = false; // hide audio player stop button
                 pictureBox1.Visible = false; // hide the picture box
+                label5.Visible = false; // hide sound length label
             }
             else if (magic == "SfxL")
             {
@@ -341,6 +324,7 @@ namespace WOWViewer
                 button5.Visible = true; // show audio player play button
                 button6.Visible = true; // show audio player stop button
                 pictureBox1.Visible = true; // show the picture box
+                label5.Visible = true; // show sound length label
             }
 
             return true;
@@ -414,6 +398,7 @@ namespace WOWViewer
 
                     byte[] fullWav = ms.ToArray();
                     pictureBox1.Image = DrawWaveform(fullWav); // update the waveform
+
                     lastSelectedListItem = selected.Name;
                 }
                 else if (magic == "KAT!")
@@ -520,7 +505,18 @@ namespace WOWViewer
             {
                 samples[i] = br.ReadInt16();
             }
-
+            // calculate sound length
+            double duration = sampleCount / (double)22050; // seconds
+            int minutes = (int)duration / 60;
+            int seconds = (int)duration % 60;
+            if (duration > 60)
+            {
+                label5.Text = $"Sound Length : {minutes:D2}:{seconds:D2}";
+            }
+            else
+            {
+                label5.Text = $"Sound Length : {duration:F2} seconds"; // update sound length label
+            }
             return samples;
         }
     }

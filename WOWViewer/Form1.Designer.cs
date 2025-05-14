@@ -32,7 +32,6 @@
             button1 = new Button();
             textBox1 = new TextBox();
             listBox1 = new ListBox();
-            label1 = new Label();
             label2 = new Label();
             button2 = new Button();
             button3 = new Button();
@@ -43,6 +42,8 @@
             button5 = new Button();
             button6 = new Button();
             pictureBox1 = new PictureBox();
+            label1 = new Label();
+            label5 = new Label();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -75,15 +76,6 @@
             listBox1.TabIndex = 3;
             listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged;
             listBox1.MouseDoubleClick += listBox1_MouseDoubleClick;
-            // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Location = new Point(93, 244);
-            label1.Name = "label1";
-            label1.Size = new Size(67, 15);
-            label1.TabIndex = 4;
-            label1.Text = "File Count :";
             // 
             // label2
             // 
@@ -189,11 +181,31 @@
             pictureBox1.TabStop = false;
             pictureBox1.Visible = false;
             // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new Point(93, 244);
+            label1.Name = "label1";
+            label1.Size = new Size(67, 15);
+            label1.TabIndex = 4;
+            label1.Text = "File Count :";
+            // 
+            // label5
+            // 
+            label5.AutoSize = true;
+            label5.Location = new Point(464, 244);
+            label5.Name = "label5";
+            label5.Size = new Size(87, 15);
+            label5.TabIndex = 15;
+            label5.Text = "Sound Length :";
+            label5.Visible = false;
+            // 
             // WOWViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(630, 349);
+            Controls.Add(label5);
             Controls.Add(pictureBox1);
             Controls.Add(button6);
             Controls.Add(button5);
@@ -221,7 +233,6 @@
         private Button button1;
         private TextBox textBox1;
         private ListBox listBox1;
-        private Label label1;
         private Label label2;
         private Button button2;
         private Button button3;
@@ -232,5 +243,7 @@
         private Button button5;
         private Button button6;
         private PictureBox pictureBox1;
+        private Label label1;
+        private Label label5;
     }
 }
