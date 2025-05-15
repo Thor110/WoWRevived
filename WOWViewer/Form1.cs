@@ -1,9 +1,6 @@
 using System.Text;
 using System.Media;
-using System.IO;
-using System.Windows.Forms;
 using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
 
 namespace WOWViewer
 {
@@ -14,6 +11,7 @@ namespace WOWViewer
         private string filePath = string.Empty;
         private string outputPath = string.Empty;
         private string magic = string.Empty;
+        private string tempName = string.Empty;
         private int fileCount = 0;
         private List<WowFileEntry> entries = new List<WowFileEntry>();
         private WowFileEntry selected = null!;
@@ -322,19 +320,28 @@ namespace WOWViewer
                 return ms.ToArray();
             }
         }
+        // detect sample rate
+        private int DetectSampleRate(byte[] rawData)
+        {
+            // Use file length heuristic — ~100 KB of raw data = ~1 sec at 44100Hz mono
+            if (rawData.Length > 50000) // >~0.6s at 22050 Hz, >~0.3s at 44100 Hz
+                return 44100;
+            else
+                return 22050;
+        }
         // extract to file method
         private void ExtractToFile(WowFileEntry entry, bool asWav = false)
         {
             using var br = new BinaryReader(File.OpenRead(filePath));
             br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
             byte[] rawData = br.ReadBytes(entry.Length);
-
             string filename = asWav ? $"{entry.Name}.wav" : entry.Name;
             using var fs = new FileStream(Path.Combine(outputPath, filename), FileMode.Create);
 
             if (asWav)
             {
-                byte[] wavHeader = CreateWavHeader(entry.Length);
+                int sampleRate = DetectSampleRate(rawData);
+                byte[] wavHeader = CreateWavHeader(rawData.Length, sampleRate);
                 fs.Write(wavHeader, 0, wavHeader.Length);
             }
             //if entry.Name ends with extension .RAW, .SHH, .SHL, .SHM, .SPR, .WOF etc add relevant header when they are determined and implemented.
@@ -356,16 +363,14 @@ namespace WOWViewer
                     using var br = new BinaryReader(File.OpenRead(filePath));
                     br.BaseStream.Seek(selected.Offset, SeekOrigin.Begin);
                     byte[] rawData = br.ReadBytes(selected.Length);
-                    byte[] wavHeader = CreateWavHeader(selected.Length);
-
+                    int sampleRate = DetectSampleRate(rawData);
+                    byte[] wavHeader = CreateWavHeader(rawData.Length, sampleRate);
                     using var ms = new MemoryStream();
                     ms.Write(wavHeader, 0, wavHeader.Length);
                     ms.Write(rawData, 0, rawData.Length);
                     ms.Position = 0;
-
                     byte[] fullWav = ms.ToArray();
-                    pictureBox1.Image = DrawWaveform(fullWav); // update the waveform
-
+                    pictureBox1.Image = DrawWaveform(fullWav, 156, 137, sampleRate);
                     lastSelectedListItem = selected.Name;
                 }
                 else if (magic == "KAT!")
@@ -396,13 +401,12 @@ namespace WOWViewer
             using var br = new BinaryReader(File.OpenRead(filePath));
             br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
             byte[] rawData = br.ReadBytes(entry.Length);
-
-            byte[] wavHeader = CreateWavHeader(entry.Length);
+            int sampleRate = DetectSampleRate(rawData);
+            byte[] wavHeader = CreateWavHeader(rawData.Length, sampleRate);
             using var ms = new MemoryStream();
             ms.Write(wavHeader, 0, wavHeader.Length);
             ms.Write(rawData, 0, rawData.Length);
             ms.Position = 0;
-
             try
             {
                 soundPlayer?.Stop(); // stop any currently playing sound
@@ -423,12 +427,12 @@ namespace WOWViewer
             // else if (magic == "KAT!") {}
         }
         // draw waveform
-        private Bitmap DrawWaveform(byte[] wavData, int width = 156, int height = 137)
+        private Bitmap DrawWaveform(byte[] wavData, int width, int height, int sampleRate)
         {
             var bmp = new Bitmap(width, height);
             using var g = Graphics.FromImage(bmp);
             g.Clear(Color.Black);
-            short[] samples = Extract16BitMonoSamples(wavData);
+            short[] samples = Extract16BitMonoSamples(wavData, sampleRate);
             int samplesPerPixel = samples.Length / width;
             Pen colour = Pens.White;
             if (filePath.Contains("sfx")) { colour = Pens.Yellow; }
@@ -450,7 +454,7 @@ namespace WOWViewer
             return bmp;
         }
         // extract 16-bit mono samples from WAV data
-        private short[] Extract16BitMonoSamples(byte[] wavData)
+        private short[] Extract16BitMonoSamples(byte[] wavData, int sampleRate)
         {
             using var ms = new MemoryStream(wavData);
             using var br = new BinaryReader(ms);
@@ -459,7 +463,7 @@ namespace WOWViewer
             short[] samples = new short[sampleCount];
             for (int i = 0; i < sampleCount; i++) { samples[i] = br.ReadInt16(); }
             // calculate sound length
-            double duration = sampleCount / (double)22050; // duration in seconds
+            double duration = sampleCount / (double)sampleRate;
             int minutes = (int)duration / 60;
             int seconds = (int)duration % 60;
             // update sound length label
