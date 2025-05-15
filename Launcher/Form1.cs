@@ -10,8 +10,6 @@ namespace WoWLauncher
         private RegistryKey screenKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Screen", true)!;
         private RegistryKey battleKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true)!;
         private RegistryKey researchKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true)!;
-        private ToolTip tooltip = new ToolTip();
-        private Type[] excludedControlTypes = new Type[] { typeof(PictureBox), typeof(Label), typeof(Button) };
         public Form1()
         {
             InitializeComponent();
@@ -59,7 +57,8 @@ namespace WoWLauncher
             comboBox4.Items.Add("Medium");
             comboBox4.Items.Add("Hard");
             InitializeRegistry();
-            InitializeTooltips();
+            ToolTip tooltip = new ToolTip();
+            ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(PictureBox), typeof(Label), typeof(Button) });
         }
         private void registryCompare(RegistryKey key, string entry, string value)
         {
@@ -95,32 +94,6 @@ namespace WoWLauncher
         /// <remarks>
         /// Uses excludedControlTypes to exclude certain types of controls from displaying tooltips.
         /// </remarks>
-        void InitializeTooltips()
-        {
-            components = new System.ComponentModel.Container();
-            tooltip = new ToolTip(components);
-            foreach (Control control in Controls)
-            {
-                if (excludedControlTypes.Contains(control.GetType()) != true)
-                {
-                    control.MouseEnter += new EventHandler(tooltip_MouseEnter);
-                    control.MouseLeave += new EventHandler(tooltip_MouseLeave);
-                }
-            }
-        }
-        /// <summary>
-        /// tooltip_MouseEnter event Handler uses the existing AccessibleDescription property as the tooltip information.
-        /// </summary>
-        void tooltip_MouseEnter(object? sender, EventArgs e)
-        {
-            Control control = (Control)sender!;
-            if (control.AccessibleDescription != null) { tooltip.Show(control.AccessibleDescription.ToString(), control); }
-            else { tooltip.Show("No description available.", control); }
-        }
-        /// <summary>
-        /// tooltip_MouseLeave event Handler hides the active tooltip.
-        /// </summary>
-        void tooltip_MouseLeave(object? sender, EventArgs e) { tooltip.Hide((Control)sender!); }
         private void launchGame()
         {
             Process.Start("WoW_patched.exe");
@@ -286,7 +259,7 @@ namespace WoWLauncher
         // open editor
         private void button6_Click(object sender, EventArgs e)
         {
-            System.Diagnostics.Process.Start("WOWViewer.exe");
+            Process.Start("WOWViewer.exe");
             Close();
         }
     }

@@ -142,6 +142,7 @@ namespace WOWViewer
             if (saveChanging) { return; } // prevents checkbox from triggering changed event when switching saves
             dateTimePicker1.MinDate = checkBox1.Checked ? DATE_LIMIT : MARTIAN_INVASION;
         }
+        // minimum date check
         private void minimumDateCheck(DateTime compare)
         {
             if (compare < MARTIAN_INVASION)

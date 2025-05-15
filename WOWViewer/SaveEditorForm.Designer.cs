@@ -86,7 +86,7 @@
             // 
             listBox2.FormattingEnabled = true;
             listBox2.ItemHeight = 15;
-            listBox2.Location = new Point(138, 81);
+            listBox2.Location = new Point(138, 70);
             listBox2.Name = "listBox2";
             listBox2.Size = new Size(120, 259);
             listBox2.TabIndex = 5;
