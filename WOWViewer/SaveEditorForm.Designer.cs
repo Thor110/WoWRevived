@@ -78,7 +78,7 @@
             textBox1.Name = "textBox1";
             textBox1.Size = new Size(239, 23);
             textBox1.TabIndex = 4;
-            textBox1.TextChanged += textBox1_TextChanged;
+            textBox1.TextChanged += AnyControlChanged;
             // 
             // listBox2
             // 
@@ -100,7 +100,7 @@
             dateTimePicker1.ShowUpDown = true;
             dateTimePicker1.Size = new Size(239, 23);
             dateTimePicker1.TabIndex = 6;
-            dateTimePicker1.ValueChanged += dateTimePicker1_ValueChanged;
+            dateTimePicker1.ValueChanged += AnyControlChanged;
             // 
             // label2
             // 

@@ -12,7 +12,6 @@ namespace WOWViewer
             InitializeSaveLoader();
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, typeof(Label));
-
         }
         // initialize save loader and count saves
         private void InitializeSaveLoader() { for (int i = 1; i <= 5; i++) { SaveLoader("Human", i); } for (int i = 1; i <= 5; i++) { SaveLoader("Martian", i); } }
@@ -25,11 +24,24 @@ namespace WOWViewer
             if (fileName == null) { return; } // check if the file exists
             using (var fs = new FileStream(fileName, FileMode.Open, FileAccess.Write))
             {
-                fs.Seek(12, SeekOrigin.Begin);
-                byte[] nameBytes = new byte[36];
-                byte[] newNameBytes = Encoding.ASCII.GetBytes(textBox1.Text);
-                Array.Copy(newNameBytes, nameBytes, Math.Min(36, newNameBytes.Length));
-                fs.Write(nameBytes, 0, 36);
+                // only write values that have changed
+                if (textBox1.Text != selectedSave.Name )
+                {
+                    byte[] nameBytes = new byte[36];
+                    byte[] newNameBytes = Encoding.ASCII.GetBytes(textBox1.Text);
+                    Array.Copy(newNameBytes, nameBytes, Math.Min(36, newNameBytes.Length));
+                    fs.Seek(0x0C, SeekOrigin.Begin);
+                    fs.Write(nameBytes, 0, 36);
+                }
+                if (dateTimePicker1.Value != selectedSave.dateTime)
+                {
+                    DateTime dt = dateTimePicker1.Value;
+                    float totalHours = dt.Hour + (dt.Minute / 60f) + (dt.Second / 3600f);
+                    float tickFloat = totalHours * 20.055f;
+                    byte[] timeBytes = BitConverter.GetBytes(tickFloat);
+                    fs.Seek(0x4C, SeekOrigin.Begin);
+                    fs.Write(timeBytes, 0, 4);
+                }
             }
             MessageBox.Show("Save Game Updated!");
             button1.Enabled = false; // disable the save button
@@ -48,21 +60,28 @@ namespace WOWViewer
             if (fileName == null) { return; } // check if the file exists
             using (var br = new BinaryReader(File.OpenRead(fileName)))
             {
-                br.BaseStream.Seek(12, SeekOrigin.Begin); // start after "....GAME(..."
+                br.BaseStream.Seek(0x0C, SeekOrigin.Begin); // start after "....GAME(..."
                 byte[] nameBytes = br.ReadBytes(36);
                 string saveName = Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
                 textBox1.Text = saveName;
                 // update selectedSave object
                 selectedSave.Name = saveName;
                 // current date and time
-                // Read Day, Month, Year (2 bytes each, little-endian)
+                br.BaseStream.Seek(0x4C, SeekOrigin.Begin);
+                byte[] timeBytes = br.ReadBytes(4);
+                float tickFloat = BitConverter.ToSingle(timeBytes, 0);
+                float totalHours = tickFloat / 20.055f;
+                int hours = (int)totalHours;
+                float fractionalHour = totalHours - hours;
+                int minutes = (int)(fractionalHour * 60);
+                int seconds = (int)((fractionalHour * 60 - minutes) * 60);
                 br.BaseStream.Seek(0x5A, SeekOrigin.Begin);
                 ushort day = BitConverter.ToUInt16(br.ReadBytes(2), 0);
                 day += 1; // update to account for zero-based indexing
                 ushort month = BitConverter.ToUInt16(br.ReadBytes(2), 0);
                 month += 1; // update to account for zero-based indexing
                 ushort year = BitConverter.ToUInt16(br.ReadBytes(2), 0);
-                selectedSave.dateTime = new DateTime(year, month, day, 12, 0, 0);
+                selectedSave.dateTime = new DateTime(year, month, day, hours, minutes, seconds);
                 dateTimePicker1.Value = selectedSave.dateTime;
             }
             if (listBox1.SelectedItem!.ToString()!.Contains("Human")) { dateTimePicker1.MinDate = new DateTime(1898, 9, 7, 0, 0, 0, 0); } // human response date
@@ -70,9 +89,9 @@ namespace WOWViewer
             textBox1.Enabled = true; // enable the text box
             dateTimePicker1.Enabled = true; // enable the date picker
             checkBox1.Enabled = true; // enable the checkbox
-            checkBox1.CheckedChanged -= checkBox1_CheckedChanged!;
-            checkBox1.Checked = false; // Reset to default
-            checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
+            checkBox1.CheckedChanged -= checkBox1_CheckedChanged!; // remove event handler to prevent triggering when setting the checkbox to default
+            checkBox1.Checked = false; // reset to default
+            checkBox1.CheckedChanged += checkBox1_CheckedChanged!; // add event handler back
             button1.Enabled = false; // disables the save button when switching saves
             label3.Text = "Status : No Changes Made"; // update the status label
             saveChanging = false; // selected save file has been changed
@@ -92,11 +111,10 @@ namespace WOWViewer
             }
             return fileName;
         }
-        // these methods can be combined into one method eventually along with others that only need to compare the save values
+        // AnyControlChanged handles when controls are changed that do not need extra logic such as the override date limit checkbox
         // save name updated
-        private void textBox1_TextChanged(object sender, EventArgs e) { compareSaveValues(); }
-        // current date
-        private void dateTimePicker1_ValueChanged(object sender, EventArgs e) { compareSaveValues(); }
+        // current date updated
+        private void AnyControlChanged(object sender, EventArgs e) { compareSaveValues(); }
         // override date limit
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
