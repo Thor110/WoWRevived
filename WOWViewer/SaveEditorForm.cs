@@ -1,5 +1,4 @@
 ﻿using System.Text;
-
 namespace WOWViewer
 {
     public partial class SaveEditorForm : Form
@@ -55,6 +54,7 @@ namespace WOWViewer
             saveChanging = true; // prevents the text box from triggering text changed event when switching saves
             parseSaveFile();
         }
+        // parse the save file
         private void parseSaveFile()
         {
             if (!fileSafetyCheck()) { return; }
@@ -94,6 +94,7 @@ namespace WOWViewer
             label3.Text = "Status : No Changes Made"; // update the status label
             saveChanging = false; // selected save file has been changed
         }
+        // double check the save file exists incase deleted by the user while the program is open
         private bool fileSafetyCheck()
         {
             fileName = $"SaveGame\\{listBox1.SelectedItem}"; // update fileName for reading and writing
@@ -124,6 +125,7 @@ namespace WOWViewer
             compareSaveValues(); // TODO : consider overriding date time picker to allow for 01/01/0000 which the game does accept
             dateTimePicker1.MinDate = checkBox1.Checked ? new DateTime(1753, 1, 1, 0, 0, 0) : selectedSave.dateTime; // set the min date to 01/01/1753 if checked
         }
+        // compare save values to see if any changes have been made
         private void compareSaveValues()
         {
             if (dateTimePicker1.Value != selectedSave.dateTime
