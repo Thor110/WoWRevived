@@ -6,4 +6,9 @@
         public int Length { get; set; }
         public int Offset { get; set; }
     }
+    class WowSaveEntry
+    {
+        public string Name { get; set; } = String.Empty;
+        public DateTime dateTime { get; set; }
+    }
 }

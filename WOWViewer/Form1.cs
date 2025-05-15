@@ -10,8 +10,6 @@ namespace WOWViewer
     public partial class WOWViewer : Form
     {
         private SoundPlayer soundPlayer = null!;
-        private ToolTip tooltip = new ToolTip();
-        private Type[] excludedControlTypes = new Type[] { typeof(ListBox), typeof(Label) };
         private string lastSelectedListItem = string.Empty;
         private string filePath = string.Empty;
         private string outputPath = string.Empty;
@@ -164,41 +162,10 @@ namespace WOWViewer
         public WOWViewer()
         {
             InitializeComponent();
-            InitializeTooltips();
+            ToolTip tooltip = new ToolTip();
+            ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(ListBox), typeof(Label) });
             InitializeHandlers();
         }
-        /// <summary>
-        /// InitializeTooltips prepares a tooltip for every control in the form.
-        /// </summary>
-        /// <remarks>
-        /// Uses excludedControlTypes to exclude certain types of controls from displaying tooltips.
-        /// </remarks>
-        void InitializeTooltips()
-        {
-            components = new System.ComponentModel.Container();
-            tooltip = new ToolTip(components);
-            foreach (Control control in Controls)
-            {
-                if (excludedControlTypes.Contains(control.GetType()) != true)
-                {
-                    control.MouseEnter += new EventHandler(tooltip_MouseEnter);
-                    control.MouseLeave += new EventHandler(tooltip_MouseLeave);
-                }
-            }
-        }
-        /// <summary>
-        /// tooltip_MouseEnter event Handler uses the existing AccessibleDescription property as the tooltip information.
-        /// </summary>
-        void tooltip_MouseEnter(object? sender, EventArgs e)
-        {
-            Control control = (Control)sender!;
-            if (control.AccessibleDescription != null) { tooltip.Show(control.AccessibleDescription.ToString(), control); }
-            else { tooltip.Show("No description available.", control); }
-        }
-        /// <summary>
-        /// tooltip_MouseLeave event Handler hides the active tooltip.
-        /// </summary>
-        void tooltip_MouseLeave(object? sender, EventArgs e) { tooltip.Hide((Control)sender!); }
         // open file
         private void button1_Click(object sender, EventArgs e)
         {
@@ -509,6 +476,13 @@ namespace WOWViewer
             saveEditor.Show();
             this.Hide();
             saveEditor.FormClosed += (s, args) => this.Show();
+            saveEditor.Move += (s, args) =>
+            {
+                if (this.Location != saveEditor.Location)
+                {
+                    this.Location = saveEditor.Location;
+                }
+            };
         }
         // map editor
         private void button8_Click(object sender, EventArgs e)
@@ -519,6 +493,13 @@ namespace WOWViewer
             mapEditor.Show();
             this.Hide();
             mapEditor.FormClosed += (s, args) => this.Show();
+            mapEditor.Move += (s, args) =>
+            {
+                if (this.Location != mapEditor.Location)
+                {
+                    this.Location = mapEditor.Location;
+                }
+            };
         }
     }
 }
