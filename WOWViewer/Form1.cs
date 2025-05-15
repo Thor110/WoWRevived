@@ -323,11 +323,20 @@ namespace WOWViewer
         // detect sample rate
         private int DetectSampleRate(byte[] rawData)
         {
-            // Use file length heuristic — ~100 KB of raw data = ~1 sec at 44100Hz mono
-            if (rawData.Length > 50000) // >~0.6s at 22050 Hz, >~0.3s at 44100 Hz
+            int sampleCount = rawData.Length / 2;
+
+            // Calculate duration at both sample rates
+            double duration22050 = sampleCount / 22050.0;
+            double duration44100 = sampleCount / 44100.0;
+
+            if (rawData.Length > 100000 && duration22050 > 30)
                 return 44100;
-            else
-                return 22050;
+            // If the file would be unusually long at 22050Hz, it's probably 44100Hz
+            if (duration22050 > 30 && duration44100 < 20)
+                return 44100;
+
+            // Otherwise, assume default (most are voice clips)
+            return 22050;
         }
         // extract to file method
         private void ExtractToFile(WowFileEntry entry, bool asWav = false)
