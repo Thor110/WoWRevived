@@ -38,6 +38,8 @@
             label2 = new Label();
             checkBox1 = new CheckBox();
             label3 = new Label();
+            button2 = new Button();
+            button3 = new Button();
             SuspendLayout();
             // 
             // button1
@@ -95,7 +97,6 @@
             dateTimePicker1.Enabled = false;
             dateTimePicker1.Format = DateTimePickerFormat.Custom;
             dateTimePicker1.Location = new Point(224, 41);
-            dateTimePicker1.MinDate = new DateTime(1898, 9, 1, 0, 0, 0, 0);
             dateTimePicker1.Name = "dateTimePicker1";
             dateTimePicker1.ShowUpDown = true;
             dateTimePicker1.Size = new Size(239, 23);
@@ -133,11 +134,35 @@
             label3.TabIndex = 9;
             label3.Text = "Status : No Save Loaded";
             // 
+            // button2
+            // 
+            button2.Enabled = false;
+            button2.Location = new Point(713, 12);
+            button2.Name = "button2";
+            button2.Size = new Size(75, 23);
+            button2.TabIndex = 10;
+            button2.Text = "Swap Sides";
+            button2.UseVisualStyleBackColor = true;
+            button2.Click += button2_Click;
+            // 
+            // button3
+            // 
+            button3.Enabled = false;
+            button3.Location = new Point(12, 172);
+            button3.Name = "button3";
+            button3.Size = new Size(75, 23);
+            button3.TabIndex = 11;
+            button3.Text = "Delete File";
+            button3.UseVisualStyleBackColor = true;
+            button3.Click += button3_Click;
+            // 
             // SaveEditorForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
+            Controls.Add(button3);
+            Controls.Add(button2);
             Controls.Add(label3);
             Controls.Add(checkBox1);
             Controls.Add(label2);
@@ -165,5 +190,7 @@
         private Label label2;
         private CheckBox checkBox1;
         private Label label3;
+        private Button button2;
+        private Button button3;
     }
 }
