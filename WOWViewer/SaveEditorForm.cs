@@ -25,13 +25,14 @@ namespace WOWViewer
             using (var fs = new FileStream(fileName, FileMode.Open, FileAccess.Write))
             {
                 // only write values that have changed
-                if (textBox1.Text != selectedSave.Name )
+                if (textBox1.Text != selectedSave.Name)
                 {
                     byte[] nameBytes = new byte[36];
                     byte[] newNameBytes = Encoding.ASCII.GetBytes(textBox1.Text);
                     Array.Copy(newNameBytes, nameBytes, Math.Min(36, newNameBytes.Length));
                     fs.Seek(0x0C, SeekOrigin.Begin);
                     fs.Write(nameBytes, 0, 36);
+                    selectedSave.Name = textBox1.Text; // update the selected save object
                 }
                 if (dateTimePicker1.Value != selectedSave.dateTime)
                 {
@@ -41,11 +42,11 @@ namespace WOWViewer
                     byte[] timeBytes = BitConverter.GetBytes(tickFloat);
                     fs.Seek(0x4C, SeekOrigin.Begin);
                     fs.Write(timeBytes, 0, 4);
+                    selectedSave.dateTime = dt; // update the selected save object
                 }
             }
             MessageBox.Show("Save Game Updated!");
             button1.Enabled = false; // disable the save button
-            // reparse the save file or manually update all entries in the WowSaveEntry object here in future
         }
         // save selected in list box
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -84,8 +85,8 @@ namespace WOWViewer
                 selectedSave.dateTime = new DateTime(year, month, day, hours, minutes, seconds);
                 dateTimePicker1.Value = selectedSave.dateTime;
             }
-            if (listBox1.SelectedItem!.ToString()!.Contains("Human")) { dateTimePicker1.MinDate = new DateTime(1898, 9, 7, 0, 0, 0, 0); } // human response date
-            else { dateTimePicker1.MinDate = new DateTime(1898, 9, 1, 0, 0, 0, 0); } // martian invasion date
+            if (listBox1.SelectedItem!.ToString()!.Contains("Human")) { dateTimePicker1.MinDate = new DateTime(1898, 9, 7, 0, 0, 0); } // human response date
+            else { dateTimePicker1.MinDate = new DateTime(1898, 9, 1, 0, 0, 0); } // martian invasion date
             textBox1.Enabled = true; // enable the text box
             dateTimePicker1.Enabled = true; // enable the date picker
             checkBox1.Enabled = true; // enable the checkbox

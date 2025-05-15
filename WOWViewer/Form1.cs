@@ -428,25 +428,25 @@ namespace WOWViewer
             var bmp = new Bitmap(width, height);
             using var g = Graphics.FromImage(bmp);
             g.Clear(Color.Black);
-
             short[] samples = Extract16BitMonoSamples(wavData);
             int samplesPerPixel = samples.Length / width;
-
+            Pen colour = Pens.White;
+            if (filePath.Contains("sfx")) { colour = Pens.Yellow; }
+            else if (filePath.Contains("human")) { colour = Pens.Red; }
+            else if (filePath.Contains("martian")) { colour = Pens.LimeGreen; }
             for (int x = 0; x < width; x++)
             {
                 int start = x * samplesPerPixel;
-                short max = 0;
+                int max = 0;
                 for (int i = 0; i < samplesPerPixel && (start + i) < samples.Length; i++)
                 {
-                    short val = Math.Abs(samples[start + i]);
+                    int val = Math.Abs((int)samples[start + i]);
                     if (val > max) max = val;
                 }
-
                 float normalized = max / (float)short.MaxValue;
                 int y = (int)(normalized * height / 2);
-                g.DrawLine(Pens.LimeGreen, x, height / 2 - y, x, height / 2 + y);
+                g.DrawLine(colour, x, height / 2 - y, x, height / 2 + y);
             }
-
             return bmp;
         }
         // extract 16-bit mono samples from WAV data
