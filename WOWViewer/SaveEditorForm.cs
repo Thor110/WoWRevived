@@ -89,9 +89,7 @@ namespace WOWViewer
             textBox1.Enabled = true; // enable the text box
             dateTimePicker1.Enabled = true; // enable the date picker
             checkBox1.Enabled = true; // enable the checkbox
-            checkBox1.CheckedChanged -= checkBox1_CheckedChanged!; // remove event handler to prevent triggering when setting the checkbox to default
             checkBox1.Checked = false; // reset to default
-            checkBox1.CheckedChanged += checkBox1_CheckedChanged!; // add event handler back
             button1.Enabled = false; // disables the save button when switching saves
             label3.Text = "Status : No Changes Made"; // update the status label
             saveChanging = false; // selected save file has been changed
@@ -116,12 +114,13 @@ namespace WOWViewer
         // current date updated
         private void AnyControlChanged(object sender, EventArgs e)
         {
-            if (saveChanging) { return; } // prevents text box from triggering text changed event when switching saves
+            if (saveChanging) { return; } // prevents controls from triggering changed events when switching saves
             compareSaveValues();
         }
         // override date limit
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
+            if (saveChanging) { return; } // prevents checkbox from triggering changed event when switching saves
             compareSaveValues(); // TODO : consider overriding date time picker to allow for 01/01/0000 which the game does accept
             dateTimePicker1.MinDate = checkBox1.Checked ? new DateTime(1753, 1, 1, 0, 0, 0) : selectedSave.dateTime; // set the min date to 01/01/1753 if checked
         }
