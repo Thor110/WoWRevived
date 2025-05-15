@@ -8,6 +8,7 @@ namespace WOWViewer
         private const int DATE_OFFSET = 0x5A;
         //private DateTime HUMAN_RESPONSE = new DateTime(1898, 9, 7); // human response date // not used due to swap save file ability
         private DateTime MARTIAN_INVASION = new DateTime(1898, 9, 1); // martian invasion date
+        // MARTIAN_INVASION is used as the default lower bound for the date time picker unless overridden or mismatching
         private DateTime DATE_LIMIT = new DateTime(1753, 1, 1); // date limit
         private bool saveChanging; // is save changing state
         private string fileName = string.Empty; // selected file name
@@ -139,8 +140,7 @@ namespace WOWViewer
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
             if (saveChanging) { return; } // prevents checkbox from triggering changed event when switching saves
-            dateTimePicker1.MinDate = checkBox1.Checked ? new DateTime(1753, 1, 1) : MARTIAN_INVASION;
-            //compareSaveValues(); // TODO : consider overriding date time picker to allow for 01/01/0000 which the game does accept
+            dateTimePicker1.MinDate = checkBox1.Checked ? DATE_LIMIT : MARTIAN_INVASION;
         }
         private void minimumDateCheck(DateTime compare)
         {
