@@ -4,8 +4,9 @@ namespace WOWViewer
 {
     public partial class SaveEditorForm : Form
     {
-        private bool saveChanging;
-        private WowSaveEntry selectedSave = new WowSaveEntry();
+        private bool saveChanging; // is save changing state
+        private string fileName = string.Empty; // selected file name
+        private WowSaveEntry selectedSave = new WowSaveEntry(); // selected save file settings
         public SaveEditorForm()
         {
             InitializeComponent();
@@ -20,8 +21,7 @@ namespace WOWViewer
         // save file button
         private void button1_Click(object sender, EventArgs e)
         {
-            string fileName = fileSafetyCheck(); // check the file still exists
-            if (fileName == null) { return; } // check if the file exists
+            if (!fileSafetyCheck()) { return; }
             using (var fs = new FileStream(fileName, FileMode.Open, FileAccess.Write))
             {
                 // only write values that have changed
@@ -57,8 +57,9 @@ namespace WOWViewer
         }
         private void parseSaveFile()
         {
-            string fileName = fileSafetyCheck(); // check the file still exists
-            if (fileName == null) { return; } // check if the file exists
+            if (!fileSafetyCheck()) { return; }
+            if (fileName.Contains("Human")) { dateTimePicker1.MinDate = new DateTime(1898, 9, 7, 0, 0, 0); } // human response date
+            else { dateTimePicker1.MinDate = new DateTime(1898, 9, 1, 0, 0, 0); } // martian invasion date
             using (var br = new BinaryReader(File.OpenRead(fileName)))
             {
                 br.BaseStream.Seek(0x0C, SeekOrigin.Begin); // start after "....GAME(..."
@@ -85,8 +86,6 @@ namespace WOWViewer
                 selectedSave.dateTime = new DateTime(year, month, day, hours, minutes, seconds);
                 dateTimePicker1.Value = selectedSave.dateTime;
             }
-            if (listBox1.SelectedItem!.ToString()!.Contains("Human")) { dateTimePicker1.MinDate = new DateTime(1898, 9, 7, 0, 0, 0); } // human response date
-            else { dateTimePicker1.MinDate = new DateTime(1898, 9, 1, 0, 0, 0); } // martian invasion date
             textBox1.Enabled = true; // enable the text box
             dateTimePicker1.Enabled = true; // enable the date picker
             checkBox1.Enabled = true; // enable the checkbox
@@ -97,34 +96,37 @@ namespace WOWViewer
             label3.Text = "Status : No Changes Made"; // update the status label
             saveChanging = false; // selected save file has been changed
         }
-        private string fileSafetyCheck()
+        private bool fileSafetyCheck()
         {
-            string fileName = $"SaveGame\\{listBox1.SelectedItem}";
+            fileName = $"SaveGame\\{listBox1.SelectedItem}"; // update fileName for reading and writing
             if (!File.Exists(fileName))
             {
-                MessageBox.Show("Where did the file go?");
-                listBox1.Items.Remove(listBox1.SelectedItem!);
+                MessageBox.Show("Where did the file go?"); // user deleted the file while the program was open
+                listBox1.Items.Remove(listBox1.SelectedItem!); // remove the file from the list box
                 textBox1.Text = ""; // clear the textbox
                 textBox1.Enabled = false; // disable the text box
                 dateTimePicker1.Enabled = false; // disables the date picker
                 checkBox1.Enabled = false; // enable the checkbox
-                return null!;
+                return false; // return false if file doesn't exist after disabling UI elements
             }
-            return fileName;
+            return true; // return true if the file still exists
         }
         // AnyControlChanged handles when controls are changed that do not need extra logic such as the override date limit checkbox
         // save name updated
         // current date updated
-        private void AnyControlChanged(object sender, EventArgs e) { compareSaveValues(); }
+        private void AnyControlChanged(object sender, EventArgs e)
+        {
+            if (saveChanging) { return; } // prevents text box from triggering text changed event when switching saves
+            compareSaveValues();
+        }
         // override date limit
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
-            compareSaveValues();
-            dateTimePicker1.MinDate = checkBox1.Checked ? new DateTime(1753, 1, 1, 0, 0, 0, 0) : selectedSave.dateTime; // set the min date to 01/01/1753 if checked
+            compareSaveValues(); // TODO : consider overriding date time picker to allow for 01/01/0000 which the game does accept
+            dateTimePicker1.MinDate = checkBox1.Checked ? new DateTime(1753, 1, 1, 0, 0, 0) : selectedSave.dateTime; // set the min date to 01/01/1753 if checked
         }
         private void compareSaveValues()
         {
-            if (saveChanging) { return; } // prevents text box from triggering text changed event when switching saves
             if (dateTimePicker1.Value != selectedSave.dateTime
                 || textBox1.Text != selectedSave.Name
                 )
