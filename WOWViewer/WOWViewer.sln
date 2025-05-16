@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.13.35913.81 d17.13
+VisualStudioVersion = 17.13.35913.81
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WOWViewer", "WOWViewer.csproj", "{3DD2264A-7A91-4A0B-8D49-808BA8DBF3DE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WoWViewer", "WoWViewer.csproj", "{3DD2264A-7A91-4A0B-8D49-808BA8DBF3DE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
