@@ -67,7 +67,7 @@
             // richTextBox1
             // 
             richTextBox1.AcceptsTab = true;
-            richTextBox1.AccessibleDescription = "Enter the desired text here and press enter!";
+            richTextBox1.AccessibleDescription = "Enter the desired text here and press enter! Then backspace!!!!";
             richTextBox1.Enabled = false;
             richTextBox1.Location = new Point(460, 26);
             richTextBox1.Name = "richTextBox1";

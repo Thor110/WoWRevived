@@ -14,7 +14,8 @@ namespace WoWViewer
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(ListBox), typeof(Label) });
             parseTEXTOJD();
         }
-        public void parseTEXTOJD() // for parsing the TEXT.ojd file into the listBox for the TextEditorForm
+        // for parsing the TEXT.ojd file into the listBox for the TextEditorForm
+        public void parseTEXTOJD()
         {
             string inputPath = "TEXT.ojd";
             byte[] data = File.ReadAllBytes(inputPath);
@@ -34,6 +35,7 @@ namespace WoWViewer
                 offset += (int)length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
             }
         }
+        // list box selected index changed event
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             richTextBox1.Enabled = true; // enable the richTextBox
@@ -46,14 +48,8 @@ namespace WoWViewer
             {
                 int index = listBox1.SelectedIndex;
                 string updatedText = richTextBox1.Text;
-                if (index == 1396)
-                {
-                    listBox1.SelectedIndex = index - 1; // spoof code
-                }
-                else
-                {
-                    listBox1.SelectedIndex = index + 1; // spoof code
-                }
+                if (index == 1396) { listBox1.SelectedIndex = index - 1; } // spoof code
+                else { listBox1.SelectedIndex = index + 1; } // spoof code to prevent the listBox from going out of bounds
                 entries[index].Name = updatedText;
                 entries[index].Length = (ushort)(updatedText.Length); // we'll add null terminator on save
                 listBox1.BeginUpdate();
@@ -67,11 +63,6 @@ namespace WoWViewer
         }
         // save file button
         private void button1_Click(object sender, EventArgs e)
-        {
-            parseCheck(); // check what values have changed before saving
-        }
-        // save the file
-        private void parseCheck()
         {
             string inputPath = "TEXT.ojd";
             byte[] data = File.ReadAllBytes(inputPath);
