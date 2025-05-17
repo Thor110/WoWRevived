@@ -23,13 +23,17 @@ Language options are currently hidden, as no confirmed non-English PC versions o
 The road map for this project.
 
 - ✅ 1 : Custom Launcher
+![Launcher](images/launcher.png)
 - ✅ 2 : File Extractor ( Fully Functional )
+![File Extractor](images/file-extractor.png)
 	- .WoW archives can be extracted
 	- .ojd files can be parsed, but there is still more decoding to do.
 - ❌ 3 : Save Editor ( Partially Implemented )
+![Save Editor](images/save-editor.png)
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Sector & Area names loaded dynamically from TEXT.ojd
 - ✅ 4 : Text Editor ( Fully Functional, edit and save references in the TEXT.ojd file, along with properly updating their headers. )
+![Text Editor](images/text-editor.png)
 - ❌ 5 : Map Editor ( Basic Parsing Implemented )
 	- Basic parsing of .nsb filetypes.
 - ❌ 6 : No-CD Music Fix
