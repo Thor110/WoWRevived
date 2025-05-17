@@ -1,6 +1,7 @@
 using System.Text;
 using System.Media;
 using System.Drawing.Imaging;
+using WoWViewer;
 
 namespace WOWViewer
 {
@@ -163,7 +164,7 @@ namespace WOWViewer
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(ListBox), typeof(Label) });
             InitializeHandlers();
             //parseTEXTOJD();
-            parseSFXOBJOJD("OBJ");
+            //parseSFXOBJOJD("OBJ");
         }
         // this is a test method to parse the TEXT.OJD file and log the results to a text file
         public void parseTEXTOJD()
@@ -603,6 +604,23 @@ namespace WOWViewer
                 if (this.Location != mapEditor.Location)
                 {
                     this.Location = mapEditor.Location;
+                }
+            };
+        }
+        // open text editor window
+        private void button9_Click(object sender, EventArgs e)
+        {
+            var textEditor = new TextEditorForm();
+            textEditor.StartPosition = FormStartPosition.Manual;
+            textEditor.Location = this.Location;
+            textEditor.Show();
+            this.Hide();
+            textEditor.FormClosed += (s, args) => this.Show();
+            textEditor.Move += (s, args) =>
+            {
+                if (this.Location != textEditor.Location)
+                {
+                    this.Location = textEditor.Location;
                 }
             };
         }
