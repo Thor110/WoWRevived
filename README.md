@@ -18,6 +18,8 @@ If anyone really wants to save themselves 15.2mb's of space or wants to save wri
 
 Language options are currently hidden, as no confirmed non-English PC versions of the game have been found. If you happen to own or know of a different language release, please let us know as support can easily be added if needed.
 
+Or, if you choose to make a language patch using the text editor, feel free to send the "TEXT.ojd" file our way and I will re-active the dropdown option in the menu and integrate language selection options!
+
 # Road Map
 
 The road map for this project.
