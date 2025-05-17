@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿using Microsoft.VisualBasic.Logging;
+using System.Text;
+using System.Xml.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace WOWViewer
 {
     public partial class SaveEditorForm : Form
@@ -73,6 +76,8 @@ namespace WOWViewer
             button2.Enabled = true; // enable the swap sides button
             button3.Enabled = true; // enable the delete save button
             parseSaveFile();
+            listBox2.Items.Clear(); // clear the list box
+            parseText(); // parse the text file for debugging purposes
         }
         // parse the save file
         private void parseSaveFile()
@@ -210,6 +215,26 @@ namespace WOWViewer
             InitializeSaveLoader(); // reinitialize the save loader and repopulate the list box
             button2.Enabled = false; // disable the swap sides button
             button3.Enabled = false; // disable the delete save button
+        }
+        // parse the text file to get sector names
+        public void parseText()
+        {
+            int offset = 0x289; // Human start
+            int endOffset = 0x4EA; // Human end
+            if (fileName.Contains("Martian"))
+            {
+                offset = endOffset; // Human end / Martian begin
+                endOffset = 0x72E; // Martian end
+            }
+            byte[] data = File.ReadAllBytes("TEXT.ojd");
+            for (int i = 0; i < 31; i++)
+            {
+                byte length = data[offset + 8]; // get string length // length is never more than one byte in this case
+                int stringOffset = offset + 10; // get string location
+                string text = Encoding.ASCII.GetString(data, stringOffset, length-1); // string length is one less than the byte length
+                listBox2.Items.Add(text);
+                offset += (int)length + 9; // move offset to next entry
+            }
         }
     }
 }

@@ -88,7 +88,7 @@
             listBox2.ItemHeight = 15;
             listBox2.Location = new Point(138, 70);
             listBox2.Name = "listBox2";
-            listBox2.Size = new Size(120, 259);
+            listBox2.Size = new Size(120, 469);
             listBox2.TabIndex = 5;
             // 
             // dateTimePicker1
@@ -160,7 +160,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(800, 550);
             Controls.Add(button3);
             Controls.Add(button2);
             Controls.Add(label3);

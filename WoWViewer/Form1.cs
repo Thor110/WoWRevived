@@ -1,6 +1,7 @@
 using System.Text;
 using System.Media;
 using System.Drawing.Imaging;
+using System.Windows.Forms;
 
 namespace WOWViewer
 {
@@ -163,6 +164,35 @@ namespace WOWViewer
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(ListBox), typeof(Label) });
             InitializeHandlers();
+            //parseOJD();
+        }
+        public void parseOJD() // this is a test method to parse the TEXT.OJD file and log the results to a text file
+        {
+            string inputPath = "TEXT.ojd";
+            string outputPath = "text-ojd-log.txt";
+            byte[] data = File.ReadAllBytes(inputPath);
+            using (StreamWriter log = new StreamWriter(outputPath, false, Encoding.UTF8))
+            {
+                int offset = 0x289;
+                int count = 0;
+                for (int i = 0; i < 1396; i++)
+                {
+                    byte buttonID = data[offset + 2]; // button type???
+                    byte category = data[offset + 4];  // Faction: 00 = Martian, 01 = Human, 02 = UI
+                    byte buttonFunction = data[offset + 6]; // button function??
+                    int length = data[offset + 8] | (data[offset + 9] << 8); // bytes 9 and 10 are the string length
+                    int stringOffset = offset + 10; // string offset
+                    string text = Encoding.ASCII.GetString(data, stringOffset, length - 1); // string length is one less than the byte length
+                    string faction =
+                        category == 0x00 ? "Martian" :
+                        category == 0x01 ? "Human" :
+                        category == 0x02 ? "UI" : "Unknown";
+                    log.WriteLine($"{i:D4} [{faction}] : {text} : Offset : [{offset:X}] : Button ID : [{buttonID:X2}] : Button Function : [{buttonFunction:X2}]");
+                    offset += length + 9; // move offset to next entry
+                    count++; // increase count checker
+                }
+                log.WriteLine($"Total valid entries: {count}");
+            }
         }
         // open file
         private void button1_Click(object sender, EventArgs e)
