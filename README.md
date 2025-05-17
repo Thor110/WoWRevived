@@ -29,6 +29,7 @@ The road map for this project.
 - ❌ 3 : Save Editor ( Partially Implemented )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Sector & Area names loaded dynamically from TEXT.ojd
+	- Text Editor functionality implemented, edit and save references in the TEXT.ojd file, along with properly updating their headers.
 - ❌ 4 : Map Editor ( Basic Parsing Implemented )
 	- Basic parsing of .nsb filetypes.
 - ❌ 5 : No-CD Music Fix
