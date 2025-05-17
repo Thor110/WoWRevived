@@ -164,7 +164,8 @@ namespace WOWViewer
             InitializeHandlers();
             //parseOJD();
         }
-        public void parseOJD() // this is a test method to parse the TEXT.OJD file and log the results to a text file
+        // this is a test method to parse the TEXT.OJD file and log the results to a text file
+        public void parseOJD()
         {
             string inputPath = "TEXT.ojd";
             string outputPath = "text-ojd-log.txt";
