@@ -32,11 +32,11 @@ The road map for this project.
 	- All 1396 strings are editable.
 	- UTF-8 + ISO-8859-1 encoding supported.
 	- File is recompiled from scratch based on modifications.
-- [❌ 5 : Map Editor](#map-editor) ( Basic Parsing Implemented )
+- ❌ 5 : Map Editor ( Basic Parsing Implemented )
 	- Basic parsing of .nsb filetypes.
-- [❌ 6 : No-CD Music Fix](#no-cd-music-fix)
-- [❌ 7 : Decomp/Recomp](#decomprecomp)
-- [❌ 8 : Remake](#remake)
+- ❌ 6 : No-CD Music Fix
+- ❌ 7 : Decomp/Recomp
+- ❌ 8 : Remake
 
 This might not all happen but we wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 
