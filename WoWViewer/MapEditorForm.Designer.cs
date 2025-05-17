@@ -34,12 +34,13 @@
             // 
             // button1
             // 
-            button1.Location = new Point(12, 12);
+            button1.Location = new Point(356, 235);
             button1.Name = "button1";
             button1.Size = new Size(75, 23);
             button1.TabIndex = 0;
-            button1.Text = "Viewer";
+            button1.Text = "Load Maps";
             button1.UseVisualStyleBackColor = true;
+            button1.Click += button1_Click;
             // 
             // MapEditorForm
             // 
