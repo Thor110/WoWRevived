@@ -25,7 +25,7 @@ The road map for this project.
 - ✅ 1 : Custom Launcher
 - ✅ 2 : File Extractor
 - ❌ 3 : Save Editor ( Partially Implemented )
-- ❌ 4 : Map Editor
+- ❌ 4 : Map Editor ( Basic Parsing Implemented )
 - ❌ 5 : No-CD Music Fix
 - ❌ 6 : Decomp/Recomp
 - ❌ 7 : Remake
