@@ -22,18 +22,21 @@ Language options are currently hidden, as no confirmed non-English PC versions o
 
 The road map for this project.
 - [✅ 1 : Custom Launcher](#custom-launcher)
-- [✅ 2 : File Extractor](#file-extractor)(#file-extractor) ( Fully Functional )
+- [✅ 2 : File Extractor](#file-extractor) ( Fully Functional )
 	- .WoW archives can be extracted
 	- .ojd files can be parsed, but there is still more decoding to do.
-- ❌ 3 : Save Editor(#save-editor) ( Partially Implemented )
+- [❌ 3 : Save Editor](#save-editor) ( Partially Implemented )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Sector & Area names loaded dynamically from TEXT.ojd
-- ✅ 4 : Text Editor(#text-editor) ( Fully Functional, edit and save references in the TEXT.ojd file, along with properly updating their headers. )
-- ❌ 5 : Map Editor ( Basic Parsing Implemented )
+- [✅ 4 : Text Editor](#text-editor) ( Fully Functional, edit and save references in the TEXT.ojd file, along with properly updating their headers. )
+	- All 1396 strings are editable.
+	- UTF-8 + ISO-8859-1 encoding supported.
+	- File is recompiled from scratch based on modifications.
+- [❌ 5 : Map Editor](#map-editor) ( Basic Parsing Implemented )
 	- Basic parsing of .nsb filetypes.
-- ❌ 6 : No-CD Music Fix
-- ❌ 7 : Decomp/Recomp
-- ❌ 8 : Remake
+- [❌ 6 : No-CD Music Fix](#no-cd-music-fix)
+- [❌ 7 : Decomp/Recomp](#decomprecomp)
+- [❌ 8 : Remake](#remake)
 
 This might not all happen but we wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 
