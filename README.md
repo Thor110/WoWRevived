@@ -21,8 +21,8 @@ Language options are currently hidden, as no confirmed non-English PC versions o
 # Road Map
 
 The road map for this project.
-- ✅ 1 : Custom Launcher(#custom-launcher)
-- ✅ 2 : File Extractor(#file-extractor) ( Fully Functional )
+- [✅ 1 : Custom Launcher](#custom-launcher)(#custom-launcher)
+- [✅ 2 : File Extractor](#file-extractor)(#file-extractor) ( Fully Functional )
 	- .WoW archives can be extracted
 	- .ojd files can be parsed, but there is still more decoding to do.
 - ❌ 3 : Save Editor(#save-editor) ( Partially Implemented )
