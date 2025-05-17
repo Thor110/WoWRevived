@@ -178,7 +178,7 @@ namespace WOWViewer
                     byte buttonID = data[offset + 2]; // button type???
                     byte category = data[offset + 4];  // Faction: 00 = Martian, 01 = Human, 02 = UI
                     byte buttonFunction = data[offset + 6]; // button function??
-                    int length = data[offset + 8] | (data[offset + 9] << 8); // bytes 9 and 10 are the string length
+                    ushort length = (ushort)(data[offset + 8] | (data[offset + 9] << 8)); // bytes 9 and 10 are the string length
                     int stringOffset = offset + 10; // string offset
                     string text = Encoding.ASCII.GetString(data, stringOffset, length - 1); // string length is one less than the byte length
                     string faction =
@@ -186,7 +186,7 @@ namespace WOWViewer
                         category == 0x01 ? "Human" :
                         category == 0x02 ? "UI" : "Unknown"; // faction type or user interface
                     log.WriteLine($"{i:D4} [{faction}] : {text} : Offset : [{offset:X}] : Button ID : [{buttonID:X2}] : Button Function : [{buttonFunction:X2}]");
-                    offset += length + 9; // move offset to next entry // not + 10 because length is -1
+                    offset += length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
                     //count++; // increase count checker
                 }
                 //log.WriteLine($"Total valid entries: {count}"); // log the total number of entries

@@ -231,7 +231,7 @@ namespace WOWViewer
                 int stringOffset = offset + 10; // get string location
                 string text = Encoding.ASCII.GetString(data, stringOffset, length-1); // string length is one less than the byte length
                 listBox2.Items.Add(text);
-                offset += (int)length + 9; // move offset to next entry // not + 10 because length is -1
+                offset += (int)length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
             }
         }
     }
