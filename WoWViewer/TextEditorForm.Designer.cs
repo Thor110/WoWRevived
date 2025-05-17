@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TextEditorForm));
             button1 = new Button();
             listBox1 = new ListBox();
             label1 = new Label();
@@ -85,8 +86,9 @@
             Controls.Add(label1);
             Controls.Add(listBox1);
             Controls.Add(button1);
-            Name = "TextEditorForm";
-            Text = "TextEditorForm";
+            Icon = (Icon)resources.GetObject("$this.Icon");
+            Name = "Text Editor";
+            Text = "Text Editor";
             ResumeLayout(false);
             PerformLayout();
         }
