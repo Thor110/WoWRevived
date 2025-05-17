@@ -29,12 +29,12 @@ The road map for this project.
 - ❌ 3 : Save Editor ( Partially Implemented )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Sector & Area names loaded dynamically from TEXT.ojd
-	- Text Editor functionality implemented, edit and save references in the TEXT.ojd file, along with properly updating their headers.
-- ❌ 4 : Map Editor ( Basic Parsing Implemented )
+- ✅ 4 : Text Editor functionality implemented, edit and save references in the TEXT.ojd file, along with properly updating their headers.
+- ❌ 5 : Map Editor ( Basic Parsing Implemented )
 	- Basic parsing of .nsb filetypes.
-- ❌ 5 : No-CD Music Fix
-- ❌ 6 : Decomp/Recomp
-- ❌ 7 : Remake
+- ❌ 6 : No-CD Music Fix
+- ❌ 7 : Decomp/Recomp
+- ❌ 8 : Remake
 
 This might not all happen but we wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 
