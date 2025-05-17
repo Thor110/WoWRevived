@@ -21,19 +21,14 @@ Language options are currently hidden, as no confirmed non-English PC versions o
 # Road Map
 
 The road map for this project.
-
 - ✅ 1 : Custom Launcher
-![Launcher](images/launcher.png)
 - ✅ 2 : File Extractor ( Fully Functional )
-![File Extractor](images/file-extractor.png)
 	- .WoW archives can be extracted
 	- .ojd files can be parsed, but there is still more decoding to do.
 - ❌ 3 : Save Editor ( Partially Implemented )
-![Save Editor](images/save-editor.png)
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Sector & Area names loaded dynamically from TEXT.ojd
 - ✅ 4 : Text Editor ( Fully Functional, edit and save references in the TEXT.ojd file, along with properly updating their headers. )
-![Text Editor](images/text-editor.png)
 - ❌ 5 : Map Editor ( Basic Parsing Implemented )
 	- Basic parsing of .nsb filetypes.
 - ❌ 6 : No-CD Music Fix
@@ -43,3 +38,23 @@ The road map for this project.
 This might not all happen but we wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 
 Discord server : https://discord.gg/bwG6Z3RK8b
+
+# Screenshots
+
+Screenshots of the current progress for the toolkit.
+
+## Custom Launcher
+WoWLauncher
+![Launcher](images/launcher.png)
+
+## File Extractor
+WoWViewer - File Extractor
+![File Extractor](images/file-extractor.png)
+
+## Save Editor
+WoWViewer - Save Editor
+![Save Editor](images/save-editor.png)
+
+## Text Editor
+WoWViewer - Text Editor
+![Text Editor](images/text-editor.png)
