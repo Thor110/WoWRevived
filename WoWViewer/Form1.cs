@@ -1,7 +1,6 @@
 using System.Text;
 using System.Media;
 using System.Drawing.Imaging;
-using System.Windows.Forms;
 
 namespace WOWViewer
 {
@@ -12,7 +11,6 @@ namespace WOWViewer
         private string filePath = string.Empty;
         private string outputPath = string.Empty;
         private string magic = string.Empty;
-        private string tempName = string.Empty;
         private int fileCount = 0;
         private List<WowFileEntry> entries = new List<WowFileEntry>();
         private WowFileEntry selected = null!;
@@ -173,9 +171,9 @@ namespace WOWViewer
             byte[] data = File.ReadAllBytes(inputPath);
             using (StreamWriter log = new StreamWriter(outputPath, false, Encoding.UTF8))
             {
-                int offset = 0x289;
-                int count = 0;
-                for (int i = 0; i < 1396; i++)
+                int offset = 0x289; // first string starts at 0x289
+                //int count = 0; // count checker for total number of entries
+                for (int i = 0; i < 1396; i++) // there are only 1396 entries
                 {
                     byte buttonID = data[offset + 2]; // button type???
                     byte category = data[offset + 4];  // Faction: 00 = Martian, 01 = Human, 02 = UI
@@ -186,12 +184,12 @@ namespace WOWViewer
                     string faction =
                         category == 0x00 ? "Martian" :
                         category == 0x01 ? "Human" :
-                        category == 0x02 ? "UI" : "Unknown";
+                        category == 0x02 ? "UI" : "Unknown"; // faction type or user interface
                     log.WriteLine($"{i:D4} [{faction}] : {text} : Offset : [{offset:X}] : Button ID : [{buttonID:X2}] : Button Function : [{buttonFunction:X2}]");
-                    offset += length + 9; // move offset to next entry
-                    count++; // increase count checker
+                    offset += length + 9; // move offset to next entry // not + 10 because length is -1
+                    //count++; // increase count checker
                 }
-                log.WriteLine($"Total valid entries: {count}");
+                //log.WriteLine($"Total valid entries: {count}"); // log the total number of entries
             }
         }
         // open file

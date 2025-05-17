@@ -1,7 +1,5 @@
-﻿using Microsoft.VisualBasic.Logging;
-using System.Text;
-using System.Xml.Linq;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+﻿using System.Text;
+
 namespace WOWViewer
 {
     public partial class SaveEditorForm : Form
@@ -233,7 +231,7 @@ namespace WOWViewer
                 int stringOffset = offset + 10; // get string location
                 string text = Encoding.ASCII.GetString(data, stringOffset, length-1); // string length is one less than the byte length
                 listBox2.Items.Add(text);
-                offset += (int)length + 9; // move offset to next entry
+                offset += (int)length + 9; // move offset to next entry // not + 10 because length is -1
             }
         }
     }
