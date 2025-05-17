@@ -24,8 +24,13 @@ The road map for this project.
 
 - ✅ 1 : Custom Launcher
 - ✅ 2 : File Extractor
+	- .WoW archives can be extracted
+	- .ojd files can be parsed, but there is still more decoding to do.
 - ❌ 3 : Save Editor ( Partially Implemented )
+	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
+	- Sector & Area names loaded dynamically from TEXT.ojd
 - ❌ 4 : Map Editor ( Basic Parsing Implemented )
+	- Basic parsing of .nsb filetypes.
 - ❌ 5 : No-CD Music Fix
 - ❌ 6 : Decomp/Recomp
 - ❌ 7 : Remake
