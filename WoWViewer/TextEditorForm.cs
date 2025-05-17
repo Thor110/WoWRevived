@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualBasic.Logging;
-using System.Text;
+﻿using System.Text;
 using WOWViewer;
 
 namespace WoWViewer
@@ -27,8 +26,9 @@ namespace WoWViewer
                 byte buttonFunction = data[offset + 6]; // button function??
                 ushort length = (ushort)(data[offset + 8] | (data[offset + 9] << 8)); // bytes 9 and 10 are the string length
                 int stringOffset = offset + 10; // string offset
-                string text = Encoding.ASCII.GetString(data, stringOffset, length - 1); // string length is one less than the byte length
-                //MessageBox.Show($"String: {text}"); // debug
+                Encoding latin1 = Encoding.GetEncoding("iso-8859-1");
+                string text = latin1.GetString(data, stringOffset, length - 1); // string length is one less than the byte length
+                text = text.Replace("\\n", "\n"); // <-- this is the actual fix
                 listBox1.Items.Add($"{i:D4} : {text}");
                 entries.Add(new WowTextEntry { Name = text, Length = length, Offset = offset }); // re-using WowFileEntry class
                 offset += (int)length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
@@ -62,9 +62,7 @@ namespace WoWViewer
                 listBox1.SelectedIndex = index;
                 listBox1.EndUpdate();
                 this.richTextBox1.Select(this.richTextBox1.Text.Length, 0); // thank you!!! : https://stackoverflow.com/questions/2241862/windows-forms-richtextbox-cursor-position/6457512
-                
                 updatedIndices.Add((ushort)index); // Track only this updated index
-
             }
         }
         // save file button
@@ -77,59 +75,24 @@ namespace WoWViewer
         {
             string inputPath = "TEXT.ojd";
             byte[] data = File.ReadAllBytes(inputPath);
-            using (FileStream fs = new FileStream(inputPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            using (FileStream fs = new FileStream(inputPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                int offset = 0x293; // first string starts at 0x289
-                fs.Seek(0, SeekOrigin.Begin); // move to the beginning of the file
-                fs.Write(data, 0, offset); // write first 289 bytes
-                int currentOffset = offset; // current offset
-                for (int j = 0; j < 1396; j++)
+                int offset = 0x289; // Original header ends here
+                fs.Write(data, 0, offset); // Write original header
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                for (int i = 0; i < entries.Count; i++)
                 {
-                    if (updatedIndices.Contains((ushort)j))
-                    {
-                        int stringOffset = entries[updatedIndices.ElementAt(j)].Offset; // get the offset
-                        ushort length = (ushort)entries[updatedIndices.ElementAt(j)].Length; // get the length
-                        string text = Encoding.ASCII.GetString(data, stringOffset, length); // string length is one less than the byte length
-                        ushort theLength = (ushort)(data[currentOffset - 2] | (data[currentOffset - 1] << 8));
-                        byte[] newLength = BitConverter.GetBytes((ushort)length + 1); // add extra byte to header character count
-                        byte[] newText = Encoding.ASCII.GetBytes(entries[updatedIndices.ElementAt(j)].Name);
-                        if (text != entries[updatedIndices.ElementAt(j)].Name) // double check string has actually changed
-                        {
-                            if(length < (ushort)theLength || length > (ushort)theLength) // if length is different
-                            {
-                                fs.Seek(offset - 2, SeekOrigin.Begin); // rewind and update the entry length
-                                fs.Write(newLength, 0, 2); // update the length
-                                fs.Write(newText, 0, length); // update the string // written wrong? // Writing as FF 03 00 04 00 1A 02
-                                fs.Write(new byte[] { 0x00 }, 0, 1); // write the null terminator
-                                currentOffset += length + 1; // update the offset for writing for the null terminator
-                            }
-                        }
-                        if (j != 1395) // special case for the very last string
-                        {
-                            fs.Write(data, currentOffset, 9); // write the next header
-                            currentOffset += 9; // update the offset for writing
-                        }
-                        else
-                        {
-                            fs.Write(data, currentOffset, 1); // write the last byte
-                        }
-                    }
-                    else // write the original string
-                    {
-                        ushort theLength = (ushort)(data[currentOffset - 2] | (data[currentOffset - 1] << 8)); // bytes 9 and 10 are the string length
-                        fs.Write(data, currentOffset, theLength); // update the string
-                        currentOffset += 2; // update the offset for writing
-                        if (j != 1395) // special case for the very last string
-                        {
-                            fs.Write(data, currentOffset, 9); // write the next header
-                            currentOffset += 9; // update the offset for writing
-                        }
-                        else
-                        {
-                            fs.Write(data, currentOffset, 1); // write the last byte
-                        }
-                    }
+                    bool isUpdated = updatedIndices.Contains((ushort)i);
+                    WowTextEntry entry = entries[i];
+                    string safeText = entries[i].Name.Replace("\r\n", "\\n");
+                    byte[] stringBytes = Encoding.GetEncoding("iso-8859-1").GetBytes(safeText);
+                    ushort lengthWithNull = (ushort)(stringBytes.Length + 1);
+                    byte[] lengthBytes = BitConverter.GetBytes(lengthWithNull);
+                    fs.Write(data, entry.Offset, 8); // Copy header (first 8 bytes untouched)
+                    fs.Write(lengthBytes, 0, 2); // Replace the 2 length bytes with the updated length
+                    fs.Write(stringBytes, 0, stringBytes.Length); // Write new or original string
                 }
+                fs.WriteByte(0x00); // write final byte
             }
             MessageBox.Show("TEXT.ojd updated successfully.", "Save Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
