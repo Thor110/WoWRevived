@@ -23,9 +23,12 @@ Language options are currently hidden, as no confirmed non-English PC versions o
 The road map for this project.
 
 - ✅ 1 : Custom Launcher
-- ❌ 2 : No-CD Music Fix
-- ❌ 3 : Decomp/Recomp
-- ❌ 4 : Remake
+- ✅ 2 : File Extractor
+- ❌ 3 : Save Editor ( Partially Implemented )
+- ❌ 4 : Map Editor
+- ❌ 5 : No-CD Music Fix
+- ❌ 6 : Decomp/Recomp
+- ❌ 7 : Remake
 
 This might not all happen but we wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 
