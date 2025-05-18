@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -15,6 +16,12 @@ namespace WoWLauncher
         public Form2()
         {
             InitializeComponent();
+        }
+        // This method compares the registry entry with the value and sets it if they are different.
+        private void registryCompare(RegistryKey key, string entry, string value)
+        {
+            if ((string)key.GetValue(entry)! != value)
+                key.SetValue(entry, value);
         }
     }
 }

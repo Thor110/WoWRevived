@@ -60,34 +60,27 @@ namespace WoWLauncher
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(PictureBox), typeof(Label), typeof(Button) });
         }
-        // This method compares the registry entry with the value and sets it if they are different.
-        private void registryCompare(RegistryKey key, string entry, string value)
-        {
-            if ((string)key.GetValue(entry)! != value)
-                key.SetValue(entry, value);
-        }
+        /// This method compares the registry entry with the value and sets it if they are different.
+        private void registryCompare(RegistryKey key, string entry, string value) { if ((string)key.GetValue(entry)! != value) { key.SetValue(entry, value); } }
         /// This method is called when the form is loaded to initialize the registry settings
         private void InitializeRegistry()
         {
-            if ((int)mainKey.GetValue("Enable Network Version")! == 1)
-            {
-                checkBox1.Checked = true;
-            }
-            if (Convert.ToInt32(mainKey.GetValue("Full Screen")) == 1)
-            {
-                checkBox2.Checked = true;
-            }
+            if ((int)mainKey.GetValue("Enable Network Version")! == 1) { checkBox1.Checked = true; }
+            if (Convert.ToInt32(mainKey.GetValue("Full Screen")) == 1) { checkBox2.Checked = true; }
             //comboBox1.SelectedItem = (string)mainKey.GetValue("Language")!; // unused code until language packs are made by the community
             comboBox2.SelectedItem = ((string)screenKey.GetValue("Size")!).Replace(",", "x");
             comboBox3.SelectedItem = (string)mainKey.GetValue("Game Frequency")!;
-            if (mainKey.GetValue("Difficulty") == null) // custom registry entry so it will be null once
-            {
-                mainKey.SetValue("Difficulty", "Medium"); // medium by default
-            }
-            else
-            {
-                comboBox4.SelectedItem = (string)mainKey.GetValue("Difficulty")!;
-            }
+            // custom registry entry so it will be null once // medium by default
+            if (mainKey.GetValue("Difficulty") == null) { mainKey.SetValue("Difficulty", "Medium"); }
+            else { comboBox4.SelectedItem = (string)mainKey.GetValue("Difficulty")!; }
+            // add event handlers here for the checkboxes and comboboxes to prevent them firing when the form is loaded
+            checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
+            checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
+            checkBox3.CheckedChanged += checkBox3_CheckedChanged!;
+            comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged!;
+            comboBox2.SelectedIndexChanged += comboBox2_SelectedIndexChanged!;
+            comboBox3.SelectedIndexChanged += comboBox3_SelectedIndexChanged!;
+            comboBox4.SelectedIndexChanged += comboBox4_SelectedIndexChanged!;
         }
         /// <summary>
         /// InitializeTooltips prepares a tooltip for every control in the form.
@@ -123,6 +116,9 @@ namespace WoWLauncher
                 case "Hard":
                     openRate = "15";
                     break;
+                case "Custom":
+                    launchGame();
+                    return; // do not set the open rate if custom is selected
             }
             registryCompare(researchKey, "Human Open Rate", openRate);
             registryCompare(researchKey, "Martian Open Rate", "10"); // default
@@ -151,6 +147,9 @@ namespace WoWLauncher
                 case "Hard":
                     openRate = "5";
                     break;
+                case "Custom":
+                    launchGame();
+                    return; // do not set the open rate if custom is selected
             }
             registryCompare(researchKey, "Martian Open Rate", openRate);
             registryCompare(researchKey, "Human Open Rate", "20"); // default
@@ -167,11 +166,11 @@ namespace WoWLauncher
             checkBox1.Visible = true;
             checkBox2.Visible = true;
             checkBox3.Visible = true;
-            //comboBox1.Visible = true;
+            //comboBox1.Visible = true; // unused code for now ( Language Options )
             comboBox2.Visible = true;
             comboBox3.Visible = true;
             comboBox4.Visible = true;
-            //label1.Visible = true;
+            //label1.Visible = true; // unused code for now ( Language Options )
             label2.Visible = true;
             label3.Visible = true;
             label4.Visible = true;
@@ -191,11 +190,11 @@ namespace WoWLauncher
                 checkBox1.Visible = false;
                 checkBox2.Visible = false;
                 checkBox3.Visible = false;
-                //comboBox1.Visible = false;
+                //comboBox1.Visible = false; // unused code for now ( Language Options )
                 comboBox2.Visible = false;
                 comboBox3.Visible = false;
                 comboBox4.Visible = false;
-                //label1.Visible = false;
+                //label1.Visible = false; // unused code for now ( Language Options )
                 label2.Visible = false;
                 label3.Visible = false;
                 label4.Visible = false;
@@ -218,8 +217,9 @@ namespace WoWLauncher
         }
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
-            registryCompare(screenKey, "Size", comboBox2.SelectedItem!.ToString()!.Replace("x", ","));
-            registryCompare(screenKey, "Support screen size", comboBox2.SelectedItem!.ToString()!.Replace("x", ","));
+            string screenSize = comboBox2.SelectedItem!.ToString()!.Replace("x", ",");
+            registryCompare(screenKey, "Size", screenSize);
+            registryCompare(screenKey, "Support screen size", screenSize);
         }
         private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -231,20 +231,20 @@ namespace WoWLauncher
         }
         private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (comboBox4.SelectedItem!.ToString()! == "Easy")
+            switch (comboBox4.SelectedItem!.ToString())
             {
-                registryCompare(mainKey, "Difficulty", "Easy");
-                registryCompare(mainKey, "Damage reduction divisor", "400");
-            }
-            else if (comboBox4.SelectedItem!.ToString()! == "Medium")
-            {
-                registryCompare(mainKey, "Difficulty", "Medium");
-                registryCompare(mainKey, "Damage reduction divisor", "500");
-            }
-            else if (comboBox4.SelectedItem!.ToString()! == "Hard")
-            {
-                registryCompare(mainKey, "Difficulty", "Hard");
-                registryCompare(mainKey, "Damage reduction divisor", "600");
+                case "Easy":
+                    registryCompare(mainKey, "Difficulty", "Easy");
+                    registryCompare(mainKey, "Damage reduction divisor", "400");
+                    break;
+                case "Medium":
+                    registryCompare(mainKey, "Difficulty", "Medium");
+                    registryCompare(mainKey, "Damage reduction divisor", "500");
+                    break;
+                case "Hard":
+                    registryCompare(mainKey, "Difficulty", "Hard");
+                    registryCompare(mainKey, "Damage reduction divisor", "600");
+                    break;
             }
         }
         // open advanced settings
@@ -262,7 +262,7 @@ namespace WoWLauncher
         // open editor
         private void button6_Click(object sender, EventArgs e)
         {
-            Process.Start("WOWViewer.exe");
+            Process.Start("WoWViewer.exe");
             Close();
         }
     }

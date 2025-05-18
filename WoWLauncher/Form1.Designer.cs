@@ -111,7 +111,6 @@
             checkBox1.Text = "Enable Network Version";
             checkBox1.UseVisualStyleBackColor = true;
             checkBox1.Visible = false;
-            checkBox1.CheckedChanged += checkBox1_CheckedChanged;
             // 
             // checkBox2
             // 
@@ -124,7 +123,6 @@
             checkBox2.Text = "Full Screen";
             checkBox2.UseVisualStyleBackColor = true;
             checkBox2.Visible = false;
-            checkBox2.CheckedChanged += checkBox2_CheckedChanged;
             // 
             // comboBox1
             // 
@@ -136,7 +134,6 @@
             comboBox1.Size = new Size(121, 23);
             comboBox1.TabIndex = 7;
             comboBox1.Visible = false;
-            comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
             // 
             // label1
             // 
@@ -157,7 +154,6 @@
             comboBox2.Size = new Size(121, 23);
             comboBox2.TabIndex = 9;
             comboBox2.Visible = false;
-            comboBox2.SelectedIndexChanged += comboBox2_SelectedIndexChanged;
             // 
             // label2
             // 
@@ -178,7 +174,6 @@
             comboBox3.Size = new Size(121, 23);
             comboBox3.TabIndex = 11;
             comboBox3.Visible = false;
-            comboBox3.SelectedIndexChanged += comboBox3_SelectedIndexChanged;
             // 
             // label3
             // 
@@ -199,7 +194,6 @@
             comboBox4.Size = new Size(121, 23);
             comboBox4.TabIndex = 13;
             comboBox4.Visible = false;
-            comboBox4.SelectedIndexChanged += comboBox4_SelectedIndexChanged;
             // 
             // label4
             // 
@@ -222,7 +216,6 @@
             checkBox3.Text = "Fog of War";
             checkBox3.UseVisualStyleBackColor = true;
             checkBox3.Visible = false;
-            checkBox3.CheckedChanged += checkBox3_CheckedChanged;
             // 
             // button5
             // 
