@@ -136,20 +136,11 @@ namespace WoWViewer
         // export to text file
         private void button2_Click(object sender, EventArgs e)
         {
-            byte[] data = File.ReadAllBytes(inputPath);
-            //string outputPath = "TEXT.OJD.txt";
             using (StreamWriter log = new StreamWriter("TEXT.OJD.txt", false, Latin1))
             {
-                int offset = 0x289; // first string starts at 0x289
-                //int count = 0; // count checker for total number of entries
                 for (int i = 0; i < 1396; i++) // there are only 1396 entries
                 {
-                    byte category = data[offset + 4];  // Faction: 00 = Martian, 01 = Human, 02 = UI
-                    ushort length = (ushort)(data[offset + 8] | (data[offset + 9] << 8)); // bytes 9 and 10 are the string length
-                    int stringOffset = offset + 10; // string offset
-                    string text = Latin1.GetString(data, stringOffset, length - 1).Replace("\n", "").Replace("\r\n", "\\n"); // string length is one less than the byte length
-                    log.WriteLine($"{i:D4} [{getFaction(category)}] : {text}");
-                    offset += length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
+                    log.WriteLine($"{i:D4} [{getFaction(entries[i].Faction)}] : {entries[i].Name.Replace("\r\n", "\\n").Replace("\n", "")}");
                 }
             }
             MessageBox.Show("TEXT.OJD.TXT file saved in the game directory.");
@@ -183,8 +174,7 @@ namespace WoWViewer
                 entries[count].Name = name;
                 count++;
             }
-            // re-sort the listBox incase a filter is ticked already and repopulate the list
-            reFilter();
+            reFilter(); // re-sort the listBox incase a filter is ticked already and repopulate the list
             MessageBox.Show("Text file imported, now just hit save!", "Import", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         // undo changes to selected string
