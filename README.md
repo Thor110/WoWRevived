@@ -31,13 +31,14 @@ The road map for this project.
 - [❌ 3 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Sector & Area names loaded dynamically from TEXT.ojd
-- [✅ 4 : Text Editor](#text-editor) ( 100% Complete - edit and save references in the TEXT.ojd file. )
+- [✅ 4 : Text Editor](#text-editor) ( 100% Complete - edit and save string entries in the TEXT.ojd file. )
 	- All 1396 strings are editable.
 	- UTF-8 + ISO-8859-1 encoding supported.
 	- File is recompiled from scratch based on modifications.
 	- Import & Export as .txt file.
 	- Undo changes to current string.
 	- Edited strings highlighted.
+	- Rich text editing with newline support (\n to \r\n handling when loading and the opposite when saving )
 - ❌ 5 : Map Editor ( Basic Parsing Implemented - 1% Complete )
 	- Basic parsing of .nsb filetypes.
 - ❌ 6 : No-CD Music Fix ( Researching Solution - 0% Complete )
