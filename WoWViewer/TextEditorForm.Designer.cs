@@ -75,6 +75,7 @@
             richTextBox1.AccessibleDescription = "Enter the desired text here and press enter!";
             richTextBox1.Enabled = false;
             richTextBox1.Location = new Point(460, 26);
+            richTextBox1.MaxLength = 65535;
             richTextBox1.Name = "richTextBox1";
             richTextBox1.Size = new Size(328, 383);
             richTextBox1.TabIndex = 4;

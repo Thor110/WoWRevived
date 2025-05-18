@@ -26,9 +26,9 @@ namespace WoWViewer
                 ushort length = (ushort)(data[offset + 8] | (data[offset + 9] << 8)); // bytes 9 and 10 are the string length
                 int stringOffset = offset + 10; // string offset
                 string text = Latin1.GetString(data, stringOffset, length - 1).Replace("\\n", "\n");
-                // string length is one less than the byte length // replaces \n with actual new line
+                // string length is one less than the ushort length as length contains the null operator // replaces \n with actual new line
                 listBox1.Items.Add($"{i:D4} : [{getFaction(category)}] : {text}");
-                entries.Add(new WowTextEntry { Name = text, Length = length, Offset = offset, Faction = category } ); // re-using WowFileEntry class
+                entries.Add(new WowTextEntry { Name = text, Length = length, Offset = offset, Faction = category, Index = (ushort)i});
                 offset += (int)length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
             }
         }
