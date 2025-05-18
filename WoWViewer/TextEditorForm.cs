@@ -20,9 +20,6 @@ namespace WoWViewer
         // for parsing the TEXT.ojd file into the listBox for the TextEditorForm
         public void parseTEXTOJD()
         {
-            listBox1.BeginUpdate(); // begin clear for reparsing
-            listBox1.Items.Clear();
-            entries.Clear();
             byte[] data = File.ReadAllBytes(inputPath); // read the file into a byte array
             int offset = 0x289; // first string starts at 0x289
             for (int i = 0; i < 1396; i++) // there are only 1396 entries
@@ -36,7 +33,6 @@ namespace WoWViewer
                 entries.Add(new WowTextEntry { Name = text, Length = length, Offset = offset, Faction = category, Index = (ushort)i });
                 offset += (int)length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
             }
-            listBox1.EndUpdate(); // end clear for reparsing
         }
         // list box selected index changed event
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -143,22 +139,18 @@ namespace WoWViewer
                 else { filePath = openFileDialog.FileName; }
             }
             var lines = File.ReadLines(filePath);
+            if (lines.Count() < 1396) // check the line count matches before updating so there is no need to reparse the original TEXT.ojd file
+            {
+                MessageBox.Show("Error importing TEXT.OJD.TXT file, please check the file and try again.", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             int count = 0;
             foreach (var line in lines)
             {
-                listBox1.BeginUpdate();
-                listBox1.Items.Clear();
                 string name = string.Join(" ", line.Split(' ').Skip(3));
                 entries[count].Length = name.Length;
                 entries[count].Name = name;
-                listBox1.EndUpdate();
                 count++;
-            }
-            if (count < 1396)
-            {
-                MessageBox.Show("Error importing TEXT.OJD.TXT file, please check the file and try again.", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                parseTEXTOJD(); // reparse original TEXT.ojd file
-                return;
             }
             // re-sort the listBox incase a filter is ticked already and repopulate the list
             if (radioButton1.Checked) { filterByFaction(0x00); }
@@ -170,11 +162,7 @@ namespace WoWViewer
         // undo changes to selected string
         private void button4_Click(object sender, EventArgs e)
         {
-            if (temporaryString != richTextBox1.Text)
-            {
-                richTextBox1.Text = temporaryString;
-                return;
-            }
+            if (temporaryString != richTextBox1.Text) { richTextBox1.Text = temporaryString; return; }
             MessageBox.Show("No changes to undo.", "Undo", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
