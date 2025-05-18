@@ -60,6 +60,7 @@ namespace WoWLauncher
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(PictureBox), typeof(Label), typeof(Button) });
         }
+        // This method compares the registry entry with the value and sets it if they are different.
         private void registryCompare(RegistryKey key, string entry, string value)
         {
             if ((string)key.GetValue(entry)! != value)
