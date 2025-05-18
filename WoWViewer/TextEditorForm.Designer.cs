@@ -40,11 +40,13 @@
             button2 = new Button();
             button3 = new Button();
             button4 = new Button();
+            label2 = new Label();
             SuspendLayout();
             // 
             // button1
             // 
             button1.AccessibleDescription = "This saves the updated TEXT.ojd file.";
+            button1.Enabled = false;
             button1.Location = new Point(713, 415);
             button1.Name = "button1";
             button1.Size = new Size(75, 23);
@@ -160,6 +162,7 @@
             // button4
             // 
             button4.AccessibleDescription = "Undo changes to the selected string.";
+            button4.Enabled = false;
             button4.Location = new Point(379, 47);
             button4.Name = "button4";
             button4.Size = new Size(75, 23);
@@ -168,11 +171,21 @@
             button4.UseVisualStyleBackColor = true;
             button4.Click += button4_Click;
             // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Location = new Point(399, 419);
+            label2.Name = "label2";
+            label2.Size = new Size(146, 15);
+            label2.TabIndex = 12;
+            label2.Text = "Status : No Changes Made";
+            // 
             // TextEditorForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
+            Controls.Add(label2);
             Controls.Add(button4);
             Controls.Add(button3);
             Controls.Add(button2);
@@ -185,9 +198,9 @@
             Controls.Add(listBox1);
             Controls.Add(button1);
             Icon = (Icon)resources.GetObject("$this.Icon");
-            Name = "Text Editor";
+            Name = "TextEditorForm";
             Text = "Text Editor";
-            this.FormClosing += TextEditorForm_FormClosing;
+            FormClosing += TextEditorForm_FormClosing;
             ResumeLayout(false);
             PerformLayout();
         }
@@ -205,5 +218,6 @@
         private Button button2;
         private Button button3;
         private Button button4;
+        private Label label2;
     }
 }
