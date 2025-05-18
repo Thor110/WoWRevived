@@ -26,6 +26,7 @@ The road map for this project.
 - [✅ 1 : Custom Launcher](#custom-launcher) ( Fully Functional - 90% Complete )
 - [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 90% Complete )
 	- .WoW archives can be extracted.
+	- Waveform preview and play sound files from .wow archives.
 	- .ojd files can be parsed, but there is still more decoding to do.
 - [❌ 3 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
