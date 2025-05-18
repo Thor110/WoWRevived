@@ -42,8 +42,11 @@ The road map for this project.
 - ❌ 5 : Map Editor ( Basic Parsing Implemented - 1% Complete )
 	- Basic parsing of .nsb filetypes.
 - ❌ 6 : No-CD Music Fix ( Researching Solution - 0% Complete )
-- ❌ 7 : Decomp/Recomp ( Not Started - 0% Complete )
-- ❌ 8 : Remake ( Not Started - 0% Complete )
+- ❌ 7 : Video Playback Intercept ( Researching Solution - 0% Complete )
+	- Looking at intercepting smackw32.dll and redirecting it to use the more modern binkw32.dll for higher resolution video playback.
+	- Determining the best solution for upscaling and remastering the original videos.
+- ❌ 8 : Decomp/Recomp ( Not Started - 0% Complete )
+- ❌ 9 : Remake ( Not Started - 0% Complete )
 
 This might not all happen but we wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 
