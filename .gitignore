@@ -1,6 +1,4 @@
-WoWLauncher/.vs
-WoWLauncher/bin
-WoWLauncher/obj
-WoWViewer/.vs
-WoWViewer/bin
-WoWViewer/obj
+.user
+.vs
+bin
+obj
