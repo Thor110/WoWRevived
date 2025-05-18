@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Windows.Forms;
 using WOWViewer;
 
 namespace WoWViewer
@@ -8,6 +9,7 @@ namespace WoWViewer
         private List<WowTextEntry> entries = new List<WowTextEntry>();
         private static readonly Encoding Latin1 = Encoding.GetEncoding("iso-8859-1");
         private static string inputPath = "TEXT.ojd";
+        private static string temporaryString = string.Empty;
         public TextEditorForm()
         {
             InitializeComponent();
@@ -18,6 +20,9 @@ namespace WoWViewer
         // for parsing the TEXT.ojd file into the listBox for the TextEditorForm
         public void parseTEXTOJD()
         {
+            listBox1.BeginUpdate(); // begin clear for reparsing
+            listBox1.Items.Clear();
+            entries.Clear();
             byte[] data = File.ReadAllBytes(inputPath); // read the file into a byte array
             int offset = 0x289; // first string starts at 0x289
             for (int i = 0; i < 1396; i++) // there are only 1396 entries
@@ -28,15 +33,17 @@ namespace WoWViewer
                 string text = Latin1.GetString(data, stringOffset, length - 1).Replace("\\n", "\n");
                 // string length is one less than the ushort length as length contains the null operator // replaces \n with actual new line
                 listBox1.Items.Add($"{i:D4} : [{getFaction(category)}] : {text}");
-                entries.Add(new WowTextEntry { Name = text, Length = length, Offset = offset, Faction = category, Index = (ushort)i});
+                entries.Add(new WowTextEntry { Name = text, Length = length, Offset = offset, Faction = category, Index = (ushort)i });
                 offset += (int)length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
             }
+            listBox1.EndUpdate(); // end clear for reparsing
         }
         // list box selected index changed event
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             richTextBox1.Enabled = true; // enable the richTextBox
             richTextBox1.Text = entries[getRealIndex()].Name; // update the richTextBox with the selected entry
+            temporaryString = richTextBox1.Text;
         }
         // faction type or user interface
         private static string getFaction(byte category) => category == 0x00 ? "Martian" : category == 0x01 ? "Human" : category == 0x02 ? "UI" : "Unknown";
@@ -99,6 +106,76 @@ namespace WoWViewer
                 }
             }
             listBox1.EndUpdate();
+        }
+        // export to text file
+        private void button2_Click(object sender, EventArgs e)
+        {
+            byte[] data = File.ReadAllBytes(inputPath);
+            //string outputPath = "TEXT.OJD.txt";
+            using (StreamWriter log = new StreamWriter("TEXT.OJD.txt", false, Latin1))
+            {
+                int offset = 0x289; // first string starts at 0x289
+                //int count = 0; // count checker for total number of entries
+                for (int i = 0; i < 1396; i++) // there are only 1396 entries
+                {
+                    byte category = data[offset + 4];  // Faction: 00 = Martian, 01 = Human, 02 = UI
+                    ushort length = (ushort)(data[offset + 8] | (data[offset + 9] << 8)); // bytes 9 and 10 are the string length
+                    int stringOffset = offset + 10; // string offset
+                    string text = Latin1.GetString(data, stringOffset, length - 1).Replace("\n", "").Replace("\r\n", "\\n"); // string length is one less than the byte length
+                    log.WriteLine($"{i:D4} [{getFaction(category)}] : {text}");
+                    offset += length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
+                }
+            }
+            MessageBox.Show("TEXT.OJD.TXT file saved in the game directory.");
+        }
+        // import strings from a text file
+        private void button3_Click(object sender, EventArgs e)
+        {
+            string filePath;
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.InitialDirectory = Directory.GetCurrentDirectory();
+                openFileDialog.Filter = "Text Files (*.txt)|*.txt";
+                openFileDialog.FilterIndex = 1;
+                openFileDialog.RestoreDirectory = true;
+                openFileDialog.Title = "Import TEXT.OJD.TXT file";
+                if (openFileDialog.ShowDialog() != DialogResult.OK) { return; }
+                else { filePath = openFileDialog.FileName; }
+            }
+            var lines = File.ReadLines(filePath);
+            int count = 0;
+            foreach (var line in lines)
+            {
+                listBox1.BeginUpdate();
+                listBox1.Items.Clear();
+                string name = string.Join(" ", line.Split(' ').Skip(3));
+                entries[count].Length = name.Length;
+                entries[count].Name = name;
+                listBox1.EndUpdate();
+                count++;
+            }
+            if (count < 1396)
+            {
+                MessageBox.Show("Error importing TEXT.OJD.TXT file, please check the file and try again.", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                parseTEXTOJD(); // reparse original TEXT.ojd file
+                return;
+            }
+            // re-sort the listBox incase a filter is ticked already and repopulate the list
+            if (radioButton1.Checked) { filterByFaction(0x00); }
+            else if (radioButton2.Checked) { filterByFaction(0x01); }
+            else if (radioButton3.Checked) { filterByFaction(0x02); }
+            else if (radioButton4.Checked) { filterByFaction(0x03); }
+            MessageBox.Show("Text file imported, now just hit save!", "Import", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        // undo changes to selected string
+        private void button4_Click(object sender, EventArgs e)
+        {
+            if (temporaryString != richTextBox1.Text)
+            {
+                richTextBox1.Text = temporaryString;
+                return;
+            }
+            MessageBox.Show("No changes to undo.", "Undo", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }

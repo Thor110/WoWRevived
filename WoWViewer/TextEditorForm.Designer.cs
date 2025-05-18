@@ -37,6 +37,9 @@
             radioButton2 = new RadioButton();
             radioButton3 = new RadioButton();
             radioButton4 = new RadioButton();
+            button2 = new Button();
+            button3 = new Button();
+            button4 = new Button();
             SuspendLayout();
             // 
             // button1
@@ -132,11 +135,47 @@
             radioButton4.UseVisualStyleBackColor = true;
             radioButton4.CheckedChanged += radioButton4_CheckedChanged;
             // 
+            // button2
+            // 
+            button2.AccessibleDescription = "Exports the strings to a text file.";
+            button2.Location = new Point(632, 415);
+            button2.Name = "button2";
+            button2.Size = new Size(75, 23);
+            button2.TabIndex = 9;
+            button2.Text = "Export";
+            button2.UseVisualStyleBackColor = true;
+            button2.Click += button2_Click;
+            // 
+            // button3
+            // 
+            button3.AccessibleDescription = "Import the strings from a text file.";
+            button3.Location = new Point(551, 415);
+            button3.Name = "button3";
+            button3.Size = new Size(75, 23);
+            button3.TabIndex = 10;
+            button3.Text = "Import";
+            button3.UseVisualStyleBackColor = true;
+            button3.Click += button3_Click;
+            // 
+            // button4
+            // 
+            button4.AccessibleDescription = "Undo changes to the selected string.";
+            button4.Location = new Point(379, 47);
+            button4.Name = "button4";
+            button4.Size = new Size(75, 23);
+            button4.TabIndex = 11;
+            button4.Text = "Undo";
+            button4.UseVisualStyleBackColor = true;
+            button4.Click += button4_Click;
+            // 
             // TextEditorForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
+            Controls.Add(button4);
+            Controls.Add(button3);
+            Controls.Add(button2);
             Controls.Add(radioButton4);
             Controls.Add(radioButton3);
             Controls.Add(radioButton2);
@@ -146,7 +185,7 @@
             Controls.Add(listBox1);
             Controls.Add(button1);
             Icon = (Icon)resources.GetObject("$this.Icon");
-            Name = "TextEditorForm";
+            Name = "Text Editor";
             Text = "Text Editor";
             ResumeLayout(false);
             PerformLayout();
@@ -162,5 +201,8 @@
         private RadioButton radioButton2;
         private RadioButton radioButton3;
         private RadioButton radioButton4;
+        private Button button2;
+        private Button button3;
+        private Button button4;
     }
 }
