@@ -44,6 +44,7 @@
             // 
             // button1
             // 
+            button1.AccessibleDescription = "Save the changes to the selected save.";
             button1.Enabled = false;
             button1.Location = new Point(469, 12);
             button1.Name = "button1";
@@ -55,6 +56,7 @@
             // 
             // listBox1
             // 
+            listBox1.AccessibleDescription = "Only loads saves 1 through 5 no backups or alternate names.";
             listBox1.FormattingEnabled = true;
             listBox1.ItemHeight = 15;
             listBox1.Location = new Point(12, 12);
@@ -74,6 +76,7 @@
             // 
             // textBox1
             // 
+            textBox1.AccessibleDescription = "Set the save name for the selected file.";
             textBox1.Enabled = false;
             textBox1.Location = new Point(224, 12);
             textBox1.MaxLength = 36;
@@ -84,6 +87,7 @@
             // 
             // listBox2
             // 
+            listBox2.AccessibleDescription = "This lists the sectors or areas in the game.";
             listBox2.FormattingEnabled = true;
             listBox2.ItemHeight = 15;
             listBox2.Location = new Point(138, 70);
@@ -93,6 +97,7 @@
             // 
             // dateTimePicker1
             // 
+            dateTimePicker1.AccessibleDescription = "Set the date and time for the selected save.";
             dateTimePicker1.CustomFormat = "dd/MM/yyyy hh:mm:ss tt";
             dateTimePicker1.Enabled = false;
             dateTimePicker1.Format = DateTimePickerFormat.Custom;
@@ -136,6 +141,7 @@
             // 
             // button2
             // 
+            button2.AccessibleDescription = "Swap the selected save to playing the opposing side.";
             button2.Enabled = false;
             button2.Location = new Point(713, 12);
             button2.Name = "button2";
@@ -147,6 +153,7 @@
             // 
             // button3
             // 
+            button3.AccessibleDescription = "Delete the selected save file.";
             button3.Enabled = false;
             button3.Location = new Point(12, 172);
             button3.Name = "button3";
