@@ -53,7 +53,7 @@
             // button1
             // 
             button1.AccessibleDescription = "";
-            button1.Location = new Point(122, 331);
+            button1.Location = new Point(122, 325);
             button1.Name = "button1";
             button1.Size = new Size(195, 23);
             button1.TabIndex = 0;
@@ -63,7 +63,7 @@
             // 
             // button2
             // 
-            button2.Location = new Point(122, 360);
+            button2.Location = new Point(122, 354);
             button2.Name = "button2";
             button2.Size = new Size(195, 23);
             button2.TabIndex = 1;
@@ -82,7 +82,7 @@
             // 
             // button3
             // 
-            button3.Location = new Point(122, 389);
+            button3.Location = new Point(122, 383);
             button3.Name = "button3";
             button3.Size = new Size(195, 23);
             button3.TabIndex = 3;
@@ -92,7 +92,7 @@
             // 
             // button4
             // 
-            button4.Location = new Point(122, 418);
+            button4.Location = new Point(122, 441);
             button4.Name = "button4";
             button4.Size = new Size(195, 23);
             button4.TabIndex = 4;
@@ -104,7 +104,7 @@
             // 
             checkBox1.AccessibleDescription = "Enable or disable multiplayer.";
             checkBox1.AutoSize = true;
-            checkBox1.Location = new Point(12, 318);
+            checkBox1.Location = new Point(24, 322);
             checkBox1.Name = "checkBox1";
             checkBox1.Size = new Size(150, 19);
             checkBox1.TabIndex = 5;
@@ -117,7 +117,7 @@
             // 
             checkBox2.AccessibleDescription = "Enable or disable fullscreen.";
             checkBox2.AutoSize = true;
-            checkBox2.Location = new Point(12, 343);
+            checkBox2.Location = new Point(180, 322);
             checkBox2.Name = "checkBox2";
             checkBox2.Size = new Size(83, 19);
             checkBox2.TabIndex = 6;
@@ -131,7 +131,7 @@
             comboBox1.AccessibleDescription = "Language options are not available, if you have a version other than English, let us know! Thanks.";
             comboBox1.BackColor = SystemColors.Window;
             comboBox1.FormattingEnabled = true;
-            comboBox1.Location = new Point(291, 318);
+            comboBox1.Location = new Point(86, 350);
             comboBox1.Name = "comboBox1";
             comboBox1.Size = new Size(121, 23);
             comboBox1.TabIndex = 7;
@@ -141,7 +141,7 @@
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(226, 322);
+            label1.Location = new Point(21, 354);
             label1.Name = "label1";
             label1.Size = new Size(59, 15);
             label1.TabIndex = 8;
@@ -152,7 +152,7 @@
             // 
             comboBox2.AccessibleDescription = "The resolution for the game.";
             comboBox2.FormattingEnabled = true;
-            comboBox2.Location = new Point(291, 347);
+            comboBox2.Location = new Point(291, 350);
             comboBox2.Name = "comboBox2";
             comboBox2.Size = new Size(121, 23);
             comboBox2.TabIndex = 9;
@@ -162,7 +162,7 @@
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(222, 351);
+            label2.Location = new Point(222, 354);
             label2.Name = "label2";
             label2.Size = new Size(63, 15);
             label2.TabIndex = 10;
@@ -173,7 +173,7 @@
             // 
             comboBox3.AccessibleDescription = "The refresh rate for the game. ( Higher than 30 might effect game stability )";
             comboBox3.FormattingEnabled = true;
-            comboBox3.Location = new Point(291, 376);
+            comboBox3.Location = new Point(291, 379);
             comboBox3.Name = "comboBox3";
             comboBox3.Size = new Size(121, 23);
             comboBox3.TabIndex = 11;
@@ -183,7 +183,7 @@
             // label3
             // 
             label3.AutoSize = true;
-            label3.Location = new Point(213, 380);
+            label3.Location = new Point(213, 383);
             label3.Name = "label3";
             label3.Size = new Size(72, 15);
             label3.TabIndex = 12;
@@ -194,7 +194,7 @@
             // 
             comboBox4.AccessibleDescription = "Simple difficulty settings.";
             comboBox4.FormattingEnabled = true;
-            comboBox4.Location = new Point(86, 376);
+            comboBox4.Location = new Point(86, 379);
             comboBox4.Name = "comboBox4";
             comboBox4.Size = new Size(121, 23);
             comboBox4.TabIndex = 13;
@@ -204,7 +204,7 @@
             // label4
             // 
             label4.AutoSize = true;
-            label4.Location = new Point(25, 380);
+            label4.Location = new Point(25, 383);
             label4.Name = "label4";
             label4.Size = new Size(55, 15);
             label4.TabIndex = 14;
@@ -215,7 +215,7 @@
             // 
             checkBox3.AccessibleDescription = "Enable or disable fog of war.";
             checkBox3.AutoSize = true;
-            checkBox3.Location = new Point(101, 343);
+            checkBox3.Location = new Point(269, 322);
             checkBox3.Name = "checkBox3";
             checkBox3.Size = new Size(84, 19);
             checkBox3.TabIndex = 15;
@@ -226,9 +226,9 @@
             // 
             // button5
             // 
-            button5.Location = new Point(12, 418);
+            button5.Location = new Point(122, 412);
             button5.Name = "button5";
-            button5.Size = new Size(75, 23);
+            button5.Size = new Size(195, 23);
             button5.TabIndex = 16;
             button5.Text = "Advanced";
             button5.UseVisualStyleBackColor = true;
@@ -237,11 +237,11 @@
             // 
             // button6
             // 
-            button6.Location = new Point(337, 418);
+            button6.Location = new Point(122, 412);
             button6.Name = "button6";
-            button6.Size = new Size(75, 23);
+            button6.Size = new Size(195, 23);
             button6.TabIndex = 17;
-            button6.Text = "Editor";
+            button6.Text = "Development Tools";
             button6.UseVisualStyleBackColor = true;
             button6.Click += button6_Click;
             // 
@@ -249,7 +249,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(424, 453);
+            ClientSize = new Size(424, 477);
             Controls.Add(button6);
             Controls.Add(button5);
             Controls.Add(checkBox3);

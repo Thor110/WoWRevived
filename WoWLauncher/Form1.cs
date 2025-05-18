@@ -76,7 +76,7 @@ namespace WoWLauncher
             {
                 checkBox2.Checked = true;
             }
-            //comboBox1.SelectedItem = (string)mainKey.GetValue("Language")!;
+            //comboBox1.SelectedItem = (string)mainKey.GetValue("Language")!; // unused code until language packs are made by the community
             comboBox2.SelectedItem = ((string)screenKey.GetValue("Size")!).Replace(",", "x");
             comboBox3.SelectedItem = (string)mainKey.GetValue("Game Frequency")!;
             if (mainKey.GetValue("Difficulty") == null) // custom registry entry so it will be null once
@@ -249,6 +249,8 @@ namespace WoWLauncher
         // open advanced settings
         private void button5_Click(object sender, EventArgs e)
         {
+            MessageBox.Show("Advanced settings menu not available yet!");
+            return;
             var advanced = new Form2();
             advanced.StartPosition = FormStartPosition.Manual;
             advanced.Location = this.Location;
