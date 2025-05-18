@@ -23,17 +23,20 @@ Or, if you choose to make a language patch using the text editor, feel free to s
 # Road Map
 
 The road map for this project.
-- [✅ 1 : Custom Launcher](#custom-launcher)
-- [✅ 2 : File Extractor](#file-extractor) ( Fully Functional )
-	- .WoW archives can be extracted
+- [✅ 1 : Custom Launcher](#custom-launcher) ( Fully Functional - 90% Complete )
+- [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 90% Complete )
+	- .WoW archives can be extracted.
 	- .ojd files can be parsed, but there is still more decoding to do.
 - [❌ 3 : Save Editor](#save-editor) ( Partially Implemented )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Sector & Area names loaded dynamically from TEXT.ojd
-- [✅ 4 : Text Editor](#text-editor) ( Fully Functional, edit and save references in the TEXT.ojd file, along with properly updating their headers. )
+- [✅ 4 : Text Editor](#text-editor) ( 100% Complete - edit and save references in the TEXT.ojd file. )
 	- All 1396 strings are editable.
 	- UTF-8 + ISO-8859-1 encoding supported.
 	- File is recompiled from scratch based on modifications.
+	- Import & Export as .txt file.
+	- Undo changes to current string.
+	- Edited strings highlighted.
 - ❌ 5 : Map Editor ( Basic Parsing Implemented )
 	- Basic parsing of .nsb filetypes.
 - ❌ 6 : No-CD Music Fix
