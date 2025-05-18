@@ -187,6 +187,7 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "Text Editor";
             Text = "Text Editor";
+            this.FormClosing += TextEditorForm_FormClosing;
             ResumeLayout(false);
             PerformLayout();
         }

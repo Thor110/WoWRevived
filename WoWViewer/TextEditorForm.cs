@@ -10,12 +10,31 @@ namespace WoWViewer
         private static readonly Encoding Latin1 = Encoding.GetEncoding("iso-8859-1");
         private static string inputPath = "TEXT.ojd";
         private static string temporaryString = string.Empty;
+        private bool changesMade;
         public TextEditorForm()
         {
             InitializeComponent();
+            listBox1.DrawMode = DrawMode.OwnerDrawFixed;
+            listBox1.DrawItem += ListBox1_DrawItem!;
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(ListBox), typeof(Label) });
             parseTEXTOJD();
+        }
+        // for the listBox draw item event to change the color of the text if an entry is edited
+        private void ListBox1_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            if (e.Index < 0 || e.Index >= listBox1.Items.Count) { return; } // Check if index is valid before drawing
+            e.DrawBackground();
+            string itemText = listBox1.Items[e.Index].ToString()!;
+            int entryIndex = int.Parse(itemText.AsSpan(0, 4));
+            // Determine proper color
+            Color textColor = (e.State & DrawItemState.Selected) == DrawItemState.Selected
+                ? SystemColors.HighlightText
+                : entries[entryIndex].Edited ? Color.Red
+                : SystemColors.WindowText;
+            // Use TextRenderer instead of Graphics.DrawString for better alignment and kerning
+            TextRenderer.DrawText( e.Graphics, itemText, e.Font, e.Bounds, textColor, TextFormatFlags.VerticalCenter );
+            e.DrawFocusRectangle();
         }
         // for parsing the TEXT.ojd file into the listBox for the TextEditorForm
         public void parseTEXTOJD()
@@ -58,11 +77,13 @@ namespace WoWViewer
                 else { listBox1.SelectedIndex = selectedIndex + 1; } // spoof code to prevent the listBox from going out of bounds
                 entries[index].Name = updatedText; // update the entry name
                 entries[index].Length = (ushort)(updatedText.Length); // we'll add null terminator on save
+                entries[index].Edited = true; // mark the entry as edited // maybe use if style settings can be used
                 listBox1.BeginUpdate();
                 listBox1.Items.RemoveAt(selectedIndex);
                 listBox1.Items.Insert(selectedIndex, $"{index:D4} : [{getFaction(entries[index].Faction)}] : {updatedText}");
                 listBox1.SelectedIndex = selectedIndex;
                 listBox1.EndUpdate();
+                changesMade = true; // set the changes made flag to true
                 this.richTextBox1.Select(this.richTextBox1.Text.Length, 0); // thank you!!! : https://stackoverflow.com/questions/2241862/windows-forms-richtextbox-cursor-position/6457512
             }
         }
@@ -80,9 +101,12 @@ namespace WoWViewer
                     fs.Write(data, entries[i].Offset, 8); // Copy header (first 8 bytes untouched)
                     fs.Write(BitConverter.GetBytes((ushort)(stringBytes.Length + 1)), 0, 2); // write the new string length (2 bytes)
                     fs.Write(stringBytes, 0, stringBytes.Length); // Write new or original string
+                    entries[i].Edited = false; // reset the edited flag
                 }
                 fs.WriteByte(0x00); // write final byte which is always 0x00
             }
+            reFilter(); // re filter to redraw the list box and remove the changes caused by the edited flag
+            changesMade = false; // reset the changes made flag
             MessageBox.Show("TEXT.ojd updated successfully.", "Save Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         // filter by faction
@@ -102,6 +126,13 @@ namespace WoWViewer
                 }
             }
             listBox1.EndUpdate();
+        }
+        private void reFilter()
+        {
+            if (radioButton1.Checked) { filterByFaction(0x00); }
+            else if (radioButton2.Checked) { filterByFaction(0x01); }
+            else if (radioButton3.Checked) { filterByFaction(0x02); }
+            else if (radioButton4.Checked) { filterByFaction(0x03); }
         }
         // export to text file
         private void button2_Click(object sender, EventArgs e)
@@ -127,6 +158,7 @@ namespace WoWViewer
         // import strings from a text file
         private void button3_Click(object sender, EventArgs e)
         {
+            changesMade = true; // set the changes made flag to true
             string filePath;
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
@@ -153,10 +185,7 @@ namespace WoWViewer
                 count++;
             }
             // re-sort the listBox incase a filter is ticked already and repopulate the list
-            if (radioButton1.Checked) { filterByFaction(0x00); }
-            else if (radioButton2.Checked) { filterByFaction(0x01); }
-            else if (radioButton3.Checked) { filterByFaction(0x02); }
-            else if (radioButton4.Checked) { filterByFaction(0x03); }
+            reFilter();
             MessageBox.Show("Text file imported, now just hit save!", "Import", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         // undo changes to selected string
@@ -164,6 +193,20 @@ namespace WoWViewer
         {
             if (temporaryString != richTextBox1.Text) { richTextBox1.Text = temporaryString; return; }
             MessageBox.Show("No changes to undo.", "Undo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        // on close prompt
+        private void TextEditorForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (changesMade)
+            {
+                var result = MessageBox.Show(
+                    "You have unsaved changes. Do you want to save before exiting?",
+                    "Unsaved Changes",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Warning);
+                if (result == DialogResult.Cancel) { e.Cancel = true; } // Prevent closing
+                else if (result == DialogResult.Yes) { button1.PerformClick(); } // Trigger the save button
+            }
         }
     }
 }

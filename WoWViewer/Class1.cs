@@ -18,5 +18,6 @@
         public int Offset { get; set; }
         public byte Faction { get; set; }
         public ushort Index { get; set; }
+        public bool Edited { get; set; } = false; // maybe use if style settings can be used
     }
 }
