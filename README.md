@@ -27,7 +27,7 @@ The road map for this project.
 - [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 90% Complete )
 	- .WoW archives can be extracted.
 	- .ojd files can be parsed, but there is still more decoding to do.
-- [❌ 3 : Save Editor](#save-editor) ( Partially Implemented )
+- [❌ 3 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Sector & Area names loaded dynamically from TEXT.ojd
 - [✅ 4 : Text Editor](#text-editor) ( 100% Complete - edit and save references in the TEXT.ojd file. )
@@ -37,11 +37,11 @@ The road map for this project.
 	- Import & Export as .txt file.
 	- Undo changes to current string.
 	- Edited strings highlighted.
-- ❌ 5 : Map Editor ( Basic Parsing Implemented )
+- ❌ 5 : Map Editor ( Basic Parsing Implemented - 1% Complete )
 	- Basic parsing of .nsb filetypes.
-- ❌ 6 : No-CD Music Fix
-- ❌ 7 : Decomp/Recomp
-- ❌ 8 : Remake
+- ❌ 6 : No-CD Music Fix ( Researching Solution - 0% Complete )
+- ❌ 7 : Decomp/Recomp ( Not Started - 0% Complete )
+- ❌ 8 : Remake ( Not Started - 0% Complete )
 
 This might not all happen but we wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 
