@@ -62,7 +62,7 @@ WoWLauncher
 
 ## File Extractor
 WoWViewer - File Extractor
-![File Extractor](images/file-extractor.png)
+![File Extractor](images/file-extractor.gif)
 
 ## Save Editor
 WoWViewer - Save Editor
