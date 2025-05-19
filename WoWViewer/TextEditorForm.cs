@@ -50,7 +50,7 @@ namespace WoWViewer
                 // string length is one less than the ushort length as length contains the null operator // replaces \n with actual new line
                 listBox1.Items.Add($"{i:D4} : [{getFaction(category)}] : {text}");
                 entries.Add(new WowTextEntry { Name = text, Length = length, Offset = offset, Faction = category, Index = (ushort)i });
-                backup.Add(new WowTextBackup { Name = text, Length = length, Offset = offset, Index = (ushort)i }); // create backup for entries to undo changes
+                backup.Add(new WowTextBackup { Name = text, Length = length, Index = (ushort)i }); // create backup for entries to undo changes
                 offset += (int)length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
             }
         }
@@ -79,7 +79,6 @@ namespace WoWViewer
                 {
                     entries[index].Name = updatedText; // here
                     entries[index].Length = backup[index].Length;
-                    entries[index].Offset = backup[index].Offset;
                     entries[index].Edited = false;
                     button4.Enabled = false; // disable the undo button
                     RefreshListBoxEntry(index);
@@ -116,7 +115,6 @@ namespace WoWViewer
                     {
                         backup[i].Name = entries[i].Name;
                         backup[i].Length = entries[i].Length;
-                        backup[i].Offset = entries[i].Offset;
                         entries[i].Edited = false;
                     }
                 }
@@ -206,7 +204,6 @@ namespace WoWViewer
             string updatedText = backup[index].Name; // here
             entries[index].Name = updatedText; // here
             entries[index].Length = backup[index].Length;
-            entries[index].Offset = backup[index].Offset;
             entries[index].Edited = false;
             RefreshListBoxEntry(index);
             richTextBox1.Text = updatedText; // here
