@@ -57,7 +57,7 @@ namespace WoWViewer
         // list box selected index changed event
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (makingChanges) { return; }
+            if (makingChanges) { return; } // safety catch to prevent selected index changing when spoofing it and changing the selected index
             richTextBox1.Enabled = true; // enable the richTextBox
             richTextBox1.Text = entries[getRealIndex()].Name; // update the richTextBox with the selected entry
             checkEditedStatus();
@@ -71,41 +71,26 @@ namespace WoWViewer
         {
             if (e.KeyCode == Keys.Enter)
             {
-                //listBox1.SelectedIndexChanged -= listBox1_SelectedIndexChanged;
                 e.SuppressKeyPress = true; // suppress the enter key from adding a new line
                 makingChanges = true;
                 int index = getRealIndex(); // get the real index
-                int selectedIndex = listBox1.SelectedIndex; // get the selected index
-                string updatedText = richTextBox1.Text; // get the text from the rich text box
-                if (updatedText == backup[index].Name)
+                string updatedText = richTextBox1.Text; // get the text from the rich text box // here
+                if (updatedText == backup[index].Name) // here
                 {
-                    entries[index].Name = updatedText;
+                    entries[index].Name = updatedText; // here
                     entries[index].Length = backup[index].Length;
                     entries[index].Offset = backup[index].Offset;
                     entries[index].Edited = false;
                     button4.Enabled = false; // disable the undo button
-                    // turn this into a helper method??????
-                    if (selectedIndex == listBox1.Items.Count) { listBox1.SelectedIndex = selectedIndex - 1; } // spoof code
-                    else { listBox1.SelectedIndex = selectedIndex + 1; } // spoof code to prevent the listBox from going out of bounds
-                    listBox1.BeginUpdate();
-                    listBox1.Items.RemoveAt(selectedIndex);
-                    listBox1.Items.Insert(selectedIndex, $"{index:D4} : [{getFaction(entries[index].Faction)}] : {updatedText}");
-                    listBox1.SelectedIndex = selectedIndex;
-                    listBox1.EndUpdate();
+                    RefreshListBoxEntry(index);
                     this.richTextBox1.Select(this.richTextBox1.Text.Length, 0);
                     checkForEdits(); // check for any other edits
                     return;
                 }
-                if (selectedIndex == listBox1.Items.Count) { listBox1.SelectedIndex = selectedIndex - 1; } // spoof code
-                else { listBox1.SelectedIndex = selectedIndex + 1; } // spoof code to prevent the listBox from going out of bounds
-                entries[index].Name = updatedText; // update the entry name
-                entries[index].Length = (ushort)(updatedText.Length); // we'll add null terminator on save
+                entries[index].Name = updatedText; // update the entry name // here
+                entries[index].Length = (ushort)(updatedText.Length); // we'll add null terminator on save // here
                 entries[index].Edited = true; // mark the entry as edited // maybe use if style settings can be used
-                listBox1.BeginUpdate();
-                listBox1.Items.RemoveAt(selectedIndex);
-                listBox1.Items.Insert(selectedIndex, $"{index:D4} : [{getFaction(entries[index].Faction)}] : {updatedText}");
-                listBox1.SelectedIndex = selectedIndex;
-                listBox1.EndUpdate();
+                RefreshListBoxEntry(index);
                 changesMade = true; // set the changes made flag to true
                 button1.Enabled = true; // enable the save button
                 label2.Text = "Status : Changes Made";
@@ -183,7 +168,6 @@ namespace WoWViewer
         // import strings from a text file
         private void button3_Click(object sender, EventArgs e)
         {
-            changesMade = true; // set the changes made flag to true
             string filePath;
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
@@ -207,8 +191,11 @@ namespace WoWViewer
                 string name = string.Join(" ", line.Split(' ').Skip(3));
                 entries[count].Length = name.Length;
                 entries[count].Name = name;
+                backup[count].Length = name.Length;
+                backup[count].Name = name;
                 count++;
             }
+            changesMade = true; // set the changes made flag to true // here we assume changes have been made when importing a TEXT.OJD.txt file
             reFilter(); // re-sort the listBox incase a filter is ticked already and repopulate the list
             MessageBox.Show("Text file imported, now just hit save!", "Import", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
@@ -216,20 +203,13 @@ namespace WoWViewer
         private void button4_Click(object sender, EventArgs e)
         {
             int index = getRealIndex();
-            string updatedText = backup[index].Name;
-            entries[index].Name = updatedText;
+            string updatedText = backup[index].Name; // here
+            entries[index].Name = updatedText; // here
             entries[index].Length = backup[index].Length;
             entries[index].Offset = backup[index].Offset;
             entries[index].Edited = false;
-            int selectedIndex = listBox1.SelectedIndex; // get the selected index
-            if (selectedIndex == listBox1.Items.Count) { listBox1.SelectedIndex = selectedIndex - 1; } // spoof code
-            else { listBox1.SelectedIndex = selectedIndex + 1; } // spoof code to prevent the listBox from going out of bounds
-            listBox1.BeginUpdate();
-            listBox1.Items.RemoveAt(selectedIndex);
-            listBox1.Items.Insert(selectedIndex, $"{index:D4} : [{getFaction(entries[index].Faction)}] : {updatedText}");
-            listBox1.SelectedIndex = selectedIndex;
-            listBox1.EndUpdate();
-            richTextBox1.Text = updatedText;
+            RefreshListBoxEntry(index);
+            richTextBox1.Text = updatedText; // here
             button4.Enabled = false; // disable the undo button
             checkForEdits(); // check for any other edits
         }
@@ -239,31 +219,47 @@ namespace WoWViewer
             int index = getRealIndex();
             if (!entries[index].Edited) // check if user entered the same as the backup
             {
-                MessageBox.Show("NOT EDITED");
                 button4.Enabled = false; // disable the undo button
                 checkForEdits(); // only compare all values if the current comparison matches
             }
             else
             {
-                MessageBox.Show("EDITED");
                 button4.Enabled = true; // enable the undo button
-                makingChanges = false;
-                //listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged;
+                makingChanges = false; // no longer making changes
             }
         }
         // check for any edits
         private void checkForEdits()
         {
+            //if (!entries.Any(e => e.Edited))
             bool edited = false;
-            foreach (var entry in entries) { if (entry.Edited) { edited = true; break; } } // recheck all entries edited status
+            foreach (var entry in entries)
+            {
+                if (entry.Edited)
+                {
+                    edited = true;
+                    break;
+                }
+            } // recheck all entries edited status
             if (!edited)
             {
                 changesMade = false; // set the changes made flag to false
                 button1.Enabled = false; // disable the save button
                 label2.Text = "Status : No Changes Made";
             }
-            makingChanges = false;
-            //listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged;
+            // if edited
+            makingChanges = false; // no longer making changes
+        }
+        private void RefreshListBoxEntry(int index)
+        {
+            int selectedIndex = listBox1.SelectedIndex; // get the selected index
+            if (selectedIndex == listBox1.Items.Count) { listBox1.SelectedIndex = selectedIndex - 1; } // spoof code
+            else { listBox1.SelectedIndex = selectedIndex + 1; } // spoof code to prevent the listBox from going out of bounds
+            listBox1.BeginUpdate();
+            listBox1.Items.RemoveAt(selectedIndex);
+            listBox1.Items.Insert(selectedIndex, $"{index:D4} : [{getFaction(entries[index].Faction)}] : {entries[index].Name}");
+            listBox1.SelectedIndex = selectedIndex;
+            listBox1.EndUpdate();
         }
         // on close prompt
         private void TextEditorForm_FormClosing(object sender, FormClosingEventArgs e)
