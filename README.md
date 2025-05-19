@@ -58,16 +58,22 @@ Screenshots of the current progress for the toolkit.
 
 ## Custom Launcher
 WoWLauncher
+
 ![Launcher](images/launcher.png)
 
 ## File Extractor
 WoWViewer - File Extractor
-![File Extractor](images/file-extractor.gif)
+
+<div align="center">
+  <img src="images/file-extractor.gif" alt="File Extractor">
+</div>
 
 ## Save Editor
 WoWViewer - Save Editor
+
 ![Save Editor](images/save-editor.png)
 
 ## Text Editor
 WoWViewer - Text Editor
+
 ![Text Editor](images/text-editor.png)
