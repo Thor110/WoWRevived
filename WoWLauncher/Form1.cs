@@ -13,9 +13,9 @@ namespace WoWLauncher
         public Form1()
         {
             InitializeComponent();
+            var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             if (mainKey == null) // set default registry settings which are required for the launcher, the rest are created when the game starts.
             {
-                var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
                 mainKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
                 screenKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Screen", true)!;
                 battleKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true)!;
@@ -72,8 +72,26 @@ namespace WoWLauncher
             comboBox2.SelectedItem = ((string)screenKey.GetValue("Size")!).Replace(",", "x");
             comboBox3.SelectedItem = (string)mainKey.GetValue("Game Frequency")!;
             // custom registry entry so it will be null once // medium by default
-            if (mainKey.GetValue("Difficulty") == null) { mainKey.SetValue("Difficulty", "Medium"); }
-            else { comboBox4.SelectedItem = (string)mainKey.GetValue("Difficulty")!; }
+            switch ((string)mainKey.GetValue("Difficulty")!)
+            {
+                case null:
+                    mainKey.SetValue("Difficulty", "Medium");
+                    comboBox4.SelectedIndex = 1;
+                    break;
+                case "Easy":
+                    comboBox4.SelectedIndex = 0;
+                    break;
+                case "Medium":
+                    comboBox4.SelectedIndex = 1;
+                    break;
+                case "Hard":
+                    comboBox4.SelectedIndex = 2;
+                    break;
+                case "Custom":
+                    comboBox4.Items.Add("Custom");
+                    comboBox4.SelectedIndex = 3;
+                    break;
+            }
             // add event handlers here for the checkboxes and comboboxes to prevent them firing when the form is loaded
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
@@ -251,15 +269,15 @@ namespace WoWLauncher
             {
                 case "Easy":
                     registryCompare(mainKey, "Difficulty", "Easy");
-                    registryCompare(mainKey, "Damage reduction divisor", "400");
+                    registryCompare(battleKey, "Damage reduction divisor", "400");
                     break;
                 case "Medium":
                     registryCompare(mainKey, "Difficulty", "Medium");
-                    registryCompare(mainKey, "Damage reduction divisor", "500");
+                    registryCompare(battleKey, "Damage reduction divisor", "500");
                     break;
                 case "Hard":
                     registryCompare(mainKey, "Difficulty", "Hard");
-                    registryCompare(mainKey, "Damage reduction divisor", "600");
+                    registryCompare(battleKey, "Damage reduction divisor", "600");
                     break;
             }
         }
@@ -271,7 +289,15 @@ namespace WoWLauncher
             advanced.Location = this.Location;
             advanced.Show();
             this.Hide();
+            checkBox1.CheckedChanged -= checkBox1_CheckedChanged!;
+            checkBox2.CheckedChanged -= checkBox2_CheckedChanged!;
+            checkBox3.CheckedChanged -= checkBox3_CheckedChanged!;
+            comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;
+            comboBox2.SelectedIndexChanged -= comboBox2_SelectedIndexChanged!;
+            comboBox3.SelectedIndexChanged -= comboBox3_SelectedIndexChanged!;
+            comboBox4.SelectedIndexChanged -= comboBox4_SelectedIndexChanged!;
             advanced.FormClosed += (s, args) => this.Show();
+            advanced.FormClosed += (s, args) => InitializeRegistry();
         }
         // open editor
         private void button6_Click(object sender, EventArgs e)
