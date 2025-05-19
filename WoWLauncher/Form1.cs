@@ -35,6 +35,7 @@ namespace WoWLauncher
                 // default difficulty settings
                 battleKey.SetValue("EnableFogOfWar", "1");
                 battleKey.SetValue("Damage reduction divisor", "500");
+                MessageBox.Show("Registry entry missing, base registry entries recreated from scratch.\nPlease run the game once to create the rest of the registry entries.");
             }
             registryCompare(mainKey, "CD Path", Directory.GetCurrentDirectory().ToString()); // update the cd path in the registry automatically.
             registryCompare(mainKey, "Install Path", Directory.GetCurrentDirectory().ToString()); // update the install path in the registry automatically.
@@ -44,7 +45,7 @@ namespace WoWLauncher
             comboBox1.Items.Add("German");
             comboBox1.Items.Add("Italian");
             comboBox1.Items.Add("Spanish");
-            */
+            */ // Eventually these will be added to the game by the community and loaded dynamically.
             comboBox2.Items.Add("640x480");
             comboBox2.Items.Add("800x600");
             comboBox2.Items.Add("1024x768");
@@ -90,7 +91,10 @@ namespace WoWLauncher
         /// </remarks>
         private void launchGame()
         {
-            Process.Start("WoW_patched.exe");
+            // safety check for anyone who may decide to use the original executable and to check either exists
+            if (File.Exists("WoW_patched.exe")) { Process.Start("WoW_patched.exe"); }
+            else if (File.Exists("WoW.exe")) { Process.Start("WoW.exe"); }
+            else { MessageBox.Show("Executable not found, please reinstall the and follow the instructions."); }
             Close();
         }
         /// This is the event handler for the "Start Human Game" button
@@ -98,6 +102,12 @@ namespace WoWLauncher
         {
             if (File.Exists("MARTIAN.cd") && Directory.Exists("FMV-Human")) // only swap files if martian is enabled and human is disabled
             {
+                // double check if the human game is installed // prevent exceptions if these files do not exist
+                if (!File.Exists("human.cd.bak") || !Directory.Exists("FMV"))
+                {
+                    MessageBox.Show("Human game not installed! Please install the Human game first.");
+                    return;
+                }
                 File.Move("MARTIAN.cd", "MARTIAN.cd.bak");
                 File.Move("human.cd.bak", "human.cd");
                 Directory.Move("FMV", "FMV-Martian");
@@ -129,6 +139,12 @@ namespace WoWLauncher
         {
             if (File.Exists("human.cd") && Directory.Exists("FMV-Martian")) // only swap files if human is enabled and martian is disabled
             {
+                // double check if the martian game is installed // prevent exceptions if these files do not exist
+                if (!File.Exists("MARTIAN.cd.bak") || !Directory.Exists("FMV"))
+                {
+                    MessageBox.Show("Martian game not installed! Please install the Martian game first.");
+                    return;
+                }
                 File.Move("human.cd", "human.cd.bak");
                 File.Move("MARTIAN.cd.bak", "MARTIAN.cd");
                 Directory.Move("FMV", "FMV-Human");
@@ -209,7 +225,7 @@ namespace WoWLauncher
         }
         private void checkBox2_CheckedChanged(object sender, EventArgs e)
         {
-            mainKey.SetValue("Full Screen", checkBox2.Checked ? 1 : 0, RegistryValueKind.String);
+            mainKey.SetValue("Full Screen", checkBox2.Checked ? "1" : "0");
         }
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -227,7 +243,7 @@ namespace WoWLauncher
         }
         private void checkBox3_CheckedChanged(object sender, EventArgs e)
         {
-            battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? 1 : 0, RegistryValueKind.String);
+            battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? "1" : "0");
         }
         private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -250,9 +266,7 @@ namespace WoWLauncher
         // open advanced settings
         private void button5_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Advanced settings menu not available yet!");
-            return;
-            var advanced = new Form2();
+            Form advanced = new Form2();
             advanced.StartPosition = FormStartPosition.Manual;
             advanced.Location = this.Location;
             advanced.Show();
@@ -262,6 +276,11 @@ namespace WoWLauncher
         // open editor
         private void button6_Click(object sender, EventArgs e)
         {
+            if(!File.Exists("WoWViewer.exe"))
+            {
+                MessageBox.Show("Editor not found, please reinstall the game and follow the instructions.");
+                return;
+            }
             Process.Start("WoWViewer.exe");
             Close();
         }

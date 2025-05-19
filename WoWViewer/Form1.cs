@@ -1,6 +1,7 @@
-using System.Text;
-using System.Media;
+using System.Diagnostics;
 using System.Drawing.Imaging;
+using System.Media;
+using System.Text;
 using WoWViewer;
 
 namespace WOWViewer
@@ -623,6 +624,16 @@ namespace WOWViewer
                     this.Location = textEditor.Location;
                 }
             };
+        }
+        // on close prompt
+        private void ViewerForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (File.Exists("WoWLauncher.exe"))
+            {
+                //Process.Start("WoWLauncher.exe"); // commented temporarily for testing
+                Close();
+            }
+            MessageBox.Show("Launcher.exe not found, how did you get here?");
         }
     }
 }

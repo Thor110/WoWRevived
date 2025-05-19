@@ -66,7 +66,7 @@ namespace WOWViewer
             label3.Text = "Status : Changes Saved"; // update the status label
             button1.Enabled = false; // disable the save button
         }
-        // save selected in list box
+        // the save file selected in list box index changed
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (listBox1.SelectedItem == null) { return; } // prevents the list box from triggering twice when a save file is deleted while the program is open
@@ -74,8 +74,6 @@ namespace WOWViewer
             button2.Enabled = true; // enable the swap sides button
             button3.Enabled = true; // enable the delete save button
             parseSaveFile();
-            listBox2.Items.Clear(); // clear the list box
-            parseText(); // parse the text file for debugging purposes
         }
         // parse the save file
         private void parseSaveFile()
@@ -114,6 +112,8 @@ namespace WOWViewer
             button1.Enabled = false; // disables the save button when switching saves
             label3.Text = "Status : No Changes Made"; // update the status label
             saveChanging = false; // selected save file has been changed
+            listBox2.Items.Clear(); // clear the sector list box
+            parseText(); // parse the text file to get sector names
         }
         // double check the save file exists incase deleted by the user while the program is open
         private bool fileSafetyCheck()
@@ -127,6 +127,9 @@ namespace WOWViewer
                 textBox1.Enabled = false; // disable the text box
                 dateTimePicker1.Enabled = false; // disables the date picker
                 checkBox1.Enabled = false; // enable the checkbox
+                button1.Enabled = false; // disables the save button
+                button2.Enabled = false; // disables the swap sides button
+                button3.Enabled = false; // disables the delete button
                 return false; // return false if file doesn't exist after disabling UI elements
             }
             return true; // return true if the file still exists
@@ -217,12 +220,17 @@ namespace WOWViewer
         // parse the text file to get sector names
         public void parseText()
         {
-            int offset = 0x289; // Human start
-            int endOffset = 0x4EA; // Human end
+            if (!File.Exists("TEXT.ojd"))
+            {
+                MessageBox.Show("TEXT.ojd not found! Please check the installation!"); // file doesn't exist
+                return;
+            }
+            int offset = 0x289; // Human sector listings start
+            int endOffset = 0x4EA; // Human sector listings end
             if (fileName.Contains("Martian"))
             {
-                offset = endOffset; // Human end / Martian begin
-                endOffset = 0x72E; // Martian end
+                offset = endOffset; // Human sector listings end / Martian sector listings start
+                endOffset = 0x72E; // Martian sector listings end
             }
             byte[] data = File.ReadAllBytes("TEXT.ojd");
             for (int i = 0; i < 31; i++)

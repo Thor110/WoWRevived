@@ -233,7 +233,7 @@
             button9.UseVisualStyleBackColor = true;
             button9.Click += button9_Click;
             // 
-            // WOWViewer
+            // WoWViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -257,8 +257,9 @@
             Controls.Add(textBox1);
             Controls.Add(button1);
             Icon = (Icon)resources.GetObject("$this.Icon");
-            Name = "WOWViewer";
-            Text = "WOWViewer";
+            Name = "WoWViewer";
+            Text = "WoWViewer";
+            FormClosing += ViewerForm_FormClosing;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
             PerformLayout();
