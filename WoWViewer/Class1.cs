@@ -20,4 +20,11 @@
         public ushort Index { get; set; }
         public bool Edited { get; set; } = false;
     }
+    class WowTextBackup
+    {
+        public string Name { get; set; } = String.Empty;
+        public int Length { get; set; }
+        public int Offset { get; set; }
+        public ushort Index { get; set; }
+    }
 }

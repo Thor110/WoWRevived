@@ -6,10 +6,11 @@ namespace WoWViewer
     public partial class TextEditorForm : Form
     {
         private List<WowTextEntry> entries = new List<WowTextEntry>();
-        private List<WowTextEntry> backup = new List<WowTextEntry>();
+        private List<WowTextBackup> backup = new List<WowTextBackup>();
         private static readonly Encoding Latin1 = Encoding.GetEncoding("iso-8859-1");
         private static string inputPath = "TEXT.ojd";
         private bool changesMade;
+        private bool makingChanges;
         public TextEditorForm()
         {
             InitializeComponent();
@@ -32,7 +33,7 @@ namespace WoWViewer
                 : entries[entryIndex].Edited ? Color.Red
                 : SystemColors.WindowText;
             // Use TextRenderer instead of Graphics.DrawString for better alignment and kerning
-            TextRenderer.DrawText( e.Graphics, itemText, e.Font, e.Bounds, textColor, TextFormatFlags.VerticalCenter );
+            TextRenderer.DrawText(e.Graphics, itemText, e.Font, e.Bounds, textColor, TextFormatFlags.VerticalCenter);
             e.DrawFocusRectangle();
         }
         // for parsing the TEXT.ojd file into the listBox for the TextEditorForm
@@ -49,15 +50,17 @@ namespace WoWViewer
                 // string length is one less than the ushort length as length contains the null operator // replaces \n with actual new line
                 listBox1.Items.Add($"{i:D4} : [{getFaction(category)}] : {text}");
                 entries.Add(new WowTextEntry { Name = text, Length = length, Offset = offset, Faction = category, Index = (ushort)i });
-                backup.Add(new WowTextEntry { Name = text, Length = length, Offset = offset, Faction = category, Index = (ushort)i });
+                backup.Add(new WowTextBackup { Name = text, Length = length, Offset = offset, Index = (ushort)i }); // create backup for entries to undo changes
                 offset += (int)length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
             }
         }
         // list box selected index changed event
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (makingChanges) { return; }
             richTextBox1.Enabled = true; // enable the richTextBox
             richTextBox1.Text = entries[getRealIndex()].Name; // update the richTextBox with the selected entry
+            checkEditedStatus();
         }
         // faction type or user interface
         private static string getFaction(byte category) => category == 0x00 ? "Martian" : category == 0x01 ? "Human" : category == 0x02 ? "UI" : "Unknown";
@@ -68,10 +71,31 @@ namespace WoWViewer
         {
             if (e.KeyCode == Keys.Enter)
             {
+                //listBox1.SelectedIndexChanged -= listBox1_SelectedIndexChanged;
                 e.SuppressKeyPress = true; // suppress the enter key from adding a new line
+                makingChanges = true;
                 int index = getRealIndex(); // get the real index
                 int selectedIndex = listBox1.SelectedIndex; // get the selected index
                 string updatedText = richTextBox1.Text; // get the text from the rich text box
+                if (updatedText == backup[index].Name)
+                {
+                    entries[index].Name = updatedText;
+                    entries[index].Length = backup[index].Length;
+                    entries[index].Offset = backup[index].Offset;
+                    entries[index].Edited = false;
+                    button4.Enabled = false; // disable the undo button
+                    // turn this into a helper method??????
+                    if (selectedIndex == listBox1.Items.Count) { listBox1.SelectedIndex = selectedIndex - 1; } // spoof code
+                    else { listBox1.SelectedIndex = selectedIndex + 1; } // spoof code to prevent the listBox from going out of bounds
+                    listBox1.BeginUpdate();
+                    listBox1.Items.RemoveAt(selectedIndex);
+                    listBox1.Items.Insert(selectedIndex, $"{index:D4} : [{getFaction(entries[index].Faction)}] : {updatedText}");
+                    listBox1.SelectedIndex = selectedIndex;
+                    listBox1.EndUpdate();
+                    this.richTextBox1.Select(this.richTextBox1.Text.Length, 0);
+                    checkForEdits(); // check for any other edits
+                    return;
+                }
                 if (selectedIndex == listBox1.Items.Count) { listBox1.SelectedIndex = selectedIndex - 1; } // spoof code
                 else { listBox1.SelectedIndex = selectedIndex + 1; } // spoof code to prevent the listBox from going out of bounds
                 entries[index].Name = updatedText; // update the entry name
@@ -84,10 +108,9 @@ namespace WoWViewer
                 listBox1.EndUpdate();
                 changesMade = true; // set the changes made flag to true
                 button1.Enabled = true; // enable the save button
-                button4.Enabled = true; // enable the undo button
                 label2.Text = "Status : Changes Made";
                 this.richTextBox1.Select(this.richTextBox1.Text.Length, 0); // thank you!!! : https://stackoverflow.com/questions/2241862/windows-forms-richtextbox-cursor-position/6457512
-                checkEditedStatus(); // compare???
+                checkEditedStatus(); // check if the currently entered text is identical to the original
             }
         }
         // save file button
@@ -104,7 +127,13 @@ namespace WoWViewer
                     fs.Write(data, entries[i].Offset, 8); // Copy header (first 8 bytes untouched)
                     fs.Write(BitConverter.GetBytes((ushort)(stringBytes.Length + 1)), 0, 2); // write the new string length (2 bytes)
                     fs.Write(stringBytes, 0, stringBytes.Length); // Write new or original string
-                    entries[i].Edited = false; // reset the edited flag
+                    if (entries[i].Edited) // update backup entries
+                    {
+                        backup[i].Name = entries[i].Name;
+                        backup[i].Length = entries[i].Length;
+                        backup[i].Offset = entries[i].Offset;
+                        entries[i].Edited = false;
+                    }
                 }
                 fs.WriteByte(0x00); // write final byte which is always 0x00
             }
@@ -112,7 +141,6 @@ namespace WoWViewer
             changesMade = false; // reset the changes made flag
             button1.Enabled = false;
             button4.Enabled = false;
-            backup = entries;
             MessageBox.Show("TEXT.ojd updated successfully.", "Save Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         // filter by faction
@@ -191,6 +219,7 @@ namespace WoWViewer
             string updatedText = backup[index].Name;
             entries[index].Name = updatedText;
             entries[index].Length = backup[index].Length;
+            entries[index].Offset = backup[index].Offset;
             entries[index].Edited = false;
             int selectedIndex = listBox1.SelectedIndex; // get the selected index
             if (selectedIndex == listBox1.Items.Count) { listBox1.SelectedIndex = selectedIndex - 1; } // spoof code
@@ -200,40 +229,41 @@ namespace WoWViewer
             listBox1.Items.Insert(selectedIndex, $"{index:D4} : [{getFaction(entries[index].Faction)}] : {updatedText}");
             listBox1.SelectedIndex = selectedIndex;
             listBox1.EndUpdate();
-            listBox1.Items[index] = $"{index:D4} : [{getFaction(entries[index].Faction)}] : {entries[index].Name}";
             richTextBox1.Text = updatedText;
-            checkForEdits();
+            button4.Enabled = false; // disable the undo button
+            checkForEdits(); // check for any other edits
         }
         // check if the current string is different from the stored string
         private void checkEditedStatus()
         {
             int index = getRealIndex();
-            string originalText = backup[index].Name;
-            if (entries[index].Name == originalText)
+            if (!entries[index].Edited) // check if user entered the same as the backup
             {
-                entries[index].Edited = false;
-                button4.Enabled = false;
+                MessageBox.Show("NOT EDITED");
+                button4.Enabled = false; // disable the undo button
                 checkForEdits(); // only compare all values if the current comparison matches
-                return;
+            }
+            else
+            {
+                MessageBox.Show("EDITED");
+                button4.Enabled = true; // enable the undo button
+                makingChanges = false;
+                //listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged;
             }
         }
         // check for any edits
         private void checkForEdits()
         {
-            int count = 0;
             bool edited = false;
-            foreach (var entry in entries) // recheck all entries edited status
-            {
-                if (entry.Edited) { edited = true; }
-                count++;
-            }
+            foreach (var entry in entries) { if (entry.Edited) { edited = true; break; } } // recheck all entries edited status
             if (!edited)
             {
                 changesMade = false; // set the changes made flag to false
                 button1.Enabled = false; // disable the save button
-                button4.Enabled = false;
                 label2.Text = "Status : No Changes Made";
             }
+            makingChanges = false;
+            //listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged;
         }
         // on close prompt
         private void TextEditorForm_FormClosing(object sender, FormClosingEventArgs e)
