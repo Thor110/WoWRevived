@@ -37,6 +37,7 @@
             // 
             // trackBar1
             // 
+            trackBar1.AccessibleDescription = "Adjust the damage reduction divisor in increments of 100 the default value is 500 for the game.";
             trackBar1.LargeChange = 2;
             trackBar1.Location = new Point(263, 115);
             trackBar1.Minimum = 1;

@@ -13,13 +13,15 @@ namespace WoWLauncher
             InitializeComponent();
             var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             InitializeRegistry();
+            ToolTip tooltip = new ToolTip();
+            ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(PictureBox), typeof(Label), typeof(Button) });
         }
         /// This method compares the registry entry with the value and sets it if they are different.
         private void registryCompare(RegistryKey key, string entry, string value) { if ((string)key.GetValue(entry)! != value) { key.SetValue(entry, value); } }
         /// This method is called when the form is loaded to initialize the registry settings
         private void InitializeRegistry()
         {
-            trackBar1.Value = Convert.ToInt32(battleKey.GetValue("Damage reduction divisor"));
+            trackBar1.Value = Convert.ToInt32(battleKey.GetValue("Damage reduction divisor")) / 100;
 
             // add event handlers
             trackBar1.ValueChanged += trackBar1_ValueChanged!;
@@ -31,7 +33,7 @@ namespace WoWLauncher
         // Damage reduction divisor track bar value changed event
         private void trackBar1_ValueChanged(object sender, EventArgs e)
         {
-            registryCompare(battleKey, "Damage reduction divisor", trackBar1.Value.ToString());
+            registryCompare(battleKey, "Damage reduction divisor", (trackBar1.Value * 100).ToString());
             customDifficulty();
         }
     }
