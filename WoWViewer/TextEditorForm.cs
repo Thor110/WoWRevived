@@ -18,7 +18,17 @@ namespace WoWViewer
             listBox1.DrawItem += ListBox1_DrawItem!;
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(ListBox), typeof(Label) });
+            if (checkSaveFileExists()) { return; } // user doesn't have TEXT.ojd file.
             parseTEXTOJD();
+        }
+        private bool checkSaveFileExists()
+        {
+            if (!File.Exists(inputPath))
+            {
+                MessageBox.Show("TEXT.ojd file not found, please check the game directory.", "File Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+            return true;
         }
         // for the listBox draw item event to change the color of the text if an entry is edited
         private void ListBox1_DrawItem(object sender, DrawItemEventArgs e)
@@ -36,7 +46,7 @@ namespace WoWViewer
             TextRenderer.DrawText(e.Graphics, itemText, e.Font, e.Bounds, textColor, TextFormatFlags.VerticalCenter);
             e.DrawFocusRectangle();
         }
-        // for parsing the TEXT.ojd file into the listBox for the TextEditorForm
+        // for initial parsing the TEXT.ojd file into the listBox for the TextEditorForm
         public void parseTEXTOJD()
         {
             byte[] data = File.ReadAllBytes(inputPath); // read the file into a byte array
@@ -100,6 +110,7 @@ namespace WoWViewer
         // save file button
         private void button1_Click(object sender, EventArgs e)
         {
+            if(checkSaveFileExists()) { return; } // user deleted the file while editing
             byte[] data = File.ReadAllBytes(inputPath); // read the file into a byte array
             using (FileStream fs = new FileStream(inputPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
