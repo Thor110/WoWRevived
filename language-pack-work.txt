@@ -1,0 +1,16 @@
+How to create a language pack
+
+Export the TEXT.OJD file to a .txt file or edit them in the text editor line by line.
+
+When translating a TEXT.OJD.TXT file, please keep the format the same, because importing properly relies on this.
+
+That is, that it gets the entire length of the string after the fourth space and it relies on there being 1396 lines to the file.
+
+0000 : [FACTION] : STRING
+
+So in this case it would return "STRING"
+
+Some lines are separated by "\n" new line separation, this is replaced with a real new line when importing or using the text editor.
+
+But it is corrected when exporting or saving, so make sure to keep them as they are because the game reads them that way
+
