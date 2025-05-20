@@ -1,4 +1,6 @@
-How to create a language pack
+How to create a language pack - rough guide.
+
+First, create a backup of your TEXT.OJD file, just to be safe.
 
 Export the TEXT.OJD file to a .txt file or edit them in the text editor line by line.
 
@@ -10,7 +12,16 @@ That is, that it gets the entire length of the string after the fourth space and
 
 So in this case it would return "STRING"
 
+Everything is initially read from the TEXT.OJD file and then the strings are updated when you import a file.
+
 Some lines are separated by "\n" new line separation, this is replaced with a real new line when importing or using the text editor.
 
 But it is corrected when exporting or saving, so make sure to keep them as they are because the game reads them that way
 
+After you are done translating then import the file and click save to update the TEXT.OJD file.
+
+When you have created a language pack, just drop it into the games installation folder with a name in all capitals and it will be automatically detected.
+
+IE : "FRENCH.OJD" "GERMAN.OJD" "SPANISH.OJD"
+
+The launcher expects the regular TEXT.OJD file by default to be there, so language packs should be submitted in this format to be properly detected and implemented.
