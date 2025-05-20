@@ -101,7 +101,7 @@
             // 
             // trackBar2
             // 
-            trackBar2.AccessibleDescription = "Adjust the damage reduction divisor in increments of 100 the default value is 500 for the game.";
+            trackBar2.AccessibleDescription = "Adjust the maximum units per sector. ( default is 15 )";
             trackBar2.LargeChange = 2;
             trackBar2.Location = new Point(182, 76);
             trackBar2.Maximum = 255;
@@ -122,7 +122,7 @@
             // 
             // trackBar3
             // 
-            trackBar3.AccessibleDescription = "Adjust the damage reduction divisor in increments of 100 the default value is 500 for the game.";
+            trackBar3.AccessibleDescription = "Adjust the maximum boats per sector. ( default is 5 )";
             trackBar3.LargeChange = 2;
             trackBar3.Location = new Point(182, 127);
             trackBar3.Maximum = 255;
@@ -143,7 +143,7 @@
             // 
             // trackBar4
             // 
-            trackBar4.AccessibleDescription = "Adjust the damage reduction divisor in increments of 100 the default value is 500 for the game.";
+            trackBar4.AccessibleDescription = "Adjust the Martian Open Rate research value. ( default is 10 )";
             trackBar4.LargeChange = 2;
             trackBar4.Location = new Point(182, 229);
             trackBar4.Maximum = 255;
@@ -164,7 +164,7 @@
             // 
             // trackBar5
             // 
-            trackBar5.AccessibleDescription = "Adjust the damage reduction divisor in increments of 100 the default value is 500 for the game.";
+            trackBar5.AccessibleDescription = "Adjust the Human Open Rate research value. ( default is 20 )";
             trackBar5.LargeChange = 2;
             trackBar5.Location = new Point(182, 178);
             trackBar5.Maximum = 255;
@@ -185,7 +185,7 @@
             // 
             // trackBar6
             // 
-            trackBar6.AccessibleDescription = "Adjust the damage reduction divisor in increments of 100 the default value is 500 for the game.";
+            trackBar6.AccessibleDescription = "Adjust the Pod interval (hours) value. ( default is 24 )";
             trackBar6.LargeChange = 2;
             trackBar6.Location = new Point(182, 280);
             trackBar6.Maximum = 255;
@@ -206,7 +206,7 @@
             // 
             // trackBar7
             // 
-            trackBar7.AccessibleDescription = "Adjust the damage reduction divisor in increments of 100 the default value is 500 for the game.";
+            trackBar7.AccessibleDescription = "Adjust the AI Hours Per Turn value. ( default is 5 )";
             trackBar7.LargeChange = 2;
             trackBar7.Location = new Point(182, 331);
             trackBar7.Maximum = 255;

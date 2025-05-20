@@ -29,30 +29,21 @@ namespace WoWLauncher
             int unitsValue = Convert.ToInt32(tweakKey.GetValue("Max units in sector"));
             trackBar2.Value = unitsValue;
             label9.Text = unitsValue.ToString();
-
             int boatsValue = Convert.ToInt32(tweakKey.GetValue("Max boats in sector"));
             trackBar3.Value = boatsValue;
             label10.Text = boatsValue.ToString();
-
             int humanOpenRate = Convert.ToInt32(researchKey.GetValue("Human Open Rate"));
             trackBar4.Value = humanOpenRate;
             label11.Text = humanOpenRate.ToString();
-
-
             int martianOpenRate = Convert.ToInt32(researchKey.GetValue("Martian Open Rate"));
             trackBar5.Value = martianOpenRate;
             label12.Text = martianOpenRate.ToString();
-
             int podInterval = Convert.ToInt32(tweakKey.GetValue("Pod Interval (hours)"));
             trackBar6.Value = podInterval;
             label13.Text = podInterval.ToString();
-
-
             int aiHoursPerTurn = Convert.ToInt32(tweakKey.GetValue("AI Hours Per Turn"));
             trackBar7.Value = aiHoursPerTurn;
             label14.Text = aiHoursPerTurn.ToString();
-
-
             trackBar1.ValueChanged += trackBar1_ValueChanged!;
             trackBar2.ValueChanged += trackBar2_ValueChanged!;
             trackBar3.ValueChanged += trackBar3_ValueChanged!;
@@ -87,11 +78,11 @@ namespace WoWLauncher
         {
             label10.Text = trackBar3.Value.ToString();
         }
-        private void trackBar5_ValueChanged(object sender, EventArgs e)
+        private void trackBar4_ValueChanged(object sender, EventArgs e)
         {
             label11.Text = trackBar4.Value.ToString();
         }
-        private void trackBar4_ValueChanged(object sender, EventArgs e)
+        private void trackBar5_ValueChanged(object sender, EventArgs e)
         {
             label12.Text = trackBar5.Value.ToString();
         }
