@@ -24,6 +24,8 @@ Or, if you choose to make a language patch using the text editor, feel free to s
 
 The road map for this project.
 - [✅ 1 : Custom Launcher](#custom-launcher) ( Fully Functional - 90% Complete )
+	- Dynamic language pack detection.
+	- Advanced registry settings options.
 - [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 90% Complete )
 	- .WoW archives can be extracted.
 	- Waveform preview and play sound files from .wow archives.
