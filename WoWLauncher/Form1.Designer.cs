@@ -47,6 +47,7 @@
             checkBox3 = new CheckBox();
             button5 = new Button();
             button6 = new Button();
+            checkBox4 = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -102,9 +103,9 @@
             // 
             // checkBox1
             // 
-            checkBox1.AccessibleDescription = "Enable or disable multiplayer.";
+            checkBox1.AccessibleDescription = "Enable or disable multiplayer. ( This option messes with single player resume and save campaign options, careful! )";
             checkBox1.AutoSize = true;
-            checkBox1.Location = new Point(24, 322);
+            checkBox1.Location = new Point(11, 322);
             checkBox1.Name = "checkBox1";
             checkBox1.Size = new Size(150, 19);
             checkBox1.TabIndex = 5;
@@ -116,7 +117,7 @@
             // 
             checkBox2.AccessibleDescription = "Enable or disable fullscreen.";
             checkBox2.AutoSize = true;
-            checkBox2.Location = new Point(180, 322);
+            checkBox2.Location = new Point(167, 322);
             checkBox2.Name = "checkBox2";
             checkBox2.Size = new Size(83, 19);
             checkBox2.TabIndex = 6;
@@ -209,7 +210,7 @@
             // 
             checkBox3.AccessibleDescription = "Enable or disable fog of war.";
             checkBox3.AutoSize = true;
-            checkBox3.Location = new Point(269, 322);
+            checkBox3.Location = new Point(256, 322);
             checkBox3.Name = "checkBox3";
             checkBox3.Size = new Size(84, 19);
             checkBox3.TabIndex = 15;
@@ -238,11 +239,23 @@
             button6.UseVisualStyleBackColor = true;
             button6.Click += button6_Click;
             // 
+            // checkBox4
+            // 
+            checkBox4.AccessibleDescription = "Enable or disable resizing of the window.";
+            checkBox4.AutoSize = true;
+            checkBox4.Location = new Point(346, 322);
+            checkBox4.Name = "checkBox4";
+            checkBox4.Size = new Size(58, 19);
+            checkBox4.TabIndex = 18;
+            checkBox4.Text = "Resize";
+            checkBox4.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(424, 477);
+            Controls.Add(checkBox4);
             Controls.Add(button6);
             Controls.Add(button5);
             Controls.Add(checkBox3);
@@ -289,5 +302,6 @@
         private CheckBox checkBox3;
         private Button button5;
         private Button button6;
+        private CheckBox checkBox4;
     }
 }

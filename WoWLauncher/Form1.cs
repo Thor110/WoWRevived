@@ -39,13 +39,18 @@ namespace WoWLauncher
             }
             registryCompare(mainKey, "CD Path", Directory.GetCurrentDirectory().ToString()); // update the cd path in the registry automatically.
             registryCompare(mainKey, "Install Path", Directory.GetCurrentDirectory().ToString()); // update the install path in the registry automatically.
-            /* // Language options are commented out as they are not used in the game.
-            comboBox1.Items.Add("English");
-            comboBox1.Items.Add("French");
-            comboBox1.Items.Add("German");
-            comboBox1.Items.Add("Italian");
-            comboBox1.Items.Add("Spanish");
-            */ // Eventually these will be added to the game by the community and loaded dynamically.
+            // Dynamic language pack detection
+            comboBox1.Items.Add((string)mainKey.GetValue("Language")!); // DEFAULT TEXT.OJD = Language set in Registry ( this could go haywire if the user changes the language in the registry )
+            var ojdFiles = Directory.GetFiles($"{Directory.GetCurrentDirectory()}", "*.OJD", SearchOption.TopDirectoryOnly);
+            foreach (string currentFile in ojdFiles)
+            {
+                string fileName = Path.GetFileNameWithoutExtension(currentFile);
+                if (fileName != "TEXT" && fileName != "AI" && fileName != "OBJ" && fileName != "SFX") // Ignore the default files
+                {
+                    comboBox1.Items.Add(fileName.Substring(0, 1).ToUpper() + fileName.Substring(1).ToLower());
+                }
+            }
+            comboBox1.SelectedIndex = 0; // default to the current language
             comboBox2.Items.Add("640x480");
             comboBox2.Items.Add("800x600");
             comboBox2.Items.Add("1024x768");
@@ -68,7 +73,8 @@ namespace WoWLauncher
         {
             if ((int)mainKey.GetValue("Enable Network Version")! == 1) { checkBox1.Checked = true; }
             if (Convert.ToInt32(mainKey.GetValue("Full Screen")) == 1) { checkBox2.Checked = true; }
-            //comboBox1.SelectedItem = (string)mainKey.GetValue("Language")!; // unused code until language packs are made by the community
+            if (Convert.ToInt32(battleKey.GetValue("EnableFogOfWar")) == 1) { checkBox3.Checked = true; }
+            if (Convert.ToInt32(screenKey.GetValue("AllowResize")) == 1) { checkBox4.Checked = true; }
             comboBox2.SelectedItem = ((string)screenKey.GetValue("Size")!).Replace(",", "x");
             comboBox3.SelectedItem = (string)mainKey.GetValue("Game Frequency")!;
             // custom registry entry so it will be null once // medium by default
@@ -96,6 +102,7 @@ namespace WoWLauncher
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
             checkBox3.CheckedChanged += checkBox3_CheckedChanged!;
+            checkBox4.CheckedChanged += checkBox4_CheckedChanged!;
             comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged!;
             comboBox2.SelectedIndexChanged += comboBox2_SelectedIndexChanged!;
             comboBox3.SelectedIndexChanged += comboBox3_SelectedIndexChanged!;
@@ -200,16 +207,19 @@ namespace WoWLauncher
             checkBox1.Visible = true;
             checkBox2.Visible = true;
             checkBox3.Visible = true;
-            //comboBox1.Visible = true; // unused code for now ( Language Options )
             comboBox2.Visible = true;
             comboBox3.Visible = true;
             comboBox4.Visible = true;
-            //label1.Visible = true; // unused code for now ( Language Options )
+            if (comboBox1.Items.Count > 1)
+            {
+                comboBox1.Visible = true;
+                label1.Visible = true;
+            }
             label2.Visible = true;
             label3.Visible = true;
             label4.Visible = true;
             button5.Visible = true;
-            button6.Visible = false; // editor button
+            button6.Visible = false;
         }
         /// This is the event handler for the "Exit" button
         private void button4_Click(object sender, EventArgs e)
@@ -224,16 +234,16 @@ namespace WoWLauncher
                 checkBox1.Visible = false;
                 checkBox2.Visible = false;
                 checkBox3.Visible = false;
-                //comboBox1.Visible = false; // unused code for now ( Language Options )
+                comboBox1.Visible = false;
                 comboBox2.Visible = false;
                 comboBox3.Visible = false;
                 comboBox4.Visible = false;
-                //label1.Visible = false; // unused code for now ( Language Options )
+                label1.Visible = false;
                 label2.Visible = false;
                 label3.Visible = false;
                 label4.Visible = false;
                 button5.Visible = false;
-                button6.Visible = true; // editor button
+                button6.Visible = true;
             }
             else { Close(); }
         }
@@ -245,9 +255,21 @@ namespace WoWLauncher
         {
             mainKey.SetValue("Full Screen", checkBox2.Checked ? "1" : "0");
         }
+        private void checkBox3_CheckedChanged(object sender, EventArgs e)
+        {
+            battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? "1" : "0");
+        }
+        private void checkBox4_CheckedChanged(object sender, EventArgs e)
+        {
+            screenKey.SetValue("AllowResize", checkBox4.Checked ? "1" : "0");
+        }
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            //mainKey.SetValue("Language", comboBox1.SelectedItem!.ToString()!); // unused code for now
+            string rename = (string)mainKey.GetValue("Language")!; // Default = English
+            if (comboBox1.Text == rename) { return; } // do nothing if the same language is selected
+            File.Move("TEXT.ojd", $"{rename.ToUpper()}.ojd"); // rename the current language file
+            File.Move($"{comboBox1.Text.ToUpper()}.ojd", $"TEXT.ojd"); // rename the new language file
+            mainKey.SetValue("Language", comboBox1.SelectedItem!.ToString()!); // update the registry
         }
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -258,10 +280,6 @@ namespace WoWLauncher
         private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
             mainKey.SetValue("Game Frequency", comboBox3.SelectedItem!.ToString()!);
-        }
-        private void checkBox3_CheckedChanged(object sender, EventArgs e)
-        {
-            battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? "1" : "0");
         }
         private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -292,6 +310,7 @@ namespace WoWLauncher
             checkBox1.CheckedChanged -= checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged -= checkBox2_CheckedChanged!;
             checkBox3.CheckedChanged -= checkBox3_CheckedChanged!;
+            checkBox4.CheckedChanged -= checkBox4_CheckedChanged!;
             comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;
             comboBox2.SelectedIndexChanged -= comboBox2_SelectedIndexChanged!;
             comboBox3.SelectedIndexChanged -= comboBox3_SelectedIndexChanged!;
@@ -302,7 +321,7 @@ namespace WoWLauncher
         // open editor
         private void button6_Click(object sender, EventArgs e)
         {
-            if(!File.Exists("WoWViewer.exe"))
+            if (!File.Exists("WoWViewer.exe"))
             {
                 MessageBox.Show("Editor not found, please reinstall the game and follow the instructions.");
                 return;
