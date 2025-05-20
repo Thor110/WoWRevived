@@ -18,7 +18,7 @@ namespace WoWViewer
             listBox1.DrawItem += ListBox1_DrawItem!;
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(ListBox), typeof(Label) });
-            if (checkSaveFileExists()) { return; } // user doesn't have TEXT.ojd file.
+            if (!checkSaveFileExists()) { return; } // user doesn't have TEXT.ojd file.
             parseTEXTOJD();
         }
         private bool checkSaveFileExists()
@@ -188,7 +188,7 @@ namespace WoWViewer
                 if (openFileDialog.ShowDialog() != DialogResult.OK) { return; }
                 else { filePath = openFileDialog.FileName; }
             }
-            var lines = File.ReadLines(filePath);
+            var lines = File.ReadLines(filePath, Latin1);
             if (lines.Count() < 1396) // check the line count matches before updating so there is no need to reparse the original TEXT.ojd file
             {
                 MessageBox.Show("Error importing TEXT.OJD.TXT file, please check the file and try again.", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -197,14 +197,16 @@ namespace WoWViewer
             int count = 0;
             foreach (var line in lines)
             {
-                string name = string.Join(" ", line.Split(' ').Skip(3));
+                string name = string.Join(" ", line.Split(' ').Skip(3)).Replace("\\n", "\n");
                 entries[count].Length = name.Length;
                 entries[count].Name = name;
                 backup[count].Length = name.Length;
                 backup[count].Name = name;
                 count++;
             }
-            changesMade = true; // set the changes made flag to true // here we assume changes have been made when importing a TEXT.OJD.txt file
+            button1.Enabled = true; // enable the save button
+            changesMade = true; // set the changes made flag to true
+            label2.Text = "Status : Changes Made"; // here we assume changes have been made when importing a TEXT.OJD.txt file
             reFilter(); // re-sort the listBox incase a filter is ticked already and repopulate the list
             MessageBox.Show("Text file imported, now just hit save!", "Import", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }

@@ -65,34 +65,13 @@ namespace WoWLauncher
             if (config) { registryCompare(mainKey, "Difficulty", "Custom"); }
             this.Close();
         }
-
-        private void trackBar1_ValueChanged(object sender, EventArgs e)
-        {
-            label8.Text = trackBar1.Value.ToString();
-        }
-        private void trackBar2_ValueChanged(object sender, EventArgs e)
-        {
-            label9.Text = trackBar2.Value.ToString();
-        }
-        private void trackBar3_ValueChanged(object sender, EventArgs e)
-        {
-            label10.Text = trackBar3.Value.ToString();
-        }
-        private void trackBar4_ValueChanged(object sender, EventArgs e)
-        {
-            label11.Text = trackBar4.Value.ToString();
-        }
-        private void trackBar5_ValueChanged(object sender, EventArgs e)
-        {
-            label12.Text = trackBar5.Value.ToString();
-        }
-        private void trackBar6_ValueChanged(object sender, EventArgs e)
-        {
-            label13.Text = trackBar6.Value.ToString();
-        }
-        private void trackBar7_ValueChanged(object sender, EventArgs e)
-        {
-            label14.Text = trackBar7.Value.ToString();
-        }
+        // update labels when track Sbar values change
+        private void trackBar1_ValueChanged(object sender, EventArgs e) { label8.Text = trackBar1.Value.ToString(); }
+        private void trackBar2_ValueChanged(object sender, EventArgs e) { label9.Text = trackBar2.Value.ToString(); }
+        private void trackBar3_ValueChanged(object sender, EventArgs e) { label10.Text = trackBar3.Value.ToString(); }
+        private void trackBar4_ValueChanged(object sender, EventArgs e) { label11.Text = trackBar4.Value.ToString(); }
+        private void trackBar5_ValueChanged(object sender, EventArgs e) { label12.Text = trackBar5.Value.ToString(); }
+        private void trackBar6_ValueChanged(object sender, EventArgs e) { label13.Text = trackBar6.Value.ToString(); }
+        private void trackBar7_ValueChanged(object sender, EventArgs e) { label14.Text = trackBar7.Value.ToString(); }
     }
 }

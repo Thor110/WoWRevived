@@ -259,7 +259,6 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "WoWViewer";
             Text = "WoWViewer";
-            FormClosing += ViewerForm_FormClosing;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
             PerformLayout();

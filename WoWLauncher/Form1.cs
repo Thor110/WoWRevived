@@ -40,7 +40,7 @@ namespace WoWLauncher
             }
             registryCompare(mainKey, "CD Path", Directory.GetCurrentDirectory().ToString()); // update the cd path in the registry automatically.
             registryCompare(mainKey, "Install Path", Directory.GetCurrentDirectory().ToString()); // update the install path in the registry automatically.
-            // Dynamic language pack detection
+            // Dynamic language pack detection, which can only go wrong if the user goes renaming files or changing the registry.
             comboBox1.Items.Add((string)mainKey.GetValue("Language")!); // DEFAULT TEXT.OJD = Language set in Registry ( this could go haywire if the user changes the language in the registry )
             var ojdFiles = Directory.GetFiles($"{Directory.GetCurrentDirectory()}", "*.OJD", SearchOption.TopDirectoryOnly);
             foreach (string currentFile in ojdFiles)
@@ -51,7 +51,7 @@ namespace WoWLauncher
                     comboBox1.Items.Add(fileName.Substring(0, 1).ToUpper() + fileName.Substring(1).ToLower());
                 }
             }
-            comboBox1.SelectedIndex = 0; // default to the current language
+            comboBox1.SelectedIndex = 0; // set selected index to the current language as per the registry
             comboBox2.Items.Add("640x480");
             comboBox2.Items.Add("800x600");
             comboBox2.Items.Add("1024x768");
@@ -256,9 +256,17 @@ namespace WoWLauncher
         {
             string rename = (string)mainKey.GetValue("Language")!; // Default = English
             if (comboBox1.Text == rename) { return; } // do nothing if the same language is selected
-            File.Move("TEXT.ojd", $"{rename.ToUpper()}.ojd"); // rename the current language file
-            File.Move($"{comboBox1.Text.ToUpper()}.ojd", $"TEXT.ojd"); // rename the new language file
-            mainKey.SetValue("Language", comboBox1.SelectedItem!.ToString()!); // update the registry
+            if(File.Exists($"{comboBox1.Text.ToUpper()}.ojd") && File.Exists("TEXT.ojd")) // double check if the files exist
+            {
+                File.Move("TEXT.ojd", $"{rename.ToUpper()}.ojd"); // rename the current language file
+                File.Move($"{comboBox1.Text.ToUpper()}.ojd", $"TEXT.ojd"); // rename the new language file
+                mainKey.SetValue("Language", comboBox1.SelectedItem!.ToString()!); // update the registry
+            }
+            else // can only happen if the user has deleted, renamed or moved the language files, or messed with the registry.
+            {
+                MessageBox.Show("Language file not found, please reinstall the game and follow the instructions.");
+                return; // do nothing if the files do not exist
+            }
         }
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {

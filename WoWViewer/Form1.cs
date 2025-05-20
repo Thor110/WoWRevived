@@ -625,15 +625,5 @@ namespace WOWViewer
                 }
             };
         }
-        // on close prompt
-        private void ViewerForm_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            if (File.Exists("WoWLauncher.exe"))
-            {
-                //Process.Start("WoWLauncher.exe"); // commented temporarily for testing
-                Close();
-            }
-            MessageBox.Show("Launcher.exe not found, how did you get here?");
-        }
     }
 }
