@@ -7,6 +7,7 @@ namespace WoWLauncher
     {
         private bool config;
         private RegistryKey mainKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
+        private RegistryKey tweakKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true)!;
         private RegistryKey screenKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Screen", true)!;
         private RegistryKey battleKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true)!;
         private RegistryKey researchKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true)!;
@@ -247,22 +248,10 @@ namespace WoWLauncher
             }
             else { Close(); }
         }
-        private void checkBox1_CheckedChanged(object sender, EventArgs e)
-        {
-            mainKey.SetValue("Enable Network Version", checkBox1.Checked ? 1 : 0);
-        }
-        private void checkBox2_CheckedChanged(object sender, EventArgs e)
-        {
-            mainKey.SetValue("Full Screen", checkBox2.Checked ? "1" : "0");
-        }
-        private void checkBox3_CheckedChanged(object sender, EventArgs e)
-        {
-            battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? "1" : "0");
-        }
-        private void checkBox4_CheckedChanged(object sender, EventArgs e)
-        {
-            screenKey.SetValue("AllowResize", checkBox4.Checked ? "1" : "0");
-        }
+        private void checkBox1_CheckedChanged(object sender, EventArgs e) { mainKey.SetValue("Enable Network Version", checkBox1.Checked ? 1 : 0); }
+        private void checkBox2_CheckedChanged(object sender, EventArgs e) { mainKey.SetValue("Full Screen", checkBox2.Checked ? "1" : "0"); }
+        private void checkBox3_CheckedChanged(object sender, EventArgs e) { battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? "1" : "0"); }
+        private void checkBox4_CheckedChanged(object sender, EventArgs e) { screenKey.SetValue("AllowResize", checkBox4.Checked ? "1" : "0"); }
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             string rename = (string)mainKey.GetValue("Language")!; // Default = English
@@ -273,16 +262,19 @@ namespace WoWLauncher
         }
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (comboBox2.Text == screenKey.GetValue("Size")!.ToString()!.Replace(",", "x")) { return; }
             string screenSize = comboBox2.SelectedItem!.ToString()!.Replace("x", ",");
             registryCompare(screenKey, "Size", screenSize);
             registryCompare(screenKey, "Support screen size", screenSize);
         }
         private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (comboBox3.Text == (string)mainKey.GetValue("Game Frequency")!) { return; }
             mainKey.SetValue("Game Frequency", comboBox3.SelectedItem!.ToString()!);
         }
         private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if(comboBox4.Text == (string)mainKey.GetValue("Difficulty")!) { return; }
             switch (comboBox4.SelectedItem!.ToString())
             {
                 case "Easy":
@@ -297,7 +289,14 @@ namespace WoWLauncher
                     registryCompare(mainKey, "Difficulty", "Hard");
                     registryCompare(battleKey, "Damage reduction divisor", "600");
                     break;
-            }
+                case "Custom":
+                    return; // do nothing if custom is selected
+            } // reset the custom settings to default
+            registryCompare(tweakKey, "Max units in sector", "15");
+            registryCompare(tweakKey, "Max boats in sector", "5");
+            registryCompare(tweakKey, "Pod Interval (hours)", "24");
+            registryCompare(tweakKey, "AI Hours Per Turn", "5");
+            if (comboBox4.Items.Count > 2) { comboBox4.Items.Remove("Custom"); } // remove custom from the combo box
         }
         // open advanced settings
         private void button5_Click(object sender, EventArgs e)
