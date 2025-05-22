@@ -15,7 +15,7 @@
     {
         public string Name { get; set; } = String.Empty;
         public byte Faction { get; set; } // might not be necessary to store this value either
-        public ushort Index { get; set; } // used for getting entry index when filtering by type // could use get real index???
+        public ushort Index { get; set; } // used for getting entry index when filtering by type
         public bool Edited { get; set; } = false;
     }
     class WowTextBackup
