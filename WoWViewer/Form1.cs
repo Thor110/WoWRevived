@@ -1,4 +1,3 @@
-using System.Drawing.Imaging;
 using System.Media;
 using System.Text;
 using WoWViewer;
@@ -12,11 +11,9 @@ namespace WOWViewer
         private string filePath = string.Empty;
         private string outputPath = string.Empty;
         private string magic = string.Empty;
-        private int fileCount = 0;
         private List<WowFileEntry> entries = new List<WowFileEntry>();
         private WowFileEntry selected = null!;
         private Dictionary<string, Action<WowFileEntry>> handlers = null!;
-        private bool outputPathSelected;
         private void InitializeHandlers()
         {
             handlers = new Dictionary<string, Action<WowFileEntry>>
@@ -300,7 +297,7 @@ namespace WOWViewer
                 {
                     button2.Enabled = true; // Enable extract button if a file is selected
                 }
-                outputPathSelected = true;
+                //outputPathSelected = true;
             }
         }
         // extract all files
@@ -345,7 +342,7 @@ namespace WOWViewer
             if (magic != "KAT!" && magic != "SfxL")
                 return false;
             // check file count
-            fileCount = br.ReadInt32();
+            int fileCount = br.ReadInt32();
             label1.Text = "File Count : " + fileCount.ToString();
             // clear entries and listbox
             entries.Clear();
@@ -494,10 +491,7 @@ namespace WOWViewer
                     }
                 }
                 lastSelectedListItem = selected.Name;
-                if(outputPathSelected)
-                {
-                    button2.Enabled = true; // Enable extract button
-                }
+                if(button4.Enabled) { button2.Enabled = true; } // Enable extract button
             }
         }
         // play sound button
