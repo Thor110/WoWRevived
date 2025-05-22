@@ -293,11 +293,7 @@ namespace WOWViewer
                 }
                 textBox2.Text = outputPath;
                 button4.Enabled = true; // Enable extract all button
-                if(listBox1.SelectedIndex != -1)
-                {
-                    button2.Enabled = true; // Enable extract button if a file is selected
-                }
-                //outputPathSelected = true;
+                if(listBox1.SelectedIndex != -1) { button2.Enabled = true; } // Enable extract button if a file is selected
             }
         }
         // extract all files
@@ -335,20 +331,15 @@ namespace WOWViewer
         // read header method
         private bool ReadHeader(BinaryReader br)
         {
-            label3.Text = $"File Size :"; // reset labels
+            magic = new string(br.ReadChars(4));        // archive type
+            if (magic != "KAT!" && magic != "SfxL") { return false; } // return false if not a valid archive type
+            label3.Text = $"File Size :";               // reset labels
             label4.Text = $"File Offset :";
-            // check archive type
-            magic = new string(br.ReadChars(4));
-            if (magic != "KAT!" && magic != "SfxL")
-                return false;
-            // check file count
-            int fileCount = br.ReadInt32();
+            int fileCount = br.ReadInt32();             // check file count
             label1.Text = "File Count : " + fileCount.ToString();
-            // clear entries and listbox
-            entries.Clear();
+            entries.Clear();                            // clear entries and listbox
             listBox1.Items.Clear();
-            // read file entries based on archive type
-            if (magic == "KAT!")
+            if (magic == "KAT!") // read file entries based on archive type
             {
                 label2.Text = "Container Type : " + "Data or Maps";
                 for (int i = 0; i < fileCount; i++)
@@ -359,16 +350,16 @@ namespace WOWViewer
                     byte[] nameBytes = br.ReadBytes(12);// filename (ASCII padded)
                     // skip 20 bytes
                     br.BaseStream.Seek(20, SeekOrigin.Current);
-                    // setup list
+                    // setup entries and listbox
                     int zeroIndex = Array.IndexOf(nameBytes, (byte)0);
                     string name = Encoding.ASCII.GetString(nameBytes, 0, zeroIndex >= 0 ? zeroIndex : nameBytes.Length);
                     listBox1.Items.Add($"{name}");
                     entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset });
                 }
-                button5.Visible = false; // hide audio player play button
-                button6.Visible = false; // hide audio player stop button
-                pictureBox1.Visible = false; // hide the picture box
-                label5.Visible = false; // hide sound length label
+                button5.Visible = false;                // hide audio player play button
+                button6.Visible = false;                // hide audio player stop button
+                pictureBox1.Visible = false;            // hide the picture box
+                label5.Visible = false;                 // hide sound length label
             }
             else if (magic == "SfxL")
             {
@@ -379,19 +370,19 @@ namespace WOWViewer
                     byte[] nameBytes = br.ReadBytes(8); // filename (ASCII padded)
                     int length = br.ReadInt32();        // file size
                     int offset = br.ReadInt32();        // file offset
-                    // setup list
+                    // setup entries and listbox
                     string name = Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
                     listBox1.Items.Add($"{name}.WAV");
                     entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset });
                 }
-                button5.Visible = true; // show audio player play button
-                button6.Visible = true; // show audio player stop button
-                pictureBox1.Visible = true; // show the picture box
-                label5.Visible = true; // show sound length label
+                button5.Visible = true;                 // show audio player play button
+                button6.Visible = true;                 // show audio player stop button
+                pictureBox1.Visible = true;             // show the picture box
+                label5.Visible = true;                  // show sound length label
             }
-            button2.Enabled = false; // disable extract button
-            button5.Enabled = false; // disable play button
-            button6.Enabled = false; // disable stop button
+            button2.Enabled = false;                    // disable extract button
+            button5.Enabled = false;                    // disable play button
+            button6.Enabled = false;                    // disable stop button
             return true;
         }
         // create wav header
@@ -423,20 +414,12 @@ namespace WOWViewer
         // detect sample rate
         private int DetectSampleRate(byte[] rawData)
         {
-            int sampleCount = rawData.Length / 2;
-
-            // Calculate duration at both sample rates
-            double duration22050 = sampleCount / 22050.0;
-            double duration44100 = sampleCount / 44100.0;
-
-            if (rawData.Length > 100000 && duration22050 > 30)
-                return 44100;
-            // If the file would be unusually long at 22050Hz, it's probably 44100Hz
-            if (duration22050 > 30 && duration44100 < 20)
-                return 44100;
-
-            // Otherwise, assume default (most are voice clips)
-            return 22050;
+            int sampleCount = rawData.Length / 2; // calculate sample count
+            double duration22050 = sampleCount / 22050.0; // calculate duration at both sample rates
+            if (rawData.Length > 100000 && duration22050 > 30) { return 44100; } // if the file would be unusually long at 22050Hz, it's probably 44100Hz
+            double duration44100 = sampleCount / 44100.0; // calculate duration at both sample rates
+            if (duration22050 > 30 && duration44100 < 20) { return 44100; } // if the file would be unusually long at 22050Hz, it's probably 44100Hz
+            return 22050; // otherwise, assume default (most are voice clips)
         }
         // extract to file method
         private void ExtractToFile(WowFileEntry entry, bool asWav = false)
@@ -446,7 +429,6 @@ namespace WOWViewer
             byte[] rawData = br.ReadBytes(entry.Length);
             string filename = asWav ? $"{entry.Name}.wav" : entry.Name;
             using var fs = new FileStream(Path.Combine(outputPath, filename), FileMode.Create);
-
             if (asWav)
             {
                 int sampleRate = DetectSampleRate(rawData);
@@ -490,8 +472,8 @@ namespace WOWViewer
                         handlers[ext].Invoke(selected);
                     }
                 }
-                lastSelectedListItem = selected.Name;
-                if(button4.Enabled) { button2.Enabled = true; } // Enable extract button
+                lastSelectedListItem = selected.Name; // update last selected item
+                if (button4.Enabled) { button2.Enabled = true; } // Enable extract button
             }
         }
         // play sound button
@@ -514,10 +496,7 @@ namespace WOWViewer
                 soundPlayer = new SoundPlayer(ms);
                 soundPlayer.Play();
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error playing sound: {ex.Message}");
-            }
+            catch (Exception ex) { MessageBox.Show($"Error playing sound: {ex.Message}"); }
         }
         // stop sound button
         private void button6_Click(object sender, EventArgs e) { soundPlayer?.Stop(); }
@@ -525,7 +504,7 @@ namespace WOWViewer
         private void listBox1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             if (magic == "SfxL") { PlayRawSound(selected); }
-            //else if (magic == "KAT!") { MessageBox.Show(selected.Name); }
+            else if (magic == "KAT!") { MessageBox.Show(selected.Name); } // temporary placeholder
         }
         // draw waveform
         private Bitmap DrawWaveform(byte[] wavData, int width, int height, int sampleRate)
