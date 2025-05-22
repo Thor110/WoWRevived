@@ -543,10 +543,9 @@ namespace WOWViewer
             short[] samples = new short[sampleCount]; // create array for samples
             for (int i = 0; i < sampleCount; i++) { samples[i] = br.ReadInt16(); } // build samples array
             double duration = sampleCount / (double)sampleRate; // calculate sound length
-            // update sound length label
-            if (duration > 60) // only calculate minutes and seconds if necessary
+            if (duration > 60) // update sound length label
             {
-                int minutes = (int)duration / 60;
+                int minutes = (int)duration / 60; // only calculate minutes and seconds if necessary
                 int seconds = (int)duration % 60;
                 label5.Text = $"Sound Length : {minutes:D2}:{seconds:D2}";
             }
@@ -567,13 +566,7 @@ namespace WOWViewer
             form.Show();
             this.Hide();
             form.FormClosed += (s, args) => this.Show();
-            form.Move += (s, args) =>
-            {
-                if (this.Location != form.Location)
-                {
-                    this.Location = form.Location;
-                }
-            };
+            form.Move += (s, args) => { if (this.Location != form.Location) { this.Location = form.Location; } };
         }
     }
 }
