@@ -59,7 +59,7 @@ namespace WoWViewer
                 string text = Latin1.GetString(data, stringOffset, length - 1).Replace("\\n", "\n");
                 // string length is one less than the ushort length as length contains the null operator // replaces \n with actual new line
                 listBox1.Items.Add($"{i:D4} : [{getFaction(category)}] : {text}");
-                entries.Add(new WowTextEntry { Name = text, Offset = offset, Faction = category, Index = (ushort)i });
+                entries.Add(new WowTextEntry { Name = text, Faction = category, Index = (ushort)i });
                 backup.Add(new WowTextBackup { Name = text }); // create backup for entries to undo changes
                 offset += (int)length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
             }
@@ -104,7 +104,7 @@ namespace WoWViewer
         // save file button
         private void button1_Click(object sender, EventArgs e)
         {
-            if(checkSaveFileExists()) { return; } // user deleted the file while editing
+            if(!checkSaveFileExists()) { return; } // user deleted the file while editing
             byte[] data = File.ReadAllBytes(inputPath); // read the file into a byte array
             using (FileStream fs = new FileStream(inputPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
@@ -113,7 +113,8 @@ namespace WoWViewer
                 for (int i = 0; i < 1396; i++) // total entry count of 1395
                 {
                     byte[] stringBytes = Latin1.GetBytes(entries[i].Name.Replace("\r\n", "\\n").Replace("\r", "\\n").Replace("\n", "\\n")); // replace actual new line with \n so the game can read it
-                    fs.Write(data, entries[i].Offset, 8); // Copy header (first 8 bytes untouched)
+                    fs.Write(data, offset, 8);
+                    //fs.Write(data, entries[i].Offset, 8); // Copy header (first 8 bytes untouched)
                     fs.Write(BitConverter.GetBytes((ushort)(stringBytes.Length + 1)), 0, 2); // write the new string length (2 bytes)
                     fs.Write(stringBytes, 0, stringBytes.Length); // Write new or original string
                     if (entries[i].Edited) // update backup entries
@@ -121,6 +122,7 @@ namespace WoWViewer
                         backup[i].Name = entries[i].Name;
                         entries[i].Edited = false;
                     }
+                    offset = offset + backup[i].Name.Length + 9;
                 }
                 fs.WriteByte(0x00); // write final byte which is always 0x00
             }
@@ -193,8 +195,8 @@ namespace WoWViewer
             foreach (var line in lines)
             {
                 string name = string.Join(" ", line.Split(' ').Skip(3)).Replace("\\n", "\n");
-                entries[count].Name = name;
-                backup[count].Name = name;
+                if(name != entries[count].Name) { entries[count].Edited = true; } // mark the entry as edited
+                entries[count].Name = name; // update the entry name
                 count++;
             }
             button1.Enabled = true; // enable the save button
