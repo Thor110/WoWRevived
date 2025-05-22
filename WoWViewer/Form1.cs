@@ -340,18 +340,17 @@ namespace WOWViewer
         {
             label3.Text = $"File Size :"; // reset labels
             label4.Text = $"File Offset :";
-
-
+            // check archive type
             magic = new string(br.ReadChars(4));
             if (magic != "KAT!" && magic != "SfxL")
                 return false;
-
-            fileCount = br.ReadInt32();                 // file count
+            // check file count
+            fileCount = br.ReadInt32();
             label1.Text = "File Count : " + fileCount.ToString();
-
+            // clear entries and listbox
             entries.Clear();
             listBox1.Items.Clear();
-
+            // read file entries based on archive type
             if (magic == "KAT!")
             {
                 label2.Text = "Container Type : " + "Data or Maps";
