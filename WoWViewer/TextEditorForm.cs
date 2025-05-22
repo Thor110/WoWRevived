@@ -228,7 +228,7 @@ namespace WoWViewer
         {
             button4.Enabled = false; // disable the undo button
             if (entries.Any(e => e.Edited)) { return; } // check if any entry is edited
-            changesMade = false; // set the changes made flag to false
+            changesMade = false; // reset the changes made flag
             button1.Enabled = false; // disable the save button
             label2.Text = "Status : No Changes Made";
         }
