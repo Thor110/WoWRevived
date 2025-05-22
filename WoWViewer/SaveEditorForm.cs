@@ -11,6 +11,7 @@ namespace WOWViewer
         private DateTime MARTIAN_INVASION = new DateTime(1898, 9, 1); // martian invasion date
         // MARTIAN_INVASION is used as the default lower bound for the date time picker unless overridden or mismatching
         private DateTime DATE_LIMIT = new DateTime(1753, 1, 1); // date limit
+        private bool yearOverride; // is year override state
         private bool saveChanging; // is save changing state
         private string fileName = string.Empty; // selected file name
         private WowSaveEntry selectedSave = new WowSaveEntry(); // selected save file settings
@@ -51,7 +52,9 @@ namespace WOWViewer
                     fs.Write(timeBytes, 0, 4);
                     ushort day = (ushort)(dt.Day - 1); // zero-based indexing
                     ushort month = (ushort)(dt.Month - 1); // zero-based indexing
-                    ushort year = (ushort)(dt.Year);
+                    ushort year;
+                    if (yearOverride) { year = (ushort)numericUpDown1.Value; }
+                    else { year = (ushort)(dt.Year); }
                     byte[] dayBytes = BitConverter.GetBytes(day);
                     byte[] monthBytes = BitConverter.GetBytes(month);
                     byte[] yearBytes = BitConverter.GetBytes(year);
@@ -71,8 +74,6 @@ namespace WOWViewer
         {
             if (listBox1.SelectedItem == null) { return; } // prevents the list box from triggering twice when a save file is deleted while the program is open
             saveChanging = true; // prevents the text box from triggering text changed event when switching saves
-            button2.Enabled = true; // enable the swap sides button
-            button3.Enabled = true; // enable the delete save button
             parseSaveFile();
         }
         // parse the save file
@@ -102,6 +103,14 @@ namespace WOWViewer
                 ushort month = BitConverter.ToUInt16(br.ReadBytes(2), 0);
                 month += 1; // update to account for zero-based indexing
                 ushort year = BitConverter.ToUInt16(br.ReadBytes(2), 0);
+                // need to add more handling for if year below 1753
+                if (year < 1753)
+                {
+                    numericUpDown1.Value = year; // set numeric up down to minimum date
+                    selectedSave.actualYear = year; // set the actual year to the selected year
+                    year = 1753; // set to minimum date
+                    checkBox2.Checked = true; // override enabled
+                }
                 selectedSave.dateTime = new DateTime(year, month, day, hours, minutes, seconds);
             }
             minimumDateCheck(selectedSave.dateTime); // check if the date is within the minimum date range
@@ -111,9 +120,22 @@ namespace WOWViewer
             checkBox1.Enabled = true; // enable the checkbox
             button1.Enabled = false; // disables the save button when switching saves
             label3.Text = "Status : No Changes Made"; // update the status label
-            saveChanging = false; // selected save file has been changed
+            button2.Enabled = true; // enable the swap sides button
+            button3.Enabled = true; // enable the delete save button
+            checkBox2.Enabled = true; // enable the year override checkbox
+            numericUpDown1.Enabled = true; // enable the year override numeric up down
             listBox2.Items.Clear(); // clear the sector list box
+            saveChanging = false; // selected save file has been changed
             parseText(); // parse the text file to get sector names
+
+
+            // event handlers for the controls
+            listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged!;
+            textBox1.TextChanged += AnyControlChanged!;
+            dateTimePicker1.ValueChanged += AnyControlChanged!;
+            checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
+            checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
+            numericUpDown1.ValueChanged += numericUpDown1_ValueChanged!;
         }
         // double check the save file exists incase deleted by the user while the program is open
         private bool fileSafetyCheck()
@@ -237,10 +259,21 @@ namespace WOWViewer
             {
                 byte length = data[offset + 8]; // get string length // length is never more than one byte in this case
                 int stringOffset = offset + 10; // get string location
-                string text = Encoding.ASCII.GetString(data, stringOffset, length-1); // string length is one less than the byte length
+                string text = Encoding.ASCII.GetString(data, stringOffset, length - 1); // string length is one less than the byte length
                 listBox2.Items.Add(text);
                 offset += (int)length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
             }
+        }
+
+        private void checkBox2_CheckedChanged(object sender, EventArgs e)
+        {
+            numericUpDown1.Enabled = checkBox2.Checked;
+            yearOverride = checkBox2.Checked;
+        }
+
+        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

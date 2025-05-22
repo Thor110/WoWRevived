@@ -10,6 +10,7 @@
     {
         public string Name { get; set; } = String.Empty;
         public DateTime dateTime { get; set; }
+        public ushort actualYear { get; set; } // used when the year is below 1753
     }
     class WowTextEntry
     {

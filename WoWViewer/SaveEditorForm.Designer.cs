@@ -40,6 +40,9 @@
             label3 = new Label();
             button2 = new Button();
             button3 = new Button();
+            numericUpDown1 = new NumericUpDown();
+            checkBox2 = new CheckBox();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             SuspendLayout();
             // 
             // button1
@@ -63,7 +66,6 @@
             listBox1.Name = "listBox1";
             listBox1.Size = new Size(120, 154);
             listBox1.TabIndex = 1;
-            listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged;
             // 
             // label1
             // 
@@ -83,7 +85,6 @@
             textBox1.Name = "textBox1";
             textBox1.Size = new Size(239, 23);
             textBox1.TabIndex = 4;
-            textBox1.TextChanged += AnyControlChanged;
             // 
             // listBox2
             // 
@@ -106,7 +107,6 @@
             dateTimePicker1.ShowUpDown = true;
             dateTimePicker1.Size = new Size(239, 23);
             dateTimePicker1.TabIndex = 6;
-            dateTimePicker1.ValueChanged += AnyControlChanged;
             // 
             // label2
             // 
@@ -128,7 +128,6 @@
             checkBox1.TabIndex = 8;
             checkBox1.Text = "Override Date Limits";
             checkBox1.UseVisualStyleBackColor = true;
-            checkBox1.CheckedChanged += checkBox1_CheckedChanged;
             // 
             // label3
             // 
@@ -163,11 +162,34 @@
             button3.UseVisualStyleBackColor = true;
             button3.Click += button3_Click;
             // 
+            // numericUpDown1
+            // 
+            numericUpDown1.Enabled = false;
+            numericUpDown1.Location = new Point(390, 70);
+            numericUpDown1.Maximum = new decimal(new int[] { 9999, 0, 0, 0 });
+            numericUpDown1.Name = "numericUpDown1";
+            numericUpDown1.Size = new Size(73, 23);
+            numericUpDown1.TabIndex = 12;
+            // 
+            // checkBox2
+            // 
+            checkBox2.AccessibleDescription = "Overrides the minimum year of 1753 imposed by the DateTimePicker object.";
+            checkBox2.AutoSize = true;
+            checkBox2.Enabled = false;
+            checkBox2.Location = new Point(469, 74);
+            checkBox2.Name = "checkBox2";
+            checkBox2.Size = new Size(158, 19);
+            checkBox2.TabIndex = 13;
+            checkBox2.Text = "Force Override Year Limit";
+            checkBox2.UseVisualStyleBackColor = true;
+            // 
             // SaveEditorForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 550);
+            Controls.Add(checkBox2);
+            Controls.Add(numericUpDown1);
             Controls.Add(button3);
             Controls.Add(button2);
             Controls.Add(label3);
@@ -182,6 +204,7 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "SaveEditorForm";
             Text = "Save Editor";
+            ((System.ComponentModel.ISupportInitialize)numericUpDown1).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -199,5 +222,7 @@
         private Label label3;
         private Button button2;
         private Button button3;
+        private NumericUpDown numericUpDown1;
+        private CheckBox checkBox2;
     }
 }
