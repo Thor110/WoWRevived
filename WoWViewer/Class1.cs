@@ -17,13 +17,12 @@
         public int Length { get; set; }
         public int Offset { get; set; }
         public byte Faction { get; set; }
-        public ushort Index { get; set; }
+        public ushort Index { get; set; } // used for getting selected index when filtering by type
         public bool Edited { get; set; } = false;
     }
     class WowTextBackup
     {
         public string Name { get; set; } = String.Empty;
         public int Length { get; set; }
-        public ushort Index { get; set; }
     }
 }

@@ -60,7 +60,7 @@ namespace WoWViewer
                 // string length is one less than the ushort length as length contains the null operator // replaces \n with actual new line
                 listBox1.Items.Add($"{i:D4} : [{getFaction(category)}] : {text}");
                 entries.Add(new WowTextEntry { Name = text, Length = length, Offset = offset, Faction = category, Index = (ushort)i });
-                backup.Add(new WowTextBackup { Name = text, Length = length, Index = (ushort)i }); // create backup for entries to undo changes
+                backup.Add(new WowTextBackup { Name = text, Length = length }); // create backup for entries to undo changes
                 offset += (int)length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
             }
         }
@@ -144,6 +144,8 @@ namespace WoWViewer
         private void radioButton4_CheckedChanged(object sender, EventArgs e) { filterByFaction(0x03); } // show all
         private void filterByFaction(byte faction)
         {
+            richTextBox1.Text = "Select a string."; // clear the richTextBox
+            richTextBox1.Enabled = false; // disable the richTextBox
             listBox1.BeginUpdate();
             listBox1.Items.Clear();
             foreach (WowTextEntry entry in entries)
