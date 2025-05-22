@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Media;
 using System.Text;
@@ -104,6 +103,7 @@ namespace WOWViewer
         }
         private void RenderSPR(WowFileEntry entry)
         {
+            /* // disabled until SPR format is known or huffman encoding is implemented
             using var br = new BinaryReader(File.OpenRead(filePath));
             br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
 
@@ -141,6 +141,9 @@ namespace WOWViewer
             }
 
             pictureBox1.Image = bmp;
+            */
+            pictureBox1.Image = null;
+            MessageBox.Show("SPR file selected. No action defined.");
         }
         private void HandleWOF(WowFileEntry entry)
         {
@@ -527,7 +530,7 @@ namespace WOWViewer
         private void listBox1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             if (magic == "SfxL") { PlayRawSound(selected); }
-            // else if (magic == "KAT!") {}
+            //else if (magic == "KAT!") { MessageBox.Show(selected.Name); }
         }
         // draw waveform
         private Bitmap DrawWaveform(byte[] wavData, int width, int height, int sampleRate)
@@ -562,11 +565,10 @@ namespace WOWViewer
             using var ms = new MemoryStream(wavData);
             using var br = new BinaryReader(ms);
             br.BaseStream.Seek(44, SeekOrigin.Begin); // skip WAV header
-            int sampleCount = (wavData.Length - 44) / 2;
-            short[] samples = new short[sampleCount];
-            for (int i = 0; i < sampleCount; i++) { samples[i] = br.ReadInt16(); }
-            // calculate sound length
-            double duration = sampleCount / (double)sampleRate;
+            int sampleCount = (wavData.Length - 44) / 2; // calculate number of samples
+            short[] samples = new short[sampleCount]; // create array for samples
+            for (int i = 0; i < sampleCount; i++) { samples[i] = br.ReadInt16(); } // build samples array
+            double duration = sampleCount / (double)sampleRate; // calculate sound length
             // update sound length label
             if (duration > 60) // only calculate minutes and seconds if necessary
             {
