@@ -94,8 +94,8 @@ namespace WoWViewer
                 }
                 entries[index].Edited = true; // mark the entry as edited
                 button1.Enabled = true; // enable the save button
-                label2.Text = "Status : Changes Made";
                 button4.Enabled = true; // enable the undo button
+                label2.Text = "Status : Changes Made";
             }
         }
         // save file button
@@ -194,10 +194,14 @@ namespace WoWViewer
                 entries[count].Name = name; // update the entry name
                 count++;
             }
-            button1.Enabled = true; // enable the save button
-            label2.Text = "Status : Changes Made"; // here we assume changes have been made when importing a TEXT.OJD.txt file
-            reFilter(); // re-sort the listBox incase a filter is ticked already and repopulate the list
-            MessageBox.Show("Text file imported, now just hit save!", "Import", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (entries.Any(e => e.Edited))
+            {
+                button1.Enabled = true; // enable the save button
+                label2.Text = "Status : Changes Made";
+                reFilter(); // re-sort the listBox incase a filter is ticked already and repopulate the list
+                MessageBox.Show("Text file imported, now just hit save!", "Import", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else { MessageBox.Show("No changes made to the TEXT.OJD.TXT file, please check the file and try again.", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
         // undo changes to selected string
         private void button4_Click(object sender, EventArgs e)
