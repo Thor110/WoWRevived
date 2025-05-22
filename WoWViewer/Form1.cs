@@ -203,12 +203,10 @@ namespace WOWViewer
             string inputPath = $"{filename}.ojd";
             string outputPath = $"{filename}-ojd-log.txt";
             byte[] data = File.ReadAllBytes(inputPath);
-
             using (StreamWriter log = new StreamWriter(outputPath, false, Encoding.UTF8))
             {
                 int offset = 0;
                 int count = 0;
-
                 while (offset < data.Length - 1)
                 {
                     // Look for null-terminated ASCII strings
@@ -216,16 +214,12 @@ namespace WOWViewer
                     {
                         int start = offset;
                         int length = 0;
-
                         while (offset < data.Length && data[offset] != 0x00)
                         {
-                            if (!IsAsciiChar(data[offset]))
-                                break;
-
+                            if (!IsAsciiChar(data[offset])) { break; }
                             offset++;
                             length++;
                         }
-
                         if (length > 1 && offset < data.Length && data[offset] == 0x00)
                         {
                             // Potential string found
@@ -243,7 +237,6 @@ namespace WOWViewer
                                 count++;
                             }
                         }
-
                         offset++; // Move to next byte after null
                     }
                     else
@@ -253,7 +246,6 @@ namespace WOWViewer
                 }
                 log.WriteLine($"Total parsed entries: {count}");
             }
-
             bool IsAsciiChar(byte b)
             {
                 return b >= 0x20 && b <= 0x7E;
@@ -269,7 +261,6 @@ namespace WOWViewer
                 openFileDialog.FilterIndex = 1;
                 openFileDialog.RestoreDirectory = true;
                 openFileDialog.Title = "Select a Container (.wow) file";
-
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     filePath = openFileDialog.FileName;
@@ -341,17 +332,15 @@ namespace WOWViewer
             listBox1.Items.Clear();
             if (magic == "KAT!") // read file entries based on archive type
             {
-                label2.Text = "Container Type : " + "Data or Maps";
+                label2.Text = "Container Type : " + "Data or Maps"; // update container type label
                 for (int i = 0; i < fileCount; i++)
                 {
                     br.ReadInt32();                     // skip 4 bytes
                     int offset = br.ReadInt32();        // file offset
                     int length = br.ReadInt32();        // file size
                     byte[] nameBytes = br.ReadBytes(12);// filename (ASCII padded)
-                    // skip 20 bytes
-                    br.BaseStream.Seek(20, SeekOrigin.Current);
-                    // setup entries and listbox
-                    int zeroIndex = Array.IndexOf(nameBytes, (byte)0);
+                    br.BaseStream.Seek(20, SeekOrigin.Current); // skip 20 bytes
+                    int zeroIndex = Array.IndexOf(nameBytes, (byte)0); // setup entries and listbox
                     string name = Encoding.ASCII.GetString(nameBytes, 0, zeroIndex >= 0 ? zeroIndex : nameBytes.Length);
                     listBox1.Items.Add($"{name}");
                     entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset });
@@ -363,11 +352,10 @@ namespace WOWViewer
             }
             else if (magic == "SfxL")
             {
-                label2.Text = "Container Type : " + "Sound Effects Library";
-                // filenames are up to 8 bytes in these file
+                label2.Text = "Container Type : " + "Sound Effects Library"; // update container type label
                 for (int i = 0; i < fileCount; i++)
                 {
-                    byte[] nameBytes = br.ReadBytes(8); // filename (ASCII padded)
+                    byte[] nameBytes = br.ReadBytes(8); // filename (ASCII padded) // filenames are up to 8 bytes in these file
                     int length = br.ReadInt32();        // file size
                     int offset = br.ReadInt32();        // file offset
                     // setup entries and listbox
@@ -441,15 +429,13 @@ namespace WOWViewer
         // listbox selection changed
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            selected = entries[listBox1.SelectedIndex];
+            selected = entries[listBox1.SelectedIndex]; // update selected entry
             if (selected.Name != lastSelectedListItem) // check selection is new
             {
-                label3.Text = $"File Size : {selected.Length} bytes";
-                label4.Text = $"File Offset : {selected.Offset} bytes";
-                // display waveform image if browsing SfxL container
-                if (magic == "SfxL")
+                label3.Text = $"File Size : {selected.Length} bytes"; // update file size label
+                label4.Text = $"File Offset : {selected.Offset} bytes"; // update file offset label
+                if (magic == "SfxL") // load and display the waveform image if browsing SfxL container
                 {
-                    // load the waveform image
                     using var br = new BinaryReader(File.OpenRead(filePath));
                     br.BaseStream.Seek(selected.Offset, SeekOrigin.Begin);
                     byte[] rawData = br.ReadBytes(selected.Length);
@@ -461,19 +447,12 @@ namespace WOWViewer
                     ms.Position = 0;
                     byte[] fullWav = ms.ToArray();
                     pictureBox1.Image = DrawWaveform(fullWav, 156, 137, sampleRate);
-                    button5.Enabled = true; // Enable play button
-                    button6.Enabled = true; // Enable stop button
-                }
-                else if (magic == "KAT!")
-                {
-                    string ext = listBox1.SelectedItem!.ToString()!.Split('.')[1];
-                    if (handlers.ContainsKey(ext))
-                    {
-                        handlers[ext].Invoke(selected);
-                    }
-                }
+                    button5.Enabled = true; // enable play button
+                    button6.Enabled = true; // enable stop button
+                } // invoke extension handler for displaying different types
+                else if (magic == "KAT!") { handlers[listBox1.SelectedItem!.ToString()!.Split('.')[1]].Invoke(selected); }
+                if (button4.Enabled) { button2.Enabled = true; } // enable extract button
                 lastSelectedListItem = selected.Name; // update last selected item
-                if (button4.Enabled) { button2.Enabled = true; } // Enable extract button
             }
         }
         // play sound button
