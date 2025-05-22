@@ -81,7 +81,6 @@ namespace WoWViewer
             if (e.KeyCode == Keys.Enter)
             {
                 e.SuppressKeyPress = true; // suppress the enter key from adding a new line
-                //makingChanges = true;
                 int index = getRealIndex(); // get the real index
                 string updatedText = richTextBox1.Text; // get the text from the rich text box
                 entries[index].Name = updatedText; // update the entry name
@@ -112,7 +111,6 @@ namespace WoWViewer
                 {
                     byte[] stringBytes = Latin1.GetBytes(entries[i].Name.Replace("\r\n", "\\n").Replace("\r", "\\n").Replace("\n", "\\n")); // replace actual new line with \n so the game can read it
                     fs.Write(data, offset, 8);
-                    //fs.Write(data, entries[i].Offset, 8); // Copy header (first 8 bytes untouched)
                     fs.Write(BitConverter.GetBytes((ushort)(stringBytes.Length + 1)), 0, 2); // write the new string length (2 bytes)
                     fs.Write(stringBytes, 0, stringBytes.Length); // Write new or original string
                     if (entries[i].Edited) // update backup entries
