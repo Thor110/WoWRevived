@@ -309,7 +309,7 @@ namespace WOWViewer
             if (magic == "KAT!") { isWav = false; }
             else if (magic == "SfxL") { isWav = true; }
             else { return; } // invalid file type
-            if (multiple)
+            if (multiple) // extra check for reduced code duplication - inlining would result in faster execution time by a millionth of a second or so
             {
                 foreach (var entry in entries) { ExtractToFile(entry, isWav); }
                 MessageBox.Show("All files extracted successfully.");
