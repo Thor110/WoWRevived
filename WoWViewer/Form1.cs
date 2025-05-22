@@ -581,54 +581,25 @@ namespace WOWViewer
             else { label5.Text = $"Sound Length : {duration:F2} seconds"; }
             return samples;
         }
-        // save editor
-        private void button7_Click(object sender, EventArgs e)
-        {
-            var saveEditor = new SaveEditorForm();
-            saveEditor.StartPosition = FormStartPosition.Manual;
-            saveEditor.Location = this.Location;
-            saveEditor.Show();
-            this.Hide();
-            saveEditor.FormClosed += (s, args) => this.Show();
-            saveEditor.Move += (s, args) =>
-            {
-                if (this.Location != saveEditor.Location)
-                {
-                    this.Location = saveEditor.Location;
-                }
-            };
-        }
-        // map editor
-        private void button8_Click(object sender, EventArgs e)
-        {
-            var mapEditor = new MapEditorForm();
-            mapEditor.StartPosition = FormStartPosition.Manual;
-            mapEditor.Location = this.Location;
-            mapEditor.Show();
-            this.Hide();
-            mapEditor.FormClosed += (s, args) => this.Show();
-            mapEditor.Move += (s, args) =>
-            {
-                if (this.Location != mapEditor.Location)
-                {
-                    this.Location = mapEditor.Location;
-                }
-            };
-        }
+        // open save editor window
+        private void button7_Click(object sender, EventArgs e) { newForm(new SaveEditorForm()); }
+        // open map editor window
+        private void button8_Click(object sender, EventArgs e) { newForm(new MapEditorForm()); }
         // open text editor window
-        private void button9_Click(object sender, EventArgs e)
+        private void button9_Click(object sender, EventArgs e) { newForm(new TextEditorForm()); }
+        // create new form method
+        private void newForm(Form form)
         {
-            var textEditor = new TextEditorForm();
-            textEditor.StartPosition = FormStartPosition.Manual;
-            textEditor.Location = this.Location;
-            textEditor.Show();
+            form.StartPosition = FormStartPosition.Manual;
+            form.Location = this.Location;
+            form.Show();
             this.Hide();
-            textEditor.FormClosed += (s, args) => this.Show();
-            textEditor.Move += (s, args) =>
+            form.FormClosed += (s, args) => this.Show();
+            form.Move += (s, args) =>
             {
-                if (this.Location != textEditor.Location)
+                if (this.Location != form.Location)
                 {
-                    this.Location = textEditor.Location;
+                    this.Location = form.Location;
                 }
             };
         }
