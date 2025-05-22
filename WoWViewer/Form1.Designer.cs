@@ -154,6 +154,7 @@
             // button5
             // 
             button5.AccessibleDescription = "Play selected sound file.";
+            button5.Enabled = false;
             button5.Location = new Point(464, 218);
             button5.Name = "button5";
             button5.Size = new Size(75, 23);
@@ -166,6 +167,7 @@
             // button6
             // 
             button6.AccessibleDescription = "Stop playing the sound file.";
+            button6.Enabled = false;
             button6.Location = new Point(545, 218);
             button6.Name = "button6";
             button6.Size = new Size(75, 23);
@@ -233,7 +235,7 @@
             button9.UseVisualStyleBackColor = true;
             button9.Click += button9_Click;
             // 
-            // WoWViewer
+            // WOWViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -257,7 +259,7 @@
             Controls.Add(textBox1);
             Controls.Add(button1);
             Icon = (Icon)resources.GetObject("$this.Icon");
-            Name = "WoWViewer";
+            Name = "WOWViewer";
             Text = "WoWViewer";
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);

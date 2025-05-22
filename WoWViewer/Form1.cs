@@ -16,6 +16,7 @@ namespace WOWViewer
         private List<WowFileEntry> entries = new List<WowFileEntry>();
         private WowFileEntry selected = null!;
         private Dictionary<string, Action<WowFileEntry>> handlers = null!;
+        private bool outputPathSelected;
         private void InitializeHandlers()
         {
             handlers = new Dictionary<string, Action<WowFileEntry>>
@@ -281,21 +282,7 @@ namespace WOWViewer
             }
         }
         // extract selected file
-        private void button2_Click(object sender, EventArgs e)
-        {
-            if (listBox1.SelectedIndex == -1)
-            {
-                MessageBox.Show("Please select a file from the list.");
-                return;
-            }
-            bool isWav;
-            if (magic == "KAT!") { isWav = false; }
-            else if (magic == "SfxL") { isWav = true; }
-            else { return; }
-            ExtractToFile(selected, isWav);
-            selected.ToString();
-            MessageBox.Show($"Extracted: {listBox1.SelectedItem!.ToString()}");
-        }
+        private void button2_Click(object sender, EventArgs e) { extractFile(false); }
         // select file output folder
         private void button3_Click(object sender, EventArgs e)
         {
@@ -308,19 +295,33 @@ namespace WOWViewer
                     outputPath += "\\"; // Complete Directory String
                 }
                 textBox2.Text = outputPath;
-                button2.Enabled = true; // Enable extract button
                 button4.Enabled = true; // Enable extract all button
+                if(listBox1.SelectedIndex != -1)
+                {
+                    button2.Enabled = true; // Enable extract button if a file is selected
+                }
+                outputPathSelected = true;
             }
         }
         // extract all files
-        private void button4_Click(object sender, EventArgs e)
+        private void button4_Click(object sender, EventArgs e) { extractFile(true); }
+        // extracted single or multiple files
+        private void extractFile(bool multiple)
         {
             bool isWav;
             if (magic == "KAT!") { isWav = false; }
             else if (magic == "SfxL") { isWav = true; }
-            else { return; }
-            foreach (var entry in entries) { ExtractToFile(entry, isWav); }
-            MessageBox.Show("All files extracted successfully.");
+            else { return; } // invalid file type
+            if (multiple)
+            {
+                foreach (var entry in entries) { ExtractToFile(entry, isWav); }
+                MessageBox.Show("All files extracted successfully.");
+            }
+            else
+            {
+                ExtractToFile(selected, isWav);
+                MessageBox.Show($"Extracted: {listBox1.SelectedItem!.ToString()}");
+            }
         }
         // parse file count method
         private void parseFileCount()
@@ -337,6 +338,10 @@ namespace WOWViewer
         // read header method
         private bool ReadHeader(BinaryReader br)
         {
+            label3.Text = $"File Size :"; // reset labels
+            label4.Text = $"File Offset :";
+
+
             magic = new string(br.ReadChars(4));
             if (magic != "KAT!" && magic != "SfxL")
                 return false;
@@ -388,7 +393,9 @@ namespace WOWViewer
                 pictureBox1.Visible = true; // show the picture box
                 label5.Visible = true; // show sound length label
             }
-
+            button2.Enabled = false; // disable extract button
+            button5.Enabled = false; // disable play button
+            button6.Enabled = false; // disable stop button
             return true;
         }
         // create wav header
@@ -457,8 +464,7 @@ namespace WOWViewer
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             selected = entries[listBox1.SelectedIndex];
-            // check selection is new
-            if (selected.Name != lastSelectedListItem)
+            if (selected.Name != lastSelectedListItem) // check selection is new
             {
                 label3.Text = $"File Size : {selected.Length} bytes";
                 label4.Text = $"File Offset : {selected.Offset} bytes";
@@ -477,7 +483,8 @@ namespace WOWViewer
                     ms.Position = 0;
                     byte[] fullWav = ms.ToArray();
                     pictureBox1.Image = DrawWaveform(fullWav, 156, 137, sampleRate);
-                    lastSelectedListItem = selected.Name;
+                    button5.Enabled = true; // Enable play button
+                    button6.Enabled = true; // Enable stop button
                 }
                 else if (magic == "KAT!")
                 {
@@ -486,21 +493,16 @@ namespace WOWViewer
                     {
                         handlers[ext].Invoke(selected);
                     }
-                    lastSelectedListItem = selected.Name;
+                }
+                lastSelectedListItem = selected.Name;
+                if(outputPathSelected)
+                {
+                    button2.Enabled = true; // Enable extract button
                 }
             }
-
         }
         // play sound button
-        private void button5_Click(object sender, EventArgs e)
-        {
-            if (selected == null)
-            {
-                MessageBox.Show("Please select a file from the list to play.");
-                return;
-            }
-            else { PlayRawSound(selected); }
-        }
+        private void button5_Click(object sender, EventArgs e) { PlayRawSound(selected); }
         // play sound method
         private void PlayRawSound(WowFileEntry entry)
         {
