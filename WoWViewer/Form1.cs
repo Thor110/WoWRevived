@@ -567,10 +567,13 @@ namespace WOWViewer
             for (int i = 0; i < sampleCount; i++) { samples[i] = br.ReadInt16(); }
             // calculate sound length
             double duration = sampleCount / (double)sampleRate;
-            int minutes = (int)duration / 60;
-            int seconds = (int)duration % 60;
             // update sound length label
-            if (duration > 60) { label5.Text = $"Sound Length : {minutes:D2}:{seconds:D2}"; }
+            if (duration > 60) // only calculate minutes and seconds if necessary
+            {
+                int minutes = (int)duration / 60;
+                int seconds = (int)duration % 60;
+                label5.Text = $"Sound Length : {minutes:D2}:{seconds:D2}";
+            }
             else { label5.Text = $"Sound Length : {duration:F2} seconds"; }
             return samples;
         }
