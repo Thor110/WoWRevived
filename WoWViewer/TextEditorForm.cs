@@ -9,7 +9,6 @@ namespace WoWViewer
         private List<WowTextBackup> backup = new List<WowTextBackup>();
         private static readonly Encoding Latin1 = Encoding.GetEncoding("iso-8859-1");
         private static string inputPath = "TEXT.ojd";
-        private bool makingChanges;
         public TextEditorForm()
         {
             InitializeComponent();
@@ -66,10 +65,11 @@ namespace WoWViewer
         // list box selected index changed event
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (makingChanges) { return; } // safety catch to prevent selected index changing when spoofing it and changing the selected index
+            int index = getRealIndex();
             richTextBox1.Enabled = true; // enable the richTextBox
-            richTextBox1.Text = entries[getRealIndex()].Name; // update the richTextBox with the selected entry
-            checkEditedStatus();
+            richTextBox1.Text = entries[index].Name; // update the richTextBox with the selected entry
+            if (!entries[index].Edited) { checkForEdits(); } // check for other edits
+            else { button4.Enabled = true; } // enable the undo button if the currently selected entry is edited
         }
         // faction type or user interface
         private static string getFaction(byte category) => category == 0x00 ? "Martian" : category == 0x01 ? "Human" : category == 0x02 ? "UI" : "Unknown";
@@ -81,19 +81,19 @@ namespace WoWViewer
             if (e.KeyCode == Keys.Enter)
             {
                 e.SuppressKeyPress = true; // suppress the enter key from adding a new line
-                makingChanges = true;
+                //makingChanges = true;
                 int index = getRealIndex(); // get the real index
-                string updatedText = richTextBox1.Text; // get the text from the rich text box // here
-                entries[index].Name = updatedText; // update the entry name // here
+                string updatedText = richTextBox1.Text; // get the text from the rich text box
+                entries[index].Name = updatedText; // update the entry name
                 RefreshListBoxEntry(index, updatedText);
                 this.richTextBox1.Select(this.richTextBox1.Text.Length, 0); // thank you!!! : https://stackoverflow.com/questions/2241862/windows-forms-richtextbox-cursor-position/6457512
-                if (updatedText == backup[index].Name) // here
+                if (updatedText == backup[index].Name)
                 {
                     entries[index].Edited = false;
                     checkForEdits(); // check for any other edits
                     return;
                 }
-                entries[index].Edited = true; // mark the entry as edited // maybe use if style settings can be used
+                entries[index].Edited = true; // mark the entry as edited
                 button1.Enabled = true; // enable the save button
                 label2.Text = "Status : Changes Made";
                 button4.Enabled = true; // enable the undo button
@@ -205,19 +205,12 @@ namespace WoWViewer
         private void button4_Click(object sender, EventArgs e)
         {
             int index = getRealIndex();
-            string updatedText = backup[index].Name; // here
+            string updatedText = backup[index].Name;
             entries[index].Name = updatedText;
             entries[index].Edited = false;
             RefreshListBoxEntry(index, updatedText);
-            richTextBox1.Text = updatedText; // here
+            richTextBox1.Text = updatedText;
             checkForEdits(); // check for any other edits
-        }
-        // check if the currently selected string is edited
-        private void checkEditedStatus()
-        {
-            int index = getRealIndex();
-            if (!entries[index].Edited) { checkForEdits(); } // check for other edits
-            else { button4.Enabled = true; } // enable the undo button if the currently selected entry is edited
         }
         // check for any edits
         private void checkForEdits()
@@ -231,14 +224,15 @@ namespace WoWViewer
         private void RefreshListBoxEntry(int index, string text)
         {
             int selectedIndex = listBox1.SelectedIndex; // get the selected index
+            listBox1.SelectedIndexChanged -= listBox1_SelectedIndexChanged!; // remove event handler before changing selected index
             if (selectedIndex == listBox1.Items.Count) { listBox1.SelectedIndex = selectedIndex - 1; } // spoof code
             else { listBox1.SelectedIndex = selectedIndex + 1; } // spoof code to prevent the listBox from going out of bounds
             listBox1.BeginUpdate();
             listBox1.Items.RemoveAt(selectedIndex);
             listBox1.Items.Insert(selectedIndex, $"{index:D4} : [{getFaction(entries[index].Faction)}] : {text}");
             listBox1.SelectedIndex = selectedIndex;
+            listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged!; // add event handler after changing selected index
             listBox1.EndUpdate();
-            makingChanges = false; // no longer making changes
         }
         // on close prompt
         private void TextEditorForm_FormClosing(object sender, FormClosingEventArgs e)
