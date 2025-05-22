@@ -9,7 +9,6 @@ namespace WoWViewer
         private List<WowTextBackup> backup = new List<WowTextBackup>();
         private static readonly Encoding Latin1 = Encoding.GetEncoding("iso-8859-1");
         private static string inputPath = "TEXT.ojd";
-        private bool changesMade;
         private bool makingChanges;
         public TextEditorForm()
         {
@@ -95,7 +94,6 @@ namespace WoWViewer
                     return;
                 }
                 entries[index].Edited = true; // mark the entry as edited // maybe use if style settings can be used
-                changesMade = true; // set the changes made flag to true
                 button1.Enabled = true; // enable the save button
                 label2.Text = "Status : Changes Made";
                 button4.Enabled = true; // enable the undo button
@@ -127,7 +125,6 @@ namespace WoWViewer
                 fs.WriteByte(0x00); // write final byte which is always 0x00
             }
             reFilter(); // re filter to redraw the list box and remove the changes caused by the edited flag
-            changesMade = false; // reset the changes made flag
             button1.Enabled = false;
             button4.Enabled = false;
             MessageBox.Show("TEXT.ojd updated successfully.", "Save Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -200,7 +197,6 @@ namespace WoWViewer
                 count++;
             }
             button1.Enabled = true; // enable the save button
-            changesMade = true; // set the changes made flag to true
             label2.Text = "Status : Changes Made"; // here we assume changes have been made when importing a TEXT.OJD.txt file
             reFilter(); // re-sort the listBox incase a filter is ticked already and repopulate the list
             MessageBox.Show("Text file imported, now just hit save!", "Import", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -228,7 +224,6 @@ namespace WoWViewer
         {
             button4.Enabled = false; // disable the undo button
             if (entries.Any(e => e.Edited)) { return; } // check if any entry is edited
-            changesMade = false; // reset the changes made flag
             button1.Enabled = false; // disable the save button
             label2.Text = "Status : No Changes Made";
         }
@@ -248,7 +243,7 @@ namespace WoWViewer
         // on close prompt
         private void TextEditorForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (changesMade)
+            if (entries.Any(e => e.Edited))
             {
                 var result = MessageBox.Show(
                     "You have unsaved changes. Do you want to save before exiting?",
