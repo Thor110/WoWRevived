@@ -59,8 +59,8 @@ namespace WoWViewer
                 string text = Latin1.GetString(data, stringOffset, length - 1).Replace("\\n", "\n");
                 // string length is one less than the ushort length as length contains the null operator // replaces \n with actual new line
                 listBox1.Items.Add($"{i:D4} : [{getFaction(category)}] : {text}");
-                entries.Add(new WowTextEntry { Name = text, Length = length, Offset = offset, Faction = category, Index = (ushort)i });
-                backup.Add(new WowTextBackup { Name = text, Length = length }); // create backup for entries to undo changes
+                entries.Add(new WowTextEntry { Name = text, Offset = offset, Faction = category, Index = (ushort)i });
+                backup.Add(new WowTextBackup { Name = text }); // create backup for entries to undo changes
                 offset += (int)length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
             }
         }
@@ -85,26 +85,20 @@ namespace WoWViewer
                 makingChanges = true;
                 int index = getRealIndex(); // get the real index
                 string updatedText = richTextBox1.Text; // get the text from the rich text box // here
+                entries[index].Name = updatedText; // update the entry name // here
+                RefreshListBoxEntry(index, updatedText);
+                this.richTextBox1.Select(this.richTextBox1.Text.Length, 0); // thank you!!! : https://stackoverflow.com/questions/2241862/windows-forms-richtextbox-cursor-position/6457512
                 if (updatedText == backup[index].Name) // here
                 {
-                    entries[index].Name = updatedText; // here
-                    entries[index].Length = backup[index].Length;
                     entries[index].Edited = false;
-                    button4.Enabled = false; // disable the undo button
-                    RefreshListBoxEntry(index);
-                    this.richTextBox1.Select(this.richTextBox1.Text.Length, 0);
                     checkForEdits(); // check for any other edits
                     return;
                 }
-                entries[index].Name = updatedText; // update the entry name // here
-                entries[index].Length = (ushort)(updatedText.Length); // we'll add null terminator on save // here
                 entries[index].Edited = true; // mark the entry as edited // maybe use if style settings can be used
-                RefreshListBoxEntry(index);
                 changesMade = true; // set the changes made flag to true
                 button1.Enabled = true; // enable the save button
                 label2.Text = "Status : Changes Made";
-                this.richTextBox1.Select(this.richTextBox1.Text.Length, 0); // thank you!!! : https://stackoverflow.com/questions/2241862/windows-forms-richtextbox-cursor-position/6457512
-                checkEditedStatus(); // check if the currently entered text is identical to the original
+                button4.Enabled = true; // enable the undo button
             }
         }
         // save file button
@@ -125,7 +119,6 @@ namespace WoWViewer
                     if (entries[i].Edited) // update backup entries
                     {
                         backup[i].Name = entries[i].Name;
-                        backup[i].Length = entries[i].Length;
                         entries[i].Edited = false;
                     }
                 }
@@ -200,9 +193,7 @@ namespace WoWViewer
             foreach (var line in lines)
             {
                 string name = string.Join(" ", line.Split(' ').Skip(3)).Replace("\\n", "\n");
-                entries[count].Length = name.Length;
                 entries[count].Name = name;
-                backup[count].Length = name.Length;
                 backup[count].Name = name;
                 count++;
             }
@@ -217,61 +208,40 @@ namespace WoWViewer
         {
             int index = getRealIndex();
             string updatedText = backup[index].Name; // here
-            entries[index].Name = updatedText; // here
-            entries[index].Length = backup[index].Length;
+            entries[index].Name = updatedText;
             entries[index].Edited = false;
-            RefreshListBoxEntry(index);
+            RefreshListBoxEntry(index, updatedText);
             richTextBox1.Text = updatedText; // here
-            button4.Enabled = false; // disable the undo button
             checkForEdits(); // check for any other edits
         }
-        // check if the current string is different from the stored string
+        // check if the currently selected string is edited
         private void checkEditedStatus()
         {
             int index = getRealIndex();
-            if (!entries[index].Edited) // check if user entered the same as the backup
-            {
-                button4.Enabled = false; // disable the undo button
-                checkForEdits(); // only compare all values if the current comparison matches
-            }
-            else
-            {
-                button4.Enabled = true; // enable the undo button
-                makingChanges = false; // no longer making changes
-            }
+            if (!entries[index].Edited) { checkForEdits(); } // check for other edits
+            else { button4.Enabled = true; } // enable the undo button if the currently selected entry is edited
         }
         // check for any edits
         private void checkForEdits()
         {
-            //if (!entries.Any(e => e.Edited))
-            bool edited = false;
-            foreach (var entry in entries)
-            {
-                if (entry.Edited)
-                {
-                    edited = true;
-                    break;
-                }
-            } // recheck all entries edited status
-            if (!edited)
-            {
-                changesMade = false; // set the changes made flag to false
-                button1.Enabled = false; // disable the save button
-                label2.Text = "Status : No Changes Made";
-            }
-            // if edited
-            makingChanges = false; // no longer making changes
+            button4.Enabled = false; // disable the undo button
+            if (entries.Any(e => e.Edited)) { return; } // check if any entry is edited
+            changesMade = false; // set the changes made flag to false
+            button1.Enabled = false; // disable the save button
+            label2.Text = "Status : No Changes Made";
         }
-        private void RefreshListBoxEntry(int index)
+        // refresh the list box entry
+        private void RefreshListBoxEntry(int index, string text)
         {
             int selectedIndex = listBox1.SelectedIndex; // get the selected index
             if (selectedIndex == listBox1.Items.Count) { listBox1.SelectedIndex = selectedIndex - 1; } // spoof code
             else { listBox1.SelectedIndex = selectedIndex + 1; } // spoof code to prevent the listBox from going out of bounds
             listBox1.BeginUpdate();
             listBox1.Items.RemoveAt(selectedIndex);
-            listBox1.Items.Insert(selectedIndex, $"{index:D4} : [{getFaction(entries[index].Faction)}] : {entries[index].Name}");
+            listBox1.Items.Insert(selectedIndex, $"{index:D4} : [{getFaction(entries[index].Faction)}] : {text}");
             listBox1.SelectedIndex = selectedIndex;
             listBox1.EndUpdate();
+            makingChanges = false; // no longer making changes
         }
         // on close prompt
         private void TextEditorForm_FormClosing(object sender, FormClosingEventArgs e)
