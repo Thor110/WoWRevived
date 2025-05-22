@@ -12,7 +12,7 @@ namespace WOWViewer
         // MARTIAN_INVASION is used as the default lower bound for the date time picker unless overridden or mismatching
         private DateTime DATE_LIMIT = new DateTime(1753, 1, 1); // date limit
         private bool yearOverride; // is year override state
-        private bool saveChanging; // is save changing state
+        //private bool saveChanging; // is save changing state
         private string fileName = string.Empty; // selected file name
         private WowSaveEntry selectedSave = new WowSaveEntry(); // selected save file settings
         public SaveEditorForm()
@@ -21,6 +21,7 @@ namespace WOWViewer
             InitializeSaveLoader();
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, typeof(Label));
+            listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged!;
         }
         // initialize save loader and count saves
         private void InitializeSaveLoader() { for (int i = 1; i <= 5; i++) { SaveLoader("Human", i); } for (int i = 1; i <= 5; i++) { SaveLoader("Martian", i); } }
@@ -73,7 +74,17 @@ namespace WOWViewer
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (listBox1.SelectedItem == null) { return; } // prevents the list box from triggering twice when a save file is deleted while the program is open
-            saveChanging = true; // prevents the text box from triggering text changed event when switching saves
+            //saveChanging = true; // prevents the text box from triggering text changed event when switching saves
+
+
+
+            // remove event handlers for the controls
+            textBox1.TextChanged -= AnyControlChanged!;
+            dateTimePicker1.ValueChanged -= AnyControlChanged!;
+            checkBox1.CheckedChanged -= checkBox1_CheckedChanged!;
+            checkBox2.CheckedChanged -= checkBox2_CheckedChanged!;
+            numericUpDown1.ValueChanged -= numericUpDown1_ValueChanged!;
+
             parseSaveFile();
         }
         // parse the save file
@@ -110,6 +121,14 @@ namespace WOWViewer
                     selectedSave.actualYear = year; // set the actual year to the selected year
                     year = 1753; // set to minimum date
                     checkBox2.Checked = true; // override enabled
+                    checkBox2.Enabled = true; // enable the year override checkbox
+                    numericUpDown1.Enabled = true; // enable the year override numeric up down
+                }
+                else
+                {
+                    checkBox2.Checked = false; // override disabled
+                    checkBox2.Enabled = false; // disble the year override checkbox
+                    numericUpDown1.Enabled = false; // isdble the year override numeric up down
                 }
                 selectedSave.dateTime = new DateTime(year, month, day, hours, minutes, seconds);
             }
@@ -122,15 +141,12 @@ namespace WOWViewer
             label3.Text = "Status : No Changes Made"; // update the status label
             button2.Enabled = true; // enable the swap sides button
             button3.Enabled = true; // enable the delete save button
-            checkBox2.Enabled = true; // enable the year override checkbox
-            numericUpDown1.Enabled = true; // enable the year override numeric up down
             listBox2.Items.Clear(); // clear the sector list box
-            saveChanging = false; // selected save file has been changed
+            //saveChanging = false; // selected save file has been changed
             parseText(); // parse the text file to get sector names
 
 
-            // event handlers for the controls
-            listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged!;
+            // add event handlers for the controls
             textBox1.TextChanged += AnyControlChanged!;
             dateTimePicker1.ValueChanged += AnyControlChanged!;
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
@@ -161,13 +177,13 @@ namespace WOWViewer
         // current date updated
         private void AnyControlChanged(object sender, EventArgs e)
         {
-            if (saveChanging) { return; } // prevents controls from triggering changed events when switching saves
+            //if (saveChanging) { return; } // prevents controls from triggering changed events when switching saves
             compareSaveValues();
         }
         // override date limit
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
-            if (saveChanging) { return; } // prevents checkbox from triggering changed event when switching saves
+            //if (saveChanging) { return; } // prevents checkbox from triggering changed event when switching saves
             dateTimePicker1.MinDate = checkBox1.Checked ? DATE_LIMIT : MARTIAN_INVASION;
         }
         // minimum date check
