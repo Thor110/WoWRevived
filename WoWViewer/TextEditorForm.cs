@@ -68,13 +68,13 @@ namespace WoWViewer
             int index = getRealIndex();
             richTextBox1.Enabled = true; // enable the richTextBox
             richTextBox1.Text = entries[index].Name; // update the richTextBox with the selected entry
-            if (!entries[index].Edited) { checkForEdits(); } // check for other edits
+            if (!entries[index].Edited) { checkForEdits(); } // check for any other edits
             else { button4.Enabled = true; } // enable the undo button if the currently selected entry is edited
         }
         // faction type or user interface
         private static string getFaction(byte category) => category == 0x00 ? "Martian" : category == 0x01 ? "Human" : category == 0x02 ? "UI" : "Unknown";
         // get the real index from the listBox text
-        private int getRealIndex() => int.Parse(listBox1.Text.Substring(0, 4));
+        private int getRealIndex() => int.Parse(listBox1.Text.AsSpan(0, 4));
         // text updated on key down event
         private void richTextBox1_KeyDown(object sender, KeyEventArgs e)
         {
