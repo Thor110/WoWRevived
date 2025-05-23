@@ -53,10 +53,16 @@
             label7 = new Label();
             label8 = new Label();
             label9 = new Label();
+            numericUpDown5 = new NumericUpDown();
+            label10 = new Label();
+            label11 = new Label();
+            numericUpDown6 = new NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown3).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown4).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown5).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown6).BeginInit();
             SuspendLayout();
             // 
             // button1
@@ -295,11 +301,53 @@
             label9.TabIndex = 24;
             label9.Text = "Sector :";
             // 
+            // numericUpDown5
+            // 
+            numericUpDown5.Enabled = false;
+            numericUpDown5.Location = new Point(469, 175);
+            numericUpDown5.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            numericUpDown5.Name = "numericUpDown5";
+            numericUpDown5.Size = new Size(41, 23);
+            numericUpDown5.TabIndex = 25;
+            numericUpDown5.Value = new decimal(new int[] { 100, 0, 0, 0 });
+            // 
+            // label10
+            // 
+            label10.AutoSize = true;
+            label10.Location = new Point(415, 177);
+            label10.Name = "label10";
+            label10.Size = new Size(48, 15);
+            label10.TabIndex = 26;
+            label10.Text = "Health :";
+            // 
+            // label11
+            // 
+            label11.AutoSize = true;
+            label11.Location = new Point(661, 177);
+            label11.Name = "label11";
+            label11.Size = new Size(48, 15);
+            label11.TabIndex = 28;
+            label11.Text = "Health :";
+            // 
+            // numericUpDown6
+            // 
+            numericUpDown6.Enabled = false;
+            numericUpDown6.Location = new Point(715, 175);
+            numericUpDown6.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            numericUpDown6.Name = "numericUpDown6";
+            numericUpDown6.Size = new Size(41, 23);
+            numericUpDown6.TabIndex = 27;
+            numericUpDown6.Value = new decimal(new int[] { 100, 0, 0, 0 });
+            // 
             // SaveEditorForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 550);
+            Controls.Add(label11);
+            Controls.Add(numericUpDown6);
+            Controls.Add(label10);
+            Controls.Add(numericUpDown5);
             Controls.Add(label9);
             Controls.Add(label8);
             Controls.Add(label7);
@@ -331,6 +379,8 @@
             ((System.ComponentModel.ISupportInitialize)numericUpDown2).EndInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown3).EndInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown4).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown5).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown6).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -361,5 +411,9 @@
         private Label label7;
         private Label label8;
         private Label label9;
+        private NumericUpDown numericUpDown5;
+        private Label label10;
+        private Label label11;
+        private NumericUpDown numericUpDown6;
     }
 }
