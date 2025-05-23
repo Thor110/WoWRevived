@@ -139,7 +139,6 @@ namespace WOWViewer
             button2.Enabled = true; // enable the swap sides button
             button3.Enabled = true; // enable the delete save button
             listBox2.Items.Clear(); // clear the sector list box
-
             if (fileName.Contains("Human"))
             {
                 label6.Text = "Iron :";
@@ -152,7 +151,7 @@ namespace WOWViewer
                 label7.Text = "Copper :";
                 label8.Text = "Heavy elements :";
             }
-            label9.Text = "Sector :"; // update the label with the selected sector
+            label9.Text = "Sector :"; // reset the sector label
             parseText(); // parse the text file to get sector names
             // add event handlers for the controls
             textBox1.TextChanged += AnyControlChanged!;
@@ -183,15 +182,9 @@ namespace WOWViewer
         // AnyControlChanged handles when controls are changed that do not need extra logic such as the override date limit checkbox
         // save name updated
         // current date updated
-        private void AnyControlChanged(object sender, EventArgs e)
-        {
-            compareSaveValues();
-        }
+        private void AnyControlChanged(object sender, EventArgs e) { compareSaveValues(); }
         // override date limit
-        private void checkBox1_CheckedChanged(object sender, EventArgs e)
-        {
-            dateTimePicker1.MinDate = checkBox1.Checked ? DATE_LIMIT : MARTIAN_INVASION;
-        }
+        private void checkBox1_CheckedChanged(object sender, EventArgs e) { dateTimePicker1.MinDate = checkBox1.Checked ? DATE_LIMIT : MARTIAN_INVASION; }
         // minimum date check
         private void minimumDateCheck(DateTime compare)
         {
