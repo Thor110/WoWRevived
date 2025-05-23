@@ -191,12 +191,12 @@
 0190 [Martian] : Unit/s arrived in
 0191 [UI] : Research finished for
 0192 [UI] : Research available for
-0193 [UI] : Iron
+0193 [UI] : Steel
 0194 [UI] : Coal
 0195 [UI] : Oil
-0196 [UI] : Human blood
+0196 [UI] : Human Blood
 0197 [UI] : Copper
-0198 [UI] : Heavy elements
+0198 [UI] : Heavy Elements
 0199 [UI] : Military tacticians can teach new attack methods and formations to our vehicle commanders.
 0200 [UI] : These are items to bolster the performance and protection of our vehicles.
 0201 [UI] : The armoured lorry is an agile and fast front line vehicle.  It's light armour cladding and a single turreted gun protects it's crew of 4.  A 6-cylinder engine supplies it with enough power to provide quick support and excellent reconnaissance abilities.
