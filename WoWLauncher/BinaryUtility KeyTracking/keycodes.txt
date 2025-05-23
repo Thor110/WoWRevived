@@ -1,11 +1,33 @@
+Left Mouse - 1
+0x32D25
+0x32D4E
+
+Right Mouse - 2
+0x32D32
+0x32D57
+
 27 - Esc
-9 - TAB
+0x4D800
+0x4D619
+0x4D66D
 
 16 - Shift
-
-20989574264066154 = 2 hits
+0x2B2F9
+0x33391
+0x96B3A
+0x7C9B8
+0x3B7A6
+0x2B709
+0x2B6DC
+0x2B678
+0x2B628
+0x2B5DA
+0x2B591
 
 17 - CTRL
+0x96BAC
+0x96AB8
+0x8507D
 
 20989574264066410 = 13 hits
 
@@ -24,34 +46,30 @@ Offsets (13)
 0x85427
 0x96598
 
-36 - Home
-33 - Page Up
-34 - Page Down
-37 - Left arrow
-38 - Up arrow
-39 - Right arrow
-40 - Down arrow
+9 - TAB - Hide Mini Map
 
-Oemcomma	188	
-The OEM comma key on any country/region keyboard.
+36 - Home - Centers On Selection
+33 - Page Up - Fast Scroll Up (BattleMap) Top of WarMap (WarMap)
+34 - Page Down - Fast Scroll Down (BattleMap) Bottom of WarMap (WarMap)
+37 - Left arrow - Normal Scroll Around
+38 - Up arrow - Normal Scroll Around
+39 - Right arrow - Normal Scroll Around
+40 - Down arrow - Normal Scroll Around
 
-OemMinus	189	
-The OEM minus key on any country/region keyboard.
+188 - < - Previous Unit
+190 - > - Next Unit
 
-OemPeriod	190	
-The OEM period key on any country/region keyboard.
+112 - F1 - Unit View
+113 - F2 - Manufacture View
+114 - F3 - Resource View 1
+115 - F4 - Resource View 2
+116 - F5 - Resource View 3
 
-112 - F1
-113 - F2
-114 - F3
-115 - F4
-116 - F5
-
-77 - M
-82 - R
+77 - M - Displays Last Five Messages
+82 - R - Research Menu
 
 
-49 - 1
+49 - 1 - Speed etc
 50 - 2
 51 - 3
 52 - 4
@@ -62,4 +80,8 @@ The OEM period key on any country/region keyboard.
 57 - 9
 48 - 0
 
-8 - Backspace
+8 - Backspace - Stop Time
+
+32 - Spacebar - Resource View
+
+https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes

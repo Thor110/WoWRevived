@@ -85,6 +85,13 @@
             }
             return $"Keybind '{keyName}' is not found or is invalid.";
         }
+        // check if the key is safe to use
+        bool IsSafeKey(byte vk)
+        {
+            return (vk >= 0x08 && vk <= 0xFE) &&
+                   vk != 0x7F && // DEL, rarely usable
+                   vk != 0x40;   // '@' or other non-functional VKs
+        }
         public static bool IsValidVirtualKey(byte vk) { return (vk >= 1 && vk <= 127); }
         // on closing event
         private void KeyboardShortcutsForm_FormClosing(object sender, FormClosingEventArgs e)

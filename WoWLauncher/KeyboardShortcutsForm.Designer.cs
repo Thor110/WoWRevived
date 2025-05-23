@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(KeyboardShortcutsForm));
             button1 = new Button();
             button2 = new Button();
             textBox1 = new TextBox();
@@ -150,6 +151,14 @@
             button60 = new Button();
             button61 = new Button();
             button62 = new Button();
+            button63 = new Button();
+            button64 = new Button();
+            button65 = new Button();
+            label31 = new Label();
+            textBox31 = new TextBox();
+            button66 = new Button();
+            label32 = new Label();
+            textBox32 = new TextBox();
             SuspendLayout();
             // 
             // button1
@@ -1283,11 +1292,93 @@
             button62.UseVisualStyleBackColor = true;
             button62.Click += button62_Click;
             // 
+            // button63
+            // 
+            button63.Location = new Point(582, 360);
+            button63.Name = "button63";
+            button63.Size = new Size(75, 23);
+            button63.TabIndex = 129;
+            button63.Text = "Default";
+            button63.UseVisualStyleBackColor = true;
+            // 
+            // button64
+            // 
+            button64.Location = new Point(582, 389);
+            button64.Name = "button64";
+            button64.Size = new Size(75, 23);
+            button64.TabIndex = 128;
+            button64.Text = "Default";
+            button64.UseVisualStyleBackColor = true;
+            // 
+            // button65
+            // 
+            button65.Location = new Point(501, 360);
+            button65.Name = "button65";
+            button65.Size = new Size(75, 23);
+            button65.TabIndex = 127;
+            button65.Text = "New Key";
+            button65.UseVisualStyleBackColor = true;
+            // 
+            // label31
+            // 
+            label31.AutoSize = true;
+            label31.Location = new Point(364, 364);
+            label31.Name = "label31";
+            label31.Size = new Size(62, 15);
+            label31.TabIndex = 126;
+            label31.Text = "Left Click :";
+            label31.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // textBox31
+            // 
+            textBox31.Enabled = false;
+            textBox31.Location = new Point(432, 360);
+            textBox31.Name = "textBox31";
+            textBox31.Size = new Size(63, 23);
+            textBox31.TabIndex = 125;
+            textBox31.Text = "LClick";
+            // 
+            // button66
+            // 
+            button66.Location = new Point(501, 389);
+            button66.Name = "button66";
+            button66.Size = new Size(75, 23);
+            button66.TabIndex = 124;
+            button66.Text = "New Key";
+            button66.UseVisualStyleBackColor = true;
+            // 
+            // label32
+            // 
+            label32.AutoSize = true;
+            label32.Location = new Point(356, 393);
+            label32.Name = "label32";
+            label32.Size = new Size(70, 15);
+            label32.TabIndex = 123;
+            label32.Text = "Right Click :";
+            label32.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // textBox32
+            // 
+            textBox32.Enabled = false;
+            textBox32.Location = new Point(432, 389);
+            textBox32.Name = "textBox32";
+            textBox32.Size = new Size(63, 23);
+            textBox32.TabIndex = 122;
+            textBox32.Text = "RClick";
+            // 
             // KeyboardShortcutsForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(997, 450);
+            Controls.Add(button63);
+            Controls.Add(button64);
+            Controls.Add(button65);
+            Controls.Add(label31);
+            Controls.Add(textBox31);
+            Controls.Add(button66);
+            Controls.Add(label32);
+            Controls.Add(textBox32);
             Controls.Add(button62);
             Controls.Add(button52);
             Controls.Add(button53);
@@ -1410,6 +1501,7 @@
             Controls.Add(textBox1);
             Controls.Add(button2);
             Controls.Add(button1);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "KeyboardShortcutsForm";
             Text = "KeyboardShortcutsForm";
             FormClosing += KeyboardShortcutsForm_FormClosing;
@@ -1541,5 +1633,13 @@
         private Button button60;
         private Button button61;
         private Button button62;
+        private Button button63;
+        private Button button64;
+        private Button button65;
+        private Label label31;
+        private TextBox textBox31;
+        private Button button66;
+        private Label label32;
+        private TextBox textBox32;
     }
 }
