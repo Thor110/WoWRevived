@@ -202,7 +202,7 @@
             listBox3.AccessibleDescription = "This lists the buildings in the sector.";
             listBox3.FormattingEnabled = true;
             listBox3.ItemHeight = 15;
-            listBox3.Location = new Point(264, 172);
+            listBox3.Location = new Point(264, 175);
             listBox3.Name = "listBox3";
             listBox3.Size = new Size(120, 364);
             listBox3.TabIndex = 14;
@@ -212,7 +212,7 @@
             listBox4.AccessibleDescription = "This lists the units in the sector.";
             listBox4.FormattingEnabled = true;
             listBox4.ItemHeight = 15;
-            listBox4.Location = new Point(516, 172);
+            listBox4.Location = new Point(516, 175);
             listBox4.Name = "listBox4";
             listBox4.Size = new Size(120, 364);
             listBox4.TabIndex = 15;
@@ -220,7 +220,7 @@
             // label4
             // 
             label4.AutoSize = true;
-            label4.Location = new Point(264, 154);
+            label4.Location = new Point(264, 157);
             label4.Name = "label4";
             label4.Size = new Size(62, 15);
             label4.TabIndex = 16;
@@ -229,7 +229,7 @@
             // label5
             // 
             label5.AutoSize = true;
-            label5.Location = new Point(516, 154);
+            label5.Location = new Point(516, 157);
             label5.Name = "label5";
             label5.Size = new Size(40, 15);
             label5.TabIndex = 17;
