@@ -105,22 +105,23 @@ namespace WoWViewer
             byte[] data = File.ReadAllBytes(inputPath); // read the file into a byte array
             using (FileStream fs = new FileStream(inputPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                int offset = 0x289; // Original header starts here
-                fs.Write(data, 0, offset); // Write original header 0x0 - 0x289
+                int offset = 0x289; // original header starts here
+                fs.Write(data, 0, offset); // write original header 0x0 - 0x289
                 for (int i = 0; i < 1396; i++) // total entry count of 1395
                 {
                     byte[] stringBytes = Latin1.GetBytes(entries[i].Name.Replace("\r\n", "\\n").Replace("\r", "\\n").Replace("\n", "\\n")); // replace actual new line with \n so the game can read it
-                    fs.Write(data, offset, 8);
+                    fs.Write(data, offset, 8); // write the original data (8 bytes)
                     fs.Write(BitConverter.GetBytes((ushort)(stringBytes.Length + 1)), 0, 2); // write the new string length (2 bytes)
-                    fs.Write(stringBytes, 0, stringBytes.Length); // Write new or original string
-                    if (entries[i].Edited) // update backup entries
+                    fs.Write(stringBytes, 0, stringBytes.Length); // write new or original string
+                    string raw = backup[i].Name.Replace("\r\n", "\\n").Replace("\r", "\\n").Replace("\n", "\\n"); // normalise the string to ensure it is the same as the original
+                    offset = offset + raw.Length + 10; // use backup name first to find correct offset in data
+                    if (entries[i].Edited)
                     {
-                        backup[i].Name = entries[i].Name;
-                        entries[i].Edited = false;
+                        backup[i].Name = entries[i].Name; // update backup entries
+                        entries[i].Edited = false; // reset edited flag
                     }
-                    offset = offset + backup[i].Name.Length + 9;
                 }
-                fs.WriteByte(0x00); // write final byte which is always 0x00
+                fs.WriteByte(0x00); // write final byte at the end of the file which is always 0x00
             }
             reFilter(); // re filter to redraw the list box and remove the changes caused by the edited flag
             button1.Enabled = false;

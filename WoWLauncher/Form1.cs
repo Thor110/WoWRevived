@@ -52,6 +52,7 @@ namespace WoWLauncher
                 }
             }
             comboBox1.SelectedIndex = 0; // set selected index to the current language as per the registry
+            comboBox2.Items.Add("512x384"); // this resolution is listed in the manual so I chose to include it
             comboBox2.Items.Add("640x480");
             comboBox2.Items.Add("800x600");
             comboBox2.Items.Add("1024x768");
