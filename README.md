@@ -26,12 +26,14 @@ The road map for this project.
 - [✅ 1 : Custom Launcher](#custom-launcher) ( Fully Functional - 90% Complete )
 	- Dynamic language pack detection.
 	- Advanced registry settings options.
+	- Custom keyboard shortcut settings. (WIP)
 - [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 90% Complete )
 	- .WoW archives can be extracted.
 	- Waveform preview and play sound files from .wow archives.
 	- .ojd files can be parsed, but there is still more decoding to do.
 - [❌ 3 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
+	- Override standard limit of 1753 as the minimum date and set the year manually to as low as year zero.
 	- Sector & Area names loaded dynamically from TEXT.ojd
 - [✅ 4 : Text Editor](#text-editor) ( 100% Complete - edit and save string entries in the TEXT.ojd file. )
 	- All 1396 strings are editable.
@@ -44,6 +46,7 @@ The road map for this project.
 - ❌ 5 : Map Editor ( Basic Parsing Implemented - 1% Complete )
 	- Basic parsing of .nsb filetypes.
 - ❌ 6 : No-CD Music Fix ( Researching Solution - 0% Complete )
+	- Looking at building mini-isos from the disk and mounting at runtime.
 - ❌ 7 : Video Playback Intercept ( Researching Solution - 0% Complete )
 	- Looking at intercepting smackw32.dll and redirecting it to use the more modern binkw32.dll for higher resolution video playback.
 	- Determining the best solution for upscaling and remastering the original videos.
