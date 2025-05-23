@@ -42,7 +42,21 @@
             button3 = new Button();
             numericUpDown1 = new NumericUpDown();
             checkBox2 = new CheckBox();
+            listBox3 = new ListBox();
+            listBox4 = new ListBox();
+            label4 = new Label();
+            label5 = new Label();
+            numericUpDown2 = new NumericUpDown();
+            numericUpDown3 = new NumericUpDown();
+            numericUpDown4 = new NumericUpDown();
+            label6 = new Label();
+            label7 = new Label();
+            label8 = new Label();
+            label9 = new Label();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown2).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown3).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown4).BeginInit();
             SuspendLayout();
             // 
             // button1
@@ -165,10 +179,10 @@
             // numericUpDown1
             // 
             numericUpDown1.Enabled = false;
-            numericUpDown1.Location = new Point(390, 70);
+            numericUpDown1.Location = new Point(417, 70);
             numericUpDown1.Maximum = new decimal(new int[] { 9999, 0, 0, 0 });
             numericUpDown1.Name = "numericUpDown1";
-            numericUpDown1.Size = new Size(73, 23);
+            numericUpDown1.Size = new Size(46, 23);
             numericUpDown1.TabIndex = 12;
             // 
             // checkBox2
@@ -183,11 +197,120 @@
             checkBox2.Text = "Force Override Year Limit";
             checkBox2.UseVisualStyleBackColor = true;
             // 
+            // listBox3
+            // 
+            listBox3.AccessibleDescription = "This lists the buildings in the sector.";
+            listBox3.FormattingEnabled = true;
+            listBox3.ItemHeight = 15;
+            listBox3.Location = new Point(264, 172);
+            listBox3.Name = "listBox3";
+            listBox3.Size = new Size(120, 364);
+            listBox3.TabIndex = 14;
+            // 
+            // listBox4
+            // 
+            listBox4.AccessibleDescription = "This lists the units in the sector.";
+            listBox4.FormattingEnabled = true;
+            listBox4.ItemHeight = 15;
+            listBox4.Location = new Point(516, 172);
+            listBox4.Name = "listBox4";
+            listBox4.Size = new Size(120, 364);
+            listBox4.TabIndex = 15;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new Point(264, 154);
+            label4.Name = "label4";
+            label4.Size = new Size(62, 15);
+            label4.TabIndex = 16;
+            label4.Text = "Buildings :";
+            // 
+            // label5
+            // 
+            label5.AutoSize = true;
+            label5.Location = new Point(516, 154);
+            label5.Name = "label5";
+            label5.Size = new Size(40, 15);
+            label5.TabIndex = 17;
+            label5.Text = "Units :";
+            // 
+            // numericUpDown2
+            // 
+            numericUpDown2.Enabled = false;
+            numericUpDown2.Location = new Point(360, 99);
+            numericUpDown2.Name = "numericUpDown2";
+            numericUpDown2.Size = new Size(73, 23);
+            numericUpDown2.TabIndex = 18;
+            // 
+            // numericUpDown3
+            // 
+            numericUpDown3.Enabled = false;
+            numericUpDown3.Location = new Point(518, 99);
+            numericUpDown3.Name = "numericUpDown3";
+            numericUpDown3.Size = new Size(73, 23);
+            numericUpDown3.TabIndex = 19;
+            // 
+            // numericUpDown4
+            // 
+            numericUpDown4.Enabled = false;
+            numericUpDown4.Location = new Point(715, 99);
+            numericUpDown4.Name = "numericUpDown4";
+            numericUpDown4.Size = new Size(73, 23);
+            numericUpDown4.TabIndex = 20;
+            // 
+            // label6
+            // 
+            label6.Location = new Point(267, 101);
+            label6.Name = "label6";
+            label6.Size = new Size(87, 15);
+            label6.TabIndex = 21;
+            label6.Text = "Type 1 :";
+            label6.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // label7
+            // 
+            label7.Location = new Point(460, 101);
+            label7.Name = "label7";
+            label7.Size = new Size(52, 15);
+            label7.TabIndex = 22;
+            label7.Text = "Type 2 :";
+            label7.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // label8
+            // 
+            label8.Location = new Point(612, 101);
+            label8.Name = "label8";
+            label8.Size = new Size(97, 15);
+            label8.TabIndex = 23;
+            label8.Text = "Type 3 :";
+            label8.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // label9
+            // 
+            label9.AutoSize = true;
+            label9.Location = new Point(267, 72);
+            label9.Name = "label9";
+            label9.Size = new Size(46, 15);
+            label9.TabIndex = 24;
+            label9.Text = "Sector :";
+            // 
             // SaveEditorForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 550);
+            Controls.Add(label9);
+            Controls.Add(label8);
+            Controls.Add(label7);
+            Controls.Add(label6);
+            Controls.Add(numericUpDown4);
+            Controls.Add(numericUpDown3);
+            Controls.Add(numericUpDown2);
+            Controls.Add(label5);
+            Controls.Add(label4);
+            Controls.Add(listBox4);
+            Controls.Add(listBox3);
             Controls.Add(checkBox2);
             Controls.Add(numericUpDown1);
             Controls.Add(button3);
@@ -205,6 +328,9 @@
             Name = "SaveEditorForm";
             Text = "Save Editor";
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown2).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown3).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown4).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -224,5 +350,16 @@
         private Button button3;
         private NumericUpDown numericUpDown1;
         private CheckBox checkBox2;
+        private ListBox listBox3;
+        private ListBox listBox4;
+        private Label label4;
+        private Label label5;
+        private NumericUpDown numericUpDown2;
+        private NumericUpDown numericUpDown3;
+        private NumericUpDown numericUpDown4;
+        private Label label6;
+        private Label label7;
+        private Label label8;
+        private Label label9;
     }
 }

@@ -208,6 +208,7 @@ namespace WoWLauncher
             checkBox1.Visible = true;
             checkBox2.Visible = true;
             checkBox3.Visible = true;
+            checkBox4.Visible = true;
             comboBox2.Visible = true;
             comboBox3.Visible = true;
             comboBox4.Visible = true;
@@ -235,6 +236,7 @@ namespace WoWLauncher
                 checkBox1.Visible = false;
                 checkBox2.Visible = false;
                 checkBox3.Visible = false;
+                checkBox4.Visible = false;
                 comboBox1.Visible = false;
                 comboBox2.Visible = false;
                 comboBox3.Visible = false;

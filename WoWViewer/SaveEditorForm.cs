@@ -21,6 +21,9 @@ namespace WOWViewer
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, typeof(Label));
             listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged!;
+            listBox2.SelectedIndexChanged += listBox2_SelectedIndexChanged!;
+            listBox3.SelectedIndexChanged += listBox3_SelectedIndexChanged!;
+            listBox4.SelectedIndexChanged += listBox4_SelectedIndexChanged!;
         }
         // initialize save loader and count saves
         private void InitializeSaveLoader() { for (int i = 1; i <= 5; i++) { SaveLoader("Human", i); } for (int i = 1; i <= 5; i++) { SaveLoader("Martian", i); } }
@@ -136,6 +139,20 @@ namespace WOWViewer
             button2.Enabled = true; // enable the swap sides button
             button3.Enabled = true; // enable the delete save button
             listBox2.Items.Clear(); // clear the sector list box
+
+            if (fileName.Contains("Human"))
+            {
+                label6.Text = "Iron :";
+                label7.Text = "Coal :";
+                label8.Text = "Oil :";
+            }
+            else
+            {
+                label6.Text = "Human blood :";
+                label7.Text = "Copper :";
+                label8.Text = "Heavy elements :";
+            }
+            label9.Text = "Sector :"; // update the label with the selected sector
             parseText(); // parse the text file to get sector names
             // add event handlers for the controls
             textBox1.TextChanged += AnyControlChanged!;
@@ -277,6 +294,21 @@ namespace WOWViewer
         }
         // override year limit numeric up down value changed
         private void numericUpDown1_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
+        // list box 2 selected index changed ( sector selection )
+        private void listBox2_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            label9.Text = listBox2.Text; // update the label with the selected sector
+        }
+
+        private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void listBox4_SelectedIndexChanged(object sender, EventArgs e)
         {
 
         }

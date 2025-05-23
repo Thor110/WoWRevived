@@ -249,6 +249,7 @@
             checkBox4.TabIndex = 18;
             checkBox4.Text = "Resize";
             checkBox4.UseVisualStyleBackColor = true;
+            checkBox4.Visible = false;
             // 
             // Form1
             // 
