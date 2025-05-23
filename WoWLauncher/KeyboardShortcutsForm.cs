@@ -28,7 +28,13 @@
             // Wire up dynamic KeyDown
             keybindings["Force Fire"].LinkedNewKeyButton!.KeyDown += (s, e) =>
             {
-                keybindings["Force Fire"].CurrentVK = (byte)e.KeyCode;
+                byte newVK = (byte)e.KeyCode;
+                if (!IsValidVirtualKey(newVK))
+                {
+                    ping("Force Fire");
+                    return;
+                }
+                keybindings["Force Fire"].CurrentVK = newVK;
                 keybindings["Force Fire"].LinkedTextBox!.Text = e.KeyCode.ToString();
             };
             // Reset to default
@@ -70,6 +76,16 @@
             BinaryUtility.ReplaceByte(replacements, "WoW_patched.exe");
             MessageBox.Show("Shortcuts updated successfully.");
         }
+        public void ping(string keyName) { MessageBox.Show(FormatInvalidKeyMessage(keyName), "Invalid Key", MessageBoxButtons.OK, MessageBoxIcon.Warning); }   
+        public string FormatInvalidKeyMessage(string keyName)
+        {
+            if (keybindings.TryGetValue(keyName, out var binding))
+            {
+                return $"Keybind '{binding.ActionName}' is set to an invalid key ({binding.CurrentVK}). It won't be saved.";
+            }
+            return $"Keybind '{keyName}' is not found or is invalid.";
+        }
+        public static bool IsValidVirtualKey(byte vk) { return (vk >= 1 && vk <= 127); }
         // on closing event
         private void KeyboardShortcutsForm_FormClosing(object sender, FormClosingEventArgs e)
         {
