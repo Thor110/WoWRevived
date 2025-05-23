@@ -223,6 +223,7 @@ namespace WoWLauncher
             label4.Visible = true;
             button5.Visible = true;
             button6.Visible = false;
+            button7.Visible = false;
         }
         /// This is the event handler for the "Exit" button
         private void button4_Click(object sender, EventArgs e)
@@ -248,6 +249,7 @@ namespace WoWLauncher
                 label4.Visible = false;
                 button5.Visible = false;
                 button6.Visible = true;
+                button7.Visible = true;
             }
             else { Close(); }
         }
@@ -259,7 +261,7 @@ namespace WoWLauncher
         {
             string rename = (string)mainKey.GetValue("Language")!; // Default = English
             if (comboBox1.Text == rename) { return; } // do nothing if the same language is selected
-            if(File.Exists($"{comboBox1.Text.ToUpper()}.ojd") && File.Exists("TEXT.ojd")) // double check if the files exist
+            if (File.Exists($"{comboBox1.Text.ToUpper()}.ojd") && File.Exists("TEXT.ojd")) // double check if the files exist
             {
                 File.Move("TEXT.ojd", $"{rename.ToUpper()}.ojd"); // rename the current language file
                 File.Move($"{comboBox1.Text.ToUpper()}.ojd", $"TEXT.ojd"); // rename the new language file
@@ -285,7 +287,7 @@ namespace WoWLauncher
         }
         private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if(comboBox4.Text == (string)mainKey.GetValue("Difficulty")!) { return; }
+            if (comboBox4.Text == (string)mainKey.GetValue("Difficulty")!) { return; }
             switch (comboBox4.SelectedItem!.ToString())
             {
                 case "Easy":
@@ -310,24 +312,7 @@ namespace WoWLauncher
             if (comboBox4.Items.Count > 2) { comboBox4.Items.Remove("Custom"); } // remove custom from the combo box
         }
         // open advanced settings
-        private void button5_Click(object sender, EventArgs e)
-        {
-            Form advanced = new Form2();
-            advanced.StartPosition = FormStartPosition.Manual;
-            advanced.Location = this.Location;
-            advanced.Show();
-            this.Hide();
-            checkBox1.CheckedChanged -= checkBox1_CheckedChanged!;
-            checkBox2.CheckedChanged -= checkBox2_CheckedChanged!;
-            checkBox3.CheckedChanged -= checkBox3_CheckedChanged!;
-            checkBox4.CheckedChanged -= checkBox4_CheckedChanged!;
-            comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;
-            comboBox2.SelectedIndexChanged -= comboBox2_SelectedIndexChanged!;
-            comboBox3.SelectedIndexChanged -= comboBox3_SelectedIndexChanged!;
-            comboBox4.SelectedIndexChanged -= comboBox4_SelectedIndexChanged!;
-            advanced.FormClosed += (s, args) => this.Show();
-            advanced.FormClosed += (s, args) => InitializeRegistry();
-        }
+        private void button5_Click(object sender, EventArgs e) { newForm(new Form2()); }
         // open editor
         private void button6_Click(object sender, EventArgs e)
         {
@@ -338,6 +323,27 @@ namespace WoWLauncher
             }
             Process.Start("WoWViewer.exe");
             Close();
+        }
+        // open keyboard shortcuts form
+        private void button7_Click(object sender, EventArgs e) { newForm(new KeyboardShortcutsForm()); }
+        // create new form method
+        private void newForm(Form form)
+        {
+            form.StartPosition = FormStartPosition.Manual;
+            form.Location = this.Location;
+            form.Show();
+            this.Hide();
+            checkBox1.CheckedChanged -= checkBox1_CheckedChanged!;
+            checkBox2.CheckedChanged -= checkBox2_CheckedChanged!;
+            checkBox3.CheckedChanged -= checkBox3_CheckedChanged!;
+            checkBox4.CheckedChanged -= checkBox4_CheckedChanged!;
+            comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;
+            comboBox2.SelectedIndexChanged -= comboBox2_SelectedIndexChanged!;
+            comboBox3.SelectedIndexChanged -= comboBox3_SelectedIndexChanged!;
+            comboBox4.SelectedIndexChanged -= comboBox4_SelectedIndexChanged!;
+            form.FormClosed += (s, args) => this.Show();
+            form.FormClosed += (s, args) => InitializeRegistry();
+            form.Move += (s, args) => { if (this.Location != form.Location) { this.Location = form.Location; } };
         }
     }
 }

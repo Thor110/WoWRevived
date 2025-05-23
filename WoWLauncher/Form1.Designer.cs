@@ -48,6 +48,7 @@
             button5 = new Button();
             button6 = new Button();
             checkBox4 = new CheckBox();
+            button7 = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -93,7 +94,7 @@
             // 
             // button4
             // 
-            button4.Location = new Point(122, 441);
+            button4.Location = new Point(122, 470);
             button4.Name = "button4";
             button4.Size = new Size(195, 23);
             button4.TabIndex = 4;
@@ -220,7 +221,7 @@
             // 
             // button5
             // 
-            button5.Location = new Point(122, 412);
+            button5.Location = new Point(122, 441);
             button5.Name = "button5";
             button5.Size = new Size(195, 23);
             button5.TabIndex = 16;
@@ -231,7 +232,7 @@
             // 
             // button6
             // 
-            button6.Location = new Point(122, 412);
+            button6.Location = new Point(122, 441);
             button6.Name = "button6";
             button6.Size = new Size(195, 23);
             button6.TabIndex = 17;
@@ -251,11 +252,22 @@
             checkBox4.UseVisualStyleBackColor = true;
             checkBox4.Visible = false;
             // 
+            // button7
+            // 
+            button7.Location = new Point(122, 412);
+            button7.Name = "button7";
+            button7.Size = new Size(195, 23);
+            button7.TabIndex = 19;
+            button7.Text = "Keyboard Shortcuts";
+            button7.UseVisualStyleBackColor = true;
+            button7.Click += button7_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(424, 477);
+            ClientSize = new Size(424, 504);
+            Controls.Add(button7);
             Controls.Add(checkBox4);
             Controls.Add(button6);
             Controls.Add(button5);
@@ -304,5 +316,6 @@
         private Button button5;
         private Button button6;
         private CheckBox checkBox4;
+        private Button button7;
     }
 }
