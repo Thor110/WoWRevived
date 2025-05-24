@@ -1,4 +1,6 @@
-﻿namespace WoWLauncher
+﻿using static System.Runtime.CompilerServices.RuntimeHelpers;
+
+namespace WoWLauncher
 {
     public partial class KeyboardShortcutsForm : Form
     {
@@ -20,7 +22,7 @@
         {
             byte[] data = File.ReadAllBytes("WoW_patched.exe");
             // manually write out label tooltip descriptions
-            AddKeybinding(data, // ESCAPE
+            AddKeybinding(data[0x4D800], // ESCAPE
                 keyName: "In-game Menu",
                 actionName: "In-game Menu",
                 offsets: new List<long> { 0x4D800, 0x4D619, 0x4D66D },
@@ -28,7 +30,7 @@
                 linkedTextBox: textBox1,
                 linkedNewKeyButton: button1,
                 linkedResetButton: button31);
-            /*AddKeybinding(data, // TAB
+            /*AddKeybinding(data[], // TAB
                 keyName: "Hide Mini Map",
                 actionName: "Hide Mini Map",
                 offsets: new List<long> {  },
@@ -36,7 +38,7 @@
                 linkedTextBox: textBox2,
                 linkedNewKeyButton: button2,
                 linkedResetButton: button32);*/
-            AddKeybinding(data, // CONTROL
+            AddKeybinding(data[0x96BAC], // CONTROL
                 keyName: "Force Fire",
                 actionName: "Force Fire",
                 offsets: new List<long> { 0x96BAC, 0x96AB8, 0x8507D, 0x1CB65, 0x1CBAB, 0x1CC20, 0x1CCB1, 0x2CFC9, 0x30D3C, 0x30EAD, 0x84B1C, 0x84B55, 0x84BBD, 0x84C44, 0x85427, 0x96598 },
@@ -44,7 +46,7 @@
                 linkedTextBox: textBox3,
                 linkedNewKeyButton: button3,
                 linkedResetButton: button33);
-            /*AddKeybinding(data, // HOME
+            /*AddKeybinding(data[], // HOME
                 keyName: "Centers On Selection",
                 actionName: "Centers On Selection",
                 offsets: new List<long> {  },
@@ -52,7 +54,7 @@
                 linkedTextBox: textBox4,
                 linkedNewKeyButton: button4,
                 linkedResetButton: button34);*/
-            /*AddKeybinding(data, // PAGEUP
+            /*AddKeybinding(data[], // PAGEUP
                 keyName: "Fast Scroll Up",
                 actionName: "Fast Scroll Up",
                 offsets: new List<long> {  },
@@ -60,7 +62,7 @@
                 linkedTextBox: textBox5,
                 linkedNewKeyButton: button5,
                 linkedResetButton: button35);*/
-            /*AddKeybinding(data, // PAGEDN
+            /*AddKeybinding(data[], // PAGEDN
                 keyName: "Fast Scroll Down",
                 actionName: "Fast Scroll Down",
                 offsets: new List<long> {  },
@@ -68,7 +70,7 @@
                 linkedTextBox: textBox6,
                 linkedNewKeyButton: button6,
                 linkedResetButton: button36);*/
-            /*AddKeybinding(data, // UP
+            /*AddKeybinding(data[], // UP
                 keyName: "Scroll Up",
                 actionName: "Scroll Up",
                 offsets: new List<long> {  },
@@ -76,7 +78,7 @@
                 linkedTextBox: textBox7,
                 linkedNewKeyButton: button7,
                 linkedResetButton: button37);*/
-            /*AddKeybinding(data, // DOWN
+            /*AddKeybinding(data[], // DOWN
                 keyName: "Scroll Down",
                 actionName: "Scroll Down",
                 offsets: new List<long> {  },
@@ -84,7 +86,7 @@
                 linkedTextBox: textBox8,
                 linkedNewKeyButton: button8,
                 linkedResetButton: button38);*/
-            /*AddKeybinding(data, // LEFT
+            /*AddKeybinding(data[], // LEFT
                 keyName: "Scroll Left",
                 actionName: "Scroll Left",
                 offsets: new List<long> {  },
@@ -92,7 +94,7 @@
                 linkedTextBox: textBox9,
                 linkedNewKeyButton: button9,
                 linkedResetButton: button39);*/
-            /*AddKeybinding(data, // RIGHT
+            /*AddKeybinding(data[], // RIGHT
                 keyName: "Scroll Right",
                 actionName: "Scroll Right",
                 offsets: new List<long> {  },
@@ -102,7 +104,7 @@
                 linkedResetButton: button40);*/
             // FIRST TEN END NAMED WITH VKS
             // SECOND TEN NAMED WITH VKS
-            /*AddKeybinding(data, // <
+            /*AddKeybinding(data[], // <
                 keyName: "Previous Unit",
                 actionName: "Previous Unit",
                 offsets: new List<long> {  },
@@ -110,7 +112,7 @@
                 linkedTextBox: textBox11,
                 linkedNewKeyButton: button11,
                 linkedResetButton: button41);*/
-            /*AddKeybinding(data, // >
+            /*AddKeybinding(data[], // >
                 keyName: "Next Unit",
                 actionName: "Next Unit",
                 offsets: new List<long> {  },
@@ -118,7 +120,7 @@
                 linkedTextBox: textBox12,
                 linkedNewKeyButton: button12,
                 linkedResetButton: button42);*/
-            /*AddKeybinding(data, // F1
+            /*AddKeybinding(data[], // F1
                 keyName: "Unit View",
                 actionName: "Unit View",
                 offsets: new List<long> {  },
@@ -126,7 +128,7 @@
                 linkedTextBox: textBox13,
                 linkedNewKeyButton: button13,
                 linkedResetButton: button43);*/
-            /*AddKeybinding(data, // F2
+            /*AddKeybinding(data[], // F2
                 keyName: "Manufacture View",
                 actionName: "Manufacture View",
                 offsets: new List<long> {  },
@@ -134,7 +136,7 @@
                 linkedTextBox: textBox14,
                 linkedNewKeyButton: button14,
                 linkedResetButton: button44);*/
-            /*AddKeybinding(data, // F3
+            /*AddKeybinding(data[], // F3
                 keyName: "Resource View 1",
                 actionName: "Resource View 1",
                 offsets: new List<long> {  },
@@ -142,7 +144,7 @@
                 linkedTextBox: textBox15,
                 linkedNewKeyButton: button15,
                 linkedResetButton: button45);*/
-            /*AddKeybinding(data, // F4
+            /*AddKeybinding(data[], // F4
                 keyName: "Resource View 2",
                 actionName: "Resource View 2",
                 offsets: new List<long> {  },
@@ -150,7 +152,7 @@
                 linkedTextBox: textBox16,
                 linkedNewKeyButton: button16,
                 linkedResetButton: button46);*/
-            /*AddKeybinding(data, // F5
+            /*AddKeybinding(data[], // F5
                 keyName: "Resource View 3",
                 actionName: "Resource View 3",
                 offsets: new List<long> {  },
@@ -158,7 +160,7 @@
                 linkedTextBox: textBox17,
                 linkedNewKeyButton: button17,
                 linkedResetButton: button47);*/
-            /*AddKeybinding(data, // M
+            /*AddKeybinding(data[], // M
                 keyName: "Last Five Messages",
                 actionName: "Last Five Messages",
                 offsets: new List<long> {  },
@@ -166,7 +168,7 @@
                 linkedTextBox: textBox18,
                 linkedNewKeyButton: button18,
                 linkedResetButton: button48);*/
-            /*AddKeybinding(data, // R
+            /*AddKeybinding(data[], // R
                 keyName: "Research Menu",
                 actionName: "Research Menu",
                 offsets: new List<long> {  },
@@ -174,7 +176,7 @@
                 linkedTextBox: textBox19,
                 linkedNewKeyButton: button19,
                 linkedResetButton: button49);*/
-            /*AddKeybinding(data, // BACKSPACE
+            /*AddKeybinding(data[], // BACKSPACE
                 keyName: "Stop Time",
                 actionName: "Stop Time",
                 offsets: new List<long> {  },
@@ -183,7 +185,7 @@
                 linkedNewKeyButton: button20,
                 linkedResetButton: button50);*/
             // LAST TEN NAMED WITH VKS
-            /*AddKeybinding(data, // 1
+            /*AddKeybinding(data[], // 1
                 keyName: "Speed 1",
                 actionName: "Speed 1",
                 offsets: new List<long> {  },
@@ -191,7 +193,7 @@
                 linkedTextBox: textBox21,
                 linkedNewKeyButton: button21,
                 linkedResetButton: button51);*/
-            /*AddKeybinding(data, // 2
+            /*AddKeybinding(data[], // 2
                 keyName: "Speed 2",
                 actionName: "Speed 2",
                 offsets: new List<long> {  },
@@ -199,7 +201,7 @@
                 linkedTextBox: textBox22,
                 linkedNewKeyButton: button22,
                 linkedResetButton: button52);*/
-            /*AddKeybinding(data, // 3
+            /*AddKeybinding(data[], // 3
                 keyName: "Speed 3",
                 actionName: "Speed 3",
                 offsets: new List<long> {  },
@@ -207,7 +209,7 @@
                 linkedTextBox: textBox23,
                 linkedNewKeyButton: button23,
                 linkedResetButton: button53);*/
-            /*AddKeybinding(data, // 4
+            /*AddKeybinding(data[], // 4
                 keyName: "Speed 4",
                 actionName: "Speed 4",
                 offsets: new List<long> {  },
@@ -215,7 +217,7 @@
                 linkedTextBox: textBox24,
                 linkedNewKeyButton: button24,
                 linkedResetButton: button54);*/
-            /*AddKeybinding(data, // 5
+            /*AddKeybinding(data[], // 5
                 keyName: "Speed 5",
                 actionName: "Speed 5",
                 offsets: new List<long> {  },
@@ -223,7 +225,7 @@
                 linkedTextBox: textBox25,
                 linkedNewKeyButton: button25,
                 linkedResetButton: button55);*/
-            /*AddKeybinding(data, // 6
+            /*AddKeybinding(data[], // 6
                 keyName: "Speed 6",
                 actionName: "Speed 6",
                 offsets: new List<long> {  },
@@ -231,7 +233,7 @@
                 linkedTextBox: textBox26,
                 linkedNewKeyButton: button26,
                 linkedResetButton: button56);*/
-            /*AddKeybinding(data, // 7
+            /*AddKeybinding(data[], // 7
                 keyName: "Speed 7",
                 actionName: "Speed 7",
                 offsets: new List<long> {  },
@@ -239,7 +241,7 @@
                 linkedTextBox: textBox27,
                 linkedNewKeyButton: button27,
                 linkedResetButton: button57);*/
-            /*AddKeybinding(data, // 8
+            /*AddKeybinding(data[], // 8
                 keyName: "Speed 8",
                 actionName: "Speed 8",
                 offsets: new List<long> {  },
@@ -247,7 +249,7 @@
                 linkedTextBox: textBox28,
                 linkedNewKeyButton: button28,
                 linkedResetButton: button58);*/
-            /*AddKeybinding(data, // 9
+            /*AddKeybinding(data[], // 9
                 keyName: "Speed 9",
                 actionName: "Speed 9",
                 offsets: new List<long> {  },
@@ -255,7 +257,7 @@
                 linkedTextBox: textBox29,
                 linkedNewKeyButton: button29,
                 linkedResetButton: button59);*/
-            /*AddKeybinding(data, // 0
+            /*AddKeybinding(data[], // 0
                 keyName: "Speed 0",
                 actionName: "Speed 0",
                 offsets: new List<long> {  },
@@ -263,8 +265,33 @@
                 linkedTextBox: textBox30,
                 linkedNewKeyButton: button30,
                 linkedResetButton: button60);*/
+            // LAST THREE NAMED WITH VKS
+            /*AddKeybinding(data[], // SPACE
+               keyName: "Cycle Resource View",
+               actionName: "Cycle Resource View",
+               offsets: new List<long> {  },
+               defaultVK: 0x20,
+               linkedTextBox: textBox33,
+               linkedNewKeyButton: button67,
+               linkedResetButton: button68);*/
+            AddKeybinding(data[0x32D25], // LEFT CLICK
+                keyName: "Left Click",
+                actionName: "Left Click",
+                offsets: new List<long> { 0x32D25, 0x32D4E },
+                defaultVK: 0x01,
+                linkedTextBox: textBox31,
+                linkedNewKeyButton: button63,
+                linkedResetButton: button64);
+            AddKeybinding(data[0x32D32], // RIGHT CLICK
+                keyName: "Right Click",
+                actionName: "Right Click",
+                offsets: new List<long> { 0x32D32, 0x32D57 },
+                defaultVK: 0x02,
+                linkedTextBox: textBox32,
+                linkedNewKeyButton: button65,
+                linkedResetButton: button66);
             // UNKNOWN SECTION START
-            /*AddKeybinding(data, // SHIFT // Unknown functionality with 11 references?
+            /*AddKeybinding(data[], // SHIFT // Unknown functionality with 11 references?
                keyName: "UNKNOWN",
                actionName: "UNKNOWN",
                offsets: new List<long> { 0x2B2F9, 0x33391, 0x96B3A, 0x7C9B8, 0x3B7A6, 0x2B709, 0x2B6DC, 0x2B678, 0x2B628, 0x2B5DA, 0x2B591 },
@@ -273,30 +300,6 @@
                linkedNewKeyButton: button1, // no buttons yet
                linkedResetButton: button31);*/ // no buttons yet
             // UNKNOWN SECTION END
-            /*AddKeybinding(data, // SPACE
-               keyName: "Cycle Resource View",
-               actionName: "Cycle Resource View",
-               offsets: new List<long> {  },
-               defaultVK: 0x20,
-               linkedTextBox: textBox33,
-               linkedNewKeyButton: button67,
-               linkedResetButton: button68);*/
-            AddKeybinding(data, // LEFT CLICK
-                keyName: "Left Click",
-                actionName: "Left Click",
-                offsets: new List<long> { 0x32D25, 0x32D4E },
-                defaultVK: 0x01,
-                linkedTextBox: textBox31,
-                linkedNewKeyButton: button63,
-                linkedResetButton: button64);
-            AddKeybinding(data, // RIGHT CLICK
-                keyName: "Right Click",
-                actionName: "Right Click",
-                offsets: new List<long> { 0x32D32, 0x32D57 },
-                defaultVK: 0x02,
-                linkedTextBox: textBox32,
-                linkedNewKeyButton: button65,
-                linkedResetButton: button66);
         }
         // reset keys
         private void button61_Click(object sender, EventArgs e)
@@ -320,7 +323,7 @@
             MessageBox.Show("Shortcuts updated successfully.");
         }
         private void AddKeybinding(
-            byte[] data,
+            byte data,
             string keyName,
             string actionName,
             List<long> offsets,
@@ -334,7 +337,7 @@
                 ActionName = actionName,
                 Offsets = offsets,
                 DefaultVK = defaultVK,
-                CurrentVK = data[(int)offsets[0]], // Just use the first offset as representative
+                CurrentVK = data, // Just use the first offset as representative
                 LinkedTextBox = linkedTextBox,
                 LinkedNewKeyButton = linkedNewKeyButton,
                 LinkedResetButton = linkedResetButton
@@ -374,20 +377,7 @@
                     ping(keyName);
                     return;
                 }
-                if (newVK == keybindings[keyName].DefaultVK) { keybindings[keyName].LinkedResetButton!.Enabled = false; }
-                else { keybindings[keyName].LinkedResetButton!.Enabled = true; }
-                keybindings[keyName].CurrentVK = newVK;
-                keybindings[keyName].LinkedTextBox!.Text = e.KeyCode.ToString();
-                if (keybindings.Values.Any(k => k.IsModified))
-                {
-                    button61.Enabled = true; // Enable reset button if any key is modified
-                    button62.Enabled = true; // Enable save button if any key is modified
-                }
-                else
-                {
-                    button61.Enabled = false; // Enable reset button if any key is modified
-                    button62.Enabled = false; // Disable save button if no keys are modified
-                }
+                checkState(keyName, newVK); // Check and update state
             };
             // Reset to default
             keybindings[keyName].LinkedResetButton!.Click += (s, e) =>
@@ -448,10 +438,23 @@
                 return;
             }
             int i = 0;
-            foreach (var key in keybindings.Values)
+            foreach (var key in keybindings.Values) { checkState(key.ActionName, loaded[i++]); } // Check and update state
+        }
+        public void checkState(string keyName, byte newVK)
+        {
+            if (newVK == keybindings[keyName].DefaultVK) { keybindings[keyName].LinkedResetButton!.Enabled = false; }
+            else { keybindings[keyName].LinkedResetButton!.Enabled = true; }
+            keybindings[keyName].CurrentVK = newVK;
+            keybindings[keyName].LinkedTextBox!.Text = ((Keys)newVK).ToString();
+            if (keybindings.Values.Any(k => k.IsModified))
             {
-                key.CurrentVK = loaded[i++];
-                key.LinkedTextBox!.Text = ((Keys)key.CurrentVK).ToString();
+                button61.Enabled = true; // Enable reset button if any key is modified
+                button62.Enabled = true; // Enable save button if any key is modified
+            }
+            else
+            {
+                button61.Enabled = false; // Enable reset button if any key is modified
+                button62.Enabled = false; // Disable save button if no keys are modified
             }
         }
         // export keybindings
