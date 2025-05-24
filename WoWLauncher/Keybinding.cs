@@ -12,5 +12,6 @@
         public Button? LinkedResetButton { get; set; }
 
         public bool IsModified => CurrentVK != DefaultVK;
+        public bool ListeningForInput { get; set; }
     }
 }

@@ -1,11 +1,9 @@
-﻿using System.Security.Cryptography.X509Certificates;
-
-namespace WoWLauncher
+﻿namespace WoWLauncher
 {
     public partial class KeyboardShortcutsForm : Form
     {
         private Dictionary<string, Keybinding> keybindings = new();
-        private string lastButtonPressed = string.Empty;
+        private string lastKeyStored = string.Empty;
         public KeyboardShortcutsForm()
         {
             InitializeComponent();
@@ -350,13 +348,19 @@ namespace WoWLauncher
             // Lost focus reset text
             keybindings[keyName].LinkedNewKeyButton!.LostFocus += (s, e) =>
             {
-                keybindings[keyName].LinkedNewKeyButton!.Text = "New Key";
+                if(keybindings[keyName].ListeningForInput)
+                {
+                    keybindings[keyName].LinkedNewKeyButton!.Text = "New Key";
+                    keybindings[keyName].LinkedTextBox!.Text = lastKeyStored; // only set if the button wasnt pressed
+                }
             };
             // Button click event
             keybindings[keyName].LinkedNewKeyButton!.Click += (s, e) =>
             {
-                lastButtonPressed = keyName;
+                lastKeyStored = keybindings[keyName].LinkedTextBox!.Text;
+                keybindings[keyName].ListeningForInput = true;
                 keybindings[keyName].LinkedNewKeyButton!.Text = "Press Key!";
+                keybindings[keyName].LinkedTextBox!.Text = "Press a key...";
                 keybindings[keyName].LinkedNewKeyButton!.Focus();
             };
             // Wire up dynamic KeyDown
@@ -371,6 +375,7 @@ namespace WoWLauncher
                 keybindings[keyName].LinkedNewKeyButton!.Text = "New Key";
                 keybindings[keyName].CurrentVK = newVK;
                 keybindings[keyName].LinkedTextBox!.Text = e.KeyCode.ToString();
+                keybindings[keyName].ListeningForInput = false;
             };
             // Reset to default
             keybindings[keyName].LinkedResetButton!.Click += (s, e) =>
@@ -431,8 +436,11 @@ namespace WoWLauncher
                 return;
             }
             int i = 0;
-            foreach (var key in keybindings.Values) { key.CurrentVK = loaded[i++]; }
-            updateAllUI();
+            foreach (var key in keybindings.Values)
+            {
+                key.CurrentVK = loaded[i++];
+                key.LinkedTextBox!.Text = ((Keys)key.CurrentVK).ToString();
+            }
         }
         // export keybindings
         private void button70_Click(object sender, EventArgs e)
@@ -450,6 +458,5 @@ namespace WoWLauncher
                 }
             }
         }
-        private void updateAllUI() { foreach (var keyName in keybindings.Keys) { updateUI(keyName); } }
     }
 }
