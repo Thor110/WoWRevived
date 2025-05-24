@@ -66,6 +66,8 @@ WoWLauncher
 
 ![Launcher](images/launcher.png)
 
+Custom Keyboard Shortcuts
+
 <div align="center">
   <img src="images/keycodes.png">
 </div>
