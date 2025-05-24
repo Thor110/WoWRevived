@@ -25,7 +25,6 @@ namespace WoWLauncher
             // actionName not necessary
             AddKeybinding(data[0x4D800], // ESCAPE
                 keyName: "In-game Menu",
-                actionName: "In-game Menu",
                 offsets: new List<long> { 0x4D800, 0x4D619, 0x4D66D },
                 defaultVK: 0x1B,
                 linkedTextBox: textBox1,
@@ -33,7 +32,6 @@ namespace WoWLauncher
                 linkedResetButton: button31);
             /*AddKeybinding(data[], // TAB
                 keyName: "Hide Mini Map",
-                actionName: "Hide Mini Map",
                 offsets: new List<long> {  },
                 defaultVK: 0x09,
                 linkedTextBox: textBox2,
@@ -41,7 +39,6 @@ namespace WoWLauncher
                 linkedResetButton: button32);*/
             AddKeybinding(data[0x96BAC], // CONTROL
                 keyName: "Force Fire",
-                actionName: "Force Fire",
                 offsets: new List<long> { 0x96BAC, 0x96AB8, 0x8507D, 0x1CB65, 0x1CBAB, 0x1CC20, 0x1CCB1, 0x2CFC9, 0x30D3C, 0x30EAD, 0x84B1C, 0x84B55, 0x84BBD, 0x84C44, 0x85427, 0x96598 },
                 defaultVK: 0x11,
                 linkedTextBox: textBox3,
@@ -49,7 +46,6 @@ namespace WoWLauncher
                 linkedResetButton: button33);
             /*AddKeybinding(data[], // HOME
                 keyName: "Centers On Selection",
-                actionName: "Centers On Selection",
                 offsets: new List<long> {  },
                 defaultVK: 0x09,
                 linkedTextBox: textBox4,
@@ -57,7 +53,6 @@ namespace WoWLauncher
                 linkedResetButton: button34);*/
             /*AddKeybinding(data[], // PAGEUP
                 keyName: "Fast Scroll Up",
-                actionName: "Fast Scroll Up",
                 offsets: new List<long> {  },
                 defaultVK: 0x21,
                 linkedTextBox: textBox5,
@@ -65,7 +60,6 @@ namespace WoWLauncher
                 linkedResetButton: button35);*/
             /*AddKeybinding(data[], // PAGEDN
                 keyName: "Fast Scroll Down",
-                actionName: "Fast Scroll Down",
                 offsets: new List<long> {  },
                 defaultVK: 0x22,
                 linkedTextBox: textBox6,
@@ -73,7 +67,6 @@ namespace WoWLauncher
                 linkedResetButton: button36);*/
             /*AddKeybinding(data[], // UP
                 keyName: "Scroll Up",
-                actionName: "Scroll Up",
                 offsets: new List<long> {  },
                 defaultVK: 0x26,
                 linkedTextBox: textBox7,
@@ -81,7 +74,6 @@ namespace WoWLauncher
                 linkedResetButton: button37);*/
             /*AddKeybinding(data[], // DOWN
                 keyName: "Scroll Down",
-                actionName: "Scroll Down",
                 offsets: new List<long> {  },
                 defaultVK: 0x28,
                 linkedTextBox: textBox8,
@@ -89,7 +81,6 @@ namespace WoWLauncher
                 linkedResetButton: button38);*/
             /*AddKeybinding(data[], // LEFT
                 keyName: "Scroll Left",
-                actionName: "Scroll Left",
                 offsets: new List<long> {  },
                 defaultVK: 0x25,
                 linkedTextBox: textBox9,
@@ -97,7 +88,6 @@ namespace WoWLauncher
                 linkedResetButton: button39);*/
             /*AddKeybinding(data[], // RIGHT
                 keyName: "Scroll Right",
-                actionName: "Scroll Right",
                 offsets: new List<long> {  },
                 defaultVK: 0x27,
                 linkedTextBox: textBox10,
@@ -107,7 +97,6 @@ namespace WoWLauncher
             // SECOND TEN NAMED WITH VKS
             /*AddKeybinding(data[], // <
                 keyName: "Previous Unit",
-                actionName: "Previous Unit",
                 offsets: new List<long> {  },
                 defaultVK: 0xBC,
                 linkedTextBox: textBox11,
@@ -115,7 +104,6 @@ namespace WoWLauncher
                 linkedResetButton: button41);*/
             /*AddKeybinding(data[], // >
                 keyName: "Next Unit",
-                actionName: "Next Unit",
                 offsets: new List<long> {  },
                 defaultVK: 0xBE,
                 linkedTextBox: textBox12,
@@ -123,7 +111,6 @@ namespace WoWLauncher
                 linkedResetButton: button42);*/
             /*AddKeybinding(data[], // F1
                 keyName: "Unit View",
-                actionName: "Unit View",
                 offsets: new List<long> {  },
                 defaultVK: 0x70,
                 linkedTextBox: textBox13,
@@ -131,7 +118,6 @@ namespace WoWLauncher
                 linkedResetButton: button43);*/
             /*AddKeybinding(data[], // F2
                 keyName: "Manufacture View",
-                actionName: "Manufacture View",
                 offsets: new List<long> {  },
                 defaultVK: 0x71,
                 linkedTextBox: textBox14,
@@ -139,7 +125,6 @@ namespace WoWLauncher
                 linkedResetButton: button44);*/
             /*AddKeybinding(data[], // F3
                 keyName: "Resource View 1",
-                actionName: "Resource View 1",
                 offsets: new List<long> {  },
                 defaultVK: 0x72,
                 linkedTextBox: textBox15,
@@ -147,7 +132,6 @@ namespace WoWLauncher
                 linkedResetButton: button45);*/
             /*AddKeybinding(data[], // F4
                 keyName: "Resource View 2",
-                actionName: "Resource View 2",
                 offsets: new List<long> {  },
                 defaultVK: 0x73,
                 linkedTextBox: textBox16,
@@ -155,7 +139,6 @@ namespace WoWLauncher
                 linkedResetButton: button46);*/
             /*AddKeybinding(data[], // F5
                 keyName: "Resource View 3",
-                actionName: "Resource View 3",
                 offsets: new List<long> {  },
                 defaultVK: 0x74,
                 linkedTextBox: textBox17,
@@ -163,7 +146,6 @@ namespace WoWLauncher
                 linkedResetButton: button47);*/
             /*AddKeybinding(data[], // M
                 keyName: "Last Five Messages",
-                actionName: "Last Five Messages",
                 offsets: new List<long> {  },
                 defaultVK: 0x4D,
                 linkedTextBox: textBox18,
@@ -171,7 +153,6 @@ namespace WoWLauncher
                 linkedResetButton: button48);*/
             /*AddKeybinding(data[], // R
                 keyName: "Research Menu",
-                actionName: "Research Menu",
                 offsets: new List<long> {  },
                 defaultVK: 0x52,
                 linkedTextBox: textBox19,
@@ -179,7 +160,6 @@ namespace WoWLauncher
                 linkedResetButton: button49);*/
             /*AddKeybinding(data[], // BACKSPACE
                 keyName: "Stop Time",
-                actionName: "Stop Time",
                 offsets: new List<long> {  },
                 defaultVK: 0x08,
                 linkedTextBox: textBox20,
@@ -188,7 +168,6 @@ namespace WoWLauncher
             // LAST TEN NAMED WITH VKS
             /*AddKeybinding(data[], // 1
                 keyName: "Speed 1",
-                actionName: "Speed 1",
                 offsets: new List<long> {  },
                 defaultVK: 0x31,
                 linkedTextBox: textBox21,
@@ -196,7 +175,6 @@ namespace WoWLauncher
                 linkedResetButton: button51);*/
             /*AddKeybinding(data[], // 2
                 keyName: "Speed 2",
-                actionName: "Speed 2",
                 offsets: new List<long> {  },
                 defaultVK: 0x32,
                 linkedTextBox: textBox22,
@@ -204,7 +182,6 @@ namespace WoWLauncher
                 linkedResetButton: button52);*/
             /*AddKeybinding(data[], // 3
                 keyName: "Speed 3",
-                actionName: "Speed 3",
                 offsets: new List<long> {  },
                 defaultVK: 0x33,
                 linkedTextBox: textBox23,
@@ -212,7 +189,6 @@ namespace WoWLauncher
                 linkedResetButton: button53);*/
             /*AddKeybinding(data[], // 4
                 keyName: "Speed 4",
-                actionName: "Speed 4",
                 offsets: new List<long> {  },
                 defaultVK: 0x34,
                 linkedTextBox: textBox24,
@@ -220,7 +196,6 @@ namespace WoWLauncher
                 linkedResetButton: button54);*/
             /*AddKeybinding(data[], // 5
                 keyName: "Speed 5",
-                actionName: "Speed 5",
                 offsets: new List<long> {  },
                 defaultVK: 0x35,
                 linkedTextBox: textBox25,
@@ -228,7 +203,6 @@ namespace WoWLauncher
                 linkedResetButton: button55);*/
             /*AddKeybinding(data[], // 6
                 keyName: "Speed 6",
-                actionName: "Speed 6",
                 offsets: new List<long> {  },
                 defaultVK: 0x36,
                 linkedTextBox: textBox26,
@@ -236,7 +210,6 @@ namespace WoWLauncher
                 linkedResetButton: button56);*/
             /*AddKeybinding(data[], // 7
                 keyName: "Speed 7",
-                actionName: "Speed 7",
                 offsets: new List<long> {  },
                 defaultVK: 0x37,
                 linkedTextBox: textBox27,
@@ -244,7 +217,6 @@ namespace WoWLauncher
                 linkedResetButton: button57);*/
             /*AddKeybinding(data[], // 8
                 keyName: "Speed 8",
-                actionName: "Speed 8",
                 offsets: new List<long> {  },
                 defaultVK: 0x38,
                 linkedTextBox: textBox28,
@@ -252,7 +224,6 @@ namespace WoWLauncher
                 linkedResetButton: button58);*/
             /*AddKeybinding(data[], // 9
                 keyName: "Speed 9",
-                actionName: "Speed 9",
                 offsets: new List<long> {  },
                 defaultVK: 0x39,
                 linkedTextBox: textBox29,
@@ -260,7 +231,6 @@ namespace WoWLauncher
                 linkedResetButton: button59);*/
             /*AddKeybinding(data[], // 0
                 keyName: "Speed 0",
-                actionName: "Speed 0",
                 offsets: new List<long> {  },
                 defaultVK: 0x30,
                 linkedTextBox: textBox30,
@@ -269,7 +239,6 @@ namespace WoWLauncher
             // LAST THREE NAMED WITH VKS
             /*AddKeybinding(data[], // SPACE
                keyName: "Cycle Resource View",
-               actionName: "Cycle Resource View",
                offsets: new List<long> {  },
                defaultVK: 0x20,
                linkedTextBox: textBox33,
@@ -277,7 +246,6 @@ namespace WoWLauncher
                linkedResetButton: button68);*/
             AddKeybinding(data[0x32D25], // LEFT CLICK
                 keyName: "Left Click",
-                actionName: "Left Click",
                 offsets: new List<long> { 0x32D25, 0x32D4E },
                 defaultVK: 0x01,
                 linkedTextBox: textBox31,
@@ -285,7 +253,6 @@ namespace WoWLauncher
                 linkedResetButton: button64);
             AddKeybinding(data[0x32D32], // RIGHT CLICK
                 keyName: "Right Click",
-                actionName: "Right Click",
                 offsets: new List<long> { 0x32D32, 0x32D57 },
                 defaultVK: 0x02,
                 linkedTextBox: textBox32,
@@ -294,14 +261,13 @@ namespace WoWLauncher
             // UNKNOWN SECTION START
             /*AddKeybinding(data[], // SHIFT // Unknown functionality with 11 references?
                keyName: "UNKNOWN",
-               actionName: "UNKNOWN",
                offsets: new List<long> { 0x2B2F9, 0x33391, 0x96B3A, 0x7C9B8, 0x3B7A6, 0x2B709, 0x2B6DC, 0x2B678, 0x2B628, 0x2B5DA, 0x2B591 },
                defaultVK: 0x10,
                linkedTextBox: textBox1, // no textbox yet
                linkedNewKeyButton: button1, // no buttons yet
                linkedResetButton: button31);*/ // no buttons yet
             // UNKNOWN SECTION END
-            foreach (var key in keybindings.Values) { checkState(key.ActionName, key.CurrentVK); } // update state from load
+            foreach (var (keyName, binding) in keybindings) { checkState(keyName, binding.CurrentVK); } // update state from load
         }
         // reset keys
         private void button61_Click(object sender, EventArgs e)
@@ -327,7 +293,6 @@ namespace WoWLauncher
         private void AddKeybinding(
             byte data,
             string keyName,
-            string actionName,
             List<long> offsets,
             byte defaultVK,
             TextBox linkedTextBox,
@@ -336,7 +301,6 @@ namespace WoWLauncher
         {
             keybindings[keyName] = new Keybinding
             {
-                ActionName = actionName,
                 Offsets = offsets,
                 DefaultVK = defaultVK,
                 CurrentVK = data, // Just use the first offset as representative
@@ -393,7 +357,7 @@ namespace WoWLauncher
         {
             if (keybindings.TryGetValue(keyName, out var binding))
             {
-                return $"Keybind '{binding.ActionName}' is set to an invalid key ({binding.CurrentVK}). It won't be saved.";
+                return $"Keybind '{keyName}' is set to an invalid key ({binding.CurrentVK}). It won't be saved.";
             }
             return $"Keybind '{keyName}' is not found or is invalid.";
         }
@@ -440,7 +404,7 @@ namespace WoWLauncher
                 return;
             }
             int i = 0;
-            foreach (var key in keybindings.Values) { checkState(key.ActionName, loaded[i++]); } // Check and update state
+            foreach (var (keyName, binding) in keybindings) { checkState(keyName, loaded[i++]); } // check and update state
         }
         public void checkState(string keyName, byte newVK)
         {
