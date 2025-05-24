@@ -23,7 +23,7 @@ Or, if you choose to make a language patch using the text editor, feel free to s
 # Road Map
 
 The road map for this project.
-- [✅ 1 : Custom Launcher](#custom-launcher) ( Fully Functional - 90% Complete )
+- [✅ 1 : Custom Launcher](#custom-launcher) ( Fully Functional - 95% Complete )
 	- Dynamic language pack detection.
 	- Advanced registry settings options.
 	- Custom keyboard shortcut settings. (WIP)
