@@ -17,11 +17,12 @@ namespace WoWLauncher
         // key formula ( label, textbox, new key button, default key button )
         // label1 + textBox1 + button1 + button31 (+30)
         // label2 + textBox2 + button2 + button32 etc
-        // label1 - label30 etc
+        // label1 - label30 etc label 31-33 are different but all values are set already
         private void ParseExecutable()
         {
             byte[] data = File.ReadAllBytes("WoW_patched.exe");
             // manually write out label tooltip descriptions
+            // actionName not necessary
             AddKeybinding(data[0x4D800], // ESCAPE
                 keyName: "In-game Menu",
                 actionName: "In-game Menu",
@@ -300,6 +301,7 @@ namespace WoWLauncher
                linkedNewKeyButton: button1, // no buttons yet
                linkedResetButton: button31);*/ // no buttons yet
             // UNKNOWN SECTION END
+            foreach (var key in keybindings.Values) { checkState(key.ActionName, key.CurrentVK); } // update state from load
         }
         // reset keys
         private void button61_Click(object sender, EventArgs e)
