@@ -366,16 +366,28 @@
             // Wire up dynamic KeyDown
             keybindings[keyName].LinkedNewKeyButton!.KeyDown += (s, e) =>
             {
-                byte newVK = (byte)e.KeyCode;
+                keybindings[keyName].ListeningForInput = false; // stop listening for input
+                keybindings[keyName].LinkedNewKeyButton!.Text = "New Key"; // reset button text
+                byte newVK = (byte)e.KeyCode; // get keycode
                 if (!IsValidVirtualKey(newVK))
                 {
                     ping(keyName);
                     return;
                 }
-                keybindings[keyName].LinkedNewKeyButton!.Text = "New Key";
+                if (newVK == keybindings[keyName].DefaultVK) { keybindings[keyName].LinkedResetButton!.Enabled = false; }
+                else { keybindings[keyName].LinkedResetButton!.Enabled = true; }
                 keybindings[keyName].CurrentVK = newVK;
                 keybindings[keyName].LinkedTextBox!.Text = e.KeyCode.ToString();
-                keybindings[keyName].ListeningForInput = false;
+                if (keybindings.Values.Any(k => k.IsModified))
+                {
+                    button61.Enabled = true; // Enable reset button if any key is modified
+                    button62.Enabled = true; // Enable save button if any key is modified
+                }
+                else
+                {
+                    button61.Enabled = false; // Enable reset button if any key is modified
+                    button62.Enabled = false; // Disable save button if no keys are modified
+                }
             };
             // Reset to default
             keybindings[keyName].LinkedResetButton!.Click += (s, e) =>

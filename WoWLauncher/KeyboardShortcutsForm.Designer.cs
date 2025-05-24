@@ -1010,6 +1010,7 @@
             // 
             // button31
             // 
+            button31.Enabled = false;
             button31.Location = new Point(284, 24);
             button31.Name = "button31";
             button31.Size = new Size(75, 23);
@@ -1019,6 +1020,7 @@
             // 
             // button32
             // 
+            button32.Enabled = false;
             button32.Location = new Point(284, 53);
             button32.Name = "button32";
             button32.Size = new Size(75, 23);
@@ -1028,6 +1030,7 @@
             // 
             // button33
             // 
+            button33.Enabled = false;
             button33.Location = new Point(284, 82);
             button33.Name = "button33";
             button33.Size = new Size(75, 23);
@@ -1037,6 +1040,7 @@
             // 
             // button34
             // 
+            button34.Enabled = false;
             button34.Location = new Point(284, 111);
             button34.Name = "button34";
             button34.Size = new Size(75, 23);
@@ -1046,6 +1050,7 @@
             // 
             // button35
             // 
+            button35.Enabled = false;
             button35.Location = new Point(284, 139);
             button35.Name = "button35";
             button35.Size = new Size(75, 23);
@@ -1055,6 +1060,7 @@
             // 
             // button36
             // 
+            button36.Enabled = false;
             button36.Location = new Point(284, 168);
             button36.Name = "button36";
             button36.Size = new Size(75, 23);
@@ -1064,6 +1070,7 @@
             // 
             // button37
             // 
+            button37.Enabled = false;
             button37.Location = new Point(284, 200);
             button37.Name = "button37";
             button37.Size = new Size(75, 23);
@@ -1073,6 +1080,7 @@
             // 
             // button38
             // 
+            button38.Enabled = false;
             button38.Location = new Point(284, 228);
             button38.Name = "button38";
             button38.Size = new Size(75, 23);
@@ -1082,6 +1090,7 @@
             // 
             // button39
             // 
+            button39.Enabled = false;
             button39.Location = new Point(284, 257);
             button39.Name = "button39";
             button39.Size = new Size(75, 23);
@@ -1091,6 +1100,7 @@
             // 
             // button40
             // 
+            button40.Enabled = false;
             button40.Location = new Point(284, 286);
             button40.Name = "button40";
             button40.Size = new Size(75, 23);
@@ -1100,6 +1110,7 @@
             // 
             // button41
             // 
+            button41.Enabled = false;
             button41.Location = new Point(634, 25);
             button41.Name = "button41";
             button41.Size = new Size(75, 23);
@@ -1109,6 +1120,7 @@
             // 
             // button42
             // 
+            button42.Enabled = false;
             button42.Location = new Point(634, 54);
             button42.Name = "button42";
             button42.Size = new Size(75, 23);
@@ -1118,6 +1130,7 @@
             // 
             // button43
             // 
+            button43.Enabled = false;
             button43.Location = new Point(634, 83);
             button43.Name = "button43";
             button43.Size = new Size(75, 23);
@@ -1127,6 +1140,7 @@
             // 
             // button44
             // 
+            button44.Enabled = false;
             button44.Location = new Point(634, 112);
             button44.Name = "button44";
             button44.Size = new Size(75, 23);
@@ -1136,6 +1150,7 @@
             // 
             // button45
             // 
+            button45.Enabled = false;
             button45.Location = new Point(634, 141);
             button45.Name = "button45";
             button45.Size = new Size(75, 23);
@@ -1145,6 +1160,7 @@
             // 
             // button46
             // 
+            button46.Enabled = false;
             button46.Location = new Point(634, 170);
             button46.Name = "button46";
             button46.Size = new Size(75, 23);
@@ -1154,6 +1170,7 @@
             // 
             // button47
             // 
+            button47.Enabled = false;
             button47.Location = new Point(634, 199);
             button47.Name = "button47";
             button47.Size = new Size(75, 23);
@@ -1163,6 +1180,7 @@
             // 
             // button48
             // 
+            button48.Enabled = false;
             button48.Location = new Point(634, 228);
             button48.Name = "button48";
             button48.Size = new Size(75, 23);
@@ -1172,6 +1190,7 @@
             // 
             // button49
             // 
+            button49.Enabled = false;
             button49.Location = new Point(634, 257);
             button49.Name = "button49";
             button49.Size = new Size(75, 23);
@@ -1181,6 +1200,7 @@
             // 
             // button50
             // 
+            button50.Enabled = false;
             button50.Location = new Point(634, 286);
             button50.Name = "button50";
             button50.Size = new Size(75, 23);
@@ -1190,6 +1210,7 @@
             // 
             // button51
             // 
+            button51.Enabled = false;
             button51.Location = new Point(922, 24);
             button51.Name = "button51";
             button51.Size = new Size(75, 23);
@@ -1199,6 +1220,7 @@
             // 
             // button52
             // 
+            button52.Enabled = false;
             button52.Location = new Point(922, 53);
             button52.Name = "button52";
             button52.Size = new Size(75, 23);
@@ -1208,6 +1230,7 @@
             // 
             // button53
             // 
+            button53.Enabled = false;
             button53.Location = new Point(922, 82);
             button53.Name = "button53";
             button53.Size = new Size(75, 23);
@@ -1217,6 +1240,7 @@
             // 
             // button54
             // 
+            button54.Enabled = false;
             button54.Location = new Point(922, 111);
             button54.Name = "button54";
             button54.Size = new Size(75, 23);
@@ -1226,6 +1250,7 @@
             // 
             // button55
             // 
+            button55.Enabled = false;
             button55.Location = new Point(922, 140);
             button55.Name = "button55";
             button55.Size = new Size(75, 23);
@@ -1235,6 +1260,7 @@
             // 
             // button56
             // 
+            button56.Enabled = false;
             button56.Location = new Point(922, 169);
             button56.Name = "button56";
             button56.Size = new Size(75, 23);
@@ -1244,6 +1270,7 @@
             // 
             // button57
             // 
+            button57.Enabled = false;
             button57.Location = new Point(922, 198);
             button57.Name = "button57";
             button57.Size = new Size(75, 23);
@@ -1253,6 +1280,7 @@
             // 
             // button58
             // 
+            button58.Enabled = false;
             button58.Location = new Point(922, 227);
             button58.Name = "button58";
             button58.Size = new Size(75, 23);
@@ -1262,6 +1290,7 @@
             // 
             // button59
             // 
+            button59.Enabled = false;
             button59.Location = new Point(922, 256);
             button59.Name = "button59";
             button59.Size = new Size(75, 23);
@@ -1271,6 +1300,7 @@
             // 
             // button60
             // 
+            button60.Enabled = false;
             button60.Location = new Point(922, 285);
             button60.Name = "button60";
             button60.Size = new Size(75, 23);
@@ -1280,6 +1310,7 @@
             // 
             // button61
             // 
+            button61.Enabled = false;
             button61.Location = new Point(122, 375);
             button61.Name = "button61";
             button61.Size = new Size(75, 23);
@@ -1290,6 +1321,7 @@
             // 
             // button62
             // 
+            button62.Enabled = false;
             button62.Location = new Point(203, 375);
             button62.Name = "button62";
             button62.Size = new Size(75, 23);
@@ -1309,6 +1341,7 @@
             // 
             // button64
             // 
+            button64.Enabled = false;
             button64.Location = new Point(634, 344);
             button64.Name = "button64";
             button64.Size = new Size(75, 23);
@@ -1346,6 +1379,7 @@
             // 
             // button66
             // 
+            button66.Enabled = false;
             button66.Location = new Point(634, 373);
             button66.Name = "button66";
             button66.Size = new Size(75, 23);
@@ -1383,6 +1417,7 @@
             // 
             // button68
             // 
+            button68.Enabled = false;
             button68.Location = new Point(634, 315);
             button68.Name = "button68";
             button68.Size = new Size(75, 23);
