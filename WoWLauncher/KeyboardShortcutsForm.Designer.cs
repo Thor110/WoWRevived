@@ -159,6 +159,10 @@
             button66 = new Button();
             label32 = new Label();
             textBox32 = new TextBox();
+            button67 = new Button();
+            button68 = new Button();
+            label33 = new Label();
+            textBox33 = new TextBox();
             SuspendLayout();
             // 
             // button1
@@ -258,11 +262,11 @@
             // label4
             // 
             label4.AutoSize = true;
-            label4.Location = new Point(8, 114);
+            label4.Location = new Point(5, 114);
             label4.Name = "label4";
-            label4.Size = new Size(120, 15);
+            label4.Size = new Size(123, 15);
             label4.TabIndex = 12;
-            label4.Text = "Centers On Selection:";
+            label4.Text = "Centers On Selection :";
             label4.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox4
@@ -1294,7 +1298,7 @@
             // 
             // button63
             // 
-            button63.Location = new Point(501, 360);
+            button63.Location = new Point(553, 344);
             button63.Name = "button63";
             button63.Size = new Size(75, 23);
             button63.TabIndex = 129;
@@ -1303,7 +1307,7 @@
             // 
             // button64
             // 
-            button64.Location = new Point(582, 360);
+            button64.Location = new Point(634, 344);
             button64.Name = "button64";
             button64.Size = new Size(75, 23);
             button64.TabIndex = 128;
@@ -1312,7 +1316,7 @@
             // 
             // button65
             // 
-            button65.Location = new Point(501, 389);
+            button65.Location = new Point(553, 373);
             button65.Name = "button65";
             button65.Size = new Size(75, 23);
             button65.TabIndex = 127;
@@ -1322,7 +1326,7 @@
             // label31
             // 
             label31.AutoSize = true;
-            label31.Location = new Point(364, 364);
+            label31.Location = new Point(416, 348);
             label31.Name = "label31";
             label31.Size = new Size(62, 15);
             label31.TabIndex = 126;
@@ -1332,7 +1336,7 @@
             // textBox31
             // 
             textBox31.Enabled = false;
-            textBox31.Location = new Point(432, 360);
+            textBox31.Location = new Point(484, 344);
             textBox31.Name = "textBox31";
             textBox31.Size = new Size(63, 23);
             textBox31.TabIndex = 125;
@@ -1340,7 +1344,7 @@
             // 
             // button66
             // 
-            button66.Location = new Point(582, 389);
+            button66.Location = new Point(634, 373);
             button66.Name = "button66";
             button66.Size = new Size(75, 23);
             button66.TabIndex = 124;
@@ -1350,7 +1354,7 @@
             // label32
             // 
             label32.AutoSize = true;
-            label32.Location = new Point(356, 393);
+            label32.Location = new Point(408, 377);
             label32.Name = "label32";
             label32.Size = new Size(70, 15);
             label32.TabIndex = 123;
@@ -1360,17 +1364,58 @@
             // textBox32
             // 
             textBox32.Enabled = false;
-            textBox32.Location = new Point(432, 389);
+            textBox32.Location = new Point(484, 373);
             textBox32.Name = "textBox32";
             textBox32.Size = new Size(63, 23);
             textBox32.TabIndex = 122;
             textBox32.Text = "RClick";
+            // 
+            // button67
+            // 
+            button67.Location = new Point(553, 315);
+            button67.Name = "button67";
+            button67.Size = new Size(75, 23);
+            button67.TabIndex = 133;
+            button67.Text = "New Key";
+            button67.UseVisualStyleBackColor = true;
+            // 
+            // button68
+            // 
+            button68.Location = new Point(634, 315);
+            button68.Name = "button68";
+            button68.Size = new Size(75, 23);
+            button68.TabIndex = 132;
+            button68.Text = "Default";
+            button68.UseVisualStyleBackColor = true;
+            // 
+            // label33
+            // 
+            label33.AutoSize = true;
+            label33.Location = new Point(357, 319);
+            label33.Name = "label33";
+            label33.Size = new Size(121, 15);
+            label33.TabIndex = 131;
+            label33.Text = "Cycle Resource View :";
+            label33.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // textBox33
+            // 
+            textBox33.Enabled = false;
+            textBox33.Location = new Point(484, 315);
+            textBox33.Name = "textBox33";
+            textBox33.Size = new Size(63, 23);
+            textBox33.TabIndex = 130;
+            textBox33.Text = "Spacebar";
             // 
             // KeyboardShortcutsForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1015, 450);
+            Controls.Add(button67);
+            Controls.Add(button68);
+            Controls.Add(label33);
+            Controls.Add(textBox33);
             Controls.Add(button63);
             Controls.Add(button64);
             Controls.Add(button65);
@@ -1641,5 +1686,9 @@
         private Button button66;
         private Label label32;
         private TextBox textBox32;
+        private Button button67;
+        private Button button68;
+        private Label label33;
+        private TextBox textBox33;
     }
 }
