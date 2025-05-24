@@ -82,6 +82,6 @@ Offsets (13)
 
 8 - Backspace - Stop Time
 
-32 - Spacebar - Resource View
+32 - Spacebar - Cycle Resource View
 
 https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
