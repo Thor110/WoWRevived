@@ -179,7 +179,7 @@ namespace WoWViewer
                 openFileDialog.RestoreDirectory = true;
                 openFileDialog.Title = "Import TEXT.OJD.TXT file";
                 if (openFileDialog.ShowDialog() != DialogResult.OK) { return; }
-                else { filePath = openFileDialog.FileName; }
+                else { filePath = openFileDialog.FileName; } // this is wrong?
             }
             var lines = File.ReadLines(filePath, Latin1);
             if (lines.Count() < 1396) // check the line count matches before updating so there is no need to reparse the original TEXT.ojd file

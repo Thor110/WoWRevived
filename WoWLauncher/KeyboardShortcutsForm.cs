@@ -7,7 +7,7 @@
         {
             InitializeComponent();
             ToolTip tooltip = new ToolTip();
-            ToolTipHelper.EnableTooltips(this.Controls, tooltip, typeof(Button) );
+            ToolTipHelper.EnableTooltips(this.Controls, tooltip, typeof(Button));
             ParseExecutable();
         }
         // parse the executables current key bindings
@@ -363,7 +363,7 @@
                 keybindings[keyName].LinkedTextBox!.Text = ((Keys)keybindings[keyName].DefaultVK).ToString();
             };
         }
-        public void ping(string keyName) { MessageBox.Show(FormatInvalidKeyMessage(keyName), "Invalid Key", MessageBoxButtons.OK, MessageBoxIcon.Warning); }   
+        public void ping(string keyName) { MessageBox.Show(FormatInvalidKeyMessage(keyName), "Invalid Key", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         public string FormatInvalidKeyMessage(string keyName)
         {
             if (keybindings.TryGetValue(keyName, out var binding))
@@ -394,5 +394,46 @@
                 else if (result == DialogResult.Yes) { button62.PerformClick(); } // Trigger the save button
             }
         }
+        // import keybinds
+        private void button69_Click(object sender, EventArgs e)
+        {
+            string filePath;
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.InitialDirectory = Directory.GetCurrentDirectory();
+                openFileDialog.Filter = "Keybinding Files (*.key)|*.key";
+                openFileDialog.FilterIndex = 1;
+                openFileDialog.RestoreDirectory = true;
+                openFileDialog.Title = "Import keybinding presets.";
+                if (openFileDialog.ShowDialog() != DialogResult.OK) { return; }
+                else { filePath = openFileDialog.FileName; }
+            }
+            byte[] loaded = File.ReadAllBytes(filePath);
+            if (loaded.Length != keybindings.Count)
+            {
+                MessageBox.Show("Invalid keybindings file. Import aborted.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            int i = 0;
+            foreach (var key in keybindings.Values) { key.CurrentVK = loaded[i++]; }
+            updateAllUI();
+        }
+        // export keybindings
+        private void button70_Click(object sender, EventArgs e)
+        {
+            using (SaveFileDialog sfd = new SaveFileDialog())
+            {
+                sfd.Title = "Export Keybindings";
+                sfd.Filter = "Keybinding Files (*.key)|*.key|All Files (*.*)|*.*";
+                sfd.DefaultExt = "key";
+                sfd.FileName = "bindings.key";
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    File.WriteAllBytes(sfd.FileName, keybindings.Values.Select(k => k.CurrentVK).ToArray());
+                    MessageBox.Show("Keybindings exported successfully.", "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        }
+        private void updateAllUI() { foreach (var keyName in keybindings.Keys) { updateUI(keyName); } }
     }
 }

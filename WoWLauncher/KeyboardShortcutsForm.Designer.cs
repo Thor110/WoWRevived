@@ -163,6 +163,8 @@
             button68 = new Button();
             label33 = new Label();
             textBox33 = new TextBox();
+            button69 = new Button();
+            button70 = new Button();
             SuspendLayout();
             // 
             // button1
@@ -1278,7 +1280,7 @@
             // 
             // button61
             // 
-            button61.Location = new Point(119, 375);
+            button61.Location = new Point(122, 375);
             button61.Name = "button61";
             button61.Size = new Size(75, 23);
             button61.TabIndex = 111;
@@ -1288,7 +1290,7 @@
             // 
             // button62
             // 
-            button62.Location = new Point(200, 375);
+            button62.Location = new Point(203, 375);
             button62.Name = "button62";
             button62.Size = new Size(75, 23);
             button62.TabIndex = 121;
@@ -1407,11 +1409,33 @@
             textBox33.TabIndex = 130;
             textBox33.Text = "Spacebar";
             // 
+            // button69
+            // 
+            button69.Location = new Point(760, 375);
+            button69.Name = "button69";
+            button69.Size = new Size(75, 23);
+            button69.TabIndex = 134;
+            button69.Text = "Import";
+            button69.UseVisualStyleBackColor = true;
+            button69.Click += button69_Click;
+            // 
+            // button70
+            // 
+            button70.Location = new Point(841, 375);
+            button70.Name = "button70";
+            button70.Size = new Size(75, 23);
+            button70.TabIndex = 135;
+            button70.Text = "Export";
+            button70.UseVisualStyleBackColor = true;
+            button70.Click += button70_Click;
+            // 
             // KeyboardShortcutsForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1015, 450);
+            Controls.Add(button70);
+            Controls.Add(button69);
             Controls.Add(button67);
             Controls.Add(button68);
             Controls.Add(label33);
@@ -1690,5 +1714,7 @@
         private Button button68;
         private Label label33;
         private TextBox textBox33;
+        private Button button69;
+        private Button button70;
     }
 }
