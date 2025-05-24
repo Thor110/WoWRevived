@@ -163,7 +163,7 @@
             // 
             // button1
             // 
-            button1.Location = new Point(188, 24);
+            button1.Location = new Point(203, 24);
             button1.Name = "button1";
             button1.Size = new Size(75, 23);
             button1.TabIndex = 0;
@@ -172,7 +172,7 @@
             // 
             // button2
             // 
-            button2.Location = new Point(188, 53);
+            button2.Location = new Point(203, 53);
             button2.Name = "button2";
             button2.Size = new Size(75, 23);
             button2.TabIndex = 1;
@@ -182,7 +182,7 @@
             // textBox1
             // 
             textBox1.Enabled = false;
-            textBox1.Location = new Point(119, 24);
+            textBox1.Location = new Point(134, 24);
             textBox1.Name = "textBox1";
             textBox1.Size = new Size(63, 23);
             textBox1.TabIndex = 2;
@@ -191,7 +191,7 @@
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(21, 28);
+            label1.Location = new Point(36, 28);
             label1.Name = "label1";
             label1.Size = new Size(92, 15);
             label1.TabIndex = 3;
@@ -201,17 +201,17 @@
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(21, 57);
+            label2.Location = new Point(36, 57);
             label2.Name = "label2";
             label2.Size = new Size(92, 15);
             label2.TabIndex = 6;
-            label2.Text = "In-game Menu :";
+            label2.Text = "Hide Mini Map :";
             label2.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox2
             // 
             textBox2.Enabled = false;
-            textBox2.Location = new Point(119, 53);
+            textBox2.Location = new Point(134, 53);
             textBox2.Name = "textBox2";
             textBox2.Size = new Size(63, 23);
             textBox2.TabIndex = 5;
@@ -219,7 +219,7 @@
             // 
             // button3
             // 
-            button3.Location = new Point(188, 82);
+            button3.Location = new Point(203, 82);
             button3.Name = "button3";
             button3.Size = new Size(75, 23);
             button3.TabIndex = 4;
@@ -230,7 +230,7 @@
             // 
             label3.AutoSize = true;
             label3.ImageAlign = ContentAlignment.MiddleRight;
-            label3.Location = new Point(49, 84);
+            label3.Location = new Point(64, 84);
             label3.Name = "label3";
             label3.Size = new Size(64, 15);
             label3.TabIndex = 9;
@@ -240,7 +240,7 @@
             // textBox3
             // 
             textBox3.Enabled = false;
-            textBox3.Location = new Point(119, 82);
+            textBox3.Location = new Point(134, 82);
             textBox3.Name = "textBox3";
             textBox3.Size = new Size(63, 23);
             textBox3.TabIndex = 8;
@@ -248,7 +248,7 @@
             // 
             // button4
             // 
-            button4.Location = new Point(188, 111);
+            button4.Location = new Point(203, 111);
             button4.Name = "button4";
             button4.Size = new Size(75, 23);
             button4.TabIndex = 7;
@@ -258,17 +258,17 @@
             // label4
             // 
             label4.AutoSize = true;
-            label4.Location = new Point(21, 114);
+            label4.Location = new Point(8, 114);
             label4.Name = "label4";
-            label4.Size = new Size(92, 15);
+            label4.Size = new Size(120, 15);
             label4.TabIndex = 12;
-            label4.Text = "In-game Menu :";
+            label4.Text = "Centers On Selection:";
             label4.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox4
             // 
             textBox4.Enabled = false;
-            textBox4.Location = new Point(119, 110);
+            textBox4.Location = new Point(134, 110);
             textBox4.Name = "textBox4";
             textBox4.Size = new Size(63, 23);
             textBox4.TabIndex = 11;
@@ -276,7 +276,7 @@
             // 
             // button5
             // 
-            button5.Location = new Point(188, 139);
+            button5.Location = new Point(203, 139);
             button5.Name = "button5";
             button5.Size = new Size(75, 23);
             button5.TabIndex = 10;
@@ -286,17 +286,17 @@
             // label5
             // 
             label5.AutoSize = true;
-            label5.Location = new Point(21, 143);
+            label5.Location = new Point(44, 143);
             label5.Name = "label5";
-            label5.Size = new Size(92, 15);
+            label5.Size = new Size(84, 15);
             label5.TabIndex = 15;
-            label5.Text = "In-game Menu :";
+            label5.Text = "Fast Scroll Up :";
             label5.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox5
             // 
             textBox5.Enabled = false;
-            textBox5.Location = new Point(119, 139);
+            textBox5.Location = new Point(134, 139);
             textBox5.Name = "textBox5";
             textBox5.Size = new Size(63, 23);
             textBox5.TabIndex = 14;
@@ -304,7 +304,7 @@
             // 
             // button6
             // 
-            button6.Location = new Point(188, 168);
+            button6.Location = new Point(203, 168);
             button6.Name = "button6";
             button6.Size = new Size(75, 23);
             button6.TabIndex = 13;
@@ -314,17 +314,17 @@
             // label6
             // 
             label6.AutoSize = true;
-            label6.Location = new Point(21, 175);
+            label6.Location = new Point(28, 174);
             label6.Name = "label6";
-            label6.Size = new Size(92, 15);
+            label6.Size = new Size(100, 15);
             label6.TabIndex = 18;
-            label6.Text = "In-game Menu :";
+            label6.Text = "Fast Scroll Down :";
             label6.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox6
             // 
             textBox6.Enabled = false;
-            textBox6.Location = new Point(119, 171);
+            textBox6.Location = new Point(134, 171);
             textBox6.Name = "textBox6";
             textBox6.Size = new Size(63, 23);
             textBox6.TabIndex = 17;
@@ -332,7 +332,7 @@
             // 
             // button7
             // 
-            button7.Location = new Point(188, 200);
+            button7.Location = new Point(203, 200);
             button7.Name = "button7";
             button7.Size = new Size(75, 23);
             button7.TabIndex = 16;
@@ -342,17 +342,17 @@
             // label7
             // 
             label7.AutoSize = true;
-            label7.Location = new Point(21, 203);
+            label7.Location = new Point(68, 203);
             label7.Name = "label7";
-            label7.Size = new Size(92, 15);
+            label7.Size = new Size(60, 15);
             label7.TabIndex = 21;
-            label7.Text = "In-game Menu :";
+            label7.Text = "Scroll Up :";
             label7.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox7
             // 
             textBox7.Enabled = false;
-            textBox7.Location = new Point(119, 199);
+            textBox7.Location = new Point(134, 199);
             textBox7.Name = "textBox7";
             textBox7.Size = new Size(63, 23);
             textBox7.TabIndex = 20;
@@ -360,7 +360,7 @@
             // 
             // button8
             // 
-            button8.Location = new Point(188, 228);
+            button8.Location = new Point(203, 228);
             button8.Name = "button8";
             button8.Size = new Size(75, 23);
             button8.TabIndex = 19;
@@ -370,17 +370,17 @@
             // label8
             // 
             label8.AutoSize = true;
-            label8.Location = new Point(21, 232);
+            label8.Location = new Point(52, 232);
             label8.Name = "label8";
-            label8.Size = new Size(92, 15);
+            label8.Size = new Size(76, 15);
             label8.TabIndex = 24;
-            label8.Text = "In-game Menu :";
+            label8.Text = "Scroll Down :";
             label8.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox8
             // 
             textBox8.Enabled = false;
-            textBox8.Location = new Point(119, 228);
+            textBox8.Location = new Point(134, 228);
             textBox8.Name = "textBox8";
             textBox8.Size = new Size(63, 23);
             textBox8.TabIndex = 23;
@@ -388,7 +388,7 @@
             // 
             // button9
             // 
-            button9.Location = new Point(188, 257);
+            button9.Location = new Point(203, 257);
             button9.Name = "button9";
             button9.Size = new Size(75, 23);
             button9.TabIndex = 22;
@@ -398,17 +398,17 @@
             // label9
             // 
             label9.AutoSize = true;
-            label9.Location = new Point(21, 261);
+            label9.Location = new Point(63, 261);
             label9.Name = "label9";
-            label9.Size = new Size(92, 15);
+            label9.Size = new Size(65, 15);
             label9.TabIndex = 27;
-            label9.Text = "In-game Menu :";
+            label9.Text = "Scroll Left :";
             label9.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox9
             // 
             textBox9.Enabled = false;
-            textBox9.Location = new Point(119, 257);
+            textBox9.Location = new Point(134, 257);
             textBox9.Name = "textBox9";
             textBox9.Size = new Size(63, 23);
             textBox9.TabIndex = 26;
@@ -416,7 +416,7 @@
             // 
             // button10
             // 
-            button10.Location = new Point(188, 286);
+            button10.Location = new Point(203, 286);
             button10.Name = "button10";
             button10.Size = new Size(75, 23);
             button10.TabIndex = 25;
@@ -426,17 +426,17 @@
             // label10
             // 
             label10.AutoSize = true;
-            label10.Location = new Point(21, 290);
+            label10.Location = new Point(55, 290);
             label10.Name = "label10";
-            label10.Size = new Size(92, 15);
+            label10.Size = new Size(73, 15);
             label10.TabIndex = 30;
-            label10.Text = "In-game Menu :";
+            label10.Text = "Scroll Right :";
             label10.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox10
             // 
             textBox10.Enabled = false;
-            textBox10.Location = new Point(119, 286);
+            textBox10.Location = new Point(134, 286);
             textBox10.Name = "textBox10";
             textBox10.Size = new Size(63, 23);
             textBox10.TabIndex = 29;
@@ -444,7 +444,7 @@
             // 
             // button11
             // 
-            button11.Location = new Point(517, 25);
+            button11.Location = new Point(553, 25);
             button11.Name = "button11";
             button11.Size = new Size(75, 23);
             button11.TabIndex = 28;
@@ -454,17 +454,17 @@
             // label11
             // 
             label11.AutoSize = true;
-            label11.Location = new Point(350, 29);
+            label11.Location = new Point(395, 29);
             label11.Name = "label11";
-            label11.Size = new Size(92, 15);
+            label11.Size = new Size(83, 15);
             label11.TabIndex = 60;
-            label11.Text = "In-game Menu :";
+            label11.Text = "Previous Unit :";
             label11.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox11
             // 
             textBox11.Enabled = false;
-            textBox11.Location = new Point(448, 25);
+            textBox11.Location = new Point(484, 25);
             textBox11.Name = "textBox11";
             textBox11.Size = new Size(63, 23);
             textBox11.TabIndex = 59;
@@ -472,7 +472,7 @@
             // 
             // button12
             // 
-            button12.Location = new Point(517, 54);
+            button12.Location = new Point(553, 54);
             button12.Name = "button12";
             button12.Size = new Size(75, 23);
             button12.TabIndex = 58;
@@ -482,17 +482,17 @@
             // label12
             // 
             label12.AutoSize = true;
-            label12.Location = new Point(350, 58);
+            label12.Location = new Point(415, 58);
             label12.Name = "label12";
-            label12.Size = new Size(92, 15);
+            label12.Size = new Size(63, 15);
             label12.TabIndex = 57;
-            label12.Text = "In-game Menu :";
+            label12.Text = "Next Unit :";
             label12.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox12
             // 
             textBox12.Enabled = false;
-            textBox12.Location = new Point(448, 54);
+            textBox12.Location = new Point(484, 54);
             textBox12.Name = "textBox12";
             textBox12.Size = new Size(63, 23);
             textBox12.TabIndex = 56;
@@ -500,7 +500,7 @@
             // 
             // button13
             // 
-            button13.Location = new Point(517, 83);
+            button13.Location = new Point(553, 83);
             button13.Name = "button13";
             button13.Size = new Size(75, 23);
             button13.TabIndex = 55;
@@ -510,17 +510,17 @@
             // label13
             // 
             label13.AutoSize = true;
-            label13.Location = new Point(350, 87);
+            label13.Location = new Point(415, 87);
             label13.Name = "label13";
-            label13.Size = new Size(92, 15);
+            label13.Size = new Size(63, 15);
             label13.TabIndex = 54;
-            label13.Text = "In-game Menu :";
+            label13.Text = "Unit View :";
             label13.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox13
             // 
             textBox13.Enabled = false;
-            textBox13.Location = new Point(448, 83);
+            textBox13.Location = new Point(484, 83);
             textBox13.Name = "textBox13";
             textBox13.Size = new Size(63, 23);
             textBox13.TabIndex = 53;
@@ -528,7 +528,7 @@
             // 
             // button14
             // 
-            button14.Location = new Point(517, 112);
+            button14.Location = new Point(553, 112);
             button14.Name = "button14";
             button14.Size = new Size(75, 23);
             button14.TabIndex = 52;
@@ -538,17 +538,17 @@
             // label14
             // 
             label14.AutoSize = true;
-            label14.Location = new Point(350, 116);
+            label14.Location = new Point(369, 116);
             label14.Name = "label14";
-            label14.Size = new Size(92, 15);
+            label14.Size = new Size(109, 15);
             label14.TabIndex = 51;
-            label14.Text = "In-game Menu :";
+            label14.Text = "Manufacture View :";
             label14.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox14
             // 
             textBox14.Enabled = false;
-            textBox14.Location = new Point(448, 112);
+            textBox14.Location = new Point(484, 112);
             textBox14.Name = "textBox14";
             textBox14.Size = new Size(63, 23);
             textBox14.TabIndex = 50;
@@ -556,7 +556,7 @@
             // 
             // button15
             // 
-            button15.Location = new Point(517, 141);
+            button15.Location = new Point(553, 141);
             button15.Name = "button15";
             button15.Size = new Size(75, 23);
             button15.TabIndex = 49;
@@ -566,17 +566,17 @@
             // label15
             // 
             label15.AutoSize = true;
-            label15.Location = new Point(350, 145);
+            label15.Location = new Point(380, 145);
             label15.Name = "label15";
-            label15.Size = new Size(92, 15);
+            label15.Size = new Size(98, 15);
             label15.TabIndex = 48;
-            label15.Text = "In-game Menu :";
+            label15.Text = "Resource View 1 :";
             label15.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox15
             // 
             textBox15.Enabled = false;
-            textBox15.Location = new Point(448, 141);
+            textBox15.Location = new Point(484, 141);
             textBox15.Name = "textBox15";
             textBox15.Size = new Size(63, 23);
             textBox15.TabIndex = 47;
@@ -584,7 +584,7 @@
             // 
             // button16
             // 
-            button16.Location = new Point(517, 170);
+            button16.Location = new Point(553, 170);
             button16.Name = "button16";
             button16.Size = new Size(75, 23);
             button16.TabIndex = 46;
@@ -594,17 +594,17 @@
             // label16
             // 
             label16.AutoSize = true;
-            label16.Location = new Point(350, 174);
+            label16.Location = new Point(380, 174);
             label16.Name = "label16";
-            label16.Size = new Size(92, 15);
+            label16.Size = new Size(98, 15);
             label16.TabIndex = 45;
-            label16.Text = "In-game Menu :";
+            label16.Text = "Resource View 2 :";
             label16.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox16
             // 
             textBox16.Enabled = false;
-            textBox16.Location = new Point(448, 170);
+            textBox16.Location = new Point(484, 170);
             textBox16.Name = "textBox16";
             textBox16.Size = new Size(63, 23);
             textBox16.TabIndex = 44;
@@ -612,7 +612,7 @@
             // 
             // button17
             // 
-            button17.Location = new Point(517, 199);
+            button17.Location = new Point(553, 199);
             button17.Name = "button17";
             button17.Size = new Size(75, 23);
             button17.TabIndex = 43;
@@ -622,17 +622,17 @@
             // label17
             // 
             label17.AutoSize = true;
-            label17.Location = new Point(350, 203);
+            label17.Location = new Point(380, 203);
             label17.Name = "label17";
-            label17.Size = new Size(92, 15);
+            label17.Size = new Size(98, 15);
             label17.TabIndex = 42;
-            label17.Text = "In-game Menu :";
+            label17.Text = "Resource View 3 :";
             label17.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox17
             // 
             textBox17.Enabled = false;
-            textBox17.Location = new Point(448, 199);
+            textBox17.Location = new Point(484, 199);
             textBox17.Name = "textBox17";
             textBox17.Size = new Size(63, 23);
             textBox17.TabIndex = 41;
@@ -640,7 +640,7 @@
             // 
             // button18
             // 
-            button18.Location = new Point(517, 228);
+            button18.Location = new Point(553, 228);
             button18.Name = "button18";
             button18.Size = new Size(75, 23);
             button18.TabIndex = 40;
@@ -650,17 +650,17 @@
             // label18
             // 
             label18.AutoSize = true;
-            label18.Location = new Point(350, 232);
+            label18.Location = new Point(366, 232);
             label18.Name = "label18";
-            label18.Size = new Size(92, 15);
+            label18.Size = new Size(112, 15);
             label18.TabIndex = 39;
-            label18.Text = "In-game Menu :";
+            label18.Text = "Last Five Messages :";
             label18.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox18
             // 
             textBox18.Enabled = false;
-            textBox18.Location = new Point(448, 228);
+            textBox18.Location = new Point(484, 228);
             textBox18.Name = "textBox18";
             textBox18.Size = new Size(63, 23);
             textBox18.TabIndex = 38;
@@ -668,7 +668,7 @@
             // 
             // button19
             // 
-            button19.Location = new Point(517, 257);
+            button19.Location = new Point(553, 257);
             button19.Name = "button19";
             button19.Size = new Size(75, 23);
             button19.TabIndex = 37;
@@ -678,17 +678,17 @@
             // label19
             // 
             label19.AutoSize = true;
-            label19.Location = new Point(350, 261);
+            label19.Location = new Point(384, 261);
             label19.Name = "label19";
-            label19.Size = new Size(92, 15);
+            label19.Size = new Size(94, 15);
             label19.TabIndex = 36;
-            label19.Text = "In-game Menu :";
+            label19.Text = "Research Menu :";
             label19.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox19
             // 
             textBox19.Enabled = false;
-            textBox19.Location = new Point(448, 257);
+            textBox19.Location = new Point(484, 257);
             textBox19.Name = "textBox19";
             textBox19.Size = new Size(63, 23);
             textBox19.TabIndex = 35;
@@ -696,7 +696,7 @@
             // 
             // button20
             // 
-            button20.Location = new Point(517, 286);
+            button20.Location = new Point(553, 286);
             button20.Name = "button20";
             button20.Size = new Size(75, 23);
             button20.TabIndex = 34;
@@ -706,17 +706,17 @@
             // label20
             // 
             label20.AutoSize = true;
-            label20.Location = new Point(350, 290);
+            label20.Location = new Point(412, 290);
             label20.Name = "label20";
-            label20.Size = new Size(92, 15);
+            label20.Size = new Size(66, 15);
             label20.TabIndex = 33;
-            label20.Text = "In-game Menu :";
+            label20.Text = "Stop Time :";
             label20.TextAlign = ContentAlignment.MiddleRight;
             // 
             // textBox20
             // 
             textBox20.Enabled = false;
-            textBox20.Location = new Point(448, 286);
+            textBox20.Location = new Point(484, 286);
             textBox20.Name = "textBox20";
             textBox20.Size = new Size(63, 23);
             textBox20.TabIndex = 32;
@@ -724,7 +724,7 @@
             // 
             // button21
             // 
-            button21.Location = new Point(805, 24);
+            button21.Location = new Point(841, 24);
             button21.Name = "button21";
             button21.Size = new Size(75, 23);
             button21.TabIndex = 31;
@@ -734,7 +734,7 @@
             // label21
             // 
             label21.AutoSize = true;
-            label21.Location = new Point(676, 28);
+            label21.Location = new Point(712, 28);
             label21.Name = "label21";
             label21.Size = new Size(54, 15);
             label21.TabIndex = 90;
@@ -744,7 +744,7 @@
             // textBox21
             // 
             textBox21.Enabled = false;
-            textBox21.Location = new Point(736, 24);
+            textBox21.Location = new Point(772, 24);
             textBox21.Name = "textBox21";
             textBox21.Size = new Size(63, 23);
             textBox21.TabIndex = 89;
@@ -752,7 +752,7 @@
             // 
             // button22
             // 
-            button22.Location = new Point(805, 53);
+            button22.Location = new Point(841, 53);
             button22.Name = "button22";
             button22.Size = new Size(75, 23);
             button22.TabIndex = 88;
@@ -762,7 +762,7 @@
             // label22
             // 
             label22.AutoSize = true;
-            label22.Location = new Point(676, 57);
+            label22.Location = new Point(712, 57);
             label22.Name = "label22";
             label22.Size = new Size(54, 15);
             label22.TabIndex = 87;
@@ -772,7 +772,7 @@
             // textBox22
             // 
             textBox22.Enabled = false;
-            textBox22.Location = new Point(736, 53);
+            textBox22.Location = new Point(772, 53);
             textBox22.Name = "textBox22";
             textBox22.Size = new Size(63, 23);
             textBox22.TabIndex = 86;
@@ -780,7 +780,7 @@
             // 
             // button23
             // 
-            button23.Location = new Point(805, 82);
+            button23.Location = new Point(841, 82);
             button23.Name = "button23";
             button23.Size = new Size(75, 23);
             button23.TabIndex = 85;
@@ -790,7 +790,7 @@
             // label23
             // 
             label23.AutoSize = true;
-            label23.Location = new Point(676, 86);
+            label23.Location = new Point(712, 86);
             label23.Name = "label23";
             label23.Size = new Size(54, 15);
             label23.TabIndex = 84;
@@ -800,7 +800,7 @@
             // textBox23
             // 
             textBox23.Enabled = false;
-            textBox23.Location = new Point(736, 82);
+            textBox23.Location = new Point(772, 82);
             textBox23.Name = "textBox23";
             textBox23.Size = new Size(63, 23);
             textBox23.TabIndex = 83;
@@ -808,7 +808,7 @@
             // 
             // button24
             // 
-            button24.Location = new Point(805, 111);
+            button24.Location = new Point(841, 111);
             button24.Name = "button24";
             button24.Size = new Size(75, 23);
             button24.TabIndex = 82;
@@ -818,7 +818,7 @@
             // label24
             // 
             label24.AutoSize = true;
-            label24.Location = new Point(676, 115);
+            label24.Location = new Point(712, 115);
             label24.Name = "label24";
             label24.Size = new Size(54, 15);
             label24.TabIndex = 81;
@@ -828,7 +828,7 @@
             // textBox24
             // 
             textBox24.Enabled = false;
-            textBox24.Location = new Point(736, 111);
+            textBox24.Location = new Point(772, 111);
             textBox24.Name = "textBox24";
             textBox24.Size = new Size(63, 23);
             textBox24.TabIndex = 80;
@@ -836,7 +836,7 @@
             // 
             // button25
             // 
-            button25.Location = new Point(805, 140);
+            button25.Location = new Point(841, 140);
             button25.Name = "button25";
             button25.Size = new Size(75, 23);
             button25.TabIndex = 79;
@@ -846,7 +846,7 @@
             // label25
             // 
             label25.AutoSize = true;
-            label25.Location = new Point(676, 144);
+            label25.Location = new Point(712, 144);
             label25.Name = "label25";
             label25.Size = new Size(54, 15);
             label25.TabIndex = 78;
@@ -856,7 +856,7 @@
             // textBox25
             // 
             textBox25.Enabled = false;
-            textBox25.Location = new Point(736, 140);
+            textBox25.Location = new Point(772, 140);
             textBox25.Name = "textBox25";
             textBox25.Size = new Size(63, 23);
             textBox25.TabIndex = 77;
@@ -864,7 +864,7 @@
             // 
             // button26
             // 
-            button26.Location = new Point(805, 169);
+            button26.Location = new Point(841, 169);
             button26.Name = "button26";
             button26.Size = new Size(75, 23);
             button26.TabIndex = 76;
@@ -874,7 +874,7 @@
             // label26
             // 
             label26.AutoSize = true;
-            label26.Location = new Point(676, 173);
+            label26.Location = new Point(712, 173);
             label26.Name = "label26";
             label26.Size = new Size(54, 15);
             label26.TabIndex = 75;
@@ -884,7 +884,7 @@
             // textBox26
             // 
             textBox26.Enabled = false;
-            textBox26.Location = new Point(736, 169);
+            textBox26.Location = new Point(772, 169);
             textBox26.Name = "textBox26";
             textBox26.Size = new Size(63, 23);
             textBox26.TabIndex = 74;
@@ -892,7 +892,7 @@
             // 
             // button27
             // 
-            button27.Location = new Point(805, 198);
+            button27.Location = new Point(841, 198);
             button27.Name = "button27";
             button27.Size = new Size(75, 23);
             button27.TabIndex = 73;
@@ -902,7 +902,7 @@
             // label27
             // 
             label27.AutoSize = true;
-            label27.Location = new Point(676, 202);
+            label27.Location = new Point(712, 202);
             label27.Name = "label27";
             label27.Size = new Size(54, 15);
             label27.TabIndex = 72;
@@ -912,7 +912,7 @@
             // textBox27
             // 
             textBox27.Enabled = false;
-            textBox27.Location = new Point(736, 198);
+            textBox27.Location = new Point(772, 198);
             textBox27.Name = "textBox27";
             textBox27.Size = new Size(63, 23);
             textBox27.TabIndex = 71;
@@ -920,7 +920,7 @@
             // 
             // button28
             // 
-            button28.Location = new Point(805, 227);
+            button28.Location = new Point(841, 227);
             button28.Name = "button28";
             button28.Size = new Size(75, 23);
             button28.TabIndex = 70;
@@ -930,7 +930,7 @@
             // label28
             // 
             label28.AutoSize = true;
-            label28.Location = new Point(676, 231);
+            label28.Location = new Point(712, 231);
             label28.Name = "label28";
             label28.Size = new Size(54, 15);
             label28.TabIndex = 69;
@@ -940,7 +940,7 @@
             // textBox28
             // 
             textBox28.Enabled = false;
-            textBox28.Location = new Point(736, 227);
+            textBox28.Location = new Point(772, 227);
             textBox28.Name = "textBox28";
             textBox28.Size = new Size(63, 23);
             textBox28.TabIndex = 68;
@@ -948,7 +948,7 @@
             // 
             // button29
             // 
-            button29.Location = new Point(805, 256);
+            button29.Location = new Point(841, 256);
             button29.Name = "button29";
             button29.Size = new Size(75, 23);
             button29.TabIndex = 67;
@@ -958,7 +958,7 @@
             // label29
             // 
             label29.AutoSize = true;
-            label29.Location = new Point(676, 260);
+            label29.Location = new Point(712, 260);
             label29.Name = "label29";
             label29.Size = new Size(54, 15);
             label29.TabIndex = 66;
@@ -968,7 +968,7 @@
             // textBox29
             // 
             textBox29.Enabled = false;
-            textBox29.Location = new Point(736, 256);
+            textBox29.Location = new Point(772, 256);
             textBox29.Name = "textBox29";
             textBox29.Size = new Size(63, 23);
             textBox29.TabIndex = 65;
@@ -976,7 +976,7 @@
             // 
             // button30
             // 
-            button30.Location = new Point(805, 285);
+            button30.Location = new Point(841, 285);
             button30.Name = "button30";
             button30.Size = new Size(75, 23);
             button30.TabIndex = 64;
@@ -986,7 +986,7 @@
             // label30
             // 
             label30.AutoSize = true;
-            label30.Location = new Point(676, 289);
+            label30.Location = new Point(712, 289);
             label30.Name = "label30";
             label30.Size = new Size(54, 15);
             label30.TabIndex = 63;
@@ -996,7 +996,7 @@
             // textBox30
             // 
             textBox30.Enabled = false;
-            textBox30.Location = new Point(736, 285);
+            textBox30.Location = new Point(772, 285);
             textBox30.Name = "textBox30";
             textBox30.Size = new Size(63, 23);
             textBox30.TabIndex = 62;
@@ -1004,7 +1004,7 @@
             // 
             // button31
             // 
-            button31.Location = new Point(269, 24);
+            button31.Location = new Point(284, 24);
             button31.Name = "button31";
             button31.Size = new Size(75, 23);
             button31.TabIndex = 61;
@@ -1013,7 +1013,7 @@
             // 
             // button32
             // 
-            button32.Location = new Point(269, 53);
+            button32.Location = new Point(284, 53);
             button32.Name = "button32";
             button32.Size = new Size(75, 23);
             button32.TabIndex = 91;
@@ -1022,7 +1022,7 @@
             // 
             // button33
             // 
-            button33.Location = new Point(269, 82);
+            button33.Location = new Point(284, 82);
             button33.Name = "button33";
             button33.Size = new Size(75, 23);
             button33.TabIndex = 92;
@@ -1031,7 +1031,7 @@
             // 
             // button34
             // 
-            button34.Location = new Point(269, 111);
+            button34.Location = new Point(284, 111);
             button34.Name = "button34";
             button34.Size = new Size(75, 23);
             button34.TabIndex = 93;
@@ -1040,7 +1040,7 @@
             // 
             // button35
             // 
-            button35.Location = new Point(269, 139);
+            button35.Location = new Point(284, 139);
             button35.Name = "button35";
             button35.Size = new Size(75, 23);
             button35.TabIndex = 94;
@@ -1049,7 +1049,7 @@
             // 
             // button36
             // 
-            button36.Location = new Point(269, 168);
+            button36.Location = new Point(284, 168);
             button36.Name = "button36";
             button36.Size = new Size(75, 23);
             button36.TabIndex = 95;
@@ -1058,7 +1058,7 @@
             // 
             // button37
             // 
-            button37.Location = new Point(269, 200);
+            button37.Location = new Point(284, 200);
             button37.Name = "button37";
             button37.Size = new Size(75, 23);
             button37.TabIndex = 96;
@@ -1067,7 +1067,7 @@
             // 
             // button38
             // 
-            button38.Location = new Point(269, 228);
+            button38.Location = new Point(284, 228);
             button38.Name = "button38";
             button38.Size = new Size(75, 23);
             button38.TabIndex = 97;
@@ -1076,7 +1076,7 @@
             // 
             // button39
             // 
-            button39.Location = new Point(269, 257);
+            button39.Location = new Point(284, 257);
             button39.Name = "button39";
             button39.Size = new Size(75, 23);
             button39.TabIndex = 98;
@@ -1085,7 +1085,7 @@
             // 
             // button40
             // 
-            button40.Location = new Point(269, 286);
+            button40.Location = new Point(284, 286);
             button40.Name = "button40";
             button40.Size = new Size(75, 23);
             button40.TabIndex = 99;
@@ -1094,7 +1094,7 @@
             // 
             // button41
             // 
-            button41.Location = new Point(598, 25);
+            button41.Location = new Point(634, 25);
             button41.Name = "button41";
             button41.Size = new Size(75, 23);
             button41.TabIndex = 100;
@@ -1103,7 +1103,7 @@
             // 
             // button42
             // 
-            button42.Location = new Point(598, 54);
+            button42.Location = new Point(634, 54);
             button42.Name = "button42";
             button42.Size = new Size(75, 23);
             button42.TabIndex = 110;
@@ -1112,7 +1112,7 @@
             // 
             // button43
             // 
-            button43.Location = new Point(598, 83);
+            button43.Location = new Point(634, 83);
             button43.Name = "button43";
             button43.Size = new Size(75, 23);
             button43.TabIndex = 109;
@@ -1121,7 +1121,7 @@
             // 
             // button44
             // 
-            button44.Location = new Point(598, 112);
+            button44.Location = new Point(634, 112);
             button44.Name = "button44";
             button44.Size = new Size(75, 23);
             button44.TabIndex = 108;
@@ -1130,7 +1130,7 @@
             // 
             // button45
             // 
-            button45.Location = new Point(598, 141);
+            button45.Location = new Point(634, 141);
             button45.Name = "button45";
             button45.Size = new Size(75, 23);
             button45.TabIndex = 107;
@@ -1139,7 +1139,7 @@
             // 
             // button46
             // 
-            button46.Location = new Point(598, 170);
+            button46.Location = new Point(634, 170);
             button46.Name = "button46";
             button46.Size = new Size(75, 23);
             button46.TabIndex = 106;
@@ -1148,7 +1148,7 @@
             // 
             // button47
             // 
-            button47.Location = new Point(598, 199);
+            button47.Location = new Point(634, 199);
             button47.Name = "button47";
             button47.Size = new Size(75, 23);
             button47.TabIndex = 105;
@@ -1157,7 +1157,7 @@
             // 
             // button48
             // 
-            button48.Location = new Point(598, 228);
+            button48.Location = new Point(634, 228);
             button48.Name = "button48";
             button48.Size = new Size(75, 23);
             button48.TabIndex = 104;
@@ -1166,7 +1166,7 @@
             // 
             // button49
             // 
-            button49.Location = new Point(598, 257);
+            button49.Location = new Point(634, 257);
             button49.Name = "button49";
             button49.Size = new Size(75, 23);
             button49.TabIndex = 103;
@@ -1175,7 +1175,7 @@
             // 
             // button50
             // 
-            button50.Location = new Point(598, 286);
+            button50.Location = new Point(634, 286);
             button50.Name = "button50";
             button50.Size = new Size(75, 23);
             button50.TabIndex = 102;
@@ -1184,7 +1184,7 @@
             // 
             // button51
             // 
-            button51.Location = new Point(886, 24);
+            button51.Location = new Point(922, 24);
             button51.Name = "button51";
             button51.Size = new Size(75, 23);
             button51.TabIndex = 101;
@@ -1193,7 +1193,7 @@
             // 
             // button52
             // 
-            button52.Location = new Point(886, 53);
+            button52.Location = new Point(922, 53);
             button52.Name = "button52";
             button52.Size = new Size(75, 23);
             button52.TabIndex = 120;
@@ -1202,7 +1202,7 @@
             // 
             // button53
             // 
-            button53.Location = new Point(886, 82);
+            button53.Location = new Point(922, 82);
             button53.Name = "button53";
             button53.Size = new Size(75, 23);
             button53.TabIndex = 119;
@@ -1211,7 +1211,7 @@
             // 
             // button54
             // 
-            button54.Location = new Point(886, 111);
+            button54.Location = new Point(922, 111);
             button54.Name = "button54";
             button54.Size = new Size(75, 23);
             button54.TabIndex = 118;
@@ -1220,7 +1220,7 @@
             // 
             // button55
             // 
-            button55.Location = new Point(886, 140);
+            button55.Location = new Point(922, 140);
             button55.Name = "button55";
             button55.Size = new Size(75, 23);
             button55.TabIndex = 117;
@@ -1229,7 +1229,7 @@
             // 
             // button56
             // 
-            button56.Location = new Point(886, 169);
+            button56.Location = new Point(922, 169);
             button56.Name = "button56";
             button56.Size = new Size(75, 23);
             button56.TabIndex = 116;
@@ -1238,7 +1238,7 @@
             // 
             // button57
             // 
-            button57.Location = new Point(886, 198);
+            button57.Location = new Point(922, 198);
             button57.Name = "button57";
             button57.Size = new Size(75, 23);
             button57.TabIndex = 115;
@@ -1247,7 +1247,7 @@
             // 
             // button58
             // 
-            button58.Location = new Point(886, 227);
+            button58.Location = new Point(922, 227);
             button58.Name = "button58";
             button58.Size = new Size(75, 23);
             button58.TabIndex = 114;
@@ -1256,7 +1256,7 @@
             // 
             // button59
             // 
-            button59.Location = new Point(886, 256);
+            button59.Location = new Point(922, 256);
             button59.Name = "button59";
             button59.Size = new Size(75, 23);
             button59.TabIndex = 113;
@@ -1265,7 +1265,7 @@
             // 
             // button60
             // 
-            button60.Location = new Point(886, 285);
+            button60.Location = new Point(922, 285);
             button60.Name = "button60";
             button60.Size = new Size(75, 23);
             button60.TabIndex = 112;
@@ -1294,16 +1294,16 @@
             // 
             // button63
             // 
-            button63.Location = new Point(582, 360);
+            button63.Location = new Point(501, 360);
             button63.Name = "button63";
             button63.Size = new Size(75, 23);
             button63.TabIndex = 129;
-            button63.Text = "Default";
+            button63.Text = "New Key";
             button63.UseVisualStyleBackColor = true;
             // 
             // button64
             // 
-            button64.Location = new Point(582, 389);
+            button64.Location = new Point(582, 360);
             button64.Name = "button64";
             button64.Size = new Size(75, 23);
             button64.TabIndex = 128;
@@ -1312,7 +1312,7 @@
             // 
             // button65
             // 
-            button65.Location = new Point(501, 360);
+            button65.Location = new Point(501, 389);
             button65.Name = "button65";
             button65.Size = new Size(75, 23);
             button65.TabIndex = 127;
@@ -1340,11 +1340,11 @@
             // 
             // button66
             // 
-            button66.Location = new Point(501, 389);
+            button66.Location = new Point(582, 389);
             button66.Name = "button66";
             button66.Size = new Size(75, 23);
             button66.TabIndex = 124;
-            button66.Text = "New Key";
+            button66.Text = "Default";
             button66.UseVisualStyleBackColor = true;
             // 
             // label32
@@ -1370,7 +1370,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(997, 450);
+            ClientSize = new Size(1015, 450);
             Controls.Add(button63);
             Controls.Add(button64);
             Controls.Add(button65);
@@ -1503,7 +1503,7 @@
             Controls.Add(button1);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "KeyboardShortcutsForm";
-            Text = "KeyboardShortcutsForm";
+            Text = "Keyboard Shortcuts";
             FormClosing += KeyboardShortcutsForm_FormClosing;
             ResumeLayout(false);
             PerformLayout();
