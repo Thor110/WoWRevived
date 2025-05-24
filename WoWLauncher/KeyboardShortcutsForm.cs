@@ -1,8 +1,11 @@
-﻿namespace WoWLauncher
+﻿using System.Security.Cryptography.X509Certificates;
+
+namespace WoWLauncher
 {
     public partial class KeyboardShortcutsForm : Form
     {
         private Dictionary<string, Keybinding> keybindings = new();
+        private string lastButtonPressed = string.Empty;
         public KeyboardShortcutsForm()
         {
             InitializeComponent();
@@ -344,6 +347,18 @@
         {
             // Update UI with current VK
             keybindings[keyName].LinkedTextBox!.Text = ((Keys)keybindings[keyName].CurrentVK).ToString();
+            // Lost focus reset text
+            keybindings[keyName].LinkedNewKeyButton!.LostFocus += (s, e) =>
+            {
+                keybindings[keyName].LinkedNewKeyButton!.Text = "New Key";
+            };
+            // Button click event
+            keybindings[keyName].LinkedNewKeyButton!.Click += (s, e) =>
+            {
+                lastButtonPressed = keyName;
+                keybindings[keyName].LinkedNewKeyButton!.Text = "Press Key!";
+                keybindings[keyName].LinkedNewKeyButton!.Focus();
+            };
             // Wire up dynamic KeyDown
             keybindings[keyName].LinkedNewKeyButton!.KeyDown += (s, e) =>
             {
@@ -353,6 +368,7 @@
                     ping(keyName);
                     return;
                 }
+                keybindings[keyName].LinkedNewKeyButton!.Text = "New Key";
                 keybindings[keyName].CurrentVK = newVK;
                 keybindings[keyName].LinkedTextBox!.Text = e.KeyCode.ToString();
             };
@@ -379,7 +395,7 @@
                    vk != 0x7F && // DEL, rarely usable
                    vk != 0x40;   // '@' or other non-functional VKs
         }
-        public static bool IsValidVirtualKey(byte vk) { return (vk >= 1 && vk <= 127); }
+        public static bool IsValidVirtualKey(byte vk) { return (vk >= 1 && vk <= 254); }
         // on closing event
         private void KeyboardShortcutsForm_FormClosing(object sender, FormClosingEventArgs e)
         {
