@@ -66,6 +66,10 @@ WoWLauncher
 
 ![Launcher](images/launcher.png)
 
+<div align="center">
+  <img src="images/keycodes.png">
+</div>
+
 ## File Extractor
 WoWViewer - File Extractor
 
