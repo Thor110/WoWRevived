@@ -19,13 +19,13 @@
         private void ParseExecutable()
         {
             byte[] data = File.ReadAllBytes("WoW_patched.exe");
-            // manually write out label tooltip descriptions
-            // actionName not necessary
+            // TODO : manually write out label tooltip descriptions
+                                                    // FUNCTION // Int64 Value // Key Name // Offset
             AddKeybinding(data[0x4D800], // ESCAPE
                 keyName: "In-game Menu",
-                offsets: new List<long> { 0x4D800, // SKIPS INTRO VIDEO
-                    //0x4D619, // UNKNOWN
-                    //0x4D66D // UNKNOWN
+                offsets: new List<long> { 0x4D800,  // SKIPS INTRO VIDEO // 20989574264068970 // ESCAPE // 4D800
+                    0x4D619,                        // UNKNOWN // 8466983863921351530 // ESCAPE // 4D619
+                    0x4D66D                         // UNKNOWN // 8466983863921351530 // ESCAPE // 4D66D
                 },
                 defaultVK: 0x1B,
                 linkedTextBox: textBox1,
@@ -40,22 +40,22 @@
                 linkedResetButton: button32);*/
             AddKeybinding(data[0x96BAC], // CONTROL
                 keyName: "Force Fire",
-                offsets: new List<long> { 0x96BAC,
-                    0x96AB8,
-                    0x8507D,
-                    0x1CB65,
-                    0x1CBAB,
-                    0x1CC20,
-                    0x1CCB1,
-                    0x2CFC9,
-                    0x30D3C,
-                    0x30EAD,
-                    0x84B1C,
-                    0x84B55,
-                    0x84BBD,
-                    0x84C44,
-                    0x85427,
-                    0x96598
+                offsets: new List<long> { 0x96BAC,  // UNKNOWN // 25290642783474026 // CTRL // 96BAC
+                    0x96AB8,                        // UNKNOWN // 8394926269816312170 // CTRL // 96AB8
+                    0x8507D,                        // UNKNOWN // 18388800105288700266 // CTRL // 8507D
+                    0x1CB65,                        // UNKNOWN // 20989574264066410 // CTRL // 96AB8
+                    0x1CBAB,                        // UNKNOWN // 20989574264066410 // CTRL // 1CB65
+                    0x1CC20,                        // UNKNOWN // 20989574264066410 // CTRL // 1CC20
+                    0x1CCB1,                        // UNKNOWN // 20989574264066410 // CTRL // 1CCB1
+                    0x2CFC9,                        // UNKNOWN // 20989574264066410 // CTRL // 2CFC9
+                    0x30D3C,                        // UNKNOWN // 20989574264066410 // CTRL // 30D3C
+                    0x30EAD,                        // UNKNOWN // 20989574264066410 // CTRL // 30EAD
+                    0x84B1C,                        // UNKNOWN // 20989574264066410 // CTRL // 84B1C
+                    0x84B55,                        // UNKNOWN // 20989574264066410 // CTRL // 84B55
+                    0x84BBD,                        // UNKNOWN // 20989574264066410 // CTRL // 84BBD
+                    0x84C44,                        // UNKNOWN // 20989574264066410 // CTRL // 84C44
+                    0x85427,                        // UNKNOWN // 20989574264066410 // CTRL // 85427
+                    0x96598                         // UNKNOWN // 20989574264066410 // CTRL // 96598
                 },
                 defaultVK: 0x11,
                 linkedTextBox: textBox3,
@@ -64,7 +64,7 @@
             /*AddKeybinding(data[], // HOME
                 keyName: "Centers On Selection",
                 offsets: new List<long> {  },
-                defaultVK: 0x09,
+                defaultVK: 0x24,
                 linkedTextBox: textBox4,
                 linkedNewKeyButton: button4,
                 linkedResetButton: button34);*/
@@ -263,8 +263,8 @@
                linkedResetButton: button68);*/
             AddKeybinding(data[0x32D25], // LEFT CLICK
                 keyName: "Left Click",
-                offsets: new List<long> { 0x32D25, // UNKNOWN
-                    0x32D4E // UNKNOWN
+                offsets: new List<long> { 0x32D25,  // UNKNOWN // 1117109272035918186 // LEFTMOUSE // 32D25
+                    0x32D4E                         // UNKNOWN // 8466983863904567658 // LEFTMOUSE // 32D4E
                 },
                 defaultVK: 0x01,
                 linkedTextBox: textBox31,
@@ -272,21 +272,32 @@
                 linkedResetButton: button64);
             AddKeybinding(data[0x32D32], // RIGHT CLICK
                 keyName: "Right Click",
-                offsets: new List<long> { 0x32D32, // UNKNOWN
-                    0x32D57 // UNKNOWN
+                offsets: new List<long> { 0x32D32,  // UNKNOWN // 1117109272035918442 // RIGHTMOUSE // 32D32
+                    0x32D57                         // UNKNOWN // 8394926269866639978 // RIGHTMOUSE // 32D57
                 },
                 defaultVK: 0x02,
                 linkedTextBox: textBox32,
                 linkedNewKeyButton: button65,
                 linkedResetButton: button66);
             // UNKNOWN SECTION START
-            /*AddKeybinding(data[], // SHIFT // Unknown functionality with 11 references?
+            AddKeybinding(data[], // SHIFT // Unknown functionality with 11 references?
                keyName: "UNKNOWN",
-               offsets: new List<long> { 0x2B2F9, 0x33391, 0x96B3A, 0x7C9B8, 0x3B7A6, 0x2B709, 0x2B6DC, 0x2B678, 0x2B628, 0x2B5DA, 0x2B591 },
+               offsets: new List<long> { 0x2B2F9,   // UNKNOWN // 20989574264066154 // SHIFT // 2B2F9
+                   0x33391,                         // UNKNOWN // 20989574264066154 // SHIFT // 33391
+                   0x96B3A,                         // UNKNOWN // 9444022862802260074 // SHIFT // 96B3A
+                   0x7C9B8,                         // UNKNOWN // 16723553203190960234 // SHIFT // 7C9B8
+                   0x3B7A6,                         // UNKNOWN // 13967350231206662250 // SHIFT // 3B7A6
+                   0x2B709,                         // UNKNOWN // 13966787281119023210 // SHIFT // 2B709
+                   0x2B6DC,                         // UNKNOWN // 8466983863854239850 // SHIFT // 2B6DC
+                   0x2B678,                         // UNKNOWN // 16723553203039965290 // SHIFT // 2B678
+                   0x2B628,                         // UNKNOWN // 13967913181059420266 // SHIFT // 2B628
+                   0x2B5DA,                         // UNKNOWN // 9444022862869368938 // SHIFT // 2B5DA
+                   0x2B591                          // UNKNOWN // 8394926269883420778 // SHIFT // 2B591
+               },
                defaultVK: 0x10,
                linkedTextBox: textBox1, // no textbox yet
                linkedNewKeyButton: button1, // no buttons yet
-               linkedResetButton: button31);*/ // no buttons yet
+               linkedResetButton: button31); // no buttons yet
             // UNKNOWN SECTION END
             foreach (var (keyName, binding) in keybindings) { checkState(keyName, binding.CurrentVK); } // update state from load
         }
