@@ -353,12 +353,13 @@
                 {
                     keybindings[keyName].LinkedNewKeyButton!.Text = "New Key";
                     keybindings[keyName].LinkedTextBox!.Text = lastKeyStored; // only set if the button wasnt pressed
-                }
+                    //keybindings[keyName].LinkedTextBox!.Text = ((Keys)keybindings[keyName].CurrentVK).ToString(); // no need for last key stored
+                } // TODO : replace lastKeyStored and test // is it better to store or get the string
             };
             // Button click event
             keybindings[keyName].LinkedNewKeyButton!.Click += (s, e) =>
             {
-                lastKeyStored = keybindings[keyName].LinkedTextBox!.Text;
+                lastKeyStored = keybindings[keyName].LinkedTextBox!.Text; // replace with CurrentVK = no need to store
                 keybindings[keyName].ListeningForInput = true;
                 keybindings[keyName].LinkedNewKeyButton!.Text = "Press Key!";
                 keybindings[keyName].LinkedTextBox!.Text = "Press a key...";
