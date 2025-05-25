@@ -23,7 +23,7 @@
                                                     // FUNCTION             // Int64 Value          // Key Name // Offset
             AddKeybinding(data[0x4D800], // ESCAPE
                 keyName: "In-game Menu",
-                offsets: new List<long> { 0x4D800,  // SKIPS INTRO VIDEO    // 20989574264068970    // ESCAPE // 4D800
+                offsets: new List<long> { 0x4D800,  // SKIPS MOVIES         // 20989574264068970    // ESCAPE // 4D800
                     0x4D619,                        // UNKNOWN              // 8466983863921351530  // ESCAPE // 4D619
                     0x4D66D                         // UNKNOWN              // 8466983863921351530  // ESCAPE // 4D66D
                 },
@@ -280,7 +280,7 @@
                 linkedNewKeyButton: button65,
                 linkedResetButton: button66);
             // UNKNOWN SECTION START
-            AddKeybinding(data[], // SHIFT // Unknown functionality with 11 references?
+            /*AddKeybinding(data[], // SHIFT // Unknown functionality with 11 references?
                keyName: "UNKNOWN",
                offsets: new List<long> { 0x2B2F9,   // UNKNOWN              // 20989574264066154    // SHIFT // 2B2F9
                    0x33391,                         // UNKNOWN              // 20989574264066154    // SHIFT // 33391
@@ -297,7 +297,7 @@
                defaultVK: 0x10,
                linkedTextBox: textBox1, // no textbox yet
                linkedNewKeyButton: button1, // no buttons yet
-               linkedResetButton: button31); // no buttons yet
+               linkedResetButton: button31);*/ // no buttons yet
             // UNKNOWN SECTION END
             foreach (var (keyName, binding) in keybindings) { checkState(keyName, binding.CurrentVK); } // update state from load
         }
