@@ -3,6 +3,7 @@
     public partial class KeyboardShortcutsForm : Form
     {
         private Dictionary<string, Keybinding> keybindings = new();
+        private bool ListeningForInput;
         public KeyboardShortcutsForm()
         {
             InitializeComponent();
@@ -348,7 +349,7 @@
             // Lost focus reset text
             keybindings[keyName].LinkedNewKeyButton!.LostFocus += (s, e) =>
             {
-                if(keybindings[keyName].ListeningForInput)
+                if(ListeningForInput)
                 {
                     keybindings[keyName].LinkedNewKeyButton!.Text = "New Key";
                     keybindings[keyName].LinkedTextBox!.Text = ((Keys)keybindings[keyName].CurrentVK).ToString();
@@ -357,15 +358,14 @@
             // Button click event
             keybindings[keyName].LinkedNewKeyButton!.Click += (s, e) =>
             {
-                keybindings[keyName].ListeningForInput = true;
+                ListeningForInput = true;
                 keybindings[keyName].LinkedNewKeyButton!.Text = "Press Key!";
                 keybindings[keyName].LinkedTextBox!.Text = "Press a key...";
-                keybindings[keyName].LinkedNewKeyButton!.Focus();
             };
             // Wire up dynamic KeyDown
             keybindings[keyName].LinkedNewKeyButton!.KeyDown += (s, e) =>
             {
-                keybindings[keyName].ListeningForInput = false; // stop listening for input
+                ListeningForInput = false; // stop listening for input
                 keybindings[keyName].LinkedNewKeyButton!.Text = "New Key"; // reset button text
                 byte newVK = (byte)e.KeyCode; // get keycode
                 if (!IsValidVirtualKey(newVK))
