@@ -38,13 +38,13 @@
                 linkedTextBox: textBox2,
                 linkedNewKeyButton: button2,
                 linkedResetButton: button32);*/
-            AddKeybinding(data[0x96BAC], // CONTROL
+            AddKeybinding(data[0x96BAC], // CONTROL // CURSOR KEY UP EVENT NOT FOUND WITHIN THESE VALUES
                 keyName: "Force Fire",
                 offsets: new List<long> { 0x96BAC,  // UNKNOWN              // 25290642783474026    // CTRL // 96BAC
                     0x96AB8,                        // UNKNOWN              // 8394926269816312170  // CTRL // 96AB8
-                    0x8507D,                        // UNKNOWN              // 18388800105288700266 // CTRL // 8507D
-                    0x1CB65,                        // UNKNOWN              // 20989574264066410    // CTRL // 96AB8
-                    0x1CBAB,                        // UNKNOWN              // 20989574264066410    // CTRL // 1CB65
+                    0x8507D,                        // FORCE FIRE COMMAND   // 18388800105288700266 // CTRL // 8507D
+                    0x1CB65,                        // UNKNOWN              // 20989574264066410    // CTRL // 1CB65
+                    0x1CBAB,                        // UNKNOWN              // 20989574264066410    // CTRL // 1CBAB
                     0x1CC20,                        // UNKNOWN              // 20989574264066410    // CTRL // 1CC20
                     0x1CCB1,                        // UNKNOWN              // 20989574264066410    // CTRL // 1CCB1
                     0x2CFC9,                        // UNKNOWN              // 20989574264066410    // CTRL // 2CFC9
@@ -54,7 +54,7 @@
                     0x84B55,                        // UNKNOWN              // 20989574264066410    // CTRL // 84B55
                     0x84BBD,                        // UNKNOWN              // 20989574264066410    // CTRL // 84BBD
                     0x84C44,                        // UNKNOWN              // 20989574264066410    // CTRL // 84C44
-                    0x85427,                        // UNKNOWN              // 20989574264066410    // CTRL // 85427
+                    0x85427,                        // CURSOR KEY DOWN      // 20989574264066410    // CTRL // 85427
                     0x96598                         // UNKNOWN              // 20989574264066410    // CTRL // 96598
                 },
                 defaultVK: 0x11,
