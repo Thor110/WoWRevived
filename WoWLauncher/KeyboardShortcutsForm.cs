@@ -1,6 +1,4 @@
-﻿using static System.Runtime.CompilerServices.RuntimeHelpers;
-
-namespace WoWLauncher
+﻿namespace WoWLauncher
 {
     public partial class KeyboardShortcutsForm : Form
     {
@@ -25,7 +23,10 @@ namespace WoWLauncher
             // actionName not necessary
             AddKeybinding(data[0x4D800], // ESCAPE
                 keyName: "In-game Menu",
-                offsets: new List<long> { 0x4D800, 0x4D619, 0x4D66D },
+                offsets: new List<long> { 0x4D800, // SKIPS INTRO VIDEO
+                    //0x4D619, // UNKNOWN
+                    //0x4D66D // UNKNOWN
+                },
                 defaultVK: 0x1B,
                 linkedTextBox: textBox1,
                 linkedNewKeyButton: button1,
@@ -39,7 +40,23 @@ namespace WoWLauncher
                 linkedResetButton: button32);*/
             AddKeybinding(data[0x96BAC], // CONTROL
                 keyName: "Force Fire",
-                offsets: new List<long> { 0x96BAC, 0x96AB8, 0x8507D, 0x1CB65, 0x1CBAB, 0x1CC20, 0x1CCB1, 0x2CFC9, 0x30D3C, 0x30EAD, 0x84B1C, 0x84B55, 0x84BBD, 0x84C44, 0x85427, 0x96598 },
+                offsets: new List<long> { 0x96BAC,
+                    0x96AB8,
+                    0x8507D,
+                    0x1CB65,
+                    0x1CBAB,
+                    0x1CC20,
+                    0x1CCB1,
+                    0x2CFC9,
+                    0x30D3C,
+                    0x30EAD,
+                    0x84B1C,
+                    0x84B55,
+                    0x84BBD,
+                    0x84C44,
+                    0x85427,
+                    0x96598
+                },
                 defaultVK: 0x11,
                 linkedTextBox: textBox3,
                 linkedNewKeyButton: button3,
@@ -246,14 +263,18 @@ namespace WoWLauncher
                linkedResetButton: button68);*/
             AddKeybinding(data[0x32D25], // LEFT CLICK
                 keyName: "Left Click",
-                offsets: new List<long> { 0x32D25, 0x32D4E },
+                offsets: new List<long> { 0x32D25, // UNKNOWN
+                    0x32D4E // UNKNOWN
+                },
                 defaultVK: 0x01,
                 linkedTextBox: textBox31,
                 linkedNewKeyButton: button63,
                 linkedResetButton: button64);
             AddKeybinding(data[0x32D32], // RIGHT CLICK
                 keyName: "Right Click",
-                offsets: new List<long> { 0x32D32, 0x32D57 },
+                offsets: new List<long> { 0x32D32, // UNKNOWN
+                    0x32D57 // UNKNOWN
+                },
                 defaultVK: 0x02,
                 linkedTextBox: textBox32,
                 linkedNewKeyButton: button65,
