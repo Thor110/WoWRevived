@@ -1,0 +1,19 @@
+// ida-map.txt
+// Quick-reference map of confirmed keycode-related GetAsyncKeyState calls in IDA
+// This is NOT a complete map — only known, confirmed values related to current keyboard remapping functionality.
+// Format: [Address] call [Function] ; [Purpose/Effect]
+
+known values found in IDA so far
+
+// --- Force Fire Key Handling ---
+.text:00486028                 call    ds:GetAsyncKeyState ; Force Fire Cursor Key Down Event
+.text:00485C83                 call    ds:GetAsyncKeyState ; Force Fire Command
+
+// --- Intro & Cutscene Skipping ---
+.text:0044E401                 call    ds:GetAsyncKeyState ; Skip Movies
+
+// Notes:
+// These values are used in the KeyboardShortcutsForm.cs class to enable dynamic remapping. ( "WoWRevived\WoWLauncher\KeyboardShortcutsForm.cs" )
+// Only 2 of 33 expected keys have been confirmed to date: Force Fire and Skip Movies.
+// The goal is to expand this file into a full IDA roadmap as decompilation progresses.
+// IDA Free 8.4 was used to generate the offsets and context.

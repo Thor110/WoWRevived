@@ -50,7 +50,8 @@ The road map for this project.
 - ❌ 7 : Video Playback Intercept ( Researching Solution - 0% Complete )
 	- Looking at intercepting smackw32.dll and redirecting it to use the more modern binkw32.dll for higher resolution video playback.
 	- Determining the best solution for upscaling and remastering the original videos.
-- ❌ 8 : Decomp/Recomp ( Not Started - 0% Complete )
+- ❌ 8 : Decomp/Recomp ( Started - 1% Complete )
+	- Begun mapping out virtual key addresses for use in the launchers custom keyboard shortcut settings. ( "WoWRevived\WoWDecomp\ida-map.txt" )
 - ❌ 9 : Remake ( Not Started - 0% Complete )
 
 This might not all happen but we wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
