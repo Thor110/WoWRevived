@@ -404,9 +404,10 @@ namespace WOWViewer
         {
             int sampleCount = rawData.Length / 2; // calculate sample count
             double duration22050 = sampleCount / 22050.0; // calculate duration at both sample rates
+            if (duration22050 < 1) { return 22050; } // if the file is less than 1 minute probably 22050hz
             if (rawData.Length > 100000 && duration22050 > 30) { return 44100; } // if the file would be unusually long at 22050Hz, it's probably 44100Hz
             double duration44100 = sampleCount / 44100.0; // calculate duration at both sample rates
-            if (duration22050 > 30 && duration44100 < 20) { return 44100; } // if the file would be unusually long at 22050Hz, it's probably 44100Hz
+            if (duration22050 < 30 && duration44100 < 20) { return 44100; } // if the file would be unusually long at 22050Hz, it's probably 44100Hz
             return 22050; // otherwise, assume default (most are voice clips)
         }
         // extract to file method
