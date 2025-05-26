@@ -1,0 +1,38 @@
+Main Menu not main menu?
+
+Nope, that still resulted in no change at all, left click still worked, right click did not.
+
+EB 7E 81 FE 05 02 00 00 77 4F
+90 90 90 90 90 90 90 90
+81 FE 01 02 00 00 72 66
+81 FE 02 02 00 00 77 5E
+
+Even NOP ing the last block out just leaves left click working
+
+EB 7E 81 FE 05 02 00 00 77 4F
+90 90 90 90 90 90 90 90
+81 FE 01 02 00 00 72 66
+90 90 90 90 90 90 90 90
+
+And noping all the blocks still just leaves left click working
+
+EB 7E 81 FE 05 02 00 00 77 4F
+90 90 90 90 90 90 90 90
+90 90 90 90 90 90 90 90
+90 90 90 90 90 90 90 90
+
+I even tried
+
+EB 7E 81 FE 06 02 00 00 77 4F
+90 90 90 90 90 90 90 90
+90 90 90 90 90 90 90 90
+90 90 90 90 90 90 90 90
+
+Even NOP'ing the whole thing just leaves left click working
+
+EB 7E 90 90 90 90 90 90 90 90
+90 90 90 90 90 90 90 90
+90 90 90 90 90 90 90 90
+90 90 90 90 90 90 90 90
+
+Must not be the main menu mouse click handler? Though swapping one of them breaks mouse clicks in the main menu? Swapping both of them results in everything going back to normal.
