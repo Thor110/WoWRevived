@@ -1,0 +1,11 @@
+Original
+
+0193 [UI] : Iron
+0196 [UI] : Human blood
+0198 [UI] : Heavy elements
+
+Updated
+
+0193 [UI] : Steel
+0196 [UI] : Human Blood
+0198 [UI] : Heavy Elements
