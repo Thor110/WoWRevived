@@ -162,11 +162,29 @@ namespace WOWViewer
         public WOWViewer()
         {
             InitializeComponent();
+            listBox1.DrawMode = DrawMode.OwnerDrawFixed;
+            listBox1.DrawItem += ListBox1_DrawItem!;
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(ListBox), typeof(Label) });
             InitializeHandlers();
             //parseTEXTOJD();
             //parseSFXOBJOJD("OBJ");
+        }
+        // for the listBox draw item event to change the color of the text if an entry is edited
+        private void ListBox1_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            if (e.Index < 0 || e.Index >= listBox1.Items.Count) { return; } // Check if index is valid before drawing
+            e.DrawBackground();
+            string itemText = listBox1.Items[e.Index].ToString()!;
+            int entryIndex = e.Index; // not sure this is right
+            // Determine proper color
+            Color textColor = (e.State & DrawItemState.Selected) == DrawItemState.Selected
+                ? SystemColors.HighlightText
+                : entries[entryIndex].Edited ? Color.Red
+                : SystemColors.WindowText;
+            // Use TextRenderer instead of Graphics.DrawString for better alignment and kerning
+            TextRenderer.DrawText(e.Graphics, itemText, e.Font, e.Bounds, textColor, TextFormatFlags.VerticalCenter);
+            e.DrawFocusRectangle();
         }
         // this is a test method to parse the TEXT.OJD file and log the results to a text file
         public void parseTEXTOJD()
@@ -350,6 +368,7 @@ namespace WOWViewer
                 pictureBox1.Visible = false;            // hide the picture box
                 label5.Visible = false;                 // hide sound length label
                 button10.Visible = false;               // hide replace file button
+                button11.Visible = false;               // hide save file button
             }
             else if (magic == "SfxL")
             {
@@ -369,11 +388,13 @@ namespace WOWViewer
                 pictureBox1.Visible = true;             // show the picture box
                 label5.Visible = true;                  // show sound length label
                 button10.Visible = true;                // show replace file button
+                button11.Visible = true;                // show save file button
             }
             button2.Enabled = false;                    // disable extract button
             button5.Enabled = false;                    // disable play button
             button6.Enabled = false;                    // disable stop button
             button10.Enabled = false;                   // disable replace file button
+            button11.Enabled = false;                   // disable save file button
             return true;
         }
         // create wav header
@@ -467,7 +488,15 @@ namespace WOWViewer
         {
             using var br = new BinaryReader(File.OpenRead(filePath));
             br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
-            byte[] rawData = br.ReadBytes(entry.Length);
+            byte[] rawData;
+            if (entries[listBox1.SelectedIndex].Edited)
+            {
+                rawData = entries[listBox1.SelectedIndex].Data!;
+            }
+            else
+            {
+                rawData = br.ReadBytes(entry.Length);
+            }
             int sampleRate = DetectSampleRate(rawData);
             byte[] wavHeader = CreateWavHeader(rawData.Length, sampleRate);
             using var ms = new MemoryStream();
@@ -564,27 +593,129 @@ namespace WOWViewer
                 openFileDialog.Title = "Select a Container (.wav) file";
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
+                    if(Path.GetFileNameWithoutExtension(openFileDialog.FileName).Length > 8)
+                    {
+                        MessageBox.Show("Filename needs to be 8 characters or less!\nI suggest using the original filenames.");
+                        return;
+                    }
                     newWAV(openFileDialog.FileName);
                 }
             }
         }
+        // parse new wav file
         private void newWAV(string newFile)
         {
             using (BinaryReader br = new BinaryReader(File.OpenRead(newFile)))
             {
-                magic = new string(br.ReadChars(4));
-                if (magic != "RIFF" )
+                // Read the RIFF header
+                string riff = new string(br.ReadChars(4));
+                if (riff != "RIFF")
                 {
-                    MessageBox.Show("File is not a standard WAV file, please select a valid WAV file.");
+                    MessageBox.Show("File is not a valid WAV file.");
+                    return;
                 }
-                else
+                br.ReadInt32(); // Skip file size
+                string wave = new string(br.ReadChars(4));
+                if (wave != "WAVE")
                 {
-                    MessageBox.Show("Feature not implemented yet!!!!");
-                    // reparse the file to get the correct offset and length or use WowFileEntry data
-                    // write up to new file entry
-                    // implement custom color for the entry in the listbox
-                    // save file
+                    MessageBox.Show("File is not a valid WAV file.");
+                    return;
                 }
+                // Search for the 'data' chunk
+                while (br.BaseStream.Position < br.BaseStream.Length)
+                {
+                    string chunkID = new string(br.ReadChars(4));
+                    int chunkSize = br.ReadInt32();
+                    if (chunkID == "data")
+                    {
+                        byte[] audioData = br.ReadBytes(chunkSize);
+                        string name = Path.GetFileNameWithoutExtension(newFile);
+                        RefreshListBoxEntry(listBox1.SelectedIndex, name);
+                        entries[listBox1.SelectedIndex].Name = name;
+                        entries[listBox1.SelectedIndex].Edited = true;
+                        entries[listBox1.SelectedIndex].Data = audioData;
+                        button11.Enabled = true;
+                        return;
+                    }
+                    else { br.BaseStream.Seek(chunkSize, SeekOrigin.Current); } // Skip this chunk
+                }
+                MessageBox.Show("No audio data found in WAV file.");
+            }
+        }
+        // refresh the list box entry
+        private void RefreshListBoxEntry(int index, string text)
+        {
+            int selectedIndex = listBox1.SelectedIndex; // get the selected index
+            listBox1.SelectedIndexChanged -= listBox1_SelectedIndexChanged!; // remove event handler before changing selected index
+            if (selectedIndex == listBox1.Items.Count) { listBox1.SelectedIndex = selectedIndex - 1; } // spoof code
+            else { listBox1.SelectedIndex = selectedIndex + 1; } // spoof code to prevent the listBox from going out of bounds
+            listBox1.BeginUpdate();
+            listBox1.Items.RemoveAt(selectedIndex);
+            listBox1.Items.Insert(selectedIndex, $"{text}.WAV");
+            listBox1.SelectedIndex = selectedIndex;
+            listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged!; // add event handler after changing selected index
+            listBox1.EndUpdate();
+        }
+        // save file
+        private void button11_Click(object sender, EventArgs e)
+        {
+            button11.Enabled = false; // Disable save button
+            string outputPath = Path.Combine(Path.GetDirectoryName(filePath)!, Path.GetFileNameWithoutExtension(filePath) + "_updated.wow");
+
+            using (BinaryWriter bw = new BinaryWriter(File.Create(outputPath)))
+            {
+                // Write archive header
+                bw.Write(Encoding.ASCII.GetBytes(magic));
+                bw.Write(entries.Count);
+                //could just write the original header and file count bytes as they are not changed
+                // Placeholder for file entries
+                long entriesStart = bw.BaseStream.Position;
+                foreach (var entry in entries)
+                {
+                    bw.Write(Encoding.ASCII.GetBytes(entry.Name.PadRight(8, '\0')));
+                    bw.Write(0); // Placeholder for length
+                    bw.Write(0); // Placeholder for offset
+                }
+                // Write file data and update entries
+                List<long> lengths = new List<long>();
+                List<long> offsets = new List<long>();
+                foreach (var entry in entries)
+                {
+                    long offset = bw.BaseStream.Position;
+                    byte[]? data = entry.Edited ? entry.Data : ReadOriginalData(entry);
+                    entry.Edited = false; // Reset all edited flags after saving ( overkill? )
+                    bw.Write(data!);
+                    lengths.Add(data!.Length);
+                    offsets.Add(offset);
+                }
+                // Update file entries with actual lengths and offsets
+                bw.BaseStream.Seek(entriesStart, SeekOrigin.Begin);
+                for (int i = 0; i < entries.Count; i++)
+                {
+                    bw.Write(Encoding.ASCII.GetBytes(entries[i].Name.PadRight(8, '\0')));
+                    bw.Write((int)lengths[i]);
+                    bw.Write((int)offsets[i]);
+                }
+            }
+            MessageBox.Show("Archive updated successfully.");
+        }
+        private byte[] ReadOriginalData(WowFileEntry entry)
+        {
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+            {
+                fs.Seek(entry.Offset, SeekOrigin.Begin);
+                byte[] buffer = new byte[entry.Length];
+                int bytesRead = 0;
+                while (bytesRead < entry.Length)
+                {
+                    int read = fs.Read(buffer, bytesRead, entry.Length - bytesRead);
+                    if (read == 0)
+                    {
+                        throw new EndOfStreamException($"Unexpected end of file while reading entry '{entry.Name}'.");
+                    }
+                    bytesRead += read;
+                }
+                return buffer;
             }
         }
     }

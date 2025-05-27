@@ -48,6 +48,7 @@
             button8 = new Button();
             button9 = new Button();
             button10 = new Button();
+            button11 = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -247,11 +248,23 @@
             button10.Visible = false;
             button10.Click += button10_Click;
             // 
+            // button11
+            // 
+            button11.Location = new Point(12, 189);
+            button11.Name = "button11";
+            button11.Size = new Size(75, 23);
+            button11.TabIndex = 20;
+            button11.Text = "Save File";
+            button11.UseVisualStyleBackColor = true;
+            button11.Visible = false;
+            button11.Click += button11_Click;
+            // 
             // WOWViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(632, 348);
+            Controls.Add(button11);
             Controls.Add(button10);
             Controls.Add(button9);
             Controls.Add(button8);
@@ -300,5 +313,6 @@
         private Button button8;
         private Button button9;
         private Button button10;
+        private Button button11;
     }
 }
