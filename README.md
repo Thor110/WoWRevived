@@ -27,9 +27,9 @@ The road map for this project.
 	- Dynamic language pack detection.
 	- Advanced registry settings options.
 	- Custom keyboard shortcut settings. (WIP)
-- [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 90% Complete )
+- [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 95% Complete )
 	- .WoW archives can be extracted.
-	- Waveform preview and play sound files from .wow archives.
+	- Waveform preview, play and replace sound files from .wow archives.
 	- .ojd files can be parsed, but there is still more decoding to do.
 - [❌ 3 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
