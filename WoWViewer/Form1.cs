@@ -284,7 +284,7 @@ namespace WOWViewer
                 }
                 textBox2.Text = outputPath;
                 button4.Enabled = true; // Enable extract all button
-                if(listBox1.SelectedIndex != -1) { button2.Enabled = true; } // Enable extract button if a file is selected
+                if (listBox1.SelectedIndex != -1) { button2.Enabled = true; } // Enable extract button if a file is selected
             }
         }
         // extract all files
@@ -349,6 +349,7 @@ namespace WOWViewer
                 button6.Visible = false;                // hide audio player stop button
                 pictureBox1.Visible = false;            // hide the picture box
                 label5.Visible = false;                 // hide sound length label
+                button10.Visible = false;               // hide replace file button
             }
             else if (magic == "SfxL")
             {
@@ -367,10 +368,12 @@ namespace WOWViewer
                 button6.Visible = true;                 // show audio player stop button
                 pictureBox1.Visible = true;             // show the picture box
                 label5.Visible = true;                  // show sound length label
+                button10.Visible = true;                // show replace file button
             }
             button2.Enabled = false;                    // disable extract button
             button5.Enabled = false;                    // disable play button
             button6.Enabled = false;                    // disable stop button
+            button10.Enabled = false;                   // disable replace file button
             return true;
         }
         // create wav header
@@ -450,6 +453,7 @@ namespace WOWViewer
                     pictureBox1.Image = DrawWaveform(fullWav, 156, 137, sampleRate);
                     button5.Enabled = true; // enable play button
                     button6.Enabled = true; // enable stop button
+                    button10.Enabled = true; // enable replace file button
                 } // invoke extension handler for displaying different types
                 else if (magic == "KAT!") { handlers[listBox1.SelectedItem!.ToString()!.Split('.')[1]].Invoke(selected); }
                 if (button4.Enabled) { button2.Enabled = true; } // enable extract button
@@ -547,6 +551,41 @@ namespace WOWViewer
             this.Hide();
             form.FormClosed += (s, args) => this.Show();
             form.Move += (s, args) => { if (this.Location != form.Location) { this.Location = form.Location; } };
+        }
+        // replace selected file
+        private void button10_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.InitialDirectory = "C:\\Program Files (x86)\\Jeff Wayne's 'The War Of The Worlds'";
+                openFileDialog.Filter = "WAV Files (*.wav)|*.wav|All Files (*.*)|*.*";
+                openFileDialog.FilterIndex = 1;
+                openFileDialog.RestoreDirectory = true;
+                openFileDialog.Title = "Select a Container (.wav) file";
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    newWAV(openFileDialog.FileName);
+                }
+            }
+        }
+        private void newWAV(string newFile)
+        {
+            using (BinaryReader br = new BinaryReader(File.OpenRead(newFile)))
+            {
+                magic = new string(br.ReadChars(4));
+                if (magic != "RIFF" )
+                {
+                    MessageBox.Show("File is not a standard WAV file, please select a valid WAV file.");
+                }
+                else
+                {
+                    MessageBox.Show("Feature not implemented yet!!!!");
+                    // reparse the file to get the correct offset and length or use WowFileEntry data
+                    // write up to new file entry
+                    // implement custom color for the entry in the listbox
+                    // save file
+                }
+            }
         }
     }
 }
