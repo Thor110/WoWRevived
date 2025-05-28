@@ -95,9 +95,23 @@ namespace WoWViewer
                 return b >= 0x20 && b <= 0x7E;
             }
         }
+        // this is a test method to parse the OBJ + SFX.OJD file and log the results to a text file
+        public void parseSFX(string filename)
+        {
+            listBox1.Items.Clear();
+
+            string inputPath = $"{filename}.ojd";
+            byte[] data = File.ReadAllBytes(inputPath);
+
+            using (BinaryReader br = new BinaryReader(File.OpenRead(inputPath)))
+            {
+                br.ReadByte(); // read the first byte (not used)
+                
+            }
+        }
         // OBJ.ojd
         private void button1_Click(object sender, EventArgs e) { parseSFXOBJOJD("OBJ"); }
         // SFX.ojd
-        private void button2_Click(object sender, EventArgs e) { parseSFXOBJOJD("SFX"); }
+        private void button2_Click(object sender, EventArgs e) { parseSFX("SFX"); }
     }
 }
