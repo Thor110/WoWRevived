@@ -369,6 +369,7 @@ namespace WOWViewer
                 label5.Visible = false;                 // hide sound length label
                 button10.Visible = false;               // hide replace file button
                 button11.Visible = false;               // hide save file button
+                checkBox1.Visible = false;              // hide checkbox for backing up the original file ( for now )
             }
             else if (magic == "SfxL")
             {
@@ -389,13 +390,13 @@ namespace WOWViewer
                 label5.Visible = true;                  // show sound length label
                 button10.Visible = true;                // show replace file button
                 button11.Visible = true;                // show save file button
+                checkBox1.Visible = true;               // enable checkbox for backing up the original file
             }
             button2.Enabled = false;                    // disable extract button
             button5.Enabled = false;                    // disable play button
             button6.Enabled = false;                    // disable stop button
             button10.Enabled = false;                   // disable replace file button
             button11.Enabled = false;                   // disable save file button
-            checkBox1.Visible = true;                   // enable checkbox for backing up the original file
             return true;
         }
         // create wav header
