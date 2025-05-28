@@ -49,6 +49,7 @@
             button9 = new Button();
             button10 = new Button();
             button11 = new Button();
+            checkBox1 = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -239,6 +240,7 @@
             // 
             // button10
             // 
+            button10.AccessibleDescription = "Replace the selected entry with a new .wav file.";
             button10.Location = new Point(12, 218);
             button10.Name = "button10";
             button10.Size = new Size(75, 23);
@@ -250,6 +252,7 @@
             // 
             // button11
             // 
+            button11.AccessibleDescription = "Save the .wow archive.";
             button11.Location = new Point(12, 189);
             button11.Name = "button11";
             button11.Size = new Size(75, 23);
@@ -259,11 +262,24 @@
             button11.Visible = false;
             button11.Click += button11_Click;
             // 
+            // checkBox1
+            // 
+            checkBox1.AccessibleDescription = "If selected this will backup the original file.";
+            checkBox1.AutoSize = true;
+            checkBox1.Location = new Point(19, 164);
+            checkBox1.Name = "checkBox1";
+            checkBox1.Size = new Size(65, 19);
+            checkBox1.TabIndex = 21;
+            checkBox1.Text = "Backup";
+            checkBox1.UseVisualStyleBackColor = true;
+            checkBox1.Visible = false;
+            // 
             // WOWViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(632, 348);
+            Controls.Add(checkBox1);
             Controls.Add(button11);
             Controls.Add(button10);
             Controls.Add(button9);
@@ -314,5 +330,6 @@
         private Button button9;
         private Button button10;
         private Button button11;
+        private CheckBox checkBox1;
     }
 }

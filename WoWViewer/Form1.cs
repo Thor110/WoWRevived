@@ -395,6 +395,7 @@ namespace WOWViewer
             button6.Enabled = false;                    // disable stop button
             button10.Enabled = false;                   // disable replace file button
             button11.Enabled = false;                   // disable save file button
+            checkBox1.Visible = true;                   // enable checkbox for backing up the original file
             return true;
         }
         // create wav header
@@ -679,6 +680,8 @@ namespace WOWViewer
                     bw.Write((int)offsets[i]);
                 }
             }
+            if(checkBox1.Checked) { File.Replace(outputPath, filePath, filePath + ".bak"); }
+            else { File.Replace(outputPath, filePath, null); }
             MessageBox.Show("Archive updated successfully.");
         }
         private byte[] ReadOriginalData(WowFileEntry entry)
