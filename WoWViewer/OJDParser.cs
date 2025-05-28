@@ -9,7 +9,7 @@ namespace WoWViewer
             InitializeComponent();
         }
         // this is a test method to parse the TEXT.OJD file and log the results to a text file
-        public void parseTEXTOJD()
+        /*public void parseTEXTOJD() // no longer used, but kept for reference.
         {
             string inputPath = "TEXT.ojd";
             string outputPath = "text-ojd-log.txt";
@@ -36,9 +36,9 @@ namespace WoWViewer
                 }
                 //log.WriteLine($"Total valid entries: {count}"); // log the total number of entries
             }
-        }
+        }*/
         // this is a test method to parse the OBJ + SFX.OJD file and log the results to a text file
-        public void parseSFXOBJOJD(string filename)
+        /*public void parseSFXOBJOJD(string filename) // no longer used, but kept for reference.
         {
             listBox1.Items.Clear();
 
@@ -94,24 +94,70 @@ namespace WoWViewer
             {
                 return b >= 0x20 && b <= 0x7E;
             }
-        }
+        }*/
         // this is a test method to parse the OBJ + SFX.OJD file and log the results to a text file
         public void parseSFX(string filename)
         {
             listBox1.Items.Clear();
+            string logPath = Path.ChangeExtension(filename, "-dump.csv");
+            byte[] data = File.ReadAllBytes(filename);
+            int count = 0;
 
-            string inputPath = $"{filename}.ojd";
-            byte[] data = File.ReadAllBytes(inputPath);
-
-            using (BinaryReader br = new BinaryReader(File.OpenRead(inputPath)))
+            using (StreamWriter log = new StreamWriter(logPath, false, Encoding.UTF8))
             {
-                br.ReadByte(); // read the first byte (not used)
-                
+                log.WriteLine("Index,Offset,HeaderID,Length,Type,Text");
+
+                for (int i = 0; i < data.Length - 1; i++)
+                {
+                    if (!IsAsciiChar(data[i]) || data[i + 1] == 0x00) continue;
+
+                    int start = i;
+                    int length = 0;
+
+                    while (i < data.Length && IsAsciiChar(data[i])) { i++; length++; }
+                    if (length < 2 || i >= data.Length || data[i] != 0x00) continue;
+
+                    // Candidate string found
+                    int stringOffset = start;
+                    string text = Encoding.ASCII.GetString(data, stringOffset, length);
+
+                    // Try to backtrack
+                    int headerOffset = stringOffset - 7;
+                    string type = "Unverified";
+                    string headerID = "??";
+
+                    if (headerOffset >= 0 && data[headerOffset] == 0xFF)
+                    {
+                        ushort id = BitConverter.ToUInt16(data, headerOffset + 1);
+                        ushort maybeLength = BitConverter.ToUInt16(data, headerOffset + 5);
+
+                        headerID = id.ToString("X4");
+
+                        if (maybeLength == length + 1)
+                        {
+                            type = "StringEntry";
+                            listBox1.Items.Add(text);
+                        }
+                        else
+                        {
+                            type = "MismatchedLength";
+                        }
+                    }
+
+                    log.WriteLine($"{count},{stringOffset:X},{headerID},{length},{type},\"{text}\"");
+                    count++;
+                }
+
+                label1.Text = $"Total Strings: {count}";
             }
+
+            bool IsAsciiChar(byte b) => b >= 0x20 && b <= 0x7E;
         }
+        // both methods return 755 entries for SFX.ojd
+        // seems more accurate for OBJ.ojd
         // OBJ.ojd
-        private void button1_Click(object sender, EventArgs e) { parseSFXOBJOJD("OBJ"); }
+        private void button1_Click(object sender, EventArgs e) { parseSFX("OBJ.ojd"); }
         // SFX.ojd
-        private void button2_Click(object sender, EventArgs e) { parseSFX("SFX"); }
+        private void button2_Click(object sender, EventArgs e) { parseSFX("SFX.ojd"); }
     }
 }

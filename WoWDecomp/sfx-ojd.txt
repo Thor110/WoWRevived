@@ -1,20 +1,33 @@
 SFX.ojd decoding
 
+this is all wrong and it looks like we might not be able to identify the structure without a disassembly of the executable
+
 faction identifiers
 4 = Human
 3 = Martian
 2 = UI or Other
 
+if faction < 2 or faction > 4 = skip 2
+if faction = 15 = dead blob?
+
+Other = NonStringMetaData? = Skip 2
+0F 00 = DeadBlob? = Skip 0
+
 		counter of some sort?
 FF		= starting position
+
 5E 00		= 94
-00 00		= 
-05 00		= 
+00 00		= NonStringMetaData?
+05 00		= Skip 2
+
 FF		= starting position
+
 60 00		= 96
-01 00		= 
-91 01		= 
+01 00		= NonStringMetaData?
+91 01		= Skip 2
+
 FF		= starting position
+
 61 00		= 97
 04 00		= faction identifier
 08 00		= filename length ( including null terminator 00 )
@@ -22,9 +35,12 @@ hepilog		= filename
 00		= null terminator
 
 FF		= starting position
+
 62 00		= 98
-0F 00		= 
+0F 00		= DeadBlob? = Skip 0
+
 FF		= starting position
+
 63 00		= 99
 03 00		= faction identifier
 08 00		= filename length ( including null terminator 00 )
@@ -32,17 +48,24 @@ mepilog		= filename
 00		= null terminator
 
 FF		= starting position
+
 64 00		= 100
-0F 00		= 
+0F 00		= DeadBlob? = Skip 0
+
 FF		= starting position
+
 6A 00		= 106
-01 00		= 
-09 01		= 
+01 00		= NonStringMetaData?
+09 01		= Skip 2
+
 FF		= starting position
+
 6B 00		= 107
-11 00
-01 00
+11 00		= NonStringMetaData?
+01 00		= Skip 2
+
 FF		= starting position
+
 6C 00		= 108
 04 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
@@ -54,9 +77,10 @@ FF		= starting position
 04 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
 Sc02		= filename
-00
+00		= null terminator
 
 FF		= starting position
+
 6E 00		= 110
 04 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
@@ -64,6 +88,7 @@ Sc03		= filename
 00		= null terminator
 
 FF		= starting position
+
 6F 00		= 111
 03 00		= faction identifier
 06 00		= filename length ( including null terminator 00 )
@@ -71,6 +96,7 @@ LEA58		= filename
 00		= null terminator
 
 FF		= starting position
+
 70 00		= 112
 03 00		= faction identifier
 06 00		= filename length ( including null terminator 00 )
@@ -78,6 +104,7 @@ LEA59		= filename
 00		= null terminator
 
 FF		= starting position
+
 71 00		= 113
 03 00		= faction identifier
 06 00		= filename length ( including null terminator 00 )
@@ -85,6 +112,7 @@ LEA60		= filename
 00		= null terminator
 
 FF		= starting position
+
 72 00		= 114
 03 00		= faction identifier
 06 00		= filename length ( including null terminator 00 )
@@ -92,10 +120,13 @@ LEA61		= filename
 00		= null terminator
 
 FF		= starting position
+
 73 00		= 115
-11 00		= 
-02 00		= 
+11 00		= NonStringMetaData?
+02 00		= Skip 2
+
 FF		= starting position
+
 74 00		= 116
 04 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
@@ -103,6 +134,7 @@ SB01		= filename
 00		= null terminator
 
 FF		= starting position
+
 75 00		= 117
 04 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
@@ -110,6 +142,7 @@ SB02		= filename
 00		= null terminator
 
 FF		= starting position
+
 76 00		= 118
 04 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
@@ -117,6 +150,7 @@ SB03		= filename
 00		= null terminator
 
 FF		= starting position
+
 77 00		= 119
 04 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
@@ -124,6 +158,7 @@ SB05		= filename
 00		= null terminator
 
 FF		= starting position
+
 78 00		= 120
 03 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
@@ -131,6 +166,7 @@ EB58		= filename
 00		= null terminator
 
 FF		= starting position
+
 79 00		= 121
 03 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
@@ -138,6 +174,7 @@ EB59		= filename
 00		= null terminator
 
 FF		= starting position
+
 7A 00		= 122
 03 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
@@ -145,6 +182,7 @@ EB60		= filename
 00		= null terminator
 
 FF		= starting position
+
 7B 00		= 123
 03 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
@@ -152,10 +190,12 @@ EB61		= filename
 00		= null terminator
 
 FF		= starting position
+
 7C 00		= 124
-11 00		= 
-03 00		= 
-FF		= suddenly just FF?
+11 00		= NonStringMetaData?
+03 00		= Skip 2
+
+FF		= starting position
 
 7D 00		= 125
 04 00		= faction identifier
@@ -164,6 +204,7 @@ Sa01		= filename
 00		= null terminator
 
 FF		= starting position
+
 7E 00		= 126
 04 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
@@ -171,6 +212,7 @@ Sa02		= filename
 00		= null terminator
 
 FF		= starting position
+
 7F 00		= 127
 04 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
@@ -178,6 +220,7 @@ Sa03		= filename
 00		= null terminator
 
 FF		= starting position
+
 80 00		= 128
 03 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
@@ -185,6 +228,7 @@ LP58		= filename
 00		= null terminator
 
 FF		= starting position
+
 81 00		= 129
 03 00		= faction identifier
 05 00		= filename length ( including null terminator 00 )
