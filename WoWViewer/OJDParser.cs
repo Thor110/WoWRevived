@@ -156,8 +156,8 @@ namespace WoWViewer
         // both methods return 755 entries for SFX.ojd
         // seems more accurate for OBJ.ojd
         // OBJ.ojd
-        private void button1_Click(object sender, EventArgs e) { parseSFX("OBJ.ojd"); }
+        private void button1_Click(object sender, EventArgs e) { parseSFX("OBJ.ojd"); } // 2072 entries
         // SFX.ojd
-        private void button2_Click(object sender, EventArgs e) { parseSFX("SFX.ojd"); }
+        private void button2_Click(object sender, EventArgs e) { parseSFX("SFX.ojd"); } // 755 entries
     }
 }
