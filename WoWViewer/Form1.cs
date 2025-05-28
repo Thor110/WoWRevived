@@ -594,7 +594,7 @@ namespace WOWViewer
                     bw.Write((int)offsets[i]);
                 }
             }
-            if(checkBox1.Checked) { File.Replace(outputPath, filePath, filePath + ".bak"); }
+            if (checkBox1.Checked) { File.Replace(outputPath, filePath, filePath + ".bak"); }
             else { File.Replace(outputPath, filePath, null); }
             MessageBox.Show("Archive updated successfully.");
         }
@@ -617,5 +617,7 @@ namespace WOWViewer
                 return buffer;
             }
         }
+        // test ojd parsing
+        private void button12_Click(object sender, EventArgs e) { newForm(new OJDParser()); }
     }
 }

@@ -1,14 +1,12 @@
 ﻿using System.Text;
-using System.Windows.Forms;
 
 namespace WoWViewer
 {
-    internal class OldParserCode
+    public partial class OJDParser : Form
     {
-        public OldParserCode()
+        public OJDParser()
         {
-            //parseTEXTOJD();
-            //parseSFXOBJOJD("OBJ");
+            InitializeComponent();
         }
         // this is a test method to parse the TEXT.OJD file and log the results to a text file
         public void parseTEXTOJD()
@@ -42,6 +40,8 @@ namespace WoWViewer
         // this is a test method to parse the OBJ + SFX.OJD file and log the results to a text file
         public void parseSFXOBJOJD(string filename)
         {
+            listBox1.Items.Clear();
+
             string inputPath = $"{filename}.ojd";
             string outputPath = $"{filename}-ojd-log.txt";
             byte[] data = File.ReadAllBytes(inputPath);
@@ -76,8 +76,10 @@ namespace WoWViewer
                                 ushort maybeLen = BitConverter.ToUInt16(data, headerOffset + 5); // Usually equals string length
                                 log.WriteLine($"{count:D4} [{id:X2}] : {text} : Offset : [{headerOffset:X}] : Length (maybe): {maybeLen}");
                                 //log.WriteLine($"{text.ToUpperInvariant()}");
+                                listBox1.Items.Add(text.ToUpperInvariant()); // add to listbox
                                 count++;
                             }
+                            label1.Text = $"Total Entries : {count}"; // update label with total entries
                         }
                         offset++; // Move to next byte after null
                     }
@@ -93,5 +95,9 @@ namespace WoWViewer
                 return b >= 0x20 && b <= 0x7E;
             }
         }
+        // OBJ.ojd
+        private void button1_Click(object sender, EventArgs e) { parseSFXOBJOJD("OBJ"); }
+        // SFX.ojd
+        private void button2_Click(object sender, EventArgs e) { parseSFXOBJOJD("SFX"); }
     }
 }

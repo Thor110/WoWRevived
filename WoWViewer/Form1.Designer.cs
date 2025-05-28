@@ -50,6 +50,7 @@
             button10 = new Button();
             button11 = new Button();
             checkBox1 = new CheckBox();
+            button12 = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -274,11 +275,22 @@
             checkBox1.UseVisualStyleBackColor = true;
             checkBox1.Visible = false;
             // 
+            // button12
+            // 
+            button12.Location = new Point(302, 315);
+            button12.Name = "button12";
+            button12.Size = new Size(75, 23);
+            button12.TabIndex = 22;
+            button12.Text = "OJD Parser";
+            button12.UseVisualStyleBackColor = true;
+            button12.Click += button12_Click;
+            // 
             // WOWViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(632, 348);
+            Controls.Add(button12);
             Controls.Add(checkBox1);
             Controls.Add(button11);
             Controls.Add(button10);
@@ -331,5 +343,6 @@
         private Button button10;
         private Button button11;
         private CheckBox checkBox1;
+        private Button button12;
     }
 }

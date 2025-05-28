@@ -1,0 +1,33 @@
+SFX.ojd
+
+Container ID Info
+4 = Human.wow
+3 = Martian.wow
+2 = SFX.wow
+
+SFX.ojd
+
+FF = file start?
+16 bytes
+2 bytes container ID
+2 bytes filename length
+filename
+00 FF
+
+inconsistent number of bytes between filenames
+
+7 bytes
+2 bytes container ID
+2 bytes filename length 
+filename
+00 FF
+
+inconsistent number of bytes between filenames
+
+21 bytes
+2 bytes container ID
+2 bytes filename length 
+filename
+00 FF
+
+inconsistent number of bytes between filenames
