@@ -444,8 +444,7 @@ namespace WOWViewer
             using var fs = new FileStream(Path.Combine(outputPath, filename), FileMode.Create);
             if (asWav)
             {
-                int sampleRate = DetectSampleRate(rawData);
-                byte[] wavHeader = CreateWavHeader(rawData.Length, sampleRate);
+                byte[] wavHeader = CreateWavHeader(rawData.Length, DetectSampleRate(rawData));
                 fs.Write(wavHeader, 0, wavHeader.Length);
             }
             //if entry.Name ends with extension .RAW, .SHH, .SHL, .SHM, .SPR, .WOF etc add relevant header when they are determined and implemented.
@@ -458,7 +457,8 @@ namespace WOWViewer
             if (selected.Name != lastSelectedListItem) // check selection is new
             {
                 label3.Text = $"File Size : {selected.Length} bytes"; // update file size label
-                label4.Text = $"File Offset : {selected.Offset} bytes"; // update file offset label
+                if (selected.Offset == 0) { label4.Text = $"File Offset : Unknown"; } // update file offset label
+                else { label4.Text = $"File Offset : {selected.Offset} bytes"; } // update file offset label
                 if (magic == "SfxL") // load and display the waveform image if browsing SfxL container
                 {
                     using var br = new BinaryReader(File.OpenRead(filePath));
@@ -466,11 +466,16 @@ namespace WOWViewer
                     byte[] rawData = br.ReadBytes(selected.Length);
                     int sampleRate = DetectSampleRate(rawData);
                     byte[] wavHeader = CreateWavHeader(rawData.Length, sampleRate);
-                    using var ms = new MemoryStream();
-                    ms.Write(wavHeader, 0, wavHeader.Length);
-                    ms.Write(rawData, 0, rawData.Length);
-                    ms.Position = 0;
-                    byte[] fullWav = ms.ToArray();
+                    byte[] fullWav; // if edited get data else read data
+                    if (entries[listBox1.SelectedIndex].Edited) { fullWav = entries[listBox1.SelectedIndex].Data!; }
+                    else
+                    {
+                        using var ms = new MemoryStream();
+                        ms.Write(wavHeader, 0, wavHeader.Length);
+                        ms.Write(rawData, 0, rawData.Length);
+                        ms.Position = 0;
+                        fullWav = ms.ToArray();
+                    }
                     pictureBox1.Image = DrawWaveform(fullWav, 156, 137, sampleRate);
                     button5.Enabled = true; // enable play button
                     button6.Enabled = true; // enable stop button
@@ -488,17 +493,10 @@ namespace WOWViewer
         {
             using var br = new BinaryReader(File.OpenRead(filePath));
             br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
-            byte[] rawData;
-            if (entries[listBox1.SelectedIndex].Edited)
-            {
-                rawData = entries[listBox1.SelectedIndex].Data!;
-            }
-            else
-            {
-                rawData = br.ReadBytes(entry.Length);
-            }
-            int sampleRate = DetectSampleRate(rawData);
-            byte[] wavHeader = CreateWavHeader(rawData.Length, sampleRate);
+            byte[] rawData; // if edited get data else read data
+            if (entries[listBox1.SelectedIndex].Edited) { rawData = entries[listBox1.SelectedIndex].Data!; }
+            else { rawData = br.ReadBytes(entry.Length); }
+            byte[] wavHeader = CreateWavHeader(rawData.Length, DetectSampleRate(rawData));
             using var ms = new MemoryStream();
             ms.Write(wavHeader, 0, wavHeader.Length);
             ms.Write(rawData, 0, rawData.Length);
@@ -593,11 +591,6 @@ namespace WOWViewer
                 openFileDialog.Title = "Select a Container (.wav) file";
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    if(Path.GetFileNameWithoutExtension(openFileDialog.FileName) != entries[listBox1.SelectedIndex].Name)
-                    {
-                        MessageBox.Show("Filename needs to be the same as the selected entry.");
-                        return;
-                    }
                     newWAV(openFileDialog.FileName);
                 }
             }
@@ -629,32 +622,21 @@ namespace WOWViewer
                     if (chunkID == "data")
                     {
                         byte[] audioData = br.ReadBytes(chunkSize);
-                        string name = Path.GetFileNameWithoutExtension(newFile);
-                        RefreshListBoxEntry(listBox1.SelectedIndex, name);
-                        entries[listBox1.SelectedIndex].Name = name;
-                        entries[listBox1.SelectedIndex].Edited = true;
-                        entries[listBox1.SelectedIndex].Data = audioData;
-                        button11.Enabled = true;
+                        int selectedIndex = listBox1.SelectedIndex;
+                        entries[selectedIndex].Edited = true;
+                        entries[selectedIndex].Length = audioData.Length;
+                        entries[selectedIndex].Offset = 0;
+                        entries[selectedIndex].Data = audioData;
+                        button11.Enabled = true; // enable save button
+                        pictureBox1.Image = DrawWaveform(audioData, 156, 137, DetectSampleRate(audioData)); // redraw waveform and update labels
+                        label3.Text = $"File Size : {selected.Length} bytes"; // update file size label
+                        label4.Text = $"File Offset : Unknown"; // update file offset label
                         return;
                     }
                     else { br.BaseStream.Seek(chunkSize, SeekOrigin.Current); } // Skip this chunk
                 }
                 MessageBox.Show("No audio data found in WAV file.");
             }
-        }
-        // refresh the list box entry
-        private void RefreshListBoxEntry(int index, string text)
-        {
-            int selectedIndex = listBox1.SelectedIndex; // get the selected index
-            listBox1.SelectedIndexChanged -= listBox1_SelectedIndexChanged!; // remove event handler before changing selected index
-            if (selectedIndex == listBox1.Items.Count) { listBox1.SelectedIndex = selectedIndex - 1; } // spoof code
-            else { listBox1.SelectedIndex = selectedIndex + 1; } // spoof code to prevent the listBox from going out of bounds
-            listBox1.BeginUpdate();
-            listBox1.Items.RemoveAt(selectedIndex);
-            listBox1.Items.Insert(selectedIndex, $"{text}.WAV");
-            listBox1.SelectedIndex = selectedIndex;
-            listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged!; // add event handler after changing selected index
-            listBox1.EndUpdate();
         }
         // save file
         private void button11_Click(object sender, EventArgs e)
