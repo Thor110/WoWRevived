@@ -593,9 +593,9 @@ namespace WOWViewer
                 openFileDialog.Title = "Select a Container (.wav) file";
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    if(Path.GetFileNameWithoutExtension(openFileDialog.FileName).Length > 8)
+                    if(Path.GetFileNameWithoutExtension(openFileDialog.FileName) != entries[listBox1.SelectedIndex].Name)
                     {
-                        MessageBox.Show("Filename needs to be 8 characters or less!\nI suggest using the original filenames.");
+                        MessageBox.Show("Filename needs to be the same as the selected entry.");
                         return;
                     }
                     newWAV(openFileDialog.FileName);
