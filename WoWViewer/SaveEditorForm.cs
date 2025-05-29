@@ -264,12 +264,8 @@ namespace WoWViewer
                 return;
             }
             int offset = 0x289; // Human sector listings start
-            int endOffset = 0x4EA; // Human sector listings end
-            if (fileName.Contains("Martian"))
-            {
-                offset = endOffset; // Human sector listings end / Martian sector listings start
-                endOffset = 0x72E; // Martian sector listings end
-            }
+            int endOffset = 0x4EA; // Human sector listings end / Martian sector listings start
+            if (fileName.Contains("Martian")) { offset = endOffset; } //endOffset = 0x72E; // Martian sector listings end
             byte[] data = File.ReadAllBytes("TEXT.ojd");
             for (int i = 0; i < 31; i++)
             {
