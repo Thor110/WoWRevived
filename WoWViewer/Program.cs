@@ -21,8 +21,6 @@ namespace WoWViewer
             {
                 string file = args[0];
                 string ext = Path.GetExtension(file).ToLowerInvariant();
-
-                // Only load .wow files (or any you want to support)
                 if (ext == ".wow")
                 {
                     mainForm.openFile(file);

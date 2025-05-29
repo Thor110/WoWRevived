@@ -616,19 +616,17 @@ namespace WoWViewer
         }
         // test ojd parsing
         private void button12_Click(object sender, EventArgs e) { newForm(new OJDParser()); }
-
+        // drag and drop file onto the form
         private void WOWViewer_DragDrop(object sender, DragEventArgs e)
         {
             if (e.Data!.GetDataPresent(DataFormats.FileDrop))
             {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
-
                 if (files.Length != 1)
                 {
                     MessageBox.Show("Please drop only one file.");
                     return;
                 }
-
                 string file = files[0];
                 string extension = Path.GetExtension(file).ToLowerInvariant();
                 if (extension == ".wow")
@@ -641,7 +639,7 @@ namespace WoWViewer
                 }
             }
         }
-
+        // DragEnter event handler to allow dropping .wow files onto the form
         private void WOWViewer_DragEnter(object sender, DragEventArgs e)
         {
             if (e.Data!.GetDataPresent(DataFormats.FileDrop))
@@ -657,9 +655,9 @@ namespace WoWViewer
                     }
                 }
             }
-
             e.Effect = DragDropEffects.None;
         }
+        // public open file method to allow double click to open a .wow file
         public void openFile(string file)
         {
             filePath = file;
