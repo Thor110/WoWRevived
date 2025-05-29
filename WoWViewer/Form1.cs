@@ -617,7 +617,7 @@ namespace WoWViewer
         // test ojd parsing
         private void button12_Click(object sender, EventArgs e) { newForm(new OJDParser()); }
         // drag and drop file onto the form
-        private void WOWViewer_DragDrop(object sender, DragEventArgs e)
+        private void WoWViewer_DragDrop(object sender, DragEventArgs e)
         {
             if (e.Data!.GetDataPresent(DataFormats.FileDrop))
             {
@@ -640,7 +640,7 @@ namespace WoWViewer
             }
         }
         // DragEnter event handler to allow dropping .wow files onto the form
-        private void WOWViewer_DragEnter(object sender, DragEventArgs e)
+        private void WoWViewer_DragEnter(object sender, DragEventArgs e)
         {
             if (e.Data!.GetDataPresent(DataFormats.FileDrop))
             {

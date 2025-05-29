@@ -315,8 +315,8 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "WOWViewer";
             Text = "WoWViewer";
-            DragDrop += WOWViewer_DragDrop;
-            DragEnter += WOWViewer_DragEnter;
+            DragDrop += WoWViewer_DragDrop;
+            DragEnter += WoWViewer_DragEnter;
             this.AllowDrop = true;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
