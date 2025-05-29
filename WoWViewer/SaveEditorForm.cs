@@ -45,7 +45,7 @@ namespace WoWViewer
                     fs.Write(nameBytes, 0, 36);
                     selectedSave.Name = textBox1.Text; // update the selected save object
                 }
-                if (dateTimePicker1.Value != selectedSave.dateTime)
+                if (dateTimePicker1.Value != selectedSave.dateTime || yearOverride)
                 {
                     DateTime dt = dateTimePicker1.Value;
                     float totalHours = dt.Hour + (dt.Minute / 60f) + (dt.Second / 3600f);
@@ -80,7 +80,6 @@ namespace WoWViewer
             dateTimePicker1.ValueChanged -= AnyControlChanged!;
             checkBox1.CheckedChanged -= checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged -= checkBox2_CheckedChanged!;
-            numericUpDown1.ValueChanged -= numericUpDown1_ValueChanged!;
             // parse the save file which adds the event handlers back
             parseSaveFile();
         }
@@ -158,7 +157,6 @@ namespace WoWViewer
             dateTimePicker1.ValueChanged += AnyControlChanged!;
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
-            numericUpDown1.ValueChanged += numericUpDown1_ValueChanged!;
         }
         // double check the save file exists incase deleted by the user while the program is open
         private bool fileSafetyCheck()
@@ -184,7 +182,11 @@ namespace WoWViewer
         // current date updated
         private void AnyControlChanged(object sender, EventArgs e) { compareSaveValues(); }
         // override date limit
-        private void checkBox1_CheckedChanged(object sender, EventArgs e) { dateTimePicker1.MinDate = checkBox1.Checked ? DATE_LIMIT : MARTIAN_INVASION; }
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            dateTimePicker1.MinDate = checkBox1.Checked ? DATE_LIMIT : MARTIAN_INVASION;
+            checkBox2.Enabled = checkBox1.Checked;
+        }
         // minimum date check
         private void minimumDateCheck(DateTime compare)
         {
@@ -203,7 +205,7 @@ namespace WoWViewer
         private void compareSaveValues()
         {
             if (dateTimePicker1.Value != selectedSave.dateTime
-                || textBox1.Text != selectedSave.Name
+                || textBox1.Text != selectedSave.Name || checkBox2.Checked
                 )
             {
                 button1.Enabled = true; // enable the save button
@@ -284,23 +286,19 @@ namespace WoWViewer
         {
             numericUpDown1.Enabled = checkBox2.Checked;
             yearOverride = checkBox2.Checked;
-        }
-        // override year limit numeric up down value changed
-        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
-        {
-
+            compareSaveValues();
         }
         // list box 2 selected index changed ( sector selection )
         private void listBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             label9.Text = listBox2.Text; // update the label with the selected sector
         }
-
+        // list box 3 selection ( building selection )
         private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
 
         }
-
+        // list box 4 selection ( unit selection )
         private void listBox4_SelectedIndexChanged(object sender, EventArgs e)
         {
 
