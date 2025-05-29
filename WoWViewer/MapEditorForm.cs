@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace WOWViewer
+namespace WoWViewer
 {
     public partial class MapEditorForm : Form
     {

@@ -1,6 +1,6 @@
-﻿namespace WOWViewer
+﻿namespace WoWViewer
 {
-    partial class WOWViewer
+    partial class WoWViewer
     {
         /// <summary>
         ///  Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(WOWViewer));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(WoWViewer));
             button1 = new Button();
             textBox1 = new TextBox();
             listBox1 = new ListBox();
@@ -315,6 +315,9 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "WOWViewer";
             Text = "WoWViewer";
+            DragDrop += WOWViewer_DragDrop;
+            DragEnter += WOWViewer_DragEnter;
+            this.AllowDrop = true;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
             PerformLayout();

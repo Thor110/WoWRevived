@@ -1,10 +1,9 @@
 using System.Media;
 using System.Text;
-using WoWViewer;
 
-namespace WOWViewer
+namespace WoWViewer
 {
-    public partial class WOWViewer : Form
+    public partial class WoWViewer : Form
     {
         private SoundPlayer soundPlayer = null!;
         private string lastSelectedListItem = string.Empty;
@@ -159,7 +158,7 @@ namespace WOWViewer
             pictureBox1.Image = null;
             MessageBox.Show("CLS file selected. No action defined.");
         }
-        public WOWViewer()
+        public WoWViewer()
         {
             InitializeComponent();
             listBox1.DrawMode = DrawMode.OwnerDrawFixed;
@@ -197,9 +196,7 @@ namespace WOWViewer
                 openFileDialog.Title = "Select a Container (.wow) file";
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    filePath = openFileDialog.FileName;
-                    textBox1.Text = filePath;
-                    parseFileCount();
+                    openFile(openFileDialog.FileName);
                 }
             }
         }
@@ -619,5 +616,55 @@ namespace WOWViewer
         }
         // test ojd parsing
         private void button12_Click(object sender, EventArgs e) { newForm(new OJDParser()); }
+
+        private void WOWViewer_DragDrop(object sender, DragEventArgs e)
+        {
+            if (e.Data!.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
+
+                if (files.Length != 1)
+                {
+                    MessageBox.Show("Please drop only one file.");
+                    return;
+                }
+
+                string file = files[0];
+                string extension = Path.GetExtension(file).ToLowerInvariant();
+                if (extension == ".wow")
+                {
+                    openFile(file);
+                }
+                else
+                {
+                    MessageBox.Show("Only .wow files are supported.");
+                }
+            }
+        }
+
+        private void WOWViewer_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data!.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
+                if (files.Length == 1)
+                {
+                    string ext = Path.GetExtension(files[0]).ToLowerInvariant();
+                    if (ext == ".wow")
+                    {
+                        e.Effect = DragDropEffects.Copy;
+                        return;
+                    }
+                }
+            }
+
+            e.Effect = DragDropEffects.None;
+        }
+        public void openFile(string file)
+        {
+            filePath = file;
+            textBox1.Text = filePath;
+            parseFileCount();
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace WOWViewer
+﻿namespace WoWViewer
 {
     class WowFileEntry
     {
