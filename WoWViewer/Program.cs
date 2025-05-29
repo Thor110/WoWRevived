@@ -19,21 +19,10 @@ namespace WoWViewer
             WoWViewer mainForm = new WoWViewer();
             if (args.Length == 1)
             {
-                string file = args[0];
-                string ext = Path.GetExtension(file).ToLowerInvariant();
-                if (ext == ".wow")
-                {
-                    mainForm.openFile(file);
-                }
-                else
-                {
-                    MessageBox.Show("Only .wow files are supported.");
-                }
+                if (Path.GetExtension(args[0]).ToLowerInvariant() == ".wow") { mainForm.openFile(args[0]); }
+                else { MessageBox.Show("Only .wow files are supported."); }
             }
-            else if (args.Length > 1)
-            {
-                MessageBox.Show("Please open only one file at a time.");
-            }
+            else if (args.Length > 1) { MessageBox.Show("Please open only one file at a time."); }
             Application.Run(mainForm);
         }
     }
