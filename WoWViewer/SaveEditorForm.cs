@@ -11,7 +11,6 @@ namespace WoWViewer
         private DateTime MARTIAN_INVASION = new DateTime(1898, 9, 1); // martian invasion date
         // MARTIAN_INVASION is used as the default lower bound for the date time picker unless overridden or mismatching
         private DateTime DATE_LIMIT = new DateTime(1753, 1, 1); // date limit
-        private bool yearOverride; // is year override state
         private string fileName = string.Empty; // selected file name
         private WowSaveEntry selectedSave = new WowSaveEntry(); // selected save file settings
         public SaveEditorForm()
@@ -45,7 +44,7 @@ namespace WoWViewer
                     fs.Write(nameBytes, 0, 36);
                     selectedSave.Name = textBox1.Text; // update the selected save object
                 }
-                if (dateTimePicker1.Value != selectedSave.dateTime || yearOverride)
+                if (dateTimePicker1.Value != selectedSave.dateTime || checkBox2.Checked)
                 {
                     DateTime dt = dateTimePicker1.Value;
                     float totalHours = dt.Hour + (dt.Minute / 60f) + (dt.Second / 3600f);
@@ -56,7 +55,7 @@ namespace WoWViewer
                     ushort day = (ushort)(dt.Day - 1); // zero-based indexing
                     ushort month = (ushort)(dt.Month - 1); // zero-based indexing
                     ushort year;
-                    if (yearOverride) { year = (ushort)numericUpDown1.Value; }
+                    if (checkBox2.Checked) { year = (ushort)numericUpDown1.Value; }
                     else { year = (ushort)(dt.Year); }
                     byte[] dayBytes = BitConverter.GetBytes(day);
                     byte[] monthBytes = BitConverter.GetBytes(month);
@@ -285,7 +284,6 @@ namespace WoWViewer
         private void checkBox2_CheckedChanged(object sender, EventArgs e)
         {
             numericUpDown1.Enabled = checkBox2.Checked;
-            yearOverride = checkBox2.Checked;
             compareSaveValues();
         }
         // list box 2 selected index changed ( sector selection )
