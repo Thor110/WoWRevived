@@ -194,10 +194,7 @@ namespace WoWViewer
                 openFileDialog.FilterIndex = 1;
                 openFileDialog.RestoreDirectory = true;
                 openFileDialog.Title = "Select a Container (.wow) file";
-                if (openFileDialog.ShowDialog() == DialogResult.OK)
-                {
-                    openFile(openFileDialog.FileName);
-                }
+                if (openFileDialog.ShowDialog() == DialogResult.OK) { openFile(openFileDialog.FileName); }
             }
         }
         // extract selected file
@@ -629,14 +626,8 @@ namespace WoWViewer
                 }
                 string file = files[0];
                 string extension = Path.GetExtension(file).ToLowerInvariant();
-                if (extension == ".wow")
-                {
-                    openFile(file);
-                }
-                else
-                {
-                    MessageBox.Show("Only .wow files are supported.");
-                }
+                if (extension == ".wow") { openFile(file); }
+                else { MessageBox.Show("Only .wow files are supported."); }
             }
         }
         // DragEnter event handler to allow dropping .wow files onto the form
@@ -647,8 +638,7 @@ namespace WoWViewer
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
                 if (files.Length == 1)
                 {
-                    string ext = Path.GetExtension(files[0]).ToLowerInvariant();
-                    if (ext == ".wow")
+                    if (Path.GetExtension(files[0]).ToLowerInvariant() == ".wow")
                     {
                         e.Effect = DragDropEffects.Copy;
                         return;
