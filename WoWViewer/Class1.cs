@@ -2,18 +2,13 @@
 {
     class WowDatFile
     {
-        public int Unknown { get; set; }     // Often 0
-        public int Length { get; set; }       // Usually 0x28 (40 decimal)
-        public int Field { get; set; }       // Always 1?
-        public uint Index { get; set; }        // 0–15
-        public int A { get; set; }
-        public int B { get; set; }
-        public int Type { get; set; }
+        public int Unknown;    // Possibly always zero
+        public int Stride;     // e.g. 8, 0x0E
+        public int A;          // signed
+        public int B;          // signed
+        public int Index;      // 0–15
 
-        public override string ToString()
-        {
-            return $"Index {Index:D2} - A: 0x{A:X8}, B: 0x{B:X8}";
-        }
+        public override string ToString() => $"Index {Index:D2} - A: 0x{A:X8}, B: 0x{B:X8}";
     }
     class WowHuffmanContext
     {

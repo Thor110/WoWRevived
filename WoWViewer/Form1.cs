@@ -19,7 +19,7 @@ namespace WoWViewer
             handlers = new Dictionary<string, Action<WowFileEntry>>
             {
                 //DAT/Dat.wow
-                { "DAT", HandleDAT },
+                { "DAT", HandleDAT }, // pseudo random dithering
                 { "FNT", HandleFonts },
                 { "HSH", HandleHSH },
                 { "HSM", HandleHSM },
@@ -68,21 +68,24 @@ namespace WoWViewer
             var entries = new List<WowDatFile>();
             using var ms = new MemoryStream(data);
             using var br = new BinaryReader(ms);
-            while (br.BaseStream.Position + 24 <= br.BaseStream.Length)
+
+            while (br.BaseStream.Position + 20 <= br.BaseStream.Length)
             {
                 var entry = new WowDatFile
                 {
-                    Unknown = br.ReadInt32(),
-                    Length = br.ReadInt32(),
+                    Unknown = br.ReadInt32(),   // Likely always 0
+                    Stride = br.ReadInt32(),    // Seen values like 8, 0x0E
                     A = br.ReadInt32(),
                     B = br.ReadInt32(),
-                    Index = (uint)br.ReadInt32(),
-                    Type = br.ReadInt32()
+                    Index = br.ReadInt32()
                 };
+
                 entries.Add(entry);
             }
+
             return entries;
         }
+
         private void HandleFonts(WowFileEntry entry)
         {
             pictureBox1.Image = null;
