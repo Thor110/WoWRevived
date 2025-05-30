@@ -1,5 +1,29 @@
 ﻿namespace WoWViewer
 {
+    class WowDatFile
+    {
+        public int Unknown { get; set; }     // Often 0
+        public int Length { get; set; }       // Usually 0x28 (40 decimal)
+        public int Field { get; set; }       // Always 1?
+        public uint Index { get; set; }        // 0–15
+        public int A { get; set; }
+        public int B { get; set; }
+        public int Type { get; set; }
+
+        public override string ToString()
+        {
+            return $"Index {Index:D2} - A: 0x{A:X8}, B: 0x{B:X8}";
+        }
+    }
+    class WowHuffmanContext
+    {
+        public int BufferSize;      // From ebx
+        public int Flags;           // (arg_8 & 0xFF) | 0x08
+        public int ID;              // From arg_0
+        public byte[]? Buffer;      // Allocated memory
+        public string? SourceName;  // 9-char name from Source
+        public byte ExtraFlag;      // Always 0
+    }
     class WowFileEntry
     {
         public string Name { get; set; } = String.Empty;

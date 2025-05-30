@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Media;
 using System.Text;
 
@@ -41,7 +42,46 @@ namespace WoWViewer
         private void HandleDAT(WowFileEntry entry)
         {
             pictureBox1.Image = null;
-            MessageBox.Show("DAT file selected. No action defined.");
+
+            using var br = new BinaryReader(File.OpenRead(filePath));
+            br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
+            byte[] data = br.ReadBytes(entry.Length);
+
+            if (entry.Name.Equals("DITH.DAT", StringComparison.OrdinalIgnoreCase))
+            {
+                var ditherEntries = ParseDat(data);
+                StringBuilder sb = new StringBuilder();
+                foreach (var d in ditherEntries)
+                {
+                    sb.AppendLine(d.ToString());
+                }
+                Debug.Print($"Parsed {ditherEntries.Count} entries from DITH.DAT.");
+                Debug.Print($"{sb.ToString()}");
+            }
+            else
+            {
+                Debug.Print($"DAT file \"{entry.Name}\" selected.\nSize: {entry.Length} bytes.\nNo specific handler defined.");
+            }
+        }
+        private List<WowDatFile> ParseDat(byte[] data)
+        {
+            var entries = new List<WowDatFile>();
+            using var ms = new MemoryStream(data);
+            using var br = new BinaryReader(ms);
+            while (br.BaseStream.Position + 24 <= br.BaseStream.Length)
+            {
+                var entry = new WowDatFile
+                {
+                    Unknown = br.ReadInt32(),
+                    Length = br.ReadInt32(),
+                    A = br.ReadInt32(),
+                    B = br.ReadInt32(),
+                    Index = (uint)br.ReadInt32(),
+                    Type = br.ReadInt32()
+                };
+                entries.Add(entry);
+            }
+            return entries;
         }
         private void HandleFonts(WowFileEntry entry)
         {
@@ -100,45 +140,6 @@ namespace WoWViewer
         }
         private void RenderSPR(WowFileEntry entry)
         {
-            /* // disabled until SPR format is known or huffman encoding is implemented
-            using var br = new BinaryReader(File.OpenRead(filePath));
-            br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
-
-            string header = Encoding.ASCII.GetString(br.ReadBytes(4));
-            if (header != "FFUH")
-            {
-                MessageBox.Show("Unsupported SPR format (no FFUH header).");
-                return;
-            }
-
-            ushort width = br.ReadUInt16();   // Little endian
-            ushort height = br.ReadUInt16();  // Little endian
-
-            int imageSize = width * height * 3; // Assuming 24-bit RGB
-
-            byte[] imageData = br.ReadBytes(imageSize);
-            if (imageData.Length < imageSize)
-            {
-                MessageBox.Show("Incomplete image data.");
-                return;
-            }
-
-            Bitmap bmp = new Bitmap(width, height, PixelFormat.Format24bppRgb);
-
-            int index = 0;
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    byte r = imageData[index++];
-                    byte g = imageData[index++];
-                    byte b = imageData[index++];
-                    bmp.SetPixel(x, y, Color.FromArgb(r, g, b));
-                }
-            }
-
-            pictureBox1.Image = bmp;
-            */
             pictureBox1.Image = null;
             MessageBox.Show("SPR file selected. No action defined.");
         }
@@ -359,7 +360,11 @@ namespace WoWViewer
                 byte[] wavHeader = CreateWavHeader(rawData.Length, DetectSampleRate(rawData));
                 fs.Write(wavHeader, 0, wavHeader.Length);
             }
-            //if entry.Name ends with extension .RAW, .SHH, .SHL, .SHM, .SPR, .WOF etc add relevant header when they are determined and implemented.
+            // debug test for non compressed files
+            /*if (rawData.Length >= 4 && Encoding.ASCII.GetString(rawData, 0, 4) != "FFUH")
+            {
+                Debug.Print($"{entry.Name}");
+            }*/
             fs.Write(rawData, 0, rawData.Length);
         }
         // listbox selection changed
