@@ -74,10 +74,10 @@ namespace WoWLauncher
             {
                 comboBox2.Items.Add(res);
             }
-            comboBox3.Items.Add("30"); // should probably not support this option
-            comboBox3.Items.Add("60");
-            comboBox3.Items.Add("120");
-            comboBox3.Items.Add("240");
+            //comboBox3.Items.Add("30"); // should probably not support this option
+            //comboBox3.Items.Add("60");     // game frequency is not supported
+            //comboBox3.Items.Add("120");
+            //comboBox3.Items.Add("240");
             comboBox4.Items.Add("Easy");
             comboBox4.Items.Add("Medium");
             comboBox4.Items.Add("Hard");
@@ -102,7 +102,7 @@ namespace WoWLauncher
                     break;
                 }
             }
-            comboBox3.SelectedItem = (string)mainKey.GetValue("Game Frequency")!;
+            //comboBox3.SelectedItem = (string)mainKey.GetValue("Game Frequency")!;     // game frequency is not supported
             // custom registry entry so it will be null once // medium by default
             switch ((string)mainKey.GetValue("Difficulty")!)
             {
@@ -131,7 +131,7 @@ namespace WoWLauncher
             checkBox4.CheckedChanged += checkBox4_CheckedChanged!;
             comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged!;
             comboBox2.SelectedIndexChanged += comboBox2_SelectedIndexChanged!;
-            comboBox3.SelectedIndexChanged += comboBox3_SelectedIndexChanged!;
+            //comboBox3.SelectedIndexChanged += comboBox3_SelectedIndexChanged!;
             comboBox4.SelectedIndexChanged += comboBox4_SelectedIndexChanged!;
         }
         /// <summary>
@@ -235,7 +235,7 @@ namespace WoWLauncher
             checkBox3.Visible = true;
             checkBox4.Visible = true;
             comboBox2.Visible = true;
-            comboBox3.Visible = true;
+            //comboBox3.Visible = true;     // game frequency is not supported
             comboBox4.Visible = true;
             if (comboBox1.Items.Count > 1)
             {
@@ -243,7 +243,7 @@ namespace WoWLauncher
                 label1.Visible = true;
             }
             label2.Visible = true;
-            label3.Visible = true;
+            //label3.Visible = true;     // game frequency is not supported
             label4.Visible = true;
             button5.Visible = true;
             button6.Visible = false;
@@ -265,11 +265,11 @@ namespace WoWLauncher
                 checkBox4.Visible = false;
                 comboBox1.Visible = false;
                 comboBox2.Visible = false;
-                comboBox3.Visible = false;
+                //comboBox3.Visible = false;     // game frequency is not supported
                 comboBox4.Visible = false;
                 label1.Visible = false;
                 label2.Visible = false;
-                label3.Visible = false;
+                //label3.Visible = false;     // game frequency is not supported
                 label4.Visible = false;
                 button5.Visible = false;
                 button6.Visible = true;
@@ -278,7 +278,29 @@ namespace WoWLauncher
             else { Close(); }
         }
         private void checkBox1_CheckedChanged(object sender, EventArgs e) { mainKey.SetValue("Enable Network Version", checkBox1.Checked ? 1 : 0); }
-        private void checkBox2_CheckedChanged(object sender, EventArgs e) { mainKey.SetValue("Full Screen", checkBox2.Checked ? "1" : "0"); }
+        private void checkBox2_CheckedChanged(object sender, EventArgs e)
+        {
+            mainKey.SetValue("Full Screen", checkBox2.Checked ? "1" : "0");
+            string exePath = Path.GetFullPath("WoW_patched.exe"); // Adjust path as needed
+            RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers");
+            if (checkBox2.Checked) // Set the registry key to enable compatibility mode for 16-bit color
+            {
+                string? existing = key?.GetValue(exePath) as string;
+                if (!string.IsNullOrWhiteSpace(existing))
+                {
+                    string updated = string.Join(" ", existing.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Where(flag => !string.Equals(flag, "16BITCOLOR", StringComparison.OrdinalIgnoreCase)));
+                    if (string.IsNullOrWhiteSpace(updated)) { key?.DeleteValue(exePath, false); } // Delete entire value if nothing remains
+                    else { key?.SetValue(exePath, updated); } // Otherwise, save the new value
+                }
+            }
+            else // Add the compatibility mode setting if unchecked
+            {
+                string compatibilityFlags = "16BITCOLOR";
+                key?.SetValue(exePath, compatibilityFlags);
+            }
+            key?.Close();
+        }
         private void checkBox3_CheckedChanged(object sender, EventArgs e) { battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? "1" : "0"); }
         private void checkBox4_CheckedChanged(object sender, EventArgs e) { screenKey.SetValue("AllowResize", checkBox4.Checked ? "1" : "0"); }
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -304,11 +326,11 @@ namespace WoWLauncher
             registryCompare(screenKey, "Size", screenSize);                 // "Size" is the in-game resolution
             registryCompare(screenKey, "Support screen size", screenSize);  // "Support screen size" is the resolution used by the main menu
         }
-        private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
+        /*private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (comboBox3.Text == (string)mainKey.GetValue("Game Frequency")!) { return; }
             mainKey.SetValue("Game Frequency", comboBox3.SelectedItem!.ToString()!);
-        }
+        }*/
         private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (comboBox4.Text == (string)mainKey.GetValue("Difficulty")!) { return; }
@@ -363,7 +385,7 @@ namespace WoWLauncher
             checkBox4.CheckedChanged -= checkBox4_CheckedChanged!;
             comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;
             comboBox2.SelectedIndexChanged -= comboBox2_SelectedIndexChanged!;
-            comboBox3.SelectedIndexChanged -= comboBox3_SelectedIndexChanged!;
+            //comboBox3.SelectedIndexChanged -= comboBox3_SelectedIndexChanged!;
             comboBox4.SelectedIndexChanged -= comboBox4_SelectedIndexChanged!;
             form.FormClosed += (s, args) => this.Show();
             form.FormClosed += (s, args) => InitializeRegistry();
