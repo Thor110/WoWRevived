@@ -1,0 +1,5 @@
+changing this byte skips the CD check in the CD Player menu, which may or may not allow me to use the existing _inmm.dll with some modifications to inject the music without the cd inserted
+
+0x7D2D = 75 = jnz
+
+Edit = EB = jmp
