@@ -1,17 +1,21 @@
 TEXT.ojd
 
-FactionID
+unsure on what the data is leading up to 0x28B
+
+ENTRY START = FF
+
+[UNKNOWN VALUE] [2 BYTES]
+
+FactionID [2 BYTES]
 
 0x00 = "Martian"
 0x01 = "Human"
 0x02 = "UI"
 
-unsure on what the data is leading up to 0x28B
+[STRING REFERENCE] [2 BYTES]
 
-starting at offset 0x28B
-2 bytes string index starting at 8? ( this doesn't seem to be correct, not sure what these bytes are currently )
-2 bytes faction ID
-2 bytes string index starting at 2? ( this doesn't seem to be correct, not sure what these bytes are currently )
-2 bytes string length ( length count includes null terminator 00 )
+[STRING LENGTH] [2 BYTES] ( length count includes null terminator 00 )
+
 string bytes ( plus null terminator 00 )
+
 repeat until end of file at the final null terminator
