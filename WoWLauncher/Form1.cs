@@ -284,23 +284,16 @@ namespace WoWLauncher
             string exePath = Path.GetFullPath("WoW_patched.exe");
             RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers");
             string existing = key?.GetValue(exePath) as string ?? "";
-            if (checkBox2.Checked) // Set the registry key to enable compatibility mode for 16-bit color
+            if (checkBox2.Checked && existing.Contains("16BITCOLOR")) // Set the registry key to enable compatibility mode for 16-bit color
             {
-                string updated = string.Join(" ", existing!.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                        .Where(flag => !string.Equals(flag, "16BITCOLOR", StringComparison.OrdinalIgnoreCase)));
-                if (existing.Contains("16BITCOLOR"))
-                {
-                    if (string.IsNullOrWhiteSpace(updated) || updated == "~") { key?.DeleteValue(exePath, false); } // because windows adds this ~
-                    else { key?.SetValue(exePath, updated); }
-                }
+                string updated = string.Join(" ", existing!.Split(new[] { ' ' }).Where(flag => !string.Equals(flag, "16BITCOLOR")));
+                if (string.IsNullOrWhiteSpace(updated) || updated == "~") { key?.DeleteValue(exePath, false); } // because windows adds this ~
+                else { key?.SetValue(exePath, updated); } // retain any other user options
             }
-            else // Add the compatibility mode setting if unchecked
+            else if (!checkBox2.Checked && !existing.Contains("16BITCOLOR")) // Add the compatibility mode setting if unchecked
             {
-                if (!existing.Contains("16BITCOLOR"))
-                {
-                    string updated = existing + " " + "16BITCOLOR"; // ensures "16BITCOLOR" is recorded as a string literal and gets interned by the compiler
-                    key?.SetValue(exePath, updated);
-                }
+                string updated = existing + " " + "16BITCOLOR"; // ensures "16BITCOLOR" is recorded as a string literal and gets interned by the compiler
+                key?.SetValue(exePath, updated);
             }
             key?.Close();
         }
