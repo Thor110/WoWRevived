@@ -52,12 +52,29 @@ namespace WoWLauncher
                 }
             }
             comboBox1.SelectedIndex = 0; // set selected index to the current language as per the registry
-            comboBox2.Items.Add("512x384"); // this resolution is listed in the manual so I chose to include it
-            comboBox2.Items.Add("640x480");
-            comboBox2.Items.Add("800x600");
-            comboBox2.Items.Add("1024x768");
-            comboBox2.Items.Add("1280x1024");
-            comboBox3.Items.Add("30");
+            string[] supportedResolutions = new string[]
+            {
+                "512x384         (4:3)",    // Listed in original manual, ultra-low fallback
+                "640x480         (4:3)",    // Classic baseline 4:3
+                "800x600         (4:3)",    // Legacy 4:3 standard
+                "1024x768       (4:3)",     // XGA — very common
+                "1152x864       (4:3)",     // Slightly higher 4:3 (rare)
+                //"1280x720       (16:9)",  // 720p — slight stretching/whiteness issue
+                "1280x768       (15:9)",    // WXGA – rare variant of 1280x800 (15:9)
+                "1280x800       (16:10)",   // WXGA — early widescreen laptops (16:10)
+                "1280x1024     (5:4)",      // SXGA — tall 5:4 monitor resolution
+                "1360x768       (16:9)",    // 16:9 — GPU-aligned, better than 1366x768
+                "1366x768       (16:9)",    // Common 16:9 laptop resolution
+                "1600x900       (16:9)",    // 16:9 — upper-mid range laptop displays
+                "1600x1024     (5:4)",      // Unusual 5:4 wide — seems to pass internal checks
+                "1600x1200     (4:3)",      // UXGA — classic high-res 4:3
+                "1680x1050     (16:10)",    // WSXGA+ — widescreen 16:10, works well
+            };
+            foreach (string res in supportedResolutions)
+            {
+                comboBox2.Items.Add(res);
+            }
+            comboBox3.Items.Add("30"); // should probably not support this option
             comboBox3.Items.Add("60");
             comboBox3.Items.Add("120");
             comboBox3.Items.Add("240");
@@ -77,7 +94,14 @@ namespace WoWLauncher
             if (Convert.ToInt32(mainKey.GetValue("Full Screen")) == 1) { checkBox2.Checked = true; }
             if (Convert.ToInt32(battleKey.GetValue("EnableFogOfWar")) == 1) { checkBox3.Checked = true; }
             if (Convert.ToInt32(screenKey.GetValue("AllowResize")) == 1) { checkBox4.Checked = true; }
-            comboBox2.SelectedItem = ((string)screenKey.GetValue("Size")!).Replace(",", "x");
+            foreach (string res in comboBox2.Items)
+            {
+                if (res.StartsWith(((string)screenKey.GetValue("Size")!).Replace(",", "x").Split(' ')[0])) // check if the resolution is supported
+                {
+                    comboBox2.SelectedItem = res;
+                    break;
+                }
+            }
             comboBox3.SelectedItem = (string)mainKey.GetValue("Game Frequency")!;
             // custom registry entry so it will be null once // medium by default
             switch ((string)mainKey.GetValue("Difficulty")!)
@@ -276,9 +300,9 @@ namespace WoWLauncher
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (comboBox2.Text == screenKey.GetValue("Size")!.ToString()!.Replace(",", "x")) { return; }
-            string screenSize = comboBox2.SelectedItem!.ToString()!.Replace("x", ",");
-            registryCompare(screenKey, "Size", screenSize);
-            registryCompare(screenKey, "Support screen size", screenSize);
+            string screenSize = comboBox2.SelectedItem!.ToString()!.Replace("x", ",").Split(' ')[0]; // convert to the format used in the registry
+            registryCompare(screenKey, "Size", screenSize);                 // "Size" is the in-game resolution
+            registryCompare(screenKey, "Support screen size", screenSize);  // "Support screen size" is the resolution used by the main menu
         }
         private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
