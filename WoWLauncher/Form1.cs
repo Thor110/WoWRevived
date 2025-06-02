@@ -299,7 +299,7 @@ namespace WoWLauncher
         }
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (comboBox2.Text == screenKey.GetValue("Size")!.ToString()!.Replace(",", "x")) { return; }
+            if (comboBox2.Text == screenKey.GetValue("Size")!.ToString()!.Replace(",", "x").Split(' ')[0]) { return; }
             string screenSize = comboBox2.SelectedItem!.ToString()!.Replace("x", ",").Split(' ')[0]; // convert to the format used in the registry
             registryCompare(screenKey, "Size", screenSize);                 // "Size" is the in-game resolution
             registryCompare(screenKey, "Support screen size", screenSize);  // "Support screen size" is the resolution used by the main menu
