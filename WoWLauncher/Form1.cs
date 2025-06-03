@@ -36,6 +36,7 @@ namespace WoWLauncher
                 // default difficulty settings
                 battleKey.SetValue("EnableFogOfWar", "1");
                 battleKey.SetValue("Damage reduction divisor", "500");
+                // alternatively I could create whatever values we use here
                 MessageBox.Show("Registry entry missing, base registry entries recreated from scratch.\nPlease run the game once to create the rest of the registry entries.");
             }
             registryCompare(mainKey, "CD Path", Directory.GetCurrentDirectory().ToString()); // update the cd path in the registry automatically.
@@ -145,7 +146,7 @@ namespace WoWLauncher
             // safety check for anyone who may decide to use the original executable and to check either exists
             if (File.Exists("WoW_patched.exe")) { Process.Start("WoW_patched.exe"); }
             else if (File.Exists("WoW.exe")) { Process.Start("WoW.exe"); }
-            else { MessageBox.Show("Executable not found, please reinstall the and follow the instructions."); }
+            else { MessageBox.Show("Executable not found, please reinstall the game and follow the instructions."); }
             Close();
         }
         /// This is the event handler for the "Start Human Game" button
@@ -156,7 +157,7 @@ namespace WoWLauncher
                 // double check if the human game is installed // prevent exceptions if these files do not exist
                 if (!File.Exists("human.cd.bak") || !Directory.Exists("FMV"))
                 {
-                    MessageBox.Show("Human game not installed! Please install the Human game first.");
+                    MessageBox.Show("Human game not installed, please reinstall the game and follow the instructions.");
                     return;
                 }
                 File.Move("MARTIAN.cd", "MARTIAN.cd.bak");
@@ -193,7 +194,7 @@ namespace WoWLauncher
                 // double check if the martian game is installed // prevent exceptions if these files do not exist
                 if (!File.Exists("MARTIAN.cd.bak") || !Directory.Exists("FMV"))
                 {
-                    MessageBox.Show("Martian game not installed! Please install the Martian game first.");
+                    MessageBox.Show("Martian game not installed, please reinstall the game and follow the instructions.");
                     return;
                 }
                 File.Move("human.cd", "human.cd.bak");

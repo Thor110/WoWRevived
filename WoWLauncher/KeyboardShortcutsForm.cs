@@ -314,11 +314,11 @@
         private void button62_Click(object sender, EventArgs e)
         {
             var replacements = keybindings.Values.Where(k => k.IsModified).SelectMany(k => k.Offsets.Select(offset => (offset, k.CurrentVK))).ToList();
-            if (replacements.Count == 0)
+            /*if (replacements.Count == 0) // no longer possible to click it unless there are changes
             {
                 MessageBox.Show("No changes to apply.");
                 return;
-            }
+            }*/
             BinaryUtility.ReplaceByte(replacements, "WoW_patched.exe");
             MessageBox.Show("Shortcuts updated successfully.");
         }
