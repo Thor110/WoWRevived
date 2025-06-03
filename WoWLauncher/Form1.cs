@@ -131,7 +131,7 @@ namespace WoWLauncher
             checkBox4.CheckedChanged += checkBox4_CheckedChanged!;
             comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged!;
             comboBox2.SelectedIndexChanged += comboBox2_SelectedIndexChanged!;
-            //comboBox3.SelectedIndexChanged += comboBox3_SelectedIndexChanged!;
+            //comboBox3.SelectedIndexChanged += comboBox3_SelectedIndexChanged!;     // game frequency is not supported
             comboBox4.SelectedIndexChanged += comboBox4_SelectedIndexChanged!;
         }
         /// <summary>
@@ -381,7 +381,7 @@ namespace WoWLauncher
             checkBox4.CheckedChanged -= checkBox4_CheckedChanged!;
             comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;
             comboBox2.SelectedIndexChanged -= comboBox2_SelectedIndexChanged!;
-            //comboBox3.SelectedIndexChanged -= comboBox3_SelectedIndexChanged!;
+            //comboBox3.SelectedIndexChanged -= comboBox3_SelectedIndexChanged!;     // game frequency is not supported
             comboBox4.SelectedIndexChanged -= comboBox4_SelectedIndexChanged!;
             form.FormClosed += (s, args) => this.Show();
             form.FormClosed += (s, args) => InitializeRegistry();
