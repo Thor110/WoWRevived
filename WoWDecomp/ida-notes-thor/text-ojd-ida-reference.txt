@@ -1,0 +1,1396 @@
+﻿Offset : [289] : Unknown : [08] : Faction : [Human] : String ID : 2 : String Length : [8] : Text : The Sea
+Offset : [29A] : Unknown : [09] : Faction : [Human] : String ID : 3 : String Length : [24] : Text : North Western Highlands
+Offset : [2BB] : Unknown : [0A] : Faction : [Human] : String ID : 4 : String Length : [13] : Text : Isle of Skye
+Offset : [2D1] : Unknown : [0B] : Faction : [Human] : String ID : 5 : String Length : [19] : Text : Grampian Mountains
+Offset : [2ED] : Unknown : [0C] : Faction : [Human] : String ID : 6 : String Length : [11] : Text : Strathmore
+Offset : [301] : Unknown : [0D] : Faction : [Human] : String ID : 7 : String Length : [12] : Text : Isle of Man
+Offset : [316] : Unknown : [0E] : Faction : [Human] : String ID : 8 : String Length : [7] : Text : Argyll
+Offset : [326] : Unknown : [0F] : Faction : [Human] : String ID : 9 : String Length : [17] : Text : Southern Uplands
+Offset : [340] : Unknown : [10] : Faction : [Human] : String ID : 10 : String Length : [10] : Text : Edinburgh
+Offset : [353] : Unknown : [11] : Faction : [Human] : String ID : 11 : String Length : [9] : Text : Galloway
+Offset : [365] : Unknown : [12] : Faction : [Human] : String ID : 12 : String Length : [15] : Text : Northumberland
+Offset : [37D] : Unknown : [13] : Faction : [Human] : String ID : 13 : String Length : [10] : Text : Newcastle
+Offset : [390] : Unknown : [14] : Faction : [Human] : String ID : 14 : String Length : [14] : Text : Lake District
+Offset : [3A7] : Unknown : [15] : Faction : [Human] : String ID : 15 : String Length : [9] : Text : Pennines
+Offset : [3B9] : Unknown : [16] : Faction : [Human] : String ID : 16 : String Length : [7] : Text : Whitby
+Offset : [3C9] : Unknown : [17] : Faction : [Human] : String ID : 17 : String Length : [10] : Text : Liverpool
+Offset : [3DC] : Unknown : [18] : Faction : [Human] : String ID : 18 : String Length : [11] : Text : Nottingham
+Offset : [3F0] : Unknown : [19] : Faction : [Human] : String ID : 19 : String Length : [10] : Text : The Wolds
+Offset : [403] : Unknown : [1A] : Faction : [Human] : String ID : 20 : String Length : [12] : Text : North Wales
+Offset : [418] : Unknown : [1B] : Faction : [Human] : String ID : 21 : String Length : [10] : Text : Cotswolds
+Offset : [42B] : Unknown : [1C] : Faction : [Human] : String ID : 22 : String Length : [12] : Text : Northampton
+Offset : [440] : Unknown : [1D] : Faction : [Human] : String ID : 23 : String Length : [5] : Text : Fens
+Offset : [44E] : Unknown : [1E] : Faction : [Human] : String ID : 24 : String Length : [12] : Text : South Wales
+Offset : [463] : Unknown : [1F] : Faction : [Human] : String ID : 25 : String Length : [8] : Text : Bristol
+Offset : [474] : Unknown : [20] : Faction : [Human] : String ID : 26 : String Length : [7] : Text : Oxford
+Offset : [484] : Unknown : [21] : Faction : [Human] : String ID : 27 : String Length : [6] : Text : Essex
+Offset : [493] : Unknown : [22] : Faction : [Human] : String ID : 28 : String Length : [8] : Text : Norfolk
+Offset : [4A4] : Unknown : [23] : Faction : [Human] : String ID : 29 : String Length : [9] : Text : Cornwall
+Offset : [4B6] : Unknown : [24] : Faction : [Human] : String ID : 30 : String Length : [12] : Text : Southampton
+Offset : [4CB] : Unknown : [25] : Faction : [Human] : String ID : 31 : String Length : [6] : Text : Dover
+Offset : [4DA] : Unknown : [26] : Faction : [Human] : String ID : 32 : String Length : [7] : Text : London
+Offset : [4EA] : Unknown : [28] : Faction : [Martian] : String ID : 2 : String Length : [10] : Text : The Water
+Offset : [4FD] : Unknown : [29] : Faction : [Martian] : String ID : 3 : String Length : [9] : Text : Sector 1
+Offset : [50F] : Unknown : [2A] : Faction : [Martian] : String ID : 4 : String Length : [9] : Text : Sector 2
+Offset : [521] : Unknown : [2B] : Faction : [Martian] : String ID : 5 : String Length : [9] : Text : Sector 3
+Offset : [533] : Unknown : [2C] : Faction : [Martian] : String ID : 6 : String Length : [9] : Text : Sector 4
+Offset : [545] : Unknown : [2D] : Faction : [Martian] : String ID : 7 : String Length : [9] : Text : Sector 5
+Offset : [557] : Unknown : [2E] : Faction : [Martian] : String ID : 8 : String Length : [9] : Text : Sector 6
+Offset : [569] : Unknown : [2F] : Faction : [Martian] : String ID : 9 : String Length : [9] : Text : Sector 7
+Offset : [57B] : Unknown : [30] : Faction : [Martian] : String ID : 10 : String Length : [9] : Text : Sector 8
+Offset : [58D] : Unknown : [31] : Faction : [Martian] : String ID : 11 : String Length : [9] : Text : Sector 9
+Offset : [59F] : Unknown : [32] : Faction : [Martian] : String ID : 12 : String Length : [10] : Text : Sector 10
+Offset : [5B2] : Unknown : [33] : Faction : [Martian] : String ID : 13 : String Length : [10] : Text : Sector 11
+Offset : [5C5] : Unknown : [34] : Faction : [Martian] : String ID : 14 : String Length : [10] : Text : Sector 12
+Offset : [5D8] : Unknown : [35] : Faction : [Martian] : String ID : 15 : String Length : [10] : Text : Sector 13
+Offset : [5EB] : Unknown : [36] : Faction : [Martian] : String ID : 16 : String Length : [10] : Text : Sector 14
+Offset : [5FE] : Unknown : [37] : Faction : [Martian] : String ID : 17 : String Length : [10] : Text : Sector 15
+Offset : [611] : Unknown : [38] : Faction : [Martian] : String ID : 18 : String Length : [10] : Text : Sector 16
+Offset : [624] : Unknown : [39] : Faction : [Martian] : String ID : 19 : String Length : [10] : Text : Sector 17
+Offset : [637] : Unknown : [3A] : Faction : [Martian] : String ID : 20 : String Length : [10] : Text : Sector 18
+Offset : [64A] : Unknown : [3B] : Faction : [Martian] : String ID : 21 : String Length : [10] : Text : Sector 19
+Offset : [65D] : Unknown : [3C] : Faction : [Martian] : String ID : 22 : String Length : [10] : Text : Sector 20
+Offset : [670] : Unknown : [3D] : Faction : [Martian] : String ID : 23 : String Length : [10] : Text : Sector 21
+Offset : [683] : Unknown : [3E] : Faction : [Martian] : String ID : 24 : String Length : [10] : Text : Sector 22
+Offset : [696] : Unknown : [3F] : Faction : [Martian] : String ID : 25 : String Length : [10] : Text : Sector 23
+Offset : [6A9] : Unknown : [40] : Faction : [Martian] : String ID : 26 : String Length : [10] : Text : Sector 24
+Offset : [6BC] : Unknown : [41] : Faction : [Martian] : String ID : 27 : String Length : [10] : Text : Sector 25
+Offset : [6CF] : Unknown : [42] : Faction : [Martian] : String ID : 28 : String Length : [10] : Text : Sector 26
+Offset : [6E2] : Unknown : [43] : Faction : [Martian] : String ID : 29 : String Length : [10] : Text : Sector 27
+Offset : [6F5] : Unknown : [44] : Faction : [Martian] : String ID : 30 : String Length : [10] : Text : Sector 28
+Offset : [708] : Unknown : [45] : Faction : [Martian] : String ID : 31 : String Length : [10] : Text : Sector 29
+Offset : [71B] : Unknown : [46] : Faction : [Martian] : String ID : 32 : String Length : [10] : Text : Sector 30
+Offset : [72E] : Unknown : [4A] : Faction : [UI] : String ID : 33 : String Length : [22] : Text : Mark I Armoured Lorry
+Offset : [74D] : Unknown : [4B] : Faction : [UI] : String ID : 37 : String Length : [23] : Text : Mark II Armoured Lorry
+Offset : [76D] : Unknown : [4C] : Faction : [UI] : String ID : 41 : String Length : [24] : Text : Mark III Armoured Lorry
+Offset : [78E] : Unknown : [4E] : Faction : [UI] : String ID : 45 : String Length : [28] : Text : Mark I Armoured Track Layer
+Offset : [7B3] : Unknown : [4F] : Faction : [UI] : String ID : 49 : String Length : [29] : Text : Mark II Armoured Track Layer
+Offset : [7D9] : Unknown : [50] : Faction : [UI] : String ID : 53 : String Length : [30] : Text : Mark III Armoured Track Layer
+Offset : [800] : Unknown : [52] : Faction : [UI] : String ID : 57 : String Length : [30] : Text : Mark I Tunnelling Track Layer
+Offset : [827] : Unknown : [53] : Faction : [UI] : String ID : 61 : String Length : [31] : Text : Mark II Tunnelling Track Layer
+Offset : [84F] : Unknown : [54] : Faction : [UI] : String ID : 65 : String Length : [32] : Text : Mark III Tunnelling Track Layer
+Offset : [878] : Unknown : [56] : Faction : [UI] : String ID : 69 : String Length : [26] : Text : Mark I Self Propelled Gun
+Offset : [89B] : Unknown : [57] : Faction : [UI] : String ID : 73 : String Length : [27] : Text : Mark II Self Propelled Gun
+Offset : [8BF] : Unknown : [58] : Faction : [UI] : String ID : 77 : String Length : [28] : Text : Mark III Self Propelled Gun
+Offset : [8E4] : Unknown : [5A] : Faction : [UI] : String ID : 81 : String Length : [24] : Text : Self Propelled Heat Ray
+Offset : [905] : Unknown : [5C] : Faction : [UI] : String ID : 85 : String Length : [34] : Text : Mark I Mobile Anti-Aircraft Array
+Offset : [930] : Unknown : [5D] : Faction : [UI] : String ID : 89 : String Length : [35] : Text : Mark II Mobile Anti-Aircraft Array
+Offset : [95C] : Unknown : [5E] : Faction : [UI] : String ID : 93 : String Length : [36] : Text : Mark III Mobile Anti-Aircraft Array
+Offset : [989] : Unknown : [60] : Faction : [UI] : String ID : 97 : String Length : [14] : Text : Sappers Lorry
+Offset : [9A0] : Unknown : [61] : Faction : [UI] : String ID : 101 : String Length : [23] : Text : Modified Sappers Lorry
+Offset : [9C0] : Unknown : [63] : Faction : [UI] : String ID : 105 : String Length : [26] : Text : Formidable Class Ironclad
+Offset : [9E3] : Unknown : [64] : Faction : [UI] : String ID : 109 : String Length : [23] : Text : Warrior Class Ironclad
+Offset : [A03] : Unknown : [65] : Faction : [UI] : String ID : 113 : String Length : [26] : Text : Invincible Class Ironclad
+Offset : [A26] : Unknown : [67] : Faction : [UI] : String ID : 117 : String Length : [20] : Text : Model A Submersible
+Offset : [A43] : Unknown : [68] : Faction : [UI] : String ID : 121 : String Length : [20] : Text : Model B Submersible
+Offset : [A60] : Unknown : [69] : Faction : [UI] : String ID : 125 : String Length : [20] : Text : Model C Submersible
+Offset : [A7D] : Unknown : [6B] : Faction : [UI] : String ID : 129 : String Length : [20] : Text : Observation Balloon
+Offset : [A9A] : Unknown : [6C] : Faction : [UI] : String ID : 133 : String Length : [28] : Text : Powered Observation Balloon
+Offset : [ABF] : Unknown : [6D] : Faction : [UI] : String ID : 137 : String Length : [29] : Text : Powered Observation Air Ship
+Offset : [AE5] : Unknown : [6F] : Faction : [UI] : String ID : 141 : String Length : [21] : Text : Construction Vehicle
+Offset : [B03] : Unknown : [70] : Faction : [UI] : String ID : 145 : String Length : [30] : Text : Modified Construction Vehicle
+Offset : [B2A] : Unknown : [72] : Faction : [UI] : String ID : 149 : String Length : [22] : Text : Mobile Repair Vehicle
+Offset : [B49] : Unknown : [73] : Faction : [UI] : String ID : 153 : String Length : [31] : Text : Modified Mobile Repair Vehicle
+Offset : [B71] : Unknown : [75] : Faction : [UI] : String ID : 157 : String Length : [19] : Text : Mark I Mortar Bike
+Offset : [B8D] : Unknown : [76] : Faction : [UI] : String ID : 161 : String Length : [20] : Text : Mark II Mortar Bike
+Offset : [BAA] : Unknown : [77] : Faction : [UI] : String ID : 165 : String Length : [21] : Text : Mark III Mortar Bike
+Offset : [BC8] : Unknown : [7C] : Faction : [UI] : String ID : 169 : String Length : [24] : Text : Scout Machine - 1st Gen
+Offset : [BE9] : Unknown : [7D] : Faction : [UI] : String ID : 173 : String Length : [24] : Text : Scout Machine - 2nd Gen
+Offset : [C0A] : Unknown : [7E] : Faction : [UI] : String ID : 177 : String Length : [24] : Text : Scout Machine - 3rd Gen
+Offset : [C2B] : Unknown : [80] : Faction : [UI] : String ID : 181 : String Length : [27] : Text : Fighting Machine - 1st Gen
+Offset : [C4F] : Unknown : [81] : Faction : [UI] : String ID : 185 : String Length : [27] : Text : Fighting Machine - 2nd Gen
+Offset : [C73] : Unknown : [82] : Faction : [UI] : String ID : 189 : String Length : [27] : Text : Fighting Machine - 3rd Gen
+Offset : [C97] : Unknown : [84] : Faction : [UI] : String ID : 193 : String Length : [18] : Text : Tempest - 1st Gen
+Offset : [CB2] : Unknown : [85] : Faction : [UI] : String ID : 197 : String Length : [18] : Text : Tempest - 2nd Gen
+Offset : [CCD] : Unknown : [86] : Faction : [UI] : String ID : 201 : String Length : [18] : Text : Tempest - 3rd Gen
+Offset : [CE8] : Unknown : [88] : Faction : [UI] : String ID : 208 : String Length : [29] : Text : Bombarding Machine - 1st Gen
+Offset : [D0E] : Unknown : [89] : Faction : [UI] : String ID : 212 : String Length : [29] : Text : Bombarding Machine - 2nd Gen
+Offset : [D34] : Unknown : [8A] : Faction : [UI] : String ID : 216 : String Length : [29] : Text : Bombarding Machine - 3rd Gen
+Offset : [D5A] : Unknown : [8C] : Faction : [UI] : String ID : 220 : String Length : [27] : Text : Electric Machine - 1st Gen
+Offset : [D7E] : Unknown : [8D] : Faction : [UI] : String ID : 224 : String Length : [27] : Text : Electric Machine - 2nd Gen
+Offset : [DA2] : Unknown : [8E] : Faction : [UI] : String ID : 228 : String Length : [27] : Text : Electric Machine - 3rd Gen
+Offset : [DC6] : Unknown : [90] : Faction : [UI] : String ID : 232 : String Length : [25] : Text : Flying Machine - 1st Gen
+Offset : [DE8] : Unknown : [91] : Faction : [UI] : String ID : 236 : String Length : [25] : Text : Flying Machine - 2nd Gen
+Offset : [E0A] : Unknown : [92] : Faction : [UI] : String ID : 240 : String Length : [25] : Text : Flying Machine - 3rd Gen
+Offset : [E2C] : Unknown : [94] : Faction : [UI] : String ID : 244 : String Length : [27] : Text : Scanning Machine - 1st Gen
+Offset : [E50] : Unknown : [95] : Faction : [UI] : String ID : 248 : String Length : [27] : Text : Scanning Machine - 2nd Gen
+Offset : [E74] : Unknown : [96] : Faction : [UI] : String ID : 252 : String Length : [27] : Text : Scanning Machine - 3rd Gen
+Offset : [E98] : Unknown : [98] : Faction : [UI] : String ID : 256 : String Length : [22] : Text : Constrictor - 1st Gen
+Offset : [EB7] : Unknown : [99] : Faction : [UI] : String ID : 260 : String Length : [22] : Text : Constrictor - 2nd Gen
+Offset : [ED6] : Unknown : [9A] : Faction : [UI] : String ID : 264 : String Length : [22] : Text : Constrictor - 3rd Gen
+Offset : [EF5] : Unknown : [9C] : Faction : [UI] : String ID : 268 : String Length : [24] : Text : Xeno Telepath - 1st Gen
+Offset : [F16] : Unknown : [9D] : Faction : [UI] : String ID : 272 : String Length : [24] : Text : Xeno Telepath - 2nd Gen
+Offset : [F37] : Unknown : [9E] : Faction : [UI] : String ID : 276 : String Length : [24] : Text : Xeno Telepath - 3rd Gen
+Offset : [F58] : Unknown : [A0] : Faction : [UI] : String ID : 280 : String Length : [17] : Text : Handling Machine
+Offset : [F72] : Unknown : [A1] : Faction : [UI] : String ID : 284 : String Length : [26] : Text : Advanced Handling Machine
+Offset : [F95] : Unknown : [A3] : Faction : [UI] : String ID : 288 : String Length : [18] : Text : Digging Mechanism
+Offset : [FB0] : Unknown : [A4] : Faction : [UI] : String ID : 292 : String Length : [27] : Text : Advanced Digging Mechanism
+Offset : [FD4] : Unknown : [A6] : Faction : [UI] : String ID : 296 : String Length : [16] : Text : Drone - 1st Gen
+Offset : [FED] : Unknown : [A7] : Faction : [UI] : String ID : 300 : String Length : [16] : Text : Drone - 2nd Gen
+Offset : [1006] : Unknown : [A8] : Faction : [UI] : String ID : 304 : String Length : [16] : Text : Drone - 3rd Gen
+Offset : [101F] : Unknown : [AD] : Faction : [UI] : String ID : 308 : String Length : [24] : Text : Vehicle Factory Level 1
+Offset : [1040] : Unknown : [AE] : Faction : [UI] : String ID : 312 : String Length : [24] : Text : Vehicle Factory Level 2
+Offset : [1061] : Unknown : [AF] : Faction : [UI] : String ID : 316 : String Length : [24] : Text : Vehicle Factory Level 3
+Offset : [1082] : Unknown : [B1] : Faction : [UI] : String ID : 320 : String Length : [16] : Text : Training Centre
+Offset : [109B] : Unknown : [B3] : Faction : [UI] : String ID : 324 : String Length : [18] : Text : Ship Yard Level 1
+Offset : [10B6] : Unknown : [B4] : Faction : [UI] : String ID : 328 : String Length : [18] : Text : Ship Yard Level 2
+Offset : [10D1] : Unknown : [B5] : Faction : [UI] : String ID : 332 : String Length : [18] : Text : Ship Yard Level 3
+Offset : [10EC] : Unknown : [B7] : Faction : [UI] : String ID : 336 : String Length : [24] : Text : Aircraft Hangar Level 1
+Offset : [110D] : Unknown : [B8] : Faction : [UI] : String ID : 340 : String Length : [24] : Text : Aircraft Hangar Level 2
+Offset : [112E] : Unknown : [B9] : Faction : [UI] : String ID : 344 : String Length : [24] : Text : Aircraft Hangar Level 3
+Offset : [114F] : Unknown : [BB] : Faction : [UI] : String ID : 348 : String Length : [18] : Text : Munitions Factory
+Offset : [116A] : Unknown : [BD] : Faction : [UI] : String ID : 352 : String Length : [18] : Text : Construction Labs
+Offset : [1185] : Unknown : [BF] : Faction : [UI] : String ID : 356 : String Length : [15] : Text : Steel Refinery
+Offset : [119D] : Unknown : [C1] : Faction : [UI] : String ID : 360 : String Length : [10] : Text : Coal Mine
+Offset : [11B0] : Unknown : [C3] : Faction : [UI] : String ID : 364 : String Length : [13] : Text : Oil Refinery
+Offset : [11C6] : Unknown : [C5] : Faction : [UI] : String ID : 368 : String Length : [25] : Text : 4.6 Inch Medium Gun Post
+Offset : [11E8] : Unknown : [C6] : Faction : [UI] : String ID : 372 : String Length : [23] : Text : 6 Inch Medium Gun Post
+Offset : [1208] : Unknown : [C8] : Faction : [UI] : String ID : 376 : String Length : [29] : Text : 6 Inch Heavy Gun Emplacement
+Offset : [122E] : Unknown : [C9] : Faction : [UI] : String ID : 380 : String Length : [31] : Text : 9.2 Inch Heavy Gun Emplacement
+Offset : [1256] : Unknown : [CA] : Faction : [UI] : String ID : 384 : String Length : [30] : Text : 12 Inch Heavy Gun Emplacement
+Offset : [127D] : Unknown : [CC] : Faction : [UI] : String ID : 388 : String Length : [26] : Text : 1 Pdr Anti Aircraft Array
+Offset : [12A0] : Unknown : [CD] : Faction : [UI] : String ID : 392 : String Length : [26] : Text : 2 Pdr Anti Aircraft Array
+Offset : [12C3] : Unknown : [CE] : Faction : [UI] : String ID : 396 : String Length : [26] : Text : 3 Pdr Anti Aircraft Array
+Offset : [12E6] : Unknown : [D0] : Faction : [UI] : String ID : 400 : String Length : [13] : Text : Command Post
+Offset : [12FC] : Unknown : [D2] : Faction : [UI] : String ID : 404 : String Length : [17] : Text : Railway Platform
+Offset : [1316] : Unknown : [D4] : Faction : [UI] : String ID : 408 : String Length : [16] : Text : Repair Workshop
+Offset : [132F] : Unknown : [D6] : Faction : [UI] : String ID : 412 : String Length : [7] : Text : Bridge
+Offset : [133F] : Unknown : [D8] : Faction : [UI] : String ID : 524 : String Length : [7] : Text : Fence1
+Offset : [134F] : Unknown : [DA] : Faction : [UI] : String ID : 525 : String Length : [7] : Text : Tunnel
+Offset : [135F] : Unknown : [DC] : Faction : [UI] : String ID : 526 : String Length : [17] : Text : Temporary Bridge
+Offset : [1379] : Unknown : [DE] : Faction : [UI] : String ID : 527 : String Length : [15] : Text : Medical Centre
+Offset : [1391] : Unknown : [E3] : Faction : [UI] : String ID : 464 : String Length : [11] : Text : Human Farm
+Offset : [13A5] : Unknown : [E5] : Faction : [UI] : String ID : 468 : String Length : [20] : Text : Heavy Element Plant
+Offset : [13C2] : Unknown : [E7] : Faction : [UI] : String ID : 472 : String Length : [13] : Text : Copper Forge
+Offset : [13D8] : Unknown : [E9] : Faction : [UI] : String ID : 476 : String Length : [22] : Text : 12 KrK Rapid Heat Ray
+Offset : [13F7] : Unknown : [EA] : Faction : [UI] : String ID : 480 : String Length : [22] : Text : 18 KrK Rapid Heat Ray
+Offset : [1416] : Unknown : [EC] : Faction : [UI] : String ID : 484 : String Length : [23] : Text : 46 KrK Heat Ray Turret
+Offset : [1436] : Unknown : [ED] : Faction : [UI] : String ID : 488 : String Length : [23] : Text : 62 KrK Heat Ray Turret
+Offset : [1456] : Unknown : [EE] : Faction : [UI] : String ID : 492 : String Length : [23] : Text : 80 KrK Heat Ray Turret
+Offset : [1476] : Unknown : [F0] : Faction : [UI] : String ID : 496 : String Length : [28] : Text : 102 DnO Projectile Launcher
+Offset : [149B] : Unknown : [F1] : Faction : [UI] : String ID : 500 : String Length : [28] : Text : 130 DnO Projectile Launcher
+Offset : [14C0] : Unknown : [F2] : Faction : [UI] : String ID : 504 : String Length : [28] : Text : 165 DnO Projectile Launcher
+Offset : [14E5] : Unknown : [F4] : Faction : [UI] : String ID : 508 : String Length : [12] : Text : Power Plant
+Offset : [14FA] : Unknown : [F6] : Faction : [UI] : String ID : 512 : String Length : [22] : Text : Communications Centre
+Offset : [1519] : Unknown : [F8] : Faction : [UI] : String ID : 516 : String Length : [16] : Text : Repair Facility
+Offset : [1532] : Unknown : [FA] : Faction : [UI] : String ID : 520 : String Length : [24] : Text : Matter Transfer Station
+Offset : [1553] : Unknown : [FC] : Faction : [UI] : String ID : 416 : String Length : [20] : Text : Constructor Level 1
+Offset : [1570] : Unknown : [FD] : Faction : [UI] : String ID : 420 : String Length : [20] : Text : Constructor Level 2
+Offset : [158D] : Unknown : [FE] : Faction : [UI] : String ID : 424 : String Length : [20] : Text : Constructor Level 3
+Offset : [15AA] : Unknown : [100] : Faction : [UI] : String ID : 428 : String Length : [20] : Text : Energy Weapon Plant
+Offset : [15C7] : Unknown : [102] : Faction : [UI] : String ID : 432 : String Length : [30] : Text : Suspension Field Site Level 1
+Offset : [15EE] : Unknown : [103] : Faction : [UI] : String ID : 436 : String Length : [30] : Text : Suspension Field Site Level 2
+Offset : [1615] : Unknown : [104] : Faction : [UI] : String ID : 440 : String Length : [30] : Text : Suspension Field Site Level 3
+Offset : [163C] : Unknown : [106] : Faction : [UI] : String ID : 444 : String Length : [35] : Text : Telepathic Training Centre Level 1
+Offset : [1668] : Unknown : [107] : Faction : [UI] : String ID : 448 : String Length : [35] : Text : Telepathic Training Centre Level 2
+Offset : [1694] : Unknown : [108] : Faction : [UI] : String ID : 452 : String Length : [35] : Text : Telepathic Training Centre Level 3
+Offset : [16C0] : Unknown : [10A] : Faction : [UI] : String ID : 456 : String Length : [18] : Text : Biochemical Plant
+Offset : [16DB] : Unknown : [10C] : Faction : [UI] : String ID : 460 : String Length : [17] : Text : Explosives Plant
+Offset : [16F5] : Unknown : [114] : Faction : [UI] : String ID : 528 : String Length : [10] : Text : Battle in
+Offset : [1708] : Unknown : [116] : Faction : [Human] : String ID : 529 : String Length : [21] : Text : Vehicle/s arrived in
+Offset : [1726] : Unknown : [117] : Faction : [Martian] : String ID : 529 : String Length : [18] : Text : Unit/s arrived in
+Offset : [1741] : Unknown : [11A] : Faction : [UI] : String ID : 530 : String Length : [22] : Text : Research finished for
+Offset : [1760] : Unknown : [11C] : Faction : [UI] : String ID : 531 : String Length : [23] : Text : Research available for
+Offset : [1780] : Unknown : [11E] : Faction : [UI] : String ID : 532 : String Length : [6] : Text : Steel
+Offset : [178F] : Unknown : [120] : Faction : [UI] : String ID : 533 : String Length : [5] : Text : Coal
+Offset : [179D] : Unknown : [122] : Faction : [UI] : String ID : 534 : String Length : [4] : Text : Oil
+Offset : [17AA] : Unknown : [124] : Faction : [UI] : String ID : 535 : String Length : [12] : Text : Human Blood
+Offset : [17BF] : Unknown : [126] : Faction : [UI] : String ID : 536 : String Length : [7] : Text : Copper
+Offset : [17CF] : Unknown : [128] : Faction : [UI] : String ID : 537 : String Length : [15] : Text : Heavy Elements
+Offset : [17E7] : Unknown : [12E] : Faction : [UI] : String ID : 538 : String Length : [91] : Text : Military tacticians can teach new attack methods and formations to our vehicle commanders.
+Offset : [184B] : Unknown : [130] : Faction : [UI] : String ID : 539 : String Length : [75] : Text : These are items to bolster the performance and protection of our vehicles.
+Offset : [189F] : Unknown : [132] : Faction : [UI] : String ID : 540 : String Length : [255] : Text : The armoured lorry is an agile and fast front line vehicle.  It's light armour cladding and a single turreted gun protects it's crew of 4.  A 6-cylinder engine supplies it with enough power to provide quick support and excellent reconnaissance abilities.
+Offset : [19A7] : Unknown : [134] : Faction : [UI] : String ID : 541 : String Length : [269] : Text : The armoured track layer has a sprung tracked chassis powered by two six-cylinder engines, all clad in treated armour.  It also mounts two medium guns to protect its crew of six.  This should provide adequate fire power, mobility and protection against enemy weaponry.
+Offset : [1ABD] : Unknown : [136] : Faction : [UI] : String ID : 542 : String Length : [261] : Text : The tunnelling tank is a heavily armoured track layer, which has a rotary excavation blade mounted at the front. This allows the machine to tunnel through the earth and travel below the enemy's defences.  Two side mounted, medium guns defend its crew of eight.
+Offset : [1BCB] : Unknown : [138] : Faction : [UI] : String ID : 543 : String Length : [203] : Text : The self-propelled gun is an armoured carriage which has a forward mounted naval artillery piece.  This allows the six man crews to position heavy guns faster than the traditional horse drawn carriages.
+Offset : [1C9F] : Unknown : [13A] : Faction : [UI] : String ID : 544 : String Length : [148] : Text : The mobile anti aircraft array has been developed to counter fast moving aerial craft. It is a lightly armoured tractor, mounting an array of guns.
+Offset : [1D3C] : Unknown : [13C] : Faction : [UI] : String ID : 545 : String Length : [229] : Text : Sappers, our highly skilled and versatile military engineers, can now operate more efficiently with these well-equipped and lightly armoured lorries.  The Sappers are expertly trained and regularly updated on enemy technologies.
+Offset : [1E2A] : Unknown : [13E] : Faction : [UI] : String ID : 546 : String Length : [169] : Text : Our Navy is the most powerful military force we have. Our Ironclads can bring heavy firepower close to the land, and prove very effective at bombarding enemy positions.
+Offset : [1EDC] : Unknown : [140] : Faction : [UI] : String ID : 547 : String Length : [172] : Text : An Ironclad has been developed which can operate underwater, rendering the craft undetectable from the surface.  However the submersible must surface to fire it's cannons.
+Offset : [1F91] : Unknown : [142] : Faction : [UI] : String ID : 548 : String Length : [152] : Text : The landing craft is a converted vehicle ferry.  It provides armoured transport to vehicles, and can place them on a shore without the need of a jetty.
+Offset : [2032] : Unknown : [144] : Faction : [UI] : String ID : 549 : String Length : [93] : Text : Observation balloons operate from high altitudes, viewing enemy movements over a large area.
+Offset : [2098] : Unknown : [146] : Faction : [UI] : String ID : 550 : String Length : [116] : Text : Construction workers travel in an armoured vehicle, carrying the tools and expertise to manufacture our facilities.
+Offset : [2115] : Unknown : [148] : Faction : [UI] : String ID : 551 : String Length : [104] : Text : The mobile repair vehicles carry field engineers who maintain and repair our vehicles and emplacements.
+Offset : [2186] : Unknown : [14A] : Faction : [UI] : String ID : 552 : String Length : [132] : Text : These are highly trained covert operatives, capable of infiltrating enemy positions.  Much of our intelligence is supplied by them.
+Offset : [2213] : Unknown : [14C] : Faction : [UI] : String ID : 553 : String Length : [125] : Text : The vehicle factories construct our land based military equipment, including the transportation for most of our specialists.
+Offset : [2299] : Unknown : [14E] : Faction : [UI] : String ID : 554 : String Length : [82] : Text : The training centres are where our specialists learn their skills and techniques.
+Offset : [22F4] : Unknown : [150] : Faction : [UI] : String ID : 555 : String Length : [52] : Text : The ship yards manufacture all of our Naval forces.
+Offset : [2331] : Unknown : [152] : Faction : [UI] : String ID : 556 : String Length : [60] : Text : The hangers are where our aerial equipment is manufactured.
+Offset : [2376] : Unknown : [154] : Faction : [UI] : String ID : 557 : String Length : [109] : Text : The munitions factory provides specialist weaponry and ordinance to increase the firepower of our vehicle's.
+Offset : [23EC] : Unknown : [156] : Faction : [UI] : String ID : 558 : String Length : [84] : Text : A facility dedicated to countering the Martian use of chemicals against our forces.
+Offset : [2449] : Unknown : [158] : Faction : [UI] : String ID : 559 : String Length : [117] : Text : The construction labs provide a more efficient research and manufacturing environment for our advanced technologies.
+Offset : [24C7] : Unknown : [15A] : Faction : [UI] : String ID : 560 : String Length : [64] : Text : The steel refinery processes iron to be used by our facilities.
+Offset : [2510] : Unknown : [15C] : Faction : [UI] : String ID : 561 : String Length : [57] : Text : The pits supply the coal to power our production plants.
+Offset : [2552] : Unknown : [15E] : Faction : [UI] : String ID : 562 : String Length : [52] : Text : Imported oil is refined into fuel for our vehicles.
+Offset : [258F] : Unknown : [160] : Faction : [UI] : String ID : 565 : String Length : [77] : Text : The gun emplacements provide heavy, shielded firepower against enemy forces.
+Offset : [25E5] : Unknown : [162] : Faction : [UI] : String ID : 566 : String Length : [164] : Text : The command post relays messages back to the war room.  No further advance or construction can be co-ordinated in the vicinity until a command post has been built.
+Offset : [2692] : Unknown : [164] : Faction : [UI] : String ID : 567 : String Length : [73] : Text : Construction of a temporary rail depot helps to speed up transportation.
+Offset : [26E4] : Unknown : [166] : Faction : [UI] : String ID : 568 : String Length : [100] : Text : Vehicles brought to a repair workshop can be refitted and repaired back to full operational status.
+Offset : [2751] : Unknown : [168] : Faction : [UI] : String ID : 569 : String Length : [124] : Text : These are items that further our understanding of the Martians and help up interpret gathered intelligence more accurately.
+Offset : [27D6] : Unknown : [16A] : Faction : [UI] : String ID : 570 : String Length : [75] : Text : Experience of previous engagements can be used to form new attack methods.
+Offset : [282A] : Unknown : [16C] : Faction : [UI] : String ID : 571 : String Length : [50] : Text : Items to improve the performance of our machines.
+Offset : [2865] : Unknown : [16E] : Faction : [UI] : String ID : 572 : String Length : [197] : Text : The scout machine is a light and fast attack vehicle.  It has thin shielding and only a light heat ray, but its high speed and manoeuvrability allow it to provide quick support and reconnaissance.
+Offset : [2933] : Unknown : [170] : Faction : [UI] : String ID : 573 : String Length : [284] : Text : The fighting machine is our primary attack weapon. It has a forward mounted heavy heat ray, a light canister launcher, and is shielded with enough armour to repel most projectile weapons.  This combination of firepower, armour and speed allow it to cut through most enemy opposition.
+Offset : [2A58] : Unknown : [172] : Faction : [UI] : String ID : 575 : String Length : [235] : Text : The bombarding machine provides heavy mobile firepower.  It mounts a long-range canister launcher, which can fire explosives over a wide area.  However its light heat ray and low speed provide less than adequate close quarter defence.
+Offset : [2B4C] : Unknown : [174] : Faction : [UI] : String ID : 576 : String Length : [93] : Text : The scanning machine has a very sensitive antenna array, which can detect concealed objects.
+Offset : [2BB2] : Unknown : [176] : Faction : [UI] : String ID : 577 : String Length : [182] : Text : The constrictor can dispense a chemical foam which encases its target and rapidly hardens.  At short range these can be discharged at an enemy vehicle with devastating consequences.
+Offset : [2C71] : Unknown : [178] : Faction : [UI] : String ID : 578 : String Length : [174] : Text : The electric machine carries a large power supply and two high voltage generators.  At short range these can be discharged at an enemy vehicle with devastating consequences.
+Offset : [2D28] : Unknown : [17A] : Faction : [UI] : String ID : 579 : String Length : [191] : Text : The flying machine has two suspension pods, which allow it to travel in the air at great speeds, out of the reach of enemy weapons.  However it mounts only a light heat ray with poor armour.
+Offset : [2DF0] : Unknown : [17C] : Faction : [UI] : String ID : 580 : String Length : [129] : Text : The Xeno-telepaths are trained to read Human minds using their telepathy.  The weak Human brains can then be easily manipulated.
+Offset : [2E7A] : Unknown : [17E] : Faction : [UI] : String ID : 581 : String Length : [107] : Text : The handling machine is a versatile tool, used to construct, repair and generally maintain our facilities.
+Offset : [2EEE] : Unknown : [180] : Faction : [UI] : String ID : 582 : String Length : [92] : Text : The digging mechanism is specifically designed to quickly move the thick, heavy Earth soil.
+Offset : [2F53] : Unknown : [182] : Faction : [UI] : String ID : 583 : String Length : [73] : Text : The drones are capable of rapidly carrying heavy payloads into position.
+Offset : [2FA5] : Unknown : [184] : Faction : [UI] : String ID : 584 : String Length : [113] : Text : The constructor manufactures most of our primary ground forces, including the vehicles for our specialist units.
+Offset : [301F] : Unknown : [186] : Faction : [UI] : String ID : 585 : String Length : [91] : Text : The energy weapon plant allows the manufacture of machines that require high power levels.
+Offset : [3083] : Unknown : [188] : Faction : [UI] : String ID : 586 : String Length : [90] : Text : The suspension field site manufactures ground effects and suspension unit based machines.
+Offset : [30E6] : Unknown : [18A] : Faction : [UI] : String ID : 587 : String Length : [74] : Text : The telepathic training centre gives us control over the minds of Humans.
+Offset : [3139] : Unknown : [18C] : Faction : [UI] : String ID : 588 : String Length : [87] : Text : The biochemical plant produces the potent chemicals required for some of our vehicles.
+Offset : [3199] : Unknown : [18E] : Faction : [UI] : String ID : 589 : String Length : [85] : Text : The High Explosives Plant provides heavy weaponry for our more destructive vehicles.
+Offset : [31F7] : Unknown : [190] : Faction : [UI] : String ID : 590 : String Length : [46] : Text : The farms process Human blood for our forces.
+Offset : [322E] : Unknown : [192] : Faction : [UI] : String ID : 591 : String Length : [87] : Text : The heavy element facilities produce isotopes used in the power units of our vehicles.
+Offset : [328E] : Unknown : [194] : Faction : [UI] : String ID : 592 : String Length : [76] : Text : The copper forge refines materials needed for our manufacturing facilities.
+Offset : [32E3] : Unknown : [196] : Faction : [UI] : String ID : 563 : String Length : [46] : Text : Constructions which will repel enemy attacks.
+Offset : [331A] : Unknown : [198] : Faction : [UI] : String ID : 564 : String Length : [77] : Text : Our defences are designed to inhibit and hopefully halt the Martian advance.
+Offset : [3370] : Unknown : [19A] : Faction : [UI] : String ID : 593 : String Length : [86] : Text : The gun positions provide heavy shielded firepower against the oncoming enemy forces.
+Offset : [33CF] : Unknown : [19C] : Faction : [UI] : String ID : 602 : String Length : [117] : Text : The medium gun post has only average firepower and weak armour, but can be rapidly installed in defensive positions.
+Offset : [344D] : Unknown : [19E] : Faction : [UI] : String ID : 603 : String Length : [133] : Text : Heavy gun emplacements are well fortified Naval guns.  Their long construction time means they are best used for permanent defences.
+Offset : [34DB] : Unknown : [1A0] : Faction : [UI] : String ID : 604 : String Length : [128] : Text : The anti aircraft array is an armoured mount of linked guns, which have sighting apparatus designed for combating aerial craft.
+Offset : [3564] : Unknown : [1A2] : Faction : [UI] : String ID : 594 : String Length : [126] : Text : The Rapid Heat Ray provides limited fire power over a small area, but its simple design allows fast construction for defence.
+Offset : [35EB] : Unknown : [1A4] : Faction : [UI] : String ID : 595 : String Length : [138] : Text : The Heat Ray Turret is a permanent structure, with a heavily shielded ray.  It provides formidable defence against oncoming enemy forces.
+Offset : [367E] : Unknown : [1A6] : Faction : [UI] : String ID : 596 : String Length : [109] : Text : The Projectile launcher is a shielded heavy canister launcher, which has great long-range destructive power.
+Offset : [36F4] : Unknown : [1A8] : Faction : [UI] : String ID : 597 : String Length : [49] : Text : The power plant supplies energy to our defences.
+Offset : [372E] : Unknown : [1AA] : Faction : [UI] : String ID : 598 : String Length : [134] : Text : The communications centre is the direct link to our forces.  A centre must be constructed to allow further expansion in the vicinity.
+Offset : [37BD] : Unknown : [1AC] : Faction : [UI] : String ID : 599 : String Length : [95] : Text : Machines brought to a repair facility can be refitted and returned to full operational status.
+Offset : [3825] : Unknown : [1AE] : Faction : [UI] : String ID : 600 : String Length : [89] : Text : Matter transfer stations allow the rapid distribution of materials over great distances.
+Offset : [3887] : Unknown : [1B0] : Faction : [UI] : String ID : 601 : String Length : [106] : Text : Advanced optical equipment allows us to view activities on Earth from observation platforms here on Mars.
+Offset : [38FA] : Unknown : [1B2] : Faction : [UI] : String ID : 574 : String Length : [102] : Text : The Tempest is an advanced assault vehicle which carries two heavy heat rays and a canister launcher.
+Offset : [3969] : Unknown : [1BA] : Faction : [Human] : String ID : 605 : String Length : [8] : Text : Viewing
+Offset : [397A] : Unknown : [1BB] : Faction : [Martian] : String ID : 605 : String Length : [8] : Text : Viewing
+Offset : [398B] : Unknown : [1BD] : Faction : [Human] : String ID : 606 : String Length : [10] : Text : Attacking
+Offset : [399E] : Unknown : [1BE] : Faction : [Martian] : String ID : 606 : String Length : [10] : Text : Attacking
+Offset : [39B1] : Unknown : [1C0] : Faction : [Human] : String ID : 607 : String Length : [10] : Text : Defending
+Offset : [39C4] : Unknown : [1C1] : Faction : [Martian] : String ID : 607 : String Length : [10] : Text : Defending
+Offset : [39D7] : Unknown : [1C3] : Faction : [UI] : String ID : 608 : String Length : [9] : Text : Time now
+Offset : [39E9] : Unknown : [1C5] : Faction : [UI] : String ID : 609 : String Length : [19] : Text : Weather conditions
+Offset : [3A05] : Unknown : [1C7] : Faction : [UI] : String ID : 610 : String Length : [16] : Text : Units in sector
+Offset : [3A1E] : Unknown : [1C9] : Faction : [Human] : String ID : 611 : String Length : [19] : Text : Vehicles in sector
+Offset : [3A3A] : Unknown : [1CA] : Faction : [Martian] : String ID : 611 : String Length : [19] : Text : Machines in sector
+Offset : [3A56] : Unknown : [1CC] : Faction : [UI] : String ID : 612 : String Length : [20] : Text : Buildings in sector
+Offset : [3A73] : Unknown : [1D1] : Faction : [UI] : String ID : 613 : String Length : [21] : Text : General Enhancements
+Offset : [3A91] : Unknown : [1D3] : Faction : [UI] : String ID : 624 : String Length : [19] : Text : Offensive Vehicles
+Offset : [3AAD] : Unknown : [1D5] : Faction : [UI] : String ID : 614 : String Length : [17] : Text : Support Vehicles
+Offset : [3AC7] : Unknown : [1D7] : Faction : [UI] : String ID : 615 : String Length : [14] : Text : Manufacturing
+Offset : [3ADE] : Unknown : [1D9] : Faction : [UI] : String ID : 616 : String Length : [9] : Text : Defences
+Offset : [3AF0] : Unknown : [1DB] : Faction : [UI] : String ID : 617 : String Length : [19] : Text : Control Facilities
+Offset : [3B0C] : Unknown : [1DD] : Faction : [UI] : String ID : 618 : String Length : [17] : Text : Current research
+Offset : [3B26] : Unknown : [1DF] : Faction : [UI] : String ID : 619 : String Length : [16] : Text : Attack Machines
+Offset : [3B3F] : Unknown : [1E1] : Faction : [UI] : String ID : 620 : String Length : [20] : Text : Specialist Machines
+Offset : [3B5C] : Unknown : [1E3] : Faction : [UI] : String ID : 621 : String Length : [18] : Text : Production Plants
+Offset : [3B77] : Unknown : [1E5] : Faction : [UI] : String ID : 622 : String Length : [14] : Text : Control Sites
+Offset : [3B8E] : Unknown : [1E7] : Faction : [UI] : String ID : 623 : String Length : [22] : Text : Communications Centre
+Offset : [3BAD] : Unknown : [1EB] : Faction : [UI] : String ID : 625 : String Length : [19] : Text : The Armoured Lorry
+Offset : [3BC9] : Unknown : [1ED] : Faction : [UI] : String ID : 626 : String Length : [17] : Text : Vehicle Upgrades
+Offset : [3BE3] : Unknown : [1EF] : Faction : [UI] : String ID : 627 : String Length : [13] : Text : Intelligence
+Offset : [3BF9] : Unknown : [1F1] : Faction : [UI] : String ID : 628 : String Length : [25] : Text : The Armoured Track Layer
+Offset : [3C1B] : Unknown : [1F3] : Faction : [UI] : String ID : 629 : String Length : [27] : Text : The Tunnelling Track Layer
+Offset : [3C3F] : Unknown : [1F5] : Faction : [UI] : String ID : 630 : String Length : [23] : Text : The Self Propelled Gun
+Offset : [3C5F] : Unknown : [1F7] : Faction : [UI] : String ID : 631 : String Length : [31] : Text : The Mobile Anti Aircraft Array
+Offset : [3C87] : Unknown : [1F9] : Faction : [UI] : String ID : 632 : String Length : [18] : Text : The Sappers Lorry
+Offset : [3CA2] : Unknown : [1FB] : Faction : [UI] : String ID : 633 : String Length : [13] : Text : The Ironclad
+Offset : [3CB8] : Unknown : [1FD] : Faction : [UI] : String ID : 634 : String Length : [16] : Text : The Submersible
+Offset : [3CD1] : Unknown : [1FF] : Faction : [UI] : String ID : 635 : String Length : [24] : Text : The Observation Balloon
+Offset : [3CF2] : Unknown : [201] : Faction : [UI] : String ID : 636 : String Length : [25] : Text : The Construction Vehicle
+Offset : [3D14] : Unknown : [203] : Faction : [UI] : String ID : 637 : String Length : [26] : Text : The Mobile Repair Vehicle
+Offset : [3D37] : Unknown : [205] : Faction : [UI] : String ID : 638 : String Length : [16] : Text : The Mortar Bike
+Offset : [3D50] : Unknown : [207] : Faction : [UI] : String ID : 639 : String Length : [16] : Text : Vehicle Factory
+Offset : [3D69] : Unknown : [209] : Faction : [UI] : String ID : 640 : String Length : [10] : Text : Ship Yard
+Offset : [3D7C] : Unknown : [20B] : Faction : [UI] : String ID : 641 : String Length : [16] : Text : Aircraft Hangar
+Offset : [3D95] : Unknown : [20D] : Faction : [UI] : String ID : 642 : String Length : [15] : Text : Steel Refinery
+Offset : [3DAD] : Unknown : [20F] : Faction : [UI] : String ID : 643 : String Length : [6] : Text : Traps
+Offset : [3DBC] : Unknown : [211] : Faction : [UI] : String ID : 644 : String Length : [10] : Text : Blockades
+Offset : [3DCF] : Unknown : [213] : Faction : [UI] : String ID : 645 : String Length : [17] : Text : Medium Gun Posts
+Offset : [3DE9] : Unknown : [215] : Faction : [UI] : String ID : 646 : String Length : [23] : Text : Heavy Gun Emplacements
+Offset : [3E09] : Unknown : [217] : Faction : [UI] : String ID : 647 : String Length : [21] : Text : Anti Aircraft Arrays
+Offset : [3E27] : Unknown : [219] : Faction : [UI] : String ID : 648 : String Length : [22] : Text : Vehicle Modifications
+Offset : [3E46] : Unknown : [21B] : Faction : [UI] : String ID : 649 : String Length : [13] : Text : Surveillance
+Offset : [3E5C] : Unknown : [21D] : Faction : [UI] : String ID : 650 : String Length : [14] : Text : Scout Machine
+Offset : [3E73] : Unknown : [21F] : Faction : [UI] : String ID : 651 : String Length : [17] : Text : Fighting Machine
+Offset : [3E8D] : Unknown : [221] : Faction : [UI] : String ID : 652 : String Length : [8] : Text : Tempest
+Offset : [3E9E] : Unknown : [223] : Faction : [UI] : String ID : 653 : String Length : [19] : Text : Bombarding Machine
+Offset : [3EBA] : Unknown : [225] : Faction : [UI] : String ID : 654 : String Length : [17] : Text : Electric Machine
+Offset : [3ED4] : Unknown : [227] : Faction : [UI] : String ID : 655 : String Length : [15] : Text : Flying Machine
+Offset : [3EEC] : Unknown : [229] : Faction : [UI] : String ID : 656 : String Length : [17] : Text : Scanning Machine
+Offset : [3F06] : Unknown : [22B] : Faction : [UI] : String ID : 657 : String Length : [12] : Text : Constrictor
+Offset : [3F1B] : Unknown : [22D] : Faction : [UI] : String ID : 658 : String Length : [14] : Text : Xeno Telepath
+Offset : [3F32] : Unknown : [22F] : Faction : [UI] : String ID : 659 : String Length : [17] : Text : Handling Machine
+Offset : [3F4C] : Unknown : [231] : Faction : [UI] : String ID : 660 : String Length : [18] : Text : Digging Mechanism
+Offset : [3F67] : Unknown : [233] : Faction : [UI] : String ID : 661 : String Length : [6] : Text : Drone
+Offset : [3F76] : Unknown : [235] : Faction : [UI] : String ID : 662 : String Length : [12] : Text : Constructor
+Offset : [3F8B] : Unknown : [237] : Faction : [UI] : String ID : 663 : String Length : [22] : Text : Suspension Field Site
+Offset : [3FAA] : Unknown : [239] : Faction : [UI] : String ID : 664 : String Length : [25] : Text : Telepath Training Centre
+Offset : [3FCC] : Unknown : [23B] : Faction : [UI] : String ID : 665 : String Length : [18] : Text : Biochemical Plant
+Offset : [3FE7] : Unknown : [23D] : Faction : [UI] : String ID : 666 : String Length : [21] : Text : High Explosive Plant
+Offset : [4005] : Unknown : [23F] : Faction : [UI] : String ID : 667 : String Length : [11] : Text : Human Farm
+Offset : [4019] : Unknown : [241] : Faction : [UI] : String ID : 668 : String Length : [23] : Text : Heavy Element Facility
+Offset : [4039] : Unknown : [243] : Faction : [UI] : String ID : 669 : String Length : [15] : Text : Rapid Heat Ray
+Offset : [4051] : Unknown : [245] : Faction : [UI] : String ID : 670 : String Length : [16] : Text : Heat Ray Turret
+Offset : [406A] : Unknown : [247] : Faction : [UI] : String ID : 671 : String Length : [20] : Text : Projectile Launcher
+Offset : [4087] : Unknown : [24D] : Faction : [UI] : String ID : 672 : String Length : [23] : Text : Shock Resistant Armour
+Offset : [40A7] : Unknown : [24F] : Faction : [UI] : String ID : 676 : String Length : [25] : Text : Impact Reflecting Armour
+Offset : [40C9] : Unknown : [251] : Faction : [UI] : String ID : 680 : String Length : [29] : Text : Enhanced Ray Focus Mechanism
+Offset : [40EF] : Unknown : [254] : Faction : [UI] : String ID : 36 : String Length : [72] : Text : Mark I;\nArmament: 2 Pounder Pom Pom, Armour: 3/8 Inch, Engine: 45 h.p.
+Offset : [4140] : Unknown : [255] : Faction : [UI] : String ID : 34 : String Length : [22] : Text : Mark I Armoured Lorry
+Offset : [415F] : Unknown : [256] : Faction : [UI] : String ID : 35 : String Length : [34] : Text : Researching Mark I Armoured Lorry
+Offset : [418A] : Unknown : [258] : Faction : [UI] : String ID : 40 : String Length : [69] : Text : Mark II;\nArmament: 3 Pounder Gun, Armour: 1/2 Inch, Engine: 62 h.p.
+Offset : [41D8] : Unknown : [259] : Faction : [UI] : String ID : 38 : String Length : [23] : Text : Mark II Armoured Lorry
+Offset : [41F8] : Unknown : [25A] : Faction : [UI] : String ID : 39 : String Length : [35] : Text : Researching Mark II Armoured Lorry
+Offset : [4224] : Unknown : [25C] : Faction : [UI] : String ID : 44 : String Length : [70] : Text : Mark III;\nArmament: 6 Pounder Gun, Armour: 5/8 Inch, Engine: 88 h.p.
+Offset : [4273] : Unknown : [25D] : Faction : [UI] : String ID : 42 : String Length : [24] : Text : Mark III Armoured Lorry
+Offset : [4294] : Unknown : [25E] : Faction : [UI] : String ID : 43 : String Length : [36] : Text : Researching Mark III Armoured Lorry
+Offset : [42C1] : Unknown : [260] : Faction : [UI] : String ID : 48 : String Length : [78] : Text : Mark I;\nArmament: Two 6 Pounder Guns, Armour: 5/8 Inch, Engine: Two 105 h.p.
+Offset : [4318] : Unknown : [261] : Faction : [UI] : String ID : 46 : String Length : [28] : Text : Mark I Armoured Track Layer
+Offset : [433D] : Unknown : [262] : Faction : [UI] : String ID : 47 : String Length : [40] : Text : Researching Mark I Armoured Track Layer
+Offset : [436E] : Unknown : [264] : Faction : [UI] : String ID : 52 : String Length : [82] : Text : Mark II;\nArmament: Two 13 Pounder Guns, Armour: 13/16 Inch, Engine: Two 150 h.p.
+Offset : [43C9] : Unknown : [265] : Faction : [UI] : String ID : 50 : String Length : [29] : Text : Mark II Armoured Track Layer
+Offset : [43EF] : Unknown : [266] : Faction : [UI] : String ID : 51 : String Length : [41] : Text : Researching Mark II Armoured Track Layer
+Offset : [4421] : Unknown : [268] : Faction : [UI] : String ID : 56 : String Length : [79] : Text : Mark III;\nArmament: Two 18 Pounder Guns, Armour: 1 Inch, Engine: Two 225 h.p.
+Offset : [4479] : Unknown : [269] : Faction : [UI] : String ID : 54 : String Length : [30] : Text : Mark III Armoured Track Layer
+Offset : [44A0] : Unknown : [26A] : Faction : [UI] : String ID : 55 : String Length : [42] : Text : Researching Mark III Armoured Track Layer
+Offset : [44D3] : Unknown : [26C] : Faction : [UI] : String ID : 72 : String Length : [73] : Text : Mark I;\nArmament: 4.6 Inch Howitzer, Armour: 1/2 Inch, Engine: 105 h.p.
+Offset : [4525] : Unknown : [26D] : Faction : [UI] : String ID : 70 : String Length : [26] : Text : Mark I Self Propelled Gun
+Offset : [4548] : Unknown : [26E] : Faction : [UI] : String ID : 71 : String Length : [38] : Text : Researching Mark I Self Propelled Gun
+Offset : [4577] : Unknown : [270] : Faction : [UI] : String ID : 76 : String Length : [72] : Text : Mark II;\nArmament: 6 Inch Howitzer, Armour: 5/8 Inch, Engine: 150 h.p.
+Offset : [45C8] : Unknown : [271] : Faction : [UI] : String ID : 74 : String Length : [27] : Text : Mark II Self Propelled Gun
+Offset : [45EC] : Unknown : [272] : Faction : [UI] : String ID : 75 : String Length : [39] : Text : Researching Mark II Self Propelled Gun
+Offset : [461C] : Unknown : [274] : Faction : [UI] : String ID : 80 : String Length : [75] : Text : Mark III;\nArmament: 8 Inch Howitzer, Armour: 13/16 Inch, Engine: 225 h.p.
+Offset : [4670] : Unknown : [275] : Faction : [UI] : String ID : 78 : String Length : [28] : Text : Mark III Self Propelled Gun
+Offset : [4695] : Unknown : [276] : Faction : [UI] : String ID : 79 : String Length : [40] : Text : Researching Mark III Self Propelled Gun
+Offset : [46C6] : Unknown : [278] : Faction : [UI] : String ID : 84 : String Length : [10] : Text : *Missing*
+Offset : [46D9] : Unknown : [279] : Faction : [UI] : String ID : 82 : String Length : [10] : Text : *Missing*
+Offset : [46EC] : Unknown : [27A] : Faction : [UI] : String ID : 83 : String Length : [10] : Text : *Missing*
+Offset : [46FF] : Unknown : [27C] : Faction : [UI] : String ID : 88 : String Length : [91] : Text : Mark I;\nArmament: Two 1 Pounder anti-aircraft pom poms, Armour: 3/8 Inch, Engine: 62 h.p.
+Offset : [4763] : Unknown : [27D] : Faction : [UI] : String ID : 86 : String Length : [34] : Text : Mark I Mobile Anti-Aircraft Array
+Offset : [478E] : Unknown : [27E] : Faction : [UI] : String ID : 87 : String Length : [46] : Text : Researching Mark I Mobile Anti-Aircraft Array
+Offset : [47C5] : Unknown : [280] : Faction : [UI] : String ID : 92 : String Length : [92] : Text : Mark II;\nArmament: Two 2 Pounder anti-aircraft pom poms, Armour: 3/8 Inch, Engine: 88 h.p.
+Offset : [482A] : Unknown : [281] : Faction : [UI] : String ID : 90 : String Length : [35] : Text : Mark II Mobile Anti-Aircraft Array
+Offset : [4856] : Unknown : [282] : Faction : [UI] : String ID : 91 : String Length : [47] : Text : Researching Mark II Mobile Anti-Aircraft Array
+Offset : [488E] : Unknown : [284] : Faction : [UI] : String ID : 96 : String Length : [90] : Text : Mark III;\nArmament: Two 3 Pounder anti-aircraft guns, Armour: 1/2 Inch, Engine: 105 h.p.
+Offset : [48F1] : Unknown : [285] : Faction : [UI] : String ID : 94 : String Length : [36] : Text : Mark III Mobile Anti-Aircraft Array
+Offset : [491E] : Unknown : [286] : Faction : [UI] : String ID : 95 : String Length : [48] : Text : Researching Mark III Mobile Anti-Aircraft Array
+Offset : [4957] : Unknown : [288] : Faction : [UI] : String ID : 60 : String Length : [77] : Text : Mark I;\nArmament: Two 3 Pounder Guns, Armour: 5/8 Inch, Engine: Two150 h.p.
+Offset : [49AD] : Unknown : [289] : Faction : [UI] : String ID : 58 : String Length : [30] : Text : Mark I Tunnelling Track Layer
+Offset : [49D4] : Unknown : [28A] : Faction : [UI] : String ID : 59 : String Length : [42] : Text : Researching Mark I Tunnelling Track Layer
+Offset : [4A07] : Unknown : [28C] : Faction : [UI] : String ID : 64 : String Length : [81] : Text : Mark II;\nArmament: Two 6 Pounder Guns, Armour: 13/16 Inch, Engine: Two 225 h.p.
+Offset : [4A61] : Unknown : [28D] : Faction : [UI] : String ID : 62 : String Length : [31] : Text : Mark II Tunnelling Track Layer
+Offset : [4A89] : Unknown : [28E] : Faction : [UI] : String ID : 63 : String Length : [43] : Text : Researching Mark II Tunnelling Track Layer
+Offset : [4ABD] : Unknown : [290] : Faction : [UI] : String ID : 68 : String Length : [79] : Text : Mark III;\nArmament: Two 13 Pounder Guns, Armour: 1 Inch, Engine: Two 300 h.p.
+Offset : [4B15] : Unknown : [291] : Faction : [UI] : String ID : 66 : String Length : [32] : Text : Mark III Tunnelling Track Layer
+Offset : [4B3E] : Unknown : [292] : Faction : [UI] : String ID : 67 : String Length : [44] : Text : Researching Mark III Tunnelling Track Layer
+Offset : [4B73] : Unknown : [294] : Faction : [UI] : String ID : 100 : String Length : [64] : Text : Armament: 1 Pounder pom pom, Armour: 5/16 Inch, Engine: 45 h.p.
+Offset : [4BBC] : Unknown : [295] : Faction : [UI] : String ID : 98 : String Length : [14] : Text : Sappers Lorry
+Offset : [4BD3] : Unknown : [296] : Faction : [UI] : String ID : 99 : String Length : [26] : Text : Researching Sappers Lorry
+Offset : [4BF6] : Unknown : [298] : Faction : [UI] : String ID : 104 : String Length : [80] : Text : Modified Lorry;\nArmament: 2 Pounder pom pom, Armour: 3/8 Inch, Engine: 62 h.p.
+Offset : [4C4F] : Unknown : [299] : Faction : [UI] : String ID : 102 : String Length : [23] : Text : Modified Sappers Lorry
+Offset : [4C6F] : Unknown : [29A] : Faction : [UI] : String ID : 103 : String Length : [35] : Text : Researching Modified Sappers Lorry
+Offset : [4C9B] : Unknown : [29C] : Faction : [UI] : String ID : 108 : String Length : [91] : Text : Formidable Class;\nArmament: Four 6 Inch Naval guns, Armour: 11/2 Inch, Engine: 12500 h.p.
+Offset : [4CFF] : Unknown : [29D] : Faction : [UI] : String ID : 106 : String Length : [26] : Text : Formidable Class Ironclad
+Offset : [4D22] : Unknown : [29E] : Faction : [UI] : String ID : 107 : String Length : [38] : Text : Researching Formidable Class Ironclad
+Offset : [4D51] : Unknown : [2A0] : Faction : [UI] : String ID : 112 : String Length : [87] : Text : Warrior Class;\nArmament: Four 9.2 Inch Naval guns, Armour: 2 Inch, Engine: 18000 h.p.
+Offset : [4DB1] : Unknown : [2A1] : Faction : [UI] : String ID : 110 : String Length : [23] : Text : Warrior Class Ironclad
+Offset : [4DD1] : Unknown : [2A2] : Faction : [UI] : String ID : 111 : String Length : [35] : Text : Researching Warrior Class Ironclad
+Offset : [4DFD] : Unknown : [2A4] : Faction : [UI] : String ID : 116 : String Length : [89] : Text : Invincible Class;\nArmament: Four 12 Inch Naval guns, Armour: 3 Inch, Engine: 25500 h.p.
+Offset : [4E5F] : Unknown : [2A5] : Faction : [UI] : String ID : 114 : String Length : [26] : Text : Invincible Class Ironclad
+Offset : [4E82] : Unknown : [2A6] : Faction : [UI] : String ID : 115 : String Length : [38] : Text : Researching Invincible Class Ironclad
+Offset : [4EB1] : Unknown : [2A8] : Faction : [UI] : String ID : 120 : String Length : [74] : Text : Model A;\nArmament: 4.6 Inch Naval gun, Armour: 1 Inch, Engine: 6300 h.p.
+Offset : [4F04] : Unknown : [2A9] : Faction : [UI] : String ID : 118 : String Length : [20] : Text : Model A Submersible
+Offset : [4F21] : Unknown : [2AA] : Faction : [UI] : String ID : 119 : String Length : [32] : Text : Researching Model A Submersible
+Offset : [4F4A] : Unknown : [2AC] : Faction : [UI] : String ID : 124 : String Length : [76] : Text : Model B;\nArmament: 6 Inch Naval gun, Armour: 11/4 Inch, Engine:, 8800 h.p.
+Offset : [4F9F] : Unknown : [2AD] : Faction : [UI] : String ID : 122 : String Length : [20] : Text : Model B Submersible
+Offset : [4FBC] : Unknown : [2AE] : Faction : [UI] : String ID : 123 : String Length : [32] : Text : Researching Model B Submersible
+Offset : [4FE5] : Unknown : [2B0] : Faction : [UI] : String ID : 128 : String Length : [78] : Text : Model C;\nArmament: 9.2 Inch Naval gun, Armour: 11/2 Inch, Engine: 12500 h.p.
+Offset : [503C] : Unknown : [2B1] : Faction : [UI] : String ID : 126 : String Length : [20] : Text : Model C Submersible
+Offset : [5059] : Unknown : [2B2] : Faction : [UI] : String ID : 127 : String Length : [32] : Text : Researching Model C Submersible
+Offset : [5082] : Unknown : [2B4] : Faction : [UI] : String ID : 132 : String Length : [57] : Text : Balloon;\nArmament: 1 Pounder pom pom, Armour: 5/16 Inch
+Offset : [50C4] : Unknown : [2B5] : Faction : [UI] : String ID : 130 : String Length : [20] : Text : Observation Balloon
+Offset : [50E1] : Unknown : [2B6] : Faction : [UI] : String ID : 131 : String Length : [32] : Text : Researching Observation Balloon
+Offset : [510A] : Unknown : [2B8] : Faction : [UI] : String ID : 136 : String Length : [84] : Text : Motorised Balloon;\nArmament: 1 Pounder pom pom, Armour: 5/16 Inch, Engine: 25 h.p.
+Offset : [5167] : Unknown : [2B9] : Faction : [UI] : String ID : 134 : String Length : [28] : Text : Powered Observation Balloon
+Offset : [518C] : Unknown : [2BA] : Faction : [UI] : String ID : 135 : String Length : [40] : Text : Researching Powered Observation Balloon
+Offset : [51BD] : Unknown : [2BC] : Faction : [UI] : String ID : 140 : String Length : [67] : Text : Air Ship;\nArmament: 2 Pounder pom pom, 5/16 Inch, Engine: 30 h.p.
+Offset : [5209] : Unknown : [2BD] : Faction : [UI] : String ID : 138 : String Length : [29] : Text : Powered Observation Air Ship
+Offset : [522F] : Unknown : [2BE] : Faction : [UI] : String ID : 139 : String Length : [41] : Text : Researching Powered Observation Air Ship
+Offset : [5261] : Unknown : [2C0] : Faction : [UI] : String ID : 144 : String Length : [34] : Text : Armour: 3/8 Inch, Engine: 88 h.p.
+Offset : [528C] : Unknown : [2C1] : Faction : [UI] : String ID : 142 : String Length : [21] : Text : Construction Vehicle
+Offset : [52AA] : Unknown : [2C2] : Faction : [UI] : String ID : 143 : String Length : [33] : Text : Researching Construction Vehicle
+Offset : [52D4] : Unknown : [2C4] : Faction : [UI] : String ID : 148 : String Length : [54] : Text : Modified Vehicle;\nArmour: 1/2 Inch, Engine: 105 h.p.
+Offset : [5313] : Unknown : [2C5] : Faction : [UI] : String ID : 146 : String Length : [30] : Text : Modified Construction Vehicle
+Offset : [533A] : Unknown : [2C6] : Faction : [UI] : String ID : 147 : String Length : [42] : Text : Researching Modified Construction Vehicle
+Offset : [536D] : Unknown : [2C8] : Faction : [UI] : String ID : 152 : String Length : [35] : Text : Armour: 5/16 Inch, Engine: 62 h.p.
+Offset : [5399] : Unknown : [2C9] : Faction : [UI] : String ID : 150 : String Length : [22] : Text : Mobile Repair Vehicle
+Offset : [53B8] : Unknown : [2CA] : Faction : [UI] : String ID : 151 : String Length : [34] : Text : Researching Mobile Repair Vehicle
+Offset : [53E3] : Unknown : [2CC] : Faction : [UI] : String ID : 156 : String Length : [53] : Text : Modified Vehicle;\nArmour: 3/8 Inch, Engine: 88 h.p.
+Offset : [5421] : Unknown : [2CD] : Faction : [UI] : String ID : 154 : String Length : [31] : Text : Modified Mobile Repair Vehicle
+Offset : [5449] : Unknown : [2CE] : Faction : [UI] : String ID : 155 : String Length : [43] : Text : Researching Modified Mobile Repair Vehicle
+Offset : [547D] : Unknown : [2D0] : Faction : [UI] : String ID : 160 : String Length : [70] : Text : Mark I;\nArmament: 2 Pound mortar, Armour: 5/16 Inch, Engine: 30 h.p.
+Offset : [54CC] : Unknown : [2D1] : Faction : [UI] : String ID : 158 : String Length : [19] : Text : Mark I Mortar Bike
+Offset : [54E8] : Unknown : [2D2] : Faction : [UI] : String ID : 159 : String Length : [31] : Text : Researching Mark I Mortar Bike
+Offset : [5510] : Unknown : [2D4] : Faction : [UI] : String ID : 164 : String Length : [70] : Text : Mark II;\nArmament: 3 Pound mortar, Armour: 3/8 Inch, Engine: 38 h.p.
+Offset : [555F] : Unknown : [2D5] : Faction : [UI] : String ID : 162 : String Length : [20] : Text : Mark II Mortar Bike
+Offset : [557C] : Unknown : [2D6] : Faction : [UI] : String ID : 163 : String Length : [32] : Text : Researching Mark II Mortar Bike
+Offset : [55A5] : Unknown : [2D8] : Faction : [UI] : String ID : 168 : String Length : [71] : Text : Mark III;\nArmament: 6 Pound mortar, Armour: 1/2 Inch, Engine: 45 h.p.
+Offset : [55F5] : Unknown : [2D9] : Faction : [UI] : String ID : 166 : String Length : [21] : Text : Mark III Mortar Bike
+Offset : [5613] : Unknown : [2DA] : Faction : [UI] : String ID : 167 : String Length : [33] : Text : Researching Mark III Mortar Bike
+Offset : [563D] : Unknown : [2DC] : Faction : [UI] : String ID : 172 : String Length : [126] : Text : 1st Generation;\nArmament: 18 KrK Rapid Heat Ray, Armour: 14 DkO Shielding, Power Plant: 1380 UaL Cyclic Depletion Generator.
+Offset : [56C4] : Unknown : [2DD] : Faction : [UI] : String ID : 170 : String Length : [24] : Text : Scout Machine - 1st Gen
+Offset : [56E5] : Unknown : [2DE] : Faction : [UI] : String ID : 171 : String Length : [36] : Text : Researching Scout Machine - 1st Gen
+Offset : [5712] : Unknown : [2E0] : Faction : [UI] : String ID : 176 : String Length : [120] : Text : 2nd Generation;\nArmament: 38 KrK Heat Ray, Armour: 18 DkO Shielding, Power Plant: 1680 UaL Cyclic Depletion Generator.
+Offset : [5793] : Unknown : [2E1] : Faction : [UI] : String ID : 174 : String Length : [24] : Text : Scout Machine - 2nd Gen
+Offset : [57B4] : Unknown : [2E2] : Faction : [UI] : String ID : 175 : String Length : [36] : Text : Researching Scout Machine - 2nd Gen
+Offset : [57E1] : Unknown : [2E4] : Faction : [UI] : String ID : 180 : String Length : [120] : Text : 3rd Generation;\nArmament: 46 KrK Heat Ray, Armour: 25 DkO Shielding, Power Plant: 2400 UaL Cyclic Depletion Generator.
+Offset : [5862] : Unknown : [2E5] : Faction : [UI] : String ID : 178 : String Length : [24] : Text : Scout Machine - 3rd Gen
+Offset : [5883] : Unknown : [2E6] : Faction : [UI] : String ID : 179 : String Length : [36] : Text : Researching Scout Machine - 3rd Gen
+Offset : [58B0] : Unknown : [2E8] : Faction : [UI] : String ID : 184 : String Length : [120] : Text : 1st Generation;\nArmament: 38 KrK Heat Ray, Armour: 25 DkO Shielding, Power Plant: 2400 UaL Cyclic Depletion Generator.
+Offset : [5931] : Unknown : [2E9] : Faction : [UI] : String ID : 182 : String Length : [27] : Text : Fighting Machine - 1st Gen
+Offset : [5955] : Unknown : [2EA] : Faction : [UI] : String ID : 183 : String Length : [39] : Text : Researching Fighting Machine - 1st Gen
+Offset : [5985] : Unknown : [2EC] : Faction : [UI] : String ID : 188 : String Length : [120] : Text : 2nd Generation;\nArmament: 46 KrK Heat Ray, Armour: 38 DkO Shielding, Power Plant: 3120 UaL Cyclic Depletion Generator.
+Offset : [5A06] : Unknown : [2ED] : Faction : [UI] : String ID : 186 : String Length : [27] : Text : Fighting Machine - 2nd Gen
+Offset : [5A2A] : Unknown : [2EE] : Faction : [UI] : String ID : 187 : String Length : [39] : Text : Researching Fighting Machine - 2nd Gen
+Offset : [5A5A] : Unknown : [2F0] : Faction : [UI] : String ID : 192 : String Length : [118] : Text : 3rd Generation;\nArmament: 62 KrK UV Ray, Armour: 50 DkO Shielding, Power Plant: 4450 UaL Cyclic Depletion Generator.
+Offset : [5AD9] : Unknown : [2F1] : Faction : [UI] : String ID : 190 : String Length : [27] : Text : Fighting Machine - 3rd Gen
+Offset : [5AFD] : Unknown : [2F2] : Faction : [UI] : String ID : 191 : String Length : [39] : Text : Researching Fighting Machine - 3rd Gen
+Offset : [5B2D] : Unknown : [2F4] : Faction : [UI] : String ID : 211 : String Length : [153] : Text : 1st Generation;\nArmament: 130 DnO Canister Launcher, 12 KrK Rapid Heat Ray, Armour: 18 DkO Shielding, Power Plant: 1380 UaL Cyclic Depletion Generator.
+Offset : [5BCF] : Unknown : [2F5] : Faction : [UI] : String ID : 209 : String Length : [29] : Text : Bombarding Machine - 1st Gen
+Offset : [5BF5] : Unknown : [2F6] : Faction : [UI] : String ID : 210 : String Length : [41] : Text : Researching Bombarding Machine - 1st Gen
+Offset : [5C27] : Unknown : [2F8] : Faction : [UI] : String ID : 215 : String Length : [153] : Text : 2nd Generation;\nArmament: 165 DnO Canister Launcher, 12 KrK Rapid Heat Ray, Armour: 25 DkO Shielding, Power Plant: 1680 UaL Cyclic Depletion Generator.
+Offset : [5CC9] : Unknown : [2F9] : Faction : [UI] : String ID : 213 : String Length : [29] : Text : Bombarding Machine - 2nd Gen
+Offset : [5CEF] : Unknown : [2FA] : Faction : [UI] : String ID : 214 : String Length : [41] : Text : Researching Bombarding Machine - 2nd Gen
+Offset : [5D21] : Unknown : [2FC] : Faction : [UI] : String ID : 219 : String Length : [153] : Text : 3rd Generation;\nArmament: 188 DnO Canister Launcher, 18 KrK Rapid Heat Ray, Armour: 38 DkO Shielding, Power Plant: 2400 UaL Cyclic Depletion Generator.
+Offset : [5DC3] : Unknown : [2FD] : Faction : [UI] : String ID : 217 : String Length : [29] : Text : Bombarding Machine - 3rd Gen
+Offset : [5DE9] : Unknown : [2FE] : Faction : [UI] : String ID : 218 : String Length : [41] : Text : Researching Bombarding Machine - 3rd Gen
+Offset : [5E1B] : Unknown : [300] : Faction : [UI] : String ID : 247 : String Length : [126] : Text : 1st Generation;\nArmament: 12 KrK Rapid Heat Ray, Armour: 10 DkO Shielding, Power Plant: 1020 UaL Cyclic Depletion Generator.
+Offset : [5EA2] : Unknown : [301] : Faction : [UI] : String ID : 245 : String Length : [27] : Text : Scanning Machine - 1st Gen
+Offset : [5EC6] : Unknown : [302] : Faction : [UI] : String ID : 246 : String Length : [39] : Text : Researching Scanning Machine - 1st Gen
+Offset : [5EF6] : Unknown : [304] : Faction : [UI] : String ID : 251 : String Length : [126] : Text : 2nd Generation;\nArmament: 12 KrK Rapid Heat Ray, Armour: 14 DkO Shielding, Power Plant: 1380 UaL Cyclic Depletion Generator.
+Offset : [5F7D] : Unknown : [305] : Faction : [UI] : String ID : 249 : String Length : [27] : Text : Scanning Machine - 2nd Gen
+Offset : [5FA1] : Unknown : [306] : Faction : [UI] : String ID : 250 : String Length : [39] : Text : Researching Scanning Machine - 2nd Gen
+Offset : [5FD1] : Unknown : [308] : Faction : [UI] : String ID : 255 : String Length : [126] : Text : 3rd Generation;\nArmament: 18 KrK Rapid Heat Ray, Armour: 18 DkO Shielding, Power Plant: 1680 UaL Cyclic Depletion Generator.
+Offset : [6058] : Unknown : [309] : Faction : [UI] : String ID : 253 : String Length : [27] : Text : Scanning Machine - 3rd Gen
+Offset : [607C] : Unknown : [30A] : Faction : [UI] : String ID : 254 : String Length : [39] : Text : Researching Scanning Machine - 3rd Gen
+Offset : [60AC] : Unknown : [30C] : Faction : [UI] : String ID : 259 : String Length : [123] : Text : 1st Generation;\nArmament: Foam jet prototype, Armour: 18 DkO Shielding, Power Plant: 1380 UaL Cyclic Depletion Generator.
+Offset : [6130] : Unknown : [30D] : Faction : [UI] : String ID : 257 : String Length : [22] : Text : Constrictor - 1st Gen
+Offset : [614F] : Unknown : [30E] : Faction : [UI] : String ID : 258 : String Length : [34] : Text : Researching Constrictor - 1st Gen
+Offset : [617A] : Unknown : [310] : Faction : [UI] : String ID : 263 : String Length : [113] : Text : 2nd Generation;\nArmament: Foam jet, Armour: 25 DkO Shielding, Power Plant: 1680 UaL Cyclic Depletion Generator.
+Offset : [61F4] : Unknown : [311] : Faction : [UI] : String ID : 261 : String Length : [22] : Text : Constrictor - 2nd Gen
+Offset : [6213] : Unknown : [312] : Faction : [UI] : String ID : 262 : String Length : [34] : Text : Researching Constrictor - 2nd Gen
+Offset : [623E] : Unknown : [314] : Faction : [UI] : String ID : 267 : String Length : [122] : Text : 3rd Generation;\nArmament: Advanced foam jet, Armour: 38 DkO Shielding, Power Plant: 2400 UaL Cyclic Depletion Generator.
+Offset : [62C1] : Unknown : [315] : Faction : [UI] : String ID : 265 : String Length : [22] : Text : Constrictor - 3rd Gen
+Offset : [62E0] : Unknown : [316] : Faction : [UI] : String ID : 266 : String Length : [34] : Text : Researching Constrictor - 3rd Gen
+Offset : [630B] : Unknown : [318] : Faction : [UI] : String ID : 223 : String Length : [129] : Text : 1st Generation;\nArmament: Two EMR 1 Charge Pulsers, Armour: 25 DkO Shielding, Power Plant: 4450 UaL Cyclic Depletion Generator.
+Offset : [6395] : Unknown : [319] : Faction : [UI] : String ID : 221 : String Length : [27] : Text : Electric Machine - 1st Gen
+Offset : [63B9] : Unknown : [31A] : Faction : [UI] : String ID : 222 : String Length : [39] : Text : Researching Electric Machine - 1st Gen
+Offset : [63E9] : Unknown : [31C] : Faction : [UI] : String ID : 227 : String Length : [129] : Text : 2nd Generation;\nArmament: Two EMR 2 Charge Pulsers, Armour: 38 DkO Shielding, Power Plant: 6210 UaL Cyclic Depletion Generator.
+Offset : [6473] : Unknown : [31D] : Faction : [UI] : String ID : 225 : String Length : [27] : Text : Electric Machine - 2nd Gen
+Offset : [6497] : Unknown : [31E] : Faction : [UI] : String ID : 226 : String Length : [39] : Text : Researching Electric Machine - 2nd Gen
+Offset : [64C7] : Unknown : [320] : Faction : [UI] : String ID : 231 : String Length : [129] : Text : 3rd Generation;\nArmament: Two EMR 3 Charge Pulsers, Armour: 50 DkO Shielding, Power Plant: 8030 UaL Cyclic Depletion Generator.
+Offset : [6551] : Unknown : [321] : Faction : [UI] : String ID : 229 : String Length : [27] : Text : Electric Machine - 3rd Gen
+Offset : [6575] : Unknown : [322] : Faction : [UI] : String ID : 230 : String Length : [39] : Text : Researching Electric Machine - 3rd Gen
+Offset : [65A5] : Unknown : [324] : Faction : [UI] : String ID : 235 : String Length : [126] : Text : 1st Generation;\nArmament: 12 KrK Rapid Heat Ray, Armour: 10 DkO Shielding, Power Plant: 1680 UaL Cyclic Depletion Generator.
+Offset : [662C] : Unknown : [325] : Faction : [UI] : String ID : 233 : String Length : [25] : Text : Flying Machine - 1st Gen
+Offset : [664E] : Unknown : [326] : Faction : [UI] : String ID : 234 : String Length : [37] : Text : Researching Flying Machine - 1st Gen
+Offset : [667C] : Unknown : [328] : Faction : [UI] : String ID : 239 : String Length : [126] : Text : 2nd Generation;\nArmament: 18 KrK Rapid Heat Ray, Armour: 14 DkO Shielding, Power Plant: 2400 UaL Cyclic Depletion Generator.
+Offset : [6703] : Unknown : [329] : Faction : [UI] : String ID : 237 : String Length : [25] : Text : Flying Machine - 2nd Gen
+Offset : [6725] : Unknown : [32A] : Faction : [UI] : String ID : 238 : String Length : [37] : Text : Researching Flying Machine - 2nd Gen
+Offset : [6753] : Unknown : [32C] : Faction : [UI] : String ID : 243 : String Length : [120] : Text : 3rd Generation;\nArmament: 38 KrK Heat Ray, Armour: 18 DkO Shielding, Power Plant: 3120 UaL Cyclic Depletion Generator.
+Offset : [67D4] : Unknown : [32D] : Faction : [UI] : String ID : 241 : String Length : [25] : Text : Flying Machine - 3rd Gen
+Offset : [67F6] : Unknown : [32E] : Faction : [UI] : String ID : 242 : String Length : [37] : Text : Researching Flying Machine - 3rd Gen
+Offset : [6824] : Unknown : [330] : Faction : [UI] : String ID : 271 : String Length : [93] : Text : 1st Generation;\nArmour: 10 DkO Shielding, Power Plant: 1020 UaL Cyclic Depletion Generator.
+Offset : [688A] : Unknown : [331] : Faction : [UI] : String ID : 269 : String Length : [24] : Text : Xeno Telepath - 1st Gen
+Offset : [68AB] : Unknown : [332] : Faction : [UI] : String ID : 270 : String Length : [36] : Text : Researching Xeno Telepath - 1st Gen
+Offset : [68D8] : Unknown : [334] : Faction : [UI] : String ID : 275 : String Length : [93] : Text : 2nd Generation;\nArmour: 14 DkO Shielding, Power Plant: 1380 UaL Cyclic Depletion Generator.
+Offset : [693E] : Unknown : [335] : Faction : [UI] : String ID : 273 : String Length : [24] : Text : Xeno Telepath - 2nd Gen
+Offset : [695F] : Unknown : [336] : Faction : [UI] : String ID : 274 : String Length : [36] : Text : Researching Xeno Telepath - 2nd Gen
+Offset : [698C] : Unknown : [338] : Faction : [UI] : String ID : 279 : String Length : [93] : Text : 3rd Generation;\nArmour: 18 DkO Shielding, Power Plant: 1680 UaL Cyclic Depletion Generator.
+Offset : [69F2] : Unknown : [339] : Faction : [UI] : String ID : 277 : String Length : [24] : Text : Xeno Telepath - 3rd Gen
+Offset : [6A13] : Unknown : [33A] : Faction : [UI] : String ID : 278 : String Length : [36] : Text : Researching Xeno Telepath - 3rd Gen
+Offset : [6A40] : Unknown : [33C] : Faction : [UI] : String ID : 283 : String Length : [109] : Text : Armament: 12 KrK Rapid Heat Ray, Armour: 25 DkO Shielding, Power Plant: 3120 UaL Cyclic Depletion Generator.
+Offset : [6AB6] : Unknown : [33D] : Faction : [UI] : String ID : 281 : String Length : [17] : Text : Handling Machine
+Offset : [6AD0] : Unknown : [33E] : Faction : [UI] : String ID : 282 : String Length : [29] : Text : Researching Handling Machine
+Offset : [6AF6] : Unknown : [340] : Faction : [UI] : String ID : 287 : String Length : [128] : Text : Advanced Machine;\nArmament: 18 KrK Rapid Heat Ray, Armour: 38 DkO Shielding, Power Plant: 4450 UaL Cyclic Depletion Generator.
+Offset : [6B7F] : Unknown : [341] : Faction : [UI] : String ID : 285 : String Length : [26] : Text : Advanced Handling Machine
+Offset : [6BA2] : Unknown : [342] : Faction : [UI] : String ID : 286 : String Length : [38] : Text : Researching Advanced Handling Machine
+Offset : [6BD1] : Unknown : [344] : Faction : [UI] : String ID : 291 : String Length : [76] : Text : Armour: 38 DkO Shielding, Power Plant: 1680 UaL Cyclic Depletion Generator.
+Offset : [6C26] : Unknown : [345] : Faction : [UI] : String ID : 289 : String Length : [18] : Text : Digging Mechanism
+Offset : [6C41] : Unknown : [346] : Faction : [UI] : String ID : 290 : String Length : [30] : Text : Researching Digging Mechanism
+Offset : [6C68] : Unknown : [348] : Faction : [UI] : String ID : 295 : String Length : [95] : Text : Advanced Machine;\nArmour: 50 DkO Shielding, Power Plant: 2400 UaL Cyclic Depletion Generator.
+Offset : [6CD0] : Unknown : [349] : Faction : [UI] : String ID : 293 : String Length : [27] : Text : Advanced Digging Mechanism
+Offset : [6CF4] : Unknown : [34A] : Faction : [UI] : String ID : 294 : String Length : [39] : Text : Researching Advanced Digging Mechanism
+Offset : [6D24] : Unknown : [34C] : Faction : [UI] : String ID : 299 : String Length : [93] : Text : 1st Generation;\nArmour: 14 DkO Shielding, Power Plant: 1020 UaL Cyclic Depletion Generator.
+Offset : [6D8A] : Unknown : [34D] : Faction : [UI] : String ID : 297 : String Length : [16] : Text : Drone - 1st Gen
+Offset : [6DA3] : Unknown : [34E] : Faction : [UI] : String ID : 298 : String Length : [28] : Text : Researching Drone - 1st Gen
+Offset : [6DC8] : Unknown : [350] : Faction : [UI] : String ID : 303 : String Length : [93] : Text : 2nd Generation;\nArmour: 18 DkO Shielding, Power Plant: 1380 UaL Cyclic Depletion Generator.
+Offset : [6E2E] : Unknown : [351] : Faction : [UI] : String ID : 301 : String Length : [16] : Text : Drone - 2nd Gen
+Offset : [6E47] : Unknown : [352] : Faction : [UI] : String ID : 302 : String Length : [28] : Text : Researching Drone - 2nd Gen
+Offset : [6E6C] : Unknown : [354] : Faction : [UI] : String ID : 307 : String Length : [93] : Text : 3rd Generation;\nArmour: 25 DkO Shielding, Power Plant: 1680 UaL Cyclic Depletion Generator.
+Offset : [6ED2] : Unknown : [355] : Faction : [UI] : String ID : 305 : String Length : [16] : Text : Drone - 3rd Gen
+Offset : [6EEB] : Unknown : [356] : Faction : [UI] : String ID : 306 : String Length : [28] : Text : Researching Drone - 3rd Gen
+Offset : [6F10] : Unknown : [358] : Faction : [UI] : String ID : 196 : String Length : [152] : Text : 1st Generation;\nArmament: Two 46 KrK Heat Rays, 102 DnO Canister Launcher, Armour: 38 DkO Shielding, Power Plant: 3120 UaL Cyclic Depletion Generator.
+Offset : [6FB1] : Unknown : [359] : Faction : [UI] : String ID : 194 : String Length : [18] : Text : Tempest - 1st Gen
+Offset : [6FCC] : Unknown : [35A] : Faction : [UI] : String ID : 195 : String Length : [30] : Text : Researching Tempest - 1st Gen
+Offset : [6FF3] : Unknown : [35C] : Faction : [UI] : String ID : 200 : String Length : [150] : Text : 2nd Generation;\nArmament: Two 62 KrK UV Rays, 130 DnO Canister Launcher, Armour: 50 DkO Shielding, Power Plant: 4450 UaL Cyclic Depletion Generator.
+Offset : [7092] : Unknown : [35D] : Faction : [UI] : String ID : 198 : String Length : [18] : Text : Tempest - 2nd Gen
+Offset : [70AD] : Unknown : [35E] : Faction : [UI] : String ID : 199 : String Length : [30] : Text : Researching Tempest - 2nd Gen
+Offset : [70D4] : Unknown : [360] : Faction : [UI] : String ID : 204 : String Length : [149] : Text : 3rd Generation;\nArmament: Two 80 KrK X Rays, 165 DnO Canister Launcher, Armour: 66 DkO Shielding, Power Plant: 6210 UaL Cyclic Depletion Generator.
+Offset : [7172] : Unknown : [361] : Faction : [UI] : String ID : 202 : String Length : [18] : Text : Tempest - 3rd Gen
+Offset : [718D] : Unknown : [362] : Faction : [UI] : String ID : 203 : String Length : [30] : Text : Researching Tempest - 3rd Gen
+Offset : [71B4] : Unknown : [364] : Faction : [UI] : String ID : 207 : String Length : [39] : Text : Completed research for Military Bridge
+Offset : [71E4] : Unknown : [365] : Faction : [UI] : String ID : 205 : String Length : [16] : Text : Military Bridge
+Offset : [71FD] : Unknown : [366] : Faction : [UI] : String ID : 206 : String Length : [28] : Text : Researching Military Bridge
+Offset : [7222] : Unknown : [368] : Faction : [UI] : String ID : 311 : String Length : [52] : Text : Level 1;\nCapable of manufacturing Mark 1 vehicles.
+Offset : [725F] : Unknown : [369] : Faction : [UI] : String ID : 309 : String Length : [24] : Text : Vehicle Factory Level 1
+Offset : [7280] : Unknown : [36A] : Faction : [UI] : String ID : 310 : String Length : [36] : Text : Researching Vehicle Factory Level 1
+Offset : [72AD] : Unknown : [36C] : Faction : [UI] : String ID : 315 : String Length : [84] : Text : Level 2;\nCapable of manufacturing Mark 1 and 2 vehicles, with improved efficiency.
+Offset : [730A] : Unknown : [36D] : Faction : [UI] : String ID : 313 : String Length : [24] : Text : Vehicle Factory Level 2
+Offset : [732B] : Unknown : [36E] : Faction : [UI] : String ID : 314 : String Length : [36] : Text : Researching Vehicle Factory Level 2
+Offset : [7358] : Unknown : [370] : Faction : [UI] : String ID : 319 : String Length : [87] : Text : Level 3;\nCapable of manufacturing Mark 1, 2, and 3 vehicles, with greater efficiency.
+Offset : [73B8] : Unknown : [371] : Faction : [UI] : String ID : 317 : String Length : [24] : Text : Vehicle Factory Level 3
+Offset : [73D9] : Unknown : [372] : Faction : [UI] : String ID : 318 : String Length : [36] : Text : Researching Vehicle Factory Level 3
+Offset : [7406] : Unknown : [374] : Faction : [UI] : String ID : 323 : String Length : [42] : Text : Support facility for the Vehicle Factory.
+Offset : [7439] : Unknown : [375] : Faction : [UI] : String ID : 321 : String Length : [16] : Text : Training Centre
+Offset : [7452] : Unknown : [376] : Faction : [UI] : String ID : 322 : String Length : [28] : Text : Researching Training Centre
+Offset : [7477] : Unknown : [378] : Faction : [UI] : String ID : 327 : String Length : [52] : Text : Level 1;\nCapable of manufacturing Class 1 vessels.
+Offset : [74B4] : Unknown : [379] : Faction : [UI] : String ID : 325 : String Length : [18] : Text : Ship Yard Level 1
+Offset : [74CF] : Unknown : [37A] : Faction : [UI] : String ID : 326 : String Length : [30] : Text : Researching Ship Yard Level 1
+Offset : [74F6] : Unknown : [37C] : Faction : [UI] : String ID : 331 : String Length : [84] : Text : Level 2;\nCapable of manufacturing Class 1 and 2 vessels, with improved efficiency.
+Offset : [7553] : Unknown : [37D] : Faction : [UI] : String ID : 329 : String Length : [18] : Text : Ship Yard Level 2
+Offset : [756E] : Unknown : [37E] : Faction : [UI] : String ID : 330 : String Length : [30] : Text : Researching Ship Yard Level 2
+Offset : [7595] : Unknown : [380] : Faction : [UI] : String ID : 335 : String Length : [87] : Text : Level 3;\nCapable of manufacturing Class 1, 2, and 3 vessels, with greater efficiency.
+Offset : [75F5] : Unknown : [381] : Faction : [UI] : String ID : 333 : String Length : [18] : Text : Ship Yard Level 3
+Offset : [7610] : Unknown : [382] : Faction : [UI] : String ID : 334 : String Length : [30] : Text : Researching Ship Yard Level 3
+Offset : [7637] : Unknown : [384] : Faction : [UI] : String ID : 339 : String Length : [53] : Text : Level 1;\nCapable of manufacturing Level 1 Aircraft.
+Offset : [7675] : Unknown : [385] : Faction : [UI] : String ID : 337 : String Length : [24] : Text : Aircraft Hangar Level 1
+Offset : [7696] : Unknown : [386] : Faction : [UI] : String ID : 338 : String Length : [36] : Text : Researching Aircraft Hangar Level 1
+Offset : [76C3] : Unknown : [388] : Faction : [UI] : String ID : 343 : String Length : [85] : Text : Level 2;\nCapable of manufacturing Level 1 and 2 Aircraft, with improved efficiency.
+Offset : [7721] : Unknown : [389] : Faction : [UI] : String ID : 341 : String Length : [24] : Text : Aircraft Hangar Level 2
+Offset : [7742] : Unknown : [38A] : Faction : [UI] : String ID : 342 : String Length : [36] : Text : Researching Aircraft Hangar Level 2
+Offset : [776F] : Unknown : [38C] : Faction : [UI] : String ID : 347 : String Length : [88] : Text : Level 3;\nCapable of manufacturing Level 1, 2, and 3 Aircraft, with greater efficiency.
+Offset : [77D0] : Unknown : [38D] : Faction : [UI] : String ID : 345 : String Length : [24] : Text : Aircraft Hangar Level 3
+Offset : [77F1] : Unknown : [38E] : Faction : [UI] : String ID : 346 : String Length : [36] : Text : Researching Aircraft Hangar Level 3
+Offset : [781E] : Unknown : [390] : Faction : [UI] : String ID : 355 : String Length : [57] : Text : Support facility for the Vehicle Factory, and Ship Yard.
+Offset : [7860] : Unknown : [391] : Faction : [UI] : String ID : 353 : String Length : [18] : Text : Construction Labs
+Offset : [787B] : Unknown : [392] : Faction : [UI] : String ID : 354 : String Length : [30] : Text : Researching Construction Labs
+Offset : [78A2] : Unknown : [394] : Faction : [UI] : String ID : 351 : String Length : [42] : Text : Support facility for the Vehicle Factory.
+Offset : [78D5] : Unknown : [395] : Faction : [UI] : String ID : 349 : String Length : [18] : Text : Munitions Factory
+Offset : [78F0] : Unknown : [396] : Faction : [UI] : String ID : 350 : String Length : [30] : Text : Researching Munitions Factory
+Offset : [7917] : Unknown : [398] : Faction : [UI] : String ID : 411 : String Length : [64] : Text : Automatically repairs the weakest vehicles within the vicinity.
+Offset : [7960] : Unknown : [399] : Faction : [UI] : String ID : 409 : String Length : [17] : Text : Repair Workshops
+Offset : [797A] : Unknown : [39A] : Faction : [UI] : String ID : 410 : String Length : [29] : Text : Researching Repair Workshops
+Offset : [79A0] : Unknown : [39C] : Faction : [UI] : String ID : 403 : String Length : [31] : Text : Relay centre for high command.
+Offset : [79C8] : Unknown : [39D] : Faction : [UI] : String ID : 401 : String Length : [13] : Text : Command Post
+Offset : [79DE] : Unknown : [39E] : Faction : [UI] : String ID : 402 : String Length : [25] : Text : Researching Command Post
+Offset : [7A00] : Unknown : [3A0] : Faction : [UI] : String ID : 371 : String Length : [46] : Text : Armament: 4.6 Inch Howitzer, Armour: 5/8 Inch
+Offset : [7A37] : Unknown : [3A1] : Faction : [UI] : String ID : 369 : String Length : [25] : Text : 4.6 Inch Medium Gun Post
+Offset : [7A59] : Unknown : [3A2] : Faction : [UI] : String ID : 370 : String Length : [37] : Text : Researching 4.6 Inch Medium Gun Post
+Offset : [7A87] : Unknown : [3A4] : Faction : [UI] : String ID : 375 : String Length : [46] : Text : Armament: 6 Inch Howitzer, Armour: 13/16 Inch
+Offset : [7ABE] : Unknown : [3A5] : Faction : [UI] : String ID : 373 : String Length : [23] : Text : 6 Inch Medium Gun Post
+Offset : [7ADE] : Unknown : [3A6] : Faction : [UI] : String ID : 374 : String Length : [35] : Text : Researching 6 Inch Medium Gun Post
+Offset : [7B0A] : Unknown : [3A8] : Faction : [UI] : String ID : 379 : String Length : [43] : Text : Armament: 6 Inch naval gun, Armour: 1 Inch
+Offset : [7B3E] : Unknown : [3A9] : Faction : [UI] : String ID : 377 : String Length : [29] : Text : 6 Inch Heavy Gun Emplacement
+Offset : [7B64] : Unknown : [3AA] : Faction : [UI] : String ID : 378 : String Length : [41] : Text : Researching 6 Inch Heavy Gun Emplacement
+Offset : [7B96] : Unknown : [3AC] : Faction : [UI] : String ID : 383 : String Length : [48] : Text : Armament: 9.2 Inch naval gun, Armour: 11/4 Inch
+Offset : [7BCF] : Unknown : [3AD] : Faction : [UI] : String ID : 381 : String Length : [31] : Text : 9.2 Inch Heavy Gun Emplacement
+Offset : [7BF7] : Unknown : [3AE] : Faction : [UI] : String ID : 382 : String Length : [43] : Text : Researching 9.2 Inch Heavy Gun Emplacement
+Offset : [7C2B] : Unknown : [3B0] : Faction : [UI] : String ID : 387 : String Length : [47] : Text : Armament: 12 Inch naval gun, Armour: 11/2 Inch
+Offset : [7C63] : Unknown : [3B1] : Faction : [UI] : String ID : 385 : String Length : [30] : Text : 12 Inch Heavy Gun Emplacement
+Offset : [7C8A] : Unknown : [3B2] : Faction : [UI] : String ID : 386 : String Length : [42] : Text : Researching 12 Inch Heavy Gun Emplacement
+Offset : [7CBD] : Unknown : [3B4] : Faction : [UI] : String ID : 391 : String Length : [65] : Text : Armament: Two 1 Pounder anti-aircraft pom poms, Armour: 1/2 Inch
+Offset : [7D07] : Unknown : [3B5] : Faction : [UI] : String ID : 389 : String Length : [26] : Text : 1 Pdr Anti Aircraft Array
+Offset : [7D2A] : Unknown : [3B6] : Faction : [UI] : String ID : 390 : String Length : [38] : Text : Researching 1 Pdr Anti Aircraft Array
+Offset : [7D59] : Unknown : [3B8] : Faction : [UI] : String ID : 395 : String Length : [65] : Text : Armament: Two 2 Pounder anti-aircraft pom poms, Armour: 5/8 Inch
+Offset : [7DA3] : Unknown : [3B9] : Faction : [UI] : String ID : 393 : String Length : [26] : Text : 2 Pdr Anti Aircraft Array
+Offset : [7DC6] : Unknown : [3BA] : Faction : [UI] : String ID : 394 : String Length : [38] : Text : Researching 2 Pdr Anti Aircraft Array
+Offset : [7DF5] : Unknown : [3BC] : Faction : [UI] : String ID : 399 : String Length : [63] : Text : Armament: Two 3 Pounder anti-aircraft guns, Armour: 13/16 Inch
+Offset : [7E3D] : Unknown : [3BD] : Faction : [UI] : String ID : 397 : String Length : [26] : Text : 3 Pdr Anti Aircraft Array
+Offset : [7E60] : Unknown : [3BE] : Faction : [UI] : String ID : 398 : String Length : [38] : Text : Researching 3 Pdr Anti Aircraft Array
+Offset : [7E8F] : Unknown : [3C0] : Faction : [UI] : String ID : 407 : String Length : [40] : Text : Completed research for Railway Platform
+Offset : [7EC0] : Unknown : [3C1] : Faction : [UI] : String ID : 405 : String Length : [17] : Text : Railway Platform
+Offset : [7EDA] : Unknown : [3C2] : Faction : [UI] : String ID : 406 : String Length : [29] : Text : Researching Railway Platform
+Offset : [7F00] : Unknown : [3C4] : Faction : [UI] : String ID : 419 : String Length : [56] : Text : Level 1;\nCapable of producing 1st Generation machines.
+Offset : [7F41] : Unknown : [3C5] : Faction : [UI] : String ID : 417 : String Length : [20] : Text : Constructor Level 1
+Offset : [7F5E] : Unknown : [3C6] : Faction : [UI] : String ID : 418 : String Length : [32] : Text : Researching Constructor Level 1
+Offset : [7F87] : Unknown : [3C8] : Faction : [UI] : String ID : 423 : String Length : [90] : Text : Level 2;\nCapable of producing 1st and 2nd Generation machines, with improved efficiency.
+Offset : [7FEA] : Unknown : [3C9] : Faction : [UI] : String ID : 421 : String Length : [20] : Text : Constructor Level 2
+Offset : [8007] : Unknown : [3CA] : Faction : [UI] : String ID : 422 : String Length : [32] : Text : Researching Constructor Level 2
+Offset : [8030] : Unknown : [3CC] : Faction : [UI] : String ID : 427 : String Length : [96] : Text : Level 3;\nCapable of producing 1st, 2nd, and 3rd Generation machines, with Advanced efficiency.
+Offset : [8099] : Unknown : [3CD] : Faction : [UI] : String ID : 425 : String Length : [20] : Text : Constructor Level 3
+Offset : [80B6] : Unknown : [3CE] : Faction : [UI] : String ID : 426 : String Length : [32] : Text : Researching Constructor Level 3
+Offset : [80DF] : Unknown : [3D0] : Faction : [UI] : String ID : 431 : String Length : [35] : Text : Support facility for Constructors.
+Offset : [810B] : Unknown : [3D1] : Faction : [UI] : String ID : 429 : String Length : [21] : Text : Energy Weapons Plant
+Offset : [8129] : Unknown : [3D2] : Faction : [UI] : String ID : 430 : String Length : [33] : Text : Researching Energy Weapons Plant
+Offset : [8153] : Unknown : [3D4] : Faction : [UI] : String ID : 435 : String Length : [56] : Text : Level 1;\nCapable of producing 1st Generation machines.
+Offset : [8194] : Unknown : [3D5] : Faction : [UI] : String ID : 433 : String Length : [30] : Text : Suspension Field Site Level 1
+Offset : [81BB] : Unknown : [3D6] : Faction : [UI] : String ID : 434 : String Length : [42] : Text : Researching Suspension Field Site Level 1
+Offset : [81EE] : Unknown : [3D8] : Faction : [UI] : String ID : 439 : String Length : [90] : Text : Level 2;\nCapable of producing 1st and 2nd Generation machines, with improved efficiency.
+Offset : [8251] : Unknown : [3D9] : Faction : [UI] : String ID : 437 : String Length : [30] : Text : Suspension Field Site Level 2
+Offset : [8278] : Unknown : [3DA] : Faction : [UI] : String ID : 438 : String Length : [42] : Text : Researching Suspension Field Site Level 2
+Offset : [82AB] : Unknown : [3DC] : Faction : [UI] : String ID : 443 : String Length : [96] : Text : Level 3;\nCapable of producing 1st, 2nd, and 3rd Generation machines, with Advanced efficiency.
+Offset : [8314] : Unknown : [3DD] : Faction : [UI] : String ID : 441 : String Length : [30] : Text : Suspension Field Site Level 3
+Offset : [833B] : Unknown : [3DE] : Faction : [UI] : String ID : 442 : String Length : [42] : Text : Researching Suspension Field Site Level 3
+Offset : [836E] : Unknown : [3E0] : Faction : [UI] : String ID : 447 : String Length : [56] : Text : Level 1;\nCapable of producing 1st Generation machines.
+Offset : [83AF] : Unknown : [3E1] : Faction : [UI] : String ID : 445 : String Length : [33] : Text : Telepath Training Centre Level 1
+Offset : [83D9] : Unknown : [3E2] : Faction : [UI] : String ID : 446 : String Length : [45] : Text : Researching Telepath Training Centre Level 1
+Offset : [840F] : Unknown : [3E4] : Faction : [UI] : String ID : 451 : String Length : [90] : Text : Level 2;\nCapable of producing 1st and 2nd Generation machines, with improved efficiency.
+Offset : [8472] : Unknown : [3E5] : Faction : [UI] : String ID : 449 : String Length : [33] : Text : Telepath Training Centre Level 2
+Offset : [849C] : Unknown : [3E6] : Faction : [UI] : String ID : 450 : String Length : [45] : Text : Researching Telepath Training Centre Level 2
+Offset : [84D2] : Unknown : [3E8] : Faction : [UI] : String ID : 455 : String Length : [96] : Text : Level 3;\nCapable of producing 1st, 2nd, and 3rd Generation machines, with Advanced efficiency.
+Offset : [853B] : Unknown : [3E9] : Faction : [UI] : String ID : 453 : String Length : [33] : Text : Telepath Training Centre Level 3
+Offset : [8565] : Unknown : [3EA] : Faction : [UI] : String ID : 454 : String Length : [45] : Text : Researching Telepath Training Centre Level 3
+Offset : [859B] : Unknown : [3EC] : Faction : [UI] : String ID : 459 : String Length : [35] : Text : Support facility for Constructors.
+Offset : [85C7] : Unknown : [3ED] : Faction : [UI] : String ID : 457 : String Length : [18] : Text : Bio-Weapons Plant
+Offset : [85E2] : Unknown : [3EE] : Faction : [UI] : String ID : 458 : String Length : [30] : Text : Researching Bio-Weapons Plant
+Offset : [8609] : Unknown : [3F0] : Faction : [UI] : String ID : 515 : String Length : [37] : Text : Relay centre for the Elder Chambers.
+Offset : [8637] : Unknown : [3F1] : Faction : [UI] : String ID : 513 : String Length : [22] : Text : Communications Centre
+Offset : [8656] : Unknown : [3F2] : Faction : [UI] : String ID : 514 : String Length : [34] : Text : Researching Communications Centre
+Offset : [8681] : Unknown : [3F4] : Faction : [UI] : String ID : 463 : String Length : [35] : Text : Support facility for Constructors.
+Offset : [86AD] : Unknown : [3F5] : Faction : [UI] : String ID : 461 : String Length : [17] : Text : Explosives Plant
+Offset : [86C7] : Unknown : [3F6] : Faction : [UI] : String ID : 462 : String Length : [29] : Text : Researching Explosives Plant
+Offset : [86ED] : Unknown : [3F8] : Faction : [UI] : String ID : 511 : String Length : [26] : Text : Standard power generator.
+Offset : [8710] : Unknown : [3F9] : Faction : [UI] : String ID : 509 : String Length : [12] : Text : Power Plant
+Offset : [8725] : Unknown : [3FA] : Faction : [UI] : String ID : 510 : String Length : [24] : Text : Researching Power Plant
+Offset : [8746] : Unknown : [3FC] : Faction : [UI] : String ID : 519 : String Length : [67] : Text : Automatically repairs the most damaged machines within the sector.
+Offset : [8792] : Unknown : [3FD] : Faction : [UI] : String ID : 517 : String Length : [16] : Text : Repair Facility
+Offset : [87AB] : Unknown : [3FE] : Faction : [UI] : String ID : 518 : String Length : [28] : Text : Researching Repair Facility
+Offset : [87D0] : Unknown : [400] : Faction : [UI] : String ID : 523 : String Length : [7] : Text : Unused
+Offset : [87E0] : Unknown : [401] : Faction : [UI] : String ID : 521 : String Length : [24] : Text : Matter Transfer Station
+Offset : [8801] : Unknown : [402] : Faction : [UI] : String ID : 522 : String Length : [36] : Text : Researching Matter Transfer Station
+Offset : [882E] : Unknown : [404] : Faction : [UI] : String ID : 479 : String Length : [58] : Text : Armament: 12 KrK Rapid Heat Ray, Armour: 25 DkO Shielding
+Offset : [8871] : Unknown : [405] : Faction : [UI] : String ID : 477 : String Length : [22] : Text : 12 KrK Rapid Heat Ray
+Offset : [8890] : Unknown : [406] : Faction : [UI] : String ID : 478 : String Length : [34] : Text : Researching 12 KrK Rapid Heat Ray
+Offset : [88BB] : Unknown : [408] : Faction : [UI] : String ID : 483 : String Length : [58] : Text : Armament: 18 KrK Rapid Heat Ray, Armour: 38 DkO Shielding
+Offset : [88FE] : Unknown : [409] : Faction : [UI] : String ID : 481 : String Length : [22] : Text : 18 KrK Rapid Heat Ray
+Offset : [891D] : Unknown : [40A] : Faction : [UI] : String ID : 482 : String Length : [34] : Text : Researching 18 KrK Rapid Heat Ray
+Offset : [8948] : Unknown : [40C] : Faction : [UI] : String ID : 487 : String Length : [52] : Text : Armament: 46 KrK Heat Ray, Armour: 50 DkO Shielding
+Offset : [8985] : Unknown : [40D] : Faction : [UI] : String ID : 485 : String Length : [23] : Text : 46 KrK Heat Ray Turret
+Offset : [89A5] : Unknown : [40E] : Faction : [UI] : String ID : 486 : String Length : [35] : Text : Researching 46 KrK Heat Ray Turret
+Offset : [89D1] : Unknown : [410] : Faction : [UI] : String ID : 491 : String Length : [50] : Text : Armament: 62 KrK UV Ray, Armour: 66 DkO Shielding
+Offset : [8A0C] : Unknown : [411] : Faction : [UI] : String ID : 489 : String Length : [23] : Text : 62 KrK Heat Ray Turret
+Offset : [8A2C] : Unknown : [412] : Faction : [UI] : String ID : 490 : String Length : [35] : Text : Researching 62 KrK Heat Ray Turret
+Offset : [8A58] : Unknown : [414] : Faction : [UI] : String ID : 495 : String Length : [49] : Text : Armament: 80 KrK X Ray, Armour: 82 DkO Shielding
+Offset : [8A92] : Unknown : [415] : Faction : [UI] : String ID : 493 : String Length : [23] : Text : 80 KrK Heat Ray Turret
+Offset : [8AB2] : Unknown : [416] : Faction : [UI] : String ID : 494 : String Length : [35] : Text : Researching 80 KrK Heat Ray Turret
+Offset : [8ADE] : Unknown : [418] : Faction : [UI] : String ID : 499 : String Length : [62] : Text : Armament: 102 DnO Canister Launcher, Armour: 38 DkO Shielding
+Offset : [8B25] : Unknown : [419] : Faction : [UI] : String ID : 497 : String Length : [28] : Text : 102 DnO Projectile Launcher
+Offset : [8B4A] : Unknown : [41A] : Faction : [UI] : String ID : 498 : String Length : [40] : Text : Researching 102 DnO Projectile Launcher
+Offset : [8B7B] : Unknown : [41C] : Faction : [UI] : String ID : 503 : String Length : [62] : Text : Armament: 130 DnO Canister Launcher, Armour: 50 DkO Shielding
+Offset : [8BC2] : Unknown : [41D] : Faction : [UI] : String ID : 501 : String Length : [28] : Text : 130 DnO Projectile Launcher
+Offset : [8BE7] : Unknown : [41E] : Faction : [UI] : String ID : 502 : String Length : [40] : Text : Researching 130 DnO Projectile Launcher
+Offset : [8C18] : Unknown : [420] : Faction : [UI] : String ID : 507 : String Length : [62] : Text : Armament: 165 DnO Canister Launcher, Armour: 66 DkO Shielding
+Offset : [8C5F] : Unknown : [421] : Faction : [UI] : String ID : 505 : String Length : [28] : Text : 165 DnO Projectile Launcher
+Offset : [8C84] : Unknown : [422] : Faction : [UI] : String ID : 506 : String Length : [40] : Text : Researching 165 DnO Projectile Launcher
+Offset : [8CB5] : Unknown : [424] : Faction : [UI] : String ID : 359 : String Length : [19] : Text : Resource Producer.
+Offset : [8CD1] : Unknown : [425] : Faction : [UI] : String ID : 357 : String Length : [15] : Text : Steel Refinery
+Offset : [8CE9] : Unknown : [426] : Faction : [UI] : String ID : 358 : String Length : [27] : Text : Researching Steel Refinery
+Offset : [8D0D] : Unknown : [428] : Faction : [UI] : String ID : 363 : String Length : [19] : Text : Resource Producer.
+Offset : [8D29] : Unknown : [429] : Faction : [UI] : String ID : 361 : String Length : [10] : Text : Coal Mine
+Offset : [8D3C] : Unknown : [42A] : Faction : [UI] : String ID : 362 : String Length : [22] : Text : Researching Coal Mine
+Offset : [8D5B] : Unknown : [42C] : Faction : [UI] : String ID : 367 : String Length : [19] : Text : Resource Producer.
+Offset : [8D77] : Unknown : [42D] : Faction : [UI] : String ID : 365 : String Length : [13] : Text : Oil Refinery
+Offset : [8D8D] : Unknown : [42E] : Faction : [UI] : String ID : 366 : String Length : [25] : Text : Researching Oil Refinery
+Offset : [8DAF] : Unknown : [430] : Faction : [UI] : String ID : 467 : String Length : [19] : Text : Resource Producer.
+Offset : [8DCB] : Unknown : [431] : Faction : [UI] : String ID : 465 : String Length : [11] : Text : Human Farm
+Offset : [8DDF] : Unknown : [432] : Faction : [UI] : String ID : 466 : String Length : [23] : Text : Researching Human Farm
+Offset : [8DFF] : Unknown : [434] : Faction : [UI] : String ID : 471 : String Length : [19] : Text : Resource Producer.
+Offset : [8E1B] : Unknown : [435] : Faction : [UI] : String ID : 469 : String Length : [20] : Text : Heavy Element Plant
+Offset : [8E38] : Unknown : [436] : Faction : [UI] : String ID : 470 : String Length : [32] : Text : Researching Heavy Element Plant
+Offset : [8E61] : Unknown : [438] : Faction : [UI] : String ID : 475 : String Length : [19] : Text : Resource Producer.
+Offset : [8E7D] : Unknown : [439] : Faction : [UI] : String ID : 473 : String Length : [13] : Text : Copper Forge
+Offset : [8E93] : Unknown : [43A] : Faction : [UI] : String ID : 474 : String Length : [25] : Text : Researching Copper Forge
+Offset : [8EB5] : Unknown : [43C] : Faction : [UI] : String ID : 684 : String Length : [22] : Text : Heat resistant armour
+Offset : [8ED4] : Unknown : [43D] : Faction : [UI] : String ID : 769 : String Length : [113] : Text : Heat resistant armour: All vehicles armour has been treated to have a higher tolerance to the Martian heat rays.
+Offset : [8F4E] : Unknown : [43E] : Faction : [UI] : String ID : 767 : String Length : [22] : Text : Heat resistant armour
+Offset : [8F6D] : Unknown : [43F] : Faction : [UI] : String ID : 768 : String Length : [34] : Text : Researching Heat resistant armour
+Offset : [8F98] : Unknown : [441] : Faction : [UI] : String ID : 685 : String Length : [39] : Text : Insulated high energy resistant armour
+Offset : [8FC8] : Unknown : [442] : Faction : [UI] : String ID : 772 : String Length : [147] : Text : Insulated high energy resistant armour: All vehicles armour has been treated to have a high tolerance to the Martian heat rays and energy weapons.
+Offset : [9064] : Unknown : [443] : Faction : [UI] : String ID : 770 : String Length : [39] : Text : Insulated high energy resistant armour
+Offset : [9094] : Unknown : [444] : Faction : [UI] : String ID : 771 : String Length : [51] : Text : Researching insulated high energy resistant armour
+Offset : [90D0] : Unknown : [446] : Faction : [UI] : String ID : 686 : String Length : [19] : Text : not used New Alloy
+Offset : [90EC] : Unknown : [447] : Faction : [UI] : String ID : 775 : String Length : [41] : Text : not used Completed research for NewAlloy
+Offset : [911E] : Unknown : [448] : Faction : [UI] : String ID : 773 : String Length : [18] : Text : not used NewAlloy
+Offset : [9139] : Unknown : [449] : Faction : [UI] : String ID : 774 : String Length : [30] : Text : not used Researching NewAlloy
+Offset : [9160] : Unknown : [44B] : Faction : [UI] : String ID : 687 : String Length : [22] : Text : High explosive rounds
+Offset : [917F] : Unknown : [44C] : Faction : [UI] : String ID : 778 : String Length : [62] : Text : High explosive rounds: All projectiles now cause more damage.
+Offset : [91C6] : Unknown : [44D] : Faction : [UI] : String ID : 776 : String Length : [22] : Text : High explosive rounds
+Offset : [91E5] : Unknown : [44E] : Faction : [UI] : String ID : 777 : String Length : [34] : Text : Researching High explosive rounds
+Offset : [9210] : Unknown : [450] : Faction : [UI] : String ID : 688 : String Length : [23] : Text : Improved powder charge
+Offset : [9230] : Unknown : [451] : Faction : [UI] : String ID : 781 : String Length : [58] : Text : Improved powder charge: All guns now have improved range.
+Offset : [9273] : Unknown : [452] : Faction : [UI] : String ID : 779 : String Length : [23] : Text : Improved powder charge
+Offset : [9293] : Unknown : [453] : Faction : [UI] : String ID : 780 : String Length : [35] : Text : Researching Improved powder charge
+Offset : [92BF] : Unknown : [455] : Faction : [UI] : String ID : 689 : String Length : [23] : Text : Advanced powder charge
+Offset : [92DF] : Unknown : [456] : Faction : [UI] : String ID : 784 : String Length : [64] : Text : Advanced powder charge: All guns now have a much greater range.
+Offset : [9328] : Unknown : [457] : Faction : [UI] : String ID : 782 : String Length : [23] : Text : Advanced powder charge
+Offset : [9348] : Unknown : [458] : Faction : [UI] : String ID : 783 : String Length : [35] : Text : Researching Advanced powder charge
+Offset : [9374] : Unknown : [45A] : Faction : [UI] : String ID : 690 : String Length : [17] : Text : Fine air filters
+Offset : [938E] : Unknown : [45B] : Faction : [UI] : String ID : 787 : String Length : [53] : Text : Fine air filters: Protection against the black dust.
+Offset : [93CC] : Unknown : [45C] : Faction : [UI] : String ID : 785 : String Length : [17] : Text : Fine air filters
+Offset : [93E6] : Unknown : [45D] : Faction : [UI] : String ID : 786 : String Length : [29] : Text : Researching Fine air filters
+Offset : [940C] : Unknown : [45F] : Faction : [UI] : String ID : 691 : String Length : [17] : Text : Chemical filters
+Offset : [9426] : Unknown : [460] : Faction : [UI] : String ID : 790 : String Length : [61] : Text : Chemical filters: Greater Protection against the black dust.
+Offset : [946C] : Unknown : [461] : Faction : [UI] : String ID : 788 : String Length : [17] : Text : Chemical filters
+Offset : [9486] : Unknown : [462] : Faction : [UI] : String ID : 789 : String Length : [29] : Text : Researching Chemical filters
+Offset : [94AC] : Unknown : [464] : Faction : [UI] : String ID : 692 : String Length : [28] : Text : Enhanced sighting apparatus
+Offset : [94D1] : Unknown : [465] : Faction : [UI] : String ID : 793 : String Length : [74] : Text : Enhanced sighting apparatus: All vehicles targeting accuracy is improved.
+Offset : [9524] : Unknown : [466] : Faction : [UI] : String ID : 791 : String Length : [28] : Text : Enhanced sighting apparatus
+Offset : [9549] : Unknown : [467] : Faction : [UI] : String ID : 792 : String Length : [40] : Text : Researching Enhanced sighting apparatus
+Offset : [957A] : Unknown : [469] : Faction : [UI] : String ID : 693 : String Length : [47] : Text : not used Sighting apparatus for moving targets
+Offset : [95B2] : Unknown : [46A] : Faction : [UI] : String ID : 796 : String Length : [66] : Text : not used Completed research for Sightingapparatusformovingtargets
+Offset : [95FD] : Unknown : [46B] : Faction : [UI] : String ID : 794 : String Length : [43] : Text : not used Sightingapparatusformovingtargets
+Offset : [9631] : Unknown : [46C] : Faction : [UI] : String ID : 795 : String Length : [55] : Text : not used Researching Sightingapparatusformovingtargets
+Offset : [9671] : Unknown : [46E] : Faction : [UI] : String ID : 694 : String Length : [24] : Text : Reading Martian symbols
+Offset : [9692] : Unknown : [46F] : Faction : [UI] : String ID : 799 : String Length : [110] : Text : A basic understanding of the Martian printed symbols provides better interpretation of gathered intelligence.
+Offset : [9709] : Unknown : [470] : Faction : [UI] : String ID : 797 : String Length : [24] : Text : Reading Martian symbols
+Offset : [972A] : Unknown : [471] : Faction : [UI] : String ID : 798 : String Length : [36] : Text : Researching Reading Martian symbols
+Offset : [9757] : Unknown : [473] : Faction : [UI] : String ID : 695 : String Length : [23] : Text : Martian signal methods
+Offset : [9777] : Unknown : [474] : Faction : [UI] : String ID : 802 : String Length : [120] : Text : A knowledge of the Martians symbols and transmission methods provides improved interpretation of gathered intelligence.
+Offset : [97F8] : Unknown : [475] : Faction : [UI] : String ID : 800 : String Length : [23] : Text : Martian signal methods
+Offset : [9818] : Unknown : [476] : Faction : [UI] : String ID : 801 : String Length : [35] : Text : Researching Martian signal methods
+Offset : [9844] : Unknown : [478] : Faction : [UI] : String ID : 696 : String Length : [17] : Text : Martian language
+Offset : [985E] : Unknown : [479] : Faction : [UI] : String ID : 805 : String Length : [105] : Text : A basic understanding  of the Martian language provides greater interpretation of gathered intelligence.
+Offset : [98D0] : Unknown : [47A] : Faction : [UI] : String ID : 803 : String Length : [17] : Text : Martian language
+Offset : [98EA] : Unknown : [47B] : Faction : [UI] : String ID : 804 : String Length : [29] : Text : Researching Martian language
+Offset : [9910] : Unknown : [47D] : Faction : [UI] : String ID : 697 : String Length : [31] : Text : not used Modified Faraday Cage
+Offset : [9938] : Unknown : [47E] : Faction : [UI] : String ID : 808 : String Length : [52] : Text : not used Completed research for ModifiedFaradayCage
+Offset : [9975] : Unknown : [47F] : Faction : [UI] : String ID : 806 : String Length : [29] : Text : not used ModifiedFaradayCage
+Offset : [999B] : Unknown : [480] : Faction : [UI] : String ID : 807 : String Length : [41] : Text : not used Researching ModifiedFaradayCage
+Offset : [99CD] : Unknown : [482] : Faction : [UI] : String ID : 698 : String Length : [27] : Text : not used Larger Capacitors
+Offset : [99F1] : Unknown : [483] : Faction : [UI] : String ID : 811 : String Length : [49] : Text : not used Completed research for LargerCapacitors
+Offset : [9A2B] : Unknown : [484] : Faction : [UI] : String ID : 809 : String Length : [26] : Text : not used LargerCapacitors
+Offset : [9A4E] : Unknown : [485] : Faction : [UI] : String ID : 810 : String Length : [38] : Text : not used Researching LargerCapacitors
+Offset : [9A7D] : Unknown : [487] : Faction : [UI] : String ID : 699 : String Length : [15] : Text : Enhanced Drill
+Offset : [9A95] : Unknown : [488] : Faction : [UI] : String ID : 814 : String Length : [74] : Text : Mounts an enhanced drill mechanism which allows faster underground travel
+Offset : [9AE8] : Unknown : [489] : Faction : [UI] : String ID : 812 : String Length : [15] : Text : Enhanced Drill
+Offset : [9B00] : Unknown : [48A] : Faction : [UI] : String ID : 813 : String Length : [46] : Text : Enhanced drill for the Tunnelling Track Layer
+Offset : [9B37] : Unknown : [48C] : Faction : [UI] : String ID : 700 : String Length : [29] : Text : Tunnel reinforcing apparatus
+Offset : [9B5D] : Unknown : [48D] : Faction : [UI] : String ID : 817 : String Length : [74] : Text : Tunnel reinforcing apparatus: Protection against the Martian shock bombs.
+Offset : [9BB0] : Unknown : [48E] : Faction : [UI] : String ID : 815 : String Length : [29] : Text : Tunnel reinforcing apparatus
+Offset : [9BD6] : Unknown : [48F] : Faction : [UI] : String ID : 816 : String Length : [41] : Text : Researching Tunnel reinforcing apparatus
+Offset : [9C08] : Unknown : [491] : Faction : [UI] : String ID : 701 : String Length : [37] : Text : not used High Energy Capacitor Shell
+Offset : [9C36] : Unknown : [492] : Faction : [UI] : String ID : 820 : String Length : [57] : Text : not used Completed research for HighEnergyCapacitorShell
+Offset : [9C78] : Unknown : [493] : Faction : [UI] : String ID : 818 : String Length : [34] : Text : not used HighEnergyCapacitorShell
+Offset : [9CA3] : Unknown : [494] : Faction : [UI] : String ID : 819 : String Length : [46] : Text : not used Researching HighEnergyCapacitorShell
+Offset : [9CDA] : Unknown : [496] : Faction : [UI] : String ID : 702 : String Length : [22] : Text : not used Smoke Shells
+Offset : [9CF9] : Unknown : [497] : Faction : [UI] : String ID : 823 : String Length : [44] : Text : not used Completed research for SmokeShells
+Offset : [9D2E] : Unknown : [498] : Faction : [UI] : String ID : 821 : String Length : [21] : Text : not used SmokeShells
+Offset : [9D4C] : Unknown : [499] : Faction : [UI] : String ID : 822 : String Length : [33] : Text : not used Researching SmokeShells
+Offset : [9D76] : Unknown : [49B] : Faction : [UI] : String ID : 703 : String Length : [25] : Text : not used Chemical Rounds
+Offset : [9D98] : Unknown : [49C] : Faction : [UI] : String ID : 826 : String Length : [47] : Text : not used Completed research for ChemicalRounds
+Offset : [9DD0] : Unknown : [49D] : Faction : [UI] : String ID : 824 : String Length : [24] : Text : not used ChemicalRounds
+Offset : [9DF1] : Unknown : [49E] : Faction : [UI] : String ID : 825 : String Length : [36] : Text : not used Researching ChemicalRounds
+Offset : [9E1E] : Unknown : [4A0] : Faction : [UI] : String ID : 704 : String Length : [34] : Text : not used Height Adjustable Rounds
+Offset : [9E49] : Unknown : [4A1] : Faction : [UI] : String ID : 829 : String Length : [55] : Text : not used Completed research for HeightAdjustableRounds
+Offset : [9E89] : Unknown : [4A2] : Faction : [UI] : String ID : 827 : String Length : [32] : Text : not used HeightAdjustableRounds
+Offset : [9EB2] : Unknown : [4A3] : Faction : [UI] : String ID : 828 : String Length : [44] : Text : not used Researching HeightAdjustableRounds
+Offset : [9EE7] : Unknown : [4A5] : Faction : [UI] : String ID : 705 : String Length : [27] : Text : not used Improved Dynamite
+Offset : [9F0B] : Unknown : [4A6] : Faction : [UI] : String ID : 832 : String Length : [49] : Text : not used Completed research for ImprovedDynamite
+Offset : [9F45] : Unknown : [4A7] : Faction : [UI] : String ID : 830 : String Length : [26] : Text : not used ImprovedDynamite
+Offset : [9F68] : Unknown : [4A8] : Faction : [UI] : String ID : 831 : String Length : [38] : Text : not used Researching ImprovedDynamite
+Offset : [9F97] : Unknown : [4AA] : Faction : [UI] : String ID : 706 : String Length : [27] : Text : not used Advanced Dynamite
+Offset : [9FBB] : Unknown : [4AB] : Faction : [UI] : String ID : 835 : String Length : [49] : Text : not used Completed research for AdvancedDynamite
+Offset : [9FF5] : Unknown : [4AC] : Faction : [UI] : String ID : 833 : String Length : [26] : Text : not used AdvancedDynamite
+Offset : [A018] : Unknown : [4AD] : Faction : [UI] : String ID : 834 : String Length : [38] : Text : not used Researching AdvancedDynamite
+Offset : [A047] : Unknown : [4AF] : Faction : [UI] : String ID : 707 : String Length : [39] : Text : not used Mounted Martian Steam Cleaner
+Offset : [A077] : Unknown : [4B0] : Faction : [UI] : String ID : 838 : String Length : [59] : Text : not used Completed research for MountedMartianSteamCleaner
+Offset : [A0BB] : Unknown : [4B1] : Faction : [UI] : String ID : 836 : String Length : [36] : Text : not used MountedMartianSteamCleaner
+Offset : [A0E8] : Unknown : [4B2] : Faction : [UI] : String ID : 837 : String Length : [48] : Text : not used Researching MountedMartianSteamCleaner
+Offset : [A121] : Unknown : [4B4] : Faction : [UI] : String ID : 708 : String Length : [31] : Text : not used Can Fire Glue Solvent
+Offset : [A149] : Unknown : [4B5] : Faction : [UI] : String ID : 841 : String Length : [51] : Text : not used Completed research for CanFireGlueSolvent
+Offset : [A185] : Unknown : [4B6] : Faction : [UI] : String ID : 839 : String Length : [28] : Text : not used CanFireGlueSolvent
+Offset : [A1AA] : Unknown : [4B7] : Faction : [UI] : String ID : 840 : String Length : [40] : Text : not used Researching CanFireGlueSolvent
+Offset : [A1DB] : Unknown : [4B9] : Faction : [UI] : String ID : 711 : String Length : [34] : Text : not used Magnetic Field Generator
+Offset : [A206] : Unknown : [4BA] : Faction : [UI] : String ID : 850 : String Length : [55] : Text : not used Completed research for MagneticFieldGenerator
+Offset : [A246] : Unknown : [4BB] : Faction : [UI] : String ID : 848 : String Length : [32] : Text : not used MagneticFieldGenerator
+Offset : [A26F] : Unknown : [4BC] : Faction : [UI] : String ID : 849 : String Length : [44] : Text : not used Researching MagneticFieldGenerator
+Offset : [A2A4] : Unknown : [4BE] : Faction : [UI] : String ID : 709 : String Length : [35] : Text : not used Construct Dummy Buildings
+Offset : [A2D0] : Unknown : [4BF] : Faction : [UI] : String ID : 844 : String Length : [56] : Text : not used Completed research for ConstructDummyBuildings
+Offset : [A311] : Unknown : [4C0] : Faction : [UI] : String ID : 842 : String Length : [33] : Text : not used ConstructDummyBuildings
+Offset : [A33B] : Unknown : [4C1] : Faction : [UI] : String ID : 843 : String Length : [45] : Text : not used Researching ConstructDummyBuildings
+Offset : [A371] : Unknown : [4C3] : Faction : [UI] : String ID : 710 : String Length : [30] : Text : not used Construct Dummy Unit
+Offset : [A398] : Unknown : [4C4] : Faction : [UI] : String ID : 847 : String Length : [51] : Text : not used Completed research for ConstructDummyUnit
+Offset : [A3D4] : Unknown : [4C5] : Faction : [UI] : String ID : 845 : String Length : [28] : Text : not used ConstructDummyUnit
+Offset : [A3F9] : Unknown : [4C6] : Faction : [UI] : String ID : 846 : String Length : [40] : Text : not used Researching ConstructDummyUnit
+Offset : [A42A] : Unknown : [4C8] : Faction : [UI] : String ID : 712 : String Length : [23] : Text : not used Concealed Pit
+Offset : [A44A] : Unknown : [4C9] : Faction : [UI] : String ID : 853 : String Length : [45] : Text : not used Completed research for ConcealedPit
+Offset : [A480] : Unknown : [4CA] : Faction : [UI] : String ID : 851 : String Length : [22] : Text : not used ConcealedPit
+Offset : [A49F] : Unknown : [4CB] : Faction : [UI] : String ID : 852 : String Length : [34] : Text : not used Researching ConcealedPit
+Offset : [A4CA] : Unknown : [4CD] : Faction : [UI] : String ID : 713 : String Length : [6] : Text : Mines
+Offset : [A4D9] : Unknown : [4CE] : Faction : [UI] : String ID : 856 : String Length : [54] : Text : Mines: Standard pressure triggered explosive devices.
+Offset : [A518] : Unknown : [4CF] : Faction : [UI] : String ID : 854 : String Length : [6] : Text : Mines
+Offset : [A527] : Unknown : [4D0] : Faction : [UI] : String ID : 855 : String Length : [18] : Text : Researching Mines
+Offset : [A542] : Unknown : [4D2] : Faction : [UI] : String ID : 714 : String Length : [21] : Text : Wire triggered mines
+Offset : [A560] : Unknown : [4D3] : Faction : [UI] : String ID : 859 : String Length : [97] : Text : Wire triggered mines: Larger explosive charges which are also set off by a web of trigger wires.
+Offset : [A5CA] : Unknown : [4D4] : Faction : [UI] : String ID : 857 : String Length : [21] : Text : Wire triggered mines
+Offset : [A5E8] : Unknown : [4D5] : Faction : [UI] : String ID : 858 : String Length : [33] : Text : Researching Wire triggered mines
+Offset : [A612] : Unknown : [4D7] : Faction : [UI] : String ID : 715 : String Length : [28] : Text : not used Undetectable Mines
+Offset : [A637] : Unknown : [4D8] : Faction : [UI] : String ID : 862 : String Length : [50] : Text : not used Completed research for UndetectableMines
+Offset : [A672] : Unknown : [4D9] : Faction : [UI] : String ID : 860 : String Length : [27] : Text : not used UndetectableMines
+Offset : [A696] : Unknown : [4DA] : Faction : [UI] : String ID : 861 : String Length : [39] : Text : not used Researching UndetectableMines
+Offset : [A6C6] : Unknown : [4DC] : Faction : [UI] : String ID : 716 : String Length : [15] : Text : Enhanced mines
+Offset : [A6DE] : Unknown : [4DD] : Faction : [UI] : String ID : 865 : String Length : [52] : Text : Enhanced mines: Greatly improved explosive charges.
+Offset : [A71B] : Unknown : [4DE] : Faction : [UI] : String ID : 863 : String Length : [15] : Text : Enhanced mines
+Offset : [A733] : Unknown : [4DF] : Faction : [UI] : String ID : 864 : String Length : [27] : Text : Researching Enhanced mines
+Offset : [A757] : Unknown : [4E1] : Faction : [UI] : String ID : 717 : String Length : [11] : Text : Wire fence
+Offset : [A76B] : Unknown : [4E2] : Faction : [UI] : String ID : 868 : String Length : [66] : Text : Wire fence: Cause damage to the Martian machines by entanglement.
+Offset : [A7B6] : Unknown : [4E3] : Faction : [UI] : String ID : 866 : String Length : [11] : Text : Wire fence
+Offset : [A7CA] : Unknown : [4E4] : Faction : [UI] : String ID : 867 : String Length : [23] : Text : Researching Wire fence
+Offset : [A7EA] : Unknown : [4E6] : Faction : [UI] : String ID : 718 : String Length : [10] : Text : Wire wall
+Offset : [A7FD] : Unknown : [4E7] : Faction : [UI] : String ID : 871 : String Length : [36] : Text : Wire wall: A stronger web of wires.
+Offset : [A82A] : Unknown : [4E8] : Faction : [UI] : String ID : 869 : String Length : [10] : Text : Wire wall
+Offset : [A83D] : Unknown : [4E9] : Faction : [UI] : String ID : 870 : String Length : [22] : Text : Researching Wire wall
+Offset : [A85C] : Unknown : [4EB] : Faction : [UI] : String ID : 719 : String Length : [16] : Text : Mined Wire wall
+Offset : [A875] : Unknown : [4EC] : Faction : [UI] : String ID : 874 : String Length : [80] : Text : Mined wire wall: Much stronger cables that also have explosive charges mounted.
+Offset : [A8CE] : Unknown : [4ED] : Faction : [UI] : String ID : 872 : String Length : [16] : Text : Mined wire wall
+Offset : [A8E7] : Unknown : [4EE] : Faction : [UI] : String ID : 873 : String Length : [28] : Text : Researching Mined wire wall
+Offset : [A90C] : Unknown : [4F0] : Faction : [UI] : String ID : 415 : String Length : [39] : Text : not used Completed research for Bridge
+Offset : [A93C] : Unknown : [4F1] : Faction : [UI] : String ID : 413 : String Length : [16] : Text : not used Bridge
+Offset : [A955] : Unknown : [4F2] : Faction : [UI] : String ID : 414 : String Length : [28] : Text : not used Researching Bridge
+Offset : [A97A] : Unknown : [4F4] : Faction : [UI] : String ID : 675 : String Length : [112] : Text : Shock resistant armour: Layers added to each machines armour provides protection against the Human projectiles.
+Offset : [A9F3] : Unknown : [4F5] : Faction : [UI] : String ID : 673 : String Length : [23] : Text : Shock resistant armour
+Offset : [AA13] : Unknown : [4F6] : Faction : [UI] : String ID : 674 : String Length : [35] : Text : Researching Shock resistant armour
+Offset : [AA3F] : Unknown : [4F8] : Faction : [UI] : String ID : 679 : String Length : [110] : Text : Impact Reflecting Armour: Improved armour layering provides greater protection against the Human projectiles.
+Offset : [AAB6] : Unknown : [4F9] : Faction : [UI] : String ID : 677 : String Length : [25] : Text : Impact reflecting armour
+Offset : [AAD8] : Unknown : [4FA] : Faction : [UI] : String ID : 678 : String Length : [37] : Text : Researching Impact reflecting armour
+Offset : [AB06] : Unknown : [4FC] : Faction : [UI] : String ID : 683 : String Length : [66] : Text : Enhanced ray focus mechanism: Extends the range of all heat rays.
+Offset : [AB51] : Unknown : [4FD] : Faction : [UI] : String ID : 681 : String Length : [29] : Text : Enhanced ray focus mechanism
+Offset : [AB77] : Unknown : [4FE] : Faction : [UI] : String ID : 682 : String Length : [41] : Text : Researching Enhanced ray focus mechanism
+Offset : [ABA9] : Unknown : [500] : Faction : [UI] : String ID : 720 : String Length : [18] : Text : Tight beam lenses
+Offset : [ABC4] : Unknown : [501] : Faction : [UI] : String ID : 877 : String Length : [63] : Text : Tight beam lenses: greatly extends the range of all heat rays.
+Offset : [AC0C] : Unknown : [502] : Faction : [UI] : String ID : 875 : String Length : [18] : Text : Tight beam lenses
+Offset : [AC27] : Unknown : [503] : Faction : [UI] : String ID : 876 : String Length : [30] : Text : Researching Tight beam lenses
+Offset : [AC4E] : Unknown : [505] : Faction : [UI] : String ID : 721 : String Length : [26] : Text : Secondary beam amplifiers
+Offset : [AC71] : Unknown : [506] : Faction : [UI] : String ID : 880 : String Length : [63] : Text : Secondary beam amplifiers: Boosts the damage of all heat rays.
+Offset : [ACB9] : Unknown : [507] : Faction : [UI] : String ID : 878 : String Length : [26] : Text : Secondary beam amplifiers
+Offset : [ACDC] : Unknown : [508] : Faction : [UI] : String ID : 879 : String Length : [38] : Text : Researching Secondary beam amplifiers
+Offset : [AD0B] : Unknown : [50A] : Faction : [UI] : String ID : 722 : String Length : [23] : Text : Motion tracking device
+Offset : [AD2B] : Unknown : [50B] : Faction : [UI] : String ID : 883 : String Length : [72] : Text : Motion tracking device: Targeting accuracy of all machines is improved.
+Offset : [AD7C] : Unknown : [50C] : Faction : [UI] : String ID : 881 : String Length : [23] : Text : Motion tracking device
+Offset : [AD9C] : Unknown : [50D] : Faction : [UI] : String ID : 882 : String Length : [35] : Text : Researching Motion tracking device
+Offset : [ADC8] : Unknown : [50F] : Faction : [UI] : String ID : 723 : String Length : [32] : Text : not used Enhanced Air Purifiers
+Offset : [ADF1] : Unknown : [510] : Faction : [UI] : String ID : 886 : String Length : [53] : Text : not used Completed research for EnhancedAirPurifiers
+Offset : [AE2F] : Unknown : [511] : Faction : [UI] : String ID : 884 : String Length : [30] : Text : not used EnhancedAirPurifiers
+Offset : [AE56] : Unknown : [512] : Faction : [UI] : String ID : 885 : String Length : [42] : Text : not used Researching EnhancedAirPurifiers
+Offset : [AE89] : Unknown : [514] : Faction : [UI] : String ID : 724 : String Length : [29] : Text : not used Larger Gas Reserves
+Offset : [AEAF] : Unknown : [515] : Faction : [UI] : String ID : 889 : String Length : [50] : Text : not used Completed research for LargerGasReserves
+Offset : [AEEA] : Unknown : [516] : Faction : [UI] : String ID : 887 : String Length : [27] : Text : not used LargerGasReserves
+Offset : [AF0E] : Unknown : [517] : Faction : [UI] : String ID : 888 : String Length : [39] : Text : not used Researching LargerGasReserves
+Offset : [AF3E] : Unknown : [519] : Faction : [UI] : String ID : 725 : String Length : [25] : Text : Mars based optical array
+Offset : [AF60] : Unknown : [51A] : Faction : [UI] : String ID : 892 : String Length : [116] : Text : Mars based optical array: The ability to monitor the Humans from Mars allows better interpretation of intelligence.
+Offset : [AFDD] : Unknown : [51B] : Faction : [UI] : String ID : 890 : String Length : [25] : Text : Mars based optical array
+Offset : [AFFF] : Unknown : [51C] : Faction : [UI] : String ID : 891 : String Length : [37] : Text : Researching Mars based optical array
+Offset : [B02D] : Unknown : [51E] : Faction : [UI] : String ID : 726 : String Length : [21] : Text : Mars based telescope
+Offset : [B04B] : Unknown : [51F] : Faction : [UI] : String ID : 895 : String Length : [99] : Text : Mars based telescope: Improved observation imaging allows improved interpretation of intelligence.
+Offset : [B0B7] : Unknown : [520] : Faction : [UI] : String ID : 893 : String Length : [21] : Text : Mars based telescope
+Offset : [B0D5] : Unknown : [521] : Faction : [UI] : String ID : 894 : String Length : [33] : Text : Researching Mars based telescope
+Offset : [B0FF] : Unknown : [523] : Faction : [UI] : String ID : 727 : String Length : [30] : Text : Mars based long range scanner
+Offset : [B126] : Unknown : [524] : Faction : [UI] : String ID : 898 : String Length : [115] : Text : Mars based long range scanner: superior imaging equipment provides vastly improved interpretation of intelligence.
+Offset : [B1A2] : Unknown : [525] : Faction : [UI] : String ID : 896 : String Length : [30] : Text : Mars based long range scanner
+Offset : [B1C9] : Unknown : [526] : Faction : [UI] : String ID : 897 : String Length : [42] : Text : Researching Mars based long range scanner
+Offset : [B1FC] : Unknown : [528] : Faction : [UI] : String ID : 728 : String Length : [12] : Text : Shock bombs
+Offset : [B211] : Unknown : [529] : Faction : [UI] : String ID : 901 : String Length : [103] : Text : Shock bombs: Create concussion waves below the surface, which damage submerged or tunnelling vehicles.
+Offset : [B281] : Unknown : [52A] : Faction : [UI] : String ID : 899 : String Length : [12] : Text : Shock bombs
+Offset : [B296] : Unknown : [52B] : Faction : [UI] : String ID : 900 : String Length : [24] : Text : Researching Shock bombs
+Offset : [B2B7] : Unknown : [52D] : Faction : [UI] : String ID : 729 : String Length : [38] : Text : not used Advanced Black Dust Canister
+Offset : [B2E6] : Unknown : [52E] : Faction : [UI] : String ID : 904 : String Length : [58] : Text : not used Completed research for AdvancedBlackDustCanister
+Offset : [B329] : Unknown : [52F] : Faction : [UI] : String ID : 902 : String Length : [35] : Text : not used AdvancedBlackDustCanister
+Offset : [B355] : Unknown : [530] : Faction : [UI] : String ID : 903 : String Length : [47] : Text : not used Researching AdvancedBlackDustCanister
+Offset : [B38D] : Unknown : [532] : Faction : [UI] : String ID : 730 : String Length : [28] : Text : not used Explosive Canister
+Offset : [B3B2] : Unknown : [533] : Faction : [UI] : String ID : 907 : String Length : [50] : Text : not used Completed research for ExplosiveCanister
+Offset : [B3ED] : Unknown : [534] : Faction : [UI] : String ID : 905 : String Length : [27] : Text : not used ExplosiveCanister
+Offset : [B411] : Unknown : [535] : Faction : [UI] : String ID : 906 : String Length : [39] : Text : not used Researching ExplosiveCanister
+Offset : [B441] : Unknown : [537] : Faction : [UI] : String ID : 731 : String Length : [12] : Text : Hover bombs
+Offset : [B456] : Unknown : [538] : Faction : [UI] : String ID : 910 : String Length : [58] : Text : Hover bombs: All projectile launchers range is increased.
+Offset : [B499] : Unknown : [539] : Faction : [UI] : String ID : 908 : String Length : [12] : Text : Hover bombs
+Offset : [B4AE] : Unknown : [53A] : Faction : [UI] : String ID : 909 : String Length : [24] : Text : Researching Hover bombs
+Offset : [B4CF] : Unknown : [53C] : Faction : [UI] : String ID : 732 : String Length : [23] : Text : High energy shock wave
+Offset : [B4EF] : Unknown : [53D] : Faction : [UI] : String ID : 913 : String Length : [62] : Text : High energy shock wave: Disrupts any buried Human explosives.
+Offset : [B536] : Unknown : [53E] : Faction : [UI] : String ID : 911 : String Length : [23] : Text : High energy shock Wave
+Offset : [B556] : Unknown : [53F] : Faction : [UI] : String ID : 912 : String Length : [35] : Text : Researching High energy shock wave
+Offset : [B582] : Unknown : [541] : Faction : [UI] : String ID : 733 : String Length : [25] : Text : not used Detect Infrared
+Offset : [B5A4] : Unknown : [542] : Faction : [UI] : String ID : 916 : String Length : [47] : Text : not used Completed research for DetectInfrared
+Offset : [B5DC] : Unknown : [543] : Faction : [UI] : String ID : 914 : String Length : [24] : Text : not used DetectInfrared
+Offset : [B5FD] : Unknown : [544] : Faction : [UI] : String ID : 915 : String Length : [36] : Text : not used Researching DetectInfrared
+Offset : [B62A] : Unknown : [546] : Faction : [UI] : String ID : 734 : String Length : [26] : Text : Enhanced metals detection
+Offset : [B64D] : Unknown : [547] : Faction : [UI] : String ID : 919 : String Length : [71] : Text : Enhanced metals detection: Can detect metal objects below the surface.
+Offset : [B69D] : Unknown : [548] : Faction : [UI] : String ID : 917 : String Length : [26] : Text : Enhanced metals detection
+Offset : [B6C0] : Unknown : [549] : Faction : [UI] : String ID : 918 : String Length : [38] : Text : Researching Enhanced metals detection
+Offset : [B6EF] : Unknown : [54B] : Faction : [UI] : String ID : 735 : String Length : [30] : Text : Detect subterrain excavations
+Offset : [B716] : Unknown : [54C] : Faction : [UI] : String ID : 922 : String Length : [87] : Text : Detect subterrain excavations: Can detect objects and vehicles deep below the surface.
+Offset : [B776] : Unknown : [54D] : Faction : [UI] : String ID : 920 : String Length : [30] : Text : Detect subterrain excavations
+Offset : [B79D] : Unknown : [54E] : Faction : [UI] : String ID : 921 : String Length : [48] : Text : Researching detection of subterrain excavations
+Offset : [B7D6] : Unknown : [550] : Faction : [UI] : String ID : 736 : String Length : [23] : Text : Energy pulse generator
+Offset : [B7F6] : Unknown : [551] : Faction : [UI] : String ID : 925 : String Length : [62] : Text : Energy pulse generator: Disrupts any buried Human explosives.
+Offset : [B83D] : Unknown : [552] : Faction : [UI] : String ID : 923 : String Length : [23] : Text : Energy pulse generator
+Offset : [B85D] : Unknown : [553] : Faction : [UI] : String ID : 924 : String Length : [35] : Text : Researching Energy pulse generator
+Offset : [B889] : Unknown : [555] : Faction : [UI] : String ID : 737 : String Length : [24] : Text : Neutralise power source
+Offset : [B8AA] : Unknown : [556] : Faction : [UI] : String ID : 928 : String Length : [57] : Text : Neutralise power source: Temporarily disables a vehicle.
+Offset : [B8EC] : Unknown : [557] : Faction : [UI] : String ID : 926 : String Length : [24] : Text : Neutralise power source
+Offset : [B90D] : Unknown : [558] : Faction : [UI] : String ID : 927 : String Length : [36] : Text : Researching Neutralise power source
+Offset : [B93A] : Unknown : [55A] : Faction : [UI] : String ID : 738 : String Length : [21] : Text : not used New Mixture
+Offset : [B958] : Unknown : [55B] : Faction : [UI] : String ID : 931 : String Length : [43] : Text : not used Completed research for NewMixture
+Offset : [B98C] : Unknown : [55C] : Faction : [UI] : String ID : 929 : String Length : [20] : Text : not used NewMixture
+Offset : [B9A9] : Unknown : [55D] : Faction : [UI] : String ID : 930 : String Length : [32] : Text : not used Researching NewMixture
+Offset : [B9D2] : Unknown : [55F] : Faction : [UI] : String ID : 739 : String Length : [28] : Text : not used Chemically Enhance
+Offset : [B9F7] : Unknown : [560] : Faction : [UI] : String ID : 934 : String Length : [50] : Text : not used Completed research for ChemicallyEnhance
+Offset : [BA32] : Unknown : [561] : Faction : [UI] : String ID : 932 : String Length : [27] : Text : not used ChemicallyEnhance
+Offset : [BA56] : Unknown : [562] : Faction : [UI] : String ID : 933 : String Length : [39] : Text : not used Researching ChemicallyEnhance
+Offset : [BA86] : Unknown : [564] : Faction : [UI] : String ID : 740 : String Length : [41] : Text : not used Telepathic Amplification Device
+Offset : [BAB8] : Unknown : [565] : Faction : [UI] : String ID : 937 : String Length : [62] : Text : not used Completed research for TelepathicAmplificationDevice
+Offset : [BAFF] : Unknown : [566] : Faction : [UI] : String ID : 935 : String Length : [39] : Text : not used TelepathicAmplificationDevice
+Offset : [BB2F] : Unknown : [567] : Faction : [UI] : String ID : 936 : String Length : [51] : Text : not used Researching TelepathicAmplificationDevice
+Offset : [BB6B] : Unknown : [569] : Faction : [UI] : String ID : 741 : String Length : [23] : Text : not used Detect Humans
+Offset : [BB8B] : Unknown : [56A] : Faction : [UI] : String ID : 940 : String Length : [45] : Text : not used Completed research for DetectHumans
+Offset : [BBC1] : Unknown : [56B] : Faction : [UI] : String ID : 938 : String Length : [22] : Text : not used DetectHumans
+Offset : [BBE0] : Unknown : [56C] : Faction : [UI] : String ID : 939 : String Length : [34] : Text : not used Researching DetectHumans
+Offset : [BC0B] : Unknown : [56E] : Faction : [UI] : String ID : 742 : String Length : [4] : Text : Awe
+Offset : [BC18] : Unknown : [56F] : Faction : [UI] : String ID : 943 : String Length : [68] : Text : Awe: Causes targeted Humans to freeze at the sight of the telepath.
+Offset : [BC65] : Unknown : [570] : Faction : [UI] : String ID : 941 : String Length : [4] : Text : Awe
+Offset : [BC72] : Unknown : [571] : Faction : [UI] : String ID : 942 : String Length : [16] : Text : Researching Awe
+Offset : [BC8B] : Unknown : [573] : Faction : [UI] : String ID : 743 : String Length : [5] : Text : Fear
+Offset : [BC99] : Unknown : [574] : Faction : [UI] : String ID : 946 : String Length : [56] : Text : Fear: Causes targeted Humans to flee from the telepath.
+Offset : [BCDA] : Unknown : [575] : Faction : [UI] : String ID : 944 : String Length : [5] : Text : Fear
+Offset : [BCE8] : Unknown : [576] : Faction : [UI] : String ID : 945 : String Length : [17] : Text : Researching Fear
+Offset : [BD02] : Unknown : [578] : Faction : [UI] : String ID : 744 : String Length : [16] : Text : not used Terror
+Offset : [BD1B] : Unknown : [579] : Faction : [UI] : String ID : 949 : String Length : [39] : Text : not used Completed research for Terror
+Offset : [BD4B] : Unknown : [57A] : Faction : [UI] : String ID : 947 : String Length : [16] : Text : not used Terror
+Offset : [BD64] : Unknown : [57B] : Faction : [UI] : String ID : 948 : String Length : [28] : Text : not used Researching Terror
+Offset : [BD89] : Unknown : [57D] : Faction : [UI] : String ID : 745 : String Length : [22] : Text : not used Mental Shock
+Offset : [BDA8] : Unknown : [57E] : Faction : [UI] : String ID : 952 : String Length : [44] : Text : not used Completed research for MentalShock
+Offset : [BDDD] : Unknown : [57F] : Faction : [UI] : String ID : 950 : String Length : [21] : Text : not used MentalShock
+Offset : [BDFB] : Unknown : [580] : Faction : [UI] : String ID : 951 : String Length : [33] : Text : not used Researching MentalShock
+Offset : [BE25] : Unknown : [582] : Faction : [UI] : String ID : 746 : String Length : [22] : Text : not used Mental Blast
+Offset : [BE44] : Unknown : [583] : Faction : [UI] : String ID : 955 : String Length : [44] : Text : not used Completed research for MentalBlast
+Offset : [BE79] : Unknown : [584] : Faction : [UI] : String ID : 953 : String Length : [21] : Text : not used MentalBlast
+Offset : [BE97] : Unknown : [585] : Faction : [UI] : String ID : 954 : String Length : [33] : Text : not used Researching MentalBlast
+Offset : [BEC1] : Unknown : [587] : Faction : [UI] : String ID : 747 : String Length : [18] : Text : not used Displace
+Offset : [BEDC] : Unknown : [588] : Faction : [UI] : String ID : 958 : String Length : [41] : Text : not used Completed research for Displace
+Offset : [BF0E] : Unknown : [589] : Faction : [UI] : String ID : 956 : String Length : [18] : Text : not used Displace
+Offset : [BF29] : Unknown : [58A] : Faction : [UI] : String ID : 957 : String Length : [30] : Text : not used Researching Displace
+Offset : [BF50] : Unknown : [58C] : Faction : [UI] : String ID : 748 : String Length : [15] : Text : not used Cloak
+Offset : [BF68] : Unknown : [58D] : Faction : [UI] : String ID : 961 : String Length : [38] : Text : not used Completed research for Cloak
+Offset : [BF97] : Unknown : [58E] : Faction : [UI] : String ID : 959 : String Length : [15] : Text : not used Cloak
+Offset : [BFAF] : Unknown : [58F] : Faction : [UI] : String ID : 960 : String Length : [27] : Text : not used Researching Cloak
+Offset : [BFD3] : Unknown : [591] : Faction : [UI] : String ID : 749 : String Length : [20] : Text : not used Mass Cloak
+Offset : [BFF0] : Unknown : [592] : Faction : [UI] : String ID : 964 : String Length : [42] : Text : not used Completed research for MassCloak
+Offset : [C023] : Unknown : [593] : Faction : [UI] : String ID : 962 : String Length : [19] : Text : not used MassCloak
+Offset : [C03F] : Unknown : [594] : Faction : [UI] : String ID : 963 : String Length : [31] : Text : not used Researching MassCloak
+Offset : [C067] : Unknown : [596] : Faction : [UI] : String ID : 750 : String Length : [18] : Text : not used Illusion
+Offset : [C082] : Unknown : [597] : Faction : [UI] : String ID : 967 : String Length : [41] : Text : not used Completed research for Illusion
+Offset : [C0B4] : Unknown : [598] : Faction : [UI] : String ID : 965 : String Length : [18] : Text : not used Illusion
+Offset : [C0CF] : Unknown : [599] : Faction : [UI] : String ID : 966 : String Length : [30] : Text : not used Researching Illusion
+Offset : [C0F6] : Unknown : [59B] : Faction : [UI] : String ID : 751 : String Length : [23] : Text : not used Unit Illusion
+Offset : [C116] : Unknown : [59C] : Faction : [UI] : String ID : 970 : String Length : [45] : Text : not used Completed research for UnitIllusion
+Offset : [C14C] : Unknown : [59D] : Faction : [UI] : String ID : 968 : String Length : [22] : Text : not used UnitIllusion
+Offset : [C16B] : Unknown : [59E] : Faction : [UI] : String ID : 969 : String Length : [34] : Text : not used Researching UnitIllusion
+Offset : [C196] : Unknown : [5A0] : Faction : [UI] : String ID : 752 : String Length : [7] : Text : Lunacy
+Offset : [C1A6] : Unknown : [5A1] : Faction : [UI] : String ID : 973 : String Length : [48] : Text : Lunacy: Causes the Humans to target each other.
+Offset : [C1DF] : Unknown : [5A2] : Faction : [UI] : String ID : 971 : String Length : [7] : Text : Lunacy
+Offset : [C1EF] : Unknown : [5A3] : Faction : [UI] : String ID : 972 : String Length : [19] : Text : Researching Lunacy
+Offset : [C20B] : Unknown : [5A5] : Faction : [UI] : String ID : 753 : String Length : [18] : Text : not used Insanity
+Offset : [C226] : Unknown : [5A6] : Faction : [UI] : String ID : 976 : String Length : [41] : Text : not used Completed research for Insanity
+Offset : [C258] : Unknown : [5A7] : Faction : [UI] : String ID : 974 : String Length : [18] : Text : not used Insanity
+Offset : [C273] : Unknown : [5A8] : Faction : [UI] : String ID : 975 : String Length : [30] : Text : not used Researching Insanity
+Offset : [C29A] : Unknown : [5AA] : Faction : [UI] : String ID : 754 : String Length : [17] : Text : not used Traitor
+Offset : [C2B4] : Unknown : [5AB] : Faction : [UI] : String ID : 979 : String Length : [40] : Text : not used Completed research for Traitor
+Offset : [C2E5] : Unknown : [5AC] : Faction : [UI] : String ID : 977 : String Length : [17] : Text : not used Traitor
+Offset : [C2FF] : Unknown : [5AD] : Faction : [UI] : String ID : 978 : String Length : [29] : Text : not used Researching Traitor
+Offset : [C325] : Unknown : [5AF] : Faction : [UI] : String ID : 755 : String Length : [33] : Text : not used Larger Explosive Charge
+Offset : [C34F] : Unknown : [5B0] : Faction : [UI] : String ID : 982 : String Length : [54] : Text : not used Completed research for LargerExplosiveCharge
+Offset : [C38E] : Unknown : [5B1] : Faction : [UI] : String ID : 980 : String Length : [31] : Text : not used LargerExplosiveCharge
+Offset : [C3B6] : Unknown : [5B2] : Faction : [UI] : String ID : 981 : String Length : [43] : Text : not used Researching LargerExplosiveCharge
+Offset : [C3EA] : Unknown : [5B4] : Faction : [UI] : String ID : 756 : String Length : [23] : Text : not used Atomic Charge
+Offset : [C40A] : Unknown : [5B5] : Faction : [UI] : String ID : 985 : String Length : [45] : Text : not used Completed research for AtomicCharge
+Offset : [C440] : Unknown : [5B6] : Faction : [UI] : String ID : 983 : String Length : [22] : Text : not used AtomicCharge
+Offset : [C45F] : Unknown : [5B7] : Faction : [UI] : String ID : 984 : String Length : [34] : Text : not used Researching AtomicCharge
+Offset : [C48A] : Unknown : [5B9] : Faction : [UI] : String ID : 757 : String Length : [25] : Text : not used Larger Scanners
+Offset : [C4AC] : Unknown : [5BA] : Faction : [UI] : String ID : 988 : String Length : [47] : Text : not used Completed research for LargerScanners
+Offset : [C4E4] : Unknown : [5BB] : Faction : [UI] : String ID : 986 : String Length : [24] : Text : not used LargerScanners
+Offset : [C505] : Unknown : [5BC] : Faction : [UI] : String ID : 987 : String Length : [36] : Text : not used Researching LargerScanners
+Offset : [C532] : Unknown : [5BE] : Faction : [UI] : String ID : 758 : String Length : [30] : Text : not used Large Array Scanners
+Offset : [C559] : Unknown : [5BF] : Faction : [UI] : String ID : 991 : String Length : [51] : Text : not used Completed research for LargeArrayScanners
+Offset : [C595] : Unknown : [5C0] : Faction : [UI] : String ID : 989 : String Length : [28] : Text : not used LargeArrayScanners
+Offset : [C5BA] : Unknown : [5C1] : Faction : [UI] : String ID : 990 : String Length : [40] : Text : not used Researching LargeArrayScanners
+Offset : [C5EB] : Unknown : [5C3] : Faction : [UI] : String ID : 759 : String Length : [24] : Text : not used Remote Control
+Offset : [C60C] : Unknown : [5C4] : Faction : [UI] : String ID : 997 : String Length : [46] : Text : not used Completed research for RemoteControl
+Offset : [C643] : Unknown : [5C5] : Faction : [UI] : String ID : 995 : String Length : [23] : Text : not used RemoteControl
+Offset : [C663] : Unknown : [5C6] : Faction : [UI] : String ID : 996 : String Length : [35] : Text : not used Researching RemoteControl
+Offset : [C68F] : Unknown : [5C8] : Faction : [UI] : String ID : 760 : String Length : [18] : Text : not used Trenches
+Offset : [C6AA] : Unknown : [5C9] : Faction : [UI] : String ID : 1000 : String Length : [41] : Text : not used Completed research for Trenches
+Offset : [C6DC] : Unknown : [5CA] : Faction : [UI] : String ID : 998 : String Length : [18] : Text : not used Trenches
+Offset : [C6F7] : Unknown : [5CB] : Faction : [UI] : String ID : 999 : String Length : [30] : Text : not used Researching Trenches
+Offset : [C71E] : Unknown : [5CD] : Faction : [UI] : String ID : 761 : String Length : [23] : Text : Electric field fencing
+Offset : [C73E] : Unknown : [5CE] : Faction : [UI] : String ID : 1003 : String Length : [43] : Text : Electric field fencing: basic energy wall.
+Offset : [C772] : Unknown : [5CF] : Faction : [UI] : String ID : 1001 : String Length : [23] : Text : Electric field fencing
+Offset : [C792] : Unknown : [5D0] : Faction : [UI] : String ID : 1002 : String Length : [35] : Text : Researching Electric field fencing
+Offset : [C7BE] : Unknown : [5D2] : Faction : [UI] : String ID : 762 : String Length : [14] : Text : Laser fencing
+Offset : [C7D5] : Unknown : [5D3] : Faction : [UI] : String ID : 1006 : String Length : [39] : Text : Laser fencing: high power energy wall.
+Offset : [C805] : Unknown : [5D4] : Faction : [UI] : String ID : 1004 : String Length : [14] : Text : Laser fencing
+Offset : [C81C] : Unknown : [5D5] : Faction : [UI] : String ID : 1005 : String Length : [26] : Text : Researching Laser fencing
+Offset : [C83F] : Unknown : [5D7] : Faction : [UI] : String ID : 763 : String Length : [15] : Text : Plasma fencing
+Offset : [C857] : Unknown : [5D8] : Faction : [UI] : String ID : 1009 : String Length : [45] : Text : Plasma fencing: Very high power energy wall.
+Offset : [C88D] : Unknown : [5D9] : Faction : [UI] : String ID : 1007 : String Length : [15] : Text : Plasma fencing
+Offset : [C8A5] : Unknown : [5DA] : Faction : [UI] : String ID : 1008 : String Length : [27] : Text : Researching Plasma fencing
+Offset : [C8C9] : Unknown : [5DC] : Faction : [UI] : String ID : 764 : String Length : [15] : Text : Motion scanner
+Offset : [C8E1] : Unknown : [5DD] : Faction : [UI] : String ID : 1012 : String Length : [48] : Text : Motion scanner: Provides scanning capabilities.
+Offset : [C91A] : Unknown : [5DE] : Faction : [UI] : String ID : 1010 : String Length : [15] : Text : Motion scanner
+Offset : [C932] : Unknown : [5DF] : Faction : [UI] : String ID : 1011 : String Length : [27] : Text : Researching Motion scanner
+Offset : [C956] : Unknown : [5E1] : Faction : [UI] : String ID : 765 : String Length : [24] : Text : Advanced motion scanner
+Offset : [C977] : Unknown : [5E2] : Faction : [UI] : String ID : 1015 : String Length : [65] : Text : Advanced motion scanner: Provides greater scanning capabilities.
+Offset : [C9C1] : Unknown : [5E3] : Faction : [UI] : String ID : 1013 : String Length : [24] : Text : Advanced motion scanner
+Offset : [C9E2] : Unknown : [5E4] : Faction : [UI] : String ID : 1014 : String Length : [36] : Text : Researching Advanced motion scanner
+Offset : [CA0F] : Unknown : [5E6] : Faction : [UI] : String ID : 766 : String Length : [15] : Text : not used Power
+Offset : [CA27] : Unknown : [5E7] : Faction : [UI] : String ID : 1018 : String Length : [38] : Text : not used Completed research for Power
+Offset : [CA56] : Unknown : [5E8] : Faction : [UI] : String ID : 1016 : String Length : [15] : Text : not used Power
+Offset : [CA6E] : Unknown : [5E9] : Faction : [UI] : String ID : 1017 : String Length : [27] : Text : not used Researching Power
+Offset : [CA92] : Unknown : [5EC] : Faction : [UI] : String ID : 994 : String Length : [36] : Text : Completed research for Intelligence
+Offset : [CABF] : Unknown : [5ED] : Faction : [UI] : String ID : 992 : String Length : [13] : Text : Intelligence
+Offset : [CAD5] : Unknown : [5EE] : Faction : [UI] : String ID : 993 : String Length : [25] : Text : Researching Intelligence
+Offset : [CAF7] : Unknown : [5F0] : Faction : [UI] : String ID : 1019 : String Length : [10] : Text : Main Menu
+Offset : [CB0A] : Unknown : [5F1] : Faction : [UI] : String ID : 1020 : String Length : [17] : Text : Campaign Options
+Offset : [CB24] : Unknown : [5F2] : Faction : [UI] : String ID : 1021 : String Length : [15] : Text : Battle Options
+Offset : [CB3C] : Unknown : [5F4] : Faction : [UI] : String ID : 1022 : String Length : [23] : Text : Single Player Campaign
+Offset : [CB5C] : Unknown : [5F5] : Faction : [UI] : String ID : 1023 : String Length : [17] : Text : Network Campaign
+Offset : [CB76] : Unknown : [5F6] : Faction : [UI] : String ID : 1024 : String Length : [22] : Text : Join Network Campaign
+Offset : [CB95] : Unknown : [5F7] : Faction : [UI] : String ID : 1025 : String Length : [13] : Text : Game Options
+Offset : [CBAB] : Unknown : [5F8] : Faction : [UI] : String ID : 1026 : String Length : [10] : Text : CD Player
+Offset : [CBBE] : Unknown : [5F9] : Faction : [UI] : String ID : 1027 : String Length : [10] : Text : Exit Game
+Offset : [CBD1] : Unknown : [5FB] : Faction : [UI] : String ID : 1034 : String Length : [20] : Text : Return to Main Menu
+Offset : [CBEE] : Unknown : [5FC] : Faction : [UI] : String ID : 1030 : String Length : [16] : Text : Resume Campaign
+Offset : [CC07] : Unknown : [5FD] : Faction : [UI] : String ID : 1031 : String Length : [14] : Text : Save Campaign
+Offset : [CC1E] : Unknown : [5FE] : Faction : [UI] : String ID : 1032 : String Length : [6] : Text : Empty
+Offset : [CC2D] : Unknown : [5FF] : Faction : [UI] : String ID : 1029 : String Length : [25] : Text : Resume Campaign (Escape)
+Offset : [CC4F] : Unknown : [600] : Faction : [UI] : String ID : 1033 : String Length : [21] : Text : Cheats Never Prosper
+Offset : [CC6D] : Unknown : [602] : Faction : [UI] : String ID : 1035 : String Length : [22] : Text : Single Player Options
+Offset : [CC8C] : Unknown : [603] : Faction : [UI] : String ID : 1036 : String Length : [19] : Text : Start New Campaign
+Offset : [CCA8] : Unknown : [604] : Faction : [UI] : String ID : 1039 : String Length : [14] : Text : Previous Menu
+Offset : [CCBF] : Unknown : [606] : Faction : [UI] : String ID : 1037 : String Length : [23] : Text : Start New Network Game
+Offset : [CCDF] : Unknown : [607] : Faction : [UI] : String ID : 1038 : String Length : [22] : Text : Load Network Campaign
+Offset : [CCFE] : Unknown : [608] : Faction : [UI] : String ID : 1040 : String Length : [17] : Text : Display Settings
+Offset : [CD18] : Unknown : [609] : Faction : [UI] : String ID : 1041 : String Length : [14] : Text : Sound Control
+Offset : [CD2F] : Unknown : [60A] : Faction : [UI] : String ID : 1042 : String Length : [23] : Text : Critical event options
+Offset : [CD4F] : Unknown : [60C] : Faction : [UI] : String ID : 1072 : String Length : [24] : Text : Select Service Provider
+Offset : [CD70] : Unknown : [60D] : Faction : [UI] : String ID : 1073 : String Length : [24] : Text : Select Network Campaign
+Offset : [CD91] : Unknown : [60E] : Faction : [UI] : String ID : 1074 : String Length : [32] : Text : Waiting for Network Campaign...
+Offset : [CDBA] : Unknown : [60F] : Faction : [UI] : String ID : 1075 : String Length : [22] : Text : Waiting for Player...
+Offset : [CDD9] : Unknown : [611] : Faction : [UI] : String ID : 1076 : String Length : [19] : Text : No Saved Campaigns
+Offset : [CDF5] : Unknown : [613] : Faction : [UI] : String ID : 1093 : String Length : [5] : Text : Exit
+Offset : [CE03] : Unknown : [614] : Faction : [UI] : String ID : 1094 : String Length : [7] : Text : Cancel
+Offset : [CE13] : Unknown : [616] : Faction : [UI] : String ID : 1086 : String Length : [14] : Text : Master Volume
+Offset : [CE2A] : Unknown : [617] : Faction : [UI] : String ID : 1087 : String Length : [15] : Text : Ambient Volume
+Offset : [CE42] : Unknown : [618] : Faction : [UI] : String ID : 1088 : String Length : [14] : Text : Speech Volume
+Offset : [CE59] : Unknown : [619] : Faction : [UI] : String ID : 1089 : String Length : [24] : Text : In-game CD Music On/Off
+Offset : [CE7A] : Unknown : [61A] : Faction : [UI] : String ID : 1090 : String Length : [24] : Text : Enable in-game CD music
+Offset : [CE9B] : Unknown : [61B] : Faction : [UI] : String ID : 1091 : String Length : [25] : Text : Disable in-game CD music
+Offset : [CEBD] : Unknown : [61C] : Faction : [UI] : String ID : 1092 : String Length : [15] : Text : Audio Channels
+Offset : [CED5] : Unknown : [61E] : Faction : [UI] : String ID : 1095 : String Length : [13] : Text : 8 Bit Colour
+Offset : [CEEB] : Unknown : [61F] : Faction : [UI] : String ID : 1096 : String Length : [14] : Text : 16 Bit Colour
+Offset : [CF02] : Unknown : [620] : Faction : [UI] : String ID : 1097 : String Length : [11] : Text : Resolution
+Offset : [CF16] : Unknown : [621] : Faction : [UI] : String ID : 1098 : String Length : [17] : Text : Lower Resolution
+Offset : [CF30] : Unknown : [622] : Faction : [UI] : String ID : 1099 : String Length : [18] : Text : Higher Resolution
+Offset : [CF4B] : Unknown : [623] : Faction : [UI] : String ID : 1100 : String Length : [16] : Text : Level of Detail
+Offset : [CF64] : Unknown : [624] : Faction : [UI] : String ID : 1101 : String Length : [7] : Text : Lights
+Offset : [CF74] : Unknown : [625] : Faction : [UI] : String ID : 1102 : String Length : [16] : Text : Vehicle shadows
+Offset : [CF8D] : Unknown : [626] : Faction : [UI] : String ID : 1103 : String Length : [16] : Text : Gouraud Shading
+Offset : [CFA6] : Unknown : [627] : Faction : [UI] : String ID : 1104 : String Length : [20] : Text : Smoke and Particles
+Offset : [CFC3] : Unknown : [628] : Faction : [UI] : String ID : 1105 : String Length : [13] : Text : Scroll Speed
+Offset : [CFD9] : Unknown : [629] : Faction : [UI] : String ID : 1106 : String Length : [15] : Text : Basic Tooltips
+Offset : [CFF1] : Unknown : [62A] : Faction : [UI] : String ID : 1107 : String Length : [31] : Text : Show vehicle and street lights
+Offset : [D019] : Unknown : [62B] : Faction : [UI] : String ID : 1108 : String Length : [29] : Text : Show shadows on all vehicles
+Offset : [D03F] : Unknown : [62C] : Faction : [UI] : String ID : 1109 : String Length : [23] : Text : Enable Gouraud shading
+Offset : [D05F] : Unknown : [62D] : Faction : [UI] : String ID : 1110 : String Length : [38] : Text : Display smoke and explosion particles
+Offset : [D08E] : Unknown : [62E] : Faction : [UI] : String ID : 1111 : String Length : [27] : Text : Alter scroll speed on maps
+Offset : [D0B2] : Unknown : [62F] : Faction : [UI] : String ID : 1112 : String Length : [55] : Text : Show Trivial Information on Cursor (vehicle names etc)
+Offset : [D0F2] : Unknown : [631] : Faction : [UI] : String ID : 1113 : String Length : [4] : Text : yrs
+Offset : [D0FF] : Unknown : [632] : Faction : [UI] : String ID : 1114 : String Length : [4] : Text : yrs
+Offset : [D10C] : Unknown : [633] : Faction : [UI] : String ID : 1115 : String Length : [4] : Text : mth
+Offset : [D119] : Unknown : [634] : Faction : [UI] : String ID : 1116 : String Length : [5] : Text : mths
+Offset : [D127] : Unknown : [635] : Faction : [Human] : String ID : 1117 : String Length : [4] : Text : day
+Offset : [D134] : Unknown : [636] : Faction : [Martian] : String ID : 1117 : String Length : [6] : Text : cycle
+Offset : [D143] : Unknown : [637] : Faction : [Human] : String ID : 1118 : String Length : [5] : Text : days
+Offset : [D151] : Unknown : [638] : Faction : [Martian] : String ID : 1118 : String Length : [7] : Text : cycles
+Offset : [D161] : Unknown : [639] : Faction : [UI] : String ID : 1119 : String Length : [3] : Text : hr
+Offset : [D16D] : Unknown : [63A] : Faction : [UI] : String ID : 1120 : String Length : [4] : Text : hrs
+Offset : [D17A] : Unknown : [63D] : Faction : [UI] : String ID : 1077 : String Length : [19] : Text : Play Human Track 1
+Offset : [D196] : Unknown : [63E] : Faction : [UI] : String ID : 1078 : String Length : [19] : Text : Play Human Track 2
+Offset : [D1B2] : Unknown : [63F] : Faction : [UI] : String ID : 1079 : String Length : [19] : Text : Play Human Track 3
+Offset : [D1CE] : Unknown : [640] : Faction : [UI] : String ID : 1080 : String Length : [19] : Text : Play Human Track 4
+Offset : [D1EA] : Unknown : [642] : Faction : [UI] : String ID : 1081 : String Length : [21] : Text : Play Martian Track 1
+Offset : [D208] : Unknown : [643] : Faction : [UI] : String ID : 1082 : String Length : [21] : Text : Play Martian Track 2
+Offset : [D226] : Unknown : [644] : Faction : [UI] : String ID : 1083 : String Length : [21] : Text : Play Martian Track 3
+Offset : [D244] : Unknown : [645] : Faction : [UI] : String ID : 1084 : String Length : [21] : Text : Play Martian Track 4
+Offset : [D262] : Unknown : [646] : Faction : [UI] : String ID : 1085 : String Length : [5] : Text : Stop
+Offset : [D270] : Unknown : [648] : Faction : [Human] : String ID : 1121 : String Length : [24] : Text : No research in progress
+Offset : [D291] : Unknown : [649] : Faction : [Martian] : String ID : 1121 : String Length : [24] : Text : No research in progress
+Offset : [D2B2] : Unknown : [64B] : Faction : [Human] : String ID : 1122 : String Length : [16] : Text : Specifications:
+Offset : [D2CB] : Unknown : [64C] : Faction : [Martian] : String ID : 1122 : String Length : [16] : Text : Specifications:
+Offset : [D2E4] : Unknown : [64E] : Faction : [Human] : String ID : 1123 : String Length : [14] : Text : Enhancements:
+Offset : [D2FB] : Unknown : [64F] : Faction : [Martian] : String ID : 1123 : String Length : [14] : Text : Enhancements:
+Offset : [D312] : Unknown : [651] : Faction : [Human] : String ID : 1124 : String Length : [24] : Text : Proposals For research:
+Offset : [D333] : Unknown : [652] : Faction : [Martian] : String ID : 1124 : String Length : [24] : Text : Proposals For research:
+Offset : [D354] : Unknown : [654] : Faction : [UI] : String ID : 1130 : String Length : [17] : Text : Research started
+Offset : [D36E] : Unknown : [656] : Faction : [UI] : String ID : 1131 : String Length : [19] : Text : Research completed
+Offset : [D38A] : Unknown : [658] : Faction : [UI] : String ID : 1132 : String Length : [23] : Text : New research available
+Offset : [D3AA] : Unknown : [65A] : Faction : [UI] : String ID : 1133 : String Length : [15] : Text : Research Alert
+Offset : [D3C2] : Unknown : [65C] : Faction : [UI] : String ID : 1125 : String Length : [12] : Text : Game Loaded
+Offset : [D3D7] : Unknown : [65D] : Faction : [UI] : String ID : 1126 : String Length : [16] : Text : Game quicksaved
+Offset : [D3F0] : Unknown : [65E] : Faction : [UI] : String ID : 1127 : String Length : [11] : Text : Game saved
+Offset : [D404] : Unknown : [65F] : Faction : [UI] : String ID : 1128 : String Length : [3] : Text : OK
+Offset : [D410] : Unknown : [660] : Faction : [UI] : String ID : 1129 : String Length : [8] : Text : Proceed
+Offset : [D421] : Unknown : [662] : Faction : [UI] : String ID : 1134 : String Length : [17] : Text : Makes Available:
+Offset : [D43B] : Unknown : [663] : Faction : [UI] : String ID : 1135 : String Length : [8] : Text : Abandon
+Offset : [D44C] : Unknown : [664] : Faction : [UI] : String ID : 1136 : String Length : [6] : Text : Build
+Offset : [D45B] : Unknown : [665] : Faction : [UI] : String ID : 1137 : String Length : [6] : Text : Avoid
+Offset : [D46A] : Unknown : [666] : Faction : [UI] : String ID : 1138 : String Length : [10] : Text : Retaliate
+Offset : [D47D] : Unknown : [667] : Faction : [UI] : String ID : 1139 : String Length : [7] : Text : Attack
+Offset : [D48D] : Unknown : [668] : Faction : [UI] : String ID : 1140 : String Length : [16] : Text : Roam and Attack
+Offset : [D4A6] : Unknown : [669] : Faction : [UI] : String ID : 1141 : String Length : [9] : Text : View map
+Offset : [D4B8] : Unknown : [66A] : Faction : [UI] : String ID : 1142 : String Length : [7] : Text : Cancel
+Offset : [D4C8] : Unknown : [66B] : Faction : [UI] : String ID : 1143 : String Length : [12] : Text : Cancel Move
+Offset : [D4DD] : Unknown : [66C] : Faction : [UI] : String ID : 1144 : String Length : [12] : Text : Information
+Offset : [D4F2] : Unknown : [66D] : Faction : [UI] : String ID : 1145 : String Length : [8] : Text : Retreat
+Offset : [D503] : Unknown : [66E] : Faction : [UI] : String ID : 1146 : String Length : [17] : Text : Return to Warmap
+Offset : [D51D] : Unknown : [66F] : Faction : [UI] : String ID : 1164 : String Length : [9] : Text : Submerge
+Offset : [D52F] : Unknown : [670] : Faction : [UI] : String ID : 1163 : String Length : [7] : Text : Tunnel
+Offset : [D53F] : Unknown : [671] : Faction : [UI] : String ID : 1165 : String Length : [5] : Text : Scan
+Offset : [D54D] : Unknown : [672] : Faction : [UI] : String ID : 1162 : String Length : [11] : Text : Force Fire
+Offset : [D561] : Unknown : [673] : Faction : [UI] : String ID : 1154 : String Length : [11] : Text : Black Dust
+Offset : [D575] : Unknown : [674] : Faction : [UI] : String ID : 1155 : String Length : [11] : Text : Shock Bomb
+Offset : [D589] : Unknown : [675] : Faction : [UI] : String ID : 1156 : String Length : [11] : Text : Explosives
+Offset : [D59D] : Unknown : [676] : Faction : [UI] : String ID : 1157 : String Length : [11] : Text : Infiltrate
+Offset : [D5B1] : Unknown : [677] : Faction : [UI] : String ID : 1158 : String Length : [6] : Text : Pulse
+Offset : [D5C0] : Unknown : [678] : Faction : [UI] : String ID : 1159 : String Length : [7] : Text : Freeze
+Offset : [D5D0] : Unknown : [679] : Faction : [UI] : String ID : 1160 : String Length : [6] : Text : Scare
+Offset : [D5DF] : Unknown : [67A] : Faction : [UI] : String ID : 1161 : String Length : [8] : Text : Control
+Offset : [D5F0] : Unknown : [67C] : Faction : [UI] : String ID : 1175 : String Length : [8] : Text : VIEWING
+Offset : [D601] : Unknown : [67D] : Faction : [UI] : String ID : 1176 : String Length : [10] : Text : ATTACKING
+Offset : [D614] : Unknown : [67E] : Faction : [UI] : String ID : 1177 : String Length : [10] : Text : DEFENDING
+Offset : [D627] : Unknown : [680] : Faction : [UI] : String ID : 1184 : String Length : [18] : Text : Local Conditions:
+Offset : [D642] : Unknown : [681] : Faction : [UI] : String ID : 1185 : String Length : [11] : Text : Date/Time:
+Offset : [D656] : Unknown : [682] : Faction : [UI] : String ID : 1186 : String Length : [9] : Text : Weather:
+Offset : [D668] : Unknown : [683] : Faction : [UI] : String ID : 1187 : String Length : [6] : Text : Clear
+Offset : [D677] : Unknown : [685] : Faction : [UI] : String ID : 1188 : String Length : [16] : Text : Forces Present:
+Offset : [D690] : Unknown : [686] : Faction : [Martian] : String ID : 1190 : String Length : [18] : Text : Units (Machines):
+Offset : [D6AB] : Unknown : [687] : Faction : [UI] : String ID : 1191 : String Length : [12] : Text : Facilities:
+Offset : [D6C0] : Unknown : [689] : Faction : [Human] : String ID : 1192 : String Length : [23] : Text : RETURNING TO WAR ROOMS
+Offset : [D6E0] : Unknown : [68A] : Faction : [Martian] : String ID : 1192 : String Length : [28] : Text : RETURNING TO ELDER CHAMBERS
+Offset : [D705] : Unknown : [68C] : Faction : [UI] : String ID : 1193 : String Length : [9] : Text : VICTORY!
+Offset : [D717] : Unknown : [68D] : Faction : [UI] : String ID : 1194 : String Length : [7] : Text : DEFEAT
+Offset : [D727] : Unknown : [68F] : Faction : [Human] : String ID : 1195 : String Length : [45] : Text : The Martians in this sector were eliminated.
+Offset : [D75D] : Unknown : [690] : Faction : [Martian] : String ID : 1195 : String Length : [43] : Text : The Humans in this sector were eliminated.
+Offset : [D791] : Unknown : [692] : Faction : [Human] : String ID : 1196 : String Length : [36] : Text : Martians are occupying this sector.
+Offset : [D7BE] : Unknown : [693] : Faction : [Martian] : String ID : 1196 : String Length : [34] : Text : Humans are occupying this sector.
+Offset : [D7E9] : Unknown : [695] : Faction : [UI] : String ID : 1197 : String Length : [13] : Text : Forces lost:
+Offset : [D7FF] : Unknown : [696] : Faction : [UI] : String ID : 1198 : String Length : [24] : Text : Enemy forces destroyed:
+Offset : [D820] : Unknown : [698] : Faction : [UI] : String ID : 1199 : String Length : [20] : Text : Enemy have attacked
+Offset : [D83D] : Unknown : [699] : Faction : [UI] : String ID : 1200 : String Length : [20] : Text : Invasion commencing
+Offset : [D85A] : Unknown : [69A] : Faction : [UI] : String ID : 1201 : String Length : [7] : Text : Attack
+Offset : [D86A] : Unknown : [69B] : Faction : [UI] : String ID : 1202 : String Length : [7] : Text : Defend
+Offset : [D87A] : Unknown : [69D] : Faction : [UI] : String ID : 1178 : String Length : [19] : Text : Attack Successful!
+Offset : [D896] : Unknown : [69E] : Faction : [UI] : String ID : 1179 : String Length : [14] : Text : Attack Failed
+Offset : [D8AD] : Unknown : [69F] : Faction : [UI] : String ID : 1180 : String Length : [19] : Text : Invaders Repelled!
+Offset : [D8C9] : Unknown : [6A0] : Faction : [UI] : String ID : 1181 : String Length : [12] : Text : Sector Lost
+Offset : [D8DE] : Unknown : [6A3] : Faction : [UI] : String ID : 1203 : String Length : [16] : Text : unit completed.
+Offset : [D8F7] : Unknown : [6A4] : Faction : [UI] : String ID : 1204 : String Length : [11] : Text : completed.
+Offset : [D90B] : Unknown : [6A5] : Faction : [UI] : String ID : 1205 : String Length : [9] : Text : complete
+Offset : [D91D] : Unknown : [6A7] : Faction : [UI] : String ID : 1149 : String Length : [14] : Text : View Research
+Offset : [D934] : Unknown : [6A8] : Faction : [UI] : String ID : 1147 : String Length : [10] : Text : Unit View
+Offset : [D947] : Unknown : [6A9] : Faction : [UI] : String ID : 1148 : String Length : [18] : Text : Construction view
+Offset : [D962] : Unknown : [6AA] : Faction : [UI] : String ID : 1150 : String Length : [14] : Text : Resource view
+Offset : [D979] : Unknown : [6AB] : Faction : [UI] : String ID : 1151 : String Length : [25] : Text : Press button to continue
+Offset : [D99B] : Unknown : [6AC] : Faction : [UI] : String ID : 1152 : String Length : [39] : Text : Press button to continue ESC to cancel
+Offset : [D9CB] : Unknown : [6AD] : Faction : [UI] : String ID : 1153 : String Length : [13] : Text : Advance time
+Offset : [D9E1] : Unknown : [6AF] : Faction : [UI] : String ID : 1166 : String Length : [20] : Text : Currently building:
+Offset : [D9FE] : Unknown : [6B0] : Faction : [Human] : String ID : 1167 : String Length : [20] : Text : Days to completion:
+Offset : [DA1B] : Unknown : [6B1] : Faction : [UI] : String ID : 1168 : String Length : [19] : Text : Percent completed:
+Offset : [DA37] : Unknown : [6B2] : Faction : [UI] : String ID : 1169 : String Length : [5] : Text : Idle
+Offset : [DA45] : Unknown : [6B3] : Faction : [UI] : String ID : 1171 : String Length : [12] : Text : Efficiency:
+Offset : [DA5A] : Unknown : [6B5] : Faction : [UI] : String ID : 1206 : String Length : [15] : Text : Choose a Track
+Offset : [DA72] : Unknown : [6B7] : Faction : [UI] : String ID : 1207 : String Length : [13] : Text : Fast Forward
+Offset : [DA88] : Unknown : [6B8] : Faction : [UI] : String ID : 1208 : String Length : [7] : Text : Rewind
+Offset : [DA98] : Unknown : [6B9] : Faction : [UI] : String ID : 1209 : String Length : [5] : Text : Play
+Offset : [DAA6] : Unknown : [6BA] : Faction : [UI] : String ID : 1210 : String Length : [5] : Text : Stop
+Offset : [DAB4] : Unknown : [6BB] : Faction : [UI] : String ID : 1211 : String Length : [11] : Text : Next Track
+Offset : [DAC8] : Unknown : [6BC] : Faction : [UI] : String ID : 1212 : String Length : [15] : Text : Previous Track
+Offset : [DAE0] : Unknown : [6BD] : Faction : [UI] : String ID : 1213 : String Length : [6] : Text : Pause
+Offset : [DAEF] : Unknown : [6BF] : Faction : [UI] : String ID : 1228 : String Length : [15] : Text : No CD Inserted
+Offset : [DB07] : Unknown : [6C1] : Faction : [Human] : String ID : 1214 : String Length : [12] : Text : Dead London
+Offset : [DB1C] : Unknown : [6C2] : Faction : [Human] : String ID : 1221 : String Length : [266] : Text : Dead London\nMusic Composed by Jeff Wayne\nArranged and Programmed by Stephen Murphy\nEngineered by Pete Smith\nSound Engineer Paul Chivers\nAdditional Programming by Ga?tan Schurrer\nMixed by James Cassidy\nMusic and Audio production by Jeff Wayne Music Group Ltd.
+Offset : [DC2F] : Unknown : [6C4] : Faction : [Human] : String ID : 1215 : String Length : [18] : Text : The Spirit of Man
+Offset : [DC4A] : Unknown : [6C5] : Faction : [Human] : String ID : 1222 : String Length : [210] : Text : The Spirit Of Man\nMusic Composed by Jeff Wayne\nArranged and programmed by Max Mondo\nEngineered and Mixed by Pete Smith\nSound Engineer Paul Chivers\nMusic and Audio production by Jeff Wayne Music Group Ltd.
+Offset : [DD25] : Unknown : [6C7] : Faction : [Human] : String ID : 1216 : String Length : [16] : Text : Brave New World
+Offset : [DD3E] : Unknown : [6C8] : Faction : [Human] : String ID : 1223 : String Length : [265] : Text : Brave New World\nMusic Composed by Jeff Wayne\nArranged and Programmed by Max Mondo\nEngineered by Pete Smith\nSound Engineer Paul Chivers\nAdditional Programming by Ga?tan Schurrer\nMixed by James Cassidy\nMusic and Audio production by Jeff Wayne Music Group Ltd.
+Offset : [DE50] : Unknown : [6CA] : Faction : [Human] : String ID : 1217 : String Length : [19] : Text : The Eve of the War
+Offset : [DE6C] : Unknown : [6CB] : Faction : [Human] : String ID : 1224 : String Length : [268] : Text : The Eve Of The War\nMusic Composed by Jeff Wayne\nArranged and Programmed by Max Mondo\nEngineered by Pete Smith\nSound Engineer Paul Chivers\nAdditional Programming by Ga?tan Schurrer\nMixed by James Cassidy\nMusic and Audio production by Jeff Wayne Music Group Ltd.
+Offset : [DF81] : Unknown : [6CD] : Faction : [Human] : String ID : 1218 : String Length : [7] : Text : Unused
+Offset : [DF91] : Unknown : [6CE] : Faction : [Human] : String ID : 1225 : String Length : [7] : Text : Unused
+Offset : [DFA1] : Unknown : [6D0] : Faction : [Human] : String ID : 1219 : String Length : [7] : Text : Unused
+Offset : [DFB1] : Unknown : [6D1] : Faction : [Human] : String ID : 1226 : String Length : [7] : Text : Unused
+Offset : [DFC1] : Unknown : [6D3] : Faction : [Human] : String ID : 1220 : String Length : [7] : Text : Unused
+Offset : [DFD1] : Unknown : [6D4] : Faction : [Human] : String ID : 1227 : String Length : [7] : Text : Unused
+Offset : [DFE1] : Unknown : [6D6] : Faction : [Martian] : String ID : 1214 : String Length : [13] : Text : The Red Weed
+Offset : [DFF7] : Unknown : [6D7] : Faction : [Martian] : String ID : 1221 : String Length : [267] : Text : The Red Weed\nMusic Composed by Jeff Wayne\nArranged and Programmed by Stephen Murphy\nEngineered by Pete Smith\nSound Engineer Paul Chivers\nAdditional Programming by Ga?tan Schurrer\nMixed by James Cassidy\nMusic and Audio production by Jeff Wayne Music Group Ltd.
+Offset : [E10B] : Unknown : [6D9] : Faction : [Martian] : String ID : 1215 : String Length : [15] : Text : Horsell Common
+Offset : [E123] : Unknown : [6DA] : Faction : [Martian] : String ID : 1222 : String Length : [224] : Text : Horsell Common And The Heat Ray\nMusic Composed by Jeff Wayne\nArranged and programmed by Max Mondo\nEngineered and Mixed by Pete Smith\nSound Engineer Paul Chivers\nMusic and Audio production by Jeff Wayne Music Group Ltd.
+Offset : [E20C] : Unknown : [6DC] : Faction : [Martian] : String ID : 1216 : String Length : [19] : Text : The Eve of the War
+Offset : [E228] : Unknown : [6DD] : Faction : [Martian] : String ID : 1223 : String Length : [268] : Text : The Eve Of The War\nMusic Composed by Jeff Wayne\nArranged and Programmed by Max Mondo\nEngineered by Pete Smith\nSound Engineer Paul Chivers\nAdditional Programming by Ga?tan Schurrer\nMixed by James Cassidy\nMusic and Audio production by Jeff Wayne Music Group Ltd.
+Offset : [E33D] : Unknown : [6DF] : Faction : [Martian] : String ID : 1217 : String Length : [21] : Text : The Fighting Machine
+Offset : [E35B] : Unknown : [6E0] : Faction : [Martian] : String ID : 1224 : String Length : [270] : Text : The Fighting Machine\nMusic Composed by Jeff Wayne\nArranged and Programmed by Max Mondo\nEngineered by Pete Smith\nSound Engineer Paul Chivers\nAdditional Programming by Ga?tan Schurrer\nMixed by James Cassidy\nMusic and Audio production by Jeff Wayne Music Group Ltd.
+Offset : [E472] : Unknown : [6E2] : Faction : [Martian] : String ID : 1218 : String Length : [7] : Text : Unused
+Offset : [E482] : Unknown : [6E3] : Faction : [Martian] : String ID : 1225 : String Length : [7] : Text : Unused
+Offset : [E492] : Unknown : [6E5] : Faction : [Martian] : String ID : 1219 : String Length : [7] : Text : Unused
+Offset : [E4A2] : Unknown : [6E6] : Faction : [Martian] : String ID : 1226 : String Length : [7] : Text : Unused
+Offset : [E4B2] : Unknown : [6E8] : Faction : [Martian] : String ID : 1220 : String Length : [7] : Text : Unused
+Offset : [E4C2] : Unknown : [6E9] : Faction : [Martian] : String ID : 1227 : String Length : [7] : Text : Unused
+Offset : [E4D2] : Unknown : [6EB] : Faction : [UI] : String ID : 1043 : String Length : [23] : Text : Construction completed
+Offset : [E4F2] : Unknown : [6EC] : Faction : [UI] : String ID : 1044 : String Length : [18] : Text : Unit manufactured
+Offset : [E50D] : Unknown : [6ED] : Faction : [UI] : String ID : 1045 : String Length : [21] : Text : Command centre built
+Offset : [E52B] : Unknown : [6EE] : Faction : [Human] : String ID : 1046 : String Length : [13] : Text : Vehicle idle
+Offset : [E541] : Unknown : [6EF] : Faction : [UI] : String ID : 1047 : String Length : [14] : Text : Facility idle
+Offset : [E558] : Unknown : [6F0] : Faction : [UI] : String ID : 1048 : String Length : [28] : Text : Unit arrived at destination
+Offset : [E57D] : Unknown : [6F1] : Faction : [UI] : String ID : 1049 : String Length : [19] : Text : Travel interrupted
+Offset : [E599] : Unknown : [6F2] : Faction : [UI] : String ID : 1050 : String Length : [19] : Text : Research completed
+Offset : [E5B5] : Unknown : [6F3] : Faction : [UI] : String ID : 1051 : String Length : [17] : Text : Resource warning
+Offset : [E5CF] : Unknown : [6F4] : Faction : [UI] : String ID : 1052 : String Length : [15] : Text : Resource alert
+Offset : [E5E7] : Unknown : [6F5] : Faction : [UI] : String ID : 1053 : String Length : [23] : Text : Entered neutral sector
+Offset : [E607] : Unknown : [6F8] : Faction : [UI] : String ID : 1054 : String Length : [11] : Text : Pod landed
+Offset : [E61B] : Unknown : [6F9] : Faction : [UI] : String ID : 1055 : String Length : [27] : Text : Pod landed in enemy sector
+Offset : [E63F] : Unknown : [6FA] : Faction : [UI] : String ID : 1058 : String Length : [16] : Text : Centre on event
+Offset : [E658] : Unknown : [6FC] : Faction : [UI] : String ID : 1059 : String Length : [31] : Text : Construction of a new facility
+Offset : [E680] : Unknown : [6FD] : Faction : [UI] : String ID : 1060 : String Length : [26] : Text : Manufacture of a new unit
+Offset : [E6A3] : Unknown : [6FE] : Faction : [UI] : String ID : 1061 : String Length : [30] : Text : A new command centre is built
+Offset : [E6CA] : Unknown : [6FF] : Faction : [UI] : String ID : 1062 : String Length : [54] : Text : A construction vehicle/machine has finished all tasks
+Offset : [E709] : Unknown : [700] : Faction : [UI] : String ID : 1063 : String Length : [48] : Text : A Manufacturing facility has finished all tasks
+Offset : [E742] : Unknown : [701] : Faction : [UI] : String ID : 1064 : String Length : [47] : Text : A unit/vehicle has arrived at it's destination
+Offset : [E77A] : Unknown : [702] : Faction : [UI] : String ID : 1065 : String Length : [69] : Text : A unit/vehicles path has been interrupted by a sector changing hands
+Offset : [E7C8] : Unknown : [703] : Faction : [UI] : String ID : 1066 : String Length : [39] : Text : The current research task is completed
+Offset : [E7F8] : Unknown : [704] : Faction : [UI] : String ID : 1067 : String Length : [53] : Text : A sector is receiving less resource than it is using
+Offset : [E836] : Unknown : [705] : Faction : [UI] : String ID : 1068 : String Length : [62] : Text : A sector is receiving less than half the resource it is using
+Offset : [E87D] : Unknown : [706] : Faction : [UI] : String ID : 1069 : String Length : [44] : Text : A Vehicle/unit has entered a neutral sector
+Offset : [E8B2] : Unknown : [707] : Faction : [UI] : String ID : 1070 : String Length : [17] : Text : A pod has landed
+Offset : [E8CC] : Unknown : [708] : Faction : [UI] : String ID : 1071 : String Length : [27] : Text : Centre on the event target
+Offset : [E8F0] : Unknown : [70B] : Faction : [UI] : String ID : 1229 : String Length : [37] : Text : Jeff Wayne's 'The War Of The Worlds'
+Offset : [E91E] : Unknown : [70C] : Faction : [UI] : String ID : 1230 : String Length : [27] : Text : Developed by Rage Software
+Offset : [E942] : Unknown : [70D] : Faction : [UI] : String ID : 1231 : String Length : [15] : Text : Game Design by
+Offset : [E95A] : Unknown : [70E] : Faction : [UI] : String ID : 1232 : String Length : [15] : Text : Programming by
+Offset : [E972] : Unknown : [70F] : Faction : [UI] : String ID : 1233 : String Length : [12] : Text : Graphics by
+Offset : [E987] : Unknown : [710] : Faction : [UI] : String ID : 1234 : String Length : [19] : Text : Video sequences by
+Offset : [E9A3] : Unknown : [711] : Faction : [UI] : String ID : 1235 : String Length : [22] : Text : Project management by
+Offset : [E9C2] : Unknown : [712] : Faction : [UI] : String ID : 1236 : String Length : [9] : Text : Audio by
+Offset : [E9D4] : Unknown : [713] : Faction : [UI] : String ID : 1237 : String Length : [28] : Text : Published by GT Interactive
+Offset : [E9F9] : Unknown : [714] : Faction : [UI] : String ID : 1238 : String Length : [9] : Text : Producer
+Offset : [EA0B] : Unknown : [715] : Faction : [UI] : String ID : 1239 : String Length : [19] : Text : Assistant Producer
+Offset : [EA27] : Unknown : [716] : Faction : [UI] : String ID : 1240 : String Length : [19] : Text : Executive Producer
+Offset : [EA43] : Unknown : [717] : Faction : [UI] : String ID : 1241 : String Length : [53] : Text : Tested by GT Interactive European Testing Department
+Offset : [EA81] : Unknown : [718] : Faction : [UI] : String ID : 1242 : String Length : [14] : Text : QA Management
+Offset : [EA98] : Unknown : [719] : Faction : [UI] : String ID : 1243 : String Length : [12] : Text : Lead Tester
+Offset : [EAAD] : Unknown : [71A] : Faction : [UI] : String ID : 1244 : String Length : [13] : Text : QA Assistant
+Offset : [EAC3] : Unknown : [71C] : Faction : [UI] : String ID : 1245 : String Length : [82] : Text : Music and Audio Production by Jeff Wayne Music Group (c) Ollie Record Productions
+Offset : [EB1E] : Unknown : [71D] : Faction : [UI] : String ID : 1246 : String Length : [18] : Text : Music Composed by
+Offset : [EB39] : Unknown : [71E] : Faction : [UI] : String ID : 1247 : String Length : [38] : Text : Based Upon Original Orchestrations by
+Offset : [EB68] : Unknown : [71F] : Faction : [UI] : String ID : 1248 : String Length : [19] : Text : Executive Producer
+Offset : [EB84] : Unknown : [720] : Faction : [UI] : String ID : 1249 : String Length : [17] : Text : Music Supervisor
+Offset : [EB9E] : Unknown : [721] : Faction : [UI] : String ID : 1250 : String Length : [52] : Text : Title Sequence & Human Epilogue Original Scripts by
+Offset : [EBDB] : Unknown : [722] : Faction : [UI] : String ID : 1251 : String Length : [29] : Text : Engineered and Programmed by
+Offset : [EC01] : Unknown : [723] : Faction : [UI] : String ID : 1252 : String Length : [15] : Text : Sound Engineer
+Offset : [EC19] : Unknown : [724] : Faction : [UI] : String ID : 1253 : String Length : [15] : Text : Voice Artists:
+Offset : [EC31] : Unknown : [725] : Faction : [UI] : String ID : 1254 : String Length : [15] : Text : The Journalist
+Offset : [EC49] : Unknown : [726] : Faction : [UI] : String ID : 1255 : String Length : [12] : Text : The General
+Offset : [EC5E] : Unknown : [727] : Faction : [UI] : String ID : 1256 : String Length : [37] : Text : The Martian General & Martian Elders
+Offset : [EC8C] : Unknown : [728] : Faction : [UI] : String ID : 1257 : String Length : [13] : Text : The Soldiers
+Offset : [ECA2] : Unknown : [729] : Faction : [UI] : String ID : 1258 : String Length : [30] : Text : NASA & Bermuda Control Voices
+Offset : [ECC9] : Unknown : [72B] : Faction : [UI] : String ID : 1259 : String Length : [15] : Text : Title Sequence
+Offset : [ECE1] : Unknown : [72C] : Faction : [UI] : String ID : 1260 : String Length : [28] : Text : Human Introduction Sequence
+Offset : [ED06] : Unknown : [72D] : Faction : [UI] : String ID : 1261 : String Length : [23] : Text : Human Victory Sequence
+Offset : [ED26] : Unknown : [72E] : Faction : [UI] : String ID : 1262 : String Length : [25] : Text : Martian Victory Sequence
+Offset : [ED48] : Unknown : [72F] : Faction : [UI] : String ID : 1263 : String Length : [22] : Text : Human Defeat Sequence
+Offset : [ED67] : Unknown : [730] : Faction : [UI] : String ID : 1264 : String Length : [32] : Text : Martian Battle Victory Sequence
+Offset : [ED90] : Unknown : [731] : Faction : [UI] : String ID : 1265 : String Length : [30] : Text : Human Battle Victory Sequence
+Offset : [EDB7] : Unknown : [732] : Faction : [UI] : String ID : 1266 : String Length : [29] : Text : Human Battle Defeat Sequence
+Offset : [EDDD] : Unknown : [733] : Faction : [UI] : String ID : 1267 : String Length : [27] : Text : Arranged and Programmed by
+Offset : [EE01] : Unknown : [735] : Faction : [UI] : String ID : 1268 : String Length : [30] : Text : Martian Introduction Sequence
+Offset : [EE28] : Unknown : [738] : Faction : [UI] : String ID : 1269 : String Length : [24] : Text : Martian Defeat Sequence
+Offset : [EE49] : Unknown : [739] : Faction : [UI] : String ID : 1270 : String Length : [31] : Text : Martian Battle Defeat Sequence
+Offset : [EE71] : Unknown : [73A] : Faction : [UI] : String ID : 1271 : String Length : [24] : Text : Human research Complete
+Offset : [EE92] : Unknown : [73B] : Faction : [UI] : String ID : 1272 : String Length : [26] : Text : Martian research Complete
+Offset : [EEB5] : Unknown : [73E] : Faction : [UI] : String ID : 1273 : String Length : [50] : Text : Human Epilogue (Licensed From The Original Album)
+Offset : [EEF0] : Unknown : [73F] : Faction : [UI] : String ID : 1274 : String Length : [17] : Text : Martian Epilogue
+Offset : [EF0A] : Unknown : [740] : Faction : [UI] : String ID : 1275 : String Length : [15] : Text : Option Screens
+Offset : [EF22] : Unknown : [741] : Faction : [UI] : String ID : 1276 : String Length : [34] : Text : Composed Arranged and Produced by
+Offset : [EF4D] : Unknown : [743] : Faction : [UI] : String ID : 1277 : String Length : [16] : Text : Brave New World
+Offset : [EF66] : Unknown : [744] : Faction : [UI] : String ID : 1278 : String Length : [21] : Text : The Fighting Machine
+Offset : [EF84] : Unknown : [745] : Faction : [UI] : String ID : 1279 : String Length : [39] : Text : The Eve Of The War (Human and Martian)
+Offset : [EFB4] : Unknown : [747] : Faction : [UI] : String ID : 1280 : String Length : [14] : Text : Programmed by
+Offset : [EFCB] : Unknown : [748] : Faction : [UI] : String ID : 1281 : String Length : [9] : Text : Mixed by
+Offset : [EFDD] : Unknown : [74A] : Faction : [UI] : String ID : 1282 : String Length : [13] : Text : The Red Weed
+Offset : [EFF3] : Unknown : [74B] : Faction : [UI] : String ID : 1283 : String Length : [12] : Text : Dead London
+Offset : [F008] : Unknown : [74F] : Faction : [UI] : String ID : 1284 : String Length : [36] : Text : Music mixed in Dolby Surround Sound
+Offset : [F035] : Unknown : [751] : Faction : [UI] : String ID : 1285 : String Length : [22] : Text : Additional Scripts by
+Offset : [F054] : Unknown : [752] : Faction : [UI] : String ID : 1286 : String Length : [10] : Text : Edited by
+Offset : [F067] : Unknown : [754] : Faction : [UI] : String ID : 1287 : String Length : [44] : Text : Smacker Video Compression by Rad Game Tools
+Offset : [F09C] : Unknown : [755] : Faction : [UI] : String ID : 1288 : String Length : [29] : Text : Mars Images Supplied by NASA
+Offset : [F0C2] : Unknown : [756] : Faction : [UI] : String ID : 1289 : String Length : [67] : Text : This product is not affiliated with or officially endorsed by NASA
+Offset : [F10E] : Unknown : [758] : Faction : [UI] : String ID : 1290 : String Length : [18] : Text : Special thanks to
+Offset : [F129] : Unknown : [75A] : Faction : [UI] : String ID : 1291 : String Length : [98] : Text : Based on Jeff Wayne's musical version of The War Of The Worlds and the original H.G. Wells novel.
+Offset : [F194] : Unknown : [75D] : Faction : [UI] : String ID : 1292 : String Length : [90] : Text : Jeff Wayne's 'The War Of The Worlds' (c) 1998 Rage Software Limited. All Rights Reserved.
+Offset : [F1F7] : Unknown : [75E] : Faction : [UI] : String ID : 1293 : String Length : [152] : Text : Published and Distributed by GT Interactive Software Corp. GT is a trademark and the GT Logo is a registered trademark of GT Interactive Software Corp.
+Offset : [F298] : Unknown : [760] : Faction : [UI] : String ID : 1294 : String Length : [128] : Text : The story, script, artwork and logo from Jeff Wayne's Musical Version of 'The War Of The Worlds' (c) Ollie Records Productions.
+Offset : [F321] : Unknown : [762] : Faction : [UI] : String ID : 1295 : String Length : [123] : Text : The musical score from Jeff Wayne's Musical Version of 'The War Of The Worlds' (c) 1978 Jeff Wayne Music (Publishing) Ltd.
+Offset : [F3A5] : Unknown : [764] : Faction : [UI] : String ID : 1296 : String Length : [80] : Text : Microsoft(r) and Windows(r) are registered trademarks of Microsoft Corporation.
+Offset : [F3FE] : Unknown : [765] : Faction : [UI] : String ID : 1297 : String Length : [69] : Text : All other trademarks are the property of their respective companies.
+Offset : [F44C] : Unknown : [767] : Faction : [UI] : String ID : 1298 : String Length : [55] : Text : No Martians were harmed during the making of this game
+Offset : [F48C] : Unknown : [769] : Faction : [UI] : String ID : 1299 : String Length : [38] : Text : Most credits (13 including this one!)
+Offset : [F4BB] : Unknown : [76B] : Faction : [UI] : String ID : 1300 : String Length : [9] : Text : produced
+Offset : [F4CD] : Unknown : [76C] : Faction : [UI] : String ID : 1302 : String Length : [5] : Text : used
+Offset : [F4DB] : Unknown : [76D] : Faction : [UI] : String ID : 1304 : String Length : [11] : Text : Retreat to
+Offset : [F4EF] : Unknown : [76F] : Faction : [Human] : String ID : 1190 : String Length : [18] : Text : Units (Vehicles):
+Offset : [F50A] : Unknown : [770] : Faction : [UI] : String ID : 1189 : String Length : [18] : Text : Forces retreated:
+Offset : [F525] : Unknown : [771] : Faction : [UI] : String ID : 1182 : String Length : [23] : Text : Undefended Sector Lost
+Offset : [F545] : Unknown : [772] : Faction : [UI] : String ID : 1056 : String Length : [28] : Text : Pod landed in our territory
+Offset : [F56A] : Unknown : [773] : Faction : [UI] : String ID : 1301 : String Length : [23] : Text : Next facility will add
+Offset : [F58A] : Unknown : [774] : Faction : [Human] : String ID : 1303 : String Length : [9] : Text : tons p/w
+Offset : [F59C] : Unknown : [776] : Faction : [UI] : String ID : 1305 : String Length : [13] : Text : Resource use
+Offset : [F5B2] : Unknown : [777] : Faction : [UI] : String ID : 1306 : String Length : [6] : Text : Idle:
+Offset : [F5C1] : Unknown : [778] : Faction : [UI] : String ID : 1307 : String Length : [9] : Text : Working:
+Offset : [F5D3] : Unknown : [779] : Faction : [UI] : String ID : 1308 : String Length : [8] : Text : Moving:
+Offset : [F5E4] : Unknown : [77B] : Faction : [UI] : String ID : 1310 : String Length : [9] : Text : Requires
+Offset : [F5F6] : Unknown : [77C] : Faction : [UI] : String ID : 1311 : String Length : [6] : Text : Limit
+Offset : [F605] : Unknown : [77D] : Faction : [UI] : String ID : 1312 : String Length : [14] : Text : Limit reached
+Offset : [F61C] : Unknown : [77F] : Faction : [UI] : String ID : 1328 : String Length : [20] : Text : Return to Main Menu
+Offset : [F639] : Unknown : [781] : Faction : [UI] : String ID : 1183 : String Length : [27] : Text : Undefended sector captured
+Offset : [F65D] : Unknown : [782] : Faction : [Human] : String ID : 1329 : String Length : [23] : Text : Please Insert Human CD
+Offset : [F67D] : Unknown : [783] : Faction : [Martian] : String ID : 1329 : String Length : [25] : Text : Please Insert Martian CD
+Offset : [F69F] : Unknown : [785] : Faction : [UI] : String ID : 1309 : String Length : [11] : Text : In transit
+Offset : [F6B3] : Unknown : [786] : Faction : [UI] : String ID : 1325 : String Length : [27] : Text : Select Campaign to Replace
+Offset : [F6D7] : Unknown : [787] : Faction : [UI] : String ID : 1326 : String Length : [23] : Text : Enter name of Campaign
+Offset : [F6F7] : Unknown : [789] : Faction : [UI] : String ID : 1327 : String Length : [15] : Text : Begin Campaign
+Offset : [F70F] : Unknown : [78B] : Faction : [Human] : String ID : 1331 : String Length : [17] : Text : Victory is ours!
+Offset : [F729] : Unknown : [78C] : Faction : [Martian] : String ID : 1331 : String Length : [19] : Text : The Earth is ours!
+Offset : [F745] : Unknown : [78E] : Faction : [Martian] : String ID : 1303 : String Length : [11] : Text : PrTs/Cycle
+Offset : [F759] : Unknown : [790] : Faction : [UI] : String ID : 1028 : String Length : [17] : Text : Save & Exit Game
+Offset : [F773] : Unknown : [792] : Faction : [Martian] : String ID : 1167 : String Length : [22] : Text : Cycles to completion:
+Offset : [F792] : Unknown : [794] : Faction : [UI] : String ID : 1170 : String Length : [23] : Text : Construction suspended
+Offset : [F7B2] : Unknown : [796] : Faction : [UI] : String ID : 1172 : String Length : [51] : Text : This item can only be constructed on the BattleMap
+Offset : [F7EE] : Unknown : [798] : Faction : [UI] : String ID : 1313 : String Length : [4] : Text : Jan
+Offset : [F7FB] : Unknown : [799] : Faction : [UI] : String ID : 1314 : String Length : [4] : Text : Feb
+Offset : [F808] : Unknown : [79A] : Faction : [UI] : String ID : 1315 : String Length : [4] : Text : Mar
+Offset : [F815] : Unknown : [79B] : Faction : [UI] : String ID : 1316 : String Length : [4] : Text : Apr
+Offset : [F822] : Unknown : [79C] : Faction : [UI] : String ID : 1317 : String Length : [4] : Text : May
+Offset : [F82F] : Unknown : [79D] : Faction : [UI] : String ID : 1318 : String Length : [4] : Text : Jun
+Offset : [F83C] : Unknown : [79E] : Faction : [UI] : String ID : 1319 : String Length : [4] : Text : Jul
+Offset : [F849] : Unknown : [79F] : Faction : [UI] : String ID : 1320 : String Length : [4] : Text : Aug
+Offset : [F856] : Unknown : [7A0] : Faction : [UI] : String ID : 1321 : String Length : [4] : Text : Sep
+Offset : [F863] : Unknown : [7A1] : Faction : [UI] : String ID : 1322 : String Length : [4] : Text : Oct
+Offset : [F870] : Unknown : [7A2] : Faction : [UI] : String ID : 1323 : String Length : [4] : Text : Nov
+Offset : [F87D] : Unknown : [7A3] : Faction : [UI] : String ID : 1324 : String Length : [4] : Text : Dec
+Offset : [F88A] : Unknown : [7A5] : Faction : [UI] : String ID : 1173 : String Length : [23] : Text : Suspend building tasks
+Offset : [F8AA] : Unknown : [7A6] : Faction : [UI] : String ID : 1174 : String Length : [22] : Text : Resume building tasks
+Offset : [F8C9] : Unknown : [7A8] : Faction : [UI] : String ID : 1330 : String Length : [27] : Text : Replace Existing Campaign?
+Offset : [F8ED] : Unknown : [7AB] : Faction : [Human] : String ID : 1057 : String Length : [37] : Text : No research is currently in progress
+Offset : [F91B] : Unknown : [7AC] : Faction : [Martian] : String ID : 1057 : String Length : [37] : Text : No research is currently in progress
+Offset : [F949] : Unknown : [7AE] : Faction : [Martian] : String ID : 1046 : String Length : [13] : Text : Machine idle

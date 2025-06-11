@@ -9,8 +9,9 @@ namespace WoWViewer
             InitializeComponent();
         }
         // this is a test method to parse the TEXT.OJD file and log the results to a text file
-        /*public void parseTEXTOJD() // no longer used, but kept for reference.
+        public void parseTEXTOJD() // no longer used, but kept for reference. // results will be used to create a script to search through the assembly for string references
         {
+            listBox1.Items.Clear();
             string inputPath = "TEXT.ojd";
             string outputPath = "text-ojd-log.txt";
             byte[] data = File.ReadAllBytes(inputPath);
@@ -20,9 +21,9 @@ namespace WoWViewer
                 //int count = 0; // count checker for total number of entries
                 for (int i = 0; i < 1396; i++) // there are only 1396 entries
                 {
-                    byte buttonID = data[offset + 2]; // button type???
+                    ushort buttonID = (ushort)(data[offset + 2] | (data[offset + 3] << 8));
                     byte category = data[offset + 4];  // Faction: 00 = Martian, 01 = Human, 02 = UI
-                    byte buttonFunction = data[offset + 6]; // button function??
+                    ushort stringID = (ushort)(data[offset + 6] | (data[offset + 7] << 8));
                     ushort length = (ushort)(data[offset + 8] | (data[offset + 9] << 8)); // bytes 9 and 10 are the string length
                     int stringOffset = offset + 10; // string offset
                     string text = Encoding.ASCII.GetString(data, stringOffset, length - 1); // string length is one less than the byte length
@@ -30,13 +31,16 @@ namespace WoWViewer
                         category == 0x00 ? "Martian" :
                         category == 0x01 ? "Human" :
                         category == 0x02 ? "UI" : "Unknown"; // faction type or user interface
-                    log.WriteLine($"{i:D4} [{faction}] : {text} : Offset : [{offset:X}] : Button ID : [{buttonID:X2}] : Button Function : [{buttonFunction:X2}]");
+                    //00 FF + Unknown + Faction + String ID + String Length ( Each 2 Bytes )
+                    log.WriteLine($"Offset : [{offset:X}] : Unknown : [{buttonID:X2}] : Faction : [{faction}] : String ID : {stringID:D} : String Length : [{length:D}] : Text : {text}");
+                    listBox1.Items.Add(text);
                     offset += length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
                     //count++; // increase count checker
                 }
                 //log.WriteLine($"Total valid entries: {count}"); // log the total number of entries
             }
-        }*/
+            label1.Text = $"Total Strings: 1396"; // known total number of entries in TEXT.ojd
+        }
         // this is a test method to parse the OBJ + SFX.OJD file and log the results to a text file
         /*public void parseSFXOBJOJD(string filename) // no longer used, but kept for reference.
         {
@@ -159,5 +163,7 @@ namespace WoWViewer
         private void button1_Click(object sender, EventArgs e) { parseSFX("OBJ.ojd"); } // 2072 entries
         // SFX.ojd
         private void button2_Click(object sender, EventArgs e) { parseSFX("SFX.ojd"); } // 755 entries
+
+        private void button3_Click(object sender, EventArgs e) { parseTEXTOJD(); } // 1396 Entries ( 0 - 1395 )
     }
 }
