@@ -4,7 +4,7 @@ unsure on what the data is leading up to 0x28B
 
 ENTRY START = FF
 
-[UNKNOWN VALUE] [2 BYTES]
+[LOOKUP ID] [2 BYTES]
 
 FactionID [2 BYTES]
 
@@ -12,7 +12,7 @@ FactionID [2 BYTES]
 0x01 = "Human"
 0x02 = "UI"
 
-[STRING REFERENCE] [2 BYTES]
+[PURPOSE ID] [2 BYTES]
 
 [STRING LENGTH] [2 BYTES] ( length count includes null terminator 00 )
 
