@@ -22,7 +22,7 @@ namespace WoWViewer
                 if (Path.GetExtension(args[0]).ToLowerInvariant() == ".wow") { mainForm.openFile(args[0]); }
                 else { MessageBox.Show("Only .wow files are supported."); }
             }
-            else if (args.Length > 1) { MessageBox.Show("Please open only one file at a time."); }
+            else { MessageBox.Show("Please open only one file at a time."); }
             Application.Run(mainForm);
         }
     }

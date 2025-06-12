@@ -637,35 +637,17 @@ namespace WoWViewer
         // test ojd parsing
         private void button12_Click(object sender, EventArgs e) { newForm(new OJDParser()); }
         // drag and drop file onto the form
-        private void WoWViewer_DragDrop(object sender, DragEventArgs e)
-        {
-            if (e.Data!.GetDataPresent(DataFormats.FileDrop))
-            {
-                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
-                if (files.Length != 1)
-                {
-                    MessageBox.Show("Please drop only one file.");
-                    return;
-                }
-                string file = files[0];
-                string extension = Path.GetExtension(file).ToLowerInvariant();
-                if (extension == ".wow") { openFile(file); }
-                else { MessageBox.Show("Only .wow files are supported."); }
-            }
-        }
+        private void WoWViewer_DragDrop(object sender, DragEventArgs e) { openFile(((string[])e.Data!.GetData(DataFormats.FileDrop)!)[0]); }
         // DragEnter event handler to allow dropping .wow files onto the form
         private void WoWViewer_DragEnter(object sender, DragEventArgs e)
         {
             if (e.Data!.GetDataPresent(DataFormats.FileDrop))
             {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
-                if (files.Length == 1)
+                if (files.Length == 1 && Path.GetExtension(files[0]).ToLowerInvariant() == ".wow")
                 {
-                    if (Path.GetExtension(files[0]).ToLowerInvariant() == ".wow")
-                    {
-                        e.Effect = DragDropEffects.Copy;
-                        return;
-                    }
+                    e.Effect = DragDropEffects.Copy;
+                    return;
                 }
             }
             e.Effect = DragDropEffects.None;
