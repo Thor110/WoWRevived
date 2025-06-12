@@ -551,7 +551,7 @@ namespace WoWViewer
                     int chunkSize = br.ReadInt32();
                     if (chunkID == "data")
                     {
-                        if (chunkSize > int.MaxValue)
+                        if (chunkSize > int.MaxValue) // limit would really be uint but int.MaxValue is sufficient for our needs
                         {
                             MessageBox.Show("Audio data chunk is too large to handle.");
                             return;
