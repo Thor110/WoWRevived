@@ -183,6 +183,7 @@
             // 
             // pictureBox1
             // 
+            pictureBox1.AccessibleDescription = "Waveform preview of the selected audio file.";
             pictureBox1.Location = new Point(464, 75);
             pictureBox1.Name = "pictureBox1";
             pictureBox1.Size = new Size(156, 137);
@@ -211,6 +212,7 @@
             // 
             // button7
             // 
+            button7.AccessibleDescription = "Open the save editor.";
             button7.Location = new Point(464, 315);
             button7.Name = "button7";
             button7.Size = new Size(75, 23);
@@ -221,6 +223,7 @@
             // 
             // button8
             // 
+            button8.AccessibleDescription = "Open the map editor.";
             button8.Location = new Point(545, 315);
             button8.Name = "button8";
             button8.Size = new Size(75, 23);
@@ -231,6 +234,7 @@
             // 
             // button9
             // 
+            button9.AccessibleDescription = "Open the text editor.";
             button9.Location = new Point(383, 315);
             button9.Name = "button9";
             button9.Size = new Size(75, 23);
@@ -277,6 +281,7 @@
             // 
             // button12
             // 
+            button12.AccessibleDescription = "Temporary OJD Parser for testing purposes.";
             button12.Location = new Point(302, 315);
             button12.Name = "button12";
             button12.Size = new Size(75, 23);
@@ -285,8 +290,9 @@
             button12.UseVisualStyleBackColor = true;
             button12.Click += button12_Click;
             // 
-            // WOWViewer
+            // WoWViewer
             // 
+            AllowDrop = true;
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(632, 348);
@@ -317,7 +323,6 @@
             Text = "WoWViewer";
             DragDrop += WoWViewer_DragDrop;
             DragEnter += WoWViewer_DragEnter;
-            this.AllowDrop = true;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
             PerformLayout();
