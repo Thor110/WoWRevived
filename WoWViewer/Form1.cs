@@ -266,7 +266,9 @@ namespace WoWViewer
             listBox1.Items.Clear();
             if (magic == "KAT!") // read file entries based on archive type
             {
-                label2.Text = "Container Type : " + "Data or Maps"; // update container type label
+                // update container type label
+                if (filePath.Contains("Dat")) { label2.Text = "Container Type : " + "Data"; }
+                else { label2.Text = "Container Type : " + "Maps"; }
                 for (int i = 0; i < fileCount; i++)
                 {
                     br.ReadInt32();                     // skip 4 bytes
