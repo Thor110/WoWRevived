@@ -46,7 +46,7 @@ namespace WoWViewer
             using var br = new BinaryReader(File.OpenRead(filePath));
             br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
             byte[] data = br.ReadBytes(entry.Length);
-
+            // only two .dat files exist // DITH.DAT is the only one with a specific handler as it is not compressed
             if (entry.Name.Equals("DITH.DAT", StringComparison.OrdinalIgnoreCase))
             {
                 var ditherEntries = ParseDat(data);
@@ -61,6 +61,11 @@ namespace WoWViewer
             else
             {
                 Debug.Print($"DAT file \"{entry.Name}\" selected.\nSize: {entry.Length} bytes.\nNo specific handler defined.");
+                // the other file div_tab.dat is compressed
+                // these files are base on (color depth 6, 7, or 8)
+                // "dat\\b16.hsh"
+                // "dat\\b15.hsm"
+                // "dat\\b8.shl"
             }
         }
         private List<WowDatFile> ParseDat(byte[] data)
@@ -210,10 +215,7 @@ namespace WoWViewer
             if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
             {
                 outputPath = folderBrowserDialog.SelectedPath;
-                if (!outputPath.EndsWith("\\")) // If Not Root Directory
-                {
-                    outputPath += "\\"; // Complete Directory String
-                }
+                if (!outputPath.EndsWith("\\")) { outputPath += "\\"; } // If Root Directory // Complete Directory String
                 textBox2.Text = outputPath;
                 button4.Enabled = true; // Enable extract all button
                 if (listBox1.SelectedIndex != -1) { button2.Enabled = true; } // Enable extract button if a file is selected
@@ -362,13 +364,24 @@ namespace WoWViewer
             {
                 byte[] wavHeader = CreateWavHeader(rawData.Length, DetectSampleRate(rawData));
                 fs.Write(wavHeader, 0, wavHeader.Length);
+                return;
             }
             // debug test for non compressed files
-            /*if (rawData.Length >= 4 && Encoding.ASCII.GetString(rawData, 0, 4) != "FFUH")
+            if (rawData.Length >= 4 && Encoding.ASCII.GetString(rawData, 0, 4) == "FFUH")
             {
-                Debug.Print($"{entry.Name}");
-            }*/
-            fs.Write(rawData, 0, rawData.Length);
+                int decompressedSize = BitConverter.ToInt32(rawData, 8); // Offset 0x08
+                byte[] huffmanTable = rawData.Skip(0x10).Take(0x400).ToArray(); // Offset 0x10–0x410
+                byte[] compressedPayload = rawData.Skip(0x410).ToArray(); // Offset 0x410 onward
+
+                var decoder = new FfuhDecoder(huffmanTable, compressedPayload);
+                byte[] decompressed = decoder.Decompress(decompressedSize);
+
+                fs.Write(decompressed, 0, decompressed.Length);
+            }
+            else
+            {
+                fs.Write(rawData, 0, rawData.Length);
+            }
         }
         // listbox selection changed
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -509,10 +522,7 @@ namespace WoWViewer
                 openFileDialog.FilterIndex = 1;
                 openFileDialog.RestoreDirectory = true;
                 openFileDialog.Title = "Select a Container (.wav) file";
-                if (openFileDialog.ShowDialog() == DialogResult.OK)
-                {
-                    newWAV(openFileDialog.FileName);
-                }
+                if (openFileDialog.ShowDialog() == DialogResult.OK) { newWAV(openFileDialog.FileName); }
             }
         }
         // parse new wav file
@@ -541,6 +551,11 @@ namespace WoWViewer
                     int chunkSize = br.ReadInt32();
                     if (chunkID == "data")
                     {
+                        if (chunkSize > int.MaxValue)
+                        {
+                            MessageBox.Show("Audio data chunk is too large to handle.");
+                            return;
+                        }
                         byte[] audioData = br.ReadBytes(chunkSize);
                         int selectedIndex = listBox1.SelectedIndex;
                         entries[selectedIndex].Edited = true;
