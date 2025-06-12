@@ -12,8 +12,7 @@ namespace WoWViewer
         {
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
-            string processName = "WoWViewer";
-            Process[] processes = Process.GetProcessesByName(processName);
+            Process[] processes = Process.GetProcessesByName("WoWViewer");
             if (processes.Length > 1) { return; }
             ApplicationConfiguration.Initialize();
             WoWViewer mainForm = new WoWViewer();
