@@ -1,0 +1,4 @@
+12 turrets = 0C
+20 mines = 14
+
+thanks to Z-Fighter for known limits
