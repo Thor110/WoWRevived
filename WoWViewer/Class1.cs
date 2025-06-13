@@ -18,6 +18,10 @@
         public byte[]? Buffer;      // Allocated memory
         public string? SourceName;  // 9-char name from Source
         public byte ExtraFlag;      // Always 0
+        public int ComputeTableSize(ushort entryCount, int itemSize)
+        {
+            return ((itemSize + 4) * entryCount) + 0x14;
+        }
     }
     class WowFileEntry
     {
@@ -43,5 +47,16 @@
     class WowTextBackup
     {
         public string Name { get; set; } = String.Empty;
+    }
+    public class OjdEntry
+    {
+        public ushort Id { get; set; }
+        public ushort Type { get; set; }
+        public ushort Length { get; set; }
+        public string Name { get; set; } = String.Empty;
+        public override string ToString()
+        {
+            return $"ID: {Id:X4}, Type: {Type:X4}, Length: {Length:X4}, Path: {Name}";
+        }
     }
 }

@@ -1,31 +1,13 @@
 OBJ.ojd
 
-FactionID Info
-3 = Human
-4 = Martian
-2 = UI
+Variable bytes inbetween entries
 
+FactionID [2 BYTES]
 
+0x03 = Human
+0x04 = Martian
+0x02 = UI
 
-17 bytes
+[STRING LENGTH] [2 BYTES] ( length count includes null terminator 00 )
 
-
-
-2 bytes FactionID
-2 bytes string length ( length count includes null terminator 00 )
-string
-2 bytes FactionID
-2 bytes string length ( length count includes null terminator 00 )
-6 bytes unknown
-string
-2 bytes FactionID
-2 bytes string length ( length count includes null terminator 00 )
-13 bytes unknown
-string
-2 bytes FactionID
-2 bytes string length ( length count includes null terminator 00 )
-6 bytes unknown
-string
-2 bytes FactionID
-2 bytes string length ( length count includes null terminator 00 )
-13 bytes unknown
+[STRING BYTES] [STRING LENGTH] ( plus null terminator 00 )
