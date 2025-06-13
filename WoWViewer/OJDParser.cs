@@ -180,8 +180,57 @@ namespace WoWViewer
                     index++; // Keep scanning for 0xFF
                 }
             }
+            //WriteCleanedOjdWithInjectedPadding(); // at \WoWRevived\WoWPatches\theory
+            //theory on obj.ojd malformed entries
             return entries;
         }
+        public static void WriteCleanedOjdWithInjectedPadding()
+        {
+            byte[] data = File.ReadAllBytes("OBJ.ojd");
+            List<byte> newData = new List<byte>();
+
+            // Preserve the initial 0x411 bytes
+            newData.AddRange(data.Take(0x431));
+
+            int index = 0x431;
+            while (index < data.Length)
+            {
+                if (data[index] != 0xFF)
+                {
+                    index++;
+                    continue;
+                }
+
+                if (index + 3 >= data.Length)
+                    break;
+
+                ushort id = BitConverter.ToUInt16(data, index + 1);
+                ushort type = BitConverter.ToUInt16(data, index + 3);
+                ushort len = BitConverter.ToUInt16(data, index + 5);
+
+                int strStart = index + 7;
+                if (len == 0 || strStart + len > data.Length)
+                {
+                    index++;
+                    continue;
+                }
+
+                // Copy: FF + 6-byte header
+                newData.AddRange(data.Skip(index).Take(7));
+
+                // Copy: ASCII string + null
+                newData.AddRange(data.Skip(strStart).Take(len));
+
+                // Inject: FF 00 (junk)
+                newData.Add(0xFF);
+                newData.Add(0x00);
+
+                index = strStart + len;
+            }
+
+            File.WriteAllBytes("OBJ-TEST.ojd", newData.ToArray());
+        }
+
 
         // both methods return 755 entries for SFX.ojd
         // seems more accurate for OBJ.ojd
