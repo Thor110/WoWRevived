@@ -12,7 +12,7 @@ namespace WoWLauncher
         public Form2()
         {
             InitializeComponent();
-            var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
+            RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             InitializeRegistry();
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(Label), typeof(Button) });
