@@ -217,7 +217,7 @@ namespace WoWViewer
                 outputPath = folderBrowserDialog.SelectedPath;
                 if (!outputPath.EndsWith("\\")) { outputPath += "\\"; } // If Root Directory // Complete Directory String
                 textBox2.Text = outputPath;
-                button4.Enabled = true; // Enable extract all button
+                if (filePath != "") { button4.Enabled = true; } // Enable extract all button
                 if (listBox1.SelectedIndex != -1) { button2.Enabled = true; } // Enable extract button if a file is selected
             }
         }
