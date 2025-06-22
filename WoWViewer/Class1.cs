@@ -22,7 +22,7 @@
     }
     class WowFileEntry
     {
-        public string Name { get; set; } = String.Empty;
+        public string Name { get; set; } = "";
         public int Length { get; set; }
         public int Offset { get; set; }
         public bool Edited { get; set; } = false;
@@ -30,27 +30,27 @@
     }
     class WowSaveEntry
     {
-        public string Name { get; set; } = String.Empty;
+        public string Name { get; set; } = "";
         public DateTime dateTime { get; set; }
         public ushort actualYear { get; set; } // used when the year is below 1753
     }
     class WowTextEntry
     {
-        public string Name { get; set; } = String.Empty;
+        public string Name { get; set; } = "";
         public byte Faction { get; set; } // might not be necessary to store this value either
         public ushort Index { get; set; } // used for getting entry index when filtering by type
         public bool Edited { get; set; } = false;
     }
     class WowTextBackup
     {
-        public string Name { get; set; } = String.Empty;
+        public string Name { get; set; } = "";
     }
     public class OjdEntry
     {
         public ushort Id { get; set; }
         public ushort Type { get; set; }
         public ushort Length { get; set; }
-        public string Name { get; set; } = String.Empty;
+        public string Name { get; set; } = "";
         public override string ToString() { return $"ID: {Id:X4}, Type: {Type:X4}, Length: {Length:X4}, Path: {Name}"; }
     }
 }

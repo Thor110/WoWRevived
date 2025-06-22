@@ -11,7 +11,7 @@ namespace WoWViewer
         private DateTime MARTIAN_INVASION = new DateTime(1898, 9, 1); // martian invasion date
         // MARTIAN_INVASION is used as the default lower bound for the date time picker unless overridden or mismatching
         private DateTime DATE_LIMIT = new DateTime(1753, 1, 1); // date limit
-        private string fileName = string.Empty; // selected file name
+        private string fileName = ""; // selected file name
         private WowSaveEntry selectedSave = new WowSaveEntry(); // selected save file settings
         public SaveEditorForm()
         {

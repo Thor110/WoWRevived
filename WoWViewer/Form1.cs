@@ -7,10 +7,10 @@ namespace WoWViewer
     public partial class WoWViewer : Form
     {
         private SoundPlayer soundPlayer = null!;
-        private string lastSelectedListItem = string.Empty;
-        private string filePath = string.Empty;
-        private string outputPath = string.Empty;
-        private string magic = string.Empty;
+        private string lastSelectedListItem = "";
+        private string filePath = "";
+        private string outputPath = "";
+        private string magic = "";
         private List<WowFileEntry> entries = new List<WowFileEntry>();
         private WowFileEntry selected = null!;
         private Dictionary<string, Action<WowFileEntry>> handlers = null!;
