@@ -427,11 +427,14 @@ namespace WoWViewer
         // play sound method
         private void PlayRawSound(WowFileEntry entry)
         {
-            using var br = new BinaryReader(File.OpenRead(filePath));
-            br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
             byte[] rawData; // if edited get data else read data
             if (entries[listBox1.SelectedIndex].Edited) { rawData = entries[listBox1.SelectedIndex].Data!; }
-            else { rawData = br.ReadBytes(entry.Length); }
+            else // read data from file if not edited
+            {
+                using var br = new BinaryReader(File.OpenRead(filePath));
+                br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
+                rawData = br.ReadBytes(entry.Length);
+            }
             byte[] wavHeader = CreateWavHeader(rawData.Length, DetectSampleRate(rawData));
             using var ms = new MemoryStream();
             ms.Write(wavHeader, 0, wavHeader.Length);
