@@ -582,7 +582,8 @@ namespace WoWViewer
         private void button11_Click(object sender, EventArgs e)
         {
             button11.Enabled = false; // Disable save button
-            string outputPath = Path.Combine(Path.GetDirectoryName(filePath)!, Path.GetFileNameWithoutExtension(filePath) + "_updated.wow");
+            // TODO : close file and write over it instead of temporary file swapping
+            string outputPath = Path.Combine(Path.GetDirectoryName(filePath)!, Path.GetFileNameWithoutExtension(filePath) + "_updated.wow"); // temporary file location
             using (BinaryWriter bw = new BinaryWriter(File.Create(outputPath)))
             {
                 bw.Write(Encoding.ASCII.GetBytes(magic)); // Write archive header
@@ -616,8 +617,8 @@ namespace WoWViewer
                     bw.Write((int)offsets[i]);
                 }
             }
-            if (checkBox1.Checked) { File.Replace(outputPath, filePath, filePath + ".bak"); }
-            else { File.Replace(outputPath, filePath, null); }
+            if (checkBox1.Checked) { File.Replace(outputPath, filePath, filePath + ".bak"); } // create backup file
+            else { File.Replace(outputPath, filePath, null); } // replace original file
             MessageBox.Show("Archive updated successfully.");
         }
         // read original data for entries not edited
