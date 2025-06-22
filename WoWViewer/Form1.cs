@@ -192,7 +192,6 @@ namespace WoWViewer
             TextRenderer.DrawText(e.Graphics, itemText, e.Font, e.Bounds, textColor, TextFormatFlags.VerticalCenter);
             e.DrawFocusRectangle();
         }
-
         // open file
         private void button1_Click(object sender, EventArgs e)
         {
@@ -617,6 +616,7 @@ namespace WoWViewer
             else { File.Replace(outputPath, filePath, null); }
             MessageBox.Show("Archive updated successfully.");
         }
+        // read original data for entries not edited
         private byte[] ReadOriginalData(WowFileEntry entry)
         {
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
