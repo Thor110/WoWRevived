@@ -230,17 +230,14 @@ namespace WoWViewer
 
             File.WriteAllBytes("OBJ-TEST.ojd", newData.ToArray());
         }
-
-
         // both methods return 755 entries for SFX.ojd
         // seems more accurate for OBJ.ojd
         // OBJ.ojd
         private void button1_Click(object sender, EventArgs e) { parseOBJOJD(); } // 2072 entries
         // SFX.ojd
         private void button2_Click(object sender, EventArgs e) { parseSFXOJD("SFX.ojd"); } // 755 entries
-
+        // TEXT.ojd
         private void button3_Click(object sender, EventArgs e) { MessageBox.Show("TEXT.ojd file fully decoded!"); } // 1396 Entries ( 0 - 1395 )
-
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             textBox1.Text = entries[listBox1.SelectedIndex].Id.ToString();          // ID
