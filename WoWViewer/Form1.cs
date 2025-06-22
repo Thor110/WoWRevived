@@ -197,7 +197,7 @@ namespace WoWViewer
         {
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                openFileDialog.InitialDirectory = "C:\\Program Files (x86)\\Jeff Wayne's 'The War Of The Worlds'";
+                openFileDialog.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory;
                 openFileDialog.Filter = "WoW Container (*.wow)|*.wow|All Files (*.*)|*.*";
                 openFileDialog.FilterIndex = 1;
                 openFileDialog.RestoreDirectory = true;
@@ -211,6 +211,8 @@ namespace WoWViewer
         private void button3_Click(object sender, EventArgs e)
         {
             FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+            folderBrowserDialog.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory; // Set initial directory to the application base directory
+            if(outputPath != "") { folderBrowserDialog.InitialDirectory = outputPath; } // Set initial directory to the last used output path
             if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
             {
                 outputPath = folderBrowserDialog.SelectedPath;
@@ -518,7 +520,6 @@ namespace WoWViewer
         {
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                openFileDialog.InitialDirectory = "C:\\Program Files (x86)\\Jeff Wayne's 'The War Of The Worlds'";
                 openFileDialog.Filter = "WAV Files (*.wav)|*.wav|All Files (*.*)|*.*";
                 openFileDialog.FilterIndex = 1;
                 openFileDialog.RestoreDirectory = true;
