@@ -429,7 +429,7 @@ namespace WoWViewer
         {
             byte[] rawData; // if edited get data else read data
             if (entries[listBox1.SelectedIndex].Edited) { rawData = entries[listBox1.SelectedIndex].Data!; }
-            else // read data from file if not edited
+            else // read data from file only if not edited
             {
                 using var br = new BinaryReader(File.OpenRead(filePath));
                 br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
