@@ -617,6 +617,7 @@ namespace WoWViewer
                     bw.Write((int)offsets[i]);
                 }
             }
+            // TODO : backup first then close then write
             if (checkBox1.Checked) { File.Replace(outputPath, filePath, filePath + ".bak"); } // create backup file
             else { File.Replace(outputPath, filePath, null); } // replace original file
             MessageBox.Show("Archive updated successfully.");
