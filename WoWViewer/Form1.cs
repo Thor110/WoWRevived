@@ -212,7 +212,7 @@ namespace WoWViewer
         {
             FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
             folderBrowserDialog.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory; // Set initial directory to the application base directory
-            if(outputPath != "") { folderBrowserDialog.InitialDirectory = outputPath; } // Set initial directory to the last used output path
+            if (outputPath != "") { folderBrowserDialog.InitialDirectory = outputPath; } // Set initial directory to the last used output path
             if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
             {
                 outputPath = folderBrowserDialog.SelectedPath;
@@ -666,6 +666,20 @@ namespace WoWViewer
             filePath = file;
             textBox1.Text = filePath;
             parseFileCount();
+        }
+        // on close prompt
+        private void WoWViewer_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (entries.Any(e => e.Edited))
+            {
+                var result = MessageBox.Show(
+                    "You have unsaved changes. Do you want to save before exiting?",
+                    "Unsaved Changes",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Warning);
+                if (result == DialogResult.Cancel) { e.Cancel = true; } // Prevent closing
+                else if (result == DialogResult.Yes) { button11.PerformClick(); } // Trigger the save button
+            }
         }
     }
 }

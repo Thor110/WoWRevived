@@ -321,6 +321,7 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "WoWViewer";
             Text = "WoWViewer";
+            FormClosing += WoWViewer_FormClosing;
             DragDrop += WoWViewer_DragDrop;
             DragEnter += WoWViewer_DragEnter;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
