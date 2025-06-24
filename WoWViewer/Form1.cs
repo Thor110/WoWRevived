@@ -14,6 +14,7 @@ namespace WoWViewer
         private List<WowFileEntry> entries = new List<WowFileEntry>();
         private WowFileEntry selected = null!;
         private Dictionary<string, Action<WowFileEntry>> handlers = null!;
+        private bool cancelOpenNewFile;
         private void InitializeHandlers()
         {
             handlers = new Dictionary<string, Action<WowFileEntry>>
@@ -663,21 +664,27 @@ namespace WoWViewer
         // public open file method to allow double click to open a .wow file
         public void openFile(string file)
         {
+            if (filePath != "") { UnsavedChanges(null!, "opening another file?"); }
+            if (cancelOpenNewFile) { cancelOpenNewFile = false; return; } // if unsaved changes were cancelled
             filePath = file;
             textBox1.Text = filePath;
+            pictureBox1.Image = null; // reset picture box
             parseFileCount();
         }
         // on close prompt
-        private void WoWViewer_FormClosing(object sender, FormClosingEventArgs e)
+        private void WoWViewer_FormClosing(object sender, FormClosingEventArgs e) { UnsavedChanges(e, "exiting?"); }
+        // check for unsaved changes
+        public void UnsavedChanges(FormClosingEventArgs e, string reason)
         {
             if (entries.Any(e => e.Edited))
             {
                 var result = MessageBox.Show(
-                    "You have unsaved changes. Do you want to save before exiting?",
+                    "You have unsaved changes. Do you want to save before " + reason,
                     "Unsaved Changes",
                     MessageBoxButtons.YesNoCancel,
                     MessageBoxIcon.Warning);
-                if (result == DialogResult.Cancel) { e.Cancel = true; } // Prevent closing
+                if (result == DialogResult.Cancel && e != null) { e.Cancel = true; } // Prevent closing
+                else if (result == DialogResult.Cancel && e == null) { cancelOpenNewFile = true; }
                 else if (result == DialogResult.Yes) { button11.PerformClick(); } // Trigger the save button
             }
         }
