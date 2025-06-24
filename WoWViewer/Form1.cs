@@ -537,14 +537,14 @@ namespace WoWViewer
             using (BinaryReader br = new BinaryReader(File.OpenRead(newFile)))
             {
                 // Read the RIFF header
-                string riff = new string(br.ReadChars(4));
+                string riff = Encoding.ASCII.GetString(br.ReadBytes(4));
                 if (riff != "RIFF")
                 {
                     MessageBox.Show("File is not a valid WAV file.");
                     return;
                 }
                 br.ReadInt32(); // Skip file size
-                string wave = new string(br.ReadChars(4));
+                string wave = Encoding.ASCII.GetString(br.ReadBytes(4));
                 if (wave != "WAVE")
                 {
                     MessageBox.Show("File is not a valid WAV file.");
@@ -553,7 +553,7 @@ namespace WoWViewer
                 // Search for the 'data' chunk
                 while (br.BaseStream.Position < br.BaseStream.Length)
                 {
-                    string chunkID = new string(br.ReadChars(4));
+                    string chunkID = Encoding.ASCII.GetString(br.ReadBytes(4));
                     int chunkSize = br.ReadInt32();
                     if (chunkID == "data")
                     {
@@ -574,7 +574,7 @@ namespace WoWViewer
                         label4.Text = $"File Offset : Unknown"; // update file offset label
                         return;
                     }
-                    else { br.BaseStream.Seek(chunkSize, SeekOrigin.Current); } // Skip this chunk
+                    else { br.BaseStream.Seek(chunkSize + (chunkSize % 2), SeekOrigin.Current); } // Skip this chunk
                 }
                 MessageBox.Show("No audio data found in WAV file.");
             }
