@@ -664,7 +664,7 @@ namespace WoWViewer
         // public open file method to allow double click to open a .wow file
         public void openFile(string file)
         {
-            if (filePath != "") { UnsavedChanges(null!, "opening another file?"); }
+            if (filePath != "") { UnsavedChanges(null!, "opening another file", button11); }
             if (cancelOpenNewFile) { cancelOpenNewFile = false; return; } // if unsaved changes were cancelled
             filePath = file;
             textBox1.Text = filePath;
@@ -672,21 +672,9 @@ namespace WoWViewer
             parseFileCount();
         }
         // on close prompt
-        private void WoWViewer_FormClosing(object sender, FormClosingEventArgs e) { UnsavedChanges(e, "exiting?"); }
+        private void WoWViewer_FormClosing(object sender, FormClosingEventArgs e) { UnsavedChanges(e, "exiting", button11); }
         // check for unsaved changes
-        public void UnsavedChanges(FormClosingEventArgs e, string reason)
-        {
-            if (entries.Any(e => e.Edited))
-            {
-                var result = MessageBox.Show(
-                    "You have unsaved changes. Do you want to save before " + reason,
-                    "Unsaved Changes",
-                    MessageBoxButtons.YesNoCancel,
-                    MessageBoxIcon.Warning);
-                if (result == DialogResult.Cancel && e != null) { e.Cancel = true; } // Prevent closing
-                else if (result == DialogResult.Cancel && e == null) { cancelOpenNewFile = true; }
-                else if (result == DialogResult.Yes) { button11.PerformClick(); } // Trigger the save button
-            }
-        }
+        public void UnsavedChanges(FormClosingEventArgs e, string reason, Button button)
+        { if (entries.Any(e => e.Edited)) { cancelOpenNewFile = Utilities.UnsavedChanges(reason, () => button.PerformClick(), e); } }
     }
 }

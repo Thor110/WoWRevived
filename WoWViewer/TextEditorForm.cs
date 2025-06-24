@@ -8,6 +8,7 @@ namespace WoWViewer
         private List<WowTextBackup> backup = new List<WowTextBackup>();
         private static readonly Encoding Latin1 = Encoding.GetEncoding("iso-8859-1");
         private static string inputPath = "TEXT.ojd";
+        private bool cancelOpenNewFile;
         public TextEditorForm()
         {
             InitializeComponent();
@@ -169,6 +170,7 @@ namespace WoWViewer
         // import strings from a text file
         private void button3_Click(object sender, EventArgs e)
         {
+            if (cancelOpenNewFile) { cancelOpenNewFile = false; return; } // if unsaved changes were cancelled
             string filePath;
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
@@ -237,18 +239,9 @@ namespace WoWViewer
             listBox1.EndUpdate();
         }
         // on close prompt
-        private void TextEditorForm_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            if (entries.Any(e => e.Edited))
-            {
-                var result = MessageBox.Show(
-                    "You have unsaved changes. Do you want to save before exiting?",
-                    "Unsaved Changes",
-                    MessageBoxButtons.YesNoCancel,
-                    MessageBoxIcon.Warning);
-                if (result == DialogResult.Cancel) { e.Cancel = true; } // Prevent closing
-                else if (result == DialogResult.Yes) { button1.PerformClick(); } // Trigger the save button
-            }
-        }
+        private void TextEditorForm_FormClosing(object sender, FormClosingEventArgs e) { UnsavedChanges(e, "exiting", button1); }
+        // check for unsaved changes
+        public void UnsavedChanges(FormClosingEventArgs e, string reason, Button button)
+        { if (entries.Any(e => e.Edited)) { cancelOpenNewFile = Utilities.UnsavedChanges(reason, () => button.PerformClick(), e); } }
     }
 }
