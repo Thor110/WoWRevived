@@ -8,10 +8,10 @@
             {
                 control.MouseEnter += (s, e) => tooltip.Show(control.AccessibleDescription ?? "No description available.", control);
                 control.MouseLeave += (s, e) => tooltip.Hide(control);
-            }
-            if (control.HasChildren)
-            {
-                EnableTooltips(control.Controls, tooltip, excludedTypes); // Recursive for nested controls
+				if (control.HasChildren)
+				{
+					EnableTooltips(control.Controls, tooltip, excludedTypes); // Recursive for nested controls
+				}
             }
         }
     }
