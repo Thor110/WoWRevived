@@ -4,6 +4,8 @@ A revival project for the classic RAGE game Jeff Wayne's 'The War Of The Worlds'
 
 The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War Of The Worlds'", but you may install it elsewhere if you prefer — for example, into a dedicated folder for modding, preservation, or portable use.
 
+NOTE : Do not use the installer, just follow the instructions below.
+
 - 1 : Copy the Human disc contents to your installation folder.
 - 2 : Rename the file "Human.cd" to "Human.cd.bak"
 - 3 : Rename the folder "FMV" to "FMV-Human"
