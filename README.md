@@ -14,6 +14,10 @@ NOTE : Do not use the installer, just follow the instructions below.
 - 6 : Download the launcher from the Releases page and and place it in your install folder.
 - 7 : Right-click the launcher and choose **Send to > Desktop (create shortcut)**, then launch it and enjoy the game!
 
+NOTE : Windows 11 users might have to adjust the properties for "wow_patched.exe" by setting compatibility to Windows XP Service Pack 3 as well as setting the colour depth to 16 bit.
+
+IE : Right click "wow_patched.exe" and go to the compatibility tab, then adjust the settings accordingly.
+
 The launcher will automatically request administrator permissions to ensure registry settings are correctly applied.
 
 If anyone really wants to save themselves 15.2mb's of space or wants to save writes that badly, check "unnecessary-files.txt" for a list of files that do not need to be copied from the discs, there are also four files not needed from "wowpatch.zip" which are the four "winmm_driver9x" files.
