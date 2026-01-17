@@ -18,14 +18,4 @@ public static class BinaryUtility
             fs.WriteByte(value);
         }
     }
-    /// <summary>
-    /// Reads a single byte from *path* at *offset* and disposes the stream automatically.
-    /// </summary>
-    public static byte ReadByteAtOffset(string path, long offset)
-    {
-        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
-        using var reader = new BinaryReader(stream);
-        stream.Seek(offset, SeekOrigin.Begin);  // seek to the absolute offset
-        return reader.ReadByte();               // read the byte
-    }
 }

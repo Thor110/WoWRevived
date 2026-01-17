@@ -10,9 +10,8 @@ NOTE : Do not use the installer, just follow the instructions below.
 - 2 : Rename the file "Human.cd" to "Human.cd.bak"
 - 3 : Rename the folder "FMV" to "FMV-Human"
 - 4 : Copy the Martian disc to your installation folder ( when prompted, choose *not* to replace files — or do, it doesn't matter anymore, but fewer writes are better for SSD longevity )
-- 5 : Download and extract "wowpatch.zip" from : https://www.old-games.ru/forum/threads/patchi-vozvraschajuschie-cd-audio-the-patchs-to-restore-cdda-playback.51778/#post-877625
-- 6 : Download the launcher from the Releases page and and place it in your install folder.
-- 7 : Right-click the launcher and choose **Send to > Desktop (create shortcut)**, then launch it and enjoy the game!
+- 5 : Download the latest version from the Releases page, extract the contents and place the files in your install folder.
+- 6 : Right-click the launcher and choose **Send to > Desktop (create shortcut)**, then launch it and enjoy the game!
 
 NOTE : Windows 11 users might have to adjust the properties for "wow_patched.exe" by setting compatibility to Windows XP Service Pack 3 as well as setting the colour depth to 16 bit.
 
@@ -108,3 +107,7 @@ WoWViewer - Save Editor
 WoWViewer - Text Editor
 
 ![Text Editor](images/text-editor.png)
+
+## Credit
+
+Thanks to old-games.ru and the author for the original executable patch and winmm.dll shim which I used as a basis for my own fix : https://www.old-games.ru/forum/threads/patchi-vozvraschajuschie-cd-audio-the-patchs-to-restore-cdda-playback.51778/#post-877625
