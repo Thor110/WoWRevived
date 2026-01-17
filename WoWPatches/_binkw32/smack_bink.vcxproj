@@ -14,6 +14,7 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <ProjectGuid>{122B5C50-CF9A-4E84-965D-E875FEA5F187}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -40,7 +41,7 @@
     <_ProjectFileVersion>17.0.35913.81</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>Debug\</OutDir>
+    <OutDir>..\..\WoWLauncher\bin\Debug\net8.0-windows</OutDir>
     <IntDir>Debug\</IntDir>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
@@ -61,13 +62,13 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalOptions>winmm.lib %(AdditionalOptions)</AdditionalOptions>
-      <OutputFile>$(OutDir)winmm_driver9x.dll</OutputFile>
-      <ModuleDefinitionFile>winmm_driver9x.def</ModuleDefinitionFile>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>$(OutDir)winmm_driver9x.pdb</ProgramDatabaseFile>
+      <AdditionalOptions>winmm.lib /NOIMPLIB /NOEXP %(AdditionalOptions)</AdditionalOptions>
+      <OutputFile>$(OutDir)smack_bink.dll</OutputFile>
+      <ModuleDefinitionFile>smack_bink.def</ModuleDefinitionFile>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)smack_bink.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
-      <ImportLibrary>$(OutDir)winmm_driver9x.lib</ImportLibrary>
+      <ImportLibrary>$(OutDir)smack_bink.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
@@ -88,17 +89,17 @@
     <Link>
       <AdditionalOptions>winmm.lib %(AdditionalOptions)</AdditionalOptions>
       <OutputFile>$(OutDir)_inmm.dll</OutputFile>
-      <ModuleDefinitionFile>winmm_driver9x.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>smack_bink.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <ImportLibrary>$(OutDir)winmm_driver9x.lib</ImportLibrary>
+      <ImportLibrary>$(OutDir)smack_bink.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="winmm_driver9x.cpp" />
+    <ClCompile Include="smack_bink.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

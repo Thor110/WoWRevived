@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="winmm_driver9x"
+	Name="smack_bink"
 	ProjectGUID="{122B5C50-CF9A-4E84-965D-E875FEA5F187}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -32,13 +32,13 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="winmm.lib"
-				OutputFile="$(OutDir)/winmm_driver9x.dll"
+				OutputFile="$(OutDir)/smack_bink.dll"
 				LinkIncremental="2"
-				ModuleDefinitionFile="winmm_driver9x.def"
+				ModuleDefinitionFile="smack_bink.def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/winmm_driver9x.pdb"
+				ProgramDatabaseFile="$(OutDir)/smack_bink.pdb"
 				SubSystem="2"
-				ImportLibrary="$(OutDir)/winmm_driver9x.lib"
+				ImportLibrary="$(OutDir)/smack_bink.lib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -81,12 +81,12 @@
 				AdditionalOptions="winmm.lib"
 				OutputFile="$(OutDir)/_inmm.dll"
 				LinkIncremental="1"
-				ModuleDefinitionFile="winmm_driver9x.def"
+				ModuleDefinitionFile="smack_bink.def"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				ImportLibrary="$(OutDir)/winmm_driver9x.lib"
+				ImportLibrary="$(OutDir)/smack_bink.lib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -109,7 +109,7 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="winmm_driver9x.cpp">
+				RelativePath="smack_bink.cpp">
 			</File>
 		</Filter>
 		<Filter
