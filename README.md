@@ -20,6 +20,8 @@ IE : Right click "wow_patched.exe" and go to the compatibility tab, then adjust 
 
 EXTRA : Steps required for users who wish to make the music player work without real discs inserted or without a disc image mounting system that supports redbook audio.
 
+NOTE : For returning users who already have the game installed, please launch the human version of the game before updating to the latest version with the audio or reinstall the game.
+
 - 1 : Install Exact Audio Copy from : https://www.exactaudiocopy.de/
 - 2 : Insert the Human or Martian Disc.
 - 3 : Deselect Track01 if it is selected (which is the games data track that contains the game files).
