@@ -14,6 +14,8 @@ namespace WoWLauncher
         public Form1()
         {
             InitializeComponent();
+            // checks if the byte for skipping the "NO CD INSERTED" message has been updated and updates it if it hasn't. JNZ -> JMP
+            if (BinaryUtility.ReadByteAtOffset("WoW_patched.exe", 0x7D2D) == 0x75) { BinaryUtility.ReplaceByte([(0x7D2D, 0xEB)], "WoW_patched.exe"); }
             var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             if (mainKey == null) // set default registry settings which are required for the launcher, the rest are created when the game starts.
             {

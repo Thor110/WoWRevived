@@ -18,6 +18,17 @@ NOTE : Windows 11 users might have to adjust the properties for "wow_patched.exe
 
 IE : Right click "wow_patched.exe" and go to the compatibility tab, then adjust the settings accordingly.
 
+EXTRA : Steps required for users who wish to make the music player work without real discs inserted or without a disc image mounting system that supports redbook audio.
+
+- 1 : Install Exact Audio Copy from : https://www.exactaudiocopy.de/
+- 2 : Insert the Human or Martian Disc.
+- 3 : Deselect Track01 if it is selected (which is the games data track that contains the game files).
+- 4 : Select "Copy Tracks Uncompressed" from the left hand toolbar. (use the default settings = 1411kbps and "## Track##")
+- 5 : Repeat from step 2 for the other disc.
+- 6 : Place the .wav files in Music and MusicMartian accordingly in the game directory.
+
+WARNING : The current audio "fix" has a "bug" or "feature" of allowing music to continue playing and the "bug" of being possible to play multiple tracks over one another.
+
 The launcher will automatically request administrator permissions to ensure registry settings are correctly applied.
 
 If anyone really wants to save themselves 15.2mb's of space or wants to save writes that badly, check "unnecessary-files.txt" for a list of files that do not need to be copied from the discs, there are also four files not needed from "wowpatch.zip" which are the four "winmm_driver9x" files.
@@ -51,8 +62,8 @@ The road map for this project.
 	- Rich text editing with newline support (\n to \r\n handling when loading and the opposite when saving )
 - ❌ 5 : Map Editor ( Basic Parsing Implemented - 1% Complete )
 	- Basic parsing of .nsb filetypes.
-- ❌ 6 : No-CD Music Fix ( Researching Solution - 0% Complete )
-	- Looking at building mini-isos from the disk and mounting at runtime.
+- ❌ 6 : No-CD Music Fix ( Researching Solution - 50% Complete )
+	- Currently have a working shim that allows for localised audio playback, which has the "feature" of allowing music to continue playing and the "bug" of being possible to play multiple tracks over one another.
 - ❌ 7 : Video Playback Intercept ( Researching Solution - 0% Complete )
 	- Looking at intercepting smackw32.dll and redirecting it to use the more modern binkw32.dll for higher resolution video playback.
 	- Determining the best solution for upscaling and remastering the original videos.
