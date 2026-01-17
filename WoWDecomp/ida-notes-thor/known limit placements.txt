@@ -2,3 +2,22 @@
 20 mines = 14
 
 thanks to Z-Fighter for known limits
+
+TEST NEXT : CHANGE TO 40
+
+20 mines = 14 @ 0x95E06 ???
+
+.text:00496A04                 cmp     eax, 14h        ; jumptable 004969A3 case 807
+
+14033271863091984515
+
+00095E00              83 F8 14 74 68 32 C0 C2                  ƒø.th2ÀÂ
+
+12 turrets = 0C @ 0x95E60 ???
+
+.text:00496A5E                 cmp     eax, 0Ch        ; jumptable 004969A3 case 699
+
+14033271476544403587
+
+00095E50                                            83 F8                ƒø
+00095E60  0C 74 0E 32 C0 C2                                .t.2ÀÂ
