@@ -58,7 +58,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		char cmd[512];
 
 		// Use a static path to avoid any GetFullPathName overhead
-		wsprintfA(path, "Music\\Track%02d.wav", trackToPlay);
+		wsprintfA(path, "Music\\%02d Track%02d.wav", trackToPlay, trackToPlay);
 
 		// KILL EVERYTHING before starting new track to prevent overlap
 		mciSendStringA("stop all", NULL, 0, 0);
