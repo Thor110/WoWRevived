@@ -150,7 +150,7 @@ namespace WoWLauncher
         /// This is the event handler for the "Start Human Game" button
         private void button1_Click(object sender, EventArgs e)
         {
-            if (File.Exists("MARTIAN.cd") && Directory.Exists("FMV-Human")) // only swap files if martian is enabled and human is disabled
+            if (File.Exists("MARTIAN.cd") && Directory.Exists("FMV-Human") && Directory.Exists("MusicHuman")) // only swap files if martian is enabled and human is disabled
             {
                 // double check if the human game is installed // prevent exceptions if these files do not exist
                 if (!File.Exists("human.cd.bak") || !Directory.Exists("FMV"))
@@ -162,6 +162,8 @@ namespace WoWLauncher
                 File.Move("human.cd.bak", "human.cd");
                 Directory.Move("FMV", "FMV-Martian");
                 Directory.Move("FMV-Human", "FMV");
+                Directory.Move("Music", "MusicMartian");
+                Directory.Move("MusicHuman", "Music");
             }
             // research variance testing
             string openRate = "20"; // default
@@ -187,7 +189,7 @@ namespace WoWLauncher
         /// This is the event handler for the "Start Martian Game" button
         private void button2_Click(object sender, EventArgs e)
         {
-            if (File.Exists("human.cd") && Directory.Exists("FMV-Martian")) // only swap files if human is enabled and martian is disabled
+            if (File.Exists("human.cd") && Directory.Exists("FMV-Martian") && Directory.Exists("MusicMartian")) // only swap files if human is enabled and martian is disabled
             {
                 // double check if the martian game is installed // prevent exceptions if these files do not exist
                 if (!File.Exists("MARTIAN.cd.bak") || !Directory.Exists("FMV"))
@@ -199,6 +201,8 @@ namespace WoWLauncher
                 File.Move("MARTIAN.cd.bak", "MARTIAN.cd");
                 Directory.Move("FMV", "FMV-Human");
                 Directory.Move("FMV-Martian", "FMV");
+                Directory.Move("Music", "MusicHuman");
+                Directory.Move("MusicMartian", "Music");
             }
             // research variance testing
             string openRate = "10"; // default
