@@ -70,7 +70,6 @@ The road map for this project.
 	- Determining the best solution for upscaling and remastering the original videos.
 - ❌ 8 : Decomp/Recomp ( Started - 1% Complete )
 	- Begun mapping out virtual key addresses for use in the launchers custom keyboard shortcut settings. ( "WoWRevived\WoWDecomp\ida-map.txt" )
-- ❌ 9 : Remake ( Not Started - 0% Complete )
 
 This might not all happen but we wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 
