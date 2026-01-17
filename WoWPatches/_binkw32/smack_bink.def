@@ -1,0 +1,13 @@
+LIBRARY smackw32.dll
+EXPORTS
+    SmackClose
+    SmackBlitClose
+    SmackWait
+    SmackBlitOpen
+    SmackDDSurfaceType
+    SmackOpen
+    SmackUseMMX
+    SmackSoundUseDirectSound
+    SmackNextFrame
+    SmackDoFrame
+    SmackToBuffer

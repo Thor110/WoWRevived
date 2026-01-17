@@ -14,7 +14,6 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <ProjectGuid>{122B5C50-CF9A-4E84-965D-E875FEA5F187}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -46,14 +45,14 @@
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\..\WoWLauncher\bin\Debug\net8.0-windows</OutDir>
+    <OutDir>Release\</OutDir>
     <IntDir>Release\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;WINMM_DRIVER9X_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;ddraw_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -63,12 +62,12 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>winmm.lib %(AdditionalOptions)</AdditionalOptions>
-      <OutputFile>$(OutDir)winmm_driver9x.dll</OutputFile>
-      <ModuleDefinitionFile>winmm_driver9x.def</ModuleDefinitionFile>
+      <OutputFile>$(OutDir)ddraw.dll</OutputFile>
+      <ModuleDefinitionFile>ddraw.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>$(OutDir)winmm_driver9x.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>$(OutDir)ddraw.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
-      <ImportLibrary>$(OutDir)winmm_driver9x.lib</ImportLibrary>
+      <ImportLibrary>$(OutDir)ddraw.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
@@ -77,29 +76,28 @@
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <OmitFramePointers>true</OmitFramePointers>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;WINMM_DRIVER9X_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ddraw_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <CallingConvention>StdCall</CallingConvention>
     </ClCompile>
     <Link>
-      <AdditionalOptions>winmm.lib /NOIMPLIB /NOEXP %(AdditionalOptions)</AdditionalOptions>
-      <OutputFile>$(OutDir)_inmm.dll</OutputFile>
-      <ModuleDefinitionFile>winmm_driver9x.def</ModuleDefinitionFile>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <AdditionalOptions>winmm.lib %(AdditionalOptions)</AdditionalOptions>
+      <OutputFile>$(OutDir)ddraw.dll</OutputFile>
+      <ModuleDefinitionFile>ddraw.def</ModuleDefinitionFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <ImportLibrary>$(OutDir)winmm_driver9x.lib</ImportLibrary>
+      <ImportLibrary>$(OutDir)ddraw.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="winmm_driver9x.cpp" />
+    <ClCompile Include="ddraw.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
