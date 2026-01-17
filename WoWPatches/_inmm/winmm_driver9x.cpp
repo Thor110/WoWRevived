@@ -19,16 +19,11 @@ int currentTrack = 2; // Global variable at top of file
 
 extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR fdwCommand, DWORD_PTR dwParam)
 {
-
 	// 1. Success for SET
 	if (uMsg == MCI_SET) return 0;
 
 	// 2. STOP & CLOSE: Use the most generic command possible
-	if (uMsg == MCI_STOP || uMsg == MCI_CLOSE) {
-		mciSendStringA("stop all", NULL, 0, 0);
-		mciSendStringA("close all", NULL, 0, 0);
-		return 0;
-	}
+	if (uMsg == MCI_STOP || uMsg == MCI_CLOSE)  return 0;
 
 	// 3. SEEK: Track selection
 	if (uMsg == MCI_SEEK) {
@@ -46,23 +41,11 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 
 	// 5. PLAY: 
 	if (uMsg == MCI_PLAY) {
-		LPMCI_PLAY_PARMS lpPlay = (LPMCI_PLAY_PARMS)dwParam;
-		int trackToPlay = (int)lpPlay->dwFrom;
-
-		// Mask for TMSF and fallback to seeked track
-		trackToPlay = trackToPlay & 0xFF;
-		if (trackToPlay == 0) trackToPlay = currentTrack;
-		if (trackToPlay < 2) trackToPlay = 2;
-
 		char path[MAX_PATH];
 		char cmd[512];
 
 		// Use a static path to avoid any GetFullPathName overhead
-		wsprintfA(path, "Music\\%02d Track%02d.wav", trackToPlay, trackToPlay);
-
-		// KILL EVERYTHING before starting new track to prevent overlap
-		mciSendStringA("stop all", NULL, 0, 0);
-		mciSendStringA("close all", NULL, 0, 0);
+		wsprintfA(path, "Music\\%02d Track%02d.wav", currentTrack, currentTrack);
 
 		wsprintfA(cmd, "open \"%s\" type waveaudio alias trackmusic", path);
 		if (mciSendStringA(cmd, NULL, 0, 0) == 0) {
