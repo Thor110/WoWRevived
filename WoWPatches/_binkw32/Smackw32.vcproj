@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.00"
-	Name="smack_bink"
+	Name="Smackw32"
 	ProjectGUID="{122B5C50-CF9A-4E84-965D-E875FEA5F187}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -32,13 +32,13 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="winmm.lib"
-				OutputFile="$(OutDir)/smack_bink.dll"
+				OutputFile="$(OutDir)/Smackw32.dll"
 				LinkIncremental="2"
-				ModuleDefinitionFile="smack_bink.def"
+				ModuleDefinitionFile="Smackw32.def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/smack_bink.pdb"
+				ProgramDatabaseFile="$(OutDir)/Smackw32.pdb"
 				SubSystem="2"
-				ImportLibrary="$(OutDir)/smack_bink.lib"
+				ImportLibrary="$(OutDir)/Smackw32.lib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -81,12 +81,12 @@
 				AdditionalOptions="winmm.lib"
 				OutputFile="$(OutDir)/_inmm.dll"
 				LinkIncremental="1"
-				ModuleDefinitionFile="smack_bink.def"
+				ModuleDefinitionFile="Smackw32.def"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				ImportLibrary="$(OutDir)/smack_bink.lib"
+				ImportLibrary="$(OutDir)/Smackw32.lib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -109,7 +109,7 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="smack_bink.cpp">
+				RelativePath="Smackw32.cpp">
 			</File>
 		</Filter>
 		<Filter

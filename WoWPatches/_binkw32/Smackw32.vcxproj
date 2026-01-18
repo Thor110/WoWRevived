@@ -63,12 +63,12 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>winmm.lib /NOIMPLIB /NOEXP %(AdditionalOptions)</AdditionalOptions>
-      <OutputFile>$(OutDir)smack_bink.dll</OutputFile>
-      <ModuleDefinitionFile>smack_bink.def</ModuleDefinitionFile>
+      <OutputFile>$(OutDir)Smackw32.dll</OutputFile>
+      <ModuleDefinitionFile>Smackw32.def</ModuleDefinitionFile>
       <GenerateDebugInformation>false</GenerateDebugInformation>
-      <ProgramDatabaseFile>$(OutDir)smack_bink.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>$(OutDir)Smackw32.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
-      <ImportLibrary>$(OutDir)smack_bink.lib</ImportLibrary>
+      <ImportLibrary>$(OutDir)Smackw32.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
@@ -89,17 +89,17 @@
     <Link>
       <AdditionalOptions>winmm.lib %(AdditionalOptions)</AdditionalOptions>
       <OutputFile>$(OutDir)_inmm.dll</OutputFile>
-      <ModuleDefinitionFile>smack_bink.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>Smackw32.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <ImportLibrary>$(OutDir)smack_bink.lib</ImportLibrary>
+      <ImportLibrary>$(OutDir)Smackw32.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="smack_bink.cpp" />
+    <ClCompile Include="Smackw32.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
