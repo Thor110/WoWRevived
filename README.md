@@ -12,6 +12,7 @@ NOTE : Do not use the installer, just follow the instructions below.
 - 4 : Copy the Martian disc to your installation folder ( when prompted, choose *not* to replace files — or do, it doesn't matter anymore, but fewer writes are better for SSD longevity )
 - 5 : Download the latest version from the Releases page, extract the contents and place the files in your install folder.
 - 6 : Right-click the launcher and choose **Send to > Desktop (create shortcut)**, then launch it and enjoy the game!
+- 7 : Move Smackw32.dll from the WinSys folder to the installation folder.
 
 NOTE : Windows 11 users might have to adjust the properties for "wow_patched.exe" by setting compatibility to Windows XP Service Pack 3 as well as setting the colour depth to 16 bit.
 
