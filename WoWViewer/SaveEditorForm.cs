@@ -86,8 +86,10 @@ namespace WoWViewer
         private void parseSaveFile()
         {
             if (!fileSafetyCheck()) { return; }
-            using (var br = new BinaryReader(File.OpenRead(fileName)))
+            FileStream saveFile = File.OpenRead(fileName);
+            using (var br = new BinaryReader(saveFile))
             {
+                // 4 bytes to NAME_OFFSET
                 br.BaseStream.Seek(NAME_OFFSET, SeekOrigin.Begin); // start after "....GAME(..."
                 byte[] nameBytes = br.ReadBytes(36);
                 string saveName = Encoding.ASCII.GetString(nameBytes).Split((char)0x00)[0]; // split on no character
@@ -95,6 +97,12 @@ namespace WoWViewer
                 // update selectedSave object
                 selectedSave.Name = saveName;
                 // current date and time
+
+                // 4 bytes      Unknown
+                // WMAP         WarMap
+                // 16 bytes     Unknown
+                // CALN         Calendar?
+
                 br.BaseStream.Seek(TIME_OFFSET, SeekOrigin.Begin);
                 byte[] timeBytes = br.ReadBytes(4);
                 float tickFloat = BitConverter.ToSingle(timeBytes, 0);
@@ -103,6 +111,9 @@ namespace WoWViewer
                 float fractionalHour = totalHours - hours;
                 int minutes = (int)(fractionalHour * 60);
                 int seconds = (int)((fractionalHour * 60 - minutes) * 60);
+
+                // 10 bytes to DATE_OFFSET
+
                 br.BaseStream.Seek(DATE_OFFSET, SeekOrigin.Begin);
                 ushort day = BitConverter.ToUInt16(br.ReadBytes(2), 0);
                 day += 1; // update to account for zero-based indexing
@@ -126,6 +137,18 @@ namespace WoWViewer
                     numericUpDown1.Enabled = false; // isdble the year override numeric up down
                 }
                 selectedSave.dateTime = new DateTime(year, month, day, hours, minutes, seconds);
+
+                // 10 bytes??
+
+                // HRSH     Horsell? Hours Seconds? Hands?
+
+                // 12 FF bytes
+                // 2 00 Bytes
+                // 4 FF Bytes
+
+
+
+                textBox2.Text = (saveFile.Length - br.BaseStream.Position).ToString();
             }
             minimumDateCheck(selectedSave.dateTime); // check if the date is within the minimum date range
             dateTimePicker1.Value = selectedSave.dateTime; // set value after the date check

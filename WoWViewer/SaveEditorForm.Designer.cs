@@ -57,6 +57,8 @@
             label10 = new Label();
             label11 = new Label();
             numericUpDown6 = new NumericUpDown();
+            textBox2 = new TextBox();
+            label12 = new Label();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown3).BeginInit();
@@ -339,11 +341,30 @@
             numericUpDown6.TabIndex = 27;
             numericUpDown6.Value = new decimal(new int[] { 100, 0, 0, 0 });
             // 
+            // textBox2
+            // 
+            textBox2.Location = new Point(12, 515);
+            textBox2.Name = "textBox2";
+            textBox2.ReadOnly = true;
+            textBox2.Size = new Size(120, 23);
+            textBox2.TabIndex = 29;
+            // 
+            // label12
+            // 
+            label12.AutoSize = true;
+            label12.Location = new Point(12, 497);
+            label12.Name = "label12";
+            label12.Size = new Size(94, 15);
+            label12.TabIndex = 30;
+            label12.Text = "Unparsed Bytes :";
+            // 
             // SaveEditorForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 550);
+            Controls.Add(label12);
+            Controls.Add(textBox2);
             Controls.Add(label11);
             Controls.Add(numericUpDown6);
             Controls.Add(label10);
@@ -415,5 +436,7 @@
         private Label label10;
         private Label label11;
         private NumericUpDown numericUpDown6;
+        private TextBox textBox2;
+        private Label label12;
     }
 }
