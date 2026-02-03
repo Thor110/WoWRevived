@@ -268,6 +268,13 @@ namespace WoWViewer
             listBox1.Items.Clear();
             if (magic == "KAT!") // read file entries based on archive type
             {
+                br.BaseStream.Seek(0x2A80, SeekOrigin.Begin); // check
+                if (br.ReadByte() != 0x82)
+                {
+                    MessageBox.Show("Regional Dat.WoW detected. This toolkit currently only supports the UK Master release.", "Unsupported Archive");
+                    return false;
+                }
+                br.BaseStream.Seek(0x8, SeekOrigin.Begin); // return
                 // update container type label
                 if (filePath.Contains("Dat")) { label2.Text = "Container Type : " + "Data"; }
                 else { label2.Text = "Container Type : " + "Maps"; }

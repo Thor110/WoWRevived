@@ -20,8 +20,4 @@ But it is corrected when exporting or saving, so make sure to keep them as they 
 
 After you are done translating then import the file and click save to update the TEXT.OJD file.
 
-When you have created a language pack, just drop it into the games installation folder with a name in all capitals and it will be automatically detected.
-
-IE : "FRENCH.OJD" "GERMAN.OJD" "SPANISH.OJD"
-
-The launcher expects the regular TEXT.OJD file by default to be there, so language packs should be submitted in this format to be properly detected and implemented.
+If you create a language pack please reach out to me as I would like to include them in this repository for future use.

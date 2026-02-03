@@ -1,3 +1,5 @@
+The launcher now automatically checks for these files and removes them if they exist.
+
 \_INST32I.EX_
 \_ISDEL.EXE
 \_SETUP.DLL

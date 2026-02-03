@@ -2,7 +2,7 @@
 
 A revival project for the classic RAGE game Jeff Wayne's 'The War Of The Worlds'
 
-The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War Of The Worlds'", but you may install it elsewhere if you prefer — for example, into a dedicated folder for modding, preservation, or portable use.
+The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War Of The Worlds'" but you may install it elsewhere if you prefer — for example, into a dedicated folder for modding, preservation, or portable use.
 
 NOTE : Do not use the installer, just follow the instructions below.
 
@@ -12,32 +12,18 @@ NOTE : Do not use the installer, just follow the instructions below.
 - 4 : Copy the Martian disc to your installation folder ( when prompted, choose *not* to replace files — or do, it doesn't matter anymore, but fewer writes are better for SSD longevity )
 - 5 : Download the latest version from the Releases page, extract the contents and place the files in your install folder.
 - 6 : Right-click the launcher and choose **Send to > Desktop (create shortcut)**, then launch it and enjoy the game!
-- 7 : Move Smackw32.dll from the WinSys folder to the installation folder.
 
-NOTE : Windows 11 users might have to adjust the properties for "wow_patched.exe" by setting compatibility to Windows XP Service Pack 3 as well as setting the colour depth to 16 bit.
+LANGUAGES : If you install a language pack, make sure you do it now, alternatively if you have started the game as human, launch it as martian, then install the language pack.
+
+COMPATIBILITY : Windows 11 users might have to adjust the properties for "WoW_patched.exe" by setting compatibility to Windows XP Service Pack 3 as well as setting the colour depth to 16 bit.
 
 IE : Right click "wow_patched.exe" and go to the compatibility tab, then adjust the settings accordingly.
 
-EXTRA : Steps required for users who wish to make the music player work without real discs inserted or without a disc image mounting system that supports redbook audio.
+WARNING : The current audio "fix" has a "bug" or "feature" of allowing music to continue playing and the "bug" of being possible to play multiple tracks over one another, if playing tracks in the CD player, let them finish before selectin another.
 
-NOTE : For returning users who already have the game installed, please launch the human version of the game before updating to the latest version with the audio or reinstall the game.
+ADDITIONAL : The launcher will automatically request administrator permissions to ensure registry settings are correctly applied.
 
-- 1 : Install Exact Audio Copy from : https://www.exactaudiocopy.de/
-- 2 : Insert the Human or Martian Disc.
-- 3 : Deselect Track01 if it is selected (which is the games data track that contains the game files).
-- 4 : Select "Copy Tracks Uncompressed" from the left hand toolbar. (use the default settings = 1411kbps and "## Track##")
-- 5 : Repeat from step 2 for the other disc.
-- 6 : Place the .wav files in Music and MusicMartian accordingly in the game directory.
-
-WARNING : The current audio "fix" has a "bug" or "feature" of allowing music to continue playing and the "bug" of being possible to play multiple tracks over one another.
-
-The launcher will automatically request administrator permissions to ensure registry settings are correctly applied.
-
-If anyone really wants to save themselves 15.2mb's of space or wants to save writes that badly, check "unnecessary-files.txt" for a list of files that do not need to be copied from the discs, there are also four files not needed from "wowpatch.zip" which are the four "winmm_driver9x" files.
-
-Language options are currently hidden, as no confirmed non-English PC versions of the game have been found. If you happen to own or know of a different language release, please let us know as support can easily be added if needed.
-
-Or, if you choose to make a language patch using the text editor, feel free to send the "TEXT.ojd" file our way and I will re-active the dropdown option in the menu and integrate language selection options!
+If you choose to make a language patch using the text editor, feel free to send the "TEXT.ojd" file my way and I will add it to the releases.
 
 # Road Map
 
@@ -64,7 +50,7 @@ The road map for this project.
 	- Rich text editing with newline support (\n to \r\n handling when loading and the opposite when saving )
 - ❌ 5 : Map Editor ( Basic Parsing Implemented - 1% Complete )
 	- Basic parsing of .nsb filetypes.
-- ❌ 6 : No-CD Music Fix ( Researching Solution - 50% Complete )
+- ✅ 6 : No-CD Music Fix ( Researching Solution - 50% Complete )
 	- Currently have a working shim that allows for localised audio playback, which has the "feature" of allowing music to continue playing and the "bug" of being possible to play multiple tracks over one another.
 - ❌ 7 : Video Playback Intercept ( Researching Solution - 0% Complete )
 	- Looking at intercepting smackw32.dll and redirecting it to use the more modern binkw32.dll for higher resolution video playback.
@@ -72,7 +58,7 @@ The road map for this project.
 - ❌ 8 : Decomp/Recomp ( Started - 1% Complete )
 	- Begun mapping out virtual key addresses for use in the launchers custom keyboard shortcut settings. ( "WoWRevived\WoWDecomp\ida-map.txt" )
 
-This might not all happen but we wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
+This might not all happen but I wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 
 Discord server : https://discord.gg/bwG6Z3RK8b
 

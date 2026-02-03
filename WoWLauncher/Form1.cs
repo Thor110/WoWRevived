@@ -41,18 +41,104 @@ namespace WoWLauncher
             }
             registryCompare(mainKey, "CD Path", AppDomain.CurrentDomain.BaseDirectory); // update the cd path in the registry automatically.
             registryCompare(mainKey, "Install Path", AppDomain.CurrentDomain.BaseDirectory); // update the install path in the registry automatically.
+            // automatically clear up the unnecessary files
+            string[] deleteFiles = new string[]
+            {
+                "_INST32I.EX_",
+                "_ISDEL.EXE",
+                "_SETUP.DLL",
+                "_sys1.cab",
+                "_user1.cab",
+                "Autoexec.exe",
+                "Autorun.exe",
+                "Autorun.inf",
+                "CMS16.DLL",
+                "cms32_95.dll",
+                "CMS32_NT.DLL",
+                "DATA.TAG",
+                "data1.cab",
+                "dsetup.dll",
+                "dsetup16.dll",
+                "dsetup32.dll",
+                "ENGLISH.cd",
+                "lang.dat",
+                "layout.bin",
+                "os.dat",
+                "README.TXT",
+                "SETUP.EXE",
+                "SETUP.INI",
+                "setup.ins",
+                "setup.lid",
+                "WoW.exe",
+                "WOWStart.exe"
+            };
+            foreach (string deleteFile in deleteFiles)
+            {
+                if(File.Exists(deleteFile))
+                {
+                    File.Delete(deleteFile);
+                }
+            }
+            if (Directory.Exists("DIRECTX"))
+            {
+                Directory.Delete("DIRECTX", true);
+            }
+            if (!File.Exists("Smackw32.dll"))
+            {
+                if (File.Exists("WinSys\\Smackw32.dll"))
+                {
+                    File.Move("WinSys\\Smackw32.dll", "Smackw32.dll");
+                }
+                else
+                {
+                    MessageBox.Show("Smackw32.dll is missing, what did you do with it?");
+                    MessageBox.Show("The game will fail to run without Smackw32.dll get it back off the disc...");
+                    Close();
+                }
+            }
+            /*
             // Dynamic language pack detection, which can only go wrong if the user goes renaming files or changing the registry.
             comboBox1.Items.Add((string)mainKey.GetValue("Language")!); // DEFAULT TEXT.OJD = Language set in Registry ( this could go haywire if the user changes the language in the registry )
             var ojdFiles = Directory.GetFiles($"{Directory.GetCurrentDirectory()}", "*.OJD", SearchOption.TopDirectoryOnly);
             foreach (string currentFile in ojdFiles)
             {
                 string fileName = Path.GetFileNameWithoutExtension(currentFile);
-                if (fileName != "TEXT" && fileName != "AI" && fileName != "OBJ" && fileName != "SFX") // Ignore the default files
+                if (fileName.Contains("TEXT") && fileName != "TEXT") // Ignore the current file
                 {
-                    comboBox1.Items.Add(fileName.Substring(0, 1).ToUpper() + fileName.Substring(1).ToLower());
+                    switch (fileName.Substring(5))
+                    {
+                        case "DE":
+                        {
+                            comboBox1.Items.Add("German");
+                        }
+                        break;
+                        case "ES":
+                        {
+                            comboBox1.Items.Add("Spanish");
+                        }
+                        break;
+                        case "FR":
+                        {
+                            comboBox1.Items.Add("French");
+                        }
+                        break;
+                        case "IT":
+                        {
+                            comboBox1.Items.Add("Italian");
+                        }
+                        break;
+                        case "EN":
+                        {
+                            comboBox1.Items.Add("English");
+                        }
+                        break;
+                    }
                 }
             }
             comboBox1.SelectedIndex = 0; // set selected index to the current language as per the registry
+            */
+
+
             string[] supportedResolutions = new string[]
             {
                 "512x384         (4:3)",    // Listed in original manual, ultra-low fallback
@@ -304,6 +390,39 @@ namespace WoWLauncher
         private void checkBox4_CheckedChanged(object sender, EventArgs e) { screenKey.SetValue("AllowResize", checkBox4.Checked ? "1" : "0"); }
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
+            return; // forget language switching, save space for the end user.
+            if (comboBox1.Text == (string)mainKey.GetValue("Language")!) { return; } // do nothing if the same language is selected
+            switch (comboBox1.Text)
+            {
+                case "German":
+                {
+                    MessageBox.Show("TEST");
+                }
+                break;
+                case "Spanish":
+                {
+                    MessageBox.Show("TEST");
+                }
+                break;
+                case "French":
+                {
+                    MessageBox.Show("TEST");
+                }
+                break;
+                case "Italian":
+                {
+                    MessageBox.Show("TEST");
+                }
+                break;
+                case "English":
+                {
+                    MessageBox.Show("TEST");
+                }
+                break;
+            }
+
+
+            return;
             string rename = (string)mainKey.GetValue("Language")!; // Default = English
             if (comboBox1.Text == rename) { return; } // do nothing if the same language is selected
             if (File.Exists($"{comboBox1.Text.ToUpper()}.ojd") && File.Exists("TEXT.ojd")) // double check if the files exist
