@@ -25,6 +25,8 @@ ADDITIONAL : The launcher will automatically request administrator permissions t
 
 If you choose to make a language patch using the text editor, feel free to send the "TEXT.ojd" file my way and I will add it to the releases.
 
+WANTED : Regional Manuals : We are looking for high-quality scans of the original physical German (DE) and Spanish (ES) manuals. If you own a physical copy and can provide a scan, please join the Discord or open an Issue!
+
 # Road Map
 
 The road map for this project.

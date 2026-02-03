@@ -162,15 +162,15 @@ namespace WoWViewer
             listBox2.Items.Clear(); // clear the sector list box
             if (fileName.Contains("Human"))
             {
-                label6.Text = "Iron :";
+                label6.Text = "Steel :";
                 label7.Text = "Coal :";
                 label8.Text = "Oil :";
             }
             else
             {
-                label6.Text = "Human blood :";
+                label6.Text = "Human Blood :";
                 label7.Text = "Copper :";
-                label8.Text = "Heavy elements :";
+                label8.Text = "Heavy Elements :";
             }
             label9.Text = "Sector :"; // reset the sector label
             parseText(); // parse the text file to get sector names
