@@ -268,13 +268,6 @@ namespace WoWViewer
             listBox1.Items.Clear();
             if (magic == "KAT!") // read file entries based on archive type
             {
-                br.BaseStream.Seek(0x2A80, SeekOrigin.Begin); // check
-                if (br.ReadByte() != 0x82)
-                {
-                    MessageBox.Show("Regional Dat.WoW detected. This toolkit currently only supports the UK Master release.", "Unsupported Archive");
-                    return false;
-                }
-                br.BaseStream.Seek(0x8, SeekOrigin.Begin); // return
                 // update container type label
                 if (filePath.Contains("Dat")) { label2.Text = "Container Type : " + "Data"; }
                 else { label2.Text = "Container Type : " + "Maps"; }
@@ -380,14 +373,17 @@ namespace WoWViewer
             // debug test for non compressed files
             if (rawData.Length >= 4 && Encoding.ASCII.GetString(rawData, 0, 4) == "FFUH")
             {
+                /*
                 int decompressedSize = BitConverter.ToInt32(rawData, 8); // Offset 0x08
                 byte[] huffmanTable = rawData.Skip(0x10).Take(0x400).ToArray(); // Offset 0x10–0x410
                 byte[] compressedPayload = rawData.Skip(0x410).ToArray(); // Offset 0x410 onward
 
                 var decoder = new FfuhDecoder(huffmanTable, compressedPayload);
                 byte[] decompressed = decoder.Decompress(decompressedSize);
-
+                MessageBox.Show("Compressed");
                 fs.Write(decompressed, 0, decompressed.Length);
+                */
+                fs.Write(rawData, 0, rawData.Length);
             }
             else
             {
