@@ -32,10 +32,9 @@ The road map for this project.
 	- Dynamic language pack detection.
 	- Advanced registry settings options.
 	- Custom keyboard shortcut settings. (WIP)
-- [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 95% Complete )
+- [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 100% Complete )
 	- .WoW archives can be extracted.
 	- Waveform preview, play and replace sound files from .wow archives.
-	- .ojd files can be parsed, but there is still more decoding to do.
 - [❌ 3 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Override standard limit of 1753 as the minimum date and set the year manually to as low as year zero.
@@ -50,7 +49,8 @@ The road map for this project.
 	- Rich text editing with newline support (\n to \r\n handling when loading and the opposite when saving )
 - ❌ 5 : Map Editor ( Basic Parsing Implemented - 1% Complete )
 	- Basic parsing of .nsb filetypes.
-- ✅ 6 : No-CD Music Fix ( Researching Solution - 50% Complete )
+	- .ojd files can be parsed, but there is still more decoding to do.
+- ✅ 6 : No-CD Music Fix ( Researching Solution - 90% Complete )
 	- Currently have a working shim that allows for localised audio playback, which has the "feature" of allowing music to continue playing and the "bug" of being possible to play multiple tracks over one another.
 - ❌ 7 : Video Playback Intercept ( Researching Solution - 0% Complete )
 	- Looking at intercepting smackw32.dll and redirecting it to use the more modern binkw32.dll for higher resolution video playback.
@@ -62,35 +62,33 @@ This might not all happen but I wanted to create a more accessible guide for run
 
 Discord server : https://discord.gg/bwG6Z3RK8b
 
-# Screenshots
-
-Screenshots of the current progress for the toolkit.
-
 ## Custom Launcher
-WoWLauncher
 
 ![Launcher](images/launcher.png)
 
-Custom Keyboard Shortcuts
+Custom Keyboard Shortcuts - Work In Progress - Not Currently Enabled
 
 <div align="center">
   <img src="images/keycodes.png">
 </div>
 
+Advanced Settings
+
+<div align="center">
+  <img src="images/advanced-settings.png">
+</div>
+
 ## File Extractor
-WoWViewer - File Extractor
 
 <div align="center">
   <img src="images/file-extractor.gif" alt="File Extractor">
 </div>
 
 ## Save Editor
-WoWViewer - Save Editor
 
 ![Save Editor](images/save-editor.png)
 
 ## Text Editor
-WoWViewer - Text Editor
 
 ![Text Editor](images/text-editor.png)
 
