@@ -19,7 +19,7 @@ COMPATIBILITY : Windows 11 users might have to adjust the properties for "WoW_pa
 
 IE : Right click "wow_patched.exe" and go to the compatibility tab, then adjust the settings accordingly.
 
-WARNING : The current audio "fix" has a "bug" or "feature" of allowing music to continue playing and the "bug" of being possible to play multiple tracks over one another, if playing tracks in the CD player, let them finish before selectin another.
+WARNING : The current audio "fix" has a "bug" or "feature" of being possible to play multiple tracks over one another, if playing tracks in the CD player, let them finish before selecting another.
 
 ADDITIONAL : The launcher will automatically request administrator permissions to ensure registry settings are correctly applied.
 
