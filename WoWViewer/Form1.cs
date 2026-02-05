@@ -668,6 +668,7 @@ namespace WoWViewer
         public void openFile(string file)
         {
             if (filePath != "") { UnsavedChanges(null!, "opening another file", button11); }
+            else { button4.Enabled = true; }
             if (cancelOpenNewFile) { cancelOpenNewFile = false; return; } // if unsaved changes were cancelled
             filePath = file;
             textBox1.Text = filePath;
