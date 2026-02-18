@@ -15,6 +15,7 @@ namespace WoWLauncher
         {
             InitializeComponent();
             var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
+            // TODO : add tweak key creation below and check what happens if it doesn't exist when altering settings etc
             if (mainKey == null) // set default registry settings which are required for the launcher, the rest are created when the game starts.
             {
                 mainKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
@@ -37,64 +38,31 @@ namespace WoWLauncher
                 battleKey.SetValue("EnableFogOfWar", "1");
                 battleKey.SetValue("Damage reduction divisor", "500");
                 // alternatively I could create whatever values we use here
-                MessageBox.Show("Registry entry missing, base registry entries recreated from scratch.\nPlease run the game once to create the rest of the registry entries.");
+                MessageBox.Show("Registry entry missing, base registry entries recreated from scratch.\n\nPlease run the game once to create the rest of the registry entries.");
             }
             registryCompare(mainKey, "CD Path", AppDomain.CurrentDomain.BaseDirectory); // update the cd path in the registry automatically.
             registryCompare(mainKey, "Install Path", AppDomain.CurrentDomain.BaseDirectory); // update the install path in the registry automatically.
             // automatically clear up the unnecessary files
             string[] deleteFiles = new string[]
             {
-                "_INST32I.EX_",
-                "_ISDEL.EXE",
-                "_SETUP.DLL",
-                "_sys1.cab",
-                "_user1.cab",
-                "Autoexec.exe",
-                "Autorun.exe",
-                "Autorun.inf",
-                "CMS16.DLL",
-                "cms32_95.dll",
-                "CMS32_NT.DLL",
-                "DATA.TAG",
-                "data1.cab",
-                "dsetup.dll",
-                "dsetup16.dll",
-                "dsetup32.dll",
-                "ENGLISH.cd",
-                "lang.dat",
-                "layout.bin",
-                "os.dat",
-                "README.TXT",
-                "SETUP.EXE",
-                "SETUP.INI",
-                "setup.ins",
-                "setup.lid",
-                "WoW.exe",
-                "WOWStart.exe"
+                "_INST32I.EX_", "_ISDEL.EXE", "_SETUP.DLL", "_sys1.cab", "_user1.cab", "Autoexec.exe", "Autorun.exe", "Autorun.inf",
+                "CMS16.DLL", "cms32_95.dll", "CMS32_NT.DLL", "DATA.TAG", "data1.cab", "dsetup.dll", "dsetup16.dll", "dsetup32.dll",
+                "ENGLISH.cd", "lang.dat", "layout.bin", "os.dat", "README.TXT", "SETUP.EXE", "SETUP.INI", "setup.ins", "setup.lid",
+                "WoW.exe", "WOWStart.exe"
             };
-            foreach (string deleteFile in deleteFiles)
+            foreach (string deleteFile in deleteFiles) { if(File.Exists(deleteFile)) { File.Delete(deleteFile); } }
+            // delete unnecessary directx folder and fles
+            if (Directory.Exists("DIRECTX")) { Directory.Delete("DIRECTX", true); }
+            // check for smackw32.dll
+            if (!File.Exists("Smackw32.dll") && File.Exists("WinSys\\Smackw32.dll"))
             {
-                if(File.Exists(deleteFile))
-                {
-                    File.Delete(deleteFile);
-                }
+                File.Move("WinSys\\Smackw32.dll", "Smackw32.dll");
+                Directory.Delete("WinSys", true);
             }
-            if (Directory.Exists("DIRECTX"))
+            else
             {
-                Directory.Delete("DIRECTX", true);
-            }
-            if (!File.Exists("Smackw32.dll"))
-            {
-                if (File.Exists("WinSys\\Smackw32.dll"))
-                {
-                    File.Move("WinSys\\Smackw32.dll", "Smackw32.dll");
-                }
-                else
-                {
-                    MessageBox.Show("Smackw32.dll is missing, what did you do with it?");
-                    MessageBox.Show("The game will fail to run without Smackw32.dll get it back off the disc...");
-                    Close();
-                }
+                MessageBox.Show("Smackw32.dll is missing, what did you do with it?\n\nThe game will fail to run without Smackw32.dll get it back off the disc...");
+                Close();
             }
             /*
             // Dynamic language pack detection, which can only go wrong if the user goes renaming files or changing the registry.
