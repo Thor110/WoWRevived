@@ -49,6 +49,16 @@ namespace WoWViewer
         public void parseTEXTOJD()
         {
             byte[] data = File.ReadAllBytes(inputPath); // read the file into a byte array
+            switch(data.Length) // check file size
+            {
+                case 63839: // english  - 63839 bytes
+                case 75224: // french   - 75224 bytes
+                case 70448: // german   - 70448 bytes
+                case 70218: // italian  - 70218 bytes
+                case 71617: // spanish  - 71617 bytes
+                    entryCount = 1396; // support for the original TEXT.ojd file without the added Credits entry.
+                    break;
+            }
             int offset = 0x289; // first string starts at 0x289
             for (int i = 0; i < entryCount; i++) // there are only 1396 entries
             {

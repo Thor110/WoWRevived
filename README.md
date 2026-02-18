@@ -54,7 +54,7 @@ The road map for this project.
 	- Override standard limit of 1753 as the minimum date and set the year manually to as low as year zero.
 	- Sector & Area names loaded dynamically from TEXT.ojd
 - [✅ 4 : Text Editor](#text-editor) ( 100% Complete - edit and save string entries in the TEXT.ojd file. )
-	- All 1396 strings are editable.
+	- All 1397 strings are editable. ( Default game has 1396, new string added for the missing Credits button text, original files also supported )
 	- UTF-8 + ISO-8859-1 encoding supported.
 	- File is recompiled from scratch based on modifications.
 	- Import & Export as .txt file.
