@@ -30,13 +30,25 @@ WANTED : Regional Manuals : We are looking for high-quality scans of the origina
 # Road Map
 
 The road map for this project.
+- ✅ 0 : Main Game Functionality ( 99% Complete )
+	- Languages supported:
+		- 1\. English
+		- 2\. French
+		- 3\. German
+		- 4\. Italian
+		- 5\. Spanish
+	- Known "bugs" which I consider non-issues for the time-being.
+		- 1\. Selecting the Credits from the options menu crashes the game.
 - [✅ 1 : Custom Launcher](#custom-launcher) ( Fully Functional - 95% Complete )
-	- Dynamic language pack detection.
+	- Dynamic language pack detection. (WIP - not enabled currently)
 	- Advanced registry settings options.
-	- Custom keyboard shortcut settings. (WIP)
+	- Custom keyboard shortcut settings. (WIP - not enabled currently)
+	- Automatic regeneration of base registry settings, making the installation portable.
+	- Automatic cleanup of unnecessary files and Smackw32.dll moved to main directory.
+	- Custom pre-set difficulty settings. (Easy, Medium[default], Hard)
 - [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 100% Complete )
 	- .WoW archives can be extracted.
-	- Waveform preview, play and replace sound files from .wow archives.
+	- Waveform preview, play and replace sound files from .WoW archives.
 - [❌ 3 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Override standard limit of 1753 as the minimum date and set the year manually to as low as year zero.
