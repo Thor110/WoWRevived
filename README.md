@@ -52,8 +52,9 @@ The road map for this project.
 - ❌ 5 : Map Editor ( Basic Parsing Implemented - 1% Complete )
 	- Basic parsing of .nsb filetypes.
 	- .ojd files can be parsed, but there is still more decoding to do.
-- ✅ 6 : No-CD Music Fix ( Researching Solution - 90% Complete )
-	- Currently have a working shim that allows for localised audio playback, which has the "feature" of allowing music to continue playing and the "bug" of being possible to play multiple tracks over one another.
+- ✅ 6 : No-CD Music Fix ( 99% Complete )
+	- Uses a shim that allows for localised audio playback.
+	- Only potential "bug" is that the currently playing track restarts when the window loses focus and the CD player seconds keep climbing, this is a non-issue realistically.
 - ❌ 7 : Video Playback Intercept ( Researching Solution - 0% Complete )
 	- Looking at intercepting smackw32.dll and redirecting it to use the more modern binkw32.dll for higher resolution video playback.
 	- Determining the best solution for upscaling and remastering the original videos.
