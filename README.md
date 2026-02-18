@@ -39,6 +39,10 @@ The road map for this project.
 		- 5\. Spanish
 	- Known "bugs" which I consider non-issues for the time-being.
 		- 1\. Selecting the Credits from the options menu crashes the game.
+		- 2\. Finishing the game leads to the Credits and also crashes the game.
+		- 3\. Infiltration skill crashes the game.
+	- Features I am considering adjusting.
+		- 1\. Heat-ray construction limit of 12, I may add this limit to the launcher when I locate the relevant values.
 - [✅ 1 : Custom Launcher](#custom-launcher) ( Fully Functional - 95% Complete )
 	- Dynamic language pack detection. (WIP - not enabled currently)
 	- Advanced registry settings options.
