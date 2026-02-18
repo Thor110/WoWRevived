@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <conio.h>
 #include <windows.h>
+#include <string>
 
 #define DLLEXPORT			__declspec(dllexport)
 
@@ -19,9 +20,12 @@ int currentTrack = 2; // Global variable at top of file
 
 FILE* logFile = nullptr;
 
+bool debug = true; // true on release, false for logging
+
 // === Logging ===
 void Log(const char* fmt, ...)
 {
+	if (debug) return;
 	if (!logFile) logFile = fopen("_inmm_log.txt", "w");
 	if (!logFile) return;
 
@@ -42,6 +46,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// 2. STOP & CLOSE: Use the most generic command possible
 	if (uMsg == MCI_STOP || uMsg == MCI_CLOSE) {
 		Log("MCI_STOP/CLOSE");
+		PlaySound(NULL, NULL, 0);
 		return 0;
 	}
 
@@ -64,15 +69,8 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	if (uMsg == MCI_PLAY) {
 		Log("MCI_PLAY: Initializing track %d", currentTrack);
 		char path[MAX_PATH];
-		char cmd[512];
-
-		// Use a static path to avoid any GetFullPathName overhead
 		wsprintfA(path, "Music\\%02d Track%02d.wav", currentTrack, currentTrack);
-
-		wsprintfA(cmd, "open \"%s\" type waveaudio alias trackmusic", path);
-		if (mciSendStringA(cmd, NULL, 0, 0) == 0) {
-			mciSendStringA("play trackmusic", NULL, 0, 0);
-		}
+		PlaySound(path, NULL, SND_ASYNC | SND_FILENAME | SND_NODEFAULT);
 		return 0;
 	}
 
