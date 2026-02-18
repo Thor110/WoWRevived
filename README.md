@@ -55,10 +55,10 @@ The road map for this project.
 - ✅ 6 : No-CD Music Fix ( 99% Complete )
 	- Uses a shim that allows for localised audio playback.
 	- Known "bugs" which I consider non-issues for the time-being.
-		- 1. Plays track 2 in the CD Player menu when the window loses and then regains focus even when a track hasn't been selected.
-		- 2. Stops the current track when the window loses focus and restarts when the window regains focus.
-		- 3. Next and previous track buttons don't work.
-		- 4. Time counter increases indefinitely in the CD Player menu unless a new track is selected or the stop button is pressed.
+		- 1\. Plays track 2 in the CD Player menu when the window loses and then regains focus even when a track hasn't been selected.
+		- 2\. Stops the current track when the window loses focus and restarts when the window regains focus.
+		- 3\. Next and previous track buttons don't work.
+		- 4\. Time counter increases indefinitely in the CD Player menu unless a new track is selected or the stop button is pressed.
 - ❌ 7 : Video Playback Intercept ( Researching Solution - 0% Complete )
 	- Looking at intercepting smackw32.dll and redirecting it to use the more modern binkw32.dll for higher resolution video playback.
 	- Determining the best solution for upscaling and remastering the original videos.
