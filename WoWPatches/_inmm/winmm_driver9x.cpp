@@ -17,18 +17,39 @@ int currentTrack = 2; // Global variable at top of file
 // We need a dummy ID that isn't 0
 #define FAKE_CD_ID 0xBEEF 
 
+FILE* logFile = nullptr;
+
+// === Logging ===
+void Log(const char* fmt, ...)
+{
+	if (!logFile) logFile = fopen("_inmm_log.txt", "w");
+	if (!logFile) return;
+
+	va_list args;
+	va_start(args, fmt);
+	vfprintf(logFile, fmt, args);
+	fprintf(logFile, "\n");
+	fflush(logFile);
+	va_end(args);
+}
+
 extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR fdwCommand, DWORD_PTR dwParam)
 {
+	Log("MCI_COMMAND: ID=%X, Msg=%X, Flags=%X", IDDevice, uMsg, fdwCommand);
 	// 1. Success for SET
 	if (uMsg == MCI_SET) return 0;
 
 	// 2. STOP & CLOSE: Use the most generic command possible
-	if (uMsg == MCI_STOP || uMsg == MCI_CLOSE)  return 0;
+	if (uMsg == MCI_STOP || uMsg == MCI_CLOSE) {
+		Log("MCI_STOP/CLOSE");
+		return 0;
+	}
 
 	// 3. SEEK: Track selection
 	if (uMsg == MCI_SEEK) {
 		LPMCI_SEEK_PARMS lpSeek = (LPMCI_SEEK_PARMS)dwParam;
 		if (lpSeek) currentTrack = (int)lpSeek->dwTo;
+		Log("MCI_SEEK to track: %d", currentTrack);
 		return 0;
 	}
 
@@ -41,6 +62,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 
 	// 5. PLAY: 
 	if (uMsg == MCI_PLAY) {
+		Log("MCI_PLAY: Initializing track %d", currentTrack);
 		char path[MAX_PATH];
 		char cmd[512];
 
