@@ -9,6 +9,7 @@ namespace WoWViewer
         private static readonly Encoding Latin1 = Encoding.GetEncoding("iso-8859-1");
         private static string inputPath = "TEXT.ojd";
         private bool cancelOpenNewFile;
+        private int entryCount = 1397; // there are only 0-1396 entries
         public TextEditorForm()
         {
             InitializeComponent();
@@ -49,7 +50,7 @@ namespace WoWViewer
         {
             byte[] data = File.ReadAllBytes(inputPath); // read the file into a byte array
             int offset = 0x289; // first string starts at 0x289
-            for (int i = 0; i < 1396; i++) // there are only 1396 entries
+            for (int i = 0; i < entryCount; i++) // there are only 1396 entries
             {
                 byte category = data[offset + 4];  // Faction: 00 = Martian, 01 = Human, 02 = UI
                 ushort length = (ushort)(data[offset + 8] | (data[offset + 9] << 8)); // bytes 9 and 10 are the string length
@@ -107,7 +108,7 @@ namespace WoWViewer
             {
                 int offset = 0x289; // original header starts here
                 fs.Write(data, 0, offset); // write original header 0x0 - 0x289
-                for (int i = 0; i < 1396; i++) // total entry count of 1395
+                for (int i = 0; i < entryCount; i++) // total entry count of 1396
                 {
                     byte[] stringBytes = Latin1.GetBytes(entries[i].Name.Replace("\r\n", "\\n").Replace("\r", "\\n").Replace("\n", "\\n")); // replace actual new line with \n so the game can read it
                     fs.Write(data, offset, 8); // write the original data (8 bytes)
@@ -160,7 +161,7 @@ namespace WoWViewer
         {
             using (StreamWriter log = new StreamWriter("TEXT.OJD.txt", false, Latin1))
             {
-                for (int i = 0; i < 1396; i++) // there are only 1396 entries
+                for (int i = 0; i < entryCount; i++) // there are only 1396 entries
                 {
                     log.WriteLine($"{i:D4} [{getFaction(entries[i].Faction)}] : {entries[i].Name.Replace("\r\n", "\\n").Replace("\r", "\\n").Replace("\n", "\\n")}");
                 }
@@ -183,7 +184,7 @@ namespace WoWViewer
                 else { filePath = openFileDialog.FileName; } // this is wrong?
             }
             var lines = File.ReadLines(filePath, Latin1);
-            if (lines.Count() < 1396) // check the line count matches before updating so there is no need to reparse the original TEXT.ojd file
+            if (lines.Count() < entryCount) // check the line count matches before updating so there is no need to reparse the original TEXT.ojd file
             {
                 MessageBox.Show("Error importing TEXT.OJD.TXT file, please check the file and try again.", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
