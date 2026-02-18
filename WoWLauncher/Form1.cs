@@ -54,15 +54,18 @@ namespace WoWLauncher
             // delete unnecessary directx folder and fles
             if (Directory.Exists("DIRECTX")) { Directory.Delete("DIRECTX", true); }
             // check for smackw32.dll
-            if (!File.Exists("Smackw32.dll") && File.Exists("WinSys\\Smackw32.dll"))
+            if (!File.Exists("Smackw32.dll"))
             {
-                File.Move("WinSys\\Smackw32.dll", "Smackw32.dll");
-                Directory.Delete("WinSys", true);
-            }
-            else
-            {
-                MessageBox.Show("Smackw32.dll is missing, what did you do with it?\n\nThe game will fail to run without Smackw32.dll get it back off the disc...");
-                Close();
+                if (File.Exists("WinSys\\Smackw32.dll"))
+                {
+                    File.Move("WinSys\\Smackw32.dll", "Smackw32.dll");
+                    Directory.Delete("WinSys", true);
+                }
+                else
+                {
+                    MessageBox.Show("Smackw32.dll is missing, what did you do with it?\n\nThe game will fail to run without Smackw32.dll get it back off the disc...");
+                    Close();
+                }
             }
             /*
             // Dynamic language pack detection, which can only go wrong if the user goes renaming files or changing the registry.
