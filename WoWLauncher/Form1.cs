@@ -112,7 +112,7 @@ namespace WoWLauncher
 
             string[] supportedResolutions = new string[]
             {
-                "512x384         (4:3)",    // Listed in original manual, ultra-low fallback
+                //"512x384         (4:3)",    // Listed in original manual, ultra-low fallback - sometimes causes DDERR_NOCOOPERATIVELEVELSET
                 "640x480         (4:3)",    // Classic baseline 4:3
                 "800x600         (4:3)",    // Legacy 4:3 standard
                 "1024x768       (4:3)",     // XGA — very common
