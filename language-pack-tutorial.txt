@@ -6,7 +6,7 @@ Export the TEXT.OJD file to a .txt file or edit them in the text editor line by 
 
 When translating a TEXT.OJD.TXT file, please keep the format the same, because importing properly relies on this.
 
-That is, that it gets the entire length of the string after the third space and it relies on there being 1396 lines to the file.
+That is, that it gets the entire length of the string after the third space and it relies on there being 1397 lines to the file.
 
 0000 [FACTION] : STRING
 
