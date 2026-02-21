@@ -11,6 +11,7 @@ namespace WoWLauncher
         private RegistryKey screenKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Screen", true)!;
         private RegistryKey battleKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true)!;
         private RegistryKey researchKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true)!;
+        private RegistryKey optionsKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Options", true)!;
         public Form1()
         {
             InitializeComponent();
@@ -180,6 +181,9 @@ namespace WoWLauncher
                     comboBox4.SelectedIndex = 3;
                     break;
             }
+            // force registry settings for removed options to prevent user meddling
+            optionsKey.SetValue("Show lights", 1, RegistryValueKind.DWord);
+            screenKey.SetValue("BPP", 16, RegistryValueKind.DWord);
             // add event handlers here for the checkboxes and comboboxes to prevent them firing when the form is loaded
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
