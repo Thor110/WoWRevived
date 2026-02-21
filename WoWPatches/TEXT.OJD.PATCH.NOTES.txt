@@ -9,3 +9,7 @@ Updated
 0193 [UI] : Steel
 0196 [UI] : Human Blood
 0198 [UI] : Heavy Elements
+
+Other
+- Added 2 leading spaces to the options in "Critical Event Options" menu so that the text doesn't sit on top of the checkbox.
+- English, French, German, Italian & Spanish versions of the file have had the "Credits" entry added to the end of the file so that the button in the settings menu now has text.
