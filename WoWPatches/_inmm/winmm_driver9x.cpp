@@ -1,34 +1,24 @@
-/*
-Попробуем написать реализацию winmm.dll для Boss Rally и починить таким образом CDDA для Windows XP.
-Шкала громкости музыки не работает в игре, но то же происходит на реальной Win98 при использовании Daemon Tools 3.47.
-
-Надо положить earpds.dll и _inmm.dll в папку с игрой.
-*/
 #include <stdio.h>
 #include <conio.h>
 #include <windows.h>
 #include <fstream>
 
 #define DLLEXPORT			__declspec(dllexport)
+#define FAKE_CD_ID 0xBEEF 
 
-int badthinghappened = 0;
-MCI_OPEN_PARMS mciparms;
 int currentTrack = 2;
-int previousTrack = 2;
 uint32_t currentTrackLength = 0;
 DWORD dwStartTime = 0;
 DWORD totalElapsedBeforePause = 0;
 bool isPaused = false;
 DWORD lastOpenTime = 0;
-
-// We need a dummy ID that isn't 0
-#define FAKE_CD_ID 0xBEEF 
-
+HWAVEOUT hWaveOut = NULL;
+WAVEHDR waveHdr = {};
+HGLOBAL hWaveData = NULL;
 FILE* logFile = nullptr;
-
 bool debug = false; // true for logging
 
-// === Logging ===
+// === Logging === //
 void Log(const char* fmt, ...)
 {
 	if (!debug) return;
@@ -43,20 +33,11 @@ void Log(const char* fmt, ...)
 	va_end(args);
 }
 
-extern "C" DLLEXPORT MMRESULT WINAPI _imeKillEvent(UINT uTimerID)
-{
-	return timeKillEvent(uTimerID);
-}
+extern "C" DLLEXPORT MMRESULT WINAPI _imeKillEvent(UINT uTimerID) { return timeKillEvent(uTimerID); }
 
-extern "C" DLLEXPORT MMRESULT WINAPI _imeSetEvent(UINT uDelay, UINT uResolution, LPTIMECALLBACK fptc, DWORD_PTR dwUser, UINT fuEvent)
-{
-	return timeSetEvent(uDelay, uResolution, fptc, dwUser, fuEvent);
-}
+extern "C" DLLEXPORT MMRESULT WINAPI _imeSetEvent(UINT uDelay, UINT uResolution, LPTIMECALLBACK fptc, DWORD_PTR dwUser, UINT fuEvent) { return timeSetEvent(uDelay, uResolution, fptc, dwUser, fuEvent); }
 
-extern "C" DLLEXPORT DWORD WINAPI _imeGetTime(void)
-{
-	return timeGetTime();
-}
+extern "C" DLLEXPORT DWORD WINAPI _imeGetTime(void) { return timeGetTime(); }
 
 // Simple helper to get duration in milliseconds
 uint32_t GetWavDuration(const char* filename) {
@@ -74,13 +55,9 @@ uint32_t GetWavDuration(const char* filename) {
 	return (uint32_t)((double)dataSize / byteRate * 1000);
 }
 
-HWAVEOUT hWaveOut = NULL;
-WAVEHDR waveHdr = {};
-HGLOBAL hWaveData = NULL;
-
 void StopAudio() {
 	if (hWaveOut) {
-		waveOutReset(hWaveOut);      // stops playback immediately
+		waveOutReset(hWaveOut); // stops playback immediately
 		waveOutUnprepareHeader(hWaveOut, &waveHdr, sizeof(WAVEHDR));
 		waveOutClose(hWaveOut);
 		hWaveOut = NULL;
@@ -135,7 +112,6 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 
 	// 2. STOP & CLOSE: Use the most generic command possible
 	if (uMsg == MCI_STOP || uMsg == MCI_CLOSE) {
-		currentTrack = previousTrack;
 		dwStartTime = 0;
 		totalElapsedBeforePause = 0;
 		isPaused = false;
@@ -167,9 +143,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 			return 0;
 		}
 		Log("MCI_PLAY: Initializing track %d", currentTrack);
-		// only get track length, set path or play if the track actually exists
-		char path[MAX_PATH];
-		wsprintfA(path, "Music\\%02d Track%02d.wav", currentTrack, currentTrack);
+		// only play track values within range to prevent seeking to tracks that dont exist
 		if (currentTrack >= 2 && currentTrack <= 5) {
 			if (isPaused) {
 				isPaused = false;
@@ -177,8 +151,9 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 				waveOutRestart(hWaveOut);
 			}
 			else {
+				char path[MAX_PATH];
+				wsprintfA(path, "Music\\%02d Track%02d.wav", currentTrack, currentTrack);
 				currentTrackLength = GetWavDuration(path);
-				previousTrack = currentTrack; // set previous track number for displaying when stopped
 				dwStartTime = GetTickCount();
 				PlayWav(path);
 			}
@@ -198,20 +173,19 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 			DWORD minutes = seconds / 60;
 			seconds = seconds % 60;
 
-			lpStatus->dwReturn = MCI_MAKE_TMSF(previousTrack, minutes, seconds, 0);
+			lpStatus->dwReturn = MCI_MAKE_TMSF(currentTrack, minutes, seconds, 0);
 		}
 		else if (lpStatus->dwItem == MCI_STATUS_NUMBER_OF_TRACKS) {
-			lpStatus->dwReturn = 5; // tracks 1-5, 1 being data
+			lpStatus->dwReturn = 5;
 		}
 		else if (lpStatus->dwItem == MCI_STATUS_CURRENT_TRACK) {
-			lpStatus->dwReturn = previousTrack;
+			lpStatus->dwReturn = currentTrack;
 		}
 		else if (lpStatus->dwItem == MCI_STATUS_LENGTH) {
 			lpStatus->dwReturn = MCI_MAKE_TMSF(0, currentTrackLength / 60000, (currentTrackLength / 1000) % 60, 0);
 		}
 		return 0;
 	}
-
 
 	// 7. PAUSE
 	if (uMsg == MCI_PAUSE) {
@@ -225,22 +199,10 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	return 0;
 }
 
-extern "C" DLLEXPORT BOOL WINAPI _ciGetErrorStringA(MCIERROR mcierr, LPSTR pszText, UINT cchText)
-{
-	return mciGetErrorStringA(mcierr, pszText, cchText);
-}
+extern "C" DLLEXPORT BOOL WINAPI _ciGetErrorStringA(MCIERROR mcierr, LPSTR pszText, UINT cchText) { return mciGetErrorStringA(mcierr, pszText, cchText); }
 
-extern "C" DLLEXPORT MMRESULT WINAPI _imeBeginPeriod(UINT uPeriod)
-{
-	return timeBeginPeriod(uPeriod);
-}
+extern "C" DLLEXPORT MMRESULT WINAPI _imeBeginPeriod(UINT uPeriod) { return timeBeginPeriod(uPeriod); }
 
-extern "C" DLLEXPORT MMRESULT WINAPI _imeGetDevCaps(LPTIMECAPS ptc, UINT cbtc)
-{
-	return timeGetDevCaps(ptc, cbtc);
-}
+extern "C" DLLEXPORT MMRESULT WINAPI _imeGetDevCaps(LPTIMECAPS ptc, UINT cbtc) { return timeGetDevCaps(ptc, cbtc); }
 
-extern "C" DLLEXPORT MMRESULT WINAPI _imeEndPeriod(UINT uPeriod)
-{
-	return timeEndPeriod(uPeriod);
-}
+extern "C" DLLEXPORT MMRESULT WINAPI _imeEndPeriod(UINT uPeriod) { return timeEndPeriod(uPeriod); }
