@@ -17,6 +17,8 @@ int currentTrack = 2;
 int previousTrack = 2;
 uint32_t currentTrackLength = 0;
 DWORD dwStartTime = 0;
+DWORD totalElapsedBeforePause = 0;
+bool isPaused = false;
 
 // We need a dummy ID that isn't 0
 #define FAKE_CD_ID 0xBEEF 
@@ -80,6 +82,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// 2. STOP & CLOSE: Use the most generic command possible
 	if (uMsg == MCI_STOP || uMsg == MCI_CLOSE) {
 		//Log("MCI_STOP/CLOSE");
+		totalElapsedBeforePause = 0;
 		PlaySound(NULL, NULL, 0);
 		return 0;
 	}
@@ -107,10 +110,17 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		{
 			char path[MAX_PATH];
 			wsprintfA(path, "Music\\%02d Track%02d.wav", currentTrack, currentTrack);
-			currentTrackLength = GetWavDuration(path);
-			previousTrack = currentTrack; // set previous track number for displaying when stopped
-			dwStartTime = GetTickCount(); // Start our internal timer
-			PlaySound(path, NULL, SND_ASYNC | SND_FILENAME | SND_NODEFAULT);
+			dwStartTime = GetTickCount();
+			if (isPaused) {
+				isPaused = false;
+				PlaySound(path, NULL, SND_ASYNC | SND_FILENAME | SND_NODEFAULT); // temporary
+			}
+			else {
+				currentTrackLength = GetWavDuration(path);
+				previousTrack = currentTrack; // set previous track number for displaying when stopped
+				totalElapsedBeforePause = 0;
+				PlaySound(path, NULL, SND_ASYNC | SND_FILENAME | SND_NODEFAULT);
+			}
 		}
 		return 0;
 	}
@@ -118,19 +128,21 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// 6. STATUS
 	if (uMsg == MCI_STATUS) {
 		LPMCI_STATUS_PARMS lpStatus = (LPMCI_STATUS_PARMS)dwParam;
-		if (lpStatus) {
-			if (lpStatus->dwItem == MCI_STATUS_NUMBER_OF_TRACKS) lpStatus->dwReturn = 5;
-			if (lpStatus->dwItem == MCI_STATUS_POSITION)
-			{
-				if (currentTrack > 5 || currentTrack == 1) // stop sets track to 6 and sometimes seeks higher or to 1
-				{
-					lpStatus->dwReturn = (DWORD_PTR)previousTrack; // display correct track number when stop is pressed
-				}
-				else
-				{
-					lpStatus->dwReturn = (DWORD_PTR)currentTrack; // reports current track
-				}
-			}
+		if (lpStatus->dwItem == MCI_STATUS_POSITION)
+		{
+			lpStatus->dwReturn = (currentTrack > 5 || currentTrack == 1) ? (DWORD_PTR)previousTrack : (DWORD_PTR)currentTrack; // prevent wrong track numbers when stop is pressed
+		}
+		return 0;
+	}
+
+
+	// 7. PAUSE
+	if (uMsg == MCI_PAUSE) {
+		if (!isPaused) {
+			totalElapsedBeforePause = GetTickCount() - dwStartTime;
+			isPaused = true;
+			PlaySound(NULL, NULL, 0);
+			Log("MCI_PAUSE: Paused at %d ms", totalElapsedBeforePause);
 		}
 		return 0;
 	}
