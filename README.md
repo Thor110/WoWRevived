@@ -69,8 +69,6 @@ The road map for this project.
 	- .ojd files can be parsed, but there is still more decoding to do.
 - ✅ 6 : No-CD Music Fix ( 99% Complete )
 	- Uses a shim that allows for localised audio playback.
-	- Known "bugs" which I consider non-issues for the time-being.
-		- 1\. Next and previous track buttons don't work.
 - ❌ 7 : Video Playback Intercept ( Researching Solution - 0% Complete )
 	- Looking at intercepting smackw32.dll and redirecting it to use the more modern binkw32.dll for higher resolution video playback.
 	- Determining the best solution for upscaling and remastering the original videos.

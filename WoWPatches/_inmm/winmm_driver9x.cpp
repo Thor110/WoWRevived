@@ -26,12 +26,12 @@ DWORD lastOpenTime = 0;
 
 FILE* logFile = nullptr;
 
-bool debug = false; // true on release, false for logging
+bool debug = false; // true for logging
 
 // === Logging ===
 void Log(const char* fmt, ...)
 {
-	if (debug) return;
+	if (!debug) return;
 	if (!logFile) logFile = fopen("_inmm_log.txt", "w");
 	if (!logFile) return;
 
@@ -199,6 +199,15 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 			seconds = seconds % 60;
 
 			lpStatus->dwReturn = MCI_MAKE_TMSF(previousTrack, minutes, seconds, 0);
+		}
+		else if (lpStatus->dwItem == MCI_STATUS_NUMBER_OF_TRACKS) {
+			lpStatus->dwReturn = 5; // tracks 1-5, 1 being data
+		}
+		else if (lpStatus->dwItem == MCI_STATUS_CURRENT_TRACK) {
+			lpStatus->dwReturn = previousTrack;
+		}
+		else if (lpStatus->dwItem == MCI_STATUS_LENGTH) {
+			lpStatus->dwReturn = MCI_MAKE_TMSF(0, currentTrackLength / 60000, (currentTrackLength / 1000) % 60, 0);
 		}
 		return 0;
 	}
