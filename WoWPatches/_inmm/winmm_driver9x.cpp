@@ -19,6 +19,7 @@ uint32_t currentTrackLength = 0;
 DWORD dwStartTime = 0;
 DWORD totalElapsedBeforePause = 0;
 bool isPaused = false;
+DWORD lastOpenTime = 0;
 
 // We need a dummy ID that isn't 0
 #define FAKE_CD_ID 0xBEEF 
@@ -155,11 +156,16 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	if (uMsg == MCI_OPEN) {
 		LPMCI_OPEN_PARMS lpOpen = (LPMCI_OPEN_PARMS)dwParam;
 		if (lpOpen) lpOpen->wDeviceID = (MCIDEVICEID)FAKE_CD_ID;
+		lastOpenTime = GetTickCount();
 		return 0;
 	}
 
 	// 5. PLAY: 
 	if (uMsg == MCI_PLAY) {
+		if (GetTickCount() - lastOpenTime < 1000) {
+			Log("Suppressed focus-triggered play");
+			return 0;
+		}
 		Log("MCI_PLAY: Initializing track %d", currentTrack);
 		// only get track length, set path or play if the track actually exists
 		char path[MAX_PATH];
