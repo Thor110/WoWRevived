@@ -74,6 +74,7 @@ The road map for this project.
 		- 2\. Stops the current track when the window loses focus and restarts when the window regains focus.
 		- 3\. Next and previous track buttons don't work.
 		- 4\. Time counter increases indefinitely in the CD Player menu unless a new track is selected or the stop button is pressed.
+		- 5\. Incorrect track displayed when the stop button is pressed.
 - ❌ 7 : Video Playback Intercept ( Researching Solution - 0% Complete )
 	- Looking at intercepting smackw32.dll and redirecting it to use the more modern binkw32.dll for higher resolution video playback.
 	- Determining the best solution for upscaling and remastering the original videos.
