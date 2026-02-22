@@ -88,6 +88,8 @@ Discord server : https://discord.gg/bwG6Z3RK8b
 
 Critical Event Options - Edited
 
+This was fixed by adding two leading spaces to the TEXT.ojd file for these entries.
+
 <div align="center">
   <img src="images/menu-critical-edited.png" alt="Critical Event Options - Edited">
 </div>
@@ -99,6 +101,8 @@ Critical Event Options - Unedited
 </div>
 
 Display Settings - Edited
+
+This was fixed by patching the executable to jump past the instructions to create these buttons.
 
 <div align="center">
   <img src="images/menu-settings-edited.png" alt="Display Settings - Edited">
