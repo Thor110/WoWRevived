@@ -30,7 +30,7 @@ WANTED : Regional Manuals : We are looking for high-quality scans of the origina
 # Road Map
 
 The road map for this project.
-- ✅ 0 : Main Game Functionality ( 99% Complete )
+- [✅ 0 : Main Game Functionality](#main-game-functionality) ( 99% Complete )
 	- Languages supported:
 		- 1\. English
 		- 2\. French
@@ -83,6 +83,32 @@ The road map for this project.
 This might not all happen but I wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 
 Discord server : https://discord.gg/bwG6Z3RK8b
+
+## Main Game Functionality
+
+Critical Event Options - Edited
+
+<div align="center">
+  <img src="images/menu-critical-edited.png" alt="Critical Event Options - Edited">
+</div>
+
+Critical Event Options - Unedited
+
+<div align="center">
+  <img src="images/menu-critical-unedited.png" alt="Critical Event Options - Unedited">
+</div>
+
+Display Settings - Edited
+
+<div align="center">
+  <img src="images/menu-settings-edited.png" alt="Display Settings - Edited">
+</div>
+
+Display Settings - Unedited
+
+<div align="center">
+  <img src="images/menu-settings-unedited.png" alt="Display Settings - Unedited">
+</div>
 
 ## Custom Launcher
 
