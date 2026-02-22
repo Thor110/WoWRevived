@@ -73,25 +73,81 @@ uint32_t GetWavDuration(const char* filename) {
 	return (uint32_t)((double)dataSize / byteRate * 1000);
 }
 
+HWAVEOUT hWaveOut = NULL;
+WAVEHDR waveHdr = {};
+HGLOBAL hWaveData = NULL;
+
+void StopAudio() {
+	if (hWaveOut) {
+		waveOutReset(hWaveOut);      // stops playback immediately
+		waveOutUnprepareHeader(hWaveOut, &waveHdr, sizeof(WAVEHDR));
+		waveOutClose(hWaveOut);
+		hWaveOut = NULL;
+	}
+	if (hWaveData) {
+		GlobalFree(hWaveData);
+		hWaveData = NULL;
+	}
+}
+
+void PlayWav(const char* path) {
+	StopAudio(); // always clean up first
+
+	// Read the whole file into memory
+	HMMIO hmmio = mmioOpenA((LPSTR)path, NULL, MMIO_READ);
+	if (!hmmio) return;
+
+	MMCKINFO riff = {}, data = {};
+	riff.fccType = mmioFOURCC('W', 'A', 'V', 'E');
+	mmioDescend(hmmio, &riff, NULL, MMIO_FINDRIFF);
+
+	MMCKINFO fmt = {};
+	fmt.ckid = mmioFOURCC('f', 'm', 't', ' ');
+	mmioDescend(hmmio, &fmt, &riff, MMIO_FINDCHUNK);
+
+	WAVEFORMATEX wfx = {};
+	mmioRead(hmmio, (HPSTR)&wfx, sizeof(WAVEFORMATEX));
+	mmioAscend(hmmio, &fmt, 0);
+
+	data.ckid = mmioFOURCC('d', 'a', 't', 'a');
+	mmioDescend(hmmio, &data, &riff, MMIO_FINDCHUNK);
+
+	hWaveData = GlobalAlloc(GMEM_MOVEABLE, data.cksize);
+	LPSTR pData = (LPSTR)GlobalLock(hWaveData);
+	mmioRead(hmmio, pData, data.cksize);
+	mmioClose(hmmio, 0);
+
+	waveOutOpen(&hWaveOut, WAVE_MAPPER, &wfx, 0, 0, CALLBACK_NULL);
+
+	waveHdr = {};
+	waveHdr.lpData = pData;
+	waveHdr.dwBufferLength = data.cksize;
+	waveOutPrepareHeader(hWaveOut, &waveHdr, sizeof(WAVEHDR));
+	waveOutWrite(hWaveOut, &waveHdr, sizeof(WAVEHDR));
+}
+
 extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR fdwCommand, DWORD_PTR dwParam)
 {
-	//Log("MCI_COMMAND: ID=%X, Msg=%X, Flags=%X", IDDevice, uMsg, fdwCommand);
+	Log("MCI_COMMAND: ID=%X, Msg=%X, Flags=%X", IDDevice, uMsg, fdwCommand);
 	// 1. Success for SET
 	if (uMsg == MCI_SET) return 0;
 
 	// 2. STOP & CLOSE: Use the most generic command possible
 	if (uMsg == MCI_STOP || uMsg == MCI_CLOSE) {
-		//Log("MCI_STOP/CLOSE");
+		currentTrack = previousTrack;
+		dwStartTime = 0;
 		totalElapsedBeforePause = 0;
-		PlaySound(NULL, NULL, 0);
+		isPaused = false;
+		Log("MCI_STOP/CLOSE");
+		StopAudio();
 		return 0;
 	}
 
 	// 3. SEEK: Track selection
 	if (uMsg == MCI_SEEK) {
 		LPMCI_SEEK_PARMS lpSeek = (LPMCI_SEEK_PARMS)dwParam;
-		if (lpSeek) currentTrack = (int)lpSeek->dwTo;
-		//Log("MCI_SEEK to track: %d", currentTrack);
+		currentTrack = (int)lpSeek->dwTo;
+		Log("MCI_SEEK to: %d", (int)lpSeek->dwTo);
 		return 0;
 	}
 
@@ -106,20 +162,19 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	if (uMsg == MCI_PLAY) {
 		Log("MCI_PLAY: Initializing track %d", currentTrack);
 		// only get track length, set path or play if the track actually exists
-		if (currentTrack < 6 && currentTrack != 1) // seek happens multiple times
-		{
-			char path[MAX_PATH];
-			wsprintfA(path, "Music\\%02d Track%02d.wav", currentTrack, currentTrack);
-			dwStartTime = GetTickCount();
+		char path[MAX_PATH];
+		wsprintfA(path, "Music\\%02d Track%02d.wav", currentTrack, currentTrack);
+		if (currentTrack >= 2 && currentTrack <= 5) {
 			if (isPaused) {
 				isPaused = false;
-				PlaySound(path, NULL, SND_ASYNC | SND_FILENAME | SND_NODEFAULT); // temporary
+				dwStartTime = GetTickCount() - totalElapsedBeforePause;
+				waveOutRestart(hWaveOut);
 			}
 			else {
 				currentTrackLength = GetWavDuration(path);
 				previousTrack = currentTrack; // set previous track number for displaying when stopped
-				totalElapsedBeforePause = 0;
-				PlaySound(path, NULL, SND_ASYNC | SND_FILENAME | SND_NODEFAULT);
+				dwStartTime = GetTickCount();
+				PlayWav(path);
 			}
 		}
 		return 0;
@@ -130,7 +185,14 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		LPMCI_STATUS_PARMS lpStatus = (LPMCI_STATUS_PARMS)dwParam;
 		if (lpStatus->dwItem == MCI_STATUS_POSITION)
 		{
-			lpStatus->dwReturn = (currentTrack > 5 || currentTrack == 1) ? (DWORD_PTR)previousTrack : (DWORD_PTR)currentTrack; // prevent wrong track numbers when stop is pressed
+			DWORD elapsed = (dwStartTime > 0) ? GetTickCount() - dwStartTime : 0;
+			if (elapsed > currentTrackLength) elapsed = currentTrackLength;
+
+			DWORD seconds = elapsed / 1000;
+			DWORD minutes = seconds / 60;
+			seconds = seconds % 60;
+
+			lpStatus->dwReturn = MCI_MAKE_TMSF(previousTrack, minutes, seconds, 0);
 		}
 		return 0;
 	}
@@ -141,8 +203,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		if (!isPaused) {
 			totalElapsedBeforePause = GetTickCount() - dwStartTime;
 			isPaused = true;
-			PlaySound(NULL, NULL, 0);
-			Log("MCI_PAUSE: Paused at %d ms", totalElapsedBeforePause);
+			waveOutPause(hWaveOut);
 		}
 		return 0;
 	}
