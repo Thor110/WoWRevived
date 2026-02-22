@@ -182,8 +182,16 @@ namespace WoWLauncher
                     break;
             }
             // force registry settings for removed options to prevent user meddling
-            optionsKey.SetValue("Show lights", 1, RegistryValueKind.DWord);
-            screenKey.SetValue("BPP", 16, RegistryValueKind.DWord);
+            if (Convert.ToInt32(optionsKey.GetValue("Show lights")) != 1)
+            {
+                optionsKey.SetValue("Show lights", 1, RegistryValueKind.DWord);
+                MessageBox.Show("The \"Show lights\" registry entry must be set to one to prevent crashes when using the Infiltration skill in-game, so it has been reset.");
+            }
+            if (Convert.ToInt32(screenKey.GetValue("BPP")) != 16)
+            {
+                screenKey.SetValue("BPP", 16, RegistryValueKind.DWord);
+                MessageBox.Show("The \"BPP\" registry entry must be set to 16 as I have removed the 8/16 bit toggle from the games executable, surely you don't want to play it in 8 bit colour mode in the 21st century?");
+            }
             // add event handlers here for the checkboxes and comboboxes to prevent them firing when the form is loaded
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
