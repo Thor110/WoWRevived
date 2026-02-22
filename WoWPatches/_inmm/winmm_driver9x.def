@@ -1,29 +1,11 @@
 LIBRARY _INMM
 
 EXPORTS
-_ciSendCommandA @2
-_ixerGetDevCapsA @3
-_ixerGetControlDetailsA @4
-_ixerGetLineControlsA @5
-_ixerClose @6
-_ixerOpen @7
-_ixerGetNumDevs @8
-_ixerSetControlDetails @9
-_ixerGetLineInfoA @10
-_imeGetTime @11
-_imeKillEvent @12
-_imeBeginPeriod @13
-_imeSetEvent @14
-_imeEndPeriod @15
-_uxGetVolume @16
-_uxGetNumDevs @17
-_uxSetVolume @18
-_uxGetDevCapsA @19
-_mioClose @20
-_mioRead @21
-_mioSeek @22
-_mioAscend @23
-_mioDescend @24
-_mioOpenA @25
-_imeGetDevCaps @26
-_ciGetErrorStringA @27
+_imeKillEvent @2
+_imeSetEvent @3
+_imeGetTime @4
+_ciSendCommandA @5
+_ciGetErrorStringA @6
+_imeBeginPeriod @7
+_imeGetDevCaps @8
+_imeEndPeriod @9

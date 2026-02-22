@@ -7,20 +7,23 @@
 #include <stdio.h>
 #include <conio.h>
 #include <windows.h>
-#include <string>
+#include <fstream>
 
 #define DLLEXPORT			__declspec(dllexport)
 
 int badthinghappened = 0;
 MCI_OPEN_PARMS mciparms;
-int currentTrack = 2; // Global variable at top of file
+int currentTrack = 2;
+int previousTrack = 2;
+uint32_t currentTrackLength = 0;
+DWORD dwStartTime = 0;
 
 // We need a dummy ID that isn't 0
 #define FAKE_CD_ID 0xBEEF 
 
 FILE* logFile = nullptr;
 
-bool debug = true; // true on release, false for logging
+bool debug = false; // true on release, false for logging
 
 // === Logging ===
 void Log(const char* fmt, ...)
@@ -37,15 +40,46 @@ void Log(const char* fmt, ...)
 	va_end(args);
 }
 
+extern "C" DLLEXPORT MMRESULT WINAPI _imeKillEvent(UINT uTimerID)
+{
+	return timeKillEvent(uTimerID);
+}
+
+extern "C" DLLEXPORT MMRESULT WINAPI _imeSetEvent(UINT uDelay, UINT uResolution, LPTIMECALLBACK fptc, DWORD_PTR dwUser, UINT fuEvent)
+{
+	return timeSetEvent(uDelay, uResolution, fptc, dwUser, fuEvent);
+}
+
+extern "C" DLLEXPORT DWORD WINAPI _imeGetTime(void)
+{
+	return timeGetTime();
+}
+
+// Simple helper to get duration in milliseconds
+uint32_t GetWavDuration(const char* filename) {
+	std::ifstream file(filename, std::ios::binary);
+	if (!file.is_open()) return 0;
+
+	char buffer[44]; // Standard WAV header size
+	file.read(buffer, 44);
+
+	// ByteRate is at offset 28, Subchunk2Size (Data Size) is at offset 40
+	uint32_t byteRate = *reinterpret_cast<uint32_t*>(&buffer[28]);
+	uint32_t dataSize = *reinterpret_cast<uint32_t*>(&buffer[40]);
+
+	if (byteRate == 0) return 0;
+	return (uint32_t)((double)dataSize / byteRate * 1000);
+}
+
 extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR fdwCommand, DWORD_PTR dwParam)
 {
-	Log("MCI_COMMAND: ID=%X, Msg=%X, Flags=%X", IDDevice, uMsg, fdwCommand);
+	//Log("MCI_COMMAND: ID=%X, Msg=%X, Flags=%X", IDDevice, uMsg, fdwCommand);
 	// 1. Success for SET
 	if (uMsg == MCI_SET) return 0;
 
 	// 2. STOP & CLOSE: Use the most generic command possible
 	if (uMsg == MCI_STOP || uMsg == MCI_CLOSE) {
-		Log("MCI_STOP/CLOSE");
+		//Log("MCI_STOP/CLOSE");
 		PlaySound(NULL, NULL, 0);
 		return 0;
 	}
@@ -54,7 +88,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	if (uMsg == MCI_SEEK) {
 		LPMCI_SEEK_PARMS lpSeek = (LPMCI_SEEK_PARMS)dwParam;
 		if (lpSeek) currentTrack = (int)lpSeek->dwTo;
-		Log("MCI_SEEK to track: %d", currentTrack);
+		//Log("MCI_SEEK to track: %d", currentTrack);
 		return 0;
 	}
 
@@ -68,9 +102,16 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// 5. PLAY: 
 	if (uMsg == MCI_PLAY) {
 		Log("MCI_PLAY: Initializing track %d", currentTrack);
-		char path[MAX_PATH];
-		wsprintfA(path, "Music\\%02d Track%02d.wav", currentTrack, currentTrack);
-		PlaySound(path, NULL, SND_ASYNC | SND_FILENAME | SND_NODEFAULT);
+		// only get track length, set path or play if the track actually exists
+		if (currentTrack < 6 && currentTrack != 1) // seek happens multiple times
+		{
+			char path[MAX_PATH];
+			wsprintfA(path, "Music\\%02d Track%02d.wav", currentTrack, currentTrack);
+			currentTrackLength = GetWavDuration(path);
+			previousTrack = currentTrack; // set previous track number for displaying when stopped
+			dwStartTime = GetTickCount(); // Start our internal timer
+			PlaySound(path, NULL, SND_ASYNC | SND_FILENAME | SND_NODEFAULT);
+		}
 		return 0;
 	}
 
@@ -79,183 +120,39 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		LPMCI_STATUS_PARMS lpStatus = (LPMCI_STATUS_PARMS)dwParam;
 		if (lpStatus) {
 			if (lpStatus->dwItem == MCI_STATUS_NUMBER_OF_TRACKS) lpStatus->dwReturn = 5;
-			if (lpStatus->dwItem == MCI_STATUS_POSITION) lpStatus->dwReturn = (DWORD_PTR)currentTrack;
+			if (lpStatus->dwItem == MCI_STATUS_POSITION)
+			{
+				if (currentTrack > 5 || currentTrack == 1) // stop sets track to 6 and sometimes seeks higher or to 1
+				{
+					lpStatus->dwReturn = (DWORD_PTR)previousTrack; // display correct track number when stop is pressed
+				}
+				else
+				{
+					lpStatus->dwReturn = (DWORD_PTR)currentTrack; // reports current track
+				}
+			}
 		}
 		return 0;
 	}
-
 	return 0;
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _ixerGetDevCapsA(UINT_PTR uMxId, LPMIXERCAPSA pmxcaps, UINT cbmxcaps)
-{
-	MMRESULT myres;
-	myres = mixerGetDevCapsA(uMxId, pmxcaps, cbmxcaps);
-	if (myres != MMSYSERR_NOERROR)
-		printf("mixerGetDevCapsA: %x\n", myres);
-	return myres;
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _ixerGetLineControlsA(HMIXEROBJ hmxobj, LPMIXERLINECONTROLSA pmxlc, DWORD fdwControls)
-{
-	MMRESULT myres;
-	myres = mixerGetLineControlsA(hmxobj, pmxlc, fdwControls);
-	if (myres != MMSYSERR_NOERROR)
-		printf("mixerGetLineControlsA: %x\n", myres);
-	return myres;
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _ixerOpen(LPHMIXER phmx, UINT uMxId, DWORD_PTR dwCallback, DWORD_PTR dwInstance, DWORD fdwOpen)
-{
-	MMRESULT myres;
-	myres =  mixerOpen(phmx, uMxId, dwCallback, dwInstance, fdwOpen);
-	if (myres != MMSYSERR_NOERROR)
-		printf("mixerOpen: %x\n", myres);
-	return myres;
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _ixerClose(HMIXER hmx)
-{
-	MMRESULT myres;
-	myres = mixerClose(hmx);
-	if (myres != MMSYSERR_NOERROR)
-		printf("mixerClose: %x\n", myres);
-	return myres;
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _ixerGetControlDetailsA(HMIXEROBJ hmxobj, LPMIXERCONTROLDETAILS pmxcd, DWORD fdwDetails)
-{
-	MMRESULT myres;
-	myres = mixerGetControlDetailsA(hmxobj, pmxcd, fdwDetails);
-	if (myres != MMSYSERR_NOERROR)
-		printf("mixerGetControlDetailsA: %x\n", myres);
-	return myres;
-}
-
-extern "C" DLLEXPORT UINT WINAPI _ixerGetNumDevs(void)
-{
-	return mixerGetNumDevs();
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _ixerSetControlDetails(HMIXEROBJ hmxobj, LPMIXERCONTROLDETAILS pmxcd, DWORD fdwDetails)
-{
-	MMRESULT myres;
-	myres = mixerSetControlDetails(hmxobj, pmxcd, fdwDetails);
-	if (myres != MMSYSERR_NOERROR)
-		printf("mixerSetControlDetails: %x\n", myres);
-	return myres;
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _ixerGetLineInfoA(HMIXEROBJ hmxobj, LPMIXERLINEA pmxl, DWORD fdwInfo)
-{
-	MMRESULT myres;
-	myres = mixerGetLineInfoA(hmxobj, pmxl, fdwInfo);
-	if (myres != MMSYSERR_NOERROR)
-		printf("mixerGetLineInfoA: %x\n", myres);
-	return myres;
-}
-
-extern "C" DLLEXPORT DWORD WINAPI _imeGetTime(void)
-{
-	return timeGetTime();
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _imeKillEvent(UINT uTimerID)
-{
-	MMRESULT myres = timeKillEvent(uTimerID);
-	return myres;
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _imeBeginPeriod(UINT uPeriod)
-{
-	MMRESULT myres = timeBeginPeriod(uPeriod);
-	return myres;
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _imeSetEvent(UINT uDelay, UINT uResolution, LPTIMECALLBACK fptc, DWORD_PTR dwUser, UINT fuEvent)
-{
-	MMRESULT myres;
-	myres = timeSetEvent(uDelay, uResolution, fptc, dwUser, fuEvent);
-	return myres;
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _imeEndPeriod(UINT uPeriod)
-{
-	MMRESULT myres = timeEndPeriod(uPeriod);
-	return myres;
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _uxGetVolume(UINT uDeviceID, LPDWORD pdwVolume)
-{
-	MMRESULT myres = auxGetVolume(uDeviceID, pdwVolume);
-	return myres;
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _uxSetVolume(UINT uDeviceID, DWORD dwVolume)
-{
-	MMRESULT myres = auxSetVolume(uDeviceID, dwVolume);
-	return myres;
-}
-
-// 1. Force the game to see at least one audio device
-extern "C" DLLEXPORT UINT WINAPI _uxGetNumDevs(void)
-{
-	return 1;
-}
-
-// 2. Force that device to identify as a CD-ROM with Volume Control
-extern "C" DLLEXPORT MMRESULT WINAPI _uxGetDevCapsA(UINT uDeviceID, LPAUXCAPS pac, UINT cbac)
-{
-	pac->wMid = 1;                // Microsoft
-	pac->wPid = 2;                // Dummy Product ID
-	pac->vDriverVersion = 0x0100; // 1.0
-	strcpy_s(pac->szPname, "CD Audio");
-	pac->wTechnology = AUXCAPS_CDAUDIO;
-	pac->dwSupport = AUXCAPS_VOLUME;
-	return MMSYSERR_NOERROR;
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _mioClose(HMMIO hmmio, UINT fuClose)
-{
-	MMRESULT myres = mmioClose(hmmio, fuClose);
-	return myres;
-}
-
-extern "C" DLLEXPORT LONG WINAPI _mioRead(HMMIO hmmio, HPSTR pch, LONG cch)
-{
-	return mmioRead(hmmio, pch, cch);
-}
-
-extern "C" DLLEXPORT LONG WINAPI _mioSeek(HMMIO hmmio, LONG lOffset, int iOrigin)
-{
-	return mmioSeek(hmmio, lOffset, iOrigin);
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _mioAscend(HMMIO hmmio, LPMMCKINFO pmmcki, UINT fuAscend)
-{
-	MMRESULT myres = mmioAscend(hmmio, pmmcki, fuAscend);
-	return myres;
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _mioDescend(HMMIO hmmio, LPMMCKINFO pmmcki, const MMCKINFO* pmmckiParent, UINT fuDescend)
-{
-	MMRESULT myres = mmioDescend(hmmio, pmmcki, pmmckiParent, fuDescend);
-	return myres;
-}
-
-extern "C" DLLEXPORT HMMIO WINAPI _mioOpenA(LPSTR pszFileName, LPMMIOINFO pmmioinfo, DWORD fdwOpen)
-{
-	return mmioOpenA(pszFileName, pmmioinfo, fdwOpen);
-}
-
-extern "C" DLLEXPORT MMRESULT WINAPI _imeGetDevCaps(LPTIMECAPS ptc, UINT cbtc)
-{
-	MMRESULT myres = timeGetDevCaps(ptc, cbtc);
-	return myres;
 }
 
 extern "C" DLLEXPORT BOOL WINAPI _ciGetErrorStringA(MCIERROR mcierr, LPSTR pszText, UINT cchText)
 {
-	strcpy_s(pszText, cchText, "Success");
-	return TRUE;
+	return mciGetErrorStringA(mcierr, pszText, cchText);
+}
+
+extern "C" DLLEXPORT MMRESULT WINAPI _imeBeginPeriod(UINT uPeriod)
+{
+	return timeBeginPeriod(uPeriod);
+}
+
+extern "C" DLLEXPORT MMRESULT WINAPI _imeGetDevCaps(LPTIMECAPS ptc, UINT cbtc)
+{
+	return timeGetDevCaps(ptc, cbtc);
+}
+
+extern "C" DLLEXPORT MMRESULT WINAPI _imeEndPeriod(UINT uPeriod)
+{
+	return timeEndPeriod(uPeriod);
 }
