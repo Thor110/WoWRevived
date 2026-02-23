@@ -42,7 +42,7 @@ extern "C" DLLEXPORT DWORD WINAPI _imeGetTime(void) { return timeGetTime(); }
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 	if (fdwReason == DLL_PROCESS_ATTACH) {
-		// Game window may not exist yet, so hook it on first MCI_OPEN instead
+		DeleteFileA("_inmm_log.txt");
 	}
 	return TRUE;
 }
