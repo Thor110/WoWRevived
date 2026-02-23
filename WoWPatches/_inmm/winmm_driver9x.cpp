@@ -16,7 +16,7 @@ HWAVEOUT hWaveOut = NULL;
 WAVEHDR waveHdr = {};
 HGLOBAL hWaveData = NULL;
 FILE* logFile = nullptr;
-bool debug = false; // true for logging
+bool debug = true; // true for logging
 
 // === Logging === //
 void Log(const char* fmt, ...)
@@ -38,6 +38,48 @@ extern "C" DLLEXPORT MMRESULT WINAPI _imeKillEvent(UINT uTimerID) { return timeK
 extern "C" DLLEXPORT MMRESULT WINAPI _imeSetEvent(UINT uDelay, UINT uResolution, LPTIMECALLBACK fptc, DWORD_PTR dwUser, UINT fuEvent) { return timeSetEvent(uDelay, uResolution, fptc, dwUser, fuEvent); }
 
 extern "C" DLLEXPORT DWORD WINAPI _imeGetTime(void) { return timeGetTime(); }
+
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+{
+	if (fdwReason == DLL_PROCESS_ATTACH) {
+		// Game window may not exist yet, so hook it on first MCI_OPEN instead
+	}
+	return TRUE;
+}
+
+HWND gameWindow = NULL;
+WNDPROC origWndProc = NULL;
+bool losingFocus = false;
+bool gainingFocus = false;
+
+LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	if (msg == WM_ACTIVATEAPP) {
+		if (!wParam) {
+			Log("LOSING FOCUS");
+			// losing focus
+			losingFocus = true;
+			gainingFocus = false;
+			if (hWaveOut && !isPaused) {
+				totalElapsedBeforePause = GetTickCount() - dwStartTime;
+				isPaused = true;
+				waveOutPause(hWaveOut);
+			}
+		}
+		else {
+			Log("GAINING FOCUS");
+			// regaining focus
+			gainingFocus = true;
+			losingFocus = false;
+			if (hWaveOut && isPaused) {
+				isPaused = false;
+				dwStartTime = GetTickCount() - totalElapsedBeforePause;
+				waveOutRestart(hWaveOut);
+			}
+		}
+	}
+	return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
+}
 
 // Simple helper to get duration in milliseconds
 uint32_t GetWavDuration(const char* filename) {
@@ -106,17 +148,18 @@ void PlayWav(const char* path) {
 
 extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR fdwCommand, DWORD_PTR dwParam)
 {
-	Log("MCI_COMMAND: ID=%X, Msg=%X, Flags=%X", IDDevice, uMsg, fdwCommand);
+	//Log("MCI_COMMAND: ID=%X, Msg=%X, Flags=%X", IDDevice, uMsg, fdwCommand);
 	// 1. Success for SET
 	if (uMsg == MCI_SET) return 0;
 
 	// 2. STOP & CLOSE: Use the most generic command possible
 	if (uMsg == MCI_STOP || uMsg == MCI_CLOSE) {
+		if (losingFocus || gainingFocus) return 0;
 		dwStartTime = 0;
 		totalElapsedBeforePause = 0;
 		isPaused = false;
-		Log("MCI_STOP/CLOSE");
 		StopAudio();
+		Log("MCI_STOP/MCI_CLOSE");
 		return 0;
 	}
 
@@ -130,9 +173,21 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 
 	// 4. OPEN: Handle the fake device ID
 	if (uMsg == MCI_OPEN) {
+		if (!gameWindow) {
+			HWND hw = GetForegroundWindow();
+			char title[256];
+			GetWindowTextA(hw, title, sizeof(title));
+			Log("Window title: %s", title);
+			gameWindow = FindWindow(NULL, title);
+			if (gameWindow) {
+				Log("Found window: %s", title);
+				origWndProc = (WNDPROC)SetWindowLongPtr(gameWindow, GWLP_WNDPROC, (LONG_PTR)WndProcHook);
+			}
+		}
 		LPMCI_OPEN_PARMS lpOpen = (LPMCI_OPEN_PARMS)dwParam;
 		if (lpOpen) lpOpen->wDeviceID = (MCIDEVICEID)FAKE_CD_ID;
 		lastOpenTime = GetTickCount();
+		Log("MCI_OPEN");
 		return 0;
 	}
 
@@ -154,6 +209,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 				char path[MAX_PATH];
 				wsprintfA(path, "Music\\%02d Track%02d.wav", currentTrack, currentTrack);
 				currentTrackLength = GetWavDuration(path);
+				Log("Track %d duration: %d ms", currentTrack, currentTrackLength);
 				dwStartTime = GetTickCount();
 				PlayWav(path);
 			}
@@ -164,6 +220,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// 6. STATUS
 	if (uMsg == MCI_STATUS) {
 		LPMCI_STATUS_PARMS lpStatus = (LPMCI_STATUS_PARMS)dwParam;
+		Log("MCI_STATUS: dwItem=%X, dwTrack=%d, flags=%X", lpStatus->dwItem, lpStatus->dwTrack, fdwCommand);
 		if (lpStatus->dwItem == MCI_STATUS_POSITION)
 		{
 			DWORD elapsed = (dwStartTime > 0) ? GetTickCount() - dwStartTime : 0;
@@ -174,15 +231,24 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 			seconds = seconds % 60;
 
 			lpStatus->dwReturn = MCI_MAKE_TMSF(currentTrack, minutes, seconds, 0);
+			Log("MCI_STATUS_POSITION %d", lpStatus->dwReturn);
 		}
 		else if (lpStatus->dwItem == MCI_STATUS_NUMBER_OF_TRACKS) {
 			lpStatus->dwReturn = 5;
+			Log("MCI_STATUS_NUMBER_OF_TRACKS %d", lpStatus->dwReturn);
 		}
 		else if (lpStatus->dwItem == MCI_STATUS_CURRENT_TRACK) {
 			lpStatus->dwReturn = currentTrack;
+			Log("MCI_STATUS_CURRENT_TRACK %d", lpStatus->dwReturn);
 		}
 		else if (lpStatus->dwItem == MCI_STATUS_LENGTH) {
-			lpStatus->dwReturn = MCI_MAKE_TMSF(0, currentTrackLength / 60000, (currentTrackLength / 1000) % 60, 0);
+			/* // stop counter? progress? something
+			DWORD totalSeconds = currentTrackLength / 1000;
+			DWORD minutes = totalSeconds / 60;
+			DWORD seconds = totalSeconds % 60;
+			lpStatus->dwReturn = MCI_MAKE_TMSF(currentTrack, minutes, seconds, 0);
+			*/ // pause counter on focus lost / resume on regained?
+			Log("MCI_STATUS_LENGTH %d", lpStatus->dwReturn);
 		}
 		return 0;
 	}
