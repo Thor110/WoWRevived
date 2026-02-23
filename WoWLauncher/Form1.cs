@@ -68,6 +68,31 @@ namespace WoWLauncher
                     Close();
                 }
             }
+            // cleanup duplicate movie files
+            // human safety check incase users dont set the game to human when launching the new version
+            if (File.Exists("FMV-Human\\RAGELOGO.SMK"))
+            {
+                if (!File.Exists("FMV\\RAGELOGO.SMK")) { File.Move("FMV-Human\\RAGELOGO.SMK", "FMV\\RAGELOGO.SMK"); }
+                else { File.Delete("FMV-Human\\RAGELOGO.SMK"); }
+            }
+            if (File.Exists("FMV-Human\\TITLE.SMK"))
+            {
+                if (!File.Exists("FMV\\TITLE.SMK")) { File.Move("FMV-Human\\TITLE.SMK", "FMV\\TITLE.SMK"); }
+                else { File.Delete("FMV-Human\\TITLE.SMK"); }
+            }
+            // martian safety check incase users dont set the game to martian when launching the new version
+            if (File.Exists("FMV-Martian\\RAGELOGO.SMK"))
+            {
+                if (!File.Exists("FMV\\RAGELOGO.SMK")) { File.Move("FMV-Martian\\RAGELOGO.SMK", "FMV\\RAGELOGO.SMK"); }
+                else { File.Delete("FMV-Martian\\RAGELOGO.SMK"); }
+            }
+            if (File.Exists("FMV-Martian\\TITLE.SMK"))
+            {
+                if (!File.Exists("FMV\\TITLE.SMK")) { File.Move("FMV-Martian\\TITLE.SMK", "FMV\\TITLE.SMK"); }
+                else { File.Delete("FMV-Martian\\TITLE.SMK"); }
+            }
+            //RAGELOGO
+            //TITLE
             /*
             // Dynamic language pack detection, which can only go wrong if the user goes renaming files or changing the registry.
             comboBox1.Items.Add((string)mainKey.GetValue("Language")!); // DEFAULT TEXT.OJD = Language set in Registry ( this could go haywire if the user changes the language in the registry )
@@ -114,13 +139,13 @@ namespace WoWLauncher
             string[] supportedResolutions = new string[]
             {
                 //"512x384         (4:3)",    // Listed in original manual, ultra-low fallback - sometimes causes DDERR_NOCOOPERATIVELEVELSET
-                "640x480         (4:3)",    // Classic baseline 4:3
-                "800x600         (4:3)",    // Legacy 4:3 standard
-                "1024x768       (4:3)",     // XGA — very common
-                "1152x864       (4:3)",     // Slightly higher 4:3 (rare)
+                "640x480         (4:3)",    // Classic baseline 4:3                         // Exists In-Game
+                "800x600         (4:3)",    // Legacy 4:3 standard                          // Exists In-Game
+                "1024x768       (4:3)",     // XGA — very common                            // Exists In-Game
+                "1152x864       (4:3)",     // Slightly higher 4:3 (rare)                   // Exists In-Game
                 //"1280x720       (16:9)",  // 720p — slight stretching/whiteness issue
                 "1280x768       (15:9)",    // WXGA – rare variant of 1280x800 (15:9)
-                "1280x800       (16:10)",   // WXGA — early widescreen laptops (16:10)
+                "1280x800       (16:10)",   // WXGA — early widescreen laptops (16:10)      // Exists In-Game
                 "1280x1024     (5:4)",      // SXGA — tall 5:4 monitor resolution
                 "1360x768       (16:9)",    // 16:9 — GPU-aligned, better than 1366x768
                 "1366x768       (16:9)",    // Common 16:9 laptop resolution
@@ -227,6 +252,8 @@ namespace WoWLauncher
                     MessageBox.Show("Human game not installed, please reinstall the game and follow the instructions.");
                     return;
                 }
+                File.Move("FMV\\RAGELOGO.SMK", "FMV-Human\\RAGELOGO.SMK");
+                File.Move("FMV\\TITLE.SMK", "FMV-Human\\TITLE.SMK");
                 File.Move("MARTIAN.cd", "MARTIAN.cd.bak");
                 File.Move("human.cd.bak", "human.cd");
                 Directory.Move("FMV", "FMV-Martian");
@@ -266,6 +293,8 @@ namespace WoWLauncher
                     MessageBox.Show("Martian game not installed, please reinstall the game and follow the instructions.");
                     return;
                 }
+                File.Move("FMV\\RAGELOGO.SMK", "FMV-Martian\\RAGELOGO.SMK");
+                File.Move("FMV\\TITLE.SMK", "FMV-Martian\\TITLE.SMK");
                 File.Move("human.cd", "human.cd.bak");
                 File.Move("MARTIAN.cd.bak", "MARTIAN.cd");
                 Directory.Move("FMV", "FMV-Human");
