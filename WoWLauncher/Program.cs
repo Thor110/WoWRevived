@@ -15,6 +15,12 @@ namespace WoWLauncher
             string processName = "WoWLauncher";
             Process[] processes = Process.GetProcessesByName(processName);
             if (processes.Length > 1) { return; }
+            string basePath = AppDomain.CurrentDomain.BaseDirectory;
+            if (basePath.Contains("OneDrive"))
+            {
+                MessageBox.Show("Warning: The game is installed in a restricted location. Please move it to a root directory like C:\\Games\\Jeff Wayne's 'The War Of The Worlds' for best results.", "Installation Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             ApplicationConfiguration.Initialize();
             Application.Run(new Form1());
         }
