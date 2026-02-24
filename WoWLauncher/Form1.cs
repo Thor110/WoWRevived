@@ -267,8 +267,17 @@ namespace WoWLauncher
         private void launchGame()
         {
             // safety check for anyone who may decide to use the original executable and to check either exists
-            if (File.Exists("WoW_patched.exe")) { Process.Start("WoW_patched.exe"); }
-            else if (File.Exists("WoW.exe")) { Process.Start("WoW.exe"); }
+            if (File.Exists("WoW_patched.exe"))
+            {
+                // TODO: run as administrator for future networked version
+                Process proc = new Process();
+                proc.StartInfo.FileName = "WoW_patched.exe";
+                proc.StartInfo.UseShellExecute = true;
+                proc.StartInfo.Verb = "runas";
+                proc.Start();
+                //Process.Start("WoW_patched.exe"); // TODO: remove or keep etc
+            }
+            //else if (File.Exists("WoW.exe")) { Process.Start("WoW.exe"); }
             else { MessageBox.Show("Executable not found, please reinstall the game and follow the instructions."); }
             Close();
         }
