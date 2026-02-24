@@ -193,6 +193,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 
 	// 5. PLAY: 
 	if (uMsg == MCI_PLAY) {
+		// this fails in network version because it fires MCI_OPEN
 		if (GetTickCount() - lastOpenTime < 1000) {
 			Log("Suppressed focus-triggered play");
 			return 0;

@@ -44,14 +44,11 @@ extern "C" {
 
     void* WINAPI SmackOpen(const char* name, DWORD flags, DWORD extra) {
         Log("SmackOpen: %s", name);
-
         //fix incoming name string .SMK = .mp4
         std::string movie = name;
         movie.resize(movie.length() - 3);
-
         movie.append("mp4");
-
-        Log("TEST NAME: %s", movie.c_str());
+        Log("Updated String: %s", movie.c_str());
 
         // Default fallback
         int regWidth = 640;
