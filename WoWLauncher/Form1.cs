@@ -1,5 +1,6 @@
 using Microsoft.Win32;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace WoWLauncher
 {
@@ -12,6 +13,38 @@ namespace WoWLauncher
         private RegistryKey battleKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true)!;
         private RegistryKey researchKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true)!;
         private RegistryKey optionsKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Options", true)!;
+        [StructLayout(LayoutKind.Sequential)]
+        public struct DEVMODE
+        {
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+            public string dmDeviceName;
+            public short dmSpecVersion, dmDriverVersion, dmSize, dmDriverExtra;
+            public int dmFields;
+            public int dmPositionX, dmPositionY;
+            public int dmDisplayOrientation, dmDisplayFixedOutput;
+            public short dmColor, dmDuplex, dmYResolution, dmTTOption, dmCollate;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+            public string dmFormName;
+            public short dmLogPixels;
+            public int dmBitsPerPel, dmPelsWidth, dmPelsHeight;
+            public int dmDisplayFlags, dmDisplayFrequency;
+        }
+
+        [DllImport("user32.dll")]
+        static extern bool EnumDisplaySettings(string deviceName, int modeNum, ref DEVMODE devMode);
+
+        public static List<string> GetSupportedResolutions()
+        {
+            var resolutions = new HashSet<string>();
+            DEVMODE devMode = new DEVMODE();
+            devMode.dmSize = (short)Marshal.SizeOf(devMode);
+            int i = 0;
+            while (EnumDisplaySettings(null!, i++, ref devMode))
+            {
+                resolutions.Add($"{devMode.dmPelsWidth}x{devMode.dmPelsHeight}");
+            }
+            return resolutions.OrderBy(r => int.Parse(r.Split('x')[0])).ToList();
+        }
         public Form1()
         {
             InitializeComponent();
@@ -65,7 +98,7 @@ namespace WoWLauncher
                 else
                 {
                     MessageBox.Show("Smackw32.dll is missing, what did you do with it?\n\nThe game will fail to run without Smackw32.dll get it back off the disc...");
-                    Close();
+                    Environment.Exit(0);
                 }
             }
             // cleanup duplicate movie files
@@ -91,8 +124,6 @@ namespace WoWLauncher
                 if (!File.Exists("FMV\\TITLE.SMK")) { File.Move("FMV-Martian\\TITLE.SMK", "FMV\\TITLE.SMK"); }
                 else { File.Delete("FMV-Martian\\TITLE.SMK"); }
             }
-            //RAGELOGO
-            //TITLE
             /*
             // Dynamic language pack detection, which can only go wrong if the user goes renaming files or changing the registry.
             comboBox1.Items.Add((string)mainKey.GetValue("Language")!); // DEFAULT TEXT.OJD = Language set in Registry ( this could go haywire if the user changes the language in the registry )
@@ -134,8 +165,6 @@ namespace WoWLauncher
             }
             comboBox1.SelectedIndex = 0; // set selected index to the current language as per the registry
             */
-
-
             string[] supportedResolutions = new string[]
             {
                 //"512x384         (4:3)",    // Listed in original manual, ultra-low fallback - sometimes causes DDERR_NOCOOPERATIVELEVELSET
@@ -155,7 +184,9 @@ namespace WoWLauncher
                 //"1600x1200     (4:3)",      // UXGA — classic high-res 4:3
                 //"1680x1050     (16:10)",    // WSXGA+ — widescreen 16:10, works well
             };
-            foreach (string res in supportedResolutions) { comboBox2.Items.Add(res); }
+            var supported = GetSupportedResolutions();
+            var matchedResolutions = supportedResolutions.Where(sr => supported.Any(r => sr.Contains(r))).ToList();
+            foreach (var resolution in matchedResolutions) { comboBox2.Items.Add(resolution); } // list only supported resolutions
             //comboBox3.Items.Add("30"); // should probably not support this option
             //comboBox3.Items.Add("60");     // game frequency is not supported
             //comboBox3.Items.Add("120");
@@ -252,8 +283,10 @@ namespace WoWLauncher
                     MessageBox.Show("Human game not installed, please reinstall the game and follow the instructions.");
                     return;
                 }
-                File.Move("FMV\\RAGELOGO.SMK", "FMV-Human\\RAGELOGO.SMK");
-                File.Move("FMV\\TITLE.SMK", "FMV-Human\\TITLE.SMK");
+                File.Move("FMV\\RAGELOGO.SMK", "FMV-Human\\RAGELOGO.SMK");      // TODO : REMOVE
+                File.Move("FMV\\TITLE.SMK", "FMV-Human\\TITLE.SMK");            // TODO : REMOVE
+                File.Move("FMV\\RAGELOGO.MP4", "FMV-Human\\RAGELOGO.MP4");      // TEST
+                File.Move("FMV\\TITLE.MP4", "FMV-Human\\TITLE.MP4");            // TEST
                 File.Move("MARTIAN.cd", "MARTIAN.cd.bak");
                 File.Move("human.cd.bak", "human.cd");
                 Directory.Move("FMV", "FMV-Martian");
@@ -293,8 +326,10 @@ namespace WoWLauncher
                     MessageBox.Show("Martian game not installed, please reinstall the game and follow the instructions.");
                     return;
                 }
-                File.Move("FMV\\RAGELOGO.SMK", "FMV-Martian\\RAGELOGO.SMK");
-                File.Move("FMV\\TITLE.SMK", "FMV-Martian\\TITLE.SMK");
+                File.Move("FMV\\RAGELOGO.SMK", "FMV-Martian\\RAGELOGO.SMK");    // TODO : REMOVE
+                File.Move("FMV\\TITLE.SMK", "FMV-Martian\\TITLE.SMK");          // TODO : REMOVE
+                File.Move("FMV\\RAGELOGO.MP4", "FMV-Martian\\RAGELOGO.MP4");    // TEST
+                File.Move("FMV\\TITLE.MP4", "FMV-Martian\\TITLE.MP4");          // TEST
                 File.Move("human.cd", "human.cd.bak");
                 File.Move("MARTIAN.cd.bak", "MARTIAN.cd");
                 Directory.Move("FMV", "FMV-Human");
