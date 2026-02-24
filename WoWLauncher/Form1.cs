@@ -184,9 +184,9 @@ namespace WoWLauncher
                 //"1600x1200     (4:3)",      // UXGA — classic high-res 4:3
                 //"1680x1050     (16:10)",    // WSXGA+ — widescreen 16:10, works well
             };
-            var supported = GetSupportedResolutions();
-            var matchedResolutions = supportedResolutions.Where(sr => supported.Any(r => sr.Contains(r))).ToList();
-            foreach (var resolution in matchedResolutions) { comboBox2.Items.Add(resolution); } // list only supported resolutions
+            List<string> supported = GetSupportedResolutions();
+            List<string> matchedResolutions = supportedResolutions.Where(sr => supported.Any(r => sr.Contains(r))).ToList();
+            foreach (string resolution in matchedResolutions) { comboBox2.Items.Add(resolution); } // list only supported resolutions
             //comboBox3.Items.Add("30"); // should probably not support this option
             //comboBox3.Items.Add("60");     // game frequency is not supported
             //comboBox3.Items.Add("120");
