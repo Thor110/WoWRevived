@@ -101,6 +101,21 @@ namespace WoWLauncher
                     Environment.Exit(0);
                 }
             }
+            // TODO: Patch binary to ignore failure to find SMK files
+            // delete old .smk movie files
+            /*string[] folders = { "FMV", "FMV-Human" };
+            foreach (string folder in folders)
+            {
+                if (Directory.Exists(folder)) 
+                {
+                    var smkFiles = Directory.EnumerateFiles(folder, "*.smk", SearchOption.TopDirectoryOnly);
+                    foreach (string file in smkFiles)
+                    {
+                        File.Delete(file);
+                    }
+                }
+            }*/
+            // old implementation
             // cleanup duplicate movie files
             // human safety check incase users dont set the game to human when launching the new version
             if (File.Exists("FMV-Human\\RAGELOGO.SMK"))
@@ -124,6 +139,9 @@ namespace WoWLauncher
                 if (!File.Exists("FMV\\TITLE.SMK")) { File.Move("FMV-Martian\\TITLE.SMK", "FMV\\TITLE.SMK"); }
                 else { File.Delete("FMV-Martian\\TITLE.SMK"); }
             }
+
+            //
+
             /*
             // Dynamic language pack detection, which can only go wrong if the user goes renaming files or changing the registry.
             comboBox1.Items.Add((string)mainKey.GetValue("Language")!); // DEFAULT TEXT.OJD = Language set in Registry ( this could go haywire if the user changes the language in the registry )
@@ -292,10 +310,10 @@ namespace WoWLauncher
                     MessageBox.Show("Human game not installed, please reinstall the game and follow the instructions.");
                     return;
                 }
-                File.Move("FMV\\RAGELOGO.SMK", "FMV-Human\\RAGELOGO.SMK");      // TODO : REMOVE
-                File.Move("FMV\\TITLE.SMK", "FMV-Human\\TITLE.SMK");            // TODO : REMOVE
-                File.Move("FMV\\RAGELOGO.MP4", "FMV-Human\\RAGELOGO.MP4");      // TEST
-                File.Move("FMV\\TITLE.MP4", "FMV-Human\\TITLE.MP4");            // TEST
+                File.Move("FMV\\RAGELOGO.SMK", "FMV-Human\\RAGELOGO.SMK");  // TODO: Patch binary to ignore failure to find SMK files
+                File.Move("FMV\\TITLE.SMK", "FMV-Human\\TITLE.SMK");
+                File.Move("FMV\\RAGELOGO.MP4", "FMV-Human\\RAGELOGO.MP4");
+                File.Move("FMV\\TITLE.MP4", "FMV-Human\\TITLE.MP4");
                 File.Move("MARTIAN.cd", "MARTIAN.cd.bak");
                 File.Move("human.cd.bak", "human.cd");
                 Directory.Move("FMV", "FMV-Martian");
@@ -335,10 +353,10 @@ namespace WoWLauncher
                     MessageBox.Show("Martian game not installed, please reinstall the game and follow the instructions.");
                     return;
                 }
-                File.Move("FMV\\RAGELOGO.SMK", "FMV-Martian\\RAGELOGO.SMK");    // TODO : REMOVE
-                File.Move("FMV\\TITLE.SMK", "FMV-Martian\\TITLE.SMK");          // TODO : REMOVE
-                File.Move("FMV\\RAGELOGO.MP4", "FMV-Martian\\RAGELOGO.MP4");    // TEST
-                File.Move("FMV\\TITLE.MP4", "FMV-Martian\\TITLE.MP4");          // TEST
+                File.Move("FMV\\RAGELOGO.SMK", "FMV-Martian\\RAGELOGO.SMK");
+                File.Move("FMV\\TITLE.SMK", "FMV-Martian\\TITLE.SMK");
+                File.Move("FMV\\RAGELOGO.MP4", "FMV-Martian\\RAGELOGO.MP4");
+                File.Move("FMV\\TITLE.MP4", "FMV-Martian\\TITLE.MP4");
                 File.Move("human.cd", "human.cd.bak");
                 File.Move("MARTIAN.cd.bak", "MARTIAN.cd");
                 Directory.Move("FMV", "FMV-Human");
