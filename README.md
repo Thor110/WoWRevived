@@ -84,6 +84,8 @@ Discord server : https://discord.gg/bwG6Z3RK8b
 
 ## Main Game Functionality
 
+Some quality of life changes have been made to the game, from incorrect text entries to the removal of unnecessary buttons.
+
 Critical Event Options - Edited
 
 This was fixed by adding two leading spaces to the TEXT.ojd file for these entries.
@@ -114,6 +116,8 @@ Display Settings - Unedited
 
 ## Custom Launcher
 
+A custom launcher that makes it easy to access both campaigns as well as adjust settings.
+
 ![Launcher](images/launcher.png)
 
 Custom Keyboard Shortcuts - Work In Progress - Not Currently Enabled
@@ -130,19 +134,27 @@ Advanced Settings
 
 ## File Extractor
 
+A custom file extractor for extracting files from the .WoW archive format the game uses.
+
 <div align="center">
   <img src="images/file-extractor.gif" alt="File Extractor">
 </div>
 
 ## Save Editor
 
+A work in progress save editor.
+
 ![Save Editor](images/save-editor.png)
 
 ## Text Editor
 
+A text editor that makes it easy to adjust any entry in the TEXT.ojd file.
+
 ![Text Editor](images/text-editor.png)
 
 ## Video Playback Intercept
+
+A custom Smackw32.dll that intercepts the original smacker calls and replaces them with a more modern system for playing the newly upscaled videos.
 
 ![Video Playback Intercept](images/wrapper.png)
 
