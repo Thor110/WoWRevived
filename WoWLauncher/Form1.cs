@@ -7,6 +7,8 @@ namespace WoWLauncher
     public partial class Form1 : Form
     {
         private bool config;
+        private int resolution; // temp resolution combobox index for swapping files in future versions
+        private List<string> keptResolutions = new List<string>(); // keep listed resolutions for future versions
         private RegistryKey mainKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
         private RegistryKey tweakKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true)!;
         private RegistryKey screenKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Screen", true)!;
@@ -204,7 +206,7 @@ namespace WoWLauncher
             };
             List<string> supported = GetSupportedResolutions();
             List<string> matchedResolutions = supportedResolutions.Where(sr => supported.Any(r => sr.Contains(r))).ToList();
-            foreach (string resolution in matchedResolutions) { comboBox2.Items.Add(resolution); } // list only supported resolutions
+            foreach (string resolution in matchedResolutions) { comboBox2.Items.Add(resolution); keptResolutions.Add(resolution.Split(' ')[0]); } // list and keep only supported resolutions
             //comboBox3.Items.Add("30"); // should probably not support this option
             //comboBox3.Items.Add("60");     // game frequency is not supported
             //comboBox3.Items.Add("120");
@@ -227,9 +229,10 @@ namespace WoWLauncher
             if (Convert.ToInt32(screenKey.GetValue("AllowResize")) == 1) { checkBox4.Checked = true; }
             foreach (string res in comboBox2.Items)
             {
-                if (res.StartsWith(((string)screenKey.GetValue("Size")!).Replace(",", "x").Split(' ')[0])) // check if the resolution is supported
+                if (res.StartsWith(((string)screenKey.GetValue("Size")!).Replace(",", "x").Split(' ')[0])) // set combobox to the registry resolution
                 {
                     comboBox2.SelectedItem = res;
+                    resolution = comboBox2.SelectedIndex;
                     break;
                 }
             }
@@ -513,10 +516,32 @@ namespace WoWLauncher
         }
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (resolution == comboBox2.SelectedIndex) { return; }
             if (comboBox2.Text == screenKey.GetValue("Size")!.ToString()!.Replace(",", "x").Split(' ')[0]) { return; }
             string screenSize = comboBox2.SelectedItem!.ToString()!.Replace("x", ",").Split(' ')[0]; // convert to the format used in the registry
             registryCompare(screenKey, "Size", screenSize);                 // "Size" is the in-game resolution
             registryCompare(screenKey, "Support screen size", screenSize);  // "Support screen size" is the resolution used by the main menu
+
+
+            return; // return for now until file types are decoded and cusom resolution specific assets are made
+            // future prep for moving resolution specific assets back and forth
+            int[] toFrom = { resolution, comboBox2.SelectedIndex };
+            string[] inOut = { "", ""};
+            inOut[0] = $"DAT-EXTRA\\{keptResolutions[toFrom[0]]}\\";
+            inOut[1] = $"DAT-EXTRA\\{keptResolutions[toFrom[1]]}\\";
+            string[] moveFiles = new string[]
+            {
+                "test.spr", "menu.spr"
+            };
+            foreach (string file in moveFiles) // move from DAT to storage
+            {
+                File.Move("DAT\\" + file, inOut[0] + file);
+            }
+            foreach (string file in moveFiles) // move from storage to DAT
+            {
+                File.Move(inOut[1] + file, "DAT\\" + file);
+            }
+            resolution = comboBox2.SelectedIndex; // update resolution
         }
         /*private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
