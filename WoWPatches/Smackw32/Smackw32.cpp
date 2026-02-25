@@ -199,7 +199,6 @@ extern "C" {
         Log("Updated String: %s", movie.c_str());
 
         videoFinished = false;
-        //CloseOverlayWindow(); // gets set false here
         CreateOverlayWindow();
 
         if (overlayWindow) {
@@ -291,8 +290,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
         }
         MFStartup(MF_VERSION);
     }
-    // shouldn't this be else if
-    if (reason == DLL_PROCESS_DETACH) {
+    else if (reason == DLL_PROCESS_DETACH) {
         CloseOverlayWindow();
         if (pMediaPlayer) {
             pMediaPlayer->Shutdown();
