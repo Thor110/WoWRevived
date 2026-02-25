@@ -72,7 +72,7 @@ The road map for this project.
 	- Known "bugs" which I consider non-issues for the time-being.
 		- 1\. The counter increases indefinitely.
 		- 2\. Doesn't progress to the next track when a track finishes.
-- [❌ 7 : Video Playback Intercept](#video-playback-intercept) ( 90% Complete )
+- [✅ 7 : Video Playback Intercept](#video-playback-intercept) ( 90% Complete )
 	- Custom Smackw32.dll that plays upscaled videos at the games resolution.
 	- Simple 1920x1080 upscales of all the original videos.
 - ❌ 8 : Decomp/Recomp ( Started - 1% Complete )
