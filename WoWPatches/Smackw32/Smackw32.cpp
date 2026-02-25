@@ -52,7 +52,7 @@ public:
         }
         else if (pEventHeader->eEventType == MFP_EVENT_TYPE_MEDIAITEM_SET) {
             pMediaPlayer->Play();
-            IMFVideoDisplayControl* pDisplay = NULL;
+            /*IMFVideoDisplayControl* pDisplay = NULL;
             HRESULT hr2 = MFGetService(pMediaPlayer, MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (void**)&pDisplay);
             Log("MFGetService result: %08X", hr2);
             if (SUCCEEDED(hr2)) {
@@ -63,7 +63,7 @@ public:
                 hr2 = pDisplay->SetAspectRatioMode(MFVideoARMode_None);
                 Log("SetAspectRatioMode result: %08X", hr2);
                 pDisplay->Release();
-            }
+            }*/
             Log("Playback started");
         }
         else if (pEventHeader->eEventType == MFP_EVENT_TYPE_PLAYBACK_ENDED) {
