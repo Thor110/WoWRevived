@@ -200,6 +200,8 @@ FakeSmack dummy;
 extern "C" {
     void WINAPI SmackClose(void* smk) {
         Log("SmackClose - Forcing cleanup");
+        ShowCursor(TRUE);
+        SetCursor(LoadCursor(NULL, IDC_ARROW));
         videoFinished = true; // Ensure any last DoFrame calls see the exit signal
         CloseOverlayWindow();
     }
@@ -252,6 +254,8 @@ extern "C" {
     void WINAPI SmackUseMMX(DWORD flag) { Log("SmackUseMMX: %d", flag); }
     void WINAPI SmackSoundUseDirectSound(void* ds) { Log("SmackSoundUseDirectSound"); }
     void WINAPI SmackNextFrame(void* smk) {
+        SetCursor(NULL);
+        ShowCursor(FALSE);
         // pump messages so the overlay window stays responsive
         //Log("NEXT FRAME"); // logged
         MSG msg;
