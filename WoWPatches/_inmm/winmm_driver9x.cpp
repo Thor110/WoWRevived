@@ -39,10 +39,18 @@ extern "C" DLLEXPORT MMRESULT WINAPI _imeSetEvent(UINT uDelay, UINT uResolution,
 
 extern "C" DLLEXPORT DWORD WINAPI _imeGetTime(void) { return timeGetTime(); }
 
+// networking executable specific variables
+bool seekAfterOpen = false;
+DWORD lastPlayTime = 0;
+bool isNetworkVersion = false;
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 	if (fdwReason == DLL_PROCESS_ATTACH) {
 		DeleteFileA("_inmm_log.txt");
+		char exeName[MAX_PATH];
+		GetModuleFileNameA(NULL, exeName, MAX_PATH);
+		isNetworkVersion = (strstr(exeName, "WoW_network") != NULL);
 	}
 	return TRUE;
 }
@@ -155,6 +163,13 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// 2. STOP & CLOSE: Use the most generic command possible
 	if (uMsg == MCI_STOP || uMsg == MCI_CLOSE) {
 		if (losingFocus || gainingFocus) return 0;
+		// network version specific
+		if (isNetworkVersion && GetTickCount() - lastPlayTime < 1000) {
+			Log("Suppressed post-play stop");
+			Log("MCI_STOP Tick: %d", GetTickCount());
+			Log("MCI_STOP Last: %d", lastPlayTime);
+			return 0;
+		}
 		dwStartTime = 0;
 		totalElapsedBeforePause = 0;
 		isPaused = false;
@@ -167,6 +182,13 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	if (uMsg == MCI_SEEK) {
 		LPMCI_SEEK_PARMS lpSeek = (LPMCI_SEEK_PARMS)dwParam;
 		currentTrack = (int)lpSeek->dwTo;
+
+		if (isNetworkVersion) {
+			Log("MCI_SEEK Tick: %d", GetTickCount());
+			Log("MCI_SEEK Last: %d", lastPlayTime);
+			seekAfterOpen = true; // network version specific
+		}
+
 		Log("MCI_SEEK to: %d", (int)lpSeek->dwTo);
 		return 0;
 	}
@@ -187,19 +209,33 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		LPMCI_OPEN_PARMS lpOpen = (LPMCI_OPEN_PARMS)dwParam;
 		if (lpOpen) lpOpen->wDeviceID = (MCIDEVICEID)FAKE_CD_ID;
 		lastOpenTime = GetTickCount();
-		Log("MCI_OPEN");
+
+		if (isNetworkVersion) {
+			Log("MCI_OPEN Tick: %d", GetTickCount());
+			Log("MCI_OPEN Last: %d", lastPlayTime);
+			seekAfterOpen = false; // network version specific
+		}
+
+		Log("MCI_OPEN close");
 		return 0;
 	}
 
 	// 5. PLAY: 
 	if (uMsg == MCI_PLAY) {
 		// this fails in network version because it fires MCI_OPEN
-		if (GetTickCount() - lastOpenTime < 1000) {
+		if (!isNetworkVersion && !seekAfterOpen && GetTickCount() - lastOpenTime < 1000) {
 			Log("Suppressed focus-triggered play");
 			return 0;
 		}
 		Log("MCI_PLAY: Initializing track %d", currentTrack);
 		// only play track values within range to prevent seeking to tracks that dont exist
+
+		if (isNetworkVersion) {
+			lastPlayTime = GetTickCount(); // network version specific
+			Log("MCI_PLAY Tick: %d", GetTickCount());
+			Log("MCI_PLAY Last: %d", lastPlayTime);
+		}
+
 		if (currentTrack >= 2 && currentTrack <= 5) {
 			if (isPaused) {
 				isPaused = false;
@@ -210,7 +246,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 				char path[MAX_PATH];
 				wsprintfA(path, "Music\\%02d Track%02d.wav", currentTrack, currentTrack);
 				currentTrackLength = GetWavDuration(path);
-				Log("Track %d duration: %d ms", currentTrack, currentTrackLength);
+				//Log("Track %d duration: %d ms", currentTrack, currentTrackLength);
 				dwStartTime = GetTickCount();
 				PlayWav(path);
 			}
@@ -221,7 +257,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// 6. STATUS
 	if (uMsg == MCI_STATUS) {
 		LPMCI_STATUS_PARMS lpStatus = (LPMCI_STATUS_PARMS)dwParam;
-		Log("MCI_STATUS: dwItem=%X, dwTrack=%d, flags=%X", lpStatus->dwItem, lpStatus->dwTrack, fdwCommand);
+		//Log("MCI_STATUS: dwItem=%X, dwTrack=%d, flags=%X", lpStatus->dwItem, lpStatus->dwTrack, fdwCommand);
 		if (lpStatus->dwItem == MCI_STATUS_POSITION)
 		{
 			DWORD elapsed = (dwStartTime > 0) ? GetTickCount() - dwStartTime : 0;
@@ -232,15 +268,15 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 			seconds = seconds % 60;
 
 			lpStatus->dwReturn = MCI_MAKE_TMSF(currentTrack, minutes, seconds, 0);
-			Log("MCI_STATUS_POSITION %d", lpStatus->dwReturn);
+			//Log("MCI_STATUS_POSITION %d", lpStatus->dwReturn);
 		}
 		else if (lpStatus->dwItem == MCI_STATUS_NUMBER_OF_TRACKS) {
 			lpStatus->dwReturn = 5;
-			Log("MCI_STATUS_NUMBER_OF_TRACKS %d", lpStatus->dwReturn);
+			//Log("MCI_STATUS_NUMBER_OF_TRACKS %d", lpStatus->dwReturn);
 		}
 		else if (lpStatus->dwItem == MCI_STATUS_CURRENT_TRACK) {
 			lpStatus->dwReturn = currentTrack;
-			Log("MCI_STATUS_CURRENT_TRACK %d", lpStatus->dwReturn);
+			//Log("MCI_STATUS_CURRENT_TRACK %d", lpStatus->dwReturn);
 		}
 		else if (lpStatus->dwItem == MCI_STATUS_LENGTH) {
 			/* // stop counter? progress? something
@@ -249,7 +285,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 			DWORD seconds = totalSeconds % 60;
 			lpStatus->dwReturn = MCI_MAKE_TMSF(currentTrack, minutes, seconds, 0);
 			*/ // pause counter on focus lost / resume on regained?
-			Log("MCI_STATUS_LENGTH %d", lpStatus->dwReturn);
+			//Log("MCI_STATUS_LENGTH %d", lpStatus->dwReturn);
 		}
 		return 0;
 	}
@@ -257,6 +293,8 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// 7. PAUSE
 	if (uMsg == MCI_PAUSE) {
 		if (!isPaused) {
+			Log("MCI_PAUSE Tick: %d", GetTickCount());
+			Log("MCI_PAUSE Last: %d", lastPlayTime);
 			totalElapsedBeforePause = GetTickCount() - dwStartTime;
 			isPaused = true;
 			waveOutPause(hWaveOut);
