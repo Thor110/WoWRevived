@@ -31,16 +31,27 @@ WANTED : Regional Manuals : We are looking for high-quality scans of the origina
 
 The road map for this project.
 - [✅ 0 : Main Game Functionality](#main-game-functionality) ( 99% Complete )
+	- Iron changed to say Steel in multiple entries in the TEXT.ojd file.
+	- Leading space added to some text to improve appearance in the Critical Event Options menu.
+	- Missing entry created for the Credits button in the options menu.
+	- Various executable edits:
+		- 1\. 1 byte to skip the "NO CD INSERTED" message in the CD Player menu.
+		- 2\. 2 bytes to skip creation of the 8/16 bit colour toggles in the "Display Settings" menu.
+			- this is because the 8 bit colour mode doesn't work on modern systems.
+		- 3\. 2 bytes to skip creation of the "Lights" toggle in the "Display Settings" menu.
+			- this prevents a crash from occuring when using the infiltration skill in-game.
+		- 4\. 1 byte to skip checking for the original .smk movie files to save storage space.
+		- 5\. 9 bytes to redirect to the winmm shim to allow localised playback of the games music.
 	- Languages supported:
 		- 1\. English
 		- 2\. French
 		- 3\. German
 		- 4\. Italian
 		- 5\. Spanish
-	- Known "bugs" which I consider non-issues for the time-being.
+	- Known "bugs" which I consider non-issues for the time-being:
 		- 1\. Selecting the Credits from the options menu crashes the game. ( doesn't crash when the resolution is set to 640x480 )
 		- 2\. Finishing the game leads to the Credits and also crashes the game. ( doesn't crash when the resolution is set to 640x480 )
-	- Features I am considering adjusting.
+	- Features I am considering adjusting:
 		- 1\. Heat-ray construction limit of 12, I may add this limit to the launcher when I locate the relevant values.
 - [✅ 1 : Custom Launcher](#custom-launcher) ( Fully Functional - 95% Complete )
 	- Dynamic language pack detection. (WIP - not enabled currently)
@@ -68,7 +79,7 @@ The road map for this project.
 	- Basic parsing of .nsb filetypes.
 	- .ojd files can be parsed, but there is still more decoding to do.
 - ✅ 6 : No-CD Music Fix ( 99% Complete )
-	- Uses a shim that allows for localised audio playback.
+	- Uses a winmm shim that allows for localised audio playback.
 	- Known "bugs" which I consider non-issues for the time-being.
 		- 1\. The counter increases indefinitely.
 		- 2\. Doesn't progress to the next track when a track finishes.
