@@ -93,8 +93,13 @@ public:
 
 MediaPlayerCallback* pCallback = nullptr;
 
+#define WM_CLOSE_OVERLAY (WM_USER + 1)
+
 LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (msg == WM_DESTROY) { overlayWindow = NULL; }
+    if (msg == WM_CLOSE_OVERLAY) {
+        DestroyWindow(hwnd);
+    }
     return DefWindowProcA(hwnd, msg, wParam, lParam);
 }
 
@@ -109,7 +114,9 @@ void CloseOverlayWindow() {
         pCallback = NULL;
     }
     if (overlayWindow) {
-        DestroyWindow(overlayWindow);
+        PostMessage(overlayWindow, WM_CLOSE_OVERLAY, 0, 0);
+        //BOOL result = DestroyWindow(overlayWindow);
+        //Log("DestroyWindow result: %d, last error: %d", result, GetLastError());
         overlayWindow = NULL;
     }
 }
@@ -122,7 +129,7 @@ LRESULT CALLBACK GameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
     if (msg == WM_MOVE && overlayWindow) {
         POINT clientPos = { 0, 0 };
         ClientToScreen(hwnd, &clientPos);
-        SetWindowPos(overlayWindow, HWND_TOPMOST,
+        SetWindowPos(overlayWindow, HWND_TOP,
             clientPos.x, clientPos.y + offsetY,
             0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
     }
@@ -130,18 +137,9 @@ LRESULT CALLBACK GameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         CloseOverlayWindow();
     }
     if (msg == WM_ACTIVATEAPP && isFullscreen) {
-        if (overlayWindow) {
-            if (!wParam) {
-                if (pMediaPlayer) pMediaPlayer->Pause();
-                ShowWindow(overlayWindow, SW_HIDE);
-            }
-            else {
-                ShowWindow(overlayWindow, SW_SHOW);
-                if (pMediaPlayer && !videoFinished) {
-                    pMediaPlayer->UpdateVideo();
-                    pMediaPlayer->Play();
-                }
-            }
+        if (!wParam) {
+            videoFinished = true;
+            CloseOverlayWindow();
         }
     }
     return CallWindowProc(origGameProc, hwnd, msg, wParam, lParam);
