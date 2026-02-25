@@ -72,9 +72,9 @@ The road map for this project.
 	- Known "bugs" which I consider non-issues for the time-being.
 		- 1\. The counter increases indefinitely.
 		- 2\. Doesn't progress to the next track when a track finishes.
-- ❌ 7 : Video Playback Intercept ( Researching Solution - 0% Complete )
-	- Looking at intercepting smackw32.dll and redirecting it to use the more modern binkw32.dll for higher resolution video playback.
-	- Determining the best solution for upscaling and remastering the original videos.
+- [❌ 7 : Video Playback Intercept](#video-playback-intercept) ( 90% Complete )
+	- Custom Smackw32.dll that plays upscaled videos at the games resolution.
+	- Simple 1920x1080 upscales of all the original videos.
 - ❌ 8 : Decomp/Recomp ( Started - 1% Complete )
 	- Begun mapping out virtual key addresses for use in the launchers custom keyboard shortcut settings. ( "WoWRevived\WoWDecomp\ida-map.txt" )
 
@@ -141,6 +141,10 @@ Advanced Settings
 ## Text Editor
 
 ![Text Editor](images/text-editor.png)
+
+## Video Playback Intercept
+
+![Video Playback Intercept](images/wrapper.png)
 
 ## Credit
 
