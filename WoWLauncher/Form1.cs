@@ -103,7 +103,7 @@ namespace WoWLauncher
             }
             // TODO: Patch binary to ignore failure to find SMK files
             // delete old .smk movie files
-            /*string[] folders = { "FMV", "FMV-Human" };
+            string[] folders = { "FMV", "FMV-Human" };
             foreach (string folder in folders)
             {
                 if (Directory.Exists(folder)) 
@@ -114,11 +114,11 @@ namespace WoWLauncher
                         File.Delete(file);
                     }
                 }
-            }*/
+            }
             // old implementation
             // cleanup duplicate movie files
             // human safety check incase users dont set the game to human when launching the new version
-            if (File.Exists("FMV-Human\\RAGELOGO.SMK"))
+            /*if (File.Exists("FMV-Human\\RAGELOGO.SMK"))
             {
                 if (!File.Exists("FMV\\RAGELOGO.SMK")) { File.Move("FMV-Human\\RAGELOGO.SMK", "FMV\\RAGELOGO.SMK"); }
                 else { File.Delete("FMV-Human\\RAGELOGO.SMK"); }
@@ -138,7 +138,7 @@ namespace WoWLauncher
             {
                 if (!File.Exists("FMV\\TITLE.SMK")) { File.Move("FMV-Martian\\TITLE.SMK", "FMV\\TITLE.SMK"); }
                 else { File.Delete("FMV-Martian\\TITLE.SMK"); }
-            }
+            }*/
 
             //
 
