@@ -20,6 +20,7 @@ int regWidth = 640;
 int regHeight = 480;
 int offsetY = 0;
 bool videoFinished = false;
+bool isFullscreen = false;
 HWND overlayWindow = NULL;
 IMFPMediaPlayer* pMediaPlayer = NULL;
 
@@ -115,6 +116,8 @@ void CloseOverlayWindow() {
 
 WNDPROC origGameProc = NULL;
 
+void CreateOverlayWindow();
+
 LRESULT CALLBACK GameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (msg == WM_MOVE && overlayWindow) {
         POINT clientPos = { 0, 0 };
@@ -125,6 +128,21 @@ LRESULT CALLBACK GameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
     }
     if (msg == WM_DESTROY || msg == WM_CLOSE) {
         CloseOverlayWindow();
+    }
+    if (msg == WM_ACTIVATEAPP && isFullscreen) {
+        if (overlayWindow) {
+            if (!wParam) {
+                if (pMediaPlayer) pMediaPlayer->Pause();
+                ShowWindow(overlayWindow, SW_HIDE);
+            }
+            else {
+                ShowWindow(overlayWindow, SW_SHOW);
+                if (pMediaPlayer && !videoFinished) {
+                    pMediaPlayer->UpdateVideo();
+                    pMediaPlayer->Play();
+                }
+            }
+        }
     }
     return CallWindowProc(origGameProc, hwnd, msg, wParam, lParam);
 }
@@ -153,12 +171,12 @@ void CreateOverlayWindow() {
     int videoHeight = regHeight - (offsetY * 2);
 
     overlayWindow = CreateWindowExA(
-        WS_EX_NOACTIVATE,
+        isFullscreen ? (WS_EX_TOPMOST | WS_EX_NOACTIVATE) : WS_EX_NOACTIVATE,
         "SmackOverlay", NULL,
         WS_POPUP | WS_VISIBLE,
         clientPos.x, clientPos.y + offsetY,
         regWidth, videoHeight,
-        gameWnd,  // parent = game window
+        isFullscreen ? NULL : gameWnd,  // no parent in fullscreen
         NULL,
         GetModuleHandleA(NULL), NULL
     );
@@ -256,14 +274,22 @@ extern "C" {
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
     if (reason == DLL_PROCESS_ATTACH) {
         DeleteFileA("smack_bink_log.txt");
-        HKEY hKey;
         // Note: We use HKEY_LOCAL_MACHINE and the path you provided. 
         // Since your app is 32-bit, Windows automatically handles the WOW6432Node redirection.
-        if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000\\Screen", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        HKEY hKey;
+        if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             char buffer[256];
             DWORD bufferSize = sizeof(buffer);
-            if (RegQueryValueExA(hKey, "Size", NULL, NULL, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS) {
-                sscanf(buffer, "%d,%d", &regWidth, &regHeight);
+            if (RegQueryValueExA(hKey, "Full Screen", NULL, NULL, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS) {
+                isFullscreen = (strcmp(buffer, "1") == 0);
+            }
+            bufferSize = sizeof(buffer);
+            HKEY screenKey;
+            if (RegOpenKeyExA(hKey, "Screen", 0, KEY_READ, &screenKey) == ERROR_SUCCESS) {
+                if (RegQueryValueExA(screenKey, "Size", NULL, NULL, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS) {
+                    sscanf(buffer, "%d,%d", &regWidth, &regHeight);
+                }
+                RegCloseKey(screenKey);
             }
             RegCloseKey(hKey);
         }
