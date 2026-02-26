@@ -171,13 +171,14 @@ void CreateOverlayWindow() {
     overlayWindow = CreateWindowExA(
         isFullscreen ? (WS_EX_TOPMOST | WS_EX_NOACTIVATE) : WS_EX_NOACTIVATE,
         "SmackOverlay", NULL,
-        WS_POPUP | WS_VISIBLE,
+        WS_POPUP,
         clientPos.x, clientPos.y + offsetY,
         regWidth, videoHeight,
-        isFullscreen ? NULL : gameWnd,  // no parent in fullscreen
+        isFullscreen ? NULL : gameWnd,
         NULL,
         GetModuleHandleA(NULL), NULL
     );
+    ShowWindow(overlayWindow, SW_SHOWNA);
     if (gameWnd && !origGameProc) {
         origGameProc = (WNDPROC)SetWindowLongPtr(gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc);
     }
@@ -269,7 +270,7 @@ extern "C" {
     }
 
     void WINAPI SmackToBuffer(void* smk, DWORD l, DWORD t, DWORD p, DWORD h, void* buf, DWORD f) {
-        //Log("SmackToBuffer"); // logged
+        Log("SmackToBuffer"); // logged
     }
 }
 
@@ -298,8 +299,15 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
         if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
             char buffer[256];
             DWORD bufferSize = sizeof(buffer);
-            if (RegQueryValueExA(hKey, "Full Screen", NULL, NULL, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS) {
+            DWORD type = 0;
+            if (RegQueryValueExA(hKey, "Full Screen", NULL, &type, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS) {
                 isFullscreen = (strcmp(buffer, "1") == 0);
+                if (type == REG_DWORD) {
+                    isFullscreen = (*(DWORD*)buffer == 1); // dword in networked executable
+                }
+                else {
+                    isFullscreen = (strcmp(buffer, "1") == 0); // string in regular executable
+                }
             }
             bufferSize = sizeof(buffer);
             HKEY screenKey;
