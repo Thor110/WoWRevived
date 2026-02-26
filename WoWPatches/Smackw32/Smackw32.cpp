@@ -140,6 +140,9 @@ LRESULT CALLBACK GameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         if (!wParam) {
             videoFinished = true;
             CloseOverlayWindow();
+            FILE* f = fopen("_alttab_exit.txt", "w");
+            if (f) fclose(f);
+            TerminateProcess(GetCurrentProcess(), 0); // force kill the process because alt-tabbing doesn't work in full-screen mode
         }
     }
     return CallWindowProc(origGameProc, hwnd, msg, wParam, lParam);

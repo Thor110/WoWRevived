@@ -50,6 +50,16 @@ namespace WoWLauncher
         public Form1()
         {
             InitializeComponent();
+            if (File.Exists("_alttab_exit.txt"))
+            {
+                DialogResult result = MessageBox.Show("Alt-tabbing is not supported in fullscreen mode.\n\nDo you want to restart the game?", "Alt Tab Error", MessageBoxButtons.YesNo);
+                File.Delete("_alttab_exit.txt");
+                if (result == DialogResult.Yes)
+                {
+                    launchGame();
+                    Environment.Exit(0);
+                }
+            }
             var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             // TODO : add tweak key creation below and check what happens if it doesn't exist when altering settings etc
             if (mainKey == null) // set default registry settings which are required for the launcher, the rest are created when the game starts.
