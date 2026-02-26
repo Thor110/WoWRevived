@@ -53,12 +53,11 @@ namespace WoWLauncher
             if (File.Exists("_alttab_exit.txt"))
             {
                 DialogResult result = MessageBox.Show("Alt-tabbing is not supported in fullscreen mode.\n\nDo you want to restart the game?", "Alt Tab Error", MessageBoxButtons.YesNo);
-                File.Delete("_alttab_exit.txt");
                 if (result == DialogResult.Yes)
                 {
                     launchGame();
-                    Environment.Exit(0);
                 }
+                File.Delete("_alttab_exit.txt");
             }
             var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             // TODO : add tweak key creation below and check what happens if it doesn't exist when altering settings etc
@@ -306,9 +305,7 @@ namespace WoWLauncher
                 proc.StartInfo.UseShellExecute = true;
                 proc.StartInfo.Verb = "runas";
                 proc.Start();
-                //Process.Start("WoW_patched.exe"); // TODO: remove or keep etc
             }
-            //else if (File.Exists("WoW.exe")) { Process.Start("WoW.exe"); }
             else { MessageBox.Show("Executable not found, please reinstall the game and follow the instructions."); }
             Close();
         }

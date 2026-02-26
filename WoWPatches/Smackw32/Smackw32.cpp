@@ -140,8 +140,6 @@ LRESULT CALLBACK GameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         if (!wParam) {
             videoFinished = true;
             CloseOverlayWindow();
-            FILE* f = fopen("_alttab_exit.txt", "w");
-            if (f) fclose(f);
             TerminateProcess(GetCurrentProcess(), 0); // force kill the process because alt-tabbing doesn't work in full-screen mode
         }
     }
@@ -154,7 +152,6 @@ void CreateOverlayWindow() {
     wc.lpfnWndProc = OverlayWndProc;
     wc.hInstance = GetModuleHandleA(NULL);
     wc.lpszClassName = "SmackOverlay";
-    //RegisterClassExA(&wc);
     if (!RegisterClassExA(&wc)) {
         // already registered, ignore error
     }
@@ -276,9 +273,25 @@ extern "C" {
     }
 }
 
+HHOOK kbHook = NULL;
+
+LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode >= 0 && isFullscreen) {
+        KBDLLHOOKSTRUCT* kb = (KBDLLHOOKSTRUCT*)lParam;
+        if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
+            if (kb->vkCode == VK_TAB && (GetAsyncKeyState(VK_MENU) & 0x8000)) {
+                FILE* f = fopen("_alttab_exit.txt", "w");
+                if (f) fclose(f);
+            }
+        }
+    }
+    return CallNextHookEx(kbHook, nCode, wParam, lParam);
+}
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
     if (reason == DLL_PROCESS_ATTACH) {
         DeleteFileA("smack_bink_log.txt");
+        kbHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
         // Note: We use HKEY_LOCAL_MACHINE and the path you provided. 
         // Since your app is 32-bit, Windows automatically handles the WOW6432Node redirection.
         HKEY hKey;
@@ -322,6 +335,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
         MFStartup(MF_VERSION);
     }
     else if (reason == DLL_PROCESS_DETACH) {
+        if (kbHook) UnhookWindowsHookEx(kbHook);
         CloseOverlayWindow();
         if (pMediaPlayer) {
             pMediaPlayer->Shutdown();
