@@ -28,7 +28,7 @@ IMFPMediaPlayer* pMediaPlayer = NULL;
 void Log(const char* fmt, ...)
 {
     if (!debug) return;
-    if (!logFile) logFile = fopen("smack_bink_log.txt", "a");
+    if (!logFile) logFile = fopen("Smackw32_log.txt", "a");
     if (!logFile) return;
 
     va_list args;
@@ -186,28 +186,28 @@ void CreateOverlayWindow() {
 }
 
 struct FakeSmack {
-    uint32_t Version = 0;
     uint32_t Width = 0;
     uint32_t Height = 0;
-    uint32_t Frames = 0;
     int OffsetY = 0; // 1360 + 1366x768 use the default
 };
 
 FakeSmack dummy;
 
+bool firstMovie = false;
+
 // We use __stdcall (WINAPI) to match the @X byte counts perfectly
 extern "C" {
     void WINAPI SmackClose(void* smk) {
-        Log("SmackClose - Forcing cleanup");
+        Log("SmackClose");
         ShowCursor(TRUE);
         SetCursor(LoadCursor(NULL, IDC_ARROW));
         videoFinished = true; // Ensure any last DoFrame calls see the exit signal
         CloseOverlayWindow();
     }
-    void WINAPI SmackBlitClose(void* smk) { Log("SmackBlitClose"); }
-    void WINAPI SmackWait(void* smk) { Log("SmackWait"); }
-    void WINAPI SmackBlitOpen(void* smk) { Log("SmackBlitOpen"); }
-    void WINAPI SmackDDSurfaceType(void* lpDDS) { Log("SmackDDSurfaceType"); }
+    void WINAPI SmackBlitClose(void* smk) { Sleep(1); /*Log("SmackBlitClose");*/ }
+    void WINAPI SmackWait(void* smk) { Sleep(1); /*Log("SmackWait");*/ }
+    void WINAPI SmackBlitOpen(void* smk) { Sleep(1); /*Log("SmackBlitOpen");*/ }
+    void WINAPI SmackDDSurfaceType(void* lpDDS) { Sleep(1); /*Log("SmackDDSurfaceType");*/ }
 
     void* WINAPI SmackOpen(const char* name, DWORD flags, DWORD extra) {
         Log("SmackOpen: %s", name);
@@ -244,14 +244,13 @@ extern "C" {
 
         dummy.Width = regWidth;
         dummy.Height = regHeight;
-        dummy.Frames = 1000; // do we even need this
         dummy.OffsetY = offsetY;
 
         return &dummy;
     }
 
-    void WINAPI SmackUseMMX(DWORD flag) { Log("SmackUseMMX: %d", flag); }
-    void WINAPI SmackSoundUseDirectSound(void* ds) { Log("SmackSoundUseDirectSound"); }
+    void WINAPI SmackUseMMX(DWORD flag) { Sleep(1); /*Log("SmackUseMMX: %d", flag);*/ }
+    void WINAPI SmackSoundUseDirectSound(void* ds) { Sleep(1); /*Log("SmackSoundUseDirectSound");*/ }
     void WINAPI SmackNextFrame(void* smk) {
         SetCursor(NULL);
         ShowCursor(FALSE);
@@ -270,7 +269,7 @@ extern "C" {
     }
 
     void WINAPI SmackToBuffer(void* smk, DWORD l, DWORD t, DWORD p, DWORD h, void* buf, DWORD f) {
-        Log("SmackToBuffer"); // logged
+        Sleep(1); /*Log("SmackToBuffer"); */ // logged
     }
 }
 
@@ -291,7 +290,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
     if (reason == DLL_PROCESS_ATTACH) {
-        DeleteFileA("smack_bink_log.txt");
+        DeleteFileA("Smackw32_log.txt");
         kbHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
         // Note: We use HKEY_LOCAL_MACHINE and the path you provided. 
         // Since your app is 32-bit, Windows automatically handles the WOW6432Node redirection.
