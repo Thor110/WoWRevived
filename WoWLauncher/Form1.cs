@@ -320,8 +320,6 @@ namespace WoWLauncher
                     MessageBox.Show("Human game not installed, please reinstall the game and follow the instructions.");
                     return;
                 }
-                File.Move("FMV\\RAGELOGO.SMK", "FMV-Human\\RAGELOGO.SMK");  // TODO: Patch binary to ignore failure to find SMK files
-                File.Move("FMV\\TITLE.SMK", "FMV-Human\\TITLE.SMK");
                 File.Move("FMV\\RAGELOGO.MP4", "FMV-Human\\RAGELOGO.MP4");
                 File.Move("FMV\\TITLE.MP4", "FMV-Human\\TITLE.MP4");
                 File.Move("MARTIAN.cd", "MARTIAN.cd.bak");
@@ -363,8 +361,6 @@ namespace WoWLauncher
                     MessageBox.Show("Martian game not installed, please reinstall the game and follow the instructions.");
                     return;
                 }
-                File.Move("FMV\\RAGELOGO.SMK", "FMV-Martian\\RAGELOGO.SMK");
-                File.Move("FMV\\TITLE.SMK", "FMV-Martian\\TITLE.SMK");
                 File.Move("FMV\\RAGELOGO.MP4", "FMV-Martian\\RAGELOGO.MP4");
                 File.Move("FMV\\TITLE.MP4", "FMV-Martian\\TITLE.MP4");
                 File.Move("human.cd", "human.cd.bak");
