@@ -42,6 +42,7 @@ The road map for this project.
 			- this prevents a crash from occuring when using the infiltration skill in-game.
 		- 4\. 1 byte to skip checking for the original .smk movie files to save storage space.
 		- 5\. 9 bytes to redirect to the winmm shim to allow localised playback of the games music.
+		- 6\. 2 bytes to skip creation of the resolution slider which doesn't change the resolution without restarting the game.
 	- Languages supported:
 		- 1\. English
 		- 2\. French
