@@ -291,6 +291,7 @@ namespace WoWViewer
                 button10.Visible = false;               // hide replace file button
                 button11.Visible = false;               // hide save file button
                 checkBox1.Visible = false;              // hide checkbox for backing up the original file ( for now )
+                checkBox2.Visible = true;               // show decompression checkbox
             }
             else if (magic == "SfxL")
             {
@@ -312,6 +313,7 @@ namespace WoWViewer
                 button10.Visible = true;                // show replace file button
                 button11.Visible = true;                // show save file button
                 checkBox1.Visible = true;               // enable checkbox for backing up the original file
+                checkBox2.Visible = false;              // hide decompression checkbox
             }
             button2.Enabled = false;                    // disable extract button
             button5.Enabled = false;                    // disable play button
@@ -372,7 +374,7 @@ namespace WoWViewer
                 return;
             }
             // debug test for non compressed files
-            if (rawData.Length >= 4 && Encoding.ASCII.GetString(rawData, 0, 4) == "FFUH")
+            if (rawData.Length >= 4 && Encoding.ASCII.GetString(rawData, 0, 4) == "FFUH" && checkBox2.Checked)
             {
                 byte[] decompressed = FfuhDecoder.Decompress(rawData);
                 fs.Write(decompressed, 0, decompressed.Length);

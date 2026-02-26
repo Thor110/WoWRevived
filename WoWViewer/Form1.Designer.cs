@@ -51,6 +51,7 @@
             button11 = new Button();
             checkBox1 = new CheckBox();
             button12 = new Button();
+            checkBox2 = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -290,12 +291,27 @@
             button12.UseVisualStyleBackColor = true;
             button12.Click += button12_Click;
             // 
+            // checkBox2
+            // 
+            checkBox2.AccessibleDescription = "Decompress any compressed assets. ( Dat.wow / MAPS.WoW )";
+            checkBox2.AutoSize = true;
+            checkBox2.Checked = true;
+            checkBox2.CheckState = CheckState.Checked;
+            checkBox2.Location = new Point(93, 318);
+            checkBox2.Name = "checkBox2";
+            checkBox2.Size = new Size(127, 19);
+            checkBox2.TabIndex = 23;
+            checkBox2.Text = "Decompress Assets";
+            checkBox2.UseVisualStyleBackColor = true;
+            checkBox2.Visible = false;
+            // 
             // WoWViewer
             // 
             AllowDrop = true;
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(632, 348);
+            Controls.Add(checkBox2);
             Controls.Add(button12);
             Controls.Add(checkBox1);
             Controls.Add(button11);
@@ -353,5 +369,6 @@
         private Button button11;
         private CheckBox checkBox1;
         private Button button12;
+        private CheckBox checkBox2;
     }
 }
