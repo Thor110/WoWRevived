@@ -54,12 +54,13 @@ The road map for this project.
 	- Features I am considering adjusting:
 		- 1\. Heat-ray construction limit of 12, I may add this limit to the launcher when I locate the relevant values.
 - [✅ 1 : Custom Launcher](#custom-launcher) ( Fully Functional - 95% Complete )
-	- Dynamic language pack detection. (WIP - not enabled currently)
+	- Quick restart after alt-tab error exit of the game.
 	- Advanced registry settings options.
 	- Custom keyboard shortcut settings. (WIP - not enabled currently)
 	- Automatic regeneration of base registry settings, making the installation portable.
 	- Automatic cleanup of unnecessary files and Smackw32.dll moved to main directory.
 	- Custom pre-set difficulty settings. (Easy, Medium[default], Hard)
+	- Dynamic asset swapping pipeline with custom assets curated for each supported resolution. (WIP - not enabled currently)
 - [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 100% Complete )
 	- .WoW archives can be extracted.
 	- Waveform preview, play and replace sound files from .WoW archives.
@@ -83,9 +84,11 @@ The road map for this project.
 	- Known "bugs" which I consider non-issues for the time-being.
 		- 1\. The counter increases indefinitely.
 		- 2\. Doesn't progress to the next track when a track finishes.
-- [✅ 7 : Video Playback Intercept](#video-playback-intercept) ( 90% Complete )
+- [✅ 7 : Video Playback Intercept](#video-playback-intercept) ( 100% Complete )
 	- Custom Smackw32.dll that plays upscaled videos at the games resolution.
-	- Simple 1920x1080 upscales of all the original videos.
+	- Simple 1920x1080 upscales of all the original videos which get scaled to the games resolution.
+	- Alt-Tab detection when in fullscreen used to close the game automatically to save the user time encountering an error.
+		- This is because alt-tabbing is broken in the game by default.
 - ❌ 8 : Decomp/Recomp ( Started - 1% Complete )
 	- Begun mapping out virtual key addresses for use in the launchers custom keyboard shortcut settings. ( "WoWRevived\WoWDecomp\ida-map.txt" )
 
