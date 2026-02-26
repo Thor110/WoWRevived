@@ -31,7 +31,8 @@ namespace WoWViewer
                 { "SHH", HandleSHH },
                 { "SHL", HandleSHL },
                 { "SHM", HandleSHM },
-                { "SPR", HandleSPR },
+                { "SPR", HandleSPR }, // uppercase exception
+                { "spr", HandleSPR }, // lowercase exception
                 { "WOF", HandleWOF },
                 //MAPS/MAPS.WoW
                 { "ATM", HandleATM },
@@ -373,17 +374,8 @@ namespace WoWViewer
             // debug test for non compressed files
             if (rawData.Length >= 4 && Encoding.ASCII.GetString(rawData, 0, 4) == "FFUH")
             {
-                /*
-                int decompressedSize = BitConverter.ToInt32(rawData, 8); // Offset 0x08
-                byte[] huffmanTable = rawData.Skip(0x10).Take(0x400).ToArray(); // Offset 0x10–0x410
-                byte[] compressedPayload = rawData.Skip(0x410).ToArray(); // Offset 0x410 onward
-
-                var decoder = new FfuhDecoder(huffmanTable, compressedPayload);
-                byte[] decompressed = decoder.Decompress(decompressedSize);
-                MessageBox.Show("Compressed");
+                byte[] decompressed = FfuhDecoder.Decompress(rawData);
                 fs.Write(decompressed, 0, decompressed.Length);
-                */
-                fs.Write(rawData, 0, rawData.Length);
             }
             else
             {
