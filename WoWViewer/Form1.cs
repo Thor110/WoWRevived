@@ -371,18 +371,12 @@ namespace WoWViewer
             {
                 byte[] wavHeader = CreateWavHeader(rawData.Length, DetectSampleRate(rawData));
                 fs.Write(wavHeader, 0, wavHeader.Length);
-                return;
             }
-            // debug test for non compressed files
-            if (rawData.Length >= 4 && Encoding.ASCII.GetString(rawData, 0, 4) == "FFUH" && checkBox2.Checked)
+            else if (Encoding.ASCII.GetString(rawData, 0, 4) == "FFUH" && checkBox2.Checked)
             {
-                byte[] decompressed = FfuhDecoder.Decompress(rawData);
-                fs.Write(decompressed, 0, decompressed.Length);
+                rawData = FfuhDecoder.Decompress(rawData);
             }
-            else
-            {
-                fs.Write(rawData, 0, rawData.Length);
-            }
+            fs.Write(rawData, 0, rawData.Length);
         }
         // listbox selection changed
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -662,7 +656,7 @@ namespace WoWViewer
         public void openFile(string file)
         {
             if (filePath != "") { UnsavedChanges(null!, "opening another file", button11); }
-            else { button4.Enabled = true; }
+            if (outputPath != "") { button4.Enabled = true; }
             if (cancelOpenNewFile) { cancelOpenNewFile = false; return; } // if unsaved changes were cancelled
             filePath = file;
             textBox1.Text = filePath;
