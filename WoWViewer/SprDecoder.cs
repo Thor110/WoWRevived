@@ -56,7 +56,7 @@ namespace WoWViewer
 
                 //if (low < prevLow && row > 0) high++;   // wrap detected: increment for this row // previous = no difference
                 if (row > 0 && (low < prevLow || (low == 0 && prevLow > 32768))) high++; // wrap detected: increment for this row
-                if (carry > 0) high = carry; // carry byte from previous overflow
+                if (carry > high) high = carry; // carry byte from previous overflow (only advance, never regress)
                 prevLow = low;
 
                 int rowOffset = high * 65536 + low;

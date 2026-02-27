@@ -68,6 +68,10 @@ namespace WoWViewer
                 {
                     entry.Data = File.ReadAllBytes($"{baseFolder}\\{entry.Name}"); // update entries Data accordingly
                 }
+                else
+                {
+                    entry.Data = FfuhDecoder.Decompress(entry.Data!); // decompress here so I keep the ability to extract compressed assets
+                }
                 listBox1.Items.Add(entry.Name); // populate listbox
             }
             foreach (var entry in (isMaps ? palettes : entries).Where(e => e.Name.EndsWith(".PAL")).ToList()) { listBox2.Items.Add(entry.Name); }

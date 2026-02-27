@@ -261,7 +261,7 @@ namespace WoWViewer
                     // record data for the entry
                     long store = br.BaseStream.Position; // store the current position
                     br.BaseStream.Seek(offset, SeekOrigin.Begin); // seek to the offset
-                    entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset, Data = FfuhDecoder.Decompress(br.ReadBytes(length)) });
+                    entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset, Data = br.ReadBytes(length) });
                     br.BaseStream.Position = store; // return to the original position
                 }
                 button5.Visible = false;                // hide audio player play button
@@ -346,12 +346,8 @@ namespace WoWViewer
         private void ExtractToFile(WowFileEntry entry, bool asWav = false)
         {
             byte[] rawData = entry.Data!;
-            string filename = asWav ? $"{entry.Name}.wav" : entry.Name;
-            using var fs = new FileStream(Path.Combine(outputPath, filename), FileMode.Create);
-            if (asWav)
-            {
-                fs.Write(CreateWavHeader(rawData.Length, DetectSampleRate(rawData)));
-            }
+            using var fs = new FileStream(Path.Combine(outputPath, (asWav ? $"{entry.Name}.wav" : entry.Name)), FileMode.Create);
+            if (asWav) { fs.Write(CreateWavHeader(rawData.Length, DetectSampleRate(rawData))); }
             else if (Encoding.ASCII.GetString(rawData, 0, 4) == "FFUH" && checkBox2.Checked)
             {
                 rawData = FfuhDecoder.Decompress(rawData);
