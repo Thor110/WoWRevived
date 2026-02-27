@@ -1,6 +1,8 @@
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
 
 namespace WoWLauncher
 {
@@ -50,6 +52,13 @@ namespace WoWLauncher
         public Form1()
         {
             InitializeComponent();
+            if(!Utilities.IsDirectoryWritable(AppDomain.CurrentDomain.BaseDirectory))
+            {
+                MessageBox.Show($"Warning: The folder {Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory)!.FullName} is Read-Only or Protected.\n\n" +
+                                "The launcher may fail to save settings. Please run as Administrator, uncheck read-only permissions on the folder " +
+                                "or move the game to a different folder (e.g., C:\\Games\\).");
+                Environment.Exit(0);
+            }
             if (File.Exists("_alttab_exit.txt"))
             {
                 DialogResult result = MessageBox.Show("Alt-tabbing is not supported in fullscreen mode.\n\nDo you want to restart the game?", "Alt Tab Error", MessageBoxButtons.YesNo);
@@ -112,7 +121,6 @@ namespace WoWLauncher
                     Environment.Exit(0);
                 }
             }
-            // TODO: Patch binary to ignore failure to find SMK files
             // delete old .smk movie files
             string[] folders = { "FMV", "FMV-Human" };
             foreach (string folder in folders)
@@ -126,74 +134,6 @@ namespace WoWLauncher
                     }
                 }
             }
-            // old implementation
-            // cleanup duplicate movie files
-            // human safety check incase users dont set the game to human when launching the new version
-            /*if (File.Exists("FMV-Human\\RAGELOGO.SMK"))
-            {
-                if (!File.Exists("FMV\\RAGELOGO.SMK")) { File.Move("FMV-Human\\RAGELOGO.SMK", "FMV\\RAGELOGO.SMK"); }
-                else { File.Delete("FMV-Human\\RAGELOGO.SMK"); }
-            }
-            if (File.Exists("FMV-Human\\TITLE.SMK"))
-            {
-                if (!File.Exists("FMV\\TITLE.SMK")) { File.Move("FMV-Human\\TITLE.SMK", "FMV\\TITLE.SMK"); }
-                else { File.Delete("FMV-Human\\TITLE.SMK"); }
-            }
-            // martian safety check incase users dont set the game to martian when launching the new version
-            if (File.Exists("FMV-Martian\\RAGELOGO.SMK"))
-            {
-                if (!File.Exists("FMV\\RAGELOGO.SMK")) { File.Move("FMV-Martian\\RAGELOGO.SMK", "FMV\\RAGELOGO.SMK"); }
-                else { File.Delete("FMV-Martian\\RAGELOGO.SMK"); }
-            }
-            if (File.Exists("FMV-Martian\\TITLE.SMK"))
-            {
-                if (!File.Exists("FMV\\TITLE.SMK")) { File.Move("FMV-Martian\\TITLE.SMK", "FMV\\TITLE.SMK"); }
-                else { File.Delete("FMV-Martian\\TITLE.SMK"); }
-            }*/
-
-            //
-
-            /*
-            // Dynamic language pack detection, which can only go wrong if the user goes renaming files or changing the registry.
-            comboBox1.Items.Add((string)mainKey.GetValue("Language")!); // DEFAULT TEXT.OJD = Language set in Registry ( this could go haywire if the user changes the language in the registry )
-            var ojdFiles = Directory.GetFiles($"{Directory.GetCurrentDirectory()}", "*.OJD", SearchOption.TopDirectoryOnly);
-            foreach (string currentFile in ojdFiles)
-            {
-                string fileName = Path.GetFileNameWithoutExtension(currentFile);
-                if (fileName.Contains("TEXT") && fileName != "TEXT") // Ignore the current file
-                {
-                    switch (fileName.Substring(5))
-                    {
-                        case "DE":
-                        {
-                            comboBox1.Items.Add("German");
-                        }
-                        break;
-                        case "ES":
-                        {
-                            comboBox1.Items.Add("Spanish");
-                        }
-                        break;
-                        case "FR":
-                        {
-                            comboBox1.Items.Add("French");
-                        }
-                        break;
-                        case "IT":
-                        {
-                            comboBox1.Items.Add("Italian");
-                        }
-                        break;
-                        case "EN":
-                        {
-                            comboBox1.Items.Add("English");
-                        }
-                        break;
-                    }
-                }
-            }
-            comboBox1.SelectedIndex = 0; // set selected index to the current language as per the registry
-            */
             string[] supportedResolutions = new string[]
             {
                 //"512x384         (4:3)",    // Listed in original manual, ultra-low fallback - sometimes causes DDERR_NOCOOPERATIVELEVELSET
