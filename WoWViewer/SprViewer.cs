@@ -8,6 +8,7 @@ namespace WoWViewer
         private List<WowFileEntry> entries;
         private string selectedEntry; // selected SPR file on enter
         private string lastSelectedEntry;
+        private int currentRenderedEntry;
         private string lastSelectedPalette;
         private byte[] rawData;
         private byte[] palData;
@@ -112,36 +113,31 @@ namespace WoWViewer
         {
             if (palData == null) { return; } // returns on first run when listBox1_SelectedIndexChanged then fires on listBox2_SelectedIndexChanged
             label1.Text = SprDecoder.ReadInfo(rawData).ToString();
-
-
-
-            comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged;
-
-
-            // check next/last selected item or something etc
-            comboBox1.Items.Clear(); // not ideal as the combo box gets repopulated when changing
-
-
-            if (SprDecoder.ReadInfo(rawData).TableCount != 1)
+            if (currentRenderedEntry != listBox1.SelectedIndex) // prevent repopulating when changing combo box, just rerender selected frame.
             {
-                for (int i = 0; i < SprDecoder.ReadInfo(rawData).TableCount; i++)
+                comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged;
+                //MessageBox.Show("TEST");
+                comboBox1.Items.Clear(); // not ideal as the combo box gets repopulated when changing
+                currentRenderedEntry = listBox1.SelectedIndex;
+                if (SprDecoder.ReadInfo(rawData).TableCount != 1)
                 {
-                    comboBox1.Items.Add($"{selectedEntry}_frame_{i:D2}");
+                    for (int i = 0; i < SprDecoder.ReadInfo(rawData).TableCount; i++)
+                    {
+                        comboBox1.Items.Add($"{selectedEntry}_frame_{i:D2}");
+                    }
+                    currentFrame = 0;
+                    comboBox1.Enabled = true;
                 }
-                comboBox1.Enabled = true;
+                else
+                {
+                    currentFrame = -1;
+                    comboBox1.Enabled = false;
+                    comboBox1.Text = $"{selectedEntry}";
+                }
+                comboBox1.SelectedIndex = currentFrame;
+                comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
             }
-            else
-            {
-                currentFrame = -1;
-                comboBox1.Enabled = false;
-                comboBox1.Text = $"{selectedEntry}";
-            }
-            comboBox1.SelectedIndex = currentFrame;
-            comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
             pictureBox1.Image = SprDecoder.Render(rawData, palData, SprDecoder.PaletteOffset((int)numericUpDown1.Value), checkBox1.Checked, currentFrame);
-
-
-
         }
         // palette changer
         private void numericUpDown1_ValueChanged(object sender, EventArgs e) => RenderCurrent();
