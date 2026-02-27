@@ -115,7 +115,7 @@ namespace WoWViewer
             label1.Text = SprDecoder.ReadInfo(rawData).ToString();
             if (currentRenderedEntry != listBox1.SelectedIndex) // prevent repopulating when changing combo box, just rerender selected frame.
             {
-                comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged;
+                comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;
                 //MessageBox.Show("TEST");
                 comboBox1.Items.Clear(); // not ideal as the combo box gets repopulated when changing
                 currentRenderedEntry = listBox1.SelectedIndex;
@@ -135,7 +135,7 @@ namespace WoWViewer
                     comboBox1.Text = $"{selectedEntry}";
                 }
                 comboBox1.SelectedIndex = currentFrame;
-                comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
+                comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged!;
             }
             pictureBox1.Image = SprDecoder.Render(rawData, palData, SprDecoder.PaletteOffset((int)numericUpDown1.Value), checkBox1.Checked, currentFrame);
         }
@@ -174,13 +174,25 @@ namespace WoWViewer
         // export all button
         private void button3_Click(object sender, EventArgs e)
         {
+            bool greyscale = checkBox1.Checked;
             // loop through render data export
             foreach (WowFileEntry entry in entries.Where(e => e.Name.EndsWith(".SPR", StringComparison.OrdinalIgnoreCase)).ToList())
             {
                 int paletteOffset = SprDecoder.PaletteOffset((int)numericUpDown1.Value); // get palette offset // TODO: Update with correct palette data
-                using (Bitmap renderedImage = SprDecoder.Render(entry.Data!, palData, paletteOffset)) // create rendered image
+                using (Bitmap renderedImage = SprDecoder.Render(entry.Data!, palData, paletteOffset, greyscale)) // create rendered image
                 {
-                    renderedImage.Save(Path.Combine(outputPath, Path.GetFileNameWithoutExtension(entry.Name) + ".png"), ImageFormat.Png); // set file path and save rendered image
+                    if (SprDecoder.ReadInfo(entry.Data!).TableCount != 1)
+                    {
+                        for (int i = 0; i < SprDecoder.ReadInfo(entry.Data!).TableCount; i++)
+                        {
+                            Bitmap frameImage = SprDecoder.Render(entry.Data!, palData, paletteOffset, greyscale, i);
+                            frameImage.Save(Path.Combine(outputPath, Path.GetFileNameWithoutExtension(entry.Name) + $"_frame_{i:D2}.png"), ImageFormat.Png); // set file path and save rendered image
+                        }
+                    }
+                    else
+                    {
+                        renderedImage.Save(Path.Combine(outputPath, Path.GetFileNameWithoutExtension(entry.Name) + ".png"), ImageFormat.Png); // set file path and save rendered image
+                    }
                 }
             }
             MessageBox.Show("All .spr files exported successfully.");
