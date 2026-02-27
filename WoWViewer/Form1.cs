@@ -19,81 +19,33 @@ namespace WoWViewer
             handlers = new Dictionary<string, Action<WowFileEntry>>(StringComparer.OrdinalIgnoreCase)
             {
                 //DAT/Dat.wow
-                { "DAT", HandleDAT }, // pseudo random dithering
-                { "FNT", HandleFonts },
-                { "HSH", HandleHSH },
-                { "HSM", HandleHSM },
-                { "INT", HandleINT },
-                { "IOB", HandleIOB },
-                { "PAL", HandlePAL },
-                { "RAW", HandleRAW },
-                { "SHH", HandleSHH },
-                { "SHL", HandleSHL },
-                { "SHM", HandleSHM },
-                { "SPR", HandleSPR },
-                { "WOF", HandleWOF },
+                { "DAT", HandleDAT },   // pseudo random dithering
+                { "FNT", HandleFNT },   // fonts
+                { "HSH", HandleHSH },   // B16.HSH
+                { "HSM", HandleHSM },   // B15.HSM
+                { "INT", HandleINT },   // terrain geometry or textures
+                { "IOB", HandleIOB },   // buildings and terrain objects
+                { "PAL", HandlePAL },   // palettes         // pairs with shaders
+                { "RAW", HandleRAW },   // effects
+                { "SHH", HandleSHH },   // shader high
+                { "SHL", HandleSHL },   // shader low       // one loose B8.SHL
+                { "SHM", HandleSHM },   // shader medium
+                { "SPR", HandleSPR },   // sprites, only lowercase exception
+                { "WOF", HandleWOF },   // units
                 //MAPS/MAPS.WoW
-                { "ATM", HandleATM },
-                { "CLS", HandleCLS },
-                //SPR files also in MAPS.WoW
+                { "ATM", HandleATM },   // terrain geometry or textures - all named LAND##
+                { "CLS", HandleCLS },   // also all named LAND##
+                //"SPR"                 // human and martian minimaps
             };
         }
         //DAT/Dat.wow
         private void HandleDAT(WowFileEntry entry)
         {
-            /* // old DAT handling
-            using var br = new BinaryReader(File.OpenRead(filePath));
-            br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
-            byte[] data = br.ReadBytes(entry.Length);
-            // only two .dat files exist // DITH.DAT is the only one with a specific handler as it is not compressed
-            if (entry.Name.Equals("DITH.DAT", StringComparison.OrdinalIgnoreCase))
-            {
-                var ditherEntries = ParseDat(data);
-                StringBuilder sb = new StringBuilder();
-                foreach (var d in ditherEntries)
-                {
-                    sb.AppendLine(d.ToString());
-                }
-                Debug.Print($"Parsed {ditherEntries.Count} entries from DITH.DAT.");
-                Debug.Print($"{sb.ToString()}");
-            }
-            else
-            {
-                Debug.Print($"DAT file \"{entry.Name}\" selected.\nSize: {entry.Length} bytes.\nNo specific handler defined.");
-                // the other file div_tab.dat is compressed
-                // these files are base on (color depth 6, 7, or 8)
-                // "dat\\b16.hsh"
-                // "dat\\b15.hsm"
-                // "dat\\b8.shl"
-            }
-            */
+            MessageBox.Show("DAT file selected. No action defined.");
         }
-        private List<WowDatFile> ParseDat(byte[] data)
+        private void HandleFNT(WowFileEntry entry)
         {
-            var entries = new List<WowDatFile>();
-            using var ms = new MemoryStream(data);
-            using var br = new BinaryReader(ms);
-
-            while (br.BaseStream.Position + 20 <= br.BaseStream.Length)
-            {
-                var entry = new WowDatFile
-                {
-                    Unknown = br.ReadInt32(),   // Likely always 0
-                    Stride = br.ReadInt32(),    // Seen values like 8, 0x0E
-                    A = br.ReadInt32(),
-                    B = br.ReadInt32(),
-                    Index = br.ReadInt32()
-                };
-
-                entries.Add(entry);
-            }
-
-            return entries;
-        }
-
-        private void HandleFonts(WowFileEntry entry)
-        {
-            MessageBox.Show("Fonts file selected. No action defined.");
+            MessageBox.Show("FNT file selected. No action defined.");
         }
         private void HandleHSH(WowFileEntry entry)
         {
