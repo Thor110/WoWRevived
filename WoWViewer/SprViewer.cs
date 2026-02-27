@@ -7,7 +7,9 @@ namespace WoWViewer
         private List<WowFileEntry> entries;
         private string selectedEntry; // selected SPR file on enter
         private string lastSelectedEntry;
-        byte[] rawData;
+        private byte[] rawData;
+        private byte[] palData;
+        private string outputPath = "";
         public static int PaletteOffset(int paletteIndex) => 768 + paletteIndex * 768;
 
         public SprViewer(List<WowFileEntry> entryList, string entryName)
@@ -39,13 +41,12 @@ namespace WoWViewer
         private void listBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             string palName = listBox2.SelectedItem!.ToString()!;
-            byte[] rawData = entries.First(e => e.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
-            palData = FfuhDecoder.Decompress(rawData);
+            palData = entries.First(e => e.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
+            palData = FfuhDecoder.Decompress(palData);
             numericUpDown1.Maximum = SprDecoder.PaletteCount(palData) - 1;
             numericUpDown1.Value = 0;
             RenderCurrent();
         }
-        private byte[] palData;
 
         private void RenderCurrent()
         {
@@ -54,13 +55,49 @@ namespace WoWViewer
             pictureBox1.Image = SprDecoder.Render(rawData, palData, paletteOffset);
             label1.Text = SprDecoder.ReadInfo(rawData).ToString();
         }
-
+        // palette changer
         private void numericUpDown1_ValueChanged(object sender, EventArgs e)
         {
             // numericUpDown1 = raw byte offset, step 3 or 768
             numericUpDown1.Maximum = palData.Length - 768;
-            numericUpDown1.Increment = 768; // step by one RGB entry at a time for fine tuning
+            numericUpDown1.Increment = 3; // step by one RGB entry at a time for fine tuning
             RenderCurrent();
+        }
+        // replace selected asset by importing - future
+        private void button1_Click(object sender, EventArgs e)
+        {
+            
+        }
+        // export selected button
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if(outputPath == "")
+            {
+                MessageBox.Show("Please select an output directory first.");
+                return;
+            }
+            string fileNameOnly = Path.GetFileNameWithoutExtension(selectedEntry);
+            string fullPath = Path.Combine(outputPath, fileNameOnly + ".png");
+            pictureBox1.Image.Save(fullPath, System.Drawing.Imaging.ImageFormat.Png);
+            MessageBox.Show($"{fileNameOnly}.png was exported successfully.");
+        }
+        // export all button
+        private void button3_Click(object sender, EventArgs e)
+        {
+            // loop through render data export
+        }
+        // set output directory
+        private void button4_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+            folderBrowserDialog.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory; // Set initial directory to the application base directory
+            if (outputPath != "") { folderBrowserDialog.InitialDirectory = outputPath; } // Set initial directory to the last used output path
+            if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
+            {
+                outputPath = folderBrowserDialog.SelectedPath;
+                if (!outputPath.EndsWith("\\")) { outputPath += "\\"; } // If Root Directory // Complete Directory String
+                textBox1.Text = outputPath;
+            }
         }
     }
 }
