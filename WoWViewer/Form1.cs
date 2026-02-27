@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Media;
 using System.Text;
 
@@ -44,7 +43,7 @@ namespace WoWViewer
         private void HandleDAT(WowFileEntry entry)
         {
             pictureBox1.Image = null;
-
+            /* // old DAT handling
             using var br = new BinaryReader(File.OpenRead(filePath));
             br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
             byte[] data = br.ReadBytes(entry.Length);
@@ -69,6 +68,7 @@ namespace WoWViewer
                 // "dat\\b15.hsm"
                 // "dat\\b8.shl"
             }
+            */
         }
         private List<WowDatFile> ParseDat(byte[] data)
         {
@@ -133,7 +133,7 @@ namespace WoWViewer
         {
             MessageBox.Show("SHM file selected. No action defined.");
         }
-        private void HandleSPR(WowFileEntry entry) { newForm(new SprViewer(entries, listBox1.SelectedItem!.ToString()!)); }
+        private void HandleSPR(WowFileEntry entry) { newForm(new SprViewer(entries, listBox1.SelectedItem!.ToString()!, filePath.Contains("MAPS.WoW"))); }
         private void HandleWOF(WowFileEntry entry)
         {
             MessageBox.Show("WOF file selected. No action defined.");
@@ -263,7 +263,7 @@ namespace WoWViewer
                     // record data for the entry
                     long store = br.BaseStream.Position; // store the current position
                     br.BaseStream.Seek(offset, SeekOrigin.Begin); // seek to the offset
-                    entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset, Data = br.ReadBytes(length) });
+                    entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset, Data = FfuhDecoder.Decompress(br.ReadBytes(length)) });
                     br.BaseStream.Position = store; // return to the original position
                 }
                 button5.Visible = false;                // hide audio player play button
@@ -286,7 +286,10 @@ namespace WoWViewer
                     // setup entries and listbox
                     string name = Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
                     listBox1.Items.Add($"{name}.WAV");
-                    entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset });
+                    long store = br.BaseStream.Position; // store the current position
+                    br.BaseStream.Seek(offset, SeekOrigin.Begin); // seek to the offset
+                    entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset, Data = br.ReadBytes(length) });
+                    br.BaseStream.Position = store; // return to the original position
                 }
                 button5.Visible = true;                 // show audio player play button
                 button6.Visible = true;                 // show audio player stop button
@@ -344,15 +347,12 @@ namespace WoWViewer
         // extract to file method
         private void ExtractToFile(WowFileEntry entry, bool asWav = false)
         {
-            using var br = new BinaryReader(File.OpenRead(filePath));
-            br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
-            byte[] rawData = br.ReadBytes(entry.Length);
+            byte[] rawData = entry.Data!;
             string filename = asWav ? $"{entry.Name}.wav" : entry.Name;
             using var fs = new FileStream(Path.Combine(outputPath, filename), FileMode.Create);
             if (asWav)
             {
-                byte[] wavHeader = CreateWavHeader(rawData.Length, DetectSampleRate(rawData));
-                fs.Write(wavHeader, 0, wavHeader.Length);
+                fs.Write(CreateWavHeader(rawData.Length, DetectSampleRate(rawData)));
             }
             else if (Encoding.ASCII.GetString(rawData, 0, 4) == "FFUH" && checkBox2.Checked)
             {

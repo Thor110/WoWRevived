@@ -20,8 +20,7 @@ namespace WoWViewer
         // Decompress an FFUH compressed file, returns raw decompressed bytes
         public static byte[] Decompress(byte[] data)
         {
-            if (!IsCompressed(data))
-                throw new InvalidDataException("Not an FFUH compressed file.");
+            if (!IsCompressed(data)) { return data; } // thor110 edited line
 
             int offset = 4;
 

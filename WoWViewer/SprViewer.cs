@@ -11,13 +11,27 @@ namespace WoWViewer
         private byte[] rawData;
         private byte[] palData;
         private string outputPath = "";
+        private bool isMaps; // is file MAPS.WoW
         public static int PaletteOffset(int paletteIndex) => 768 + paletteIndex * 768;
 
-        public SprViewer(List<WowFileEntry> entryList, string entryName)
+        public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps)
         {
             InitializeComponent();
             entries = entryList;
             selectedEntry = entryName;
+            isMaps = maps;
+
+            if(isMaps)
+            {
+                // load dat file...
+                if (!File.Exists("DAT\\Dat.wow"))
+                {
+                    MessageBox.Show("Where is DAT\\Dat.wow ");
+                }
+            }
+
+
+
             PopulateList();
         }
         private void PopulateList()
@@ -34,7 +48,7 @@ namespace WoWViewer
             selectedEntry = listBox1.SelectedItem!.ToString()!; // update selected entry
             lastSelectedEntry = selectedEntry; // update last selected entry
             rawData = entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase))!.Data!; // find selected entry data
-            if (Encoding.ASCII.GetString(rawData, 0, 4) == "FFUH") { rawData = FfuhDecoder.Decompress(rawData); } // decompress the selected entry data if it is compressed
+
             //
             RenderCurrent();
         }
@@ -43,12 +57,11 @@ namespace WoWViewer
         {
             string palName = listBox2.SelectedItem!.ToString()!;
             palData = entries.First(e => e.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
-            palData = FfuhDecoder.Decompress(palData);
             numericUpDown1.Maximum = SprDecoder.PaletteCount(palData) - 1;
             numericUpDown1.Value = 0;
             RenderCurrent();
         }
-
+        // render selected image with selected palette data
         private void RenderCurrent()
         {
             if (rawData == null || palData == null) { return; } // returns on first run when listBox1_SelectedIndexChanged
@@ -82,7 +95,8 @@ namespace WoWViewer
                     }
                     // convert to .spr format before displaying
                     pictureBox1.Image = bmp; // set picture box to the new image
-                    string fullPath = Path.Combine("DAT", Path.GetFileNameWithoutExtension(selectedEntry));
+
+                    string fullPath = Path.Combine(isMaps ? "MAPS" : "DAT", Path.GetFileNameWithoutExtension(selectedEntry));
                     // save to fullPath
                 }
             }
@@ -91,8 +105,7 @@ namespace WoWViewer
         private void button2_Click(object sender, EventArgs e)
         {
             string fileNameOnly = Path.GetFileNameWithoutExtension(selectedEntry);
-            string fullPath = Path.Combine(outputPath, fileNameOnly + ".png");
-            pictureBox1.Image.Save(fullPath, System.Drawing.Imaging.ImageFormat.Png);
+            pictureBox1.Image.Save(Path.Combine(outputPath, fileNameOnly + ".png"), ImageFormat.Png);
             MessageBox.Show($"{fileNameOnly}.png was exported successfully.");
         }
         // export all button
@@ -101,7 +114,7 @@ namespace WoWViewer
             // loop through render data export
             foreach (WowFileEntry entry in entries.Where(e => e.Name.EndsWith(".SPR", StringComparison.OrdinalIgnoreCase)).ToList())
             {
-                byte[] rawData = entries.First(e => e.Name.Equals(entry.Name, StringComparison.OrdinalIgnoreCase))!.Data!; // get decompressed data
+                byte[] rawData = entries.First(e => e.Name.Equals(entry.Name, StringComparison.OrdinalIgnoreCase))!.Data!; // get decompressed data // inline later
                 string fileNameOnly = Path.GetFileNameWithoutExtension(entry.Name); // get filename without extension
                 string fullPath = Path.Combine(outputPath, fileNameOnly + ".png"); // set file path
                 int paletteOffset = SprDecoder.PaletteOffset((int)numericUpDown1.Value); // get palette offset // TODO: Update with correct palette data
