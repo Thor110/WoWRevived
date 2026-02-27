@@ -14,8 +14,7 @@ namespace WoWViewer
         }
 
         // Returns true if this file is FFUH compressed
-        public static bool IsCompressed(byte[] data) =>
-            data.Length >= 4 && data[0] == 'F' && data[1] == 'F' && data[2] == 'U' && data[3] == 'H';
+        public static bool IsCompressed(byte[] data) => data.Length >= 4 && data[0] == 'F' && data[1] == 'F' && data[2] == 'U' && data[3] == 'H';
 
         // Decompress an FFUH compressed file, returns raw decompressed bytes
         public static byte[] Decompress(byte[] data)

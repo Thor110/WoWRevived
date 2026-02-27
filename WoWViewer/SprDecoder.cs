@@ -54,7 +54,8 @@ namespace WoWViewer
                 int carry = sprData[entryBase];                             // high byte (one entry late)
                 int low = BitConverter.ToUInt16(sprData, entryBase + 2); // low 16 bits
 
-                if (low < prevLow && row > 0) high++;   // wrap detected: increment for this row
+                //if (low < prevLow && row > 0) high++;   // wrap detected: increment for this row // previous = no difference
+                if (row > 0 && (low < prevLow || (low == 0 && prevLow > 32768))) high++; // wrap detected: increment for this row
                 if (carry > 0) high = carry; // carry byte from previous overflow
                 prevLow = low;
 
@@ -93,7 +94,7 @@ namespace WoWViewer
         public static int PaletteCount(byte[] palData) => palData.Length / 768;
 
         // Returns the byte offset for palette index n
-        public static int PaletteOffset(int paletteIndex) => paletteIndex * 768;
+        public static int PaletteOffset(int paletteIndex) => 768 + paletteIndex * 768;
     }
 
     public class SprInfo

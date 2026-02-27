@@ -10,16 +10,6 @@
 
         public override string ToString() => $"Index {Index:D2} - A: 0x{A:X8}, B: 0x{B:X8}";
     }
-    class WowHuffmanContext
-    {
-        public int BufferSize;      // From ebx
-        public int Flags;           // (arg_8 & 0xFF) | 0x08
-        public int ID;              // From arg_0
-        public byte[]? Buffer;      // Allocated memory
-        public string? SourceName;  // 9-char name from Source
-        public byte ExtraFlag;      // Always 0
-        public int ComputeTableSize(ushort entryCount, int itemSize) { return ((itemSize + 4) * entryCount) + 0x14; }
-    }
     public class WowFileEntry
     {
         public string Name { get; set; } = "";

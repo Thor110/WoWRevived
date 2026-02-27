@@ -14,7 +14,6 @@ namespace WoWViewer
         private bool isMaps; // is file MAPS.WoW
         private List<WowFileEntry> palettes; // necessary if MAPS.WoW is loaded
         private string baseFolder;
-        public static int PaletteOffset(int paletteIndex) => 768 + paletteIndex * 768;
 
         public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps)
         {
