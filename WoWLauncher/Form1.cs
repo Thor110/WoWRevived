@@ -41,10 +41,7 @@ namespace WoWLauncher
             DEVMODE devMode = new DEVMODE();
             devMode.dmSize = (short)Marshal.SizeOf(devMode);
             int i = 0;
-            while (EnumDisplaySettings(null!, i++, ref devMode))
-            {
-                resolutions.Add($"{devMode.dmPelsWidth}x{devMode.dmPelsHeight}");
-            }
+            while (EnumDisplaySettings(null!, i++, ref devMode)) { resolutions.Add($"{devMode.dmPelsWidth}x{devMode.dmPelsHeight}"); }
             return resolutions.OrderBy(r => int.Parse(r.Split('x')[0])).ToList();
         }
         public Form1()
@@ -59,11 +56,7 @@ namespace WoWLauncher
             }
             if (File.Exists("_alttab_exit.txt"))
             {
-                DialogResult result = MessageBox.Show("Alt-tabbing is not supported in fullscreen mode.\n\nDo you want to restart the game?", "Alt Tab Error", MessageBoxButtons.YesNo);
-                if (result == DialogResult.Yes)
-                {
-                    launchGame();
-                }
+                if (MessageBox.Show("Alt-tabbing is not supported in fullscreen mode.\n\nDo you want to restart the game?", "Alt Tab Error", MessageBoxButtons.YesNo) == DialogResult.Yes) { launchGame(); }
                 File.Delete("_alttab_exit.txt");
             }
             var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
