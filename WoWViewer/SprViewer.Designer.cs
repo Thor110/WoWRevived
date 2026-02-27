@@ -39,6 +39,7 @@
             textBox1 = new TextBox();
             button4 = new Button();
             checkBox1 = new CheckBox();
+            comboBox1 = new ComboBox();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             SuspendLayout();
@@ -151,11 +152,21 @@
             checkBox1.UseVisualStyleBackColor = true;
             checkBox1.CheckedChanged += checkBox1_CheckedChanged;
             // 
+            // comboBox1
+            // 
+            comboBox1.FormattingEnabled = true;
+            comboBox1.Location = new Point(693, 498);
+            comboBox1.Name = "comboBox1";
+            comboBox1.Size = new Size(121, 23);
+            comboBox1.TabIndex = 11;
+            comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
+            // 
             // SprViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1264, 777);
+            Controls.Add(comboBox1);
             Controls.Add(checkBox1);
             Controls.Add(button4);
             Controls.Add(textBox1);
@@ -188,5 +199,6 @@
         private TextBox textBox1;
         private Button button4;
         private CheckBox checkBox1;
+        private ComboBox comboBox1;
     }
 }

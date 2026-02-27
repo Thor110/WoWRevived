@@ -1,6 +1,6 @@
 ﻿namespace WoWViewer
 {
-    class WowDatFile
+    class WowDatFile // currently unused
     {
         public int Unknown;    // Possibly always zero
         public int Stride;     // e.g. 8, 0x0E
@@ -17,6 +17,7 @@
         public int Offset { get; set; }
         public bool Edited { get; set; } = false;
         public byte[]? Data { get; set; } = null; // used for storing the file data in memory
+        public int Frames { get; set; }
     }
     class WowSaveEntry
     {
@@ -31,10 +32,7 @@
         public ushort Index { get; set; } // used for getting entry index when filtering by type
         public bool Edited { get; set; } = false;
     }
-    class WowTextBackup
-    {
-        public string Name { get; set; } = "";
-    }
+    class WowTextBackup { public string Name { get; set; } = ""; }
     public class OjdEntry
     {
         public ushort Id { get; set; }

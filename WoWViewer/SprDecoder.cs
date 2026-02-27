@@ -1,6 +1,8 @@
 ﻿// SprDecoder.cs: Reverse-engineered from WoW.exe via IDA Pro.
 // Traced to the Huffman loop at 0x415A80 and sprite blitting routines.
 // Logic derived and verified with Claude.ai (Anthropic) for the "WoWRevived" Project.
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
 namespace WoWViewer
 {
     public static class SprDecoder
@@ -9,8 +11,8 @@ namespace WoWViewer
         //
         //   0x00  uint16  width
         //   0x02  uint16  height
-        //   0x04  uint16  tableCount
-        //   0x06  uint16  rowHeaderSize (always 10)
+        //   0x04  uint16  tableCount = frameCount
+        //   0x06  uint16  rowHeaderSize
         //   0x08  height * 4 bytes: row offset table
         //
         // Each 4-byte row offset entry:
@@ -42,6 +44,8 @@ namespace WoWViewer
         {
             ushort width = BitConverter.ToUInt16(sprData, 0);
             ushort height = BitConverter.ToUInt16(sprData, 2);
+            ushort frameCount = BitConverter.ToUInt16(sprData, 4);
+            //ushort rowHeaderSize = BitConverter.ToUInt16(sprData, 6);
 
             var bmp = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
@@ -60,7 +64,7 @@ namespace WoWViewer
                 prevLow = low;
 
                 int rowOffset = high * 65536 + low;
-                int dataPos = rowOffset + 10; // skip 10-byte row header
+                int dataPos = rowOffset + BitConverter.ToUInt16(sprData, 6); // thor110 edited line
 
                 int x = 0;
                 while (x < width && dataPos + 1 < sprData.Length)

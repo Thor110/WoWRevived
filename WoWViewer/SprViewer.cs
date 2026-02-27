@@ -176,5 +176,12 @@ namespace WoWViewer
         }
         // greyscale checkbox changed
         private void checkBox1_CheckedChanged(object sender, EventArgs e) => RenderCurrent();
+        // frame selection combobox
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+
+            //RenderCurrent();
+        }
     }
 }
