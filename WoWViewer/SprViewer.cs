@@ -42,7 +42,7 @@ namespace WoWViewer
             using var br = new BinaryReader(File.OpenRead("DAT\\Dat.wow"));
             br.ReadInt32();
             int fileCount = br.ReadInt32();
-            for (int i = 0; i < fileCount; i++) // duplicate code from Form1.cs could be cleaned up later
+            for (int i = 0; i < fileCount; i++) // near duplicate code from Form1.cs could be cleaned up later
             {
                 br.ReadInt32();                     // skip 4 bytes
                 int offset = br.ReadInt32();        // file offset
@@ -51,7 +51,7 @@ namespace WoWViewer
                 br.BaseStream.Seek(20, SeekOrigin.Current); // skip 20 bytes
                 int zeroIndex = Array.IndexOf(nameBytes, (byte)0); // setup entries and listbox
                 string name = Encoding.ASCII.GetString(nameBytes, 0, zeroIndex >= 0 ? zeroIndex : nameBytes.Length);
-                if (name.EndsWith(".PAL", StringComparison.OrdinalIgnoreCase))
+                if (name.EndsWith(".PAL"))
                 {
                     long store = br.BaseStream.Position; // store the current position
                     br.BaseStream.Seek(offset, SeekOrigin.Begin); // seek to the offset
@@ -70,7 +70,7 @@ namespace WoWViewer
                 }
                 listBox1.Items.Add(entry.Name); // populate listbox
             }
-            foreach (var entry in (isMaps ? palettes : entries).Where(e => e.Name.EndsWith(".PAL", StringComparison.OrdinalIgnoreCase)).ToList()) { listBox2.Items.Add(entry.Name); }
+            foreach (var entry in (isMaps ? palettes : entries).Where(e => e.Name.EndsWith(".PAL")).ToList()) { listBox2.Items.Add(entry.Name); }
             listBox1.SelectedIndex = listBox1.FindStringExact(selectedEntry); // set selectedEntry
             listBox2.SelectedIndex = 0; // set to first palette file
         }
@@ -95,23 +95,22 @@ namespace WoWViewer
             numericUpDown1.Maximum = SprDecoder.PaletteCount(palData) - 1;
             numericUpDown1.Value = 0;
             //
+            // palette limits
+            // numericUpDown1 = raw byte offset, step 3 or 768
+            numericUpDown1.Maximum = palData.Length - 768;
+            numericUpDown1.Increment = 3; // step by one RGB entry at a time for fine tuning
+            //
             RenderCurrent();
         }
         // render selected image with selected palette data
         private void RenderCurrent()
         {
-            if (rawData == null || palData == null) { return; } // returns on first run when listBox1_SelectedIndexChanged
+            if (palData == null) { return; } // returns on first run when listBox1_SelectedIndexChanged then fires on listBox2_SelectedIndexChanged
             pictureBox1.Image = SprDecoder.Render(rawData, palData, SprDecoder.PaletteOffset((int)numericUpDown1.Value));
             label1.Text = SprDecoder.ReadInfo(rawData).ToString();
         }
         // palette changer
-        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
-        {
-            // numericUpDown1 = raw byte offset, step 3 or 768
-            numericUpDown1.Maximum = palData.Length - 768;
-            numericUpDown1.Increment = 3; // step by one RGB entry at a time for fine tuning
-            RenderCurrent();
-        }
+        private void numericUpDown1_ValueChanged(object sender, EventArgs e) => RenderCurrent();
         // replace selected asset by importing - future
         private void button1_Click(object sender, EventArgs e)
         {
