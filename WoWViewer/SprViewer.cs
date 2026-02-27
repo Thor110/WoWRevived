@@ -176,23 +176,25 @@ namespace WoWViewer
         {
             bool greyscale = checkBox1.Checked;
             // loop through render data export
-            foreach (WowFileEntry entry in entries.Where(e => e.Name.EndsWith(".SPR", StringComparison.OrdinalIgnoreCase)).ToList())
+            foreach (WowFileEntry entry in entries.Where(e => e.Name.EndsWith(".SPR", StringComparison.OrdinalIgnoreCase)))
             {
                 int paletteOffset = SprDecoder.PaletteOffset((int)numericUpDown1.Value); // get palette offset // TODO: Update with correct palette data
-                using (Bitmap renderedImage = SprDecoder.Render(entry.Data!, palData, paletteOffset, greyscale)) // create rendered image
+                int info = SprDecoder.ReadInfo(entry.Data!).TableCount;
+                string fileName = Path.GetFileNameWithoutExtension(entry.Name);
+                if (info != 1)
                 {
-                    if (SprDecoder.ReadInfo(entry.Data!).TableCount != 1)
+                    for (int i = 0; i < info; i++)
                     {
-                        for (int i = 0; i < SprDecoder.ReadInfo(entry.Data!).TableCount; i++)
-                        {
-                            Bitmap frameImage = SprDecoder.Render(entry.Data!, palData, paletteOffset, greyscale, i);
-                            frameImage.Save(Path.Combine(outputPath, Path.GetFileNameWithoutExtension(entry.Name) + $"_frame_{i:D2}.png"), ImageFormat.Png); // set file path and save rendered image
-                        }
+                        Bitmap frameImage = SprDecoder.Render(entry.Data!, palData, paletteOffset, greyscale, i);
+                        frameImage.Save(Path.Combine(outputPath, fileName + $"_frame_{i:D2}.png"), ImageFormat.Png); // set file path and save rendered image
+                        frameImage.Dispose();
                     }
-                    else
-                    {
-                        renderedImage.Save(Path.Combine(outputPath, Path.GetFileNameWithoutExtension(entry.Name) + ".png"), ImageFormat.Png); // set file path and save rendered image
-                    }
+                }
+                else
+                {
+                    Bitmap renderedImage = SprDecoder.Render(entry.Data!, palData, paletteOffset, greyscale);
+                    renderedImage.Save(Path.Combine(outputPath, fileName + ".png"), ImageFormat.Png); // set file path and save rendered image
+                    renderedImage.Dispose();
                 }
             }
             MessageBox.Show("All .spr files exported successfully.");
