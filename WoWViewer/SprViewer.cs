@@ -8,11 +8,12 @@ namespace WoWViewer
         private List<WowFileEntry> entries;
         private string selectedEntry; // selected SPR file on enter
         private string lastSelectedEntry;
+        private string lastSelectedPalette;
         private byte[] rawData;
         private byte[] palData;
         private string outputPath = "";
         private bool isMaps; // is file MAPS.WoW
-        private List<WowFileEntry> palettes; // necessary if MAPS.WoW is loaded
+        private List<WowFileEntry> palettes = new List<WowFileEntry>(); // necessary if MAPS.WoW is loaded
         private string baseFolder;
 
         public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps)
@@ -38,7 +39,6 @@ namespace WoWViewer
         // read MAPS\\MAPS.WoW -> extract palette data from DAT\\Dat.wow
         private void PopulatePalettes()
         {
-            palettes = new List<WowFileEntry>();
             using var br = new BinaryReader(File.OpenRead("DAT\\Dat.wow"));
             br.ReadInt32();
             int fileCount = br.ReadInt32();
@@ -77,11 +77,11 @@ namespace WoWViewer
         // SPR list box index changed
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (listBox1.SelectedItem!.ToString()! == lastSelectedEntry) { return; } // prevent selecting the same entry
-            selectedEntry = listBox1.SelectedItem!.ToString()!; // update selected entry
+            string sprName = listBox1.SelectedItem!.ToString()!;
+            if (sprName == lastSelectedEntry) { return; } // prevent selecting the same entry
+            selectedEntry = sprName; // update selected entry
             lastSelectedEntry = selectedEntry; // update last selected entry
             rawData = entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase))!.Data!; // find selected entry data
-
             //
             RenderCurrent();
         }
@@ -89,17 +89,19 @@ namespace WoWViewer
         private void listBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             string palName = listBox2.SelectedItem!.ToString()!;
+            if (palName == lastSelectedPalette) { return; } // prevent selecting the same entry
+            lastSelectedPalette = palName; // update last selected entry
             palData = (isMaps ? palettes : entries).First(e => e.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
             numericUpDown1.Maximum = SprDecoder.PaletteCount(palData) - 1;
             numericUpDown1.Value = 0;
+            //
             RenderCurrent();
         }
         // render selected image with selected palette data
         private void RenderCurrent()
         {
             if (rawData == null || palData == null) { return; } // returns on first run when listBox1_SelectedIndexChanged
-            int paletteOffset = SprDecoder.PaletteOffset((int)numericUpDown1.Value);
-            pictureBox1.Image = SprDecoder.Render(rawData, palData, paletteOffset);
+            pictureBox1.Image = SprDecoder.Render(rawData, palData, SprDecoder.PaletteOffset((int)numericUpDown1.Value));
             label1.Text = SprDecoder.ReadInfo(rawData).ToString();
         }
         // palette changer
@@ -120,21 +122,16 @@ namespace WoWViewer
                 if (ofd.ShowDialog() == DialogResult.OK)
                 {
                     Bitmap bmp = new Bitmap(ofd.FileName);
-                    // Validation: Ensure it's actually 4-bit (16 colors)
-                    if (bmp.PixelFormat != PixelFormat.Format4bppIndexed)
+                    if (bmp.PixelFormat != PixelFormat.Format4bppIndexed) // Validation: Ensure it's actually 4-bit (16 colors)
                     {
                         MessageBox.Show("Error: File must be a 16-color (4-bit) Indexed Bitmap.");
                         return;
                     }
+                    string fullPath = Path.Combine(baseFolder, Path.GetFileNameWithoutExtension(selectedEntry));
+                    if (File.Exists(fullPath) && MessageBox.Show($"File '{fullPath}' already exists, overwrite file?", "File Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) { return; }
+                    // save to fullPath
                     // convert to .spr format before displaying
                     pictureBox1.Image = bmp; // set picture box to the new image
-
-                    string fullPath = Path.Combine(baseFolder, Path.GetFileNameWithoutExtension(selectedEntry));
-                    if(File.Exists(fullPath))
-                    {
-                        
-                    }
-                    // save to fullPath
                 }
             }
         }
@@ -151,11 +148,10 @@ namespace WoWViewer
             // loop through render data export
             foreach (WowFileEntry entry in entries.Where(e => e.Name.EndsWith(".SPR", StringComparison.OrdinalIgnoreCase)).ToList())
             {
-                string fullPath = Path.Combine(outputPath, Path.GetFileNameWithoutExtension(entry.Name) + ".png"); // set file path
                 int paletteOffset = SprDecoder.PaletteOffset((int)numericUpDown1.Value); // get palette offset // TODO: Update with correct palette data
                 using (Bitmap renderedImage = SprDecoder.Render(entry.Data!, palData, paletteOffset)) // create rendered image
                 {
-                    renderedImage.Save(fullPath, ImageFormat.Png); // save rendered image
+                    renderedImage.Save(Path.Combine(outputPath, Path.GetFileNameWithoutExtension(entry.Name) + ".png"), ImageFormat.Png); // set file path and save rendered image
                 }
             }
             MessageBox.Show("All .spr files exported successfully.");

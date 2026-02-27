@@ -16,7 +16,7 @@ namespace WoWViewer
         private bool cancelOpenNewFile;
         private void InitializeHandlers()
         {
-            handlers = new Dictionary<string, Action<WowFileEntry>>
+            handlers = new Dictionary<string, Action<WowFileEntry>>(StringComparer.OrdinalIgnoreCase)
             {
                 //DAT/Dat.wow
                 { "DAT", HandleDAT }, // pseudo random dithering
@@ -25,13 +25,12 @@ namespace WoWViewer
                 { "HSM", HandleHSM },
                 { "INT", HandleINT },
                 { "IOB", HandleIOB },
-                { "PAL", HandlePalette },
+                { "PAL", HandlePAL },
                 { "RAW", HandleRAW },
                 { "SHH", HandleSHH },
                 { "SHL", HandleSHL },
                 { "SHM", HandleSHM },
-                { "SPR", HandleSPR }, // uppercase exception
-                { "spr", HandleSPR }, // lowercase exception
+                { "SPR", HandleSPR },
                 { "WOF", HandleWOF },
                 //MAPS/MAPS.WoW
                 { "ATM", HandleATM },
@@ -42,7 +41,6 @@ namespace WoWViewer
         //DAT/Dat.wow
         private void HandleDAT(WowFileEntry entry)
         {
-            pictureBox1.Image = null;
             /* // old DAT handling
             using var br = new BinaryReader(File.OpenRead(filePath));
             br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
@@ -113,9 +111,9 @@ namespace WoWViewer
         {
             MessageBox.Show("IOB file selected. No action defined.");
         }
-        private void HandlePalette(WowFileEntry entry)
+        private void HandlePAL(WowFileEntry entry)
         {
-            MessageBox.Show("Palette file selected. No action defined.");
+            MessageBox.Show("PAL file selected. No action defined.");
         }
         private void HandleRAW(WowFileEntry entry)
         {
