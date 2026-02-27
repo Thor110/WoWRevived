@@ -15,6 +15,7 @@ namespace WoWViewer
         private bool isMaps; // is file MAPS.WoW
         private List<WowFileEntry> palettes = new List<WowFileEntry>(); // necessary if MAPS.WoW is loaded
         private string baseFolder;
+        private int currentFrame;
 
         public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps)
         {
@@ -84,7 +85,7 @@ namespace WoWViewer
             string sprName = listBox1.SelectedItem!.ToString()!;
             if (sprName == lastSelectedEntry) { return; } // prevent selecting the same entry
             selectedEntry = sprName; // update selected entry
-            lastSelectedEntry = selectedEntry; // update last selected entry
+            lastSelectedEntry = sprName; // update last selected entry
             rawData = entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase))!.Data!; // find selected entry data
             //
             RenderCurrent();
@@ -110,8 +111,37 @@ namespace WoWViewer
         private void RenderCurrent()
         {
             if (palData == null) { return; } // returns on first run when listBox1_SelectedIndexChanged then fires on listBox2_SelectedIndexChanged
-            pictureBox1.Image = SprDecoder.Render(rawData, palData, SprDecoder.PaletteOffset((int)numericUpDown1.Value), checkBox1.Checked);
             label1.Text = SprDecoder.ReadInfo(rawData).ToString();
+
+
+
+            comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged;
+
+
+            // check next/last selected item or something etc
+            comboBox1.Items.Clear(); // not ideal as the combo box gets repopulated when changing
+
+
+            if (SprDecoder.ReadInfo(rawData).TableCount != 1)
+            {
+                for (int i = 0; i < SprDecoder.ReadInfo(rawData).TableCount; i++)
+                {
+                    comboBox1.Items.Add($"{selectedEntry}_frame_{i:D2}");
+                }
+                comboBox1.Enabled = true;
+            }
+            else
+            {
+                currentFrame = -1;
+                comboBox1.Enabled = false;
+                comboBox1.Text = $"{selectedEntry}";
+            }
+            comboBox1.SelectedIndex = currentFrame;
+            comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
+            pictureBox1.Image = SprDecoder.Render(rawData, palData, SprDecoder.PaletteOffset((int)numericUpDown1.Value), checkBox1.Checked, currentFrame);
+
+
+
         }
         // palette changer
         private void numericUpDown1_ValueChanged(object sender, EventArgs e) => RenderCurrent();
@@ -179,9 +209,9 @@ namespace WoWViewer
         // frame selection combobox
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-
-
-            //RenderCurrent();
+            if(comboBox1.SelectedIndex == currentFrame) { return; }
+            currentFrame = comboBox1.SelectedIndex;
+            RenderCurrent();
         }
     }
 }
