@@ -38,7 +38,7 @@ namespace WoWViewer
         // Render SPR data using a flat RGB palette (byte[] of R,G,B triplets)
         // paletteOffset: byte offset into palData to start reading from
         // transparentIndex: palette index to treat as transparent (default 0)
-        public static Bitmap Render(byte[] sprData, byte[] palData, int paletteOffset = 0, int transparentIndex = 0)
+        public static Bitmap Render(byte[] sprData, byte[] palData, int paletteOffset, bool greyscale = false)
         {
             ushort width = BitConverter.ToUInt16(sprData, 0);
             ushort height = BitConverter.ToUInt16(sprData, 2);
@@ -70,9 +70,13 @@ namespace WoWViewer
                     dataPos += 2;
 
                     Color c;
-                    if (palIndex == transparentIndex)
+                    if (palIndex == 0) // this was transparentIndex from the method signature
                     {
                         c = Color.Transparent;
+                    }
+                    else if (greyscale)
+                    {
+                        c = Color.FromArgb(palIndex, palIndex, palIndex);
                     }
                     else
                     {

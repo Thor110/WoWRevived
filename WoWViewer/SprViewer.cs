@@ -106,7 +106,7 @@ namespace WoWViewer
         private void RenderCurrent()
         {
             if (palData == null) { return; } // returns on first run when listBox1_SelectedIndexChanged then fires on listBox2_SelectedIndexChanged
-            pictureBox1.Image = SprDecoder.Render(rawData, palData, SprDecoder.PaletteOffset((int)numericUpDown1.Value));
+            pictureBox1.Image = SprDecoder.Render(rawData, palData, SprDecoder.PaletteOffset((int)numericUpDown1.Value), checkBox1.Checked);
             label1.Text = SprDecoder.ReadInfo(rawData).ToString();
         }
         // palette changer
@@ -170,5 +170,7 @@ namespace WoWViewer
                 button3.Enabled = true;
             }
         }
+        // greyscale checkbox changed
+        private void checkBox1_CheckedChanged(object sender, EventArgs e) => RenderCurrent();
     }
 }
