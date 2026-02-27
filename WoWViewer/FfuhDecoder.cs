@@ -1,4 +1,7 @@
-﻿namespace WoWViewer
+﻿// Decompression algorithm reverse engineered from WoW.exe with assistance from Claude.ai (Anthropic)
+// The disassembly was traced through IDA Pro to locate the Huffman decompression loop at 0x415A80,
+// from which Claude derived and verified a Python implementation before porting to C#.
+namespace WoWViewer
 {
     public static class FfuhDecoder
     {

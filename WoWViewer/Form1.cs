@@ -95,78 +95,56 @@ namespace WoWViewer
 
         private void HandleFonts(WowFileEntry entry)
         {
-            pictureBox1.Image = null;
             MessageBox.Show("Fonts file selected. No action defined.");
         }
         private void HandleHSH(WowFileEntry entry)
         {
-            pictureBox1.Image = null;
             MessageBox.Show("HSH file selected. No action defined.");
         }
         private void HandleHSM(WowFileEntry entry)
         {
-            pictureBox1.Image = null;
             MessageBox.Show("HSM file selected. No action defined.");
         }
         private void HandleINT(WowFileEntry entry)
         {
-            pictureBox1.Image = null;
             MessageBox.Show("INT file selected. No action defined.");
         }
         private void HandleIOB(WowFileEntry entry)
         {
-            pictureBox1.Image = null;
             MessageBox.Show("IOB file selected. No action defined.");
         }
         private void HandlePalette(WowFileEntry entry)
         {
-            pictureBox1.Image = null;
             MessageBox.Show("Palette file selected. No action defined.");
         }
         private void HandleRAW(WowFileEntry entry)
         {
-            pictureBox1.Image = null;
             MessageBox.Show("RAW file selected. No action defined.");
         }
         private void HandleSHH(WowFileEntry entry)
         {
-            pictureBox1.Image = null;
             MessageBox.Show("SHH file selected. No action defined.");
         }
         private void HandleSHL(WowFileEntry entry)
         {
-            pictureBox1.Image = null;
             MessageBox.Show("SHL file selected. No action defined.");
         }
         private void HandleSHM(WowFileEntry entry)
         {
-            pictureBox1.Image = null;
             MessageBox.Show("SHM file selected. No action defined.");
         }
-        private void HandleSPR(WowFileEntry entry)
-        {
-            pictureBox1.Visible = true; // show the picture box
-            RenderSPR(entry);
-        }
-        private void RenderSPR(WowFileEntry entry)
-        {
-            pictureBox1.Image = null;
-            MessageBox.Show("SPR file selected. No action defined.");
-        }
+        private void HandleSPR(WowFileEntry entry) { newForm(new SprViewer(entries, listBox1.SelectedItem!.ToString()!)); }
         private void HandleWOF(WowFileEntry entry)
         {
-            pictureBox1.Image = null;
             MessageBox.Show("WOF file selected. No action defined.");
         }
         //MAPS/MAPS.WoW
         private void HandleATM(WowFileEntry entry)
         {
-            pictureBox1.Image = null;
             MessageBox.Show("ATM file selected. No action defined.");
         }
         private void HandleCLS(WowFileEntry entry)
         {
-            pictureBox1.Image = null;
             MessageBox.Show("CLS file selected. No action defined.");
         }
         public WoWViewer()
@@ -281,8 +259,12 @@ namespace WoWViewer
                     br.BaseStream.Seek(20, SeekOrigin.Current); // skip 20 bytes
                     int zeroIndex = Array.IndexOf(nameBytes, (byte)0); // setup entries and listbox
                     string name = Encoding.ASCII.GetString(nameBytes, 0, zeroIndex >= 0 ? zeroIndex : nameBytes.Length);
-                    listBox1.Items.Add($"{name}");
-                    entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset });
+                    listBox1.Items.Add($"{name}");      // add entry to the listbox
+                    // record data for the entry
+                    long store = br.BaseStream.Position; // store the current position
+                    br.BaseStream.Seek(offset, SeekOrigin.Begin); // seek to the offset
+                    entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset, Data = br.ReadBytes(length) });
+                    br.BaseStream.Position = store; // return to the original position
                 }
                 button5.Visible = false;                // hide audio player play button
                 button6.Visible = false;                // hide audio player stop button
@@ -408,8 +390,7 @@ namespace WoWViewer
                     button5.Enabled = true; // enable play button
                     button6.Enabled = true; // enable stop button
                     button10.Enabled = true; // enable replace file button
-                } // invoke extension handler for displaying different types
-                else if (magic == "KAT!") { handlers[listBox1.SelectedItem!.ToString()!.Split('.')[1]].Invoke(selected); }
+                }
                 if (button4.Enabled) { button2.Enabled = true; } // enable extract button
                 lastSelectedListItem = selected.Name; // update last selected item
             }
@@ -446,7 +427,7 @@ namespace WoWViewer
         private void listBox1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             if (magic == "SfxL") { PlayRawSound(selected); }
-            else if (magic == "KAT!") { MessageBox.Show(selected.Name); } // temporary placeholder
+            else if (magic == "KAT!") { handlers[listBox1.SelectedItem!.ToString()!.Split('.')[1]].Invoke(selected); }
         }
         // draw waveform
         private Bitmap DrawWaveform(byte[] wavData, int width, int height, int sampleRate)

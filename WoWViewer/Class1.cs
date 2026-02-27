@@ -20,7 +20,7 @@
         public byte ExtraFlag;      // Always 0
         public int ComputeTableSize(ushort entryCount, int itemSize) { return ((itemSize + 4) * entryCount) + 0x14; }
     }
-    class WowFileEntry
+    public class WowFileEntry
     {
         public string Name { get; set; } = "";
         public int Length { get; set; }
