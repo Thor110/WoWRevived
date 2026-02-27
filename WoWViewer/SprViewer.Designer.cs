@@ -99,6 +99,7 @@
             // 
             // button2
             // 
+            button2.Enabled = false;
             button2.Location = new Point(531, 469);
             button2.Name = "button2";
             button2.Size = new Size(75, 23);
@@ -109,6 +110,7 @@
             // 
             // button3
             // 
+            button3.Enabled = false;
             button3.Location = new Point(157, 712);
             button3.Name = "button3";
             button3.Size = new Size(75, 23);

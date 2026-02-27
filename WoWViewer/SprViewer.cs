@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Drawing.Imaging;
+using System.Text;
 
 namespace WoWViewer
 {
@@ -50,7 +51,7 @@ namespace WoWViewer
 
         private void RenderCurrent()
         {
-            if (rawData == null || palData == null) { return; } // this won't ever fire
+            if (rawData == null || palData == null) { return; } // returns on first run when listBox1_SelectedIndexChanged
             int paletteOffset = SprDecoder.PaletteOffset((int)numericUpDown1.Value);
             pictureBox1.Image = SprDecoder.Render(rawData, palData, paletteOffset);
             label1.Text = SprDecoder.ReadInfo(rawData).ToString();
@@ -66,16 +67,29 @@ namespace WoWViewer
         // replace selected asset by importing - future
         private void button1_Click(object sender, EventArgs e)
         {
-            
+            using (OpenFileDialog ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "Bitmap Files|*.bmp";
+                ofd.Title = "Select 16-Color BMP for Replacement";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    Bitmap bmp = new Bitmap(ofd.FileName);
+                    // Validation: Ensure it's actually 4-bit (16 colors)
+                    if (bmp.PixelFormat != PixelFormat.Format4bppIndexed)
+                    {
+                        MessageBox.Show("Error: File must be a 16-color (4-bit) Indexed Bitmap.");
+                        return;
+                    }
+                    // convert to .spr format before displaying
+                    pictureBox1.Image = bmp; // set picture box to the new image
+                    string fullPath = Path.Combine("DAT", Path.GetFileNameWithoutExtension(selectedEntry));
+                    // save to fullPath
+                }
+            }
         }
         // export selected button
         private void button2_Click(object sender, EventArgs e)
         {
-            if(outputPath == "")
-            {
-                MessageBox.Show("Please select an output directory first.");
-                return;
-            }
             string fileNameOnly = Path.GetFileNameWithoutExtension(selectedEntry);
             string fullPath = Path.Combine(outputPath, fileNameOnly + ".png");
             pictureBox1.Image.Save(fullPath, System.Drawing.Imaging.ImageFormat.Png);
@@ -85,6 +99,16 @@ namespace WoWViewer
         private void button3_Click(object sender, EventArgs e)
         {
             // loop through render data export
+            foreach (WowFileEntry entry in entries.Where(e => e.Name.EndsWith(".SPR", StringComparison.OrdinalIgnoreCase)).ToList())
+            {
+                byte[] rawData = entries.First(e => e.Name.Equals(entry.Name, StringComparison.OrdinalIgnoreCase))!.Data!; // get decompressed data
+                string fileNameOnly = Path.GetFileNameWithoutExtension(entry.Name); // get filename without extension
+                string fullPath = Path.Combine(outputPath, fileNameOnly + ".png"); // set file path
+                int paletteOffset = SprDecoder.PaletteOffset((int)numericUpDown1.Value); // get palette offset // TODO: Update with correct palette data
+                Bitmap renderedImage = SprDecoder.Render(rawData, palData, paletteOffset); // create rendered image
+                renderedImage.Save(fullPath, ImageFormat.Png); // save rendered image
+            }
+            MessageBox.Show("All .spr files exported successfully.");
         }
         // set output directory
         private void button4_Click(object sender, EventArgs e)
@@ -97,6 +121,8 @@ namespace WoWViewer
                 outputPath = folderBrowserDialog.SelectedPath;
                 if (!outputPath.EndsWith("\\")) { outputPath += "\\"; } // If Root Directory // Complete Directory String
                 textBox1.Text = outputPath;
+                button2.Enabled = true;
+                button3.Enabled = true;
             }
         }
     }
