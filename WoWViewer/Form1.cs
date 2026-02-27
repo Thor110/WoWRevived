@@ -486,10 +486,10 @@ namespace WoWViewer
         {
             form.StartPosition = FormStartPosition.Manual;
             form.Location = this.Location;
-            form.Show();
-            this.Hide();
             form.FormClosed += (s, args) => this.Show();
             form.Move += (s, args) => { if (this.Location != form.Location) { this.Location = form.Location; } };
+            form.Show();
+            if (!form.IsDisposed) { this.Hide(); }
         }
         // replace selected file
         private void button10_Click(object sender, EventArgs e)

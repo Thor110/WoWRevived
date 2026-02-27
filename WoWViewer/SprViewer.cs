@@ -12,6 +12,8 @@ namespace WoWViewer
         private byte[] palData;
         private string outputPath = "";
         private bool isMaps; // is file MAPS.WoW
+        private List<WowFileEntry> palettes; // necessary if MAPS.WoW is loaded
+        private string baseFolder;
         public static int PaletteOffset(int paletteIndex) => 768 + paletteIndex * 768;
 
         public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps)
@@ -20,24 +22,56 @@ namespace WoWViewer
             entries = entryList;
             selectedEntry = entryName;
             isMaps = maps;
-
-            if(isMaps)
+            if (maps)
             {
-                // load dat file...
-                if (!File.Exists("DAT\\Dat.wow"))
+                if (!File.Exists("DAT\\Dat.wow")) // check for dat file...
                 {
-                    MessageBox.Show("Where is DAT\\Dat.wow ");
+                    MessageBox.Show("Where is DAT\\Dat.wow? Palette data is stored there.");
+                    this.Load += (s, e) => this.Close();
+                    return;
+                }
+                baseFolder = "MAPS";
+                PopulatePalettes();
+            }
+            else { baseFolder = "DAT"; }
+            PopulateList();
+        }
+        // read MAPS\\MAPS.WoW -> extract palette data from DAT\\Dat.wow
+        private void PopulatePalettes()
+        {
+            palettes = new List<WowFileEntry>();
+            using var br = new BinaryReader(File.OpenRead("DAT\\Dat.wow"));
+            br.ReadInt32();
+            int fileCount = br.ReadInt32();
+            for (int i = 0; i < fileCount; i++) // duplicate code from Form1.cs could be cleaned up later
+            {
+                br.ReadInt32();                     // skip 4 bytes
+                int offset = br.ReadInt32();        // file offset
+                int length = br.ReadInt32();        // file size
+                byte[] nameBytes = br.ReadBytes(12);// filename (ASCII padded)
+                br.BaseStream.Seek(20, SeekOrigin.Current); // skip 20 bytes
+                int zeroIndex = Array.IndexOf(nameBytes, (byte)0); // setup entries and listbox
+                string name = Encoding.ASCII.GetString(nameBytes, 0, zeroIndex >= 0 ? zeroIndex : nameBytes.Length);
+                if (name.EndsWith(".PAL", StringComparison.OrdinalIgnoreCase))
+                {
+                    long store = br.BaseStream.Position; // store the current position
+                    br.BaseStream.Seek(offset, SeekOrigin.Begin); // seek to the offset
+                    palettes.Add(new WowFileEntry { Name = name, Length = length, Offset = offset, Data = FfuhDecoder.Decompress(br.ReadBytes(length)) });
+                    br.BaseStream.Position = store; // return to the original position
                 }
             }
-
-
-
-            PopulateList();
         }
         private void PopulateList()
         {
-            foreach (var entry in entries.Where(e => e.Name.EndsWith(".SPR", StringComparison.OrdinalIgnoreCase)).ToList()) { listBox1.Items.Add(entry.Name); }
-            foreach (var entry in entries.Where(e => e.Name.EndsWith(".PAL", StringComparison.OrdinalIgnoreCase)).ToList()) { listBox2.Items.Add(entry.Name); }
+            foreach (var entry in entries.Where(e => e.Name.EndsWith(".SPR", StringComparison.OrdinalIgnoreCase)).ToList())
+            {
+                if (File.Exists($"{baseFolder}\\{entry.Name}")) // check if an overridden file already exists
+                {
+                    entry.Data = File.ReadAllBytes($"{baseFolder}\\{entry.Name}"); // update entries Data accordingly
+                }
+                listBox1.Items.Add(entry.Name); // populate listbox
+            }
+            foreach (var entry in (isMaps ? palettes : entries).Where(e => e.Name.EndsWith(".PAL", StringComparison.OrdinalIgnoreCase)).ToList()) { listBox2.Items.Add(entry.Name); }
             listBox1.SelectedIndex = listBox1.FindStringExact(selectedEntry); // set selectedEntry
             listBox2.SelectedIndex = 0; // set to first palette file
         }
@@ -56,7 +90,7 @@ namespace WoWViewer
         private void listBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             string palName = listBox2.SelectedItem!.ToString()!;
-            palData = entries.First(e => e.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
+            palData = (isMaps ? palettes : entries).First(e => e.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
             numericUpDown1.Maximum = SprDecoder.PaletteCount(palData) - 1;
             numericUpDown1.Value = 0;
             RenderCurrent();
@@ -96,7 +130,11 @@ namespace WoWViewer
                     // convert to .spr format before displaying
                     pictureBox1.Image = bmp; // set picture box to the new image
 
-                    string fullPath = Path.Combine(isMaps ? "MAPS" : "DAT", Path.GetFileNameWithoutExtension(selectedEntry));
+                    string fullPath = Path.Combine(baseFolder, Path.GetFileNameWithoutExtension(selectedEntry));
+                    if(File.Exists(fullPath))
+                    {
+                        
+                    }
                     // save to fullPath
                 }
             }
@@ -114,12 +152,12 @@ namespace WoWViewer
             // loop through render data export
             foreach (WowFileEntry entry in entries.Where(e => e.Name.EndsWith(".SPR", StringComparison.OrdinalIgnoreCase)).ToList())
             {
-                byte[] rawData = entries.First(e => e.Name.Equals(entry.Name, StringComparison.OrdinalIgnoreCase))!.Data!; // get decompressed data // inline later
-                string fileNameOnly = Path.GetFileNameWithoutExtension(entry.Name); // get filename without extension
-                string fullPath = Path.Combine(outputPath, fileNameOnly + ".png"); // set file path
+                string fullPath = Path.Combine(outputPath, Path.GetFileNameWithoutExtension(entry.Name) + ".png"); // set file path
                 int paletteOffset = SprDecoder.PaletteOffset((int)numericUpDown1.Value); // get palette offset // TODO: Update with correct palette data
-                Bitmap renderedImage = SprDecoder.Render(rawData, palData, paletteOffset); // create rendered image
-                renderedImage.Save(fullPath, ImageFormat.Png); // save rendered image
+                using (Bitmap renderedImage = SprDecoder.Render(entry.Data!, palData, paletteOffset)) // create rendered image
+                {
+                    renderedImage.Save(fullPath, ImageFormat.Png); // save rendered image
+                }
             }
             MessageBox.Show("All .spr files exported successfully.");
         }
