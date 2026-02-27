@@ -14,7 +14,7 @@ namespace WoWViewer
         }
 
         // Returns true if this file is FFUH compressed
-        public static bool IsCompressed(byte[] data) => data.Length >= 4 && data[0] == 'F' && data[1] == 'F' && data[2] == 'U' && data[3] == 'H';
+        public static bool IsCompressed(byte[] data) => data[0] == 'F' && data[1] == 'F' && data[2] == 'U' && data[3] == 'H'; // thor110 edited line
 
         // Decompress an FFUH compressed file, returns raw decompressed bytes
         public static byte[] Decompress(byte[] data)
@@ -72,7 +72,6 @@ namespace WoWViewer
                 }
                 output[writePos++] = (byte)node.Symbol;
             }
-
             return output;
         }
 
@@ -100,7 +99,6 @@ namespace WoWViewer
             {
                 Node left = nodes[0]; nodes.RemoveAt(0);
                 Node right = nodes[0]; nodes.RemoveAt(0);
-
                 Node parent = new Node
                 {
                     Freq = left.Freq + right.Freq,
@@ -108,7 +106,6 @@ namespace WoWViewer
                     Left = left,
                     Right = right
                 };
-
                 // Insert before first node with strictly higher frequency (stable)
                 int insertAt = nodes.Count; // default to end
                 for (int i = 0; i < nodes.Count; i++)
@@ -121,7 +118,6 @@ namespace WoWViewer
                 }
                 nodes.Insert(insertAt, parent);
             }
-
             return nodes[0];
         }
     }
