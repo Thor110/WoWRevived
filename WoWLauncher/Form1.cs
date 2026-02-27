@@ -6,7 +6,7 @@ namespace WoWLauncher
 {
     public partial class Form1 : Form
     {
-        private bool config;
+        private bool config; // are settings open or not
         private int resolution; // temp resolution combobox index for swapping files in future versions
         private List<string> keptResolutions = new List<string>(); // keep listed resolutions for future versions
         private RegistryKey mainKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
@@ -61,6 +61,7 @@ namespace WoWLauncher
             }
             var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             // TODO : add tweak key creation below and check what happens if it doesn't exist when altering settings etc
+            // TODO : or just repopulate every registry entry
             if (mainKey == null) // set default registry settings which are required for the launcher, the rest are created when the game starts.
             {
                 mainKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
@@ -114,17 +115,7 @@ namespace WoWLauncher
             }
             // delete old .smk movie files
             string[] folders = { "FMV", "FMV-Human" };
-            foreach (string folder in folders)
-            {
-                if (Directory.Exists(folder)) 
-                {
-                    var smkFiles = Directory.EnumerateFiles(folder, "*.smk", SearchOption.TopDirectoryOnly);
-                    foreach (string file in smkFiles)
-                    {
-                        File.Delete(file);
-                    }
-                }
-            }
+            foreach (string file in folders.Where(Directory.Exists).SelectMany(f => Directory.EnumerateFiles(f, "*.smk", SearchOption.TopDirectoryOnly))) { File.Delete(file); }
             string[] supportedResolutions = new string[]
             {
                 //"512x384         (4:3)",    // Listed in original manual, ultra-low fallback - sometimes causes DDERR_NOCOOPERATIVELEVELSET
@@ -146,7 +137,7 @@ namespace WoWLauncher
             };
             List<string> supported = GetSupportedResolutions();
             List<string> matchedResolutions = supportedResolutions.Where(sr => supported.Any(r => sr.Contains(r))).ToList();
-            foreach (string resolution in matchedResolutions) { comboBox2.Items.Add(resolution); keptResolutions.Add(resolution.Split(' ')[0]); } // list and keep only supported resolutions
+            foreach (string resolution in matchedResolutions) { comboBox2.Items.Add(resolution); keptResolutions.Add(resolution.Split(' ')[0]); } // list and keep only supported resolutions for later use
             //comboBox3.Items.Add("30"); // should probably not support this option
             //comboBox3.Items.Add("60");     // game frequency is not supported
             //comboBox3.Items.Add("120");
