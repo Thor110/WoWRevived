@@ -93,20 +93,59 @@ namespace WoWViewer
             }
             return result;
         }
-        // AI.ojd
-        public void parseAIOJD()
-        {
-
-        }
-        // OBJ.ojd
-        public void parseOBJOJD()
+        public void cleanList()
         {
             listBox1.Items.Clear();
-            entries = ParseOJDFile();
+            entries.Clear();
             textBox1.Text = "";
             textBox2.Text = "";
             textBox3.Text = "";
             textBox4.Text = "";
+        }
+        // AI.ojd
+        public void parseAIOJD()
+        {
+            cleanList();
+            // FF - FF pattern
+            // 0x0
+            // FF
+            // 6 bytes * 392 up to 0xAB8 // [Marker (1)] [ID (2)] [ScriptPointer (2)] [Type (1)]
+            // 10 bytes * 2
+            // FF
+            // 14 bytes * 6
+            // FF
+            // 10 bytes * 11
+            // FF
+            // 14 bytes * 5
+            // FF
+            // 10 bytes * 8
+            // FF
+            // 14 bytes * 6
+            // FF
+            // 10 bytes * 17
+            // FF
+            // 6 bytes * 2
+            // 0xD67
+            byte[] data = File.ReadAllBytes("AI.ojd");
+            int count = 392;
+            for (int i = 0; i < count; i++)
+            {
+                if (data[i] == 0xFF) { continue; }
+                byte marker = data[i + 1]; //[Marker(1)]
+                ushort ID = data[i + 2]; //[ID(2)]
+                ushort pointer = data[i + 3]; //[ScriptPointer(2)]
+                byte type = data[i + 5]; //[Type(1)]
+                listBox1.Items.Add($"[Marker] :{marker} [ID] :{ID} [ScriptPointer] :{pointer} [Type] :{type}");
+                count++;
+                //entries.Add(new OJDEntry { Id = hid, Type = 0xFF, Length = (ushort)length, Name = text });
+            }
+            label1.Text = $"Total Entries: {count}";
+        }
+        // OBJ.ojd
+        public void parseOBJOJD()
+        {
+            cleanList();
+            entries = ParseOJDFile();
             //
             string logPath = "ojd_log.txt";
             if (File.Exists(logPath)) { File.Delete(logPath); }
@@ -120,12 +159,7 @@ namespace WoWViewer
         // SFX.ojd
         public void parseSFXOJD()
         {
-            listBox1.Items.Clear();
-            entries.Clear();
-            textBox1.Text = "";
-            textBox2.Text = "";
-            textBox3.Text = "";
-            textBox4.Text = "";
+            cleanList();
             //
             byte[] data = File.ReadAllBytes("SFX.ojd");
             int count = 0;
