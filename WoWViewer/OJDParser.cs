@@ -2,113 +2,106 @@
 
 namespace WoWViewer
 {
+    // OBJ.ojd binary format (reverse-engineered for WoWRevived, Claude.ai assisted)
+    //
+    // Flat sequence of variable-length entries, each beginning with 0xFF:
+    //
+    //   [+0x00]  0xFF          marker byte
+    //   [+0x01]  uint16 LE     id      – unique object ID
+    //   [+0x03]  uint16 LE     type    – entry class (see below)
+    //   [+0x05]  uint16 LE     length  – byte count of string INCLUDING null terminator
+    //                                    (0 = metadata entry; no string, no palSlot)
+    //   [+0x07]  char[]        name    – ASCII, length bytes, null-terminated
+    //   [+0x07+length]
+    //            uint16 LE     palSlot – palette file index 0-15
+    //                                    ONLY present for types 2, 3, 4
+    //                                    Absent for types 5, 16, 19, 50 (next byte = 0xFF)
+    //
+    //   type values (confirmed):
+    //     2   UI assets          (.spr, .iob, .wof, .pal, .raw)
+    //     3   Human-faction      (.spr, .fnt, .raw)
+    //     4   Martian-faction    (.spr, .fnt, .raw)
+    //     5   Named constant     (no string/palSlot)
+    //     16  OTYPE_ enum names  e.g. "OTYPE_EXITARROW" (no palSlot)
+    //     19  Named constant     (no palSlot)
+    //     50  Named constant     (no palSlot)
+    //
+    //   palSlot values (types 2/3/4):
+    //     Index into the 16 PAL files, in order of first appearance in OBJ.ojd:
+    //       0=HW  1=MW  2=HB  3=MB  4=HR  5=MR  6=BM
+    //       7=F1  8=F2  9=F3  10=F4 11=F5 12=F6 13=F7  14=SE  15=CD
+    //     Values >= 16 are special (in-memory or level-specific palettes).
+    //
+    //   SPR→PAL mapping: see SprDecoder.GetPaletteForSpr()
+
     public partial class OJDParser : Form
     {
         private List<OjdEntry> entries = new List<OjdEntry>();
+
+        // Types that carry NO palSlot field after the null terminator
+        private static readonly HashSet<ushort> NoPalSlotTypes = new() { 5, 16, 19, 50 };
+
         public OJDParser()
         {
             InitializeComponent();
         }
-        // this is a test method to parse the TEXT.OJD file and log the results to a text file
-        /*public void parseTEXTOJD() // no longer used, but kept for reference. // results will be used to create a script to search through the assembly for string references
+
+        // Parse OBJ.ojd into a flat list of OjdEntry objects.
+        public static List<OjdEntry> ParseOjdFile(string path = "OBJ.ojd")
         {
-            listBox1.Items.Clear();
-            string inputPath = "TEXT.ojd";
-            string outputPath = "text-ojd-log.txt";
-            byte[] data = File.ReadAllBytes(inputPath);
-            using (StreamWriter log = new StreamWriter(outputPath, false, Encoding.UTF8))
+            var result = new List<OjdEntry>();
+            byte[] data = File.ReadAllBytes(path);
+            int i = 0;
+
+            while (i < data.Length - 6)
             {
-                int offset = 0x289; // first string starts at 0x289
-                //int count = 0; // count checker for total number of entries
-                for (int i = 0; i < 1396; i++) // there are only 1396 entries
+                if (data[i] != 0xFF) { i++; continue; }
+
+                ushort id     = BitConverter.ToUInt16(data, i + 1);
+                ushort type   = BitConverter.ToUInt16(data, i + 3);
+                ushort length = BitConverter.ToUInt16(data, i + 5);
+                int strStart  = i + 7;
+
+                // Zero-length = metadata only, no string
+                if (length == 0) { i += 7; continue; }
+
+                if (strStart + length > data.Length) { i++; continue; }
+
+                int nullPos = Array.IndexOf(data, (byte)0, strStart, Math.Min(length + 4, data.Length - strStart));
+                if (nullPos < 0) { i++; continue; }
+
+                string name;
+                try
                 {
-                    ushort lookupID = (ushort)(data[offset + 2] | (data[offset + 3] << 8));
-                    byte category = data[offset + 4];  // Faction: 00 = Martian, 01 = Human, 02 = UI
-                    ushort purposeID = (ushort)(data[offset + 6] | (data[offset + 7] << 8));
-                    ushort length = (ushort)(data[offset + 8] | (data[offset + 9] << 8)); // bytes 9 and 10 are the string length
-                    int stringOffset = offset + 10; // string offset
-                    string text = Encoding.ASCII.GetString(data, stringOffset, length - 1); // string length is one less than the byte length
-                    string faction =
-                        category == 0x00 ? "Martian" :
-                        category == 0x01 ? "Human" :
-                        category == 0x02 ? "UI" : "Unknown"; // faction type or user interface
-                    //00 FF + LookupID + Faction + PurposeID + String Length ( Each 2 Bytes )
-                    log.WriteLine($"Offset : [{offset:X}] : Unknown : [{lookupID:D}] : Faction : [{faction}] : String ID : {purposeID:D} : String Length : [{length:D}] : Text : {text}");
-                    //log.WriteLine($"{stringID:X}h : {text}");
-                    listBox1.Items.Add(text);
-                    offset += length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
-                    //count++; // increase count checker
+                    name = Encoding.ASCII.GetString(data, strStart, nullPos - strStart);
+                    if (!name.All(c => c >= 0x20 && c <= 0x7E)) { i++; continue; }
                 }
-                //log.WriteLine($"Total valid entries: {count}"); // log the total number of entries
-            }
-            label1.Text = $"Total Strings: 1396"; // known total number of entries in TEXT.ojd
-        }*/
-        // this is a test method to parse the SFX.OJD file and log the results to a text file
-        public void parseSFXOJD(string filename)
-        {
-            listBox1.Items.Clear();
-            string logPath = Path.ChangeExtension(filename, "-dump.csv");
-            byte[] data = File.ReadAllBytes(filename);
-            int count = 0;
+                catch { i++; continue; }
 
-            using (StreamWriter log = new StreamWriter(logPath, false, Encoding.UTF8))
-            {
-                log.WriteLine("Index,Offset,HeaderID,Length,Type,Text");
-
-                for (int i = 0; i < data.Length - 1; i++)
+                ushort palSlot = 0;
+                if (NoPalSlotTypes.Contains(type))
                 {
-                    if (!IsAsciiChar(data[i]) || data[i + 1] == 0x00) continue;
-
-                    int start = i;
-                    int length = 0;
-
-                    while (i < data.Length && IsAsciiChar(data[i])) { i++; length++; }
-                    if (length < 2 || i >= data.Length || data[i] != 0x00) continue;
-
-                    // Candidate string found
-                    int stringOffset = start;
-                    string text = Encoding.ASCII.GetString(data, stringOffset, length);
-
-                    // Try to backtrack
-                    int headerOffset = stringOffset - 7;
-                    string type = "Unverified";
-                    string headerID = "??";
-
-                    if (headerOffset >= 0 && data[headerOffset] == 0xFF)
-                    {
-                        ushort id = BitConverter.ToUInt16(data, headerOffset + 1);
-                        ushort maybeLength = BitConverter.ToUInt16(data, headerOffset + 5);
-
-                        headerID = id.ToString("X4");
-
-                        if (maybeLength == length + 1)
-                        {
-                            type = "StringEntry";
-                            listBox1.Items.Add(text);
-                        }
-                        else
-                        {
-                            type = "MismatchedLength";
-                        }
-                    }
-
-                    log.WriteLine($"{count},{stringOffset:X},{headerID},{length},{type},\"{text}\"");
-                    count++;
+                    i = nullPos + 1;  // no palSlot bytes
+                }
+                else
+                {
+                    palSlot = (nullPos + 3 <= data.Length) ? BitConverter.ToUInt16(data, nullPos + 1) : (ushort)0;
+                    i = nullPos + 3;
                 }
 
-                label1.Text = $"Total Strings: {count}";
+                result.Add(new OjdEntry { Id = id, Type = type, Length = length, Name = name, PalSlot = palSlot });
             }
-
-            //bool IsAsciiChar(byte b) => b >= 0x20 && b <= 0x7E;
+            return result;
         }
-        private static bool IsAsciiChar(byte b) => b >= 0x20 && b <= 0x7E;
-        // this is a test method to parse the OBJ.OJD file and log the results
+
+        // ── UI ───────────────────────────────────────────────────────────────────
+
         public void parseOBJOJD()
         {
             listBox1.Items.Clear();
             entries = ParseOjdFile();
             string logPath = "ojd_log.txt";
-            if (File.Exists(logPath)) { File.Delete(logPath); }
+            if (File.Exists(logPath)) File.Delete(logPath);
             foreach (var entry in entries)
             {
                 listBox1.Items.Add(entry.Name);
@@ -116,134 +109,54 @@ namespace WoWViewer
             }
             label1.Text = $"Total Entries: {entries.Count}";
         }
-        // This method parses the OJD file and returns a list of OjdEntry objects
-        public static List<OjdEntry> ParseOjdFile()
+
+        public void parseSFXOJD(string filename)
         {
-            var entries = new List<OjdEntry>();
-            byte[] data = File.ReadAllBytes("OBJ.ojd");
-            int index = 0;
-            while (index < data.Length)
+            listBox1.Items.Clear();
+            string logPath = Path.ChangeExtension(filename, "-dump.csv");
+            byte[] data = File.ReadAllBytes(filename);
+            int count = 0;
+            using (StreamWriter log = new StreamWriter(logPath, false, Encoding.UTF8))
             {
-                if (data[index] == 0xFF)
+                log.WriteLine("Index,Offset,HeaderID,Length,Type,Text");
+                for (int i = 0; i < data.Length - 1; i++)
                 {
-                    ushort id = BitConverter.ToUInt16(data, index + 1);
-                    ushort type = BitConverter.ToUInt16(data, index + 3);
-                    ushort length = BitConverter.ToUInt16(data, index + 5);
-
-                    int strStart = index + 7;
-
-                    if (strStart < data.Length && data[strStart] == 0xFF)
+                    if (!IsAsciiChar(data[i]) || data[i + 1] == 0x00) continue;
+                    int start = i, length = 0;
+                    while (i < data.Length && IsAsciiChar(data[i])) { i++; length++; }
+                    if (length < 2 || i >= data.Length || data[i] != 0x00) continue;
+                    string text = Encoding.ASCII.GetString(data, start, length);
+                    int headerOffset = start - 7;
+                    string type = "Unverified", headerID = "??";
+                    if (headerOffset >= 0 && data[headerOffset] == 0xFF)
                     {
-                        index += 1;
-                        continue;
+                        ushort hid = BitConverter.ToUInt16(data, headerOffset + 1);
+                        ushort maybeLength = BitConverter.ToUInt16(data, headerOffset + 5);
+                        headerID = hid.ToString("X4");
+                        if (maybeLength == length + 1) { type = "StringEntry"; listBox1.Items.Add(text); }
+                        else type = "MismatchedLength";
                     }
-                    if (!IsAsciiChar(data[strStart]))
-                    {
-                        index += 1;
-                        continue;
-                    }
-                    if (length == 0 || strStart + length > data.Length)
-                    {
-                        index += 1;
-                        continue;
-                    }
-                    if (length >= 33 || length <= 7)
-                    {
-                        index += 1;
-                        continue;
-                    }
-
-                    int strEnd = Array.IndexOf(data, (byte)0x00, strStart);
-
-                    string name = Encoding.ASCII.GetString(data, strStart, strEnd - strStart);
-
-                    name = name.Replace("\n", "").Replace("\r", "").Replace("\t", "").Replace("\x1A", "").Replace("\0", "");
-
-                    if(String.IsNullOrWhiteSpace(name))
-                    {
-                        index += 1;
-                        continue;
-                    }
-
-                    entries.Add(new OjdEntry
-                    {
-                        Id = id,
-                        Type = type,
-                        Length = length,
-                        Name = name
-                    });
-
-                    index = strEnd; // Move to next possible entry
+                    log.WriteLine($"{count},{start:X},{headerID},{length},{type},\"{text}\"");
+                    count++;
                 }
-                else
-                {
-                    index++; // Keep scanning for 0xFF
-                }
+                label1.Text = $"Total Strings: {count}";
             }
-            //WriteCleanedOjdWithInjectedPadding(); // at \WoWRevived\WoWPatches\theory
-            //theory on obj.ojd malformed entries
-            return entries;
         }
-        public static void WriteCleanedOjdWithInjectedPadding()
-        {
-            byte[] data = File.ReadAllBytes("OBJ.ojd");
-            List<byte> newData = new List<byte>();
 
-            // Preserve the initial 0x411 bytes
-            newData.AddRange(data.Take(0x431));
+        private static bool IsAsciiChar(byte b) => b >= 0x20 && b <= 0x7E;
 
-            int index = 0x431;
-            while (index < data.Length)
-            {
-                if (data[index] != 0xFF)
-                {
-                    index++;
-                    continue;
-                }
+        private void button1_Click(object sender, EventArgs e) { parseOBJOJD(); }          // OBJ.ojd
+        private void button2_Click(object sender, EventArgs e) { parseSFXOJD("SFX.ojd"); } // SFX.ojd
+        private void button3_Click(object sender, EventArgs e) { MessageBox.Show("TEXT.ojd fully decoded!"); }
 
-                if (index + 3 >= data.Length)
-                    break;
-
-                ushort id = BitConverter.ToUInt16(data, index + 1);
-                ushort type = BitConverter.ToUInt16(data, index + 3);
-                ushort len = BitConverter.ToUInt16(data, index + 5);
-
-                int strStart = index + 7;
-                if (len == 0 || strStart + len > data.Length)
-                {
-                    index++;
-                    continue;
-                }
-
-                // Copy: FF + 6-byte header
-                newData.AddRange(data.Skip(index).Take(7));
-
-                // Copy: ASCII string + null
-                newData.AddRange(data.Skip(strStart).Take(len));
-
-                // Inject: FF 00 (junk)
-                newData.Add(0xFF);
-                newData.Add(0x00);
-
-                index = strStart + len;
-            }
-
-            File.WriteAllBytes("OBJ-TEST.ojd", newData.ToArray());
-        }
-        // both methods return 755 entries for SFX.ojd
-        // seems more accurate for OBJ.ojd
-        // OBJ.ojd
-        private void button1_Click(object sender, EventArgs e) { parseOBJOJD(); } // 2072 entries
-        // SFX.ojd
-        private void button2_Click(object sender, EventArgs e) { parseSFXOJD("SFX.ojd"); } // 755 entries
-        // TEXT.ojd
-        private void button3_Click(object sender, EventArgs e) { MessageBox.Show("TEXT.ojd file fully decoded!"); } // 1396 Entries ( 0 - 1395 )
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            textBox1.Text = entries[listBox1.SelectedIndex].Id.ToString();          // ID
-            textBox2.Text = entries[listBox1.SelectedIndex].Type.ToString();        // Type
-            textBox3.Text = entries[listBox1.SelectedIndex].Length.ToString();      // Flags
-            textBox4.Text = entries[listBox1.SelectedIndex].Name;                   // Path
+            if (listBox1.SelectedIndex < 0 || listBox1.SelectedIndex >= entries.Count) return;
+            var entry = entries[listBox1.SelectedIndex];
+            textBox1.Text = entry.Id.ToString();
+            textBox2.Text = entry.Type.ToString();
+            textBox3.Text = entry.PalSlot.ToString();   // was "Flags", now holds PAL slot
+            textBox4.Text = entry.Name;
         }
     }
 }

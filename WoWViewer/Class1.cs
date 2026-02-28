@@ -33,12 +33,15 @@
         public bool Edited { get; set; } = false;
     }
     class WowTextBackup { public string Name { get; set; } = ""; }
+
     public class OjdEntry
     {
         public ushort Id { get; set; }
         public ushort Type { get; set; }
         public ushort Length { get; set; }
         public string Name { get; set; } = "";
-        public override string ToString() { return $"ID: {Id:X4}, Type: {Type:X4}, Length: {Length:X4}, Path: {Name}"; }
+        public ushort PalSlot { get; set; }  // 0 for types without a palSlot field
+
+        public override string ToString() => $"[{Id:D5}] type={Type:D3} palSlot={PalSlot:D2} len={Length:D2} '{Name}'";
     }
 }
