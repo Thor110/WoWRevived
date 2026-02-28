@@ -128,19 +128,20 @@ namespace WoWViewer
             // 0xD67
             byte[] data = File.ReadAllBytes("AI.ojd");
             int count = 392;
+            int offset = 0;
             for (int i = 0; i < count; i++)
             {
-                if (data[i] == 0xFF) { continue; }
-                byte marker = data[i + 1]; //[Marker(1)]
-                ushort ID = data[i + 2]; //[ID(2)]
-                ushort pointer = data[i + 3]; //[ScriptPointer(2)]
-                byte type = data[i + 5]; //[Type(1)]
-                listBox1.Items.Add($"[Marker] :{marker} [ID] :{ID} [ScriptPointer] :{pointer} [Type] :{type}");
-                count++;
-                //entries.Add(new OJDEntry { Id = hid, Type = 0xFF, Length = (ushort)length, Name = text });
+                byte marker = data[offset + 1]; //[Marker(1)]
+                byte ID = data[offset + 3]; //[ID(2)]
+                ushort pointer = data[offset + 5]; //[ScriptPointer(2)]
+
+                listBox1.Items.Add($"[Marker] :{marker} [Faction] :{getFaction(ID)} [ScriptPointer] :{pointer}");
+                entries.Add(new OJDEntry { Id = marker, Type = 0xFF, Length = pointer, Name = getFaction(ID) });
+                offset += 7;
             }
             label1.Text = $"Total Entries: {count}";
         }
+        private static string getFaction(byte category) => category == 0x00 ? "Martian" : category == 0x01 ? "Human" : category == 0x02 ? "UI" : "Unknown";
         // OBJ.ojd
         public void parseOBJOJD()
         {
