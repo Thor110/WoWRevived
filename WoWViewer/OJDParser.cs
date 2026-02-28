@@ -164,7 +164,6 @@ namespace WoWViewer
 
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (listBox1.SelectedIndex < 0 || listBox1.SelectedIndex >= entries.Count) return;
             var entry = entries[listBox1.SelectedIndex];
             textBox1.Text = entry.Id.ToString();
             textBox2.Text = entry.Type != 0xFF ? entry.Type.ToString() : "UNRECORDED";
