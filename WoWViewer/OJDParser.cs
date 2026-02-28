@@ -46,10 +46,10 @@ namespace WoWViewer
             InitializeComponent();
         }
         // Parse OBJ.ojd into a flat list of OjdEntry objects.
-        public static List<OjdEntry> ParseOjdFile(string path = "OBJ.ojd")
+        public static List<OjdEntry> ParseOjdFile()
         {
             var result = new List<OjdEntry>();
-            byte[] data = File.ReadAllBytes(path);
+            byte[] data = File.ReadAllBytes("OBJ.ojd");
             int i = 0;
 
             while (i < data.Length - 6)
