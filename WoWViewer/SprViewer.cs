@@ -51,7 +51,7 @@ namespace WoWViewer
         private void BuildSprPalMap()
         {
             if (!File.Exists("OBJ.ojd")) { MessageBox.Show("OBJ.ojd file is missing."); return; }
-            foreach (var entry in OJDParser.ParseOjdFile())
+            foreach (var entry in OJDParser.ParseOJDFile())
             {
                 if (!entry.Name.EndsWith(".spr", StringComparison.OrdinalIgnoreCase)) { continue; }
                 string key = Path.GetFileName(entry.Name).ToUpperInvariant();

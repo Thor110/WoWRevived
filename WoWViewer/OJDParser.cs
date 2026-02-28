@@ -2,6 +2,8 @@
 
 namespace WoWViewer
 {
+    // Object Data Container File Format Specifications
+    //
     // OBJ.ojd binary format (reverse-engineered for WoWRevived, Claude.ai assisted)
     //
     // Flat sequence of variable-length entries, each beginning with 0xFF:
@@ -36,17 +38,14 @@ namespace WoWViewer
 
     public partial class OJDParser : Form
     {
-        private List<OjdEntry> entries = new List<OjdEntry>();
+        private List<OJDEntry> entries = new List<OJDEntry>();
         // Types that carry NO palSlot field after the null terminator
         private static readonly HashSet<ushort> NoPalSlotTypes = new() { 5, 16, 19, 50 };
-        public OJDParser()
-        {
-            InitializeComponent();
-        }
+        public OJDParser() { InitializeComponent(); }
         // Parse OBJ.ojd into a flat list of OjdEntry objects.
-        public static List<OjdEntry> ParseOjdFile()
+        public static List<OJDEntry> ParseOJDFile()
         {
-            var result = new List<OjdEntry>();
+            var result = new List<OJDEntry>();
             byte[] data = File.ReadAllBytes("OBJ.ojd");
             int i = 0;
 
@@ -54,10 +53,10 @@ namespace WoWViewer
             {
                 if (data[i] != 0xFF) { i++; continue; }
 
-                ushort id     = BitConverter.ToUInt16(data, i + 1);
-                ushort type   = BitConverter.ToUInt16(data, i + 3);
+                ushort id = BitConverter.ToUInt16(data, i + 1);
+                ushort type = BitConverter.ToUInt16(data, i + 3);
                 ushort length = BitConverter.ToUInt16(data, i + 5);
-                int strStart  = i + 7;
+                int strStart = i + 7;
 
                 // Zero-length = metadata only, no string
                 if (length == 0) { i += 7; continue; }
@@ -86,28 +85,31 @@ namespace WoWViewer
                     i = nullPos + 3;
                 }
 
-                if(name.Length > 6) // prevent listing non-existent entries
+                if (name.Length > 6) // prevent listing non-existent entries
                 {
-                    result.Add(new OjdEntry { Id = id, Type = type, Length = length, Name = name, PalSlot = palSlot });
+                    result.Add(new OJDEntry { Id = id, Type = type, Length = length, Name = name, PalSlot = palSlot });
                 }
-                
+
             }
             return result;
         }
+        // AI.ojd
+        public void parseAIOJD()
+        {
 
-        // ── UI ───────────────────────────────────────────────────────────────────
-
+        }
+        // OBJ.ojd
         public void parseOBJOJD()
         {
             listBox1.Items.Clear();
-            entries = ParseOjdFile();
+            entries = ParseOJDFile();
             textBox1.Text = "";
             textBox2.Text = "";
             textBox3.Text = "";
             textBox4.Text = "";
             //
             string logPath = "ojd_log.txt";
-            if (File.Exists(logPath)) File.Delete(logPath);
+            if (File.Exists(logPath)) { File.Delete(logPath); }
             foreach (var entry in entries)
             {
                 listBox1.Items.Add(entry.Name);
@@ -115,6 +117,7 @@ namespace WoWViewer
             }
             label1.Text = $"Total Entries: {entries.Count}";
         }
+        // SFX.ojd
         public void parseSFXOJD()
         {
             listBox1.Items.Clear();
@@ -151,17 +154,15 @@ namespace WoWViewer
                     else type = "MismatchedLength";
                 }
                 count++;
-                entries.Add(new OjdEntry { Id = hid, Type = 0xFF, Length = (ushort)length, Name = text });
+                entries.Add(new OJDEntry { Id = hid, Type = 0xFF, Length = (ushort)length, Name = text });
             }
-            label1.Text = $"Total Strings: {count}";
+            label1.Text = $"Total Entries: {count}";
         }
-
         private static bool IsAsciiChar(byte b) => b >= 0x20 && b <= 0x7E;
-
         private void button1_Click(object sender, EventArgs e) { parseOBJOJD(); } // OBJ.ojd
         private void button2_Click(object sender, EventArgs e) { parseSFXOJD(); } // SFX.ojd
-        private void button3_Click(object sender, EventArgs e) { MessageBox.Show("TEXT.ojd fully decoded!"); }
-
+        private void button3_Click(object sender, EventArgs e) { MessageBox.Show("TEXT.ojd fully decoded!"); } // Disabled, now handled by TextEditorForm.cs
+        private void button4_Click(object sender, EventArgs e) { parseAIOJD(); } // AI.ojd
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             var entry = entries[listBox1.SelectedIndex];

@@ -34,7 +34,7 @@
     }
     class WowTextBackup { public string Name { get; set; } = ""; }
 
-    public class OjdEntry
+    public class OJDEntry
     {
         public ushort Id { get; set; }
         public ushort Type { get; set; }
