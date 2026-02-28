@@ -37,10 +37,8 @@ namespace WoWViewer
     public partial class OJDParser : Form
     {
         private List<OjdEntry> entries = new List<OjdEntry>();
-
         // Types that carry NO palSlot field after the null terminator
         private static readonly HashSet<ushort> NoPalSlotTypes = new() { 5, 16, 19, 50 };
-
         public OJDParser()
         {
             InitializeComponent();
@@ -154,8 +152,6 @@ namespace WoWViewer
                 }
                 count++;
                 entries.Add(new OjdEntry { Id = hid, Type = 0xFF, Length = (ushort)length, Name = text });
-
-                //MessageBox.Show($"{headerID} : {type} : {length} : {text}");
             }
             label1.Text = $"Total Strings: {count}";
         }
@@ -171,7 +167,7 @@ namespace WoWViewer
             if (listBox1.SelectedIndex < 0 || listBox1.SelectedIndex >= entries.Count) return;
             var entry = entries[listBox1.SelectedIndex];
             textBox1.Text = entry.Id.ToString();
-            textBox2.Text = entry.Type.ToString();
+            textBox2.Text = entry.Type != 0xFF ? entry.Type.ToString() : "UNRECORDED";
             textBox3.Text = entry.Length.ToString();
             textBox4.Text = entry.Name;
         }
