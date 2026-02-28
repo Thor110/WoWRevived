@@ -24,7 +24,7 @@ namespace WoWViewer
         private static readonly string[] PalSlots =
         {
             "HW.PAL","MW.PAL","HB.PAL","MB.PAL","HR.PAL","MR.PAL","BM.PAL","F1.PAL",
-            "F2.PAL","F3.PAL","F4.PAL","F5.PAL","F1.PAL","F2.PAL","SE.PAL","CD.PAL"
+            "F2.PAL","F3.PAL","F4.PAL","F5.PAL","F6.PAL","F7.PAL","SE.PAL","CD.PAL"
         };
         public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps)
         {
@@ -47,19 +47,19 @@ namespace WoWViewer
             BuildSprPalMap();
             PopulateList();
         }
+        // build spr palette map from OBJ.ojd file
         private void BuildSprPalMap()
         {
-            if (!File.Exists("OBJ.ojd")) return;
+            if (!File.Exists("OBJ.ojd")) { MessageBox.Show("OBJ.ojd file is missing."); return; }
             foreach (var entry in OJDParser.ParseOjdFile("OBJ.ojd"))
             {
-                if (!entry.Name.EndsWith(".spr", StringComparison.OrdinalIgnoreCase)) continue;
+                if (!entry.Name.EndsWith(".spr", StringComparison.OrdinalIgnoreCase)) { continue; }
                 string key = Path.GetFileName(entry.Name).ToUpperInvariant();
-                if (_sprToPal.ContainsKey(key)) continue; // first occurrence wins
-                if (entry.PalSlot < PalSlots.Length)
-                    _sprToPal[key] = PalSlots[entry.PalSlot];
+                if (_sprToPal.ContainsKey(key)) { continue; } // first occurrence wins
+                if (entry.PalSlot < PalSlots.Length) { _sprToPal[key] = PalSlots[entry.PalSlot]; }
             }
         }
-
+        // populate palettes from DAT\\Dat.wow when reading MAPS.WoW
         private void PopulatePalettes()
         {
             using var br = new BinaryReader(File.OpenRead("DAT\\Dat.wow"));
@@ -78,12 +78,12 @@ namespace WoWViewer
                 {
                     long store = br.BaseStream.Position;
                     br.BaseStream.Seek(offset, SeekOrigin.Begin);
-                    palettes.Add(new WowFileEntry { Name = name, Length = length, Offset = offset, Data = FfuhDecoder.Decompress(br.ReadBytes(length)) });
+                    palettes.Add(new WowFileEntry { Name = name, Length = length, Offset = offset, Data = br.ReadBytes(length) });
                     br.BaseStream.Position = store;
                 }
             }
         }
-
+        // populate spr and pal lists
         private void PopulateList()
         {
             foreach (var entry in entries.Where(e => e.Name.EndsWith(".SPR", StringComparison.OrdinalIgnoreCase)).ToList())
@@ -96,9 +96,6 @@ namespace WoWViewer
                 entry.Data = FfuhDecoder.Decompress(entry.Data!);
                 listBox2.Items.Add(entry.Name);
             }
-
-
-
             listBox1.SelectedIndex = listBox1.FindStringExact(selectedEntry);
             listBox2.SelectedIndex = 0;
         }

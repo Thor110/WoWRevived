@@ -45,7 +45,6 @@ namespace WoWViewer
         {
             InitializeComponent();
         }
-
         // Parse OBJ.ojd into a flat list of OjdEntry objects.
         public static List<OjdEntry> ParseOjdFile(string path = "OBJ.ojd")
         {
@@ -89,7 +88,11 @@ namespace WoWViewer
                     i = nullPos + 3;
                 }
 
-                result.Add(new OjdEntry { Id = id, Type = type, Length = length, Name = name, PalSlot = palSlot });
+                if(name.Length > 6) // prevent listing non-existent entries
+                {
+                    result.Add(new OjdEntry { Id = id, Type = type, Length = length, Name = name, PalSlot = palSlot });
+                }
+                
             }
             return result;
         }
@@ -100,6 +103,11 @@ namespace WoWViewer
         {
             listBox1.Items.Clear();
             entries = ParseOjdFile();
+            textBox1.Text = "";
+            textBox2.Text = "";
+            textBox3.Text = "";
+            textBox4.Text = "";
+            //
             string logPath = "ojd_log.txt";
             if (File.Exists(logPath)) File.Delete(logPath);
             foreach (var entry in entries)
@@ -109,44 +117,53 @@ namespace WoWViewer
             }
             label1.Text = $"Total Entries: {entries.Count}";
         }
-
-        public void parseSFXOJD(string filename)
+        public void parseSFXOJD()
         {
             listBox1.Items.Clear();
-            string logPath = Path.ChangeExtension(filename, "-dump.csv");
-            byte[] data = File.ReadAllBytes(filename);
+            entries.Clear();
+            textBox1.Text = "";
+            textBox2.Text = "";
+            textBox3.Text = "";
+            textBox4.Text = "";
+            //
+            byte[] data = File.ReadAllBytes("SFX.ojd");
             int count = 0;
-            using (StreamWriter log = new StreamWriter(logPath, false, Encoding.UTF8))
+            for (int i = 0; i < data.Length - 1; i++)
             {
-                log.WriteLine("Index,Offset,HeaderID,Length,Type,Text");
-                for (int i = 0; i < data.Length - 1; i++)
+                if (!IsAsciiChar(data[i]) || data[i + 1] == 0x00) { continue; }
+                int start = i;
+                int length = 0;
+                while (i < data.Length && IsAsciiChar(data[i])) { i++; length++; }
+                if (length < 2 || i >= data.Length || data[i] != 0x00) { continue; }
+                string text = Encoding.ASCII.GetString(data, start, length);
+                int headerOffset = start - 7;
+                string type = "Unverified";
+                string headerID = "??";
+                ushort hid = 0;
+                if (headerOffset >= 0 && data[headerOffset] == 0xFF)
                 {
-                    if (!IsAsciiChar(data[i]) || data[i + 1] == 0x00) continue;
-                    int start = i, length = 0;
-                    while (i < data.Length && IsAsciiChar(data[i])) { i++; length++; }
-                    if (length < 2 || i >= data.Length || data[i] != 0x00) continue;
-                    string text = Encoding.ASCII.GetString(data, start, length);
-                    int headerOffset = start - 7;
-                    string type = "Unverified", headerID = "??";
-                    if (headerOffset >= 0 && data[headerOffset] == 0xFF)
+                    hid = BitConverter.ToUInt16(data, headerOffset + 1);
+                    ushort maybeLength = BitConverter.ToUInt16(data, headerOffset + 5);
+                    headerID = hid.ToString("X4");
+                    if (maybeLength == length + 1)
                     {
-                        ushort hid = BitConverter.ToUInt16(data, headerOffset + 1);
-                        ushort maybeLength = BitConverter.ToUInt16(data, headerOffset + 5);
-                        headerID = hid.ToString("X4");
-                        if (maybeLength == length + 1) { type = "StringEntry"; listBox1.Items.Add(text); }
-                        else type = "MismatchedLength";
+                        type = "StringEntry";
+                        listBox1.Items.Add(text);
                     }
-                    log.WriteLine($"{count},{start:X},{headerID},{length},{type},\"{text}\"");
-                    count++;
+                    else type = "MismatchedLength";
                 }
-                label1.Text = $"Total Strings: {count}";
+                count++;
+                entries.Add(new OjdEntry { Id = hid, Type = 0xFF, Length = (ushort)length, Name = text });
+
+                //MessageBox.Show($"{headerID} : {type} : {length} : {text}");
             }
+            label1.Text = $"Total Strings: {count}";
         }
 
         private static bool IsAsciiChar(byte b) => b >= 0x20 && b <= 0x7E;
 
-        private void button1_Click(object sender, EventArgs e) { parseOBJOJD(); }          // OBJ.ojd
-        private void button2_Click(object sender, EventArgs e) { parseSFXOJD("SFX.ojd"); } // SFX.ojd
+        private void button1_Click(object sender, EventArgs e) { parseOBJOJD(); } // OBJ.ojd
+        private void button2_Click(object sender, EventArgs e) { parseSFXOJD(); } // SFX.ojd
         private void button3_Click(object sender, EventArgs e) { MessageBox.Show("TEXT.ojd fully decoded!"); }
 
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -155,7 +172,7 @@ namespace WoWViewer
             var entry = entries[listBox1.SelectedIndex];
             textBox1.Text = entry.Id.ToString();
             textBox2.Text = entry.Type.ToString();
-            textBox3.Text = entry.PalSlot.ToString();   // was "Flags", now holds PAL slot
+            textBox3.Text = entry.Length.ToString();
             textBox4.Text = entry.Name;
         }
     }
