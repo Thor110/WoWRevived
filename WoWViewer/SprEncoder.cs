@@ -41,9 +41,8 @@ namespace WoWViewer
                 return Encode(frames[0], width, height);
             }
 
-            var frameRle = frames
-                .Select(f => BuildRleRows(f, width, height))
-                .ToList();
+            var frameRle = frames.Select(f => BuildRleRows(f, width, height)).ToList();
+
             return EncodeMultiFrame(frameRle, width, height);
         }
 
@@ -60,8 +59,7 @@ namespace WoWViewer
         //   [0x08 + height*4]  pixel data: rows packed end-to-end
         //          Each row: [paletteIndex:1][runLength:1] pairs until width pixels consumed.
 
-        private static byte[] EncodeSingleFrame(List<List<(byte idx, byte cnt)>> rows,
-                                                 int width, int height)
+        private static byte[] EncodeSingleFrame(List<List<(byte idx, byte cnt)>> rows, int width, int height)
         {
             const int tc = 1;
             int rhs = 6 + tc * 4;   // rowHeaderSize = 10
@@ -84,8 +82,8 @@ namespace WoWViewer
             }
 
             // Build the output buffer.
-            using var ms = new System.IO.MemoryStream();
-            using var bw = new System.IO.BinaryWriter(ms);
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
 
             bw.Write((ushort)width);
             bw.Write((ushort)height);
@@ -128,16 +126,13 @@ namespace WoWViewer
         // passes a pixel-count sanity check.  Placing the baseBlock at (8 + height*4) and
         // pointing row 0 at it satisfies this on the first scan iteration.
 
-        private static byte[] EncodeMultiFrame(List<List<List<(byte idx, byte cnt)>>> frameRle,
-                                                int width, int height)
+        private static byte[] EncodeMultiFrame(List<List<List<(byte idx, byte cnt)>>> frameRle, int width, int height)
         {
             int tc = frameRle.Count;
             int rhs = width;  // rowHeaderSize matches game convention for multi-frame
 
             // Serialise pixel data for every frame.
-            var frameBytes = frameRle
-                .Select(frame => SerialiseFrame(frame))
-                .ToList();
+            var frameBytes = frameRle.Select(frame => SerialiseFrame(frame)).ToList();
 
             // baseBlock sits immediately after the row-offset table.
             int baseBlock = 8 + height * 4;
@@ -153,8 +148,8 @@ namespace WoWViewer
                 cumulative += frameBytes[f].Length;
             }
 
-            using var ms = new System.IO.MemoryStream();
-            using var bw = new System.IO.BinaryWriter(ms);
+            using var ms = new MemoryStream();
+            using var bw = new BinaryWriter(ms);
 
             bw.Write((ushort)width);
             bw.Write((ushort)height);
@@ -199,8 +194,7 @@ namespace WoWViewer
         /// Index 0 (transparent) is encoded the same as any other index — the
         /// decoder treats it as transparent at render time.
         /// </summary>
-        private static List<List<(byte idx, byte cnt)>> BuildRleRows(
-            byte[] pixels, int width, int height)
+        private static List<List<(byte idx, byte cnt)>> BuildRleRows(byte[] pixels, int width, int height)
         {
             var rows = new List<List<(byte, byte)>>(height);
 

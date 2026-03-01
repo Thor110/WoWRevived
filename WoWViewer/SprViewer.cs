@@ -113,7 +113,7 @@ namespace WoWViewer
                 }
             }
         }
-
+        // sprite selection
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             string sprName = listBox1.SelectedItem!.ToString()!;
@@ -124,7 +124,7 @@ namespace WoWViewer
             TryAutoSelectPalette();
             RenderCurrent();
         }
-
+        // palette selection
         private void listBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             string palName = listBox2.SelectedItem!.ToString()!;
@@ -178,42 +178,20 @@ namespace WoWViewer
             // For now always render at full brightness (paletteOffset = 0).
             pictureBox1.Image = SprDecoder.Render(rawData, palData, paletteOffset: 0, frame: currentFrame);
         }
-
-        private void numericUpDown1_ValueChanged(object sender, EventArgs e) => RenderCurrent();
-
+        // replace selected sprite
         private void button1_Click(object sender, EventArgs e)
         {
-            //using var ofd = new OpenFileDialog { Filter = "Bitmap Files|*.bmp", Title = "Select 16-Color BMP for Replacement" };
             using var ofd = new OpenFileDialog { Filter = "PNG Image|*.png", Title = "Select a replacement to encode" };
             if (ofd.ShowDialog() != DialogResult.OK) return;
 
             var bmp = new Bitmap(ofd.FileName);
 
-            // Load the original SPR so we can read its palette mapping
-            // and verify the replacement is the right size.
-            /*string sprPath = Path.Combine(baseFolder, selectedEntry);
-            byte[] origSpr = File.ReadAllBytes(sprPath);
-            int origW = BitConverter.ToUInt16(origSpr, 0);
-            int origH = BitConverter.ToUInt16(origSpr, 2);
-
-            if (bmp.Width != origW || bmp.Height != origH)
-            {
-                MessageBox.Show($"Size mismatch: replacement is {bmp.Width}×{bmp.Height}, " +
-                                $"original is {origW}×{origH}.", "Size Mismatch");
-                return;
-            }*/
-
-            // Convert the PNG pixels to palette indices by finding the closest
-            // colour in the loaded PAL file for each pixel.
-            //byte[] palData = File.ReadAllBytes(/* path to the relevant .PAL file */); // temporary, select the right image/palette
             byte[] indices = QuantiseToPalette(bmp, palData);
 
             byte[] encoded = SprEncoder.Encode(indices, bmp.Width, bmp.Height);
 
             string outPath = Path.Combine(baseFolder, Path.GetFileNameWithoutExtension(selectedEntry));
-            if (File.Exists(outPath) &&
-                MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite",
-                                MessageBoxButtons.YesNo) == DialogResult.No) return;
+            if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) { return; }
 
             File.WriteAllBytes(outPath, encoded);
             pictureBox1.Image = bmp;
@@ -222,7 +200,7 @@ namespace WoWViewer
         private static byte[] QuantiseToPalette(Bitmap bmp, byte[] palData)
         {
             int w = bmp.Width, h = bmp.Height;
-            var indices = new byte[w * h];
+            byte[] indices = new byte[w * h];
 
             for (int y = 0; y < h; y++)
                 for (int x = 0; x < w; x++)
@@ -248,13 +226,14 @@ namespace WoWViewer
                 }
             return indices;
         }
+        // export selected sprite/frame
         private void button2_Click(object sender, EventArgs e)
         {
             string name = Path.GetFileNameWithoutExtension(selectedEntry);
             pictureBox1.Image.Save(Path.Combine(outputPath, name + ".png"), ImageFormat.Png);
             MessageBox.Show($"{name}.png exported.");
         }
-
+        // export all sprites
         private void button3_Click(object sender, EventArgs e)
         {
             foreach (WowFileEntry entry in entries.Where(e => e.Name.EndsWith(".SPR", StringComparison.OrdinalIgnoreCase)))
@@ -281,7 +260,7 @@ namespace WoWViewer
             }
             MessageBox.Show("All .spr files exported.");
         }
-
+        // set output path
         private void button4_Click(object sender, EventArgs e)
         {
             using var fbd = new FolderBrowserDialog { InitialDirectory = outputPath != "" ? outputPath : AppDomain.CurrentDomain.BaseDirectory };
@@ -292,7 +271,7 @@ namespace WoWViewer
             button2.Enabled = true;
             button3.Enabled = true;
         }
-
+        // frame change
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (comboBox1.SelectedIndex < 0 || comboBox1.SelectedIndex == currentFrame) return;
