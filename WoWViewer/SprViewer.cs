@@ -24,7 +24,7 @@ namespace WoWViewer
         private static readonly string[] PalSlots =
         {
             "HW.PAL","MW.PAL","HB.PAL","MB.PAL","HR.PAL","MR.PAL","BM.PAL","F1.PAL",
-            "F2.PAL","F3.PAL","F4.PAL","F5.PAL","F6.PAL","F7.PAL","SE.PAL","CD.PAL"
+            "F2.PAL","F3.PAL","F4.PAL","F5.PAL","F1.PAL","F2.PAL","SE.PAL","CD.PAL"
         };
         public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps)
         {

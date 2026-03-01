@@ -197,15 +197,13 @@ namespace WoWViewer
                     }
                 }
 
-                for (int i = 0; i < count && x < width; i++, x++)
-                    bmp.SetPixel(x, row, c);
+                for (int i = 0; i < count && x < width; i++, x++) { bmp.SetPixel(x, row, c); }
             }
         }
 
         private static bool IsSorted(int[] arr)
         {
-            for (int i = 1; i < arr.Length; i++)
-                if (arr[i] <= arr[i - 1]) return false;
+            for (int i = 1; i < arr.Length; i++) { if (arr[i] <= arr[i - 1]) { return false; } }
             return true;
         }
 
