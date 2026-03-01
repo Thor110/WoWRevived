@@ -53,18 +53,6 @@ public:
         }
         else if (pEventHeader->eEventType == MFP_EVENT_TYPE_MEDIAITEM_SET) {
             pMediaPlayer->Play();
-            /*IMFVideoDisplayControl* pDisplay = NULL;
-            HRESULT hr2 = MFGetService(pMediaPlayer, MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (void**)&pDisplay);
-            Log("MFGetService result: %08X", hr2);
-            if (SUCCEEDED(hr2)) {
-                int videoHeight = (regHeight - (offsetY * 2)) * 2;
-                RECT destRect = { 0, 0, regWidth, videoHeight };
-                hr2 = pDisplay->SetVideoPosition(NULL, &destRect);
-                Log("SetVideoPosition result: %08X", hr2);
-                hr2 = pDisplay->SetAspectRatioMode(MFVideoARMode_None);
-                Log("SetAspectRatioMode result: %08X", hr2);
-                pDisplay->Release();
-            }*/
             Log("Playback started");
         }
         else if (pEventHeader->eEventType == MFP_EVENT_TYPE_PLAYBACK_ENDED) {
@@ -106,6 +94,7 @@ LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 void CloseOverlayWindow() {
     if (pMediaPlayer) {
         pMediaPlayer->Stop();
+        pMediaPlayer->Shutdown();
         pMediaPlayer->Release();
         pMediaPlayer = NULL;
     }
