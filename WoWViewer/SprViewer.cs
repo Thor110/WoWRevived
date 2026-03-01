@@ -183,16 +183,71 @@ namespace WoWViewer
 
         private void button1_Click(object sender, EventArgs e)
         {
-            using var ofd = new OpenFileDialog { Filter = "Bitmap Files|*.bmp", Title = "Select 16-Color BMP for Replacement" };
+            //using var ofd = new OpenFileDialog { Filter = "Bitmap Files|*.bmp", Title = "Select 16-Color BMP for Replacement" };
+            using var ofd = new OpenFileDialog { Filter = "PNG Image|*.png", Title = "Select a replacement to encode" };
             if (ofd.ShowDialog() != DialogResult.OK) return;
-            var bmp = new Bitmap(ofd.FileName);
-            if (bmp.PixelFormat != PixelFormat.Format4bppIndexed)
-            { MessageBox.Show("Error: File must be a 16-color (4-bit) Indexed Bitmap."); return; }
-            string fullPath = Path.Combine(baseFolder, Path.GetFileNameWithoutExtension(selectedEntry));
-            if (File.Exists(fullPath) && MessageBox.Show($"'{fullPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) return;
-            pictureBox1.Image = bmp;
-        }
 
+            var bmp = new Bitmap(ofd.FileName);
+
+            // Load the original SPR so we can read its palette mapping
+            // and verify the replacement is the right size.
+            /*string sprPath = Path.Combine(baseFolder, selectedEntry);
+            byte[] origSpr = File.ReadAllBytes(sprPath);
+            int origW = BitConverter.ToUInt16(origSpr, 0);
+            int origH = BitConverter.ToUInt16(origSpr, 2);
+
+            if (bmp.Width != origW || bmp.Height != origH)
+            {
+                MessageBox.Show($"Size mismatch: replacement is {bmp.Width}×{bmp.Height}, " +
+                                $"original is {origW}×{origH}.", "Size Mismatch");
+                return;
+            }*/
+
+            // Convert the PNG pixels to palette indices by finding the closest
+            // colour in the loaded PAL file for each pixel.
+            //byte[] palData = File.ReadAllBytes(/* path to the relevant .PAL file */); // temporary, select the right image/palette
+            byte[] indices = QuantiseToPalette(bmp, palData);
+
+            byte[] encoded = SprEncoder.Encode(indices, bmp.Width, bmp.Height);
+
+            string outPath = Path.Combine(baseFolder, Path.GetFileNameWithoutExtension(selectedEntry));
+            if (File.Exists(outPath) &&
+                MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite",
+                                MessageBoxButtons.YesNo) == DialogResult.No) return;
+
+            File.WriteAllBytes(outPath, encoded);
+            pictureBox1.Image = bmp;
+            MessageBox.Show("Encoded and saved.");
+        }
+        private static byte[] QuantiseToPalette(Bitmap bmp, byte[] palData)
+        {
+            int w = bmp.Width, h = bmp.Height;
+            var indices = new byte[w * h];
+
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    Color c = bmp.GetPixel(x, y);
+
+                    // Transparent pixels → index 0 (engine treats 0 as transparent).
+                    if (c.A < 128) { indices[y * w + x] = 0; continue; }
+
+                    byte best = 1;
+                    int bestErr = int.MaxValue;
+                    for (int i = 1; i < 256; i++)   // skip 0 (transparent)
+                    {
+                        int r = palData[i * 3] * 4;
+                        int g = palData[i * 3 + 1] * 4;
+                        int b = palData[i * 3 + 2] * 4;
+                        int err = (c.R - r) * (c.R - r)
+                                + (c.G - g) * (c.G - g)
+                                + (c.B - b) * (c.B - b);
+                        if (err < bestErr) { bestErr = err; best = (byte)i; }
+                    }
+                    indices[y * w + x] = best;
+                }
+            return indices;
+        }
         private void button2_Click(object sender, EventArgs e)
         {
             string name = Path.GetFileNameWithoutExtension(selectedEntry);
