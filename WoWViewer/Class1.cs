@@ -33,7 +33,6 @@
         public bool Edited { get; set; } = false;
     }
     class WowTextBackup { public string Name { get; set; } = ""; }
-
     public class OJDEntry
     {
         public ushort Id { get; set; }
@@ -43,5 +42,13 @@
         public ushort PalSlot { get; set; }  // 0 for types without a palSlot field
 
         public override string ToString() => $"[{Id:D5}] type={Type:D3} palSlot={PalSlot:D2} len={Length:D2} '{Name}'";
+    }
+    public class SprInfo
+    {
+        public ushort Width { get; set; }
+        public ushort Height { get; set; }
+        public ushort TableCount { get; set; }
+        public ushort RowHeaderSize { get; set; }
+        public override string ToString() => $"Size={Width}x{Height}  tableCount={TableCount}  rowHeaderSize={RowHeaderSize}";
     }
 }

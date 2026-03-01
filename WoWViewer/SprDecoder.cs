@@ -26,13 +26,20 @@ namespace WoWViewer
         // Pixel data starts at: absolute_offset + rowHeaderSize
         //
         // --- Multi-frame (tableCount > 1) ---
-        // Row table entries = 16-bit sub-offsets relative to a "base block".
-        // No carry/wrap applies (files fit within 64 KB).
-        // Full-block rows (value >= baseBlock): begin with tableCount×int32 per-frame offsets.
-        // Body rows (value < baseBlock): frame-0 offset relative to base block;
-        //   frame N = baseBlock + bodyOffset + (baseFrameSubs[N] - baseFrameSubs[0])
+        // The first "full-block" row in the row table (identified by its low16 pointing to a
+        // sorted array of tableCount int32 sub-offsets) anchors the layout:
+        //   baseBlock   = that row's low16 value
+        //   frameSubs[] = the tableCount int32s read at baseBlock
+        //
+        // Each frame's pixel data is a CONTIGUOUS block of rows packed sequentially.
+        // Frame N starts at: baseBlock + frameSubs[N]
+        // Rows are decoded by walking forward through the block, consuming RLE pairs until
+        // width pixels are filled, then advancing the pointer for the next row.
+        // The per-row low16 values in the outer row table are only used for frame 0 indexing
+        // and are not consulted when rendering frames 1+.
         //
         // RLE pixel stream: [paletteIndex, runLength] pairs. Index 0 = transparent.
+        // The last run of a row may extend past width; excess pixels are simply clipped.
         //
         // ── PAL file structure ───────────────────────────────────────────────────
         //
@@ -62,9 +69,9 @@ namespace WoWViewer
         {
             return new SprInfo
             {
-                Width         = BitConverter.ToUInt16(data, 0),
-                Height        = BitConverter.ToUInt16(data, 2),
-                TableCount    = BitConverter.ToUInt16(data, 4),
+                Width = BitConverter.ToUInt16(data, 0),
+                Height = BitConverter.ToUInt16(data, 2),
+                TableCount = BitConverter.ToUInt16(data, 4),
                 RowHeaderSize = BitConverter.ToUInt16(data, 6)
             };
         }
@@ -77,9 +84,9 @@ namespace WoWViewer
         // frame         : animation frame, clamped to [0, tableCount-1].
         public static Bitmap Render(byte[] sprData, byte[] palData, int paletteOffset = 0, int frame = 0)
         {
-            ushort width         = BitConverter.ToUInt16(sprData, 0);
-            ushort height        = BitConverter.ToUInt16(sprData, 2);
-            ushort tableCount    = BitConverter.ToUInt16(sprData, 4);
+            ushort width = BitConverter.ToUInt16(sprData, 0);
+            ushort height = BitConverter.ToUInt16(sprData, 2);
+            ushort tableCount = BitConverter.ToUInt16(sprData, 4);
             ushort rowHeaderSize = BitConverter.ToUInt16(sprData, 6);
 
             var bmp = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -91,11 +98,11 @@ namespace WoWViewer
                 for (int row = 0; row < height; row++)
                 {
                     int entryBase = 8 + row * 4;
-                    int carry     = sprData[entryBase];
-                    int low       = BitConverter.ToUInt16(sprData, entryBase + 2);
+                    int carry = sprData[entryBase];
+                    int low = BitConverter.ToUInt16(sprData, entryBase + 2);
 
-                    if (row > 0 && (low < prevLow || (low == 0 && prevLow > 32768))) high++;
-                    if (carry > high) high = carry;
+                    if (row > 0 && (low < prevLow || (low == 0 && prevLow > 32768))) { high++; }
+                    if (carry > high) { high = carry; }
                     prevLow = low;
 
                     RenderRow(sprData, palData, bmp, row, width, high * 65536 + low + rowHeaderSize, paletteOffset);
@@ -103,54 +110,46 @@ namespace WoWViewer
             }
             else
             {
-                int   baseBlock     = -1;
-                int[] baseFrameSubs = new int[tableCount];
+                int baseBlock = -1;
+                int[] frameStarts = Array.Empty<int>();
 
                 for (int r = 0; r < height && baseBlock < 0; r++)
                 {
                     int low = BitConverter.ToUInt16(sprData, 8 + r * 4 + 2);
-                    if (low + tableCount * 4 >= sprData.Length) continue;
+                    if (low + tableCount * 4 >= sprData.Length) { continue; }
 
                     int[] subs = new int[tableCount];
-                    for (int f = 0; f < tableCount; f++)
-                        subs[f] = BitConverter.ToInt32(sprData, low + f * 4);
+                    for (int f = 0; f < tableCount; f++) { subs[f] = BitConverter.ToInt32(sprData, low + f * 4); }
 
                     if (subs[0] > 0 && subs[0] < 0x8000 && IsSorted(subs))
                     {
                         int testOff = low + subs[0];
-                        if (testOff < sprData.Length && CountPixels(sprData, testOff, width) == width)
+                        if (testOff < sprData.Length && CountPixels(sprData, testOff, width) >= width)
                         {
-                            baseBlock = low; baseFrameSubs = subs;
+                            baseBlock = low;
+                            frameStarts = new int[tableCount];
+                            for (int f = 0; f < tableCount; f++) { frameStarts[f] = low + subs[f]; }
                         }
                     }
                 }
 
-                if (baseBlock < 0) return bmp;
+                if (baseBlock < 0) { return bmp; }
 
-                int frameDelta = baseFrameSubs[frame] - baseFrameSubs[0];
+                // Each frame is a contiguous block of rows; walk forward consuming RLE pairs.
+
+                int dataPos = frameStarts[frame];
+                if (tableCount > 1) { dataPos = frameStarts[frame]; }
 
                 for (int row = 0; row < height; row++)
                 {
-                    int low = BitConverter.ToUInt16(sprData, 8 + row * 4 + 2);
-                    int dataPos;
-
-                    if (low >= baseBlock && low + tableCount * 4 < sprData.Length)
+                    RenderRow(sprData, palData, bmp, row, width, dataPos, paletteOffset);
+                    // Advance past this row's RLE data
+                    int x = 0;
+                    while (x < width && dataPos + 1 < sprData.Length)
                     {
-                        int[] subs = new int[tableCount];
-                        for (int f = 0; f < tableCount; f++)
-                            subs[f] = BitConverter.ToInt32(sprData, low + f * 4);
-
-                        dataPos = (subs[0] > 0 && subs[0] < 0x8000 && IsSorted(subs))
-                            ? low + subs[frame]             // full-block row
-                            : baseBlock + low + frameDelta; // body-offset row
+                        x += sprData[dataPos + 1];
+                        dataPos += 2;
                     }
-                    else
-                    {
-                        dataPos = baseBlock + low + frameDelta;
-                    }
-
-                    if (dataPos >= 0 && dataPos < sprData.Length)
-                        RenderRow(sprData, palData, bmp, row, width, dataPos, paletteOffset);
                 }
             }
 
@@ -173,7 +172,7 @@ namespace WoWViewer
             while (x < width && dataPos + 1 < sprData.Length)
             {
                 byte palIndex = sprData[dataPos];
-                byte count    = sprData[dataPos + 1];
+                byte count = sprData[dataPos + 1];
                 dataPos += 2;
 
                 Color c;
@@ -187,7 +186,7 @@ namespace WoWViewer
                     if (palPos + 2 < palData.Length)
                     {
                         // VGA 6-bit palette values: multiply by 4 for 8-bit RGB.
-                        int r = Math.Min(255, palData[palPos]     * 4);
+                        int r = Math.Min(255, palData[palPos] * 4);
                         int g = Math.Min(255, palData[palPos + 1] * 4);
                         int b = Math.Min(255, palData[palPos + 2] * 4);
                         c = Color.FromArgb(r, g, b);
@@ -215,19 +214,10 @@ namespace WoWViewer
             int x = 0;
             while (x < width && pos + 1 < data.Length)
             {
-                x   += data[pos + 1];
+                x += data[pos + 1];
                 pos += 2;
             }
             return x;
         }
-    }
-
-    public class SprInfo
-    {
-        public ushort Width         { get; set; }
-        public ushort Height        { get; set; }
-        public ushort TableCount    { get; set; }
-        public ushort RowHeaderSize { get; set; }
-        public override string ToString() => $"Size={Width}x{Height}  tableCount={TableCount}  rowHeaderSize={RowHeaderSize}";
     }
 }
