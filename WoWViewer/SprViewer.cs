@@ -241,6 +241,7 @@ namespace WoWViewer
                 // Use the correct PAL for this sprite if known; otherwise fall back to selected PAL.
                 int frameCount = SprDecoder.ReadInfo(entry.Data!).TableCount;
                 string fileName = Path.GetFileNameWithoutExtension(entry.Name);
+                palData = (isMaps ? palettes : entries).First(e => e.Name.Equals(entry.Name, StringComparison.OrdinalIgnoreCase)).Data!; // get associated palette
 
                 if (frameCount != 1)
                 {
