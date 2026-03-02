@@ -54,9 +54,16 @@ namespace WoWViewer
         //   [0x04] uint16  tableCount = 1
         //   [0x06] uint16  rowHeaderSize = 10  (= 6 + 1*4)
         //   [0x08] height × 4 bytes  row-offset table
-        //          Each 4-byte entry: [carry:1][0x00:1][low16:2]
-        //          absolute_offset = carry*65536 + low16 + rowHeaderSize
-        //   [0x08 + height*4]  pixel data: rows packed end-to-end
+        //          Each entry: [carry:1][0x00:1][low16:2]
+        //          The carry field is written ONE ROW LATE (lagged): each row's entry
+        //          stores the carry that the PREVIOUS row's absolute offset required.
+        //          The decoder's wrap-detection handles both early and lagged carry
+        //          correctly, but lagging is required for byte-for-byte file identity.
+        //   [0x08 + height*4]  2-byte fence sentinel: [last_row_carry, 0x00]
+        //                      The original encoder wrote height+1 row entries; the
+        //                      last (fence) entry's carry+zero bytes land here.
+        //                      The engine uses these 2 bytes to locate pixel data start.
+        //   [0x08 + height*4 + 2]  pixel data: rows packed end-to-end.
         //          Each row: [paletteIndex:1][runLength:1] pairs until width pixels consumed.
 
         private static byte[] EncodeSingleFrame(List<List<(byte idx, byte cnt)>> rows, int width, int height)
@@ -64,8 +71,9 @@ namespace WoWViewer
             const int tc = 1;
             int rhs = 6 + tc * 4;   // rowHeaderSize = 10
 
-            // Pixel data starts immediately after the row-offset table.
-            int dataBase = 8 + height * 4;
+            // Pixel data starts 2 bytes after the row-offset table end.
+            // Those 2 bytes are the fence sentinel [last_carry, 0x00].
+            int dataBase = 8 + height * 4 + 2;
 
             // Serialise all RLE rows and record each row's absolute file offset.
             var pixelData = new List<byte>();
@@ -90,16 +98,25 @@ namespace WoWViewer
             bw.Write((ushort)tc);
             bw.Write((ushort)rhs);
 
-            // Row-offset table.
+            // Row-offset table with lagged carry.
+            // Each row's entry stores the carry from the PREVIOUS row's absolute offset,
+            // matching the original encoder's behaviour exactly.
+            int prevCarry = 0;
             foreach (int abs in absOffsets)
             {
                 int val = abs - rhs;
                 int carry = val >> 16;
                 int low16 = val & 0xFFFF;
-                bw.Write((byte)carry);
+                bw.Write((byte)prevCarry);   // carry lags by one row
                 bw.Write((byte)0);
                 bw.Write((ushort)low16);
+                prevCarry = carry;
             }
+
+            // Fence sentinel: carry+zero of the (height+1)th entry.
+            // prevCarry now holds the carry of the last real row.
+            bw.Write((byte)prevCarry);
+            bw.Write((byte)0);
 
             // Pixel data.
             bw.Write(pixelData.ToArray());
