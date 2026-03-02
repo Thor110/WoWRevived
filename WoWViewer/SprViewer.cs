@@ -103,12 +103,12 @@ namespace WoWViewer
         private void TryAutoSelectPalette()
         {
             string key = selectedEntry.ToUpperInvariant();
-            if (!_sprToPal.TryGetValue(key, out string? correctPal)) return;
+            if (!_sprToPal.TryGetValue(key, out string? correctPal)) { return; }
             for (int i = 0; i < listBox2.Items.Count; i++)
             {
                 if (string.Equals(listBox2.Items[i]?.ToString(), correctPal, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (i != listBox2.SelectedIndex) listBox2.SelectedIndex = i;
+                    if (i != listBox2.SelectedIndex) { listBox2.SelectedIndex = i; }
                     return;
                 }
             }
@@ -130,24 +130,18 @@ namespace WoWViewer
             string palName = listBox2.SelectedItem!.ToString()!;
             if (palName == lastSelectedPalette) return;
             lastSelectedPalette = palName;
-            
-
             palData = (isMaps ? palettes : entries).First(e => e.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
-
-
             // PAL structure: bytes 0–767 = main 256-colour VGA palette (6-bit, ×4 = 8-bit).
             // Bytes 768–66303 = colour-blend / translucency table (not used for static viewing).
             // numericUpDown1 is exposed as a "shade level" control (0 = normal brightness).
             // Range 0–255 corresponds to rows in the shade table; 0 is full brightness.
-
             RenderCurrent();
         }
-
+        // render selected sprite with selected palette
         private void RenderCurrent()
         {
             if (palData == null) { return; }
             label2.Text = SprDecoder.ReadInfo(rawData).ToString();
-
             if (currentRenderedEntry != listBox1.SelectedIndex)
             {
                 comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;
@@ -170,7 +164,6 @@ namespace WoWViewer
                 }
                 comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged!;
             }
-
             // paletteOffset = 0 → use the main palette at the start of the PAL file.
             // If shade-level rendering were ever needed:
             //   int shadeOffset = SprDecoder.ShadeTableOffset((int)numericUpDown1.Value);
@@ -182,17 +175,12 @@ namespace WoWViewer
         private void button1_Click(object sender, EventArgs e)
         {
             using var ofd = new OpenFileDialog { Filter = "PNG Image|*.png", Title = "Select a replacement to encode" };
-            if (ofd.ShowDialog() != DialogResult.OK) return;
-
+            if (ofd.ShowDialog() != DialogResult.OK) { return; }
             var bmp = new Bitmap(ofd.FileName);
-
             byte[] indices = QuantiseToPalette(bmp, palData);
-
             byte[] encoded = SprEncoder.Encode(indices, bmp.Width, bmp.Height);
-
-            string outPath = Path.Combine(baseFolder, Path.GetFileNameWithoutExtension(selectedEntry));
+            string outPath = Path.Combine(baseFolder, selectedEntry);
             if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) { return; }
-
             File.WriteAllBytes(outPath, encoded);
             pictureBox1.Image = bmp;
             MessageBox.Show("Encoded and saved.");
@@ -241,8 +229,7 @@ namespace WoWViewer
                 // Use the correct PAL for this sprite if known; otherwise fall back to selected PAL.
                 int frameCount = SprDecoder.ReadInfo(entry.Data!).TableCount;
                 string fileName = Path.GetFileNameWithoutExtension(entry.Name);
-                palData = (isMaps ? palettes : entries).First(e => e.Name.Equals(entry.Name, StringComparison.OrdinalIgnoreCase)).Data!; // get associated palette
-
+                TryAutoSelectPalette();
                 if (frameCount != 1)
                 {
                     for (int i = 0; i < frameCount; i++)
