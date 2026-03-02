@@ -245,6 +245,7 @@
             // 
             checkBox4.AccessibleDescription = "Enable or disable resizing of the window.";
             checkBox4.AutoSize = true;
+            checkBox4.Enabled = false;
             checkBox4.Location = new Point(346, 322);
             checkBox4.Name = "checkBox4";
             checkBox4.Size = new Size(58, 19);

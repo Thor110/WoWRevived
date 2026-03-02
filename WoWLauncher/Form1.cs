@@ -47,7 +47,7 @@ namespace WoWLauncher
         public Form1()
         {
             InitializeComponent();
-            if(!Utilities.IsDirectoryWritable(AppDomain.CurrentDomain.BaseDirectory))
+            if (!Utilities.IsDirectoryWritable(AppDomain.CurrentDomain.BaseDirectory))
             {
                 MessageBox.Show($"Warning: The folder {Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory)!.FullName} is Read-Only or Protected.\n\n" +
                                 "The launcher may fail to save settings. Please run as Administrator, uncheck read-only permissions on the folder " +
@@ -96,7 +96,7 @@ namespace WoWLauncher
                 "ENGLISH.cd", "lang.dat", "layout.bin", "os.dat", "README.TXT", "SETUP.EXE", "SETUP.INI", "setup.ins", "setup.lid",
                 "WoW.exe", "WOWStart.exe"
             };
-            foreach (string deleteFile in deleteFiles) { if(File.Exists(deleteFile)) { File.Delete(deleteFile); } }
+            foreach (string deleteFile in deleteFiles) { if (File.Exists(deleteFile)) { File.Delete(deleteFile); } }
             // delete unnecessary directx folder and fles
             if (Directory.Exists("DIRECTX")) { Directory.Delete("DIRECTX", true); }
             // check for smackw32.dll
@@ -157,7 +157,7 @@ namespace WoWLauncher
             if ((int)mainKey.GetValue("Enable Network Version")! == 1) { checkBox1.Checked = true; }
             if (Convert.ToInt32(mainKey.GetValue("Full Screen")) == 1) { checkBox2.Checked = true; }
             if (Convert.ToInt32(battleKey.GetValue("EnableFogOfWar")) == 1) { checkBox3.Checked = true; }
-            if (Convert.ToInt32(screenKey.GetValue("AllowResize")) == 1) { checkBox4.Checked = true; }
+            //if (Convert.ToInt32(screenKey.GetValue("AllowResize")) == 1) { checkBox4.Checked = true; }
             foreach (string res in comboBox2.Items)
             {
                 if (res.StartsWith(((string)screenKey.GetValue("Size")!).Replace(",", "x").Split(' ')[0])) // set combobox to the registry resolution
@@ -204,7 +204,7 @@ namespace WoWLauncher
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
             checkBox3.CheckedChanged += checkBox3_CheckedChanged!;
-            checkBox4.CheckedChanged += checkBox4_CheckedChanged!;
+            //checkBox4.CheckedChanged += checkBox4_CheckedChanged!; // allow resize - disabled because it doesn't display right when resized
             comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged!;
             comboBox2.SelectedIndexChanged += comboBox2_SelectedIndexChanged!;
             //comboBox3.SelectedIndexChanged += comboBox3_SelectedIndexChanged!;     // game frequency is not supported
@@ -324,7 +324,7 @@ namespace WoWLauncher
             checkBox1.Visible = true;
             checkBox2.Visible = true;
             checkBox3.Visible = true;
-            checkBox4.Visible = true;
+            //checkBox4.Visible = true;
             comboBox2.Visible = true;
             //comboBox3.Visible = true;     // game frequency is not supported
             comboBox4.Visible = true;
@@ -353,7 +353,7 @@ namespace WoWLauncher
                 checkBox1.Visible = false;
                 checkBox2.Visible = false;
                 checkBox3.Visible = false;
-                checkBox4.Visible = false;
+                //checkBox4.Visible = false;
                 comboBox1.Visible = false;
                 comboBox2.Visible = false;
                 //comboBox3.Visible = false;     // game frequency is not supported
@@ -389,7 +389,7 @@ namespace WoWLauncher
             key?.Close();
         }
         private void checkBox3_CheckedChanged(object sender, EventArgs e) { battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? "1" : "0"); }
-        private void checkBox4_CheckedChanged(object sender, EventArgs e) { screenKey.SetValue("AllowResize", checkBox4.Checked ? "1" : "0"); }
+        //private void checkBox4_CheckedChanged(object sender, EventArgs e) { screenKey.SetValue("AllowResize", checkBox4.Checked ? "1" : "0"); }
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             return; // forget language switching, save space for the end user.
@@ -397,30 +397,30 @@ namespace WoWLauncher
             switch (comboBox1.Text)
             {
                 case "German":
-                {
-                    MessageBox.Show("TEST");
-                }
-                break;
+                    {
+                        MessageBox.Show("TEST");
+                    }
+                    break;
                 case "Spanish":
-                {
-                    MessageBox.Show("TEST");
-                }
-                break;
+                    {
+                        MessageBox.Show("TEST");
+                    }
+                    break;
                 case "French":
-                {
-                    MessageBox.Show("TEST");
-                }
-                break;
+                    {
+                        MessageBox.Show("TEST");
+                    }
+                    break;
                 case "Italian":
-                {
-                    MessageBox.Show("TEST");
-                }
-                break;
+                    {
+                        MessageBox.Show("TEST");
+                    }
+                    break;
                 case "English":
-                {
-                    MessageBox.Show("TEST");
-                }
-                break;
+                    {
+                        MessageBox.Show("TEST");
+                    }
+                    break;
             }
 
 
@@ -517,7 +517,7 @@ namespace WoWLauncher
             checkBox1.CheckedChanged -= checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged -= checkBox2_CheckedChanged!;
             checkBox3.CheckedChanged -= checkBox3_CheckedChanged!;
-            checkBox4.CheckedChanged -= checkBox4_CheckedChanged!;
+            //checkBox4.CheckedChanged -= checkBox4_CheckedChanged!;
             comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;
             comboBox2.SelectedIndexChanged -= comboBox2_SelectedIndexChanged!;
             //comboBox3.SelectedIndexChanged -= comboBox3_SelectedIndexChanged!;     // game frequency is not supported
