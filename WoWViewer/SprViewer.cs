@@ -25,6 +25,7 @@ namespace WoWViewer
         {
             "HW.PAL","MW.PAL","HB.PAL","MB.PAL","HR.PAL","MR.PAL","BM.PAL","F1.PAL",
             "F2.PAL","F3.PAL","F4.PAL","F5.PAL","F1.PAL","F2.PAL","SE.PAL","CD.PAL"
+            //F6/F7 as F1/F2 for now
         };
         public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps)
         {
@@ -191,6 +192,7 @@ namespace WoWViewer
             byte[] indices = new byte[w * h];
 
             for (int y = 0; y < h; y++)
+            {
                 for (int x = 0; x < w; x++)
                 {
                     Color c = bmp.GetPixel(x, y);
@@ -212,6 +214,7 @@ namespace WoWViewer
                     }
                     indices[y * w + x] = best;
                 }
+            }
             return indices;
         }
         // export selected sprite/frame
