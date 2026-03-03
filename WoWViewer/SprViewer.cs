@@ -8,7 +8,7 @@ namespace WoWViewer
         private List<WowFileEntry> entries;
         private string selectedEntry;
         private string lastSelectedEntry;
-        private int currentRenderedEntry = -1;
+        private int currentRenderedEntry;
         private string lastSelectedPalette;
         private byte[] rawData;
         private byte[] palData;
@@ -33,8 +33,8 @@ namespace WoWViewer
             /*  9 */ "F3.PAL",  // VERIFIED (ragelogo.spr)
             /* 10 */ "F4.PAL",  // VERIFIED (bomb.spr)
             /* 11 */ "F5.PAL",      // UNVERIFIED (mush64.spr) (multi-frame)
-            /* 12 */ "F1.PAL",  // VERIFIED (LEGAL.spr)
-            /* 13 */ "F2.PAL",  // VERIFIED (SEPIATIT.spr)
+            /* 12 */ "F1.PAL",  // VERIFIED (LEGAL.spr)         RENDERS COLOURS CORRECTLY
+            /* 13 */ "F2.PAL",  // VERIFIED (SEPIATIT.spr)      RENDERS COLOURS CORRECTLY
             /* 14 */ "SE.PAL",  // VERIFIED (CREDITS.spr)
             /* 15 */ "CD.PAL",  // VERIFIED (gtlogo.spr)
             /* 16 */ "F1.PAL",  // VERIFIED (legal1.spr)
@@ -123,7 +123,6 @@ namespace WoWViewer
                 listBox2.Items.Add(entry.Name);
             }
             listBox1.SelectedIndex = listBox1.FindStringExact(selectedEntry);
-            listBox2.SelectedIndex = 0;
         }
         // Auto-select the PAL file that OBJ.ojd says this SPR should use.
         private void TryAutoSelectPalette()
