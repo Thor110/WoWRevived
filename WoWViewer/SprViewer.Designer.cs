@@ -66,7 +66,7 @@
             listBox2.ItemHeight = 15;
             listBox2.Location = new Point(157, 49);
             listBox2.Name = "listBox2";
-            listBox2.Size = new Size(120, 184);
+            listBox2.Size = new Size(120, 244);
             listBox2.TabIndex = 2;
             listBox2.SelectedIndexChanged += listBox2_SelectedIndexChanged;
             // 

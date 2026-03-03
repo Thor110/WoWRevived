@@ -17,15 +17,40 @@ namespace WoWViewer
         private List<WowFileEntry> palettes = new List<WowFileEntry>();
         private string baseFolder;
         private int currentFrame;
-        // Add at the top of SprViewer fields:
         private Dictionary<string, string> _sprToPal = new();
-
-        // The 16-slot PAL mapping with confirmed corrections (slot 12=F1, 13=F2):
-        private static readonly string[] PalSlots =
+        private static readonly string?[] PalSlots =
         {
-            "HW.PAL","MW.PAL","HB.PAL","MB.PAL","HR.PAL","MR.PAL","BM.PAL","F1.PAL",
-            "F2.PAL","F3.PAL","F4.PAL","F5.PAL","F1.PAL","F2.PAL","SE.PAL","CD.PAL"
-            //F6/F7 as F1/F2 for now
+            // Palette Index OBJ.ojd
+            /*  0 */ "HW.PAL",      // UNUSED?
+            /*  1 */ "MW.PAL",  // VERIFIED (bld_mark.spr)
+            /*  2 */ "HB.PAL",      //WOF files
+            /*  3 */ "MB.PAL",      //WOF files
+            /*  4 */ "HR.PAL",      //IOB files
+            /*  5 */ "MR.PAL",  // VERIFIED (selcurs.spr)
+            /*  6 */ "BM.PAL",  // VERIFIED (HWM.SPR)
+            /*  7 */ "F1.PAL",  // VERIFIED (RES_LAMP.SPR)
+            /*  8 */ "F5.PAL",  // VERIFIED (HU_BRIEF.SPR)
+            /*  9 */ "F3.PAL",  // VERIFIED (ragelogo.spr)
+            /* 10 */ "F4.PAL",  // VERIFIED (bomb.spr)
+            /* 11 */ "F5.PAL",      // UNVERIFIED (mush64.spr) (multi-frame)
+            /* 12 */ "F1.PAL",  // VERIFIED (LEGAL.spr)
+            /* 13 */ "F2.PAL",  // VERIFIED (SEPIATIT.spr)
+            /* 14 */ "SE.PAL",  // VERIFIED (CREDITS.spr)
+            /* 15 */ "CD.PAL",  // VERIFIED (gtlogo.spr)
+            /* 16 */ "F1.PAL",  // VERIFIED (legal1.spr)
+            /* 17 */ "MR.PAL",  // VERIFIED (humanbd.SPR)
+            /* 18 */ "F1.PAL",  // VERIFIED (martbd.spr)
+            /* 19 */ "F1.PAL",  // VERIFIED (gtlogo.spr)
+            /* 20 */ "F1.PAL",      // UNVERIFIED (TWINK1.SPR) (multi-frame)
+            /* 21 */ "F1.PAL",      // UNUSED?
+            /* 22 */ "CD.PAL",  // VERIFIED (CD_SEP1.spr)
+            /* 23 */ "CD.PAL",  // VERIFIED (cd_BD1.spr)
+            /* 24 */ "CD.PAL",  // VERIFIED (cd_BD2.spr)
+            /* 25 */ "CD.PAL",  // VERIFIED (cd_BD3.spr)
+            /* 26 */ "F4.PAL",  // VERIFIED (cd_BD4.spr)
+            /* 27 */ "CD.PAL",  // VERIFIED (cd_BD5.spr)
+            /* 28 */ "CD.PAL",  // VERIFIED (cd_BD6.spr)
+            /* 29 */ "CD.PAL",  // VERIFIED (cd_BD7.spr)
         };
         public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps)
         {
@@ -57,7 +82,7 @@ namespace WoWViewer
                 if (!entry.Name.EndsWith(".spr", StringComparison.OrdinalIgnoreCase)) { continue; }
                 string key = Path.GetFileName(entry.Name).ToUpperInvariant();
                 if (_sprToPal.ContainsKey(key)) { continue; } // first occurrence wins
-                if (entry.PalSlot < PalSlots.Length) { _sprToPal[key] = PalSlots[entry.PalSlot]; }
+                if (entry.PalSlot < PalSlots.Length) { _sprToPal[key] = PalSlots[entry.PalSlot]!; }
             }
         }
         // populate palettes from DAT\\Dat.wow when reading MAPS.WoW
@@ -119,7 +144,7 @@ namespace WoWViewer
         {
             string sprName = listBox1.SelectedItem!.ToString()!;
             if (sprName == lastSelectedEntry) return;
-            selectedEntry    = sprName;
+            selectedEntry = sprName;
             lastSelectedEntry = sprName;
             rawData = entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
             TryAutoSelectPalette();
