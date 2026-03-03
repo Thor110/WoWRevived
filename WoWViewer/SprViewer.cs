@@ -125,9 +125,9 @@ namespace WoWViewer
             listBox1.SelectedIndex = listBox1.FindStringExact(selectedEntry);
         }
         // Auto-select the PAL file that OBJ.ojd says this SPR should use.
-        private void TryAutoSelectPalette()
+        private void TryAutoSelectPalette(string entry)
         {
-            string key = selectedEntry.ToUpperInvariant();
+            string key = entry.ToUpperInvariant();
             if (!_sprToPal.TryGetValue(key, out string? correctPal)) { return; }
             for (int i = 0; i < listBox2.Items.Count; i++)
             {
@@ -146,7 +146,7 @@ namespace WoWViewer
             selectedEntry = sprName;
             lastSelectedEntry = sprName;
             rawData = entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
-            TryAutoSelectPalette();
+            TryAutoSelectPalette(selectedEntry);
             RenderCurrent();
         }
         // palette selection
@@ -256,7 +256,7 @@ namespace WoWViewer
                 // Use the correct PAL for this sprite if known; otherwise fall back to selected PAL.
                 int frameCount = SprDecoder.ReadInfo(entry.Data!).TableCount;
                 string fileName = Path.GetFileNameWithoutExtension(entry.Name);
-                TryAutoSelectPalette();
+                TryAutoSelectPalette(entry.Name);
                 if (frameCount != 1)
                 {
                     for (int i = 0; i < frameCount; i++)
