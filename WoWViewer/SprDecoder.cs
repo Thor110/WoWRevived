@@ -201,7 +201,11 @@ namespace WoWViewer
                         int b = Math.Max(0, (palData[palPos + 2] * 255 / 63) - 6);  // Drop Blue
                         c = Color.FromArgb(r, g, b);
                         */
-                        c = Color.FromArgb(palData[palPos] * 4, palData[palPos + 1] * 4, palData[palPos + 2] * 4);
+                        //c = Color.FromArgb(palData[palPos] * 4, palData[palPos + 1] * 4, palData[palPos + 2] * 4);
+                        int r = (palData[palPos] << 2) | (palData[palPos] >> 4);
+                        int g = (palData[palPos + 1] << 2) | (palData[palPos + 1] >> 4);
+                        int b = (palData[palPos + 2] << 2) | (palData[palPos + 2] >> 4);
+                        c = Color.FromArgb(r, g, b);
                     }
                     else
                     {
