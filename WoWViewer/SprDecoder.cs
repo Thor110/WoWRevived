@@ -115,7 +115,7 @@ namespace WoWViewer
 
                 for (int r = 0; r < height && baseBlock < 0; r++)
                 {
-                    int low = BitConverter.ToUInt16(sprData, 8 + r * 4 + 2);
+                    int low = BitConverter.ToUInt16(sprData, 8 + r * 4 + 2); // +2 makes no difference here?
                     if (low + tableCount * 4 >= sprData.Length) { continue; }
 
                     int[] subs = new int[tableCount];
@@ -133,12 +133,12 @@ namespace WoWViewer
                     }
                 }
 
-                if (baseBlock < 0) { return bmp; }
+                if (baseBlock < 0) { return bmp; } // makes no difference
 
                 // Each frame is a contiguous block of rows; walk forward consuming RLE pairs.
 
                 int dataPos = frameStarts[frame];
-                if (tableCount > 1) { dataPos = frameStarts[frame]; }
+                if (tableCount > 1) { dataPos = frameStarts[frame]; } // makes no difference
 
                 for (int row = 0; row < height; row++)
                 {
@@ -185,6 +185,13 @@ namespace WoWViewer
                     if (palPos + 2 < palData.Length)
                     {
                         // VGA 6-bit palette values: multiply by 4 for 8-bit RGB.
+                        // Pack to 565
+                        /* // exact colour match to screenshot for cd_sep1........ not for anything else
+                        int r = Math.Min(255, (palData[palPos] * 255 / 63) + 7);   // Boost Red
+                        int g = Math.Min(255, (palData[palPos + 1] * 255 / 63) + 1); // Slight Green
+                        int b = Math.Max(0, (palData[palPos + 2] * 255 / 63) - 6);  // Drop Blue
+                        c = Color.FromArgb(r, g, b);
+                        */
                         c = Color.FromArgb(palData[palPos] * 4, palData[palPos + 1] * 4, palData[palPos + 2] * 4);
                     }
                     else
