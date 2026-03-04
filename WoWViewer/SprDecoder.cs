@@ -181,15 +181,11 @@ namespace WoWViewer
                 {
                     // Apply shade remap if present: palIndex -> remapped index,
                     // then look up colour in the main 256-colour VGA palette (6-bit, x4).
-                    int mapped = (shadeData != null) ? shadeData[palIndex] : palIndex;
-                    int palPos = mapped * 3;
+                    int palPos = ((shadeData != null) ? shadeData[palIndex] : palIndex) * 3;
                     if (palPos + 2 < palData.Length)
                     {
                         // VGA 6-bit palette values: multiply by 4 for 8-bit RGB.
-                        int r = Math.Min(255, palData[palPos] * 4);
-                        int g = Math.Min(255, palData[palPos + 1] * 4);
-                        int b = Math.Min(255, palData[palPos + 2] * 4);
-                        c = Color.FromArgb(r, g, b);
+                        c = Color.FromArgb(palData[palPos] * 4, palData[palPos + 1] * 4, palData[palPos + 2] * 4);
                     }
                     else
                     {
