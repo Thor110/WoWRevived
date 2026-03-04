@@ -83,7 +83,7 @@ namespace WoWViewer
         {
             MessageBox.Show("SHM file selected. No action defined.");
         }
-        private void HandleSPR(WowFileEntry entry) { newForm(new SprViewer(entries, listBox1.SelectedItem!.ToString()!, filePath.Contains("MAPS.WoW"))); }
+        private void HandleSPR(WowFileEntry entry) { newForm(new SprViewer(entries, listBox1.SelectedItem!.ToString()!, filePath.Contains("MAPS.WoW"), outputPath)); }
         private void HandleWOF(WowFileEntry entry)
         {
             MessageBox.Show("WOF file selected. No action defined.");

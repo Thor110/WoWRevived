@@ -39,6 +39,7 @@
             button4 = new Button();
             comboBox1 = new ComboBox();
             label2 = new Label();
+            button5 = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -147,11 +148,23 @@
             label2.TabIndex = 12;
             label2.Text = "Sprite Information Display";
             // 
+            // button5
+            // 
+            button5.Enabled = false;
+            button5.Location = new Point(157, 299);
+            button5.Name = "button5";
+            button5.Size = new Size(120, 23);
+            button5.TabIndex = 13;
+            button5.Text = "Export Palette";
+            button5.UseVisualStyleBackColor = true;
+            button5.Click += button5_Click;
+            // 
             // SprViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1264, 777);
+            Controls.Add(button5);
             Controls.Add(label2);
             Controls.Add(comboBox1);
             Controls.Add(button4);
@@ -183,5 +196,6 @@
         private Button button4;
         private ComboBox comboBox1;
         private Label label2;
+        private Button button5;
     }
 }

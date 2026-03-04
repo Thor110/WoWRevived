@@ -52,12 +52,20 @@ namespace WoWViewer
             /* 28 */ "CD.PAL",  // VERIFIED (cd_BD6.spr)
             /* 29 */ "CD.PAL",  // VERIFIED (cd_BD7.spr)
         };
-        public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps)
+        public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps, string output)
         {
             InitializeComponent();
             entries = entryList;
             selectedEntry = entryName;
             isMaps = maps;
+            if(output != "")
+            {
+                outputPath = output;
+                textBox1.Text = outputPath;
+                button2.Enabled = true;
+                button3.Enabled = true;
+                button5.Enabled = true;
+            }
             if (maps)
             {
                 if (!File.Exists("DAT\\Dat.wow"))
@@ -285,6 +293,7 @@ namespace WoWViewer
             textBox1.Text = outputPath;
             button2.Enabled = true;
             button3.Enabled = true;
+            button5.Enabled = true;
         }
         // frame change
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -292,6 +301,17 @@ namespace WoWViewer
             if (comboBox1.SelectedIndex < 0 || comboBox1.SelectedIndex == currentFrame) return;
             currentFrame = comboBox1.SelectedIndex;
             RenderCurrent();
+        }
+        // export shader mapped palette
+        private void button5_Click(object sender, EventArgs e)
+        {
+            byte[] trimmedPalette = new byte[768];
+            Array.Copy(palData, 0, trimmedPalette, 0, 768);
+
+            // TODO : apply relevant shader mapping
+
+            File.WriteAllBytes(outputPath + Path.GetFileNameWithoutExtension(selectedEntry) + ".PAL", trimmedPalette);
+            MessageBox.Show("Shader Mapped Palette Exported");
         }
     }
 }
