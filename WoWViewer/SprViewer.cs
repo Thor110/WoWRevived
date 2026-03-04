@@ -208,7 +208,7 @@ namespace WoWViewer
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             string sprName = listBox1.SelectedItem!.ToString()!;
-            if (sprName == lastSelectedEntry) return;
+            if (sprName == lastSelectedEntry) { return; }
             selectedEntry = sprName;
             lastSelectedEntry = sprName;
             rawData = entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
@@ -220,7 +220,7 @@ namespace WoWViewer
         private void listBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             string palName = listBox2.SelectedItem!.ToString()!;
-            if (palName == lastSelectedPalette) return;
+            if (palName == lastSelectedPalette) { return; }
             lastSelectedPalette = palName;
             palData = (isMaps ? palettes : entries).First(e => e.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
             // PAL structure: bytes 0–767 = main 256-colour VGA palette (6-bit, ×4 = 8-bit).
