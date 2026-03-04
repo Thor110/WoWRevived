@@ -37,30 +37,28 @@ namespace WoWViewer
             /* 11 */ "F5.PAL",      // UNVERIFIED (mush64.spr) (multi-frame)
             /* 12 */ "F1.PAL",  // VERIFIED (LEGAL.spr)         RENDERS COLOURS CORRECTLY
             /* 13 */ "F2.PAL",  // VERIFIED (SEPIATIT.spr)      RENDERS COLOURS CORRECTLY
-            /* 14 */ "SE.PAL",  // VERIFIED (CREDITS.spr)
-            /* 15 */ "CD.PAL",  // VERIFIED (gtlogo.spr)
-            /* 16 */ "F1.PAL",  // VERIFIED (legal1.spr)
-            /* 17 */ "MR.PAL",  // VERIFIED (humanbd.SPR)
-            /* 18 */ "F1.PAL",  // VERIFIED (martbd.spr)
-            /* 19 */ "F1.PAL",  // VERIFIED (gtlogo.spr)
+            /* 14 */ "F3.PAL",  // VERIFIED (CREDITS.spr)
+            /* 15 */ "F4.PAL",  // VERIFIED (gtlogo.spr)
+            /* 16 */ "F5.PAL",  // VERIFIED (legal1.spr)
+            /* 17 */ "F6.PAL",  // VERIFIED (humanbd.SPR)
+            /* 18 */ "F7.PAL",  // VERIFIED (martbd.spr)
+            /* 19 */ "SE.PAL",  // VERIFIED (gtlogo.spr)
             /* 20 */ "F1.PAL",      // UNVERIFIED (TWINK1.SPR) (multi-frame)
             /* 21 */ "F1.PAL",      // UNUSED?
             /* 22 */ "CD.PAL",  // VERIFIED (CD_SEP1.spr)
             /* 23 */ "CD.PAL",  // VERIFIED (cd_BD1.spr)
             /* 24 */ "CD.PAL",  // VERIFIED (cd_BD2.spr)
             /* 25 */ "CD.PAL",  // VERIFIED (cd_BD3.spr)
-            /* 26 */ "F4.PAL",  // VERIFIED (cd_BD4.spr)
+            /* 26 */ "CD.PAL",  // VERIFIED (cd_BD4.spr)
             /* 27 */ "CD.PAL",  // VERIFIED (cd_BD5.spr)
             /* 28 */ "CD.PAL",  // VERIFIED (cd_BD6.spr)
             /* 29 */ "CD.PAL",  // VERIFIED (cd_BD7.spr)
         };
-
         // Rule confirmed from IDA: .text:0040C452 push offset aDatF1f1S ; "dat\\F1F1.%s"
         // Strip ".PAL", double the two-letter prefix -> shader stem.
         // BM.PAL has no BMBM; use BMGI (general illumination) as closest equivalent.
         // CD sprites use individually named shaders, handled via SpriteShaderOverrides.
-        private static readonly Dictionary<string, string> PalToShaderStem =
-            new(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, string> PalToShaderStem = new(StringComparer.OrdinalIgnoreCase)
         {
             { "HW.PAL", "HWHW" }, { "MW.PAL", "MWMW" }, { "HB.PAL", "HBHB" },
             { "MB.PAL", "MBMB" }, { "HR.PAL", "HRHR" }, { "MR.PAL", "MRMR" },
@@ -72,8 +70,7 @@ namespace WoWViewer
         };
 
         // Per-sprite shader overrides for CD content.
-        private static readonly Dictionary<string, string> SpriteShaderOverrides =
-            new(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, string> SpriteShaderOverrides = new(StringComparer.OrdinalIgnoreCase)
         {
             { "CD_SEP1.SPR", "CDSEPIA" },
             { "CD_BD1.SPR",  "CD1"  }, { "CD_BD2.SPR", "CD2" },
