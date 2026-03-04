@@ -115,7 +115,7 @@ Martian Background Menu
   <img src="images/menu-background-martian.png" alt="Martian Background Menu">
 </div>
 
-Original Backround menu
+Original Backround Menu
 
 <div align="center">
   <img src="images/menu-background-original.png" alt="Menu Background Original">
