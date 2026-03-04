@@ -106,13 +106,19 @@ Rescaled menu sprites for all supported resolutions which are swapped around whe
 Human Background Menu
 
 <div align="center">
-  <img src="images/menu-background-human.png" alt="Critical Event Options - Edited">
+  <img src="images/menu-background-human.png" alt="Human Background Menu">
 </div>
 
 Martian Background Menu
 
 <div align="center">
-  <img src="images/menu-background-martian.png" alt="Critical Event Options - Edited">
+  <img src="images/menu-background-martian.png" alt="Martian Background Menu">
+</div>
+
+Original Backround menu
+
+<div align="center">
+  <img src="images/menu-background-original.png" alt="Menu Background Original">
 </div>
 
 Critical Event Options - Edited
