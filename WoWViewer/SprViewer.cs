@@ -361,7 +361,7 @@ namespace WoWViewer
         // frame change
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (comboBox1.SelectedIndex < 0 || comboBox1.SelectedIndex == currentFrame) return;
+            if (comboBox1.SelectedIndex == currentFrame) { return; }
             currentFrame = comboBox1.SelectedIndex;
             RenderCurrent();
         }
