@@ -18,6 +18,8 @@ namespace WoWViewer
         private string baseFolder;
         private int currentFrame;
         private Dictionary<string, string> _sprToPal = new();
+        private Dictionary<string, string> _sprToShader = new();
+        private byte[]? shadeData;   // active shade remap table (level 0, 256 bytes), null = identity
         private static readonly string?[] PalSlots =
         {
             // Palette Index OBJ.ojd
@@ -52,13 +54,40 @@ namespace WoWViewer
             /* 28 */ "CD.PAL",  // VERIFIED (cd_BD6.spr)
             /* 29 */ "CD.PAL",  // VERIFIED (cd_BD7.spr)
         };
+
+        // Rule confirmed from IDA: .text:0040C452 push offset aDatF1f1S ; "dat\\F1F1.%s"
+        // Strip ".PAL", double the two-letter prefix -> shader stem.
+        // BM.PAL has no BMBM; use BMGI (general illumination) as closest equivalent.
+        // CD sprites use individually named shaders, handled via SpriteShaderOverrides.
+        private static readonly Dictionary<string, string> PalToShaderStem =
+            new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "HW.PAL", "HWHW" }, { "MW.PAL", "MWMW" }, { "HB.PAL", "HBHB" },
+            { "MB.PAL", "MBMB" }, { "HR.PAL", "HRHR" }, { "MR.PAL", "MRMR" },
+            { "BM.PAL", "BMGI" }, // no BMBM exists; BMGI = general illumination
+            { "SE.PAL", "SESE" },
+            { "F1.PAL", "F1F1" }, { "F2.PAL", "F2F2" }, { "F3.PAL", "F3F3" },
+            { "F4.PAL", "F4F4" }, { "F5.PAL", "F5F5" }, { "F6.PAL", "F6F6" },
+            { "F7.PAL", "F7F7" },
+        };
+
+        // Per-sprite shader overrides for CD content.
+        private static readonly Dictionary<string, string> SpriteShaderOverrides =
+            new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "CD_SEP1.SPR", "CDSEPIA" },
+            { "CD_BD1.SPR",  "CD1"  }, { "CD_BD2.SPR", "CD2" },
+            { "CD_BD3.SPR",  "CD3"  }, { "CD_BD4.SPR", "CD4" },
+            { "CD_BD5.SPR",  "CD5"  }, { "CD_BD6.SPR", "CD6" },
+            { "CD_BD7.SPR",  "CD7"  },
+        };
         public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps, string output)
         {
             InitializeComponent();
             entries = entryList;
             selectedEntry = entryName;
             isMaps = maps;
-            if(output != "")
+            if (output != "")
             {
                 outputPath = output;
                 textBox1.Text = outputPath;
@@ -79,6 +108,7 @@ namespace WoWViewer
             }
             else { baseFolder = "DAT"; }
             BuildSprPalMap();
+            BuildSprShaderMap();
             PopulateList();
         }
         // build spr palette map from OBJ.ojd file
@@ -92,6 +122,32 @@ namespace WoWViewer
                 if (_sprToPal.ContainsKey(key)) { continue; } // first occurrence wins
                 if (entry.PalSlot < PalSlots.Length) { _sprToPal[key] = PalSlots[entry.PalSlot]!; }
             }
+        }
+        // Build sprite -> shader filename map.
+        // For most sprites: PAL prefix doubled (e.g. MR.PAL -> MRMR.SHL).
+        // CD sprites: per-sprite named shader from SpriteShaderOverrides.
+        private void BuildSprShaderMap()
+        {
+            foreach (var kvp in _sprToPal)
+            {
+                string sprKey = kvp.Key;    // e.g. "HUMANBD.SPR"
+                string palName = kvp.Value; // e.g. "MR.PAL"
+                if (SpriteShaderOverrides.TryGetValue(sprKey, out string? stem) || PalToShaderStem.TryGetValue(palName, out stem))
+                {
+                    _sprToShader[sprKey] = stem + ".SHL";
+                }
+            }
+        }// Select the shader for the current sprite from the already-loaded entries.
+        private void TryAutoSelectShader()
+        {
+            if (!checkBox1.Checked) { return; }
+            string key = Path.GetFileName(selectedEntry).ToUpperInvariant();
+            if (!_sprToShader.TryGetValue(key, out string? shaderName)) { shadeData = null; return; }
+            byte[] raw = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data!;
+            listBox3.SelectedIndex = listBox3.FindStringExact(shaderName);
+            // Structure: byte[0] = number of shade levels N, then N*256 bytes.
+            // Level 0 = fully lit. Extract as a 256-byte remap table.
+            shadeData = (raw.Length >= 257) ? raw[1..257] : null;
         }
         // populate palettes from DAT\\Dat.wow when reading MAPS.WoW
         private void PopulatePalettes()
@@ -108,7 +164,7 @@ namespace WoWViewer
                 br.BaseStream.Seek(20, SeekOrigin.Current);
                 int zeroIndex = Array.IndexOf(nameBytes, (byte)0);
                 string name = Encoding.ASCII.GetString(nameBytes, 0, zeroIndex >= 0 ? zeroIndex : nameBytes.Length);
-                if (name.EndsWith(".PAL"))
+                if (name.EndsWith(".PAL") || name.EndsWith(".SHL"))
                 {
                     long store = br.BaseStream.Position;
                     br.BaseStream.Seek(offset, SeekOrigin.Begin);
@@ -129,6 +185,11 @@ namespace WoWViewer
             {
                 entry.Data = FfuhDecoder.Decompress(entry.Data!);
                 listBox2.Items.Add(entry.Name);
+            }
+            foreach (var entry in (isMaps ? palettes : entries).Where(e => e.Name.EndsWith(".SHL", StringComparison.OrdinalIgnoreCase)))
+            {
+                entry.Data = FfuhDecoder.Decompress(entry.Data!);
+                listBox3.Items.Add(entry.Name);
             }
             listBox1.SelectedIndex = listBox1.FindStringExact(selectedEntry);
         }
@@ -155,6 +216,7 @@ namespace WoWViewer
             lastSelectedEntry = sprName;
             rawData = entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
             TryAutoSelectPalette(selectedEntry);
+            TryAutoSelectShader();
             RenderCurrent();
         }
         // palette selection
@@ -202,7 +264,7 @@ namespace WoWViewer
             //   int shadeOffset = SprDecoder.ShadeTableOffset((int)numericUpDown1.Value);
             //   then look up shaded index before applying palette.
             // For now always render at full brightness (paletteOffset = 0).
-            pictureBox1.Image = SprDecoder.Render(rawData, palData, paletteOffset: 0, frame: currentFrame);
+            pictureBox1.Image = SprDecoder.Render(rawData, palData, shadeData: shadeData, frame: currentFrame);
         }
         // replace selected sprite
         private void button1_Click(object sender, EventArgs e)
@@ -265,18 +327,19 @@ namespace WoWViewer
                 int frameCount = SprDecoder.ReadInfo(entry.Data!).TableCount;
                 string fileName = Path.GetFileNameWithoutExtension(entry.Name);
                 TryAutoSelectPalette(entry.Name);
+                TryAutoSelectShader();
                 if (frameCount != 1)
                 {
                     for (int i = 0; i < frameCount; i++)
                     {
-                        Bitmap frame = SprDecoder.Render(entry.Data!, palData, 0, i);
+                        Bitmap frame = SprDecoder.Render(entry.Data!, palData, shadeData: shadeData, frame: i);
                         frame.Save(Path.Combine(outputPath, $"{fileName}_frame_{i:D2}.png"), ImageFormat.Png);
                         frame.Dispose();
                     }
                 }
                 else
                 {
-                    Bitmap img = SprDecoder.Render(entry.Data!, palData, 0, 0);
+                    Bitmap img = SprDecoder.Render(entry.Data!, palData, shadeData: shadeData, frame: 0);
                     img.Save(Path.Combine(outputPath, fileName + ".png"), ImageFormat.Png);
                     img.Dispose();
                 }
@@ -312,6 +375,19 @@ namespace WoWViewer
 
             File.WriteAllBytes(outputPath + Path.GetFileNameWithoutExtension(selectedEntry) + ".PAL", trimmedPalette);
             MessageBox.Show("Shader Mapped Palette Exported");
+        }
+        // disable shader data
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            shadeData = null;
+            RenderCurrent();
+        }
+        // shader listbox
+        private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string shaderName = listBox3.SelectedItem!.ToString()!;
+            shadeData = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data!;
+            RenderCurrent();
         }
     }
 }

@@ -78,11 +78,11 @@ namespace WoWViewer
 
         // Render a sprite frame.
         // palData       : raw bytes of the .PAL file.
-        // paletteOffset : byte offset into palData for the start of the colour table.
-        //                 For normal (unshaded) rendering always pass 0.
-        // greyscale     : if true, renders palette index as grey value (ignores palData).
+        // shadeData     : optional 256-byte remap table (level 0 from .SHL file).
+        //                 Each byte remaps a palette index before colour lookup.
+        //                 Pass null for identity (F1/F2 sprites need no remapping).
         // frame         : animation frame, clamped to [0, tableCount-1].
-        public static Bitmap Render(byte[] sprData, byte[] palData, int paletteOffset = 0, int frame = 0)
+        public static Bitmap Render(byte[] sprData, byte[] palData, byte[]? shadeData = null, int frame = 0)
         {
             ushort width = BitConverter.ToUInt16(sprData, 0);
             ushort height = BitConverter.ToUInt16(sprData, 2);
@@ -105,7 +105,7 @@ namespace WoWViewer
                     if (carry > high) { high = carry; }
                     prevLow = low;
 
-                    RenderRow(sprData, palData, bmp, row, width, high * 65536 + low + rowHeaderSize, paletteOffset);
+                    RenderRow(sprData, palData, bmp, row, width, high * 65536 + low + rowHeaderSize, shadeData);
                 }
             }
             else
@@ -142,7 +142,7 @@ namespace WoWViewer
 
                 for (int row = 0; row < height; row++)
                 {
-                    RenderRow(sprData, palData, bmp, row, width, dataPos, paletteOffset);
+                    RenderRow(sprData, palData, bmp, row, width, dataPos, shadeData);
                     // Advance past this row's RLE data
                     int x = 0;
                     while (x < width && dataPos + 1 < sprData.Length)
@@ -158,15 +158,12 @@ namespace WoWViewer
 
         // ── Palette helpers ──────────────────────────────────────────────────────
 
-        // For static rendering always use paletteOffset = 0.
-        // The main 256-colour palette occupies bytes 0–767 of every PAL file.
-        // The blend/shade table (bytes 768–66303) is only needed for runtime transparency.
-        // This method is kept for future use if shade-level rendering is implemented.
-        public static int ShadeTableOffset(int shadeLevel) => 768 + Math.Clamp(shadeLevel, 0, 255) * 256;
+        // The shade table (bytes 768-66303 of a PAL file) is separate from the .SHL remap tables
+        // and is only used for runtime transparency blending in the engine, not for sprite rendering.
 
         // ── Internal helpers ─────────────────────────────────────────────────────
 
-        private static void RenderRow(byte[] sprData, byte[] palData, Bitmap bmp, int row, int width, int dataPos, int paletteOffset)
+        private static void RenderRow(byte[] sprData, byte[] palData, Bitmap bmp, int row, int width, int dataPos, byte[]? shadeData)
         {
             int x = 0;
             while (x < width && dataPos + 1 < sprData.Length)
@@ -182,7 +179,10 @@ namespace WoWViewer
                 }
                 else
                 {
-                    int palPos = paletteOffset + palIndex * 3;
+                    // Apply shade remap if present: palIndex -> remapped index,
+                    // then look up colour in the main 256-colour VGA palette (6-bit, x4).
+                    int mapped = (shadeData != null) ? shadeData[palIndex] : palIndex;
+                    int palPos = mapped * 3;
                     if (palPos + 2 < palData.Length)
                     {
                         // VGA 6-bit palette values: multiply by 4 for 8-bit RGB.

@@ -40,6 +40,9 @@
             comboBox1 = new ComboBox();
             label2 = new Label();
             button5 = new Button();
+            checkBox1 = new CheckBox();
+            listBox3 = new ListBox();
+            label3 = new Label();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -159,11 +162,46 @@
             button5.UseVisualStyleBackColor = true;
             button5.Click += button5_Click;
             // 
+            // checkBox1
+            // 
+            checkBox1.AutoSize = true;
+            checkBox1.Checked = true;
+            checkBox1.CheckState = CheckState.Checked;
+            checkBox1.Location = new Point(283, 302);
+            checkBox1.Name = "checkBox1";
+            checkBox1.Size = new Size(97, 19);
+            checkBox1.TabIndex = 14;
+            checkBox1.Text = "Shader Tables";
+            checkBox1.UseVisualStyleBackColor = true;
+            checkBox1.CheckedChanged += checkBox1_CheckedChanged;
+            // 
+            // listBox3
+            // 
+            listBox3.FormattingEnabled = true;
+            listBox3.ItemHeight = 15;
+            listBox3.Location = new Point(283, 49);
+            listBox3.Name = "listBox3";
+            listBox3.Size = new Size(120, 244);
+            listBox3.TabIndex = 15;
+            listBox3.SelectedIndexChanged += listBox3_SelectedIndexChanged;
+            // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new Point(283, 31);
+            label3.Name = "label3";
+            label3.Size = new Size(78, 15);
+            label3.TabIndex = 16;
+            label3.Text = "Shader Tables";
+            // 
             // SprViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1264, 777);
+            Controls.Add(label3);
+            Controls.Add(listBox3);
+            Controls.Add(checkBox1);
             Controls.Add(button5);
             Controls.Add(label2);
             Controls.Add(comboBox1);
@@ -197,5 +235,8 @@
         private ComboBox comboBox1;
         private Label label2;
         private Button button5;
+        private CheckBox checkBox1;
+        private ListBox listBox3;
+        private Label label3;
     }
 }
