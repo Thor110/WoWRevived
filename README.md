@@ -101,6 +101,20 @@ Discord server : https://discord.gg/bwG6Z3RK8b
 
 Some quality of life changes have been made to the game, from incorrect text entries to the removal of unnecessary buttons.
 
+Rescaled menu sprites for all supported resolutions which are swapped around when changing the resolution in the launcher.
+
+Human Background Menu
+
+<div align="center">
+  <img src="images/menu-background-human.png" alt="Critical Event Options - Edited">
+</div>
+
+Martian Background Menu
+
+<div align="center">
+  <img src="images/menu-background-martian.png" alt="Critical Event Options - Edited">
+</div>
+
 Critical Event Options - Edited
 
 This was fixed by adding two leading spaces to the TEXT.ojd file for these entries.
@@ -118,6 +132,8 @@ Critical Event Options - Unedited
 Display Settings - Edited
 
 This was fixed by patching the executable to jump past the instructions to create these buttons.
+
+The resolution slider was also removed because this is now handled by the launcher and the original functionality required restarting the game.
 
 <div align="center">
   <img src="images/menu-settings-edited.png" alt="Display Settings - Edited">
