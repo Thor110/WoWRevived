@@ -314,7 +314,7 @@ namespace WoWViewer
         // export selected sprite/frame
         private void button2_Click(object sender, EventArgs e)
         {
-            string name = Path.GetFileNameWithoutExtension(selectedEntry);
+            string name = (SprDecoder.ReadInfo(rawData).TableCount != 1) ? comboBox1.Text : Path.GetFileNameWithoutExtension(selectedEntry);
             pictureBox1.Image.Save(Path.Combine(outputPath, name + ".png"), ImageFormat.Png);
             MessageBox.Show($"{name}.png exported.");
         }

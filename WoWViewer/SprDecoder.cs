@@ -110,52 +110,61 @@ namespace WoWViewer
             }
             else
             {
-                int baseBlock = -1;
-                int[] frameStarts = Array.Empty<int>();
+                // 1. Find the Frame Offset Table. 
+                // It is located at the address stored in the first row entry.
+                int firstRowEntry = BitConverter.ToUInt16(sprData, 8 + 2);
 
-                for (int r = 0; r < height && baseBlock < 0; r++)
-                {
-                    int low = BitConverter.ToUInt16(sprData, 8 + r * 4 + 2); // +2 makes no difference here?
-                    if (low + tableCount * 4 >= sprData.Length) { continue; }
+                // 2. Get the specific offset for the frame we want.
+                // Each frame pointer is 4 bytes.
+                int framePointerLoc = firstRowEntry + (frame * 4);
+                int frameOffset = BitConverter.ToInt32(sprData, framePointerLoc);
 
-                    int[] subs = new int[tableCount];
-                    for (int f = 0; f < tableCount; f++) { subs[f] = BitConverter.ToInt32(sprData, low + f * 4); }
+                // 3. Set the Absolute Starting Position
+                int dataPos = firstRowEntry + frameOffset;
 
-                    if (subs[0] > 0 && subs[0] < 0x8000 && IsSorted(subs))
-                    {
-                        int testOff = low + subs[0];
-                        if (testOff < sprData.Length && CountPixels(sprData, testOff, width) >= width)
-                        {
-                            baseBlock = low;
-                            frameStarts = new int[tableCount];
-                            for (int f = 0; f < tableCount; f++) { frameStarts[f] = low + subs[f]; }
-                        }
-                    }
-                }
-
-                if (baseBlock < 0) { return bmp; } // makes no difference
-
-                // Each frame is a contiguous block of rows; walk forward consuming RLE pairs.
-
-                int dataPos = frameStarts[frame];
-                if (tableCount > 1) { dataPos = frameStarts[frame]; } // makes no difference
+                // THE "ONE ROW" CALIBRATION
+                // If Frame 2 is still shifted, it means there is a 4-byte 
+                // Frame Header (Width/Height) right here.
+                // dataPos += 4;
 
                 for (int row = 0; row < height; row++)
                 {
-                    RenderRow(sprData, palData, bmp, row, width, dataPos, shadeData);
-                    // Advance past this row's RLE data
-                    int x = 0;
-                    while (x < width && dataPos + 1 < sprData.Length)
-                    {
-                        x += sprData[dataPos + 1];
-                        dataPos += 2;
-                    }
+                    // Use your existing RenderRow, but update dataPos manually
+                    // by counting how many bytes it consumed.
+                    dataPos = RenderRowAndGetNextPos(sprData, palData, bmp, row, width, dataPos, shadeData);
                 }
             }
 
             return bmp;
         }
+        private static int RenderRowAndGetNextPos(byte[] sprData, byte[] palData, Bitmap bmp, int row, int width, int dataPos, byte[]? shadeData)
+        {
+            int x = 0;
+            while (x < width && dataPos + 1 < sprData.Length)
+            {
+                byte palIndex = sprData[dataPos];
+                byte count = sprData[dataPos + 1];
+                dataPos += 2;
 
+                Color c;
+                if (palIndex == 0) { c = Color.Transparent; }
+                else
+                {
+                    int palPos = ((shadeData != null) ? shadeData[palIndex] : palIndex) * 3;
+                    if (palPos + 2 < palData.Length)
+                    {
+                        c = Color.FromArgb(palData[palPos] * 4, palData[palPos + 1] * 4, palData[palPos + 2] * 4);
+                    }
+                    else { c = Color.Magenta; }
+                }
+
+                for (int i = 0; i < count && x < width; i++, x++)
+                {
+                    if (x < width) bmp.SetPixel(x, row, c);
+                }
+            }
+            return dataPos; // This tells the loop exactly where the next row starts
+        }
         // ── Palette helpers ──────────────────────────────────────────────────────
 
         // The shade table (bytes 768-66303 of a PAL file) is separate from the .SHL remap tables
