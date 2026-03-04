@@ -370,10 +370,12 @@ namespace WoWViewer
         {
             byte[] trimmedPalette = new byte[768];
             Array.Copy(palData, 0, trimmedPalette, 0, 768);
-
-            // TODO : apply relevant shader mapping
-
-            File.WriteAllBytes(outputPath + Path.GetFileNameWithoutExtension(selectedEntry) + ".PAL", trimmedPalette);
+            if(checkBox1.Checked) // TODO : apply relevant shader mapping
+            {
+                //remap trimmedPalette etc
+                File.WriteAllBytes(outputPath + Path.GetFileNameWithoutExtension(selectedEntry) + "_SHADED.PAL", trimmedPalette);
+            }
+            else { File.WriteAllBytes(outputPath + Path.GetFileNameWithoutExtension(selectedEntry) + ".PAL", trimmedPalette); }
             MessageBox.Show("Shader Mapped Palette Exported");
         }
         // disable shader data
