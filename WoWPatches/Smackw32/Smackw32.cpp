@@ -289,7 +289,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
             DWORD bufferSize = sizeof(buffer);
             DWORD type = 0;
             if (RegQueryValueExA(hKey, "Full Screen", NULL, &type, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS) {
-                isFullscreen = (strcmp(buffer, "1") == 0);
                 if (type == REG_DWORD) {
                     isFullscreen = (*(DWORD*)buffer == 1); // dword in networked executable
                 }
