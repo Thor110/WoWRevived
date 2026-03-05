@@ -65,11 +65,23 @@ The road map for this project.
 - [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 100% Complete )
 	- .WoW archives can be extracted.
 	- Waveform preview, play and replace sound files from .WoW archives.
-- [❌ 3 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
+	- Decompressing files optional but enabled by default.
+- [❌ 3 : Sprite Viewer](#sprite-viewer) ( 50% Complete )
+	- Sprite viewer can extract and replace game sprites.
+	- Known "bugs" with the Sprite Viewer.
+		- 1\. Multi-frame sprites do not render frames other than the first frame correctly yet.
+		- 2\. Shader tables are not applied to all sprites yet, only the following sprites currently render correctly.
+			- cd_sep1.spr
+			- HUMANFMV.SPR
+			- LEGAL.SPR
+			- MARTNFMV.SPR
+			- SEPIATIT.SPR
+			- TITLEFMV.SPR
+- [❌ 4 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Override standard limit of 1753 as the minimum date and set the year manually to as low as year zero.
-	- Sector & Area names loaded dynamically from TEXT.ojd
-- [✅ 4 : Text Editor](#text-editor) ( 100% Complete - edit and save string entries in the TEXT.ojd file. )
+	- Sector & Area names loaded dynamically from TEXT.ojd to support the regional releases.
+- [✅ 5 : Text Editor](#text-editor) ( 100% Complete - edit and save string entries in the TEXT.ojd file. )
 	- All 1397 strings are editable. ( Default game has 1396, new string added for the missing Credits button text, original files also supported )
 	- UTF-8 + ISO-8859-1 encoding supported.
 	- File is recompiled from scratch based on modifications.
@@ -77,20 +89,21 @@ The road map for this project.
 	- Undo changes to current string.
 	- Edited strings highlighted.
 	- Rich text editing with newline support (\n to \r\n handling when loading and the opposite when saving )
-- ❌ 5 : Map Editor ( Basic Parsing Implemented - 1% Complete )
+- ❌ 6 : Map Editor ( Basic Parsing Implemented - 1% Complete )
 	- Basic parsing of .nsb filetypes.
 	- .ojd files can be parsed, but there is still more decoding to do.
-- ✅ 6 : No-CD Music Fix ( 99% Complete )
+- ✅ 7 : No-CD Music Fix ( 99% Complete )
 	- Uses a winmm shim that allows for localised audio playback.
+	- Added functionality to allow music playback to continue when not in fullscreen and the window loses focus.
 	- Known "bugs" which I consider non-issues for the time-being.
 		- 1\. The counter increases indefinitely.
-		- 2\. Doesn't progress to the next track when a track finishes.
-- [✅ 7 : Video Playback Intercept](#video-playback-intercept) ( 100% Complete )
+		- 2\. Doesn't progress to the next track when a track finishes in the CD player menu.
+- [✅ 8 : Video Playback Intercept](#video-playback-intercept) ( 100% Complete )
 	- Custom Smackw32.dll that plays upscaled videos at the games resolution.
 	- Simple 1920x1080 upscales of all the original videos which get scaled to the games resolution.
 	- Alt-Tab detection when in fullscreen used to close the game automatically to save the user time encountering an error.
 		- This is because alt-tabbing is broken in the game by default.
-- ❌ 8 : Decomp/Recomp ( Started - 1% Complete )
+- ❌ 9 : Decomp/Recomp ( Started - 1% Complete )
 	- Begun mapping out virtual key addresses for use in the launchers custom keyboard shortcut settings. ( "WoWRevived\WoWDecomp\ida-map.txt" )
 
 This might not all happen but I wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
@@ -175,6 +188,14 @@ A custom file extractor for extracting files from the .WoW archive format the ga
 
 <div align="center">
   <img src="images/file-extractor.gif" alt="File Extractor">
+</div>
+
+## Sprite Viewer
+
+A work in progress sprite viewer.
+
+<div align="center">
+  <img src="images/sprite-viewer.png" alt="Sprite Viewer">
 </div>
 
 ## Save Editor
