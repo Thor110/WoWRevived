@@ -49,6 +49,7 @@
             button6 = new Button();
             checkBox4 = new CheckBox();
             button7 = new Button();
+            checkBox5 = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -265,11 +266,24 @@
             button7.UseVisualStyleBackColor = true;
             button7.Click += button7_Click;
             // 
+            // checkBox5
+            // 
+            checkBox5.AccessibleDescription = "Enabling this will allow the music to continue playing when the window loses focus if not in fullscreenmode.";
+            checkBox5.AutoSize = true;
+            checkBox5.Location = new Point(12, 412);
+            checkBox5.Name = "checkBox5";
+            checkBox5.Size = new Size(108, 19);
+            checkBox5.TabIndex = 20;
+            checkBox5.Text = "Music Playback";
+            checkBox5.UseVisualStyleBackColor = true;
+            checkBox5.CheckedChanged += checkBox5_CheckedChanged;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(424, 504);
+            Controls.Add(checkBox5);
             Controls.Add(button7);
             Controls.Add(checkBox4);
             Controls.Add(button6);
@@ -320,5 +334,6 @@
         private Button button6;
         private CheckBox checkBox4;
         private Button button7;
+        private CheckBox checkBox5;
     }
 }

@@ -325,6 +325,7 @@ namespace WoWLauncher
             checkBox2.Visible = true;
             checkBox3.Visible = true;
             //checkBox4.Visible = true;
+            checkBox5.Visible = true;
             comboBox2.Visible = true;
             //comboBox3.Visible = true;     // game frequency is not supported
             comboBox4.Visible = true;
@@ -354,6 +355,7 @@ namespace WoWLauncher
                 checkBox2.Visible = false;
                 checkBox3.Visible = false;
                 //checkBox4.Visible = false;
+                checkBox5.Visible = false;
                 comboBox1.Visible = false;
                 comboBox2.Visible = false;
                 //comboBox3.Visible = false;     // game frequency is not supported
@@ -525,6 +527,12 @@ namespace WoWLauncher
             form.FormClosed += (s, args) => this.Show();
             form.FormClosed += (s, args) => InitializeRegistry();
             form.Move += (s, args) => { if (this.Location != form.Location) { this.Location = form.Location; } };
+        }
+        // music focus checkbox
+        private void checkBox5_CheckedChanged(object sender, EventArgs e)
+        {
+            if(checkBox5.Checked) { File.Move("no_music_focus.txt", "music_focus.txt"); }
+            else { File.Move("music_focus.txt", "no_music_focus.txt"); }
         }
     }
 }
