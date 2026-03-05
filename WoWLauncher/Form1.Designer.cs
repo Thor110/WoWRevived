@@ -117,7 +117,7 @@
             // 
             // checkBox2
             // 
-            checkBox2.AccessibleDescription = "Enable or disable fullscreen.";
+            checkBox2.AccessibleDescription = "Enable or disable fullscreen. Note : Alt-Tabbing crashes the game when in fullscreen mode.";
             checkBox2.AutoSize = true;
             checkBox2.Location = new Point(167, 322);
             checkBox2.Name = "checkBox2";
@@ -268,7 +268,7 @@
             // 
             // checkBox5
             // 
-            checkBox5.AccessibleDescription = "Enabling this will allow the music to continue playing when the window loses focus if not in fullscreenmode.";
+            checkBox5.AccessibleDescription = "Enabling this will allow the music to continue playing when the window loses focus, if not in fullscreen mode.";
             checkBox5.AutoSize = true;
             checkBox5.Location = new Point(12, 412);
             checkBox5.Name = "checkBox5";
@@ -276,7 +276,7 @@
             checkBox5.TabIndex = 20;
             checkBox5.Text = "Music Playback";
             checkBox5.UseVisualStyleBackColor = true;
-            checkBox5.CheckedChanged += checkBox5_CheckedChanged;
+            checkBox5.Visible = false;
             // 
             // Form1
             // 

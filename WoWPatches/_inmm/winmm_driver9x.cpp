@@ -16,7 +16,7 @@ HWAVEOUT hWaveOut = NULL;
 WAVEHDR waveHdr = {};
 HGLOBAL hWaveData = NULL;
 FILE* logFile = nullptr;
-bool debug = true; // true for logging
+bool debug = false; // true for logging
 bool musicFocus = (GetFileAttributesA("music_focus.txt") != INVALID_FILE_ATTRIBUTES); // allow music to continue playing while the window is out of focus
 
 // === Logging === //

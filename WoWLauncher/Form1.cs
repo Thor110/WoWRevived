@@ -209,6 +209,9 @@ namespace WoWLauncher
             comboBox2.SelectedIndexChanged += comboBox2_SelectedIndexChanged!;
             //comboBox3.SelectedIndexChanged += comboBox3_SelectedIndexChanged!;     // game frequency is not supported
             comboBox4.SelectedIndexChanged += comboBox4_SelectedIndexChanged!;
+            //music playback when out of focus
+            checkBox5.Checked = File.Exists("music_focus.txt");
+            checkBox5.CheckedChanged += checkBox5_CheckedChanged!;
         }
         /// <summary>
         /// InitializeTooltips prepares a tooltip for every control in the form.
@@ -450,7 +453,7 @@ namespace WoWLauncher
             // future prep for moving resolution specific assets back and forth
             string[] moveFiles = new string[]
             {
-                "cd_sep1.spr",
+                //"cd_sep1.spr",
                 //"credits.spr", "HU_BRIEF.SPR", "HU_RSCH.SPR",
                 "humanbd.spr", "legal1.spr", "legal2.spr",
                 //"ma_brief.spr",
