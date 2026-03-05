@@ -17,7 +17,7 @@ WAVEHDR waveHdr = {};
 HGLOBAL hWaveData = NULL;
 FILE* logFile = nullptr;
 bool debug = true; // true for logging
-//bool musicFocus = (GetFileAttributesA("music_focus.txt") != INVALID_FILE_ATTRIBUTES); // allow music to continue playing while the window is out of focus
+bool musicFocus = (GetFileAttributesA("music_focus.txt") != INVALID_FILE_ATTRIBUTES); // allow music to continue playing while the window is out of focus
 
 // === Logging === //
 void Log(const char* fmt, ...)
@@ -65,26 +65,24 @@ WNDPROC origWndProc = NULL;
 bool losingFocus = false;
 bool gainingFocus = false;
 
+DWORD lastFocusEventTick = 0;
+
 LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	if (msg == WM_ACTIVATEAPP) {
+		lastFocusEventTick = GetTickCount(); // Mark exactly WHEN focus shifted
+
 		if (!wParam) {
-			Log("LOSING FOCUS");
-			// losing focus
-			losingFocus = true;
-			gainingFocus = false;
-			if (hWaveOut && !isPaused) {
+			Log("HOOK: Focus Lost");
+			if (hWaveOut && !isPaused && !musicFocus) {
 				totalElapsedBeforePause = GetTickCount() - dwStartTime;
 				isPaused = true;
 				waveOutPause(hWaveOut);
 			}
 		}
 		else {
-			Log("GAINING FOCUS");
-			// regaining focus
-			gainingFocus = true;
-			losingFocus = false;
-			if (hWaveOut && isPaused) {
+			Log("HOOK: Focus Gained");
+			if (hWaveOut && isPaused && !musicFocus) {
 				isPaused = false;
 				dwStartTime = GetTickCount() - totalElapsedBeforePause;
 				waveOutRestart(hWaveOut);
@@ -181,7 +179,14 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 
 	// 2. STOP & CLOSE: Use the most generic command possible
 	if (uMsg == MCI_STOP || uMsg == MCI_CLOSE) {
-		if (losingFocus || gainingFocus) return 0;
+		DWORD currentTick = GetTickCount();
+
+		// If musicFocus is enabled AND a focus event happened within the last 250ms
+		// we can safely assume this STOP is a redundant 'auto-stop' from the engine/OS.
+		if (musicFocus && (currentTick - lastFocusEventTick < 250)) {
+			Log("MCI_STOP: Suppressing focus-related stop spam.");
+			return 0;
+		}
 		// network version specific
 		if (isNetworkVersion && GetTickCount() - lastPlayTime < 1000) {
 			Log("Suppressed post-play stop");
