@@ -99,20 +99,7 @@ namespace WoWLauncher
             foreach (string deleteFile in deleteFiles) { if (File.Exists(deleteFile)) { File.Delete(deleteFile); } }
             // delete unnecessary directx folder and fles
             if (Directory.Exists("DIRECTX")) { Directory.Delete("DIRECTX", true); }
-            // check for smackw32.dll
-            if (!File.Exists("Smackw32.dll"))
-            {
-                if (File.Exists("WinSys\\Smackw32.dll"))
-                {
-                    File.Move("WinSys\\Smackw32.dll", "Smackw32.dll");
-                    Directory.Delete("WinSys", true);
-                }
-                else
-                {
-                    MessageBox.Show("Smackw32.dll is missing, what did you do with it?\n\nThe game will fail to run without Smackw32.dll get it back off the disc...");
-                    Environment.Exit(0);
-                }
-            }
+            if (Directory.Exists("WinSys")) { Directory.Delete("WinSys", true); }
             // delete old .smk movie files
             string[] folders = { "FMV", "FMV-Human" };
             foreach (string file in folders.Where(Directory.Exists).SelectMany(f => Directory.EnumerateFiles(f, "*.smk", SearchOption.TopDirectoryOnly))) { File.Delete(file); }
@@ -534,6 +521,17 @@ namespace WoWLauncher
         // music focus checkbox
         private void checkBox5_CheckedChanged(object sender, EventArgs e)
         {
+            if(checkBox2.Checked)
+            {
+                if (MessageBox.Show("Disable Full Screen to enable this feature.", "Full Screen Detected", MessageBoxButtons.YesNo) == DialogResult.No)
+                {
+                    checkBox5.CheckedChanged -= checkBox5_CheckedChanged!;
+                    checkBox5.Checked = false;
+                    checkBox5.CheckedChanged += checkBox5_CheckedChanged!;
+                    return;
+                }
+                checkBox2.Checked = false;
+            }
             if(checkBox5.Checked) { File.Move("no_music_focus.txt", "music_focus.txt"); }
             else { File.Move("music_focus.txt", "no_music_focus.txt"); }
         }
