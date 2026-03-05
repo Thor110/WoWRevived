@@ -17,6 +17,7 @@ WAVEHDR waveHdr = {};
 HGLOBAL hWaveData = NULL;
 FILE* logFile = nullptr;
 bool debug = true; // true for logging
+//bool musicFocus = (GetFileAttributesA("music_focus.txt") != INVALID_FILE_ATTRIBUTES); // allow music to continue playing while the window is out of focus
 
 // === Logging === //
 void Log(const char* fmt, ...)
@@ -24,6 +25,10 @@ void Log(const char* fmt, ...)
 	if (!debug) return;
 	if (!logFile) logFile = fopen("_inmm_log.txt", "w");
 	if (!logFile) return;
+
+	SYSTEMTIME st;
+	GetLocalTime(&st);
+	fprintf(logFile, "[%02d:%02d:%02d.%03d] : ", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
 
 	va_list args;
 	va_start(args, fmt);
@@ -108,7 +113,21 @@ uint32_t GetWavDuration(const char* filename) {
 void StopAudio() {
 	if (hWaveOut) {
 		waveOutReset(hWaveOut); // stops playback immediately
-		waveOutUnprepareHeader(hWaveOut, &waveHdr, sizeof(WAVEHDR));
+		// Wait for the driver to release the buffer
+		// If we don't wait here, GlobalFree will kill the memory 
+		// while wdmaud is still cleaning up its header list.
+		// Wait for driver to signal buffer completion
+		int timeout = 0;
+		while (!(waveHdr.dwFlags & WHDR_DONE) && timeout < 100) {
+			Sleep(1);
+			timeout++;
+		}
+
+		// Unprepare MUST happen before Close or Free
+		MMRESULT res = waveOutUnprepareHeader(hWaveOut, &waveHdr, sizeof(WAVEHDR));
+		if (res != MMSYSERR_NOERROR) Log("StopAudio: Unprepare failed: %d", res);
+		//
+		//waveOutUnprepareHeader(hWaveOut, &waveHdr, sizeof(WAVEHDR));
 		waveOutClose(hWaveOut);
 		hWaveOut = NULL;
 	}
