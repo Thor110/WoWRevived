@@ -52,7 +52,7 @@ bool isNetworkVersion = false;
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 	if (fdwReason == DLL_PROCESS_ATTACH) {
-		DeleteFileA("_inmm_log.txt");
+		if(debug) DeleteFileA("_inmm_log.txt");
 		char exeName[MAX_PATH];
 		GetModuleFileNameA(NULL, exeName, MAX_PATH);
 		isNetworkVersion = (strstr(exeName, "WoW_network") != NULL);
