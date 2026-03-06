@@ -134,6 +134,42 @@ Original Backround Menu
   <img src="images/menu-background-original.png" alt="Menu Background Original">
 </div>
 
+Custom Extended Backgrounds
+
+These are a work in-progress, AI (Gemini) was used to generate portions of the extended backgrounds, but they have undergone extensive editing.
+
+There is still a lot of cleanup left to do before these images are viable for use, but I have done my best to try and ensure that they are resolution agnostic and people using different resolutions won't miss out on much.
+
+CD Player Menu
+
+<div align="center">
+  <img src="images/custom-cd-player.png" alt="CD Player Menu">
+</div>
+
+Human Briefing Menu
+
+<div align="center">
+  <img src="images/custom-human-briefing.png" alt="Human Briefing Menu">
+</div>
+
+Human Research Menu
+
+<div align="center">
+  <img src="images/custom-human-research.png" alt="Human Research Menu">
+</div>
+
+Martian Briefing Menu
+
+<div align="center">
+  <img src="images/custom-martian-briefing.png" alt="Martian Briefing Menu">
+</div>
+
+Martian Research Menu
+
+<div align="center">
+  <img src="images/custom-martian-research.png" alt="Martian Research Menu">
+</div>
+
 Critical Event Options - Edited
 
 This was fixed by adding two leading spaces to the TEXT.ojd file for these entries.
@@ -218,8 +254,12 @@ A custom Smackw32.dll that intercepts the original smacker calls and replaces th
 
 ## Credit
 
-Thanks to old-games.ru and the author for the original executable patch and winmm.dll shim which I used as a basis for my own fix : https://www.old-games.ru/forum/threads/patchi-vozvraschajuschie-cd-audio-the-patchs-to-restore-cdda-playback.51778/#post-877625
+Thanks to old-games.ru and the author for the original executable patch and winmm.dll shim which I used as a reference for my own fixes : https://www.old-games.ru/forum/threads/patchi-vozvraschajuschie-cd-audio-the-patchs-to-restore-cdda-playback.51778/#post-877625
 
 Thanks to Dan Redfield for the Credits patch to the TEXT.ojd file which I then used as reference to patch the other languages versions of that file.
 
 Thanks to RetroKet for setting up and managing the Discord server as well as encouragement and helping identify some bytes in the .WoW archive format.
+
+Thanks to yereverluvinunclebert for creating the front of the filing cabinet drawer, which will be used in a future version for the expanded backgrounds : https://www.deviantart.com/yereverluvinuncleber/gallery
+
+Thanks to the Discord community for supporting the project and helping out with testing.
