@@ -103,7 +103,9 @@ The road map for this project.
 	- Simple 1920x1080 upscales of all the original videos which get scaled to the games resolution.
 	- Alt-Tab detection when in fullscreen used to close the game automatically to save the user time encountering an error.
 		- This is because alt-tabbing is broken in the game by default.
-- ❌ 9 : Decomp/Recomp ( Started - 1% Complete )
+- [❌ 9 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 50% Complete )
+	- Resolution agnostic custom backgrounds have been made but have yet to be finished.
+- ❌ 10 : Decomp/Recomp ( Started - 1% Complete )
 	- Begun mapping out virtual key addresses for use in the launchers custom keyboard shortcut settings. ( "WoWRevived\WoWDecomp\ida-map.txt" )
 
 This might not all happen but I wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
@@ -132,42 +134,6 @@ Original Backround Menu
 
 <div align="center">
   <img src="images/menu-background-original.png" alt="Menu Background Original">
-</div>
-
-Custom Extended Backgrounds
-
-These are a work in-progress, AI (Gemini) was used to generate portions of the extended backgrounds, but they have undergone extensive editing.
-
-There is still a lot of cleanup left to do before these images are viable for use, but I have done my best to try and ensure that they are resolution agnostic and people using different resolutions won't miss out on much.
-
-CD Player Menu
-
-<div align="center">
-  <img src="images/custom-cd-player.png" alt="CD Player Menu">
-</div>
-
-Human Briefing Menu
-
-<div align="center">
-  <img src="images/custom-human-briefing.png" alt="Human Briefing Menu">
-</div>
-
-Human Research Menu
-
-<div align="center">
-  <img src="images/custom-human-research.png" alt="Human Research Menu">
-</div>
-
-Martian Briefing Menu
-
-<div align="center">
-  <img src="images/custom-martian-briefing.png" alt="Martian Briefing Menu">
-</div>
-
-Martian Research Menu
-
-<div align="center">
-  <img src="images/custom-martian-research.png" alt="Martian Research Menu">
 </div>
 
 Critical Event Options - Edited
@@ -251,6 +217,42 @@ A text editor that makes it easy to adjust any entry in the TEXT.ojd file.
 A custom Smackw32.dll that intercepts the original smacker calls and replaces them with a more modern system for playing the newly upscaled videos.
 
 ![Video Playback Intercept](images/wrapper.png)
+
+## Custom Extended Backgrounds
+
+These are a work in-progress, AI (Gemini) was used to generate portions of the extended backgrounds, but they have undergone extensive editing.
+
+There is still a lot of cleanup left to do before these images are viable for use, but I have done my best to try and ensure that they are resolution agnostic and people using different resolutions won't miss out on much.
+
+CD Player Menu
+
+<div align="center">
+  <img src="images/custom-cd-player.png" alt="CD Player Menu">
+</div>
+
+Human Briefing Menu
+
+<div align="center">
+  <img src="images/custom-human-briefing.png" alt="Human Briefing Menu">
+</div>
+
+Human Research Menu
+
+<div align="center">
+  <img src="images/custom-human-research.png" alt="Human Research Menu">
+</div>
+
+Martian Briefing Menu
+
+<div align="center">
+  <img src="images/custom-martian-briefing.png" alt="Martian Briefing Menu">
+</div>
+
+Martian Research Menu
+
+<div align="center">
+  <img src="images/custom-martian-research.png" alt="Martian Research Menu">
+</div>
 
 ## Credit
 
