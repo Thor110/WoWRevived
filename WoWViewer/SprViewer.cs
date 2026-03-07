@@ -24,18 +24,18 @@ namespace WoWViewer
         {
             // Palette Index OBJ.ojd
             /*  0 */ "HW.PAL",      // UNUSED?
-            /*  1 */ "MW.PAL",  // VERIFIED (bld_mark.spr)
+            /*  1 */ "BM.PAL",  // VERIFIED (bld_mark.spr)
             /*  2 */ "HB.PAL",      //WOF files
-            /*  3 */ "MB.PAL",      //WOF files
-            /*  4 */ "HR.PAL",      //IOB files
-            /*  5 */ "MR.PAL",  // VERIFIED (selcurs.spr)
-            /*  6 */ "BM.PAL",  // VERIFIED (HWM.SPR)
-            /*  7 */ "F1.PAL",  // VERIFIED (RES_LAMP.SPR)
-            /*  8 */ "F5.PAL",  // VERIFIED (HU_BRIEF.SPR)
+            /*  3 */ "BM.PAL",      //WOF files
+            /*  4 */ "BM.PAL",      //IOB files
+            /*  5 */ "HW.PAL",  // VERIFIED (selcurs.spr)
+            /*  6 */ "HW.PAL",  // VERIFIED (HWM.SPR)
+            /*  7 */ "HR.PAL",  // VERIFIED (RES_LAMP.SPR)
+            /*  8 */ "HB.PAL",  // VERIFIED (HU_BRIEF.SPR)
             /*  9 */ "F3.PAL",  // VERIFIED (ragelogo.spr)
-            /* 10 */ "F4.PAL",  // VERIFIED (bomb.spr)
-            /* 11 */ "F5.PAL",      // UNVERIFIED (mush64.spr) (multi-frame)
-            /* 12 */ "F1.PAL",  // VERIFIED (LEGAL.spr)         RENDERS COLOURS CORRECTLY
+            /* 10 */ "BM.PAL",  // VERIFIED (bomb.spr)
+            /* 11 */ "BM.PAL",      // UNVERIFIED (mush64.spr) (multi-frame)
+            /* 12 */ "BM.PAL",  // VERIFIED (LEGAL.spr)         RENDERS COLOURS CORRECTLY
             /* 13 */ "F2.PAL",  // VERIFIED (SEPIATIT.spr)      RENDERS COLOURS CORRECTLY
             /* 14 */ "F3.PAL",  // VERIFIED (CREDITS.spr)
             /* 15 */ "F4.PAL",  // VERIFIED (gtlogo.spr)
@@ -43,7 +43,7 @@ namespace WoWViewer
             /* 17 */ "F6.PAL",  // VERIFIED (humanbd.SPR)
             /* 18 */ "F7.PAL",  // VERIFIED (martbd.spr)
             /* 19 */ "SE.PAL",  // VERIFIED (gtlogo.spr)
-            /* 20 */ "F1.PAL",      // UNVERIFIED (TWINK1.SPR) (multi-frame)
+            /* 20 */ "BM.PAL",      // UNVERIFIED (TWINK1.SPR) (multi-frame)
             /* 21 */ "F1.PAL",      // UNUSED?
             /* 22 */ "CD.PAL",  // VERIFIED (CD_SEP1.spr)
             /* 23 */ "CD.PAL",  // VERIFIED (cd_BD1.spr)

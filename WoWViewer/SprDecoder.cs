@@ -145,6 +145,7 @@ namespace WoWViewer
                 byte palIndex = sprData[dataPos];
                 byte count = sprData[dataPos + 1];
                 dataPos += 2;
+                if (count == 0) continue;
 
                 Color c;
                 if (palIndex == 0) { c = Color.Transparent; }
