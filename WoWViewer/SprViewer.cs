@@ -35,7 +35,7 @@ namespace WoWViewer
             /*  9 */ "F3.PAL",  // VERIFIED (ragelogo.spr)
             /* 10 */ "BM.PAL",  // VERIFIED (bomb.spr)
             /* 11 */ "BM.PAL",      // UNVERIFIED (mush64.spr) (multi-frame)
-            /* 12 */ "BM.PAL",  // VERIFIED (LEGAL.spr)         RENDERS COLOURS CORRECTLY
+            /* 12 */ "F1.PAL",  // VERIFIED (LEGAL.spr)         RENDERS COLOURS CORRECTLY
             /* 13 */ "F2.PAL",  // VERIFIED (SEPIATIT.spr)      RENDERS COLOURS CORRECTLY
             /* 14 */ "F3.PAL",  // VERIFIED (CREDITS.spr)
             /* 15 */ "F4.PAL",  // VERIFIED (gtlogo.spr)
@@ -78,6 +78,17 @@ namespace WoWViewer
             { "CD_BD5.SPR",  "CD5"  }, { "CD_BD6.SPR", "CD6" },
             { "CD_BD7.SPR",  "CD7"  },
         };
+        private static readonly Dictionary<string, string> SpritePalOverrides = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "CDNEXTBT.SPR",  "CD.PAL" }, { "CDPREVBT.SPR", "CD.PAL" },
+            { "CDPLAYBT.SPR",  "CD.PAL" }, { "CDSTOPBT.SPR", "CD.PAL" },
+            { "CDPAUSBT.SPR",  "CD.PAL" }, { "CDFFWDBT.SPR", "CD.PAL" },
+            { "CDRWEDBT.SPR",  "CD.PAL" }, { "CDBTALPH.SPR",  "CD.PAL" },
+            { "CD_HL.SPR",     "CD.PAL" }, { "cdhead.spr",    "CD.PAL" },
+            { "cdttralp.SPR",  "CD.PAL" }, { "CD_TRALP.SPR",  "CD.PAL" },
+            { "cdbtrAlp.SPR",  "CD.PAL" }, { "CD_DTALP.SPR",  "CD.PAL" },
+            { "CDTMALPH.SPR",  "CD.PAL" },
+        };
         public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps, string output)
         {
             InitializeComponent();
@@ -117,7 +128,14 @@ namespace WoWViewer
                 if (!entry.Name.EndsWith(".spr", StringComparison.OrdinalIgnoreCase)) { continue; }
                 string key = Path.GetFileName(entry.Name).ToUpperInvariant();
                 if (_sprToPal.ContainsKey(key)) { continue; } // first occurrence wins
-                if (entry.PalSlot < PalSlots.Length) { _sprToPal[key] = PalSlots[entry.PalSlot]!; }
+                if (SpritePalOverrides.TryGetValue(key, out string? overridePal))
+                {
+                    _sprToPal[key] = overridePal;
+                }
+                if (entry.PalSlot < PalSlots.Length)
+                {
+                    _sprToPal[key] = PalSlots[entry.PalSlot]!;
+                }
             }
         }
         // Build sprite -> shader filename map.
