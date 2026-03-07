@@ -188,18 +188,14 @@ namespace WoWViewer
         }// Select the shader for the current sprite from the already-loaded entries.
         private void TryAutoSelectShader()
         {
-            if (!checkBox1.Checked) { shadeData = null; return; }
+            if (!checkBox1.Checked) { return; }
             string key = Path.GetFileName(selectedEntry).ToUpperInvariant();
             if (!_sprToShader.TryGetValue(key, out string? shaderName)) { shadeData = null; return; }
-            var shlEntry = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase));
-            if (shlEntry == null) { shadeData = null; return; }
-            // Structure: byte[0] = number of shade levels N, then N*256 bytes.
-            // Level 0 = fully lit. Set shadeData BEFORE touching the listbox so the
-            // SelectedIndexChanged event cannot fire and overwrite it with the unsliced file.
-            shadeData = (shlEntry.Data!.Length >= 257) ? shlEntry.Data![1..257] : null;
-            listBox3.SelectedIndexChanged -= listBox3_SelectedIndexChanged!;
+            byte[] raw = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data!;
             listBox3.SelectedIndex = listBox3.FindStringExact(shaderName);
-            listBox3.SelectedIndexChanged += listBox3_SelectedIndexChanged!;
+            // Structure: byte[0] = number of shade levels N, then N*256 bytes.
+            // Level 0 = fully lit. Extract as a 256-byte remap table.
+            shadeData = (raw.Length >= 257) ? raw[1..257] : null;
         }
         // populate palettes from DAT\\Dat.wow when reading MAPS.WoW
         private void PopulatePalettes()
@@ -324,7 +320,7 @@ namespace WoWViewer
             using var ofd = new OpenFileDialog { Filter = "PNG Image|*.png", Title = "Select a replacement to encode" };
             if (ofd.ShowDialog() != DialogResult.OK) { return; }
             var bmp = new Bitmap(ofd.FileName);
-            byte[] indices = QuantiseToPalette(bmp, palData);
+            byte[] indices = QuantiseToPalette(bmp, palData, shadeData);
             byte[] encoded = SprEncoder.Encode(indices, bmp.Width, bmp.Height);
             string outPath = Path.Combine(baseFolder, selectedEntry);
             if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) { return; }
@@ -332,18 +328,21 @@ namespace WoWViewer
             pictureBox1.Image = bmp;
             MessageBox.Show("Encoded and saved.");
         }
-        // Quantise each pixel of bmp to the nearest raw palette index.
+        // Quantise each pixel of bmp to the nearest available palette index.
         //
-        // SPR files always store raw palette indices - shaders are a runtime concern.
-        // The export PNG is rendered with the raw palette (no shader) so colours match
-        // exactly, giving a byte-perfect round-trip.
+        // When shadeData is null (no shader active):
+        //   Search palette entries 1-255 directly. Store the winning index i.
+        //   Round-trip: stored i -> pal[i] -> displayed colour.
         //
-        // Iterates 255->1 so duplicate palette entries resolve to the higher index,
-        // matching how the original SPR files were authored.
+        // When shadeData is active:
+        //   The engine displays pal[shadeData[i]] for stored index i, not pal[i].
+        //   So we search over pre-remap indices i, evaluate the displayed colour
+        //   pal[shadeData[i]], find the nearest match, and store i (not shadeData[i]).
+        //   Many pre-remap indices may map to the same post-remap colour; the search
+        //   handles this correctly by finding whichever i produces the closest result.
         //
-        // Colour expansion uses (v<<2)|(v>>4) to exactly match SprDecoder.
         // Index 0 is always transparent and is never stored for opaque pixels.
-        private static byte[] QuantiseToPalette(Bitmap bmp, byte[] palData)
+        private static byte[] QuantiseToPalette(Bitmap bmp, byte[] palData, byte[]? shadeData)
         {
             int w = bmp.Width, h = bmp.Height;
             byte[] indices = new byte[w * h];
@@ -355,12 +354,13 @@ namespace WoWViewer
                     if (c.A < 128) { indices[y * w + x] = 0; continue; } // transparent -> index 0
                     byte best = 1;
                     int bestErr = int.MaxValue;
-                    for (int i = 1; i < 256; i++) // low-to-high: matches original SPR authoring
+                    for (int i = 1; i < 256; i++) // skip index 0 (transparent)
                     {
-                        int p = i * 3;
-                        int r = (palData[p] << 2) | (palData[p] >> 4);
-                        int g = (palData[p + 1] << 2) | (palData[p + 1] >> 4);
-                        int b = (palData[p + 2] << 2) | (palData[p + 2] >> 4);
+                        // Resolve which palette entry this pre-remap index displays as.
+                        int palIdx = (shadeData != null) ? shadeData[i] : i;
+                        int r = palData[palIdx * 3] * 4;
+                        int g = palData[palIdx * 3 + 1] * 4;
+                        int b = palData[palIdx * 3 + 2] * 4;
                         int err = (c.R - r) * (c.R - r)
                                 + (c.G - g) * (c.G - g)
                                 + (c.B - b) * (c.B - b);
@@ -374,13 +374,8 @@ namespace WoWViewer
         // export selected sprite/frame
         private void button2_Click(object sender, EventArgs e)
         {
-            //string name = (SprDecoder.ReadInfo(rawData).TableCount != 1) ? comboBox1.Text : Path.GetFileNameWithoutExtension(selectedEntry);
-            //pictureBox1.Image.Save(Path.Combine(outputPath, name + ".png"), ImageFormat.Png);
-            //MessageBox.Show($"{name}.png exported.");
-
             string name = (SprDecoder.ReadInfo(rawData).TableCount != 1) ? comboBox1.Text : Path.GetFileNameWithoutExtension(selectedEntry);
-            using Bitmap exported = SprDecoder.Render(rawData, palData, shadeData: null, frame: currentFrame);
-            exported.Save(Path.Combine(outputPath, name + ".png"), ImageFormat.Png);
+            pictureBox1.Image.Save(Path.Combine(outputPath, name + ".png"), ImageFormat.Png);
             MessageBox.Show($"{name}.png exported.");
         }
         // export all sprites
@@ -453,9 +448,7 @@ namespace WoWViewer
         private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
             string shaderName = listBox3.SelectedItem!.ToString()!;
-            byte[] raw = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data!;
-            // SHL: byte[0]=level count, bytes[1..256]=level-0 remap (fully lit).
-            shadeData = (raw.Length >= 257) ? raw[1..257] : null;
+            shadeData = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data!;
             RenderCurrent();
         }
     }
