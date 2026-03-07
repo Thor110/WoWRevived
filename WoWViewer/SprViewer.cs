@@ -321,7 +321,7 @@ namespace WoWViewer
             using var ofd = new OpenFileDialog { Filter = "PNG Image|*.png", Title = "Select a replacement to encode" };
             if (ofd.ShowDialog() != DialogResult.OK) { return; }
             var bmp = new Bitmap(ofd.FileName);
-            byte[] indices = QuantiseToPalette(bmp, palData, null);
+            byte[] indices = QuantiseToPalette(bmp, palData, (checkBox1.Checked) ? shadeData : null);
             byte[] encoded = SprEncoder.Encode(indices, bmp.Width, bmp.Height);
             string outPath = Path.Combine(baseFolder, selectedEntry);
             if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) { return; }
