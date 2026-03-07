@@ -191,11 +191,14 @@ namespace WoWViewer
             if (!checkBox1.Checked) { return; }
             string key = Path.GetFileName(selectedEntry).ToUpperInvariant();
             if (!_sprToShader.TryGetValue(key, out string? shaderName)) { shadeData = null; return; }
-            byte[] raw = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data!;
+            byte[] shaderEntry = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data!;
             listBox3.SelectedIndex = listBox3.FindStringExact(shaderName);
             // Structure: byte[0] = number of shade levels N, then N*256 bytes.
             // Level 0 = fully lit. Extract as a 256-byte remap table.
-            shadeData = (raw.Length >= 257) ? raw[1..257] : null;
+            shadeData = (shaderEntry.Length >= 257) ? shaderEntry[1..257] : null;
+            listBox3.SelectedIndexChanged -= listBox3_SelectedIndexChanged!;
+            listBox3.SelectedIndex = listBox3.FindStringExact(shaderName);
+            listBox3.SelectedIndexChanged += listBox3_SelectedIndexChanged!;
         }
         // populate palettes from DAT\\Dat.wow when reading MAPS.WoW
         private void PopulatePalettes()
@@ -448,7 +451,8 @@ namespace WoWViewer
         private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
             string shaderName = listBox3.SelectedItem!.ToString()!;
-            shadeData = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data!;
+            byte[] raw = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data!;
+            shadeData = (raw.Length >= 257) ? raw[1..257] : null;
             RenderCurrent();
         }
     }
