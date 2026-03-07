@@ -166,7 +166,6 @@ namespace WoWViewer
             {
                 string key = Path.GetFileName(entry.Name).ToUpperInvariant();
                 if (_sprToPal.ContainsKey(key)) { continue; }
-
                 if (key.StartsWith("HMIN")) { _sprToPal[key] = "HW.PAL"; }
                 else if (key.StartsWith("MMIN")) { _sprToPal[key] = "MW.PAL"; }
             }
@@ -192,7 +191,6 @@ namespace WoWViewer
             string key = Path.GetFileName(selectedEntry).ToUpperInvariant();
             if (!_sprToShader.TryGetValue(key, out string? shaderName)) { shadeData = null; return; }
             byte[] shaderEntry = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data!;
-            listBox3.SelectedIndex = listBox3.FindStringExact(shaderName);
             // Structure: byte[0] = number of shade levels N, then N*256 bytes.
             // Level 0 = fully lit. Extract as a 256-byte remap table.
             shadeData = (shaderEntry.Length >= 257) ? shaderEntry[1..257] : null;
@@ -323,12 +321,14 @@ namespace WoWViewer
             using var ofd = new OpenFileDialog { Filter = "PNG Image|*.png", Title = "Select a replacement to encode" };
             if (ofd.ShowDialog() != DialogResult.OK) { return; }
             var bmp = new Bitmap(ofd.FileName);
-            byte[] indices = QuantiseToPalette(bmp, palData, shadeData);
+            byte[] indices = QuantiseToPalette(bmp, palData, null);
             byte[] encoded = SprEncoder.Encode(indices, bmp.Width, bmp.Height);
             string outPath = Path.Combine(baseFolder, selectedEntry);
             if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) { return; }
             File.WriteAllBytes(outPath, encoded);
-            pictureBox1.Image = bmp;
+            (isMaps ? palettes : entries).First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
+            rawData = encoded;
+            RenderCurrent();
             MessageBox.Show("Encoded and saved.");
         }
         // Quantise each pixel of bmp to the nearest available palette index.
