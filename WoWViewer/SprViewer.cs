@@ -22,42 +22,46 @@ namespace WoWViewer
         private byte[]? shadeData;   // active shade remap table (level 0, 256 bytes), null = identity
         private static readonly string?[] PalSlots =
         {
-            // Palette Index OBJ.ojd
+            // Palette slot index from OBJ.ojd extra word field.
+            // Confirmed via IDA analysis of sub_40B6C0 (LoadShadeTables) and sub_40B520 (slot registration).
             /*  0 */ "HW.PAL",      // UNUSED?
-            /*  1 */ "BM.PAL",  // VERIFIED (bld_mark.spr)
-            /*  2 */ "HB.PAL",      //WOF files
-            /*  3 */ "BM.PAL",      //WOF files
-            /*  4 */ "BM.PAL",      //IOB files
-            /*  5 */ "HW.PAL",  // VERIFIED (selcurs.spr)
-            /*  6 */ "HW.PAL",  // VERIFIED (HWM.SPR)
-            /*  7 */ "HR.PAL",  // VERIFIED (RES_LAMP.SPR)
-            /*  8 */ "HB.PAL",  // VERIFIED (HU_BRIEF.SPR)
-            /*  9 */ "F3.PAL",  // VERIFIED (ragelogo.spr)
-            /* 10 */ "BM.PAL",  // VERIFIED (bomb.spr)
-            /* 11 */ "BM.PAL",      // UNVERIFIED (mush64.spr) (multi-frame)
-            /* 12 */ "F1.PAL",  // VERIFIED (LEGAL.spr)         RENDERS COLOURS CORRECTLY
-            /* 13 */ "F2.PAL",  // VERIFIED (SEPIATIT.spr)      RENDERS COLOURS CORRECTLY
-            /* 14 */ "F3.PAL",  // VERIFIED (CREDITS.spr)
-            /* 15 */ "F4.PAL",  // VERIFIED (gtlogo.spr)
-            /* 16 */ "F5.PAL",  // VERIFIED (legal1.spr)
-            /* 17 */ "F6.PAL",  // VERIFIED (humanbd.SPR)
-            /* 18 */ "F7.PAL",  // VERIFIED (martbd.spr)
-            /* 19 */ "SE.PAL",  // VERIFIED (gtlogo.spr)
-            /* 20 */ "BM.PAL",      // UNVERIFIED (TWINK1.SPR) (multi-frame)
+            /*  1 */ "BM.PAL",      // VERIFIED (bld_mark.spr, stlamp.spr) - IDA: BMMB shader
+            /*  2 */ "HB.PAL",      // WOF files
+            /*  3 */ "BM.PAL",      // WOF files
+            /*  4 */ "BM.PAL",      // IOB files
+            /*  5 */ "HW.PAL",      // VERIFIED (selcurs.spr) - runtime context slot, world default
+            /*  6 */ "HW.PAL",      // VERIFIED (HWM.SPR) - IDA: %sW%sW world shader
+            /*  7 */ "HR.PAL",      // VERIFIED (RES_LAMP.SPR, RES_EXIT.SPR) - IDA: %sR%sI radar
+            /*  8 */ "HB.PAL",      // VERIFIED (HU_BRIEF.SPR) - IDA: %sB%sI blue illumination
+            /*  9 */ "F3.PAL",      // VERIFIED (ragelogo.spr) - runtime context slot, F3 default
+            /* 10 */ "BM.PAL",      // VERIFIED (bomb.spr, ripple.spr) - IDA: BMMV shader
+            /* 11 */ "BM.PAL",      // UNVERIFIED (mush64.spr, basicm64.spr) - IDA: LANDR shader
+            /* 12 */ "F1.PAL",      // VERIFIED (LEGAL.spr, TITLEFMV.spr) - IDA: F1%sI shader
+            /* 13 */ "F2.PAL",      // VERIFIED (SEPIATIT.spr)
+            /* 14 */ "F3.PAL",      // VERIFIED (CREDITS.spr, topfade.spr)
+            /* 15 */ "F4.PAL",      // VERIFIED (gtlogo.spr lowercase)
+            /* 16 */ "F5.PAL",      // VERIFIED (legal1.spr, legal2.spr)
+            /* 17 */ "F6.PAL",      // VERIFIED (humanbd.spr)
+            /* 18 */ "F7.PAL",      // VERIFIED (martbd.spr)
+            /* 19 */ "SE.PAL",      // VERIFIED (gtlogo.spr uppercase) - SE.PAL == F1.PAL main palette
+            /* 20 */ "BM.PAL",      // UNVERIFIED (TWINK1.SPR, W_FROTH.SPR) - IDA: %sMINIB shader
             /* 21 */ "F1.PAL",      // UNUSED?
-            /* 22 */ "CD.PAL",  // VERIFIED (CD_SEP1.spr)
-            /* 23 */ "CD.PAL",  // VERIFIED (cd_BD1.spr)
-            /* 24 */ "CD.PAL",  // VERIFIED (cd_BD2.spr)
-            /* 25 */ "CD.PAL",  // VERIFIED (cd_BD3.spr)
-            /* 26 */ "CD.PAL",  // VERIFIED (cd_BD4.spr)
-            /* 27 */ "CD.PAL",  // VERIFIED (cd_BD5.spr)
-            /* 28 */ "CD.PAL",  // VERIFIED (cd_BD6.spr)
-            /* 29 */ "CD.PAL",  // VERIFIED (cd_BD7.spr)
+            /* 22 */ "CD.PAL",      // VERIFIED (CD_SEP1.spr)
+            /* 23 */ "CD.PAL",      // VERIFIED (cd_BD1.spr)
+            /* 24 */ "CD.PAL",      // VERIFIED (cd_BD2.spr)
+            /* 25 */ "CD.PAL",      // VERIFIED (cd_BD3.spr)
+            /* 26 */ "CD.PAL",      // VERIFIED (cd_BD4.spr)
+            /* 27 */ "CD.PAL",      // VERIFIED (cd_BD5.spr)
+            /* 28 */ "CD.PAL",      // VERIFIED (cd_BD6.spr)
+            /* 29 */ "CD.PAL",      // VERIFIED (cd_BD7.spr)
         };
+
         // Rule confirmed from IDA: .text:0040C452 push offset aDatF1f1S ; "dat\\F1F1.%s"
         // Strip ".PAL", double the two-letter prefix -> shader stem.
         // BM.PAL has no BMBM; use BMGI (general illumination) as closest equivalent.
-        // CD sprites use individually named shaders, handled via SpriteShaderOverrides.
+        // CD sprites (slots 22-29) use individually named shaders via SpriteShaderOverrides.
+        // HMIN/MMIN map tiles use no shader (fallback at 0x4A954C is 4 null bytes).
+        // CD.PAL player UI buttons use no shader (no entry here, no SpriteShaderOverride).
         private static readonly Dictionary<string, string> PalToShaderStem = new(StringComparer.OrdinalIgnoreCase)
         {
             { "HW.PAL", "HWHW" }, { "MW.PAL", "MWMW" }, { "HB.PAL", "HBHB" },
@@ -69,7 +73,8 @@ namespace WoWViewer
             { "F7.PAL", "F7F7" },
         };
 
-        // Per-sprite shader overrides for CD content.
+        // Per-sprite shader overrides. Takes priority over PalToShaderStem.
+        // Used for CD FMV backdrop sprites which have individually named shade tables.
         private static readonly Dictionary<string, string> SpriteShaderOverrides = new(StringComparer.OrdinalIgnoreCase)
         {
             { "CD_SEP1.SPR", "CDSEPIA" },
@@ -78,15 +83,23 @@ namespace WoWViewer
             { "CD_BD5.SPR",  "CD5"  }, { "CD_BD6.SPR", "CD6" },
             { "CD_BD7.SPR",  "CD7"  },
         };
+
+        // Per-sprite palette overrides. Takes priority over PalSlots.
+        // Used for sprites whose OBJ.ojd slot is a shared runtime-overwritten context
+        // that doesn't reflect the palette they actually render against in the game.
         private static readonly Dictionary<string, string> SpritePalOverrides = new(StringComparer.OrdinalIgnoreCase)
         {
-            { "CDNEXTBT.SPR",  "CD.PAL" }, { "CDPREVBT.SPR", "CD.PAL" },
-            { "CDPLAYBT.SPR",  "CD.PAL" }, { "CDSTOPBT.SPR", "CD.PAL" },
-            { "CDPAUSBT.SPR",  "CD.PAL" }, { "CDFFWDBT.SPR", "CD.PAL" },
+            // CD player UI control buttons are in slot 9 (shared F3/context slot) but
+            // are rendered against CD.PAL at runtime when the CD player screen is active.
+            // These have no SpriteShaderOverride so they get no shader (identity), which
+            // is correct: the fallback shader path at 0x4A954C for this context is null.
+            { "CDNEXTBT.SPR",  "CD.PAL" }, { "CDPREVBT.SPR",  "CD.PAL" },
+            { "CDPLAYBT.SPR",  "CD.PAL" }, { "CDSTOPBT.SPR",  "CD.PAL" },
+            { "CDPAUSBT.SPR",  "CD.PAL" }, { "CDFFWDBT.SPR",  "CD.PAL" },
             { "CDRWEDBT.SPR",  "CD.PAL" }, { "CDBTALPH.SPR",  "CD.PAL" },
-            { "CD_HL.SPR",     "CD.PAL" }, { "cdhead.spr",    "CD.PAL" },
-            { "cdttralp.SPR",  "CD.PAL" }, { "CD_TRALP.SPR",  "CD.PAL" },
-            { "cdbtrAlp.SPR",  "CD.PAL" }, { "CD_DTALP.SPR",  "CD.PAL" },
+            { "CD_HL.SPR",     "CD.PAL" }, { "CDHEAD.SPR",    "CD.PAL" },
+            { "CDTTRALP.SPR",  "CD.PAL" }, { "CD_TRALP.SPR",  "CD.PAL" },
+            { "CDBTRALP.SPR",  "CD.PAL" }, { "CD_DTALP.SPR",  "CD.PAL" },
             { "CDTMALPH.SPR",  "CD.PAL" },
         };
         public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps, string output)
@@ -122,20 +135,40 @@ namespace WoWViewer
         // build spr palette map from OBJ.ojd file
         private void BuildSprPalMap()
         {
-            if (!File.Exists("OBJ.ojd")) { MessageBox.Show("OBJ.ojd file is missing."); return; }
-            foreach (var entry in OJDParser.ParseOJDFile())
+            if (!isMaps)
             {
-                if (!entry.Name.EndsWith(".spr", StringComparison.OrdinalIgnoreCase)) { continue; }
+                // DAT sprites: palette assignments sourced from OBJ.ojd.
+                if (!File.Exists("OBJ.ojd")) { MessageBox.Show("OBJ.ojd file is missing."); return; }
+                foreach (var entry in OJDParser.ParseOJDFile())
+                {
+                    if (!entry.Name.EndsWith(".spr", StringComparison.OrdinalIgnoreCase)) { continue; }
+                    string key = Path.GetFileName(entry.Name).ToUpperInvariant();
+                    if (_sprToPal.ContainsKey(key)) { continue; } // first occurrence wins
+
+                    // Per-sprite override takes priority over the slot table.
+                    if (SpritePalOverrides.TryGetValue(key, out string? overridePal))
+                    {
+                        _sprToPal[key] = overridePal;
+                    }
+                    else if (entry.PalSlot < PalSlots.Length && PalSlots[entry.PalSlot] != null)
+                    {
+                        _sprToPal[key] = PalSlots[entry.PalSlot]!;
+                    }
+                }
+                return;
+            }
+
+            // Maps sprites: not in OBJ.ojd, assigned by filename prefix.
+            // sub_4A1F90 confirmed: HMIN* uses HW.PAL context, MMIN* uses MW.PAL context.
+            // Fallback shader at 0x4A954C is 4 null bytes -> no shader for map tiles.
+            // Other maps sprites (if any) are left unmapped for manual palette selection.
+            foreach (var entry in entries.Where(e => e.Name.EndsWith(".SPR", StringComparison.OrdinalIgnoreCase)))
+            {
                 string key = Path.GetFileName(entry.Name).ToUpperInvariant();
-                if (_sprToPal.ContainsKey(key)) { continue; } // first occurrence wins
-                if (SpritePalOverrides.TryGetValue(key, out string? overridePal))
-                {
-                    _sprToPal[key] = overridePal;
-                }
-                if (entry.PalSlot < PalSlots.Length)
-                {
-                    _sprToPal[key] = PalSlots[entry.PalSlot]!;
-                }
+                if (_sprToPal.ContainsKey(key)) { continue; }
+
+                if (key.StartsWith("HMIN")) { _sprToPal[key] = "HW.PAL"; }
+                else if (key.StartsWith("MMIN")) { _sprToPal[key] = "MW.PAL"; }
             }
         }
         // Build sprite -> shader filename map.
@@ -287,7 +320,7 @@ namespace WoWViewer
             using var ofd = new OpenFileDialog { Filter = "PNG Image|*.png", Title = "Select a replacement to encode" };
             if (ofd.ShowDialog() != DialogResult.OK) { return; }
             var bmp = new Bitmap(ofd.FileName);
-            byte[] indices = QuantiseToPalette(bmp, palData);
+            byte[] indices = QuantiseToPalette(bmp, palData, shadeData);
             byte[] encoded = SprEncoder.Encode(indices, bmp.Width, bmp.Height);
             string outPath = Path.Combine(baseFolder, selectedEntry);
             if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) { return; }
@@ -295,27 +328,39 @@ namespace WoWViewer
             pictureBox1.Image = bmp;
             MessageBox.Show("Encoded and saved.");
         }
-        private static byte[] QuantiseToPalette(Bitmap bmp, byte[] palData)
+        // Quantise each pixel of bmp to the nearest available palette index.
+        //
+        // When shadeData is null (no shader active):
+        //   Search palette entries 1-255 directly. Store the winning index i.
+        //   Round-trip: stored i -> pal[i] -> displayed colour.
+        //
+        // When shadeData is active:
+        //   The engine displays pal[shadeData[i]] for stored index i, not pal[i].
+        //   So we search over pre-remap indices i, evaluate the displayed colour
+        //   pal[shadeData[i]], find the nearest match, and store i (not shadeData[i]).
+        //   Many pre-remap indices may map to the same post-remap colour; the search
+        //   handles this correctly by finding whichever i produces the closest result.
+        //
+        // Index 0 is always transparent and is never stored for opaque pixels.
+        private static byte[] QuantiseToPalette(Bitmap bmp, byte[] palData, byte[]? shadeData)
         {
             int w = bmp.Width, h = bmp.Height;
             byte[] indices = new byte[w * h];
-
             for (int y = 0; y < h; y++)
             {
                 for (int x = 0; x < w; x++)
                 {
                     Color c = bmp.GetPixel(x, y);
-
-                    // Transparent pixels → index 0 (engine treats 0 as transparent).
-                    if (c.A < 128) { indices[y * w + x] = 0; continue; }
-
+                    if (c.A < 128) { indices[y * w + x] = 0; continue; } // transparent -> index 0
                     byte best = 1;
                     int bestErr = int.MaxValue;
-                    for (int i = 1; i < 256; i++)   // skip 0 (transparent)
+                    for (int i = 1; i < 256; i++) // skip index 0 (transparent)
                     {
-                        int r = palData[i * 3] * 4;
-                        int g = palData[i * 3 + 1] * 4;
-                        int b = palData[i * 3 + 2] * 4;
+                        // Resolve which palette entry this pre-remap index displays as.
+                        int palIdx = (shadeData != null) ? shadeData[i] : i;
+                        int r = palData[palIdx * 3] * 4;
+                        int g = palData[palIdx * 3 + 1] * 4;
+                        int b = palData[palIdx * 3 + 2] * 4;
                         int err = (c.R - r) * (c.R - r)
                                 + (c.G - g) * (c.G - g)
                                 + (c.B - b) * (c.B - b);
