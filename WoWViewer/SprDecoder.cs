@@ -220,22 +220,5 @@ namespace WoWViewer
                 for (int i = 0; i < count && x < width; i++, x++) { bmp.SetPixel(x, row, c); }
             }
         }
-
-        private static bool IsSorted(int[] arr)
-        {
-            for (int i = 1; i < arr.Length; i++) { if (arr[i] <= arr[i - 1]) { return false; } }
-            return true;
-        }
-
-        private static int CountPixels(byte[] data, int pos, int width)
-        {
-            int x = 0;
-            while (x < width && pos + 1 < data.Length)
-            {
-                x += data[pos + 1];
-                pos += 2;
-            }
-            return x;
-        }
     }
 }

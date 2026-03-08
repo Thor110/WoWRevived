@@ -82,6 +82,13 @@ namespace WoWViewer
             { "CD_BD3.SPR",  "CD3"  }, { "CD_BD4.SPR", "CD4" },
             { "CD_BD5.SPR",  "CD5"  }, { "CD_BD6.SPR", "CD6" },
             { "CD_BD7.SPR",  "CD7"  },
+            { "MARTNFMV.SPR",  "F1F1"  },
+            { "HUMANFMV.SPR",  "F1F1"  },
+            { "LEGAL.SPR",  "F1F1"  },
+            { "SEPIATIT.SPR",  "F1F1"  },
+            { "TITLEFMV.SPR",  "F1F1"  },
+            { "martbd.spr",  "F7F7"  },
+            { "ma_brief.spr", "MBMB" }
             // CD8/9/10 shaders exist in DAT but no corresponding artwork sprites were shipped.
             // Originally 10 CD covers were clearly planned.
             // { "CD_BD8.SPR", "CD8" }, { "CD_BD9.SPR", "CD9" }, { "CD_BD10.SPR", "CD10" },
@@ -123,7 +130,7 @@ namespace WoWViewer
             {
                 if (!File.Exists("DAT\\Dat.wow"))
                 {
-                    MessageBox.Show("Where is DAT\\Dat.wow? Palette data is stored there.");
+                    MessageBox.Show("Where is DAT\\Dat.wow? Palette data and shader tables are stored there!");
                     this.Load += (s, e) => this.Close();
                     return;
                 }
@@ -186,6 +193,7 @@ namespace WoWViewer
         // CD sprites: per-sprite named shader from SpriteShaderOverrides.
         private void BuildSprShaderMap()
         {
+            if (isMaps) { return; } // no need to build for MAPS.WoW
             foreach (var kvp in _sprToPal)
             {
                 string sprKey = kvp.Key;    // e.g. "HUMANBD.SPR"
@@ -196,13 +204,41 @@ namespace WoWViewer
                 }
             }
         }// Select the shader for the current sprite from the already-loaded entries.
-        private void TryAutoSelectShader(string entry)
+        private void TryAutoSelectShader(string entry) { listBox3.SelectedIndex = listBox3.FindStringExact(ShaderName(entry)); }
+        private string ShaderName(string entry)
         {
+            // UNKNOWNS
+            // MAN_BUT.SPR
+            // MDONTCUR.SPR
+            // min_mark.spr
+            // madbrief.spr - broken version of ma_brief.spr, doesn't map to anything, must be unused.
+            // RES_PHOT
+            string shaderName;
             // NOTE: MINIB and MINIT produce the same result.
-            if (isMaps) { listBox3.SelectedIndex = listBox3.FindStringExact(selectedEntry.First() + "MINIB.SHH"); return; }
-            string key = Path.GetFileName(entry).ToUpperInvariant();
-            if (!_sprToShader.TryGetValue(key, out string? shaderName)) { shadeData = null; return; }
-            listBox3.SelectedIndex = listBox3.FindStringExact(shaderName);
+            if (isMaps || entry.StartsWith("HMINI") || entry.StartsWith("mmini")) { shaderName = entry.First() + "MINIB.SHH"; }
+            else if (entry.StartsWith("resi", StringComparison.Ordinal)
+                || entry.StartsWith("RES-BUT", StringComparison.Ordinal)
+                || entry.StartsWith("rese", StringComparison.Ordinal)) { shaderName = "HRHI.SHH"; }
+            else if (entry.StartsWith("res", StringComparison.Ordinal)) { shaderName = "HRHR.SHH"; }
+            else if (entry.StartsWith("UNIT_BUT")) { shaderName = "HWHI.SHH"; }
+            else if (entry.StartsWith("HB")) { shaderName = "HBHI.SHH"; }
+            else if (entry.StartsWith("RP")) { shaderName = "MRMR.SHH"; }
+            else if (entry.StartsWith("RBM")) { shaderName = "SEMI.SHH"; }
+            else if (entry.StartsWith("RBH")) { shaderName = "SEHI.SHH"; }
+            else if (entry.StartsWith("gtlogo")) { shaderName = "F4F4.SHH"; }
+            else if (entry.StartsWith("MA", StringComparison.OrdinalIgnoreCase) || entry.StartsWith("MB") || entry.StartsWith("MC")
+                || entry.StartsWith("MD") || entry.StartsWith("MM") || entry.StartsWith("mexit")
+                ) { shaderName = "MBMI.SHH"; }
+            else
+            {
+                if (!_sprToShader.TryGetValue(Path.GetFileName(entry).ToUpperInvariant(), out string? shaderNameOut))
+                {
+                    shadeData = null;
+                    return "F1F1.SHH"; // F1F1 for all unknowns currently
+                }
+                shaderName = shaderNameOut;
+            }
+            return shaderName;
         }
         // populate palettes from DAT\\Dat.wow when reading MAPS.WoW
         private void PopulatePalettes()
@@ -273,6 +309,7 @@ namespace WoWViewer
             TryAutoSelectPalette(selectedEntry);
             TryAutoSelectShader(selectedEntry);
             // TODO : add RenderCurrent here when palette and shader selection is perfect, then remove listBox2 and listBox3.
+            RenderCurrent();
         }
         // palette selection
         private void listBox2_SelectedIndexChanged(object sender, EventArgs e)
@@ -413,10 +450,7 @@ namespace WoWViewer
                 {
                     palData = source.First(e => e.Name.Equals(correctPal, StringComparison.OrdinalIgnoreCase)).Data!;
                 }
-                if (_sprToShader.TryGetValue(key, out string? shaderName))
-                {
-                    shadeData = source.FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data![1..513];
-                }
+                shadeData = source.First(e => e.Name.Equals(ShaderName(entry.Name), StringComparison.OrdinalIgnoreCase)).Data![1..513];
                 multiFrame = frameCount > 1;
                 for (int i = 0; i < frameCount; i++)
                 {
@@ -460,7 +494,7 @@ namespace WoWViewer
         // disable shader data
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
-            shadeData = null;
+            shadeData = checkBox1.Checked ? (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(listBox3.SelectedItem!.ToString()!, StringComparison.OrdinalIgnoreCase))!.Data![1..513] : null;
             RenderCurrent();
         }
         // shader listbox
