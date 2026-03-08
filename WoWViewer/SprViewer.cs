@@ -187,7 +187,7 @@ namespace WoWViewer
         }// Select the shader for the current sprite from the already-loaded entries.
         private void TryAutoSelectShader()
         {
-            if (!checkBox1.Checked) { return; }
+            if (!checkBox1.Checked) { shadeData = null; return; }
             string key = Path.GetFileName(selectedEntry).ToUpperInvariant();
             if (!_sprToShader.TryGetValue(key, out string? shaderName)) { shadeData = null; return; }
             byte[] shaderEntry = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data!;
