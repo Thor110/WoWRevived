@@ -85,7 +85,7 @@ namespace WoWViewer
             { "MARTNFMV.SPR",  "F1F1"  },
             { "HUMANFMV.SPR",  "F1F1"  },
             { "LEGAL.SPR",  "F1F1"  },
-            { "SEPIATIT.SPR",  "F1F1"  },
+            { "SEPIATIT.SPR",  "F2F2"  },
             { "TITLEFMV.SPR",  "F1F1"  },
             { "martbd.spr",  "F7F7"  },
             { "ma_brief.spr", "MBMB" }
@@ -208,7 +208,6 @@ namespace WoWViewer
         private string ShaderName(string entry)
         {
             // UNKNOWNS
-            // MAN_BUT.SPR
             // MDONTCUR.SPR
             // min_mark.spr
             // madbrief.spr - broken version of ma_brief.spr, doesn't map to anything, must be unused.
@@ -220,13 +219,19 @@ namespace WoWViewer
                 || entry.StartsWith("RES-BUT", StringComparison.Ordinal)
                 || entry.StartsWith("rese", StringComparison.Ordinal)) { shaderName = "HRHI.SHH"; }
             else if (entry.StartsWith("res", StringComparison.Ordinal)) { shaderName = "HRHR.SHH"; }
-            else if (entry.StartsWith("UNIT_BUT")) { shaderName = "HWHI.SHH"; }
+            else if (entry == "UNIT-BUT.SPR" || entry.StartsWith("hmf") || entry.StartsWith("hu-")
+                || entry.StartsWith("hex") || entry.StartsWith("Hm", StringComparison.Ordinal)
+                ) { shaderName = "HWHI.SHH"; }
             else if (entry.StartsWith("HB")) { shaderName = "HBHI.SHH"; }
+            else if (entry.StartsWith("hu_", StringComparison.Ordinal)) { shaderName = "HWHI.SHH"; }
             else if (entry.StartsWith("RP")) { shaderName = "MRMR.SHH"; }
             else if (entry.StartsWith("RBM")) { shaderName = "SEMI.SHH"; }
-            else if (entry.StartsWith("RBH")) { shaderName = "SEHI.SHH"; }
+            else if (entry.StartsWith("RBH") || entry == "MAN-BUT.SPR"
+                ) { shaderName = "SEHI.SHH"; }
             else if (entry.StartsWith("gtlogo")) { shaderName = "F4F4.SHH"; }
-            else if (entry.StartsWith("MA", StringComparison.OrdinalIgnoreCase) || entry.StartsWith("MB") || entry.StartsWith("MC")
+            else if (entry.StartsWith("MA", StringComparison.Ordinal) && entry != "ma_brief.spr"
+                && entry != "martbd.spr" && entry != "MARTNFMV.SPR"
+                || entry.StartsWith("MB") || entry.StartsWith("MC")
                 || entry.StartsWith("MD") || entry.StartsWith("MM") || entry.StartsWith("mexit")
                 ) { shaderName = "MBMI.SHH"; }
             else
@@ -238,6 +243,7 @@ namespace WoWViewer
                 }
                 shaderName = shaderNameOut;
             }
+            //Debug.WriteLine($"{entry} : {shaderName}");
             return shaderName;
         }
         // populate palettes from DAT\\Dat.wow when reading MAPS.WoW
