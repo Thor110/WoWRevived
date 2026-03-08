@@ -82,6 +82,9 @@ namespace WoWViewer
             { "CD_BD3.SPR",  "CD3"  }, { "CD_BD4.SPR", "CD4" },
             { "CD_BD5.SPR",  "CD5"  }, { "CD_BD6.SPR", "CD6" },
             { "CD_BD7.SPR",  "CD7"  },
+            // CD8/9/10 shaders exist in DAT but no corresponding artwork sprites were shipped.
+            // Originally 10 CD covers were clearly planned.
+            // { "CD_BD8.SPR", "CD8" }, { "CD_BD9.SPR", "CD9" }, { "CD_BD10.SPR", "CD10" },
         };
 
         // Per-sprite palette overrides. Takes priority over PalSlots.
@@ -193,10 +196,10 @@ namespace WoWViewer
                 }
             }
         }// Select the shader for the current sprite from the already-loaded entries.
-        private void TryAutoSelectShader()
+        private void TryAutoSelectShader(string entry)
         {
-            if (!checkBox1.Checked) { shadeData = null; return; }
-            string key = Path.GetFileName(selectedEntry).ToUpperInvariant();
+            //if (!checkBox1.Checked) { shadeData = null; return; }
+            string key = Path.GetFileName(entry).ToUpperInvariant();
             if (!_sprToShader.TryGetValue(key, out string? shaderName)) { shadeData = null; return; }
             listBox3.SelectedIndex = listBox3.FindStringExact(shaderName);
         }
@@ -267,7 +270,7 @@ namespace WoWViewer
             lastSelectedEntry = sprName;
             rawData = entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
             TryAutoSelectPalette(selectedEntry);
-            TryAutoSelectShader();
+            TryAutoSelectShader(selectedEntry);
             RenderCurrent();
         }
         // palette selection
@@ -394,26 +397,27 @@ namespace WoWViewer
         // export all sprites
         private void button3_Click(object sender, EventArgs e)
         {
+            bool multiFrame;
+            Bitmap img;
             foreach (WowFileEntry entry in entries.Where(e => e.Name.EndsWith(".SPR", StringComparison.OrdinalIgnoreCase)))
             {
                 // Use the correct PAL for this sprite if known; otherwise fall back to selected PAL.
                 int frameCount = SprDecoder.ReadInfo(entry.Data!).TableCount;
-                string fileName = Path.GetFileNameWithoutExtension(entry.Name);
-                TryAutoSelectPalette(entry.Name);
-                TryAutoSelectShader();
-                if (frameCount != 1)
+                string fileName = outputPath + Path.GetFileNameWithoutExtension(entry.Name);
+                string key = entry.Name.ToUpperInvariant();
+                if (_sprToPal.TryGetValue(key, out string? correctPal))
                 {
-                    for (int i = 0; i < frameCount; i++)
-                    {
-                        Bitmap frame = SprDecoder.Render(entry.Data!, palData, shadeData: shadeData, frame: i);
-                        frame.Save(Path.Combine(outputPath, $"{fileName}_frame_{i:D2}.png"), ImageFormat.Png);
-                        frame.Dispose();
-                    }
+                    palData = (isMaps ? palettes : entries).First(e => e.Name.Equals(correctPal, StringComparison.OrdinalIgnoreCase)).Data!;
                 }
-                else
+                if (_sprToShader.TryGetValue(key, out string? shaderName))
                 {
-                    Bitmap img = SprDecoder.Render(entry.Data!, palData, shadeData: shadeData, frame: 0);
-                    img.Save(Path.Combine(outputPath, fileName + ".png"), ImageFormat.Png);
+                    shadeData = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data![1..513];
+                }
+                multiFrame = frameCount > 1;
+                for (int i = 0; i < frameCount; i++)
+                {
+                    img = SprDecoder.Render(entry.Data!, palData, shadeData, frame: i);
+                    img.Save(multiFrame ? $"{fileName}_frame_{i:D2}.png" : fileName + ".png", ImageFormat.Png);
                     img.Dispose();
                 }
             }
@@ -443,12 +447,7 @@ namespace WoWViewer
         {
             byte[] trimmedPalette = new byte[768];
             Array.Copy(palData, 0, trimmedPalette, 0, 768);
-            if (checkBox1.Checked) // TODO : apply relevant shader mapping
-            {
-                //remap trimmedPalette etc
-                File.WriteAllBytes(outputPath + Path.GetFileNameWithoutExtension(selectedEntry) + "_SHADED.PAL", trimmedPalette);
-            }
-            else { File.WriteAllBytes(outputPath + Path.GetFileNameWithoutExtension(selectedEntry) + ".PAL", trimmedPalette); }
+            File.WriteAllBytes(outputPath + Path.GetFileNameWithoutExtension(selectedEntry) + (checkBox1.Checked ? "_SHADED.PAL" : ".PAL"), trimmedPalette);
             MessageBox.Show("Shader Mapped Palette Exported");
         }
         // disable shader data
@@ -460,8 +459,7 @@ namespace WoWViewer
         // shader listbox
         private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
-            byte[] raw = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(listBox3.SelectedItem!.ToString()!, StringComparison.OrdinalIgnoreCase))!.Data!;
-            shadeData = (raw.Length >= 513) ? raw[1..513] : null;
+            shadeData = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(listBox3.SelectedItem!.ToString()!, StringComparison.OrdinalIgnoreCase))!.Data![1..513];
             RenderCurrent();
         }
     }
