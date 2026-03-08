@@ -399,6 +399,7 @@ namespace WoWViewer
         {
             bool multiFrame;
             Bitmap img;
+            List<WowFileEntry> source = isMaps ? palettes : entries;
             foreach (WowFileEntry entry in entries.Where(e => e.Name.EndsWith(".SPR", StringComparison.OrdinalIgnoreCase)))
             {
                 // Use the correct PAL for this sprite if known; otherwise fall back to selected PAL.
@@ -407,11 +408,11 @@ namespace WoWViewer
                 string key = entry.Name.ToUpperInvariant();
                 if (_sprToPal.TryGetValue(key, out string? correctPal))
                 {
-                    palData = (isMaps ? palettes : entries).First(e => e.Name.Equals(correctPal, StringComparison.OrdinalIgnoreCase)).Data!;
+                    palData = source.First(e => e.Name.Equals(correctPal, StringComparison.OrdinalIgnoreCase)).Data!;
                 }
                 if (_sprToShader.TryGetValue(key, out string? shaderName))
                 {
-                    shadeData = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data![1..513];
+                    shadeData = source.FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data![1..513];
                 }
                 multiFrame = frameCount > 1;
                 for (int i = 0; i < frameCount; i++)
