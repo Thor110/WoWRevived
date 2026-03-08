@@ -198,7 +198,8 @@ namespace WoWViewer
         }// Select the shader for the current sprite from the already-loaded entries.
         private void TryAutoSelectShader(string entry)
         {
-            //if (!checkBox1.Checked) { shadeData = null; return; }
+            // NOTE: MINIB and MINIT produce the same result.
+            if (isMaps) { listBox3.SelectedIndex = listBox3.FindStringExact(selectedEntry.First() + "MINIB.SHH"); return; }
             string key = Path.GetFileName(entry).ToUpperInvariant();
             if (!_sprToShader.TryGetValue(key, out string? shaderName)) { shadeData = null; return; }
             listBox3.SelectedIndex = listBox3.FindStringExact(shaderName);
@@ -271,7 +272,7 @@ namespace WoWViewer
             rawData = entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
             TryAutoSelectPalette(selectedEntry);
             TryAutoSelectShader(selectedEntry);
-            RenderCurrent();
+            // TODO : add RenderCurrent here when palette and shader selection is perfect, then remove listBox2 and listBox3.
         }
         // palette selection
         private void listBox2_SelectedIndexChanged(object sender, EventArgs e)
@@ -295,6 +296,7 @@ namespace WoWViewer
             {
                 comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;
                 comboBox1.Items.Clear();
+                // TODO : move combobox code to comboBox1_SelectedIndexChanged
                 currentRenderedEntry = listBox1.SelectedIndex;
                 int frameCount = SprDecoder.ReadInfo(rawData).TableCount;
                 if (frameCount != 1)
@@ -326,8 +328,9 @@ namespace WoWViewer
             using var ofd = new OpenFileDialog { Filter = "PNG Image|*.png", Title = "Select a replacement to encode" };
             if (ofd.ShowDialog() != DialogResult.OK) { return; }
             var bmp = new Bitmap(ofd.FileName);
-            byte[] indices = QuantiseToPalette(bmp, palData, (checkBox1.Checked) ? shadeData : null);
-            byte[] encoded = SprEncoder.Encode(indices, bmp.Width, bmp.Height);
+            //byte[] indices = QuantiseToPalette(bmp, palData, (checkBox1.Checked) ? shadeData : null);
+            // TODO : remove checkBox1?
+            byte[] encoded = SprEncoder.Encode(QuantiseToPalette(bmp, palData, checkBox1.Checked ? shadeData : null), bmp.Width, bmp.Height);
             string outPath = Path.Combine(baseFolder, selectedEntry);
             if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) { return; }
             File.WriteAllBytes(outPath, encoded);
