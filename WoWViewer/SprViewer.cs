@@ -422,6 +422,9 @@ namespace WoWViewer
                     img.Dispose();
                 }
             }
+            // reset palData and shadeData to currently selected entry.
+            TryAutoSelectPalette(selectedEntry);
+            TryAutoSelectShader(selectedEntry);
             MessageBox.Show("All .spr files exported.");
         }
         // set output path
