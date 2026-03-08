@@ -78,9 +78,10 @@ namespace WoWViewer
 
         // Render a sprite frame.
         // palData       : raw bytes of the .PAL file.
-        // shadeData     : optional 256-byte remap table (level 0 from .SHL file).
-        //                 Each byte remaps a palette index before colour lookup.
-        //                 Pass null for identity (F1/F2 sprites need no remapping).
+        // shadeData     : optional shade table from .SHH file (16-bit colour mode).
+        //                 Level 0 = 512 bytes: 256 × uint16 RGB565 values.
+        //                 Each entry is the final 16-bit screen colour for that palette index.
+        //                 Pass null for identity palette rendering (F1/F2 sprites etc).
         // frame         : animation frame, clamped to [0, tableCount-1].
         public static Bitmap Render(byte[] sprData, byte[] palData, byte[]? shadeData = null, int frame = 0)
         {
@@ -149,13 +150,19 @@ namespace WoWViewer
 
                 Color c;
                 if (palIndex == 0) { c = Color.Transparent; }
+                else if (shadeData != null && shadeData.Length >= palIndex * 2 + 2)
+                {
+                    int rgb565 = shadeData[palIndex * 2] | (shadeData[palIndex * 2 + 1] << 8);
+                    int r = ((rgb565 >> 11) & 0x1F); r = (r << 3) | (r >> 2);
+                    int g = ((rgb565 >> 5) & 0x3F); g = (g << 2) | (g >> 4);
+                    int b = (rgb565 & 0x1F); b = (b << 3) | (b >> 2);
+                    c = Color.FromArgb(r, g, b);
+                }
                 else
                 {
-                    int palPos = ((shadeData != null) ? shadeData[palIndex] : palIndex) * 3;
+                    int palPos = palIndex * 3;
                     if (palPos + 2 < palData.Length)
-                    {
                         c = Color.FromArgb(palData[palPos] * 4, palData[palPos + 1] * 4, palData[palPos + 2] * 4);
-                    }
                     else { c = Color.Magenta; }
                 }
 
@@ -189,29 +196,24 @@ namespace WoWViewer
                 }
                 else
                 {
-                    // Apply shade remap if present: palIndex -> remapped index,
-                    // then look up colour in the main 256-colour VGA palette (6-bit, x4).
-                    int palPos = ((shadeData != null) ? shadeData[palIndex] : palIndex) * 3;
-                    if (palPos + 2 < palData.Length)
+                    if (shadeData != null && shadeData.Length >= palIndex * 2 + 2)
                     {
-                        // VGA 6-bit palette values: multiply by 4 for 8-bit RGB.
-                        // Pack to 565
-                        /* // exact colour match to screenshot for cd_sep1........ not for anything else
-                        int r = Math.Min(255, (palData[palPos] * 255 / 63) + 7);   // Boost Red
-                        int g = Math.Min(255, (palData[palPos + 1] * 255 / 63) + 1); // Slight Green
-                        int b = Math.Max(0, (palData[palPos + 2] * 255 / 63) - 6);  // Drop Blue
+                        // 16-bit render path: shadeData is level 0 of the .SHH file.
+                        // Each entry is a uint16 RGB565 value for that palette index.
+                        int rgb565 = shadeData[palIndex * 2] | (shadeData[palIndex * 2 + 1] << 8);
+                        int r = ((rgb565 >> 11) & 0x1F); r = (r << 3) | (r >> 2);
+                        int g = ((rgb565 >> 5) & 0x3F); g = (g << 2) | (g >> 4);
+                        int b = (rgb565 & 0x1F); b = (b << 3) | (b >> 2);
                         c = Color.FromArgb(r, g, b);
-                        */
-                        //c = Color.FromArgb(palData[palPos] * 4, palData[palPos + 1] * 4, palData[palPos + 2] * 4);
-                        //int r = (palData[palPos] << 2) | (palData[palPos] >> 4);
-                        //int g = (palData[palPos + 1] << 2) | (palData[palPos + 1] >> 4);
-                        //int b = (palData[palPos + 2] << 2) | (palData[palPos + 2] >> 4);
-                        //c = Color.FromArgb(r, g, b);
-                        c = Color.FromArgb(palData[palPos] * 4, palData[palPos + 1] * 4, palData[palPos + 2] * 4);
                     }
                     else
                     {
-                        c = Color.Magenta; // palette out-of-range marker
+                        // No shade table: direct palette lookup (6-bit VGA × 4).
+                        int palPos = palIndex * 3;
+                        if (palPos + 2 < palData.Length)
+                            c = Color.FromArgb(palData[palPos] * 4, palData[palPos + 1] * 4, palData[palPos + 2] * 4);
+                        else
+                            c = Color.Magenta;
                     }
                 }
 

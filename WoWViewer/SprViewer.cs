@@ -32,7 +32,7 @@ namespace WoWViewer
             /*  5 */ "HW.PAL",      // VERIFIED (selcurs.spr) - runtime context slot, world default
             /*  6 */ "HW.PAL",      // VERIFIED (HWM.SPR) - IDA: %sW%sW world shader
             /*  7 */ "HR.PAL",      // VERIFIED (RES_LAMP.SPR, RES_EXIT.SPR) - IDA: %sR%sI radar
-            /*  8 */ "HB.PAL",      // VERIFIED (HU_BRIEF.SPR) - IDA: %sB%sI blue illumination
+            /*  8 */ "HB.PAL",      // VERIFIED (HU_BRIEF.SPR) - IDA: %sB%sI  H/M prefix resolved from sprite filename at runtime
             /*  9 */ "F3.PAL",      // VERIFIED (ragelogo.spr) - runtime context slot, F3 default
             /* 10 */ "BM.PAL",      // VERIFIED (bomb.spr, ripple.spr) - IDA: BMMV shader
             /* 11 */ "BM.PAL",      // UNVERIFIED (mush64.spr, basicm64.spr) - IDA: LANDR shader
@@ -152,7 +152,15 @@ namespace WoWViewer
                     }
                     else if (entry.PalSlot < PalSlots.Length && PalSlots[entry.PalSlot] != null)
                     {
-                        _sprToPal[key] = PalSlots[entry.PalSlot]!;
+                        string pal = PalSlots[entry.PalSlot]!;
+                        // IDA: %sB%sI / %sW%sW / %sR%sI — the H/M prefix is resolved from the
+                        // sprite filename at runtime, not stored in the slot. If the sprite starts
+                        // with M and the slot-assigned PAL starts with H, swap H→M (and vice versa).
+                        char sprPrefix = key[0];
+                        char palPrefix = pal[0];
+                        if ((sprPrefix == 'M' && palPrefix == 'H') || (sprPrefix == 'H' && palPrefix == 'M'))
+                            pal = sprPrefix + pal[1..];
+                        _sprToPal[key] = pal;
                     }
                 }
                 return;
@@ -181,7 +189,7 @@ namespace WoWViewer
                 string palName = kvp.Value; // e.g. "MR.PAL"
                 if (SpriteShaderOverrides.TryGetValue(sprKey, out string? stem) || PalToShaderStem.TryGetValue(palName, out stem))
                 {
-                    _sprToShader[sprKey] = stem + ".SHL";
+                    _sprToShader[sprKey] = stem + ".SHH";
                 }
             }
         }// Select the shader for the current sprite from the already-loaded entries.
@@ -190,13 +198,7 @@ namespace WoWViewer
             if (!checkBox1.Checked) { shadeData = null; return; }
             string key = Path.GetFileName(selectedEntry).ToUpperInvariant();
             if (!_sprToShader.TryGetValue(key, out string? shaderName)) { shadeData = null; return; }
-            byte[] shaderEntry = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data!;
-            // Structure: byte[0] = number of shade levels N, then N*256 bytes.
-            // Level 0 = fully lit. Extract as a 256-byte remap table.
-            shadeData = (shaderEntry.Length >= 257) ? shaderEntry[1..257] : null;
-            listBox3.SelectedIndexChanged -= listBox3_SelectedIndexChanged!;
             listBox3.SelectedIndex = listBox3.FindStringExact(shaderName);
-            listBox3.SelectedIndexChanged += listBox3_SelectedIndexChanged!;
         }
         // populate palettes from DAT\\Dat.wow when reading MAPS.WoW
         private void PopulatePalettes()
@@ -213,7 +215,7 @@ namespace WoWViewer
                 br.BaseStream.Seek(20, SeekOrigin.Current);
                 int zeroIndex = Array.IndexOf(nameBytes, (byte)0);
                 string name = Encoding.ASCII.GetString(nameBytes, 0, zeroIndex >= 0 ? zeroIndex : nameBytes.Length);
-                if (name.EndsWith(".PAL") || name.EndsWith(".SHL"))
+                if (name.EndsWith(".PAL") || name.EndsWith(".SHH"))
                 {
                     long store = br.BaseStream.Position;
                     br.BaseStream.Seek(offset, SeekOrigin.Begin);
@@ -235,7 +237,7 @@ namespace WoWViewer
                 entry.Data = FfuhDecoder.Decompress(entry.Data!);
                 listBox2.Items.Add(entry.Name);
             }
-            foreach (var entry in (isMaps ? palettes : entries).Where(e => e.Name.EndsWith(".SHL", StringComparison.OrdinalIgnoreCase)))
+            foreach (var entry in (isMaps ? palettes : entries).Where(e => e.Name.EndsWith(".SHH", StringComparison.OrdinalIgnoreCase)))
             {
                 entry.Data = FfuhDecoder.Decompress(entry.Data!);
                 listBox3.Items.Add(entry.Name);
@@ -337,33 +339,41 @@ namespace WoWViewer
         //   Search palette entries 1-255 directly. Store the winning index i.
         //   Round-trip: stored i -> pal[i] -> displayed colour.
         //
-        // When shadeData is active:
-        //   The engine displays pal[shadeData[i]] for stored index i, not pal[i].
-        //   So we search over pre-remap indices i, evaluate the displayed colour
-        //   pal[shadeData[i]], find the nearest match, and store i (not shadeData[i]).
-        //   Many pre-remap indices may map to the same post-remap colour; the search
-        //   handles this correctly by finding whichever i produces the closest result.
+        // When shadeData is active (512 bytes = 256 × uint16 RGB565 from .SHH level 0):
+        //   The engine displays shadeData[i] (as RGB565) for stored index i.
+        //   Search over all i, evaluate the displayed colour from the SHH table,
+        //   find the nearest match, and store i.
         //
         // Index 0 is always transparent and is never stored for opaque pixels.
         private static byte[] QuantiseToPalette(Bitmap bmp, byte[] palData, byte[]? shadeData)
         {
             int w = bmp.Width, h = bmp.Height;
             byte[] indices = new byte[w * h];
+            bool useSHH = shadeData != null && shadeData.Length >= 512;
             for (int y = 0; y < h; y++)
             {
                 for (int x = 0; x < w; x++)
                 {
                     Color c = bmp.GetPixel(x, y);
-                    if (c.A < 128) { indices[y * w + x] = 0; continue; } // transparent -> index 0
+                    if (c.A < 128) { indices[y * w + x] = 0; continue; }
                     byte best = 1;
                     int bestErr = int.MaxValue;
-                    for (int i = 1; i < 256; i++) // skip index 0 (transparent)
+                    for (int i = 1; i < 256; i++)
                     {
-                        // Resolve which palette entry this pre-remap index displays as.
-                        int palIdx = (shadeData != null) ? shadeData[i] : i;
-                        int r = palData[palIdx * 3] * 4;
-                        int g = palData[palIdx * 3 + 1] * 4;
-                        int b = palData[palIdx * 3 + 2] * 4;
+                        int r, g, b;
+                        if (useSHH)
+                        {
+                            int rgb565 = shadeData![i * 2] | (shadeData[i * 2 + 1] << 8);
+                            int rv = ((rgb565 >> 11) & 0x1F); r = (rv << 3) | (rv >> 2);
+                            int gv = ((rgb565 >> 5) & 0x3F); g = (gv << 2) | (gv >> 4);
+                            int bv = (rgb565 & 0x1F); b = (bv << 3) | (bv >> 2);
+                        }
+                        else
+                        {
+                            r = palData[i * 3] * 4;
+                            g = palData[i * 3 + 1] * 4;
+                            b = palData[i * 3 + 2] * 4;
+                        }
                         int err = (c.R - r) * (c.R - r)
                                 + (c.G - g) * (c.G - g)
                                 + (c.B - b) * (c.B - b);
@@ -433,7 +443,7 @@ namespace WoWViewer
         {
             byte[] trimmedPalette = new byte[768];
             Array.Copy(palData, 0, trimmedPalette, 0, 768);
-            if(checkBox1.Checked) // TODO : apply relevant shader mapping
+            if (checkBox1.Checked) // TODO : apply relevant shader mapping
             {
                 //remap trimmedPalette etc
                 File.WriteAllBytes(outputPath + Path.GetFileNameWithoutExtension(selectedEntry) + "_SHADED.PAL", trimmedPalette);
@@ -450,9 +460,8 @@ namespace WoWViewer
         // shader listbox
         private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
-            string shaderName = listBox3.SelectedItem!.ToString()!;
-            byte[] raw = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(shaderName, StringComparison.OrdinalIgnoreCase))!.Data!;
-            shadeData = (raw.Length >= 257) ? raw[1..257] : null;
+            byte[] raw = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(listBox3.SelectedItem!.ToString()!, StringComparison.OrdinalIgnoreCase))!.Data!;
+            shadeData = (raw.Length >= 513) ? raw[1..513] : null;
             RenderCurrent();
         }
     }
