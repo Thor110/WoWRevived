@@ -68,6 +68,11 @@ The road map for this project.
 	- Decompressing files optional but enabled by default.
 - [❌ 3 : Sprite Viewer](#sprite-viewer) ( 50% Complete )
 	- Sprite viewer can extract and replace game sprites.
+	- Export original palette and palette with the shader tables applied.
+	- Preview with the original palette or with the shader tables applied.
+	- Replace sprites with custom ones.
+	- Quantisation of imported images will reduce them to the closest equivalent colour found in the palette.
+	- Supports importing with the original palette colours.
 	- Known "bugs" with the Sprite Viewer.
 		- 1\. Multi-frame sprites do not render frames other than the first frame correctly yet.
 		- 2\. Shader tables are not applied to all sprites yet, only the following sprites currently render correctly.
