@@ -121,26 +121,6 @@ Discord server : https://discord.gg/bwG6Z3RK8b
 
 Some quality of life changes have been made to the game, from incorrect text entries to the removal of unnecessary buttons.
 
-Rescaled menu sprites for all supported resolutions which are swapped around when changing the resolution in the launcher.
-
-Human Background Menu
-
-<div align="center">
-  <img src="images/menu-background-human.png" alt="Human Background Menu">
-</div>
-
-Martian Background Menu
-
-<div align="center">
-  <img src="images/menu-background-martian.png" alt="Martian Background Menu">
-</div>
-
-Original Backround Menu
-
-<div align="center">
-  <img src="images/menu-background-original.png" alt="Menu Background Original">
-</div>
-
 Critical Event Options - Edited
 
 This was fixed by adding two leading spaces to the TEXT.ojd file for these entries.
@@ -224,6 +204,28 @@ A custom Smackw32.dll that intercepts the original smacker calls and replaces th
 ![Video Playback Intercept](images/wrapper.png)
 
 ## Custom Extended Backgrounds
+
+Upscaled menu sprites for all supported resolutions which are swapped around when changing the resolution in the launcher.
+
+Human Background Menu
+
+<div align="center">
+  <img src="images/menu-background-human.png" alt="Human Background Menu">
+</div>
+
+Martian Background Menu
+
+<div align="center">
+  <img src="images/menu-background-martian.png" alt="Martian Background Menu">
+</div>
+
+Original Backround Menu
+
+All of the original menu backgrounds sat in the corner at 640x480 no matter the resolution you were using.
+
+<div align="center">
+  <img src="images/menu-background-original.png" alt="Menu Background Original">
+</div>
 
 These are a work in-progress, AI (Gemini) was used to generate portions of the extended backgrounds, but they have undergone extensive editing.
 
