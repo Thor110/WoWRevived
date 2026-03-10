@@ -234,6 +234,7 @@ namespace WoWViewer
                 || entry.StartsWith("MB") || entry.StartsWith("MC")
                 || entry.StartsWith("MD") || entry.StartsWith("MM") || entry.StartsWith("mexit")
                 ) { shaderName = "MBMI.SHH"; }
+            else if (entry == "MWMHI.SPR" || entry == "HWMHI.SPR") { shaderName = "MWMI.SHH"; }
             else
             {
                 if (!_sprToShader.TryGetValue(Path.GetFileName(entry).ToUpperInvariant(), out string? shaderNameOut))
