@@ -316,6 +316,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
         //"1280x1024     (5:4)",      // SXGA — tall 5:4 monitor resolution
         //"1360x768       (16:9)",    // 16:9 — GPU-aligned, better than 1366x768
         //"1366x768       (16:9)",    // Common 16:9 laptop resolution
+        // These resolutions only work on the main menu - newly expanded warmap allows these resolutions to work
+        //"1600x900       (16:9)",    // 16:9 — upper-mid range laptop displays
+        //"1600x1024     (5:4)",      // Unusual 5:4 wide — seems to pass internal checks
+        //"1600x1200     (4:3)",      // UXGA — classic high-res 4:3
+        //"1680x1050     (16:10)",    // WSXGA+ — widescreen 16:10, works well
         // determine letterboxing arrangement
         // Calculate letterbox offset
         switch (regWidth + regHeight) {
@@ -326,6 +331,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
             case 2048: offsetY = 24; break;     // 1280x768
             case 2080: offsetY = 40; break;     // 1280x800
             case 2304: offsetY = 152; break;    // 1280x1024
+            case 2624: offsetY = 62; break;     // 1600x1024
+            //case 2800: offsetY = 150; break;    // 1600x1200
+            case 2730: offsetY = 52; break;     // 1680x1050
         }
         MFStartup(MF_VERSION);
     }

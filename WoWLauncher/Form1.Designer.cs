@@ -132,7 +132,7 @@
             comboBox1.AccessibleDescription = "Language options are not available, if you have a version other than English, let us know! Thanks.";
             comboBox1.BackColor = SystemColors.Window;
             comboBox1.FormattingEnabled = true;
-            comboBox1.Location = new Point(86, 350);
+            comboBox1.Location = new Point(291, 409);
             comboBox1.Name = "comboBox1";
             comboBox1.Size = new Size(121, 23);
             comboBox1.TabIndex = 7;
@@ -142,7 +142,7 @@
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(21, 354);
+            label1.Location = new Point(323, 441);
             label1.Name = "label1";
             label1.Size = new Size(59, 15);
             label1.TabIndex = 8;
@@ -153,16 +153,16 @@
             // 
             comboBox2.AccessibleDescription = "The resolution for the game.";
             comboBox2.FormattingEnabled = true;
-            comboBox2.Location = new Point(291, 350);
+            comboBox2.Location = new Point(278, 351);
             comboBox2.Name = "comboBox2";
-            comboBox2.Size = new Size(121, 23);
+            comboBox2.Size = new Size(134, 23);
             comboBox2.TabIndex = 9;
             comboBox2.Visible = false;
             // 
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(222, 354);
+            label2.Location = new Point(209, 354);
             label2.Name = "label2";
             label2.Size = new Size(63, 15);
             label2.TabIndex = 10;
@@ -173,7 +173,7 @@
             // 
             comboBox3.AccessibleDescription = "The refresh rate for the game. ( Higher than 30 might effect game stability )";
             comboBox3.FormattingEnabled = true;
-            comboBox3.Location = new Point(291, 379);
+            comboBox3.Location = new Point(291, 437);
             comboBox3.Name = "comboBox3";
             comboBox3.Size = new Size(121, 23);
             comboBox3.TabIndex = 11;
@@ -182,7 +182,7 @@
             // label3
             // 
             label3.AutoSize = true;
-            label3.Location = new Point(213, 383);
+            label3.Location = new Point(323, 470);
             label3.Name = "label3";
             label3.Size = new Size(72, 15);
             label3.TabIndex = 12;
@@ -193,16 +193,16 @@
             // 
             comboBox4.AccessibleDescription = "Simple difficulty settings.";
             comboBox4.FormattingEnabled = true;
-            comboBox4.Location = new Point(86, 379);
+            comboBox4.Location = new Point(278, 379);
             comboBox4.Name = "comboBox4";
-            comboBox4.Size = new Size(121, 23);
+            comboBox4.Size = new Size(134, 23);
             comboBox4.TabIndex = 13;
             comboBox4.Visible = false;
             // 
             // label4
             // 
             label4.AutoSize = true;
-            label4.Location = new Point(25, 383);
+            label4.Location = new Point(217, 383);
             label4.Name = "label4";
             label4.Size = new Size(55, 15);
             label4.TabIndex = 14;

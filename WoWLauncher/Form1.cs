@@ -119,7 +119,7 @@ namespace WoWLauncher
                 // These resolutions only work on the main menu - newly expanded warmap allows these resolutions to work
                 "1600x900       (16:9)",    // 16:9 — upper-mid range laptop displays
                 "1600x1024     (5:4)",      // Unusual 5:4 wide — seems to pass internal checks
-                "1600x1200     (4:3)",      // UXGA — classic high-res 4:3
+                //"1600x1200     (4:3)",      // UXGA — classic high-res 4:3                // DDERR_NOCOOPERATIVELEVELSET
                 "1680x1050     (16:10)",    // WSXGA+ — widescreen 16:10, works well
             };
             List<string> supported = GetSupportedResolutions();
@@ -438,19 +438,18 @@ namespace WoWLauncher
             registryCompare(screenKey, "Size", screenSize);                 // "Size" is the in-game resolution
             registryCompare(screenKey, "Support screen size", screenSize);  // "Support screen size" is the resolution used by the main menu
             // future prep for moving resolution specific assets back and forth
-            string[] moveFiles = new string[]
-            {
-                //"cd_sep1.spr",
-                //"credits.spr", "HU_BRIEF.SPR", "HU_RSCH.SPR",
-                "humanbd.spr", "legal1.spr", "legal2.spr",
-                //"ma_brief.spr",
-                "martbd.spr"
-            };
+            string[] moveFiles = new string[] { "humanbd.spr", "legal1.spr", "legal2.spr", "martbd.spr" };
             foreach (string file in moveFiles)
             {
                 File.Move("DAT\\" + file, $"DAT-EXTRA\\{keptResolutions[resolution]}\\" + file); // move from DAT to storage
                 File.Move($"DAT-EXTRA\\{keptResolutions[comboBox2.SelectedIndex]}\\" + file, "DAT\\" + file); // move from storage to DAT
             }
+            // larger resolution warmap files
+            string[] resolutionFiles = new string[] { "HWM.SPR", "HWMHI.SPR", "MWM.SPR", "MWMHI.SPR" };
+            if (screenSize.Split(",")[0] == "1600" || screenSize.Split(",")[0] == "1680")
+            { foreach (string file in resolutionFiles) { if (File.Exists("DAT\\TEMP-" + file)) { File.Move("DAT\\TEMP-" + file, $"DAT\\" + file); } } }
+            else
+            { foreach (string file in resolutionFiles) { if (File.Exists("DAT\\" + file)) { File.Move("DAT\\" + file, $"DAT\\TEMP-" + file); } } }
             resolution = comboBox2.SelectedIndex; // update resolution tracker
         }
         /*private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
