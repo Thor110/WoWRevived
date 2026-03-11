@@ -248,7 +248,6 @@ namespace WoWViewer
                 }
                 shaderName = shaderNameOut;
             }
-            //Debug.WriteLine($"{entry} : {shaderName}");
             return shaderName;
         }
         // populate palettes from DAT\\Dat.wow when reading MAPS.WoW
