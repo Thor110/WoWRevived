@@ -116,11 +116,11 @@ namespace WoWLauncher
                 "1280x1024     (5:4)",      // SXGA — tall 5:4 monitor resolution
                 "1360x768       (16:9)",    // 16:9 — GPU-aligned, better than 1366x768
                 "1366x768       (16:9)",    // Common 16:9 laptop resolution
-                // These resolutions only work on the main menu
-                //"1600x900       (16:9)",    // 16:9 — upper-mid range laptop displays
-                //"1600x1024     (5:4)",      // Unusual 5:4 wide — seems to pass internal checks
-                //"1600x1200     (4:3)",      // UXGA — classic high-res 4:3
-                //"1680x1050     (16:10)",    // WSXGA+ — widescreen 16:10, works well
+                // These resolutions only work on the main menu - newly expanded warmap allows these resolutions to work
+                "1600x900       (16:9)",    // 16:9 — upper-mid range laptop displays
+                "1600x1024     (5:4)",      // Unusual 5:4 wide — seems to pass internal checks
+                "1600x1200     (4:3)",      // UXGA — classic high-res 4:3
+                "1680x1050     (16:10)",    // WSXGA+ — widescreen 16:10, works well
             };
             List<string> supported = GetSupportedResolutions();
             List<string> matchedResolutions = supportedResolutions.Where(sr => supported.Any(r => sr.Contains(r))).ToList();
