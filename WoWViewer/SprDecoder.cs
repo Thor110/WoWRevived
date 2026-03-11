@@ -14,32 +14,63 @@ namespace WoWViewer
         //   0x04  uint16  tableCount     (1 = single frame, >1 = animated)
         //   0x06  uint16  rowHeaderSize  = 6 + tableCount*4
         //                                 tc=1→10  tc=2→14  tc=4→22
-        //   0x08  height × 4 bytes: row offset table
         //
-        // --- Single-frame (tableCount == 1) ---
-        // Each 4-byte entry:
-        //   byte[0]    carry  (only ever advances, never regresses)
-        //   byte[1]    0x00
-        //   byte[2..3] uint16 LE  low 16 bits of absolute row-data offset
-        // True offset = high*65536 + low
-        // Wrap: when low < prevLow (or low==0 && prevLow>32768), high++
-        // Pixel data starts at: absolute_offset + rowHeaderSize
+        // ── Single-frame (tableCount == 1) ───────────────────────────────────────
         //
-        // --- Multi-frame (tableCount > 1) ---
-        // The first "full-block" row in the row table (identified by its low16 pointing to a
-        // sorted array of tableCount int32 sub-offsets) anchors the layout:
-        //   baseBlock   = that row's low16 value
-        //   frameSubs[] = the tableCount int32s read at baseBlock
+        //   Bytes 8..8+height*4-1 : row offset table (height × 4 bytes)
+        //   Each 4-byte entry:
+        //     byte[0]    carry  (only ever advances, never regresses)
+        //     byte[1]    0x00
+        //     byte[2..3] uint16 LE  low 16 bits of pixel-data offset
+        //   True offset  = high*65536 + low
+        //   Wrap rule    : when low < prevLow (or low==0 && prevLow>32768), high++
+        //   Pixel data starts at: true_offset + rowHeaderSize
         //
-        // Each frame's pixel data is a CONTIGUOUS block of rows packed sequentially.
-        // Frame N starts at: baseBlock + frameSubs[N]
-        // Rows are decoded by walking forward through the block, consuming RLE pairs until
-        // width pixels are filled, then advancing the pointer for the next row.
-        // The per-row low16 values in the outer row table are only used for frame 0 indexing
-        // and are not consulted when rendering frames 1+.
+        // ── Multi-frame (tableCount > 1) ─────────────────────────────────────────
         //
-        // RLE pixel stream: [paletteIndex, runLength] pairs. Index 0 = transparent.
-        // The last run of a row may extend past width; excess pixels are simply clipped.
+        //   Bytes 8..8+tc*4-1         : Frame Pointer Table (tc × 4-byte entries)
+        //     Each entry uses the same carry/low16/wrap encoding as single-frame rows.
+        //     Decoded with the same running high/prevLow wrap rule across all tc entries.
+        //     Signal : the LAST entry always has low16 == height*4.
+        //              That entry identifies the "outer row table" frame (see below).
+        //
+        //   Bytes 8+tc*4..8+tc*4+height*4-1 : Outer Row Table (height × 4-byte entries)
+        //     Same carry/low16/wrap encoding.
+        //     Contains row offsets for the LAST frame (frame index tableCount-1).
+        //     Layout:
+        //       Entries [0..height-2]  → rows 0..height-2 (absolute offsets: low16 + rhs)
+        //       Row height-1 (last)    → pixel data stored in the "gap" at
+        //                                byte (8 + tc*4 + height*4), immediately after
+        //                                this table, with NO entry in the table.
+        //
+        //   Bytes 8+tc*4+height*4..  : pixel data for last frame (row height-1 first,
+        //                              then the remainder pointed to by the outer table)
+        //
+        //   Frames 0..tableCount-2 (sub-table frames):
+        //     frameBlockPtrs[F] = decoded frame pointer for frame F.
+        //     A sub-table of height int32 values sits at that file offset.
+        //     Each int32 is a relative offset from frameBlockPtrs[F].
+        //     Pixel data for frame F, row R  =  frameBlockPtrs[F] + subTable[R]
+        //     (no +rowHeaderSize; the int32 values are self-contained.)
+        //
+        // ── Row data corruption / missing rows ───────────────────────────────────
+        //
+        //   A small number of sprites (e.g. R_FOLD.SPR) appear to contain corrupted
+        //   sub-table entries in certain rows, producing out-of-range pixel offsets.
+        //   RenderRow() silently skips any row whose resolved pixelAbs is out of
+        //   bounds, leaving that row transparent rather than throwing.
+        //
+        // ── White / fully-transparent frames ─────────────────────────────────────
+        //
+        //   Some sprites (hu-cnt24, MA-CNT24 frames 11, 23, 25, 94, 133-146 etc.)
+        //   decode to all palette-index-0 (transparent).  This is intentional: those
+        //   animation slots were cut before ship and the pixel streams are genuinely
+        //   empty.  They are not a decoder bug.
+        //
+        // ── RLE pixel stream ─────────────────────────────────────────────────────
+        //
+        //   [paletteIndex, runLength] pairs. Index 0 = transparent (never rendered).
+        //   The last run of a row may exceed width; excess pixels are clipped.
         //
         // ── PAL file structure ───────────────────────────────────────────────────
         //
@@ -51,11 +82,6 @@ namespace WoWViewer
         //                      Used at runtime for transparent effects (smoke, glass…).
         //                      NOT needed for static sprite viewing.
         //   Total = 66 304 bytes (all 16 PAL files are exactly this size).
-        //
-        //   BUGS FIXED in this revision:
-        //   (a) PaletteOffset previously returned 768 + n*768, skipping past the actual
-        //       palette entirely and reading from the blend table → wrong colours.
-        //   (b) RGB values were never scaled ×4, making everything ~1/4 correct brightness.
         //
         // ── SPR → PAL file mapping (from OBJ.ojd palSlot field) ─────────────────
         //
@@ -77,12 +103,12 @@ namespace WoWViewer
         }
 
         // Render a sprite frame.
-        // palData       : raw bytes of the .PAL file.
-        // shadeData     : optional shade table from .SHH file (16-bit colour mode).
-        //                 Level 0 = 512 bytes: 256 × uint16 RGB565 values.
-        //                 Each entry is the final 16-bit screen colour for that palette index.
-        //                 Pass null for identity palette rendering (F1/F2 sprites etc).
-        // frame         : animation frame, clamped to [0, tableCount-1].
+        // palData    : raw bytes of the .PAL file.
+        // shadeData  : optional shade table from .SHH file (16-bit colour mode).
+        //              Level 0 = 512 bytes: 256 × uint16 RGB565 values.
+        //              Each entry is the final 16-bit screen colour for that palette index.
+        //              Pass null for identity palette rendering (F1/F2 sprites etc).
+        // frame      : animation frame index, clamped to [0, tableCount-1].
         public static Bitmap Render(byte[] sprData, byte[] palData, byte[]? shadeData = null, int frame = 0)
         {
             ushort width = BitConverter.ToUInt16(sprData, 0);
@@ -95,6 +121,7 @@ namespace WoWViewer
 
             if (tableCount == 1)
             {
+                // ── Single-frame path ────────────────────────────────────────────
                 int high = 0, prevLow = 0;
                 for (int row = 0; row < height; row++)
                 {
@@ -102,8 +129,8 @@ namespace WoWViewer
                     int carry = sprData[entryBase];
                     int low = BitConverter.ToUInt16(sprData, entryBase + 2);
 
-                    if (row > 0 && (low < prevLow || (low == 0 && prevLow > 32768))) { high++; }
-                    if (carry > high) { high = carry; }
+                    if (row > 0 && (low < prevLow || (low == 0 && prevLow > 32768))) high++;
+                    if (carry > high) high = carry;
                     prevLow = low;
 
                     RenderRow(sprData, palData, bmp, row, width, high * 65536 + low + rowHeaderSize, shadeData);
@@ -111,42 +138,56 @@ namespace WoWViewer
             }
             else
             {
-                // Read tc frame block pointers (starting at byte 8), with carry/wrap tracking
+                // ── Multi-frame path ─────────────────────────────────────────────
+
+                // 1. Decode the Frame Pointer Table (bytes 8..8+tc*4-1).
+                //    Use the same running carry/wrap rule as the single-frame row table.
                 int[] frameBlockPtrs = new int[tableCount];
-                int high = 0, prevLow = 0;
-                for (int i = 0; i < tableCount; i++)
                 {
-                    int baseX = 8 + i * 4;
-                    int carry = sprData[baseX];
-                    int low16 = BitConverter.ToUInt16(sprData, baseX + 2);
+                    int high = 0, prevLow = 0;
+                    for (int i = 0; i < tableCount; i++)
+                    {
+                        int baseX = 8 + i * 4;
+                        int carry = sprData[baseX];
+                        int low16 = BitConverter.ToUInt16(sprData, baseX + 2);
 
-                    if (i > 0 && (low16 < prevLow || (low16 == 0 && prevLow > 32768))) high++;
-                    if (carry > high) high = carry;
-                    prevLow = low16;
+                        if (i > 0 && (low16 < prevLow || (low16 == 0 && prevLow > 32768))) high++;
+                        if (carry > high) high = carry;
+                        prevLow = low16;
 
-                    frameBlockPtrs[i] = high * 65536 + low16;
+                        frameBlockPtrs[i] = high * 65536 + low16;
+                    }
                 }
 
+                // Outer row table begins immediately after the Frame Pointer Table.
                 int outerRowTableStart = 8 + tableCount * 4;
+
+                // Row 0 of the last frame has no outer table entry.
+                // Its pixel data sits in the "gap" immediately after the outer table.
+                // Entry[N] holds row N+1. Entry[height-1] is a sentinel and is never read.
+                int lastFrameFirstRowPos = outerRowTableStart + height * 4;
 
                 for (int row = 0; row < height; row++)
                 {
-                    int pixelAbs;
+                    int pixelAbs = -1;
+
                     if (frame < tableCount - 1)
                     {
-                        // Sub-table frame: relative offset from block ptr
+                        // Sub-table frame (frames 0..tc-2).
+                        // Sub-table at frameBlockPtrs[frame] holds height int32 relative offsets.
+                        // Pixel data = blockPtr + subTable[row].
                         int blockPtr = frameBlockPtrs[frame];
                         int relVal = BitConverter.ToInt32(sprData, blockPtr + row * 4);
                         pixelAbs = blockPtr + relVal;
                     }
                     else
                     {
-                        // Last frame uses the outer row table — but it is SHIFTED BY ONE.
-                        // Row 0 is stored immediately after the outer table (no table entry).
-                        // Rows 1..height-1 are in outer table entries [0..height-2].
+                        // Last frame (frame tc-1) uses the outer row table.
+                        // Row 0 comes from the gap (lastFrameFirstRowPos).
+                        // Rows 1..height-1 come from entries [0..height-2].
                         if (row == 0)
                         {
-                            pixelAbs = outerRowTableStart + height * 4; // data right after the table
+                            pixelAbs = lastFrameFirstRowPos;
                         }
                         else
                         {
@@ -154,18 +195,22 @@ namespace WoWViewer
                             pixelAbs = low16 + rowHeaderSize;
                         }
                     }
+
+                    // Guard against corrupt or out-of-range offsets (e.g. R_FOLD.SPR).
+                    if (pixelAbs < 0 || pixelAbs + 1 >= sprData.Length)
+                        continue;
+
                     RenderRow(sprData, palData, bmp, row, width, pixelAbs, shadeData);
                 }
             }
 
             return bmp;
         }
-        // ── Palette helpers ──────────────────────────────────────────────────────
-
-        // The shade table (bytes 768-66303 of a PAL file) is separate from the .SHL remap tables
-        // and is only used for runtime transparency blending in the engine, not for sprite rendering.
 
         // ── Internal helpers ─────────────────────────────────────────────────────
+
+        // The shade table (bytes 768-66303 of a PAL file) is separate from the .SHL remap
+        // tables and is only used for runtime transparency blending in the engine.
 
         private static void RenderRow(byte[] sprData, byte[] palData, Bitmap bmp, int row, int width, int dataPos, byte[]? shadeData)
         {
@@ -181,30 +226,27 @@ namespace WoWViewer
                 {
                     c = Color.Transparent;
                 }
+                else if (shadeData != null && shadeData.Length >= palIndex * 2 + 2)
+                {
+                    // 16-bit render path: shadeData is level 0 of the .SHH file.
+                    // Each entry is a uint16 RGB565 value for that palette index.
+                    int rgb565 = shadeData[palIndex * 2] | (shadeData[palIndex * 2 + 1] << 8);
+                    int r = ((rgb565 >> 11) & 0x1F); r = (r << 3) | (r >> 2);
+                    int g = ((rgb565 >> 5) & 0x3F); g = (g << 2) | (g >> 4);
+                    int b = (rgb565 & 0x1F); b = (b << 3) | (b >> 2);
+                    c = Color.FromArgb(r, g, b);
+                }
                 else
                 {
-                    if (shadeData != null && shadeData.Length >= palIndex * 2 + 2)
-                    {
-                        // 16-bit render path: shadeData is level 0 of the .SHH file.
-                        // Each entry is a uint16 RGB565 value for that palette index.
-                        int rgb565 = shadeData[palIndex * 2] | (shadeData[palIndex * 2 + 1] << 8);
-                        int r = ((rgb565 >> 11) & 0x1F); r = (r << 3) | (r >> 2);
-                        int g = ((rgb565 >> 5) & 0x3F); g = (g << 2) | (g >> 4);
-                        int b = (rgb565 & 0x1F); b = (b << 3) | (b >> 2);
-                        c = Color.FromArgb(r, g, b);
-                    }
-                    else
-                    {
-                        // No shade table: direct palette lookup (6-bit VGA × 4).
-                        int palPos = palIndex * 3;
-                        if (palPos + 2 < palData.Length)
-                            c = Color.FromArgb(palData[palPos] * 4, palData[palPos + 1] * 4, palData[palPos + 2] * 4);
-                        else
-                            c = Color.Magenta;
-                    }
+                    // No shade table: direct palette lookup (6-bit VGA × 4).
+                    int palPos = palIndex * 3;
+                    c = (palPos + 2 < palData.Length)
+                        ? Color.FromArgb(palData[palPos] * 4, palData[palPos + 1] * 4, palData[palPos + 2] * 4)
+                        : Color.Magenta;
                 }
 
-                for (int i = 0; i < count && x < width; i++, x++) { bmp.SetPixel(x, row, c); }
+                for (int i = 0; i < count && x < width; i++, x++)
+                    bmp.SetPixel(x, row, c);
             }
         }
     }
