@@ -1,6 +1,6 @@
 ﻿// SprEncoder.cs: Encodes raw palette-indexed pixel data into the WoW SPR format.
-// Exact inverse of SprDecoder.cs — round-trip verified against original game sprites.
-// Produces files that decode pixel-identically to their source data.
+// Exact inverse of SprDecoder.cs — round-trip verified byte-for-byte against original
+// game sprites (hu_buton.spr, HWAITCUR.SPR, hu-cnt48.spr).
 //
 // Usage:
 //   // Single-frame (e.g. a full-screen background):
@@ -126,45 +126,127 @@ namespace WoWViewer
 
         // ── Multi-frame encoding ─────────────────────────────────────────────────
         //
-        // File layout:
+        // File layout (byte-for-byte verified against original game sprites):
+        //
         //   [0x00] uint16  width
         //   [0x02] uint16  height
-        //   [0x04] uint16  tableCount  (= number of frames)
-        //   [0x06] uint16  rowHeaderSize = width  (matches original game files)
-        //   [0x08] height × 4 bytes  row-offset table
-        //          Row 0 low16 = baseBlock (the address of the int32 sub-offset array).
-        //          All other rows are zeroed — the decoder ignores them for frames 1+.
-        //   [0x08 + height*4]  baseBlock starts here:
-        //          int32[tableCount]  sub-offsets from baseBlock to each frame's data block.
-        //          Immediately followed by the concatenated frame data blocks.
+        //   [0x04] uint16  tableCount  (tc)
+        //   [0x06] uint16  rowHeaderSize  = 6 + tc*4  (= rhs)
         //
-        // The decoder locates the baseBlock by scanning the row table for the first entry
-        // whose low16 points to a strictly-ascending int32[tc] array whose first element
-        // passes a pixel-count sanity check.  Placing the baseBlock at (8 + height*4) and
-        // pointing row 0 at it satisfies this on the first scan iteration.
+        //   [0x08..0x08+tc*4-1]  Frame Pointer Table (tc × 4-byte entries)
+        //     Entries 0..tc-2: absolute address of each sub-table frame block.
+        //       carry byte = running 'high' value BEFORE this entry's wrap check.
+        //       low16      = address & 0xFFFF.
+        //       Wrap rule (as single-frame): when low16 < prevLow, high++.
+        //     Entry tc-1 (sentinel): carry = current high, low16 = height*4.
+        //       Detected by decoder via low16 == height*4; abs value not used.
+        //
+        //   [0x08+tc*4 .. 0x08+tc*4+height*4-1]  Outer Row Table (height × 4-byte entries)
+        //     Entries 0..height-2: entry[N] → absolute offset of last-frame row N+1.
+        //       Encoded as: low16 = (abs - rhs), carry = running high.
+        //     Entry height-1: sentinel (never used as a pixel pointer).
+        //       Its 4 bytes [0x00, 0x00, pair0_idx, pair0_cnt] simultaneously serve
+        //       as the start of the last-frame row-0 pixel stream:
+        //         [0x00, 0x00] = no-op RLE pair (transparent, 0 pixels).
+        //         [pair0_idx, pair0_cnt] = first real RLE pair of row 0.
+        //
+        //   [gapPos = 0x08+tc*4+(height-1)*4 ..]
+        //     Last-frame row 0 pixel data starts here (the sentinel entry slot).
+        //     Followed immediately by rows 1..height-1 packed sequentially.
+        //     entry[N] (N=0..height-2) points to the start of row N+1.
+        //
+        //   [last_frame_end ..]
+        //     Sub-table frames 0..tc-2, each laid out as:
+        //       int32[height]  relative offsets from block start to each row.
+        //       (rels[0] = height*4 always — pixel data starts after the table.)
+        //       Pixel data for all height rows, packed end-to-end.
 
         private static byte[] EncodeMultiFrame(List<List<List<(byte idx, byte cnt)>>> frameRle, int width, int height)
         {
             int tc = frameRle.Count;
-            int rhs = width;  // rowHeaderSize matches game convention for multi-frame
+            int rhs = 6 + tc * 4;   // rowHeaderSize
 
-            // Serialise pixel data for every frame.
-            var frameBytes = frameRle.Select(frame => SerialiseFrame(frame)).ToList();
+            int outerRowTableStart = 8 + tc * 4;
+            int gapPos = outerRowTableStart + (height - 1) * 4;   // sentinel slot = row 0 start
 
-            // baseBlock sits immediately after the row-offset table.
-            int baseBlock = 8 + height * 4;
+            // ── Last-frame layout ────────────────────────────────────────────────
+            // gap (at gapPos) = row 0 of the last frame.
+            // The sentinel entry's 4 bytes are [0x00, 0x00, pair0_idx, pair0_cnt]:
+            //   carry=0, pad=0 from the table entry structure, then the first RLE pair
+            //   of row 0. The decoder reads gapPos and sees a [0,0] no-op then the
+            //   first real pair. The remaining pairs of row 0 follow at gapPos+4.
+            // Rows 1..height-1 follow sequentially; entry[N] → row N+1 (N=0..h-2).
+            var lastRle = frameRle[tc - 1];
 
-            // sub-offsets[f] = offset from baseBlock to frame f's data.
-            // Frame data begins after the sub-offset array (tc × 4 bytes).
-            int subsSize = tc * 4;
-            var subOffsets = new int[tc];
-            int cumulative = subsSize;
-            for (int f = 0; f < tc; f++)
+            byte sentPair0Idx = lastRle[0][0].idx;
+            byte sentPair0Cnt = lastRle[0][0].cnt;
+            byte[] gapRow0Tail = SerialiseRow(lastRle[0].Skip(1));   // row 0, pair 1 onward
+
+            // Absolute positions of last-frame rows 1..height-1.
+            var lastRowPositions = new int[height - 1];   // index N → row N+1
+            int pos = gapPos + 4 + gapRow0Tail.Length;
+            for (int r = 1; r < height; r++)
             {
-                subOffsets[f] = cumulative;
-                cumulative += frameBytes[f].Length;
+                lastRowPositions[r - 1] = pos;
+                pos += SerialiseRow(lastRle[r]).Length;
+            }
+            int lastFrameEnd = pos;
+
+            // ── Sub-table frame layout ───────────────────────────────────────────
+            var subTableAddrs = new int[tc - 1];
+            var subTables = new int[tc - 1][];
+            var frameBufs = new byte[tc - 1][];
+
+            int cur = lastFrameEnd;
+            for (int f = 0; f < tc - 1; f++)
+            {
+                subTableAddrs[f] = cur;
+                int pixStart = cur + height * 4;
+                var rels = new int[height];
+                int p = pixStart;
+                for (int r = 0; r < height; r++)
+                {
+                    rels[r] = p - cur;
+                    p += SerialiseRow(frameRle[f][r]).Length;
+                }
+                subTables[f] = rels;
+                frameBufs[f] = SerialiseRows(frameRle[f]);
+                cur = p;
             }
 
+            // ── Frame Pointer Table carry-encoding ───────────────────────────────
+            var fpEntries = new (byte carry, ushort low16)[tc];
+            {
+                int high = 0, prevLow = 0;
+                for (int f = 0; f < tc - 1; f++)
+                {
+                    int absAddr = subTableAddrs[f];
+                    byte carry = (byte)high;
+                    ushort low16 = (ushort)(absAddr & 0xFFFF);
+                    if (f > 0 && (low16 < prevLow || (low16 == 0 && prevLow > 32768))) high++;
+                    prevLow = low16;
+                    fpEntries[f] = (carry, low16);
+                }
+                fpEntries[tc - 1] = ((byte)high, (ushort)(height * 4));   // sentinel
+            }
+
+            // ── Outer Row Table carry-encoding ───────────────────────────────────
+            // entry[N] → row N+1  (N = 0..height-2)
+            var outerEntries = new (byte carry, ushort low16)[height - 1];
+            {
+                int high = 0, prevLow = 0;
+                for (int n = 0; n < height - 1; n++)
+                {
+                    int absOff = lastRowPositions[n];   // position of row n+1
+                    byte carry = (byte)high;
+                    ushort low16 = (ushort)((absOff - rhs) & 0xFFFF);
+                    if (n > 0 && (low16 < prevLow || (low16 == 0 && prevLow > 32768))) high++;
+                    prevLow = low16;
+                    outerEntries[n] = (carry, low16);
+                }
+            }
+
+            // ── Assemble ─────────────────────────────────────────────────────────
             using var ms = new MemoryStream();
             using var bw = new BinaryWriter(ms);
 
@@ -173,31 +255,28 @@ namespace WoWViewer
             bw.Write((ushort)tc);
             bw.Write((ushort)rhs);
 
-            // Row-offset table: row 0 points at baseBlock; all others zeroed.
-            for (int r = 0; r < height; r++)
-            {
-                if (r == 0)
-                {
-                    bw.Write((byte)0);
-                    bw.Write((byte)0);
-                    bw.Write((ushort)baseBlock);
-                }
-                else
-                {
-                    bw.Write((uint)0);
-                }
-            }
+            // Frame Pointer Table
+            foreach (var (carry, low16) in fpEntries)
+            { bw.Write(carry); bw.Write((byte)0); bw.Write(low16); }
 
-            // Sub-offset array (int32[tc]).
-            foreach (int sub in subOffsets)
-            {
-                bw.Write((int)sub);
-            }
+            // Outer Row Table entries 0..height-2
+            foreach (var (carry, low16) in outerEntries)
+            { bw.Write(carry); bw.Write((byte)0); bw.Write(low16); }
 
-            // Frame pixel data (concatenated).
-            foreach (var fb in frameBytes)
+            // Sentinel entry at gapPos — also the start of last-frame row 0.
+            bw.Write((byte)0); bw.Write((byte)0);
+            bw.Write(sentPair0Idx); bw.Write(sentPair0Cnt);
+
+            // Rest of last-frame row 0, then rows 1..height-1
+            bw.Write(gapRow0Tail);
+            for (int r = 1; r < height; r++)
+                bw.Write(SerialiseRow(lastRle[r]));
+
+            // Sub-table frames 0..tc-2
+            for (int f = 0; f < tc - 1; f++)
             {
-                bw.Write(fb);
+                foreach (int rel in subTables[f]) bw.Write(rel);
+                bw.Write(frameBufs[f]);
             }
 
             return ms.ToArray();
@@ -242,19 +321,23 @@ namespace WoWViewer
         }
 
         /// <summary>
-        /// Flatten a list of RLE row lists into a single byte array.
+        /// Flatten one RLE row into a byte array: [idx, cnt, idx, cnt, ...].
         /// </summary>
-        private static byte[] SerialiseFrame(List<List<(byte idx, byte cnt)>> frameRows)
+        private static byte[] SerialiseRow(IEnumerable<(byte idx, byte cnt)> row)
         {
             var buf = new List<byte>();
-            foreach (var row in frameRows)
-            {
-                foreach (var (idx, cnt) in row)
-                {
-                    buf.Add(idx);
-                    buf.Add(cnt);
-                }
-            }
+            foreach (var (idx, cnt) in row) { buf.Add(idx); buf.Add(cnt); }
+            return buf.ToArray();
+        }
+
+        /// <summary>
+        /// Flatten a list of RLE rows into a single contiguous byte array.
+        /// </summary>
+        private static byte[] SerialiseRows(IEnumerable<IEnumerable<(byte idx, byte cnt)>> rows)
+        {
+            var buf = new List<byte>();
+            foreach (var row in rows)
+                foreach (var (idx, cnt) in row) { buf.Add(idx); buf.Add(cnt); }
             return buf.ToArray();
         }
     }

@@ -43,6 +43,7 @@
             listBox3 = new ListBox();
             label3 = new Label();
             checkBox1 = new CheckBox();
+            button6 = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -85,6 +86,7 @@
             // 
             // button1
             // 
+            button1.Enabled = false;
             button1.Location = new Point(612, 498);
             button1.Name = "button1";
             button1.Size = new Size(75, 23);
@@ -194,11 +196,23 @@
             checkBox1.UseVisualStyleBackColor = true;
             checkBox1.CheckedChanged += checkBox1_CheckedChanged;
             // 
+            // button6
+            // 
+            button6.Enabled = false;
+            button6.Location = new Point(531, 527);
+            button6.Name = "button6";
+            button6.Size = new Size(156, 23);
+            button6.TabIndex = 17;
+            button6.Text = "Replace All Frames";
+            button6.UseVisualStyleBackColor = true;
+            button6.Click += button6_Click;
+            // 
             // SprViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1264, 777);
+            Controls.Add(button6);
             Controls.Add(label3);
             Controls.Add(listBox3);
             Controls.Add(checkBox1);
@@ -238,5 +252,6 @@
         private ListBox listBox3;
         private Label label3;
         private CheckBox checkBox1;
+        private Button button6;
     }
 }

@@ -245,7 +245,7 @@ namespace WoWViewer
                 || entry == "BAR-BASE.SPR"
                 ) { shaderName = "MBMI.SHH"; }
             else if (entry == "MWMHI.SPR" || entry == "HWMHI.SPR" || entry == "N-ATTACK.SPR"
-                || entry == "MWAITCUR.SPR" || entry == "madd.spr"
+                || entry == "MWAITCUR.SPR" || entry == "madd.spr" || entry == "MRESRCHB.SPR" || entry == "MUNITS.SPR"
                 ) { shaderName = "MWMI.SHH"; }
             else if (entry.StartsWith("chk") || entry.StartsWith("RA")
                 ) { shaderName = "F1GI.SHH"; }
@@ -256,6 +256,7 @@ namespace WoWViewer
                 || entry.StartsWith("BS") || entry.StartsWith("CRA") || entry.StartsWith("di")
                 || entry.StartsWith("E") || entry.StartsWith("gu") || entry.StartsWith("mus")
                 || entry.StartsWith("smk") || entry.StartsWith("sp") || entry.StartsWith("tp")
+                //SMK case? // shock? //MWMI
                 ) { shaderName = "BMEX.SHH"; }
             else
             {
@@ -368,13 +369,17 @@ namespace WoWViewer
                 {
                     for (int i = 0; i < frameCount; i++) { comboBox1.Items.Add($"{selectedEntry}_frame_{i:D2}"); }
                     currentFrame = 0;
-                    comboBox1.Enabled = true;
+                    comboBox1.Enabled = true;   // enable frames combo box
+                    button6.Enabled = true;     // enable replace all frames button
+                    button1.Enabled = false;    // disable single frame replace button??
                     comboBox1.SelectedIndex = 0;
                 }
                 else
                 {
                     currentFrame = 0;
-                    comboBox1.Enabled = false;
+                    comboBox1.Enabled = false;  // disable frames combo box
+                    button6.Enabled = false;    // disable replace all frames button
+                    button1.Enabled = true;     // enable single frame replace button??
                     comboBox1.Text = selectedEntry;
                     comboBox1.SelectedIndex = -1;
                 }
@@ -531,6 +536,102 @@ namespace WoWViewer
         {
             shadeData = (isMaps ? palettes : entries).FirstOrDefault(e => e.Name.Equals(listBox3.SelectedItem!.ToString()!, StringComparison.OrdinalIgnoreCase))!.Data![1..513];
             RenderCurrent();
+        }
+        // Replace all frames of the current multi-frame sprite.
+        // Expects exactly tableCount PNG files whose names match the export naming scheme:
+        //   {spriteNameWithoutExtension}_frame_{N:D2}.png
+        // Files may be selected in any order; they are sorted by the parsed frame index.
+        private void button6_Click(object sender, EventArgs e)
+        {
+            var info = SprDecoder.ReadInfo(rawData);
+            int tc = info.TableCount;
+            if (tc <= 1)
+            {
+                MessageBox.Show("This sprite is single-frame. Use the Replace button instead.");
+                return;
+            }
+
+            string baseName = Path.GetFileNameWithoutExtension(selectedEntry);
+
+            using var ofd = new OpenFileDialog
+            {
+                Filter = "PNG Images|*.png",
+                Title = $"Select all {tc} frame PNGs for {selectedEntry}",
+                Multiselect = true,
+            };
+            if (ofd.ShowDialog() != DialogResult.OK) return;
+
+            if (ofd.FileNames.Length != tc)
+            {
+                MessageBox.Show(
+                    $"Expected exactly {tc} files (one per frame), but {ofd.FileNames.Length} were selected.\n" +
+                    $"Frame files should be named:  {baseName}_frame_00.png … {baseName}_frame_{tc - 1:D2}.png",
+                    "Wrong file count");
+                return;
+            }
+
+            // Parse frame index from filename suffix _frame_NN and sort.
+            var indexed = new List<(int frameIdx, string path)>();
+            foreach (string path in ofd.FileNames)
+            {
+                string fn = Path.GetFileNameWithoutExtension(path);
+                string tag = "_frame_";
+                int mark = fn.LastIndexOf(tag, StringComparison.OrdinalIgnoreCase);
+                if (mark < 0 || !int.TryParse(fn[(mark + tag.Length)..], out int idx))
+                {
+                    MessageBox.Show(
+                        $"Could not parse a frame index from:\n{Path.GetFileName(path)}\n\n" +
+                        $"Files must be named  {baseName}_frame_00.png  etc.",
+                        "Bad filename");
+                    return;
+                }
+                if (idx < 0 || idx >= tc)
+                {
+                    MessageBox.Show($"Frame index {idx} is out of range (sprite has {tc} frames).", "Bad index");
+                    return;
+                }
+                indexed.Add((idx, path));
+            }
+
+            // Check for duplicates.
+            var seen = new HashSet<int>();
+            foreach (var (idx, _) in indexed)
+            {
+                if (!seen.Add(idx))
+                {
+                    MessageBox.Show($"Frame index {idx} appears more than once in the selection.", "Duplicate frame");
+                    return;
+                }
+            }
+
+            indexed.Sort((a, b) => a.frameIdx.CompareTo(b.frameIdx));
+
+            // Quantise each PNG to palette indices.
+            var framePixels = new List<byte[]>(tc);
+            bool useShade = checkBox1.Checked;
+            foreach (var (_, path) in indexed)
+            {
+                using var bmp = new Bitmap(path);
+                if (bmp.Width != info.Width || bmp.Height != info.Height)
+                {
+                    MessageBox.Show(
+                        $"{Path.GetFileName(path)} is {bmp.Width}×{bmp.Height} " +
+                        $"but the sprite is {info.Width}×{info.Height}.\nAll replacement frames must match the sprite dimensions.",
+                        "Size mismatch");
+                    return;
+                }
+                framePixels.Add(QuantiseToPalette(bmp, palData, useShade ? shadeData : null));
+            }
+
+            byte[] encoded = SprEncoder.EncodeFrames(framePixels, info.Width, info.Height);
+
+            string outPath = Path.Combine(baseFolder, selectedEntry);
+            if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) return;
+            File.WriteAllBytes(outPath, encoded);
+            (isMaps ? palettes : entries).First(en => en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
+            rawData = encoded;
+            RenderCurrent();
+            MessageBox.Show($"All {tc} frames encoded and saved to {outPath}");
         }
     }
 }
