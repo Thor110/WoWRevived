@@ -165,7 +165,7 @@ namespace WoWViewer
                 // Row 0 of the last frame has no outer table entry.
                 // Its pixel data sits in the "gap" immediately after the outer table.
                 // Entry[N] holds row N+1. Entry[height-1] is a sentinel and is never read.
-                int lastFrameFirstRowPos = outerRowTableStart + height * 4;
+                int lastFrameFirstRowPos = outerRowTableStart + (height-1) * 4;
 
                 for (int row = 0; row < height; row++)
                 {

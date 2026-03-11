@@ -66,22 +66,15 @@ The road map for this project.
 	- .WoW archives can be extracted.
 	- Waveform preview, play and replace sound files from .WoW archives.
 	- Decompressing files optional but enabled by default.
-- [❌ 3 : Sprite Viewer](#sprite-viewer) ( 50% Complete )
+- [❌ 3 : Sprite Viewer](#sprite-viewer) ( 95% Complete )
 	- Sprite viewer can extract and replace game sprites.
 	- Export original palette and palette with the shader tables applied.
 	- Preview with the original palette or with the shader tables applied.
-	- Replace sprites with custom ones.
+	- Replace single frame sprites with custom ones.
 	- Quantisation of imported images will reduce them to the closest equivalent colour found in the palette.
 	- Supports importing with the original palette colours.
 	- Known "bugs" with the Sprite Viewer.
-		- 1\. Multi-frame sprites do not render frames other than the first frame correctly yet.
-		- 2\. Shader tables are not applied to all sprites yet, only the following sprites currently render correctly.
-			- cd_sep1.spr
-			- HUMANFMV.SPR
-			- LEGAL.SPR
-			- MARTNFMV.SPR
-			- SEPIATIT.SPR
-			- TITLEFMV.SPR
+		- 1\. Shader tables are not applied to all sprites yet, only a small number of shader tables are left to be identified.
 - [❌ 4 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Override standard limit of 1753 as the minimum date and set the year manually to as low as year zero.
