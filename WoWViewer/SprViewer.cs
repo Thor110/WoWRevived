@@ -234,7 +234,8 @@ namespace WoWViewer
                 || entry.StartsWith("MB") || entry.StartsWith("MC")
                 || entry.StartsWith("MD") || entry.StartsWith("MM") || entry.StartsWith("mexit")
                 ) { shaderName = "MBMI.SHH"; }
-            else if (entry == "MWMHI.SPR" || entry == "HWMHI.SPR" || entry == "N-ATTACK.SPR") { shaderName = "MWMI.SHH"; }
+            else if (entry == "MWMHI.SPR" || entry == "HWMHI.SPR" || entry == "N-ATTACK.SPR"
+                || entry == "MWAITCUR.SPR") { shaderName = "MWMI.SHH"; }
             else if (entry.StartsWith("chk")) { shaderName = "F1GI.SHH"; }
             else if (entry == "mprom.spr" || entry == "msub.spr" || entry == "NORMCURS.SPR"
                 || entry == "SELCURS.SPR" || entry == "SELMINUS.SPR" || entry == "SELPLUS.SPR"
@@ -464,6 +465,7 @@ namespace WoWViewer
                 multiFrame = frameCount > 1;
                 for (int i = 0; i < frameCount; i++)
                 {
+                    System.Diagnostics.Debug.WriteLine($"{entry.Name} : {i}");
                     img = SprDecoder.Render(entry.Data!, palData, shadeData, frame: i);
                     img.Save(multiFrame ? $"{fileName}_frame_{i:D2}.png" : fileName + ".png", ImageFormat.Png);
                     img.Dispose();

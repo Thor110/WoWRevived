@@ -111,17 +111,22 @@ namespace WoWViewer
             }
             else
             {
-                // Read tc frame block pointers (starting at byte 8)
+                // Read tc frame block pointers (starting at byte 8), with carry/wrap tracking
                 int[] frameBlockPtrs = new int[tableCount];
+                int high = 0, prevLow = 0;
                 for (int i = 0; i < tableCount; i++)
                 {
                     int baseX = 8 + i * 4;
                     int carry = sprData[baseX];
                     int low16 = BitConverter.ToUInt16(sprData, baseX + 2);
-                    frameBlockPtrs[i] = carry * 65536 + low16;
+
+                    if (i > 0 && (low16 < prevLow || (low16 == 0 && prevLow > 32768))) high++;
+                    if (carry > high) high = carry;
+                    prevLow = low16;
+
+                    frameBlockPtrs[i] = high * 65536 + low16;
                 }
 
-                // Outer row table starts at byte 8 + tc*4
                 int outerRowTableStart = 8 + tableCount * 4;
 
                 for (int row = 0; row < height; row++)
@@ -129,57 +134,31 @@ namespace WoWViewer
                     int pixelAbs;
                     if (frame < tableCount - 1)
                     {
-                        // Sub-table frame: offset is relative to block ptr
+                        // Sub-table frame: relative offset from block ptr
                         int blockPtr = frameBlockPtrs[frame];
                         int relVal = BitConverter.ToInt32(sprData, blockPtr + row * 4);
-                        pixelAbs = blockPtr + relVal;  // NO +rowHeaderSize
+                        pixelAbs = blockPtr + relVal;
                     }
                     else
                     {
-                        // Last frame: uses outer row table, same as single-frame formula
-                        int low16 = BitConverter.ToUInt16(sprData, outerRowTableStart + row * 4 + 2);
-                        pixelAbs = low16 + rowHeaderSize;  // +rhs like single-frame
+                        // Last frame uses the outer row table — but it is SHIFTED BY ONE.
+                        // Row 0 is stored immediately after the outer table (no table entry).
+                        // Rows 1..height-1 are in outer table entries [0..height-2].
+                        if (row == 0)
+                        {
+                            pixelAbs = outerRowTableStart + height * 4; // data right after the table
+                        }
+                        else
+                        {
+                            int low16 = BitConverter.ToUInt16(sprData, outerRowTableStart + (row - 1) * 4 + 2);
+                            pixelAbs = low16 + rowHeaderSize;
+                        }
                     }
                     RenderRow(sprData, palData, bmp, row, width, pixelAbs, shadeData);
                 }
             }
 
             return bmp;
-        }
-        private static int RenderRowAndGetNextPos(byte[] sprData, byte[] palData, Bitmap bmp, int row, int width, int dataPos, byte[]? shadeData)
-        {
-            int x = 0;
-            while (x < width && dataPos + 1 < sprData.Length)
-            {
-                byte palIndex = sprData[dataPos];
-                byte count = sprData[dataPos + 1];
-                dataPos += 2;
-                if (count == 0) continue;
-
-                Color c;
-                if (palIndex == 0) { c = Color.Transparent; }
-                else if (shadeData != null && shadeData.Length >= palIndex * 2 + 2)
-                {
-                    int rgb565 = shadeData[palIndex * 2] | (shadeData[palIndex * 2 + 1] << 8);
-                    int r = ((rgb565 >> 11) & 0x1F); r = (r << 3) | (r >> 2);
-                    int g = ((rgb565 >> 5) & 0x3F); g = (g << 2) | (g >> 4);
-                    int b = (rgb565 & 0x1F); b = (b << 3) | (b >> 2);
-                    c = Color.FromArgb(r, g, b);
-                }
-                else
-                {
-                    int palPos = palIndex * 3;
-                    if (palPos + 2 < palData.Length)
-                        c = Color.FromArgb(palData[palPos] * 4, palData[palPos + 1] * 4, palData[palPos + 2] * 4);
-                    else { c = Color.Magenta; }
-                }
-
-                for (int i = 0; i < count && x < width; i++, x++)
-                {
-                    if (x < width) bmp.SetPixel(x, row, c);
-                }
-            }
-            return dataPos; // This tells the loop exactly where the next row starts
         }
         // ── Palette helpers ──────────────────────────────────────────────────────
 
