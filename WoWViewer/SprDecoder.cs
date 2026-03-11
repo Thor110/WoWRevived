@@ -111,28 +111,36 @@ namespace WoWViewer
             }
             else
             {
-                // 1. Find the Frame Offset Table. 
-                // It is located at the address stored in the first row entry.
-                int firstRowEntry = BitConverter.ToUInt16(sprData, 8 + 2);
+                // Read tc frame block pointers (starting at byte 8)
+                int[] frameBlockPtrs = new int[tableCount];
+                for (int i = 0; i < tableCount; i++)
+                {
+                    int baseX = 8 + i * 4;
+                    int carry = sprData[baseX];
+                    int low16 = BitConverter.ToUInt16(sprData, baseX + 2);
+                    frameBlockPtrs[i] = carry * 65536 + low16;
+                }
 
-                // 2. Get the specific offset for the frame we want.
-                // Each frame pointer is 4 bytes.
-                int framePointerLoc = firstRowEntry + (frame * 4);
-                int frameOffset = BitConverter.ToInt32(sprData, framePointerLoc);
-
-                // 3. Set the Absolute Starting Position
-                int dataPos = firstRowEntry + frameOffset;
-
-                // THE "ONE ROW" CALIBRATION
-                // If Frame 2 is still shifted, it means there is a 4-byte 
-                // Frame Header (Width/Height) right here.
-                // dataPos += 4;
+                // Outer row table starts at byte 8 + tc*4
+                int outerRowTableStart = 8 + tableCount * 4;
 
                 for (int row = 0; row < height; row++)
                 {
-                    // Use your existing RenderRow, but update dataPos manually
-                    // by counting how many bytes it consumed.
-                    dataPos = RenderRowAndGetNextPos(sprData, palData, bmp, row, width, dataPos, shadeData);
+                    int pixelAbs;
+                    if (frame < tableCount - 1)
+                    {
+                        // Sub-table frame: offset is relative to block ptr
+                        int blockPtr = frameBlockPtrs[frame];
+                        int relVal = BitConverter.ToInt32(sprData, blockPtr + row * 4);
+                        pixelAbs = blockPtr + relVal;  // NO +rowHeaderSize
+                    }
+                    else
+                    {
+                        // Last frame: uses outer row table, same as single-frame formula
+                        int low16 = BitConverter.ToUInt16(sprData, outerRowTableStart + row * 4 + 2);
+                        pixelAbs = low16 + rowHeaderSize;  // +rhs like single-frame
+                    }
+                    RenderRow(sprData, palData, bmp, row, width, pixelAbs, shadeData);
                 }
             }
 
