@@ -218,13 +218,13 @@ namespace WoWViewer
             else if (entry.StartsWith("resi", StringComparison.Ordinal)
                 || entry.StartsWith("RES-BUT", StringComparison.Ordinal)
                 || entry.StartsWith("rese", StringComparison.Ordinal)) { shaderName = "HRHI.SHH"; }
-            else if (entry.StartsWith("res", StringComparison.Ordinal)) { shaderName = "HRHR.SHH"; }
+            else if (entry.StartsWith("res", StringComparison.Ordinal) || entry.StartsWith("hu_rscht", StringComparison.Ordinal)) { shaderName = "HRHR.SHH"; }
             else if (entry == "UNIT-BUT.SPR" || entry.StartsWith("hmf") || entry.StartsWith("hu-")
                 || entry.StartsWith("hex") || entry.StartsWith("Hm", StringComparison.Ordinal)
+                || entry.StartsWith("hu_", StringComparison.Ordinal) || entry == "HWAITCUR.SPR"
                 ) { shaderName = "HWHI.SHH"; }
             else if (entry.StartsWith("HB")) { shaderName = "HBHI.SHH"; }
-            else if (entry.StartsWith("hu_", StringComparison.Ordinal)) { shaderName = "HWHI.SHH"; }
-            else if (entry.StartsWith("RP")) { shaderName = "MRMR.SHH"; }
+            else if (entry.StartsWith("RP") || entry == "MR_DETAL") { shaderName = "MRMR.SHH"; }
             else if (entry.StartsWith("RBM")) { shaderName = "SEMI.SHH"; }
             else if (entry.StartsWith("RBH") || entry == "MAN-BUT.SPR"
                 ) { shaderName = "SEHI.SHH"; }
@@ -234,7 +234,11 @@ namespace WoWViewer
                 || entry.StartsWith("MB") || entry.StartsWith("MC")
                 || entry.StartsWith("MD") || entry.StartsWith("MM") || entry.StartsWith("mexit")
                 ) { shaderName = "MBMI.SHH"; }
-            else if (entry == "MWMHI.SPR" || entry == "HWMHI.SPR") { shaderName = "MWMI.SHH"; }
+            else if (entry == "MWMHI.SPR" || entry == "HWMHI.SPR" || entry == "N-ATTACK.SPR") { shaderName = "MWMI.SHH"; }
+            else if (entry.StartsWith("chk")) { shaderName = "F1GI.SHH"; }
+            else if (entry == "mprom.spr" || entry == "msub.spr" || entry == "NORMCURS.SPR"
+                || entry == "SELCURS.SPR" || entry == "SELMINUS.SPR" || entry == "SELPLUS.SPR"
+                || entry == "N_MOVE.SPR") { shaderName = "MRMI.SHH"; }
             else
             {
                 if (!_sprToShader.TryGetValue(Path.GetFileName(entry).ToUpperInvariant(), out string? shaderNameOut))
