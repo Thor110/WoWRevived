@@ -224,7 +224,7 @@ namespace WoWViewer
                 || entry.StartsWith("hu_", StringComparison.Ordinal) || entry == "HWAITCUR.SPR"
                 ) { shaderName = "HWHI.SHH"; }
             else if (entry.StartsWith("HB")) { shaderName = "HBHI.SHH"; }
-            else if (entry.StartsWith("RP") || entry == "MR_DETAL") { shaderName = "MRMR.SHH"; }
+            else if (entry.StartsWith("RP") || entry == "MR_DETAL.SPR") { shaderName = "MRMR.SHH"; }
             else if (entry.StartsWith("RBM")) { shaderName = "SEMI.SHH"; }
             else if (entry.StartsWith("RBH") || entry == "MAN-BUT.SPR"
                 ) { shaderName = "SEHI.SHH"; }
@@ -239,7 +239,7 @@ namespace WoWViewer
             else if (entry == "mprom.spr" || entry == "msub.spr" || entry == "NORMCURS.SPR"
                 || entry == "SELCURS.SPR" || entry == "SELMINUS.SPR" || entry == "SELPLUS.SPR"
                 || entry == "N_MOVE.SPR") { shaderName = "MRMI.SHH"; }
-            else
+            else // MR_DETAL MR
             {
                 if (!_sprToShader.TryGetValue(Path.GetFileName(entry).ToUpperInvariant(), out string? shaderNameOut))
                 {
