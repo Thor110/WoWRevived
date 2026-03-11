@@ -239,7 +239,7 @@ namespace WoWViewer
             else if (entry == "mprom.spr" || entry == "msub.spr" || entry == "NORMCURS.SPR"
                 || entry == "SELCURS.SPR" || entry == "SELMINUS.SPR" || entry == "SELPLUS.SPR"
                 || entry == "N_MOVE.SPR") { shaderName = "MRMI.SHH"; }
-            else // MR_DETAL MR
+            else
             {
                 if (!_sprToShader.TryGetValue(Path.GetFileName(entry).ToUpperInvariant(), out string? shaderNameOut))
                 {
