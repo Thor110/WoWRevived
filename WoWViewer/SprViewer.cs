@@ -214,32 +214,49 @@ namespace WoWViewer
             // RES_PHOT
             string shaderName;
             // NOTE: MINIB and MINIT produce the same result.
-            if (isMaps || entry.StartsWith("HMINI") || entry.StartsWith("mmini")) { shaderName = entry.First() + "MINIB.SHH"; }
+            if (isMaps || entry.StartsWith("HMINI") || entry.StartsWith("mmini")
+                ) { shaderName = entry.First() + "MINIB.SHH"; }
             else if (entry.StartsWith("resi", StringComparison.Ordinal)
                 || entry.StartsWith("RES-BUT", StringComparison.Ordinal)
-                || entry.StartsWith("rese", StringComparison.Ordinal)) { shaderName = "HRHI.SHH"; }
-            else if (entry.StartsWith("res", StringComparison.Ordinal) || entry.StartsWith("hu_rscht", StringComparison.Ordinal)) { shaderName = "HRHR.SHH"; }
+                || entry.StartsWith("rese", StringComparison.Ordinal)
+                ) { shaderName = "HRHI.SHH"; }
+            else if (entry.StartsWith("res", StringComparison.Ordinal) || entry.StartsWith("hu_rscht", StringComparison.Ordinal)
+                ) { shaderName = "HRHR.SHH"; }
             else if (entry == "UNIT-BUT.SPR" || entry.StartsWith("hmf") || entry.StartsWith("hu-")
                 || entry.StartsWith("hex") || entry.StartsWith("Hm", StringComparison.Ordinal)
                 || entry.StartsWith("hu_", StringComparison.Ordinal) || entry == "HWAITCUR.SPR"
                 ) { shaderName = "HWHI.SHH"; }
-            else if (entry.StartsWith("HB")) { shaderName = "HBHI.SHH"; }
-            else if (entry.StartsWith("RP") || entry == "MR_DETAL.SPR") { shaderName = "MRMR.SHH"; }
-            else if (entry.StartsWith("RBM")) { shaderName = "SEMI.SHH"; }
-            else if (entry.StartsWith("RBH") || entry == "MAN-BUT.SPR"
+            else if (entry.StartsWith("HB")
+                ) { shaderName = "HBHI.SHH"; }
+            else if (entry.StartsWith("RP") || entry == "MR_DETAL.SPR"
+                ) { shaderName = "MRMR.SHH"; }
+            else if (entry.StartsWith("RBM")
+                ) { shaderName = "SEMI.SHH"; }
+            else if (entry.StartsWith("RBH") || entry == "MAN-BUT.SPR" || entry.StartsWith("hp")
+                || entry.StartsWith("HRep") || entry.StartsWith("hsel") || entry.StartsWith("hsu")
+                || entry.StartsWith("N-M")
                 ) { shaderName = "SEHI.SHH"; }
-            else if (entry.StartsWith("gtlogo")) { shaderName = "F4F4.SHH"; }
+            else if (entry.StartsWith("gtlogo")
+                ) { shaderName = "F4F4.SHH"; }
             else if (entry.StartsWith("MA", StringComparison.Ordinal) && entry != "ma_brief.spr"
                 && entry != "martbd.spr" && entry != "MARTNFMV.SPR"
                 || entry.StartsWith("MB") || entry.StartsWith("MC")
                 || entry.StartsWith("MD") || entry.StartsWith("MM") || entry.StartsWith("mexit")
+                || entry == "BAR-BASE.SPR"
                 ) { shaderName = "MBMI.SHH"; }
             else if (entry == "MWMHI.SPR" || entry == "HWMHI.SPR" || entry == "N-ATTACK.SPR"
-                || entry == "MWAITCUR.SPR") { shaderName = "MWMI.SHH"; }
-            else if (entry.StartsWith("chk")) { shaderName = "F1GI.SHH"; }
+                || entry == "MWAITCUR.SPR" || entry == "madd.spr"
+                ) { shaderName = "MWMI.SHH"; }
+            else if (entry.StartsWith("chk") || entry.StartsWith("RA")
+                ) { shaderName = "F1GI.SHH"; }
             else if (entry == "mprom.spr" || entry == "msub.spr" || entry == "NORMCURS.SPR"
                 || entry == "SELCURS.SPR" || entry == "SELMINUS.SPR" || entry == "SELPLUS.SPR"
                 || entry == "N_MOVE.SPR") { shaderName = "MRMI.SHH"; }
+            else if (entry.StartsWith("BAS") || entry.StartsWith("BLA") || entry.StartsWith("BO")
+                || entry.StartsWith("BS") || entry.StartsWith("CRA") || entry.StartsWith("di")
+                || entry.StartsWith("E") || entry.StartsWith("gu") || entry.StartsWith("mus")
+                || entry.StartsWith("smk") || entry.StartsWith("sp") || entry.StartsWith("tp")
+                ) { shaderName = "BMEX.SHH"; }
             else
             {
                 if (!_sprToShader.TryGetValue(Path.GetFileName(entry).ToUpperInvariant(), out string? shaderNameOut))
