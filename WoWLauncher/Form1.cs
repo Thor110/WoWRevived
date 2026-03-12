@@ -187,6 +187,7 @@ namespace WoWLauncher
                 screenKey.SetValue("BPP", 16, RegistryValueKind.DWord);
                 MessageBox.Show("The \"BPP\" registry entry must be set to 16 as I have removed the 8/16 bit toggle from the games executable, surely you don't want to play it in 8 bit colour mode in the 21st century?");
             }
+            if(File.Exists("DAT\\cd_bd1.spr")) { checkBox6.Checked = true; }
             // add event handlers here for the checkboxes and comboboxes to prevent them firing when the form is loaded
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
@@ -199,6 +200,7 @@ namespace WoWLauncher
             //music playback when out of focus
             checkBox5.Checked = File.Exists("music_focus.txt");
             checkBox5.CheckedChanged += checkBox5_CheckedChanged!;
+            checkBox6.CheckedChanged += checkBox6_CheckedChanged!;
         }
         /// <summary>
         /// InitializeTooltips prepares a tooltip for every control in the form.
@@ -314,8 +316,9 @@ namespace WoWLauncher
             checkBox1.Visible = true;
             checkBox2.Visible = true;
             checkBox3.Visible = true;
-            //checkBox4.Visible = true;
+            //checkBox4.Visible = true;     // resize window not supported
             checkBox5.Visible = true;
+            checkBox6.Visible = true;
             comboBox2.Visible = true;
             //comboBox3.Visible = true;     // game frequency is not supported
             comboBox4.Visible = true;
@@ -344,8 +347,9 @@ namespace WoWLauncher
                 checkBox1.Visible = false;
                 checkBox2.Visible = false;
                 checkBox3.Visible = false;
-                //checkBox4.Visible = false;
+                //checkBox4.Visible = false;    // resize window not supported
                 checkBox5.Visible = false;
+                checkBox6.Visible = false;
                 comboBox1.Visible = false;
                 comboBox2.Visible = false;
                 //comboBox3.Visible = false;     // game frequency is not supported
@@ -520,7 +524,7 @@ namespace WoWLauncher
         // music focus checkbox
         private void checkBox5_CheckedChanged(object sender, EventArgs e)
         {
-            if(checkBox2.Checked)
+            if (checkBox2.Checked)
             {
                 if (MessageBox.Show("Disable Full Screen to enable this feature.", "Full Screen Detected", MessageBoxButtons.YesNo) == DialogResult.No)
                 {
@@ -531,8 +535,32 @@ namespace WoWLauncher
                 }
                 checkBox2.Checked = false;
             }
-            if(checkBox5.Checked) { File.Move("no_music_focus.txt", "music_focus.txt"); }
+            if (checkBox5.Checked) { File.Move("no_music_focus.txt", "music_focus.txt"); }
             else { File.Move("music_focus.txt", "no_music_focus.txt"); }
+        }
+        // enable or disable hd upscale
+        private string[] upscaledFiles = new string[] {
+            "cd_bd1.spr", "cd_bd2.spr", "cd_bd3.spr", "cd_bd4.spr", "cd_bd5.spr", "cd_bd6.spr", "cd_bd7.spr",
+            "HBBdown.spr", "HBBup.spr", "HBTdown.spr", "HBTup.spr", "HBuildB1.spr", "hexitarr.spr", "Hmessage.spr",
+            "hmframe.spr", "HMINI.SPR", "hu-cnt48.spr", "hu_buton.spr", "hu_calen.spr", "hu_event.spr", "hu_speed.spr",
+            "MA-CNT48.SPR", "MAN-BUT.SPR", "MA_BUTON.SPR", "MA_CALEN.SPR", "MA_EVENT.SPR", "ma_goo.spr", "MA_SPEED.SPR",
+            "MA_WORLD.SPR", "MBBDOWN.SPR", "MBBUP.SPR", "MBTDOWN.SPR", "MBTUP.SPR", "MBUILDB1.SPR", "MBUILDB2.SPR", "MCOG.SPR",
+            "mexitarr.spr", "MFACT.SPR", "MMFRAME.SPR", "mmini.spr", "MRESRCHB.SPR", "mr_exit.spr", "MR_TAB.SPR", "MUNITS.SPR",
+            "RBHAbndn.spr", "RBHAggro.spr", "RBHattk.spr", "RBHBsrk.spr", "RBHbuild.spr", "RBHChkn.spr", "RBHcncl.spr", "RBHcnclM.spr",
+            "RBHCtrlB.spr", "RBHFrze.spr", "RBHgo.spr", "RBHInfl.spr", "RBHinfo.spr", "RBHPulse.spr", "RBHrsrch.spr", "RBHRtlt.spr",
+            "RBHrtrt.spr", "RBHrturn.spr", "RBHScare.spr", "RBHstop.spr", "RBHsusp.spr", "RBHtnnl.spr", "RBHvwmap.spr", "RBHXplsv.spr",
+            "RBMAbndn.spr", "RBMAggro.spr", "RBMATTK.SPR", "RBMBDUST.SPR", "RBMBsrk.spr", "RBMBUILD.SPR", "RBMChkn.spr", "RBMCNCL.SPR",
+            "RBMcnclM.spr", "RBMCtrlB.spr", "RBMFrze.spr", "RBMgo.spr", "RBMHALT.SPR", "RBMinflt.spr", "RBMINFO.SPR", "RBMPulse.spr",
+            "RBMRtlt.spr", "RBMRTRT.SPR", "RBMRTURN.SPR", "RBMSBOMB.SPR", "RBMscan.spr", "RBMScare.spr", "RBMstop.spr", "RBMsusp.spr",
+            "RBMVWMAP.SPR", "RES-BUT.SPR", "rese-but.spr", "RP_Bio.spr", "RP_Blcks.spr", "RP_bm.spr", "RP_Cnstr.spr", "RP_Comms.spr",
+            "RP_cons.spr", "RP_Coppr.spr", "RP_DM.spr", "RP_DR.spr", "RP_el.spr", "RP_EWP.spr", "RP_Farm.spr", "RP_FLM.spr", "RP_fm.spr",
+            "RP_HElmn.spr", "RP_hm.spr", "RP_HRT.spr", "RP_HX.spr", "RP_mods.spr", "RP_Obs.spr", "RP_Power.spr", "RP_Proj.spr", "RP_Rapid.spr",
+            "RP_Repr.spr", "RP_scn.spr", "RP_sm.spr", "RP_Susp.spr", "RP_T.spr", "RP_TC.spr", "RP_xt.spr", "UNIT-BUT.SPR",
+        };
+        private void checkBox6_CheckedChanged(object sender, EventArgs e)
+        {
+            if(checkBox6.Checked) { foreach(string file in upscaledFiles) { File.Move($"DAT-EXTRA\\HD\\{file}",$"DAT\\{file}"); } }
+            else { foreach (string file in upscaledFiles) { MessageBox.Show("TEST"); File.Move($"DAT\\{file}", $"DAT-EXTRA\\HD\\{file}"); } }
         }
     }
 }
