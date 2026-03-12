@@ -208,10 +208,8 @@ namespace WoWViewer
         private string ShaderName(string entry)
         {
             // UNKNOWNS
-            // MDONTCUR.SPR
-            // min_mark.spr
             // madbrief.spr - broken version of ma_brief.spr, doesn't map to anything, must be unused.
-            // RES_PHOT
+            // RES_PHOT - possibly unused.
             string shaderName;
             // NOTE: MINIB and MINIT produce the same result.
             if (isMaps || entry.StartsWith("HMINI") || entry.StartsWith("mmini")
@@ -219,12 +217,17 @@ namespace WoWViewer
             else if (entry.StartsWith("resi", StringComparison.Ordinal)
                 || entry.StartsWith("RES-BUT", StringComparison.Ordinal)
                 || entry.StartsWith("rese", StringComparison.Ordinal)
+                || entry.StartsWith("ha")
+                || entry.StartsWith("hov")
+                || entry.StartsWith("hn")
+                || entry.StartsWith("HD")
                 ) { shaderName = "HRHI.SHH"; }
             else if (entry.StartsWith("res", StringComparison.Ordinal) || entry.StartsWith("hu_rscht", StringComparison.Ordinal)
                 ) { shaderName = "HRHR.SHH"; }
             else if (entry == "UNIT-BUT.SPR" || entry.StartsWith("hmf") || entry.StartsWith("hu-")
                 || entry.StartsWith("hex") || entry.StartsWith("Hm", StringComparison.Ordinal)
                 || entry.StartsWith("hu_", StringComparison.Ordinal) || entry == "HWAITCUR.SPR"
+                || entry.StartsWith("h-")
                 ) { shaderName = "HWHI.SHH"; }
             else if (entry.StartsWith("HB")
                 ) { shaderName = "HBHI.SHH"; }
@@ -246,17 +249,21 @@ namespace WoWViewer
                 ) { shaderName = "MBMI.SHH"; }
             else if (entry == "MWMHI.SPR" || entry == "HWMHI.SPR" || entry == "N-ATTACK.SPR"
                 || entry == "MWAITCUR.SPR" || entry == "madd.spr" || entry == "MRESRCHB.SPR" || entry == "MUNITS.SPR"
+                || entry == "ma_goo.spr"
+                || entry == "MFACT.SPR"
+                || entry == "MREPEAT.SPR"
                 ) { shaderName = "MWMI.SHH"; }
             else if (entry.StartsWith("chk") || entry.StartsWith("RA")
                 ) { shaderName = "F1GI.SHH"; }
             else if (entry == "mprom.spr" || entry == "msub.spr" || entry == "NORMCURS.SPR"
                 || entry == "SELCURS.SPR" || entry == "SELMINUS.SPR" || entry == "SELPLUS.SPR"
-                || entry == "N_MOVE.SPR") { shaderName = "MRMI.SHH"; }
+                || entry == "N_MOVE.SPR" || entry == "MOVE-ACK.SPR"
+                || entry.StartsWith("SELEC")
+                ) { shaderName = "MRMI.SHH"; }
             else if (entry.StartsWith("BAS") || entry.StartsWith("BLA") || entry.StartsWith("BO")
                 || entry.StartsWith("BS") || entry.StartsWith("CRA") || entry.StartsWith("di")
                 || entry.StartsWith("E") || entry.StartsWith("gu") || entry.StartsWith("mus")
-                || entry.StartsWith("smk") || entry.StartsWith("sp") || entry.StartsWith("tp")
-                //SMK case? // shock? //MWMI
+                || entry.StartsWith("smk", StringComparison.OrdinalIgnoreCase) || entry.StartsWith("sp") || entry.StartsWith("tp")
                 ) { shaderName = "BMEX.SHH"; }
             else
             {
@@ -358,17 +365,16 @@ namespace WoWViewer
         {
             if (palData == null) { return; }
             label2.Text = SprDecoder.ReadInfo(rawData).ToString();
-            if (currentRenderedEntry != listBox1.SelectedIndex)
+            if (currentRenderedEntry != listBox1.SelectedIndex) // repopulate comboBox1 if new entry is selected
             {
                 comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;
                 comboBox1.Items.Clear();
-                // TODO : move combobox code to comboBox1_SelectedIndexChanged
                 currentRenderedEntry = listBox1.SelectedIndex;
                 int frameCount = SprDecoder.ReadInfo(rawData).TableCount;
+                string name = Path.GetFileNameWithoutExtension(selectedEntry);
                 if (frameCount != 1)
                 {
-                    for (int i = 0; i < frameCount; i++) { comboBox1.Items.Add($"{selectedEntry}_frame_{i:D2}"); }
-                    currentFrame = 0;
+                    for (int i = 0; i < frameCount; i++) { comboBox1.Items.Add($"{name}_frame_{i:D2}"); }
                     comboBox1.Enabled = true;   // enable frames combo box
                     button6.Enabled = true;     // enable replace all frames button
                     button1.Enabled = false;    // disable single frame replace button??
@@ -376,13 +382,13 @@ namespace WoWViewer
                 }
                 else
                 {
-                    currentFrame = 0;
                     comboBox1.Enabled = false;  // disable frames combo box
                     button6.Enabled = false;    // disable replace all frames button
                     button1.Enabled = true;     // enable single frame replace button??
-                    comboBox1.Text = selectedEntry;
+                    comboBox1.Text = name;      // update combobox with entry name
                     comboBox1.SelectedIndex = -1;
                 }
+                currentFrame = 0; // reset currently selected frame
                 comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged!;
             }
             // paletteOffset = 0 → use the main palette at the start of the PAL file.
