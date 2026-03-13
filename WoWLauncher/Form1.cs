@@ -542,8 +542,9 @@ namespace WoWLauncher
         private string[] upscaledFiles = new string[] {
             "cd_bd1.spr", "cd_bd2.spr", "cd_bd3.spr", "cd_bd4.spr", "cd_bd5.spr", "cd_bd6.spr", "cd_bd7.spr",
             "HBBdown.spr", "HBBup.spr", "HBTdown.spr", "HBTup.spr", "HBuildB1.spr", "hexitarr.spr", "Hmessage.spr",
-            "hmframe.spr", "HMINI.SPR", "hu-cnt48.spr", "hu_buton.spr", "hu_calen.spr", "hu_event.spr", "hu_speed.spr",
-            "MA-CNT48.SPR", "MAN-BUT.SPR", "MA_BUTON.SPR", "MA_CALEN.SPR", "MA_EVENT.SPR", "ma_goo.spr", "MA_SPEED.SPR",
+            "hmframe.spr", "HMINI.SPR", "hu-cnt32.spr", "hu-cnt48.spr", "hu_buton.spr", "hu_calen.spr", "hu_event.spr",
+            "hu_speed.spr", "hu_twirl.spr", "MA-CNT32.SPR", "MA-CNT48.SPR",
+            "MAN-BUT.SPR", "MA_BUTON.SPR", "MA_CALEN.SPR", "MA_EVENT.SPR", "ma_goo.spr", "MA_SPEED.SPR",
             "MA_WORLD.SPR", "MBBDOWN.SPR", "MBBUP.SPR", "MBTDOWN.SPR", "MBTUP.SPR", "MBUILDB1.SPR", "MBUILDB2.SPR", "MCOG.SPR",
             "mexitarr.spr", "MFACT.SPR", "MMFRAME.SPR", "mmini.spr", "MRESRCHB.SPR", "mr_exit.spr", "MR_TAB.SPR", "MUNITS.SPR",
             "RBHAbndn.spr", "RBHAggro.spr", "RBHattk.spr", "RBHBsrk.spr", "RBHbuild.spr", "RBHChkn.spr", "RBHcncl.spr", "RBHcnclM.spr",
@@ -559,8 +560,8 @@ namespace WoWLauncher
         };
         private void checkBox6_CheckedChanged(object sender, EventArgs e)
         {
-            if(checkBox6.Checked) { foreach(string file in upscaledFiles) { File.Move($"DAT-EXTRA\\HD\\{file}",$"DAT\\{file}"); } }
-            else { foreach (string file in upscaledFiles) { MessageBox.Show("TEST"); File.Move($"DAT\\{file}", $"DAT-EXTRA\\HD\\{file}"); } }
+            if (checkBox6.Checked) { foreach(string file in upscaledFiles) { File.Move($"DAT-EXTRA\\HD\\{file}",$"DAT\\{file}"); } }
+            else { foreach (string file in upscaledFiles) { File.Move($"DAT\\{file}", $"DAT-EXTRA\\HD\\{file}"); } }
         }
     }
 }
