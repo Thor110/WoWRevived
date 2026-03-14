@@ -108,6 +108,10 @@ The road map for this project.
 		- Martian & Human Unit Icons are now the same for both factions, which makes it easier to tell when using the infiltration skill.
 		- Music Track Artwork is now brighter.
 		- Reworked 129/445 .spr files in total which includes the vast majority of the user interface, building unit icons, warmap unit icons and battlemap unit icons.
+			- This count doesn't include the menu backgrounds and legal screens, which is another 9 files.
+			- The extended warmap background includes another 4 files.
+			- Full count 142/445 .spr files.
+			- Remaining sprite files include mouse cursors, visual effects and parts of menus where there is very little space to add any detail.
 - ❌ 11 : Decomp/Recomp ( Started - 1% Complete )
 	- Begun mapping out virtual key addresses for use in the launchers custom keyboard shortcut settings. ( "WoWRevived\WoWDecomp\ida-map.txt" )
 
