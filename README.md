@@ -66,15 +66,14 @@ The road map for this project.
 	- .WoW archives can be extracted.
 	- Waveform preview, play and replace sound files from .WoW archives.
 	- Decompressing files optional but enabled by default.
-- [❌ 3 : Sprite Viewer](#sprite-viewer) ( 95% Complete )
+- [✅ 3 : Sprite Viewer](#sprite-viewer) ( 99% Complete )
 	- Sprite viewer can extract and replace game sprites.
 	- Export original palette and palette with the shader tables applied.
 	- Preview with the original palette or with the shader tables applied.
-	- Replace single frame sprites with custom ones.
+	- Replace single frame and multi-frame sprites with custom ones.
 	- Quantisation of imported images will reduce them to the closest equivalent colour found in the palette.
-	- Supports importing with the original palette colours.
 	- Known "bugs" with the Sprite Viewer.
-		- 1\. Shader tables are not applied to all sprites yet, only a small number of shader tables are left to be identified.
+		- 1\. Shader tables are not applied to all sprites yet, only a very small number of shader tables are left to be identified.
 - [❌ 4 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Override standard limit of 1753 as the minimum date and set the year manually to as low as year zero.
@@ -103,7 +102,13 @@ The road map for this project.
 		- This is because alt-tabbing is broken in the game by default.
 - [❌ 9 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 50% Complete )
 	- Resolution agnostic custom backgrounds have been made but have yet to be finished.
-- ❌ 10 : Decomp/Recomp ( Started - 1% Complete )
+	- Extended width of the war map, this allows higher resolutions to work.
+- [❌ 10 : Enhanced Original Assets](#enhanced-original-assets) ( 50% Complete )
+	- Reworked many assets in the game to improve their appearance.
+		- Martian & Human Unit Icons are now the same for both factions, which makes it easier to tell when using the infiltration skill.
+		- Music Track Artwork is now brighter.
+		- Reworked 129/445 .spr files in total which includes the vast majority of the user interface, building unit icons, warmap unit icons and battlemap unit icons.
+- ❌ 11 : Decomp/Recomp ( Started - 1% Complete )
 	- Begun mapping out virtual key addresses for use in the launchers custom keyboard shortcut settings. ( "WoWRevived\WoWDecomp\ida-map.txt" )
 
 This might not all happen but I wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
@@ -253,6 +258,30 @@ Martian Research Menu
 <div align="center">
   <img src="images/custom-martian-research.png" alt="Martian Research Menu">
 </div>
+
+## Enhanced Original Assets
+
+These are the original battle map unit icons.
+
+<div align="center">
+  <img src="images/hu-original-spritesheet.png" alt="Original Human Battle Map Unit Icons">
+</div>
+
+<div align="center">
+  <img src="images/ma-original-spritesheet.png" alt="Original Martian Battle Map Unit Icons">
+</div>
+
+These are the enhanced battle map unit icons.
+
+<div align="center">
+  <img src="images/hu-output-spritesheet.png" alt="Enhanced Human Battle Map Unit Icons">
+</div>
+
+<div align="center">
+  <img src="images/ma-output-spritesheet.png" alt="Enhanced Martian Battle Map Unit Icons">
+</div>
+
+Many more assets have been reworked, most of which is barely noticeable but in general adds a little more colour depth to the interface.
 
 ## Credit
 
