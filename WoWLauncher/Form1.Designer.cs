@@ -281,13 +281,13 @@
             // 
             // checkBox6
             // 
-            checkBox6.AccessibleDescription = "This setting enables the HD upscaled user interface assets.";
+            checkBox6.AccessibleDescription = "This setting enables the enhanced user interface assets. ( This adds a little more colour depth to the interface. )";
             checkBox6.AutoSize = true;
             checkBox6.Location = new Point(12, 387);
             checkBox6.Name = "checkBox6";
-            checkBox6.Size = new Size(87, 19);
+            checkBox6.Size = new Size(114, 19);
             checkBox6.TabIndex = 21;
-            checkBox6.Text = "HD Upscale";
+            checkBox6.Text = "Enhanced Assets";
             checkBox6.UseVisualStyleBackColor = true;
             checkBox6.Visible = false;
             // 
