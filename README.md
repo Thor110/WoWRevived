@@ -40,7 +40,7 @@ The road map for this project.
 			- this is because the 8 bit colour mode doesn't work on modern systems.
 		- 3\. 2 bytes to skip creation of the "Lights" toggle in the "Display Settings" menu.
 			- this prevents a crash from occuring when using the infiltration skill in-game.
-		- 4\. 1 byte to skip checking for the original .smk movie files to save storage space.
+		- 4\. 1 byte to skip checking for the original .smk movie files to save storage space, this patch also allows my movies to play through the wrapper.
 		- 5\. 9 bytes to redirect to the winmm shim to allow localised playback of the games music.
 		- 6\. 2 bytes to skip creation of the resolution slider which doesn't change the resolution without restarting the game.
 	- Languages supported:
@@ -49,9 +49,6 @@ The road map for this project.
 		- 3\. German
 		- 4\. Italian
 		- 5\. Spanish
-	- Known "bugs" which I consider non-issues for the time-being:
-		- 1\. Selecting the Credits from the options menu crashes the game. ( doesn't crash when the resolution is set to 640x480 )
-		- 2\. Finishing the game leads to the Credits and also crashes the game. ( doesn't crash when the resolution is set to 640x480 )
 	- Features I am considering adjusting:
 		- 1\. Heat-ray construction limit of 12, I may add this limit to the launcher when I locate the relevant values.
 - [✅ 1 : Custom Launcher](#custom-launcher) ( Fully Functional - 95% Complete )
@@ -100,10 +97,11 @@ The road map for this project.
 	- Simple 1920x1080 upscales of all the original videos which get scaled to the games resolution.
 	- Alt-Tab detection when in fullscreen used to close the game automatically to save the user time encountering an error.
 		- This is because alt-tabbing is broken in the game by default.
-- [❌ 9 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 50% Complete )
+	- Includes code for hijacking the credits sequence so that it doesn't crash and creating an overlay to display the credits sequence.
+- [❌ 9 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 90% Complete )
 	- Resolution agnostic custom backgrounds have been made but have yet to be finished.
 	- Extended width of the war map, this allows higher resolutions to work.
-- [❌ 10 : Enhanced Original Assets](#enhanced-original-assets) ( 50% Complete )
+- [❌ 10 : Enhanced Original Assets](#enhanced-original-assets) ( 90% Complete )
 	- Reworked many assets in the game to improve their appearance.
 		- Martian & Human Unit Icons are now the same for both factions, which makes it easier to tell when using the infiltration skill.
 		- Music Track Artwork is now brighter.
