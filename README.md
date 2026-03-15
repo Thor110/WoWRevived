@@ -56,7 +56,7 @@ The road map for this project.
 	- Automatic regeneration of base registry settings, making the installation portable.
 	- Automatic cleanup of unnecessary files and Smackw32.dll moved to main directory.
 	- Custom pre-set difficulty settings. (Easy, Medium[default], Hard)
-	- Dynamic asset swapping pipeline with custom assets curated for each supported resolution. (WIP - not enabled currently)
+	- Dynamic asset swapping pipeline with custom assets curated for each supported resolution.
 - [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 100% Complete )
 	- .WoW archives can be extracted.
 	- Waveform preview, play and replace sound files from .WoW archives.
