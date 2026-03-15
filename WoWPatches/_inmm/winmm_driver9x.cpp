@@ -19,6 +19,8 @@ FILE* logFile = nullptr;
 bool debug = false; // true for logging
 bool musicFocus = (GetFileAttributesA("music_focus.txt") != INVALID_FILE_ATTRIBUTES); // allow music to continue playing while the window is out of focus
 
+CRITICAL_SECTION audioLock;
+
 // === Logging === //
 void Log(const char* fmt, ...)
 {
@@ -56,6 +58,10 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		char exeName[MAX_PATH];
 		GetModuleFileNameA(NULL, exeName, MAX_PATH);
 		isNetworkVersion = (strstr(exeName, "WoW_network") != NULL);
+		InitializeCriticalSection(&audioLock);
+	}
+	else if (fdwReason == DLL_PROCESS_DETACH) {
+		DeleteCriticalSection(&audioLock);
 	}
 	return TRUE;
 }
@@ -71,7 +77,7 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	if (msg == WM_ACTIVATEAPP) {
 		lastFocusEventTick = GetTickCount(); // Mark exactly WHEN focus shifted
-
+		EnterCriticalSection(&audioLock);
 		if (!wParam) {
 			Log("HOOK: Focus Lost");
 			if (hWaveOut && !isPaused && !musicFocus) {
@@ -88,6 +94,7 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				waveOutRestart(hWaveOut);
 			}
 		}
+		LeaveCriticalSection(&audioLock);
 	}
 	return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
 }
@@ -109,6 +116,7 @@ uint32_t GetWavDuration(const char* filename) {
 }
 
 void StopAudio() {
+	EnterCriticalSection(&audioLock);
 	if (hWaveOut) {
 		waveOutReset(hWaveOut); // stops playback immediately
 		// Wait for the driver to release the buffer
@@ -133,6 +141,7 @@ void StopAudio() {
 		GlobalFree(hWaveData);
 		hWaveData = NULL;
 	}
+	LeaveCriticalSection(&audioLock);
 }
 
 void PlayWav(const char* path) {
