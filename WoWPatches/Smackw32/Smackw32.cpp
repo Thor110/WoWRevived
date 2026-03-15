@@ -8,29 +8,45 @@
 #include <string>
 #include <mfidl.h>
 
+#include <gdiplus.h>
+#pragma comment(lib, "gdiplus.lib")
+using namespace Gdiplus;
+
 #pragma comment(lib, "mfuuid.lib")
 #pragma comment(lib, "strmiids.lib")
 #pragma comment(lib, "mf.lib")
 #pragma comment(lib, "mfplay.lib")
 #pragma comment(lib, "mfplat.lib")
 
+// ============================================================
+//  Globals
+// ============================================================
+
 FILE* logFile = nullptr;
-bool debug = false;
-int regWidth = 640;
-int regHeight = 480;
-int offsetY = 0;
-bool videoFinished = false;
-bool isFullscreen = false;
-HWND overlayWindow = NULL;
+bool  debug = true;
+int   regWidth = 640;
+int   regHeight = 480;
+int   offsetY = 0;
+bool  videoFinished = false;
+bool  isFullscreen = false;
+HWND  overlayWindow = NULL;
 IMFPMediaPlayer* pMediaPlayer = NULL;
 
-// === Logging === //
+// Credits scroll state
+Image* creditsImage = nullptr;
+float   creditsScrollY = 0.0f;   // current scroll position in image pixels
+float   creditsScrollPx = 0.0f;   // pixels per second, set after image loads
+ULONG_PTR gdiplusToken = 0;
+
+// ============================================================
+//  Logging
+// ============================================================
+
 void Log(const char* fmt, ...)
 {
     if (!debug) return;
     if (!logFile) logFile = fopen("Smackw32_log.txt", "a");
     if (!logFile) return;
-
     va_list args;
     va_start(args, fmt);
     vfprintf(logFile, fmt, args);
@@ -39,7 +55,271 @@ void Log(const char* fmt, ...)
     va_end(args);
 }
 
-// Media Foundation callback
+// ============================================================
+//  Credits interception
+//
+//  No hook on sub_4041B0 - credits init runs fully so audio plays.
+//
+//  Two patches at startup:
+//    0x405470 -> RET  (disables tile renderer: no crash, no broken visual)
+//
+//  Detection:
+//    Menu path:        0x4D1490 == 0x80CA  (set when Credits button clicked)
+//    Post-victory:     0x4D255C == 0x80CA  (set when entering credits state)
+//
+//  End detection:
+//    Credits always exit to state 0x80C9 or via sub_4048F0 which sets 0x4D255C=0.
+//    We detect the state variable changing away from what it was at credits start.
+// ============================================================
+
+#define ADDR_STATE_255C  ((volatile DWORD*)0x4D255C)
+#define ADDR_STATE_1490  ((volatile DWORD*)0x4D1490)
+
+HWND   creditsOverlay = NULL;
+HANDLE creditsThread = NULL;
+bool   creditsShutdown = false;
+
+void CreateOverlayWindow();
+void CloseOverlayWindow();
+
+void InstallCreditsHook()
+{
+    DWORD old;
+
+    // Patch sub_405470 to return immediately.
+    // This prevents the tile renderer from being created (no crash at any resolution).
+    // Audio is set up in sub_4052B0 which runs before sub_405470 is ever called.
+    BYTE* p = (BYTE*)0x405470;
+    VirtualProtect(p, 1, PAGE_EXECUTE_READWRITE, &old);
+    *p = 0xC3;  // RET
+    VirtualProtect(p, 1, old, &old);
+    FlushInstructionCache(GetCurrentProcess(), p, 1);
+    Log("sub_405470 patched to RET (tile renderer disabled)");
+}
+
+// ============================================================
+//  Credits overlay window
+// ============================================================
+
+#define WM_CLOSE_CREDITS (WM_USER + 2)
+
+LRESULT CALLBACK CreditsWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    if (msg == WM_DESTROY) { creditsOverlay = NULL; }
+    if (msg == WM_CLOSE_CREDITS) { DestroyWindow(hwnd); }
+    if (msg == WM_KEYDOWN || msg == WM_KEYUP || msg == WM_SYSKEYDOWN || msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN) {
+        HWND gameWnd = FindWindowA(NULL, "The War Of The Worlds");
+        if (gameWnd) PostMessage(gameWnd, msg, wParam, lParam);
+        return 0;
+    }
+    if (msg == WM_PAINT) {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+        RECT rc; GetClientRect(hwnd, &rc);
+        int w = rc.right, h = rc.bottom;
+
+        // Double-buffer to avoid flicker
+        HDC memDC = CreateCompatibleDC(hdc);
+        HBITMAP memBmp = CreateCompatibleBitmap(hdc, w, h);
+        HBITMAP oldBmp = (HBITMAP)SelectObject(memDC, memBmp);
+
+        // Fill black
+        HBRUSH black = (HBRUSH)GetStockObject(BLACK_BRUSH);
+        FillRect(memDC, &rc, black);
+
+        if (creditsImage) {
+            Graphics g(memDC);
+            g.SetInterpolationMode(InterpolationModeHighQualityBicubic);
+
+            int imgW = (int)creditsImage->GetWidth();
+            int imgH = (int)creditsImage->GetHeight();
+
+            // Centre image horizontally, scroll vertically
+            int destX = (w - imgW) / 2;
+            int srcY = (int)creditsScrollY;
+            int srcH = min(h, imgH - srcY);
+            if (srcH > 0) {
+                g.DrawImage(creditsImage,
+                    destX, 0,           // dest top-left
+                    0, srcY, imgW, srcH, // src rect
+                    UnitPixel);
+            }
+        }
+
+        BitBlt(hdc, 0, 0, w, h, memDC, 0, 0, SRCCOPY);
+        SelectObject(memDC, oldBmp);
+        DeleteObject(memBmp);
+        DeleteDC(memDC);
+        EndPaint(hwnd, &ps);
+        return 0;
+    }
+    return DefWindowProcA(hwnd, msg, wParam, lParam);
+}
+
+void CreateCreditsOverlay()
+{
+    WNDCLASSEXA wc = {};
+    wc.cbSize = sizeof(wc);
+    wc.lpfnWndProc = CreditsWndProc;
+    wc.hInstance = GetModuleHandleA(NULL);
+    wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    wc.lpszClassName = "WoWCreditsOverlay";
+    RegisterClassExA(&wc);
+
+    HWND gameWnd = FindWindowA(NULL, "The War Of The Worlds");
+    POINT clientPos = { 0, 0 };
+    if (gameWnd) ClientToScreen(gameWnd, &clientPos);
+    creditsOverlay = CreateWindowExA(
+        isFullscreen ? (WS_EX_TOPMOST | WS_EX_NOACTIVATE) : WS_EX_NOACTIVATE,
+        "WoWCreditsOverlay", NULL, WS_POPUP,
+        clientPos.x, clientPos.y, regWidth, regHeight,
+        isFullscreen ? NULL : gameWnd,
+        NULL, GetModuleHandleA(NULL), NULL
+    );
+
+    if (creditsOverlay) {
+        ShowWindow(creditsOverlay, SW_SHOWNA);
+        // Load credits.png from the same directory as the exe
+        char exePath[MAX_PATH];
+        GetModuleFileNameA(NULL, exePath, MAX_PATH);
+        // Replace filename with credits.png
+        char* lastSlash = strrchr(exePath, '\\');
+        if (lastSlash) *(lastSlash + 1) = '\0';
+        strcat(exePath, "credits.png");
+
+        wchar_t wPath[MAX_PATH];
+        MultiByteToWideChar(CP_ACP, 0, exePath, -1, wPath, MAX_PATH);
+        creditsImage = Image::FromFile(wPath);
+
+        if (creditsImage && creditsImage->GetLastStatus() == Ok) {
+            // Scroll the full image height plus one screen height over the window lifetime.
+            // Speed is set here as pixels/second - adjust to taste or measure audio later.
+            // Default: scroll full image in ~60 seconds (tune per language).
+            creditsScrollY = 0.0f;
+            //creditsScrollPx = (float)(creditsImage->GetHeight() + regHeight) / 60.0f;
+            creditsScrollPx = 52.0f;
+            Log("credits.png loaded %dx%d scroll=%.1f px/s",
+                creditsImage->GetWidth(), creditsImage->GetHeight(), creditsScrollPx);
+        }
+        else {
+            Log("credits.png failed to load from %s", exePath);
+            if (creditsImage) { delete creditsImage; creditsImage = nullptr; }
+        }
+        Log("Credits overlay created %dx%d", regWidth, regHeight);
+    }
+    else {
+        Log("Credits overlay FAILED err=%d", GetLastError());
+    }
+}
+
+void DestroyCreditsOverlay()
+{
+    if (creditsImage) { delete creditsImage; creditsImage = nullptr; }
+    creditsScrollY = 0.0f;
+    if (creditsOverlay) { PostMessage(creditsOverlay, WM_CLOSE_CREDITS, 0, 0); }
+    Log("Credits overlay destroyed");
+}
+
+// ============================================================
+//  Watch thread
+// ============================================================
+
+// Forward declaration
+void CreateCreditsOverlay();
+void DestroyCreditsOverlay();
+
+DWORD WINAPI CreditsWatchThread(LPVOID)
+{
+    Log("CreditsWatchThread started");
+
+    // Track the last value of 4D1490 we acted on so we don't re-trigger
+    // after returning to menu (where 4D1490 stays 0x80CA until next click).
+    DWORD last1490Handled = 0;
+    float creditsHoldRemaining = 2.0f;  // seconds to hold before scrolling
+    DWORD lastTick = GetTickCount();
+
+    while (!creditsShutdown)
+    {
+        DWORD s255C = *ADDR_STATE_255C;
+        DWORD s1490 = *ADDR_STATE_1490;
+
+        bool postVictory = (s255C == 0x80CA);
+        bool fromMenu = (s1490 == 0x80CA && s255C == 0x90 &&
+            s1490 != last1490Handled);
+
+        if (!postVictory && !fromMenu) { Sleep(10); continue; }
+
+        // Record which variable to watch for end detection
+        DWORD watchAddr = postVictory ? (DWORD)ADDR_STATE_255C
+            : (DWORD)ADDR_STATE_1490;
+        DWORD baseValue = postVictory ? s255C : s1490;
+        last1490Handled = s1490;  // prevent re-entry after return
+
+        Log("Credits detected (postVictory=%d s255C=0x%X s1490=0x%X)",
+            postVictory ? 1 : 0, s255C, s1490);
+
+        CreateCreditsOverlay();
+
+        // Wait for end: the watched variable changes away from 0x80CA.
+        // Post-victory: 4D255C changes from 0x80CA to 0x80C9 when music ends.
+        // Menu:         4D1490 changes when the next menu button is clicked,
+        //               OR when sub_4048F0 fires (state machine rebuild).
+        //               Also catch 4D255C going to 0 (sub_4048F0 clears it).
+        while (!creditsShutdown)
+        {
+            DWORD cur255C = *ADDR_STATE_255C;
+            DWORD cur1490 = *ADDR_STATE_1490;
+            DWORD baseState = postVictory ? s255C : s1490;
+            bool ended = (postVictory ? cur255C : cur1490) != 0x80CA;
+
+            if (ended) {
+                Log("Credits ended (255C=0x%X 1490=0x%X)", cur255C, cur1490);
+                break;
+            }
+
+            DWORD now = GetTickCount();
+            float dt = min((now - lastTick) / 1000.0f, 0.1f);  // cap dt to avoid jump after sleep
+            lastTick = now;
+
+            if (creditsHoldRemaining > 0.0f) {
+                creditsHoldRemaining -= dt;
+            }
+            else if (creditsImage) {
+                creditsScrollY += creditsScrollPx * dt;
+                if (creditsScrollY > (float)creditsImage->GetHeight())
+                    creditsScrollY = (float)creditsImage->GetHeight();
+                InvalidateRect(creditsOverlay, NULL, FALSE);
+            }
+
+            MSG msg;
+            while (PeekMessageA(&msg, creditsOverlay, 0, 0, PM_REMOVE)) {
+                TranslateMessage(&msg);
+                DispatchMessageA(&msg);
+            }
+            Sleep(16);
+        }
+
+        DestroyCreditsOverlay();
+        last1490Handled = 0;
+        creditsScrollY = 0.0f;
+        creditsHoldRemaining = 2.0f;
+
+        // Drain leftover messages
+        MSG msg;
+        while (PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE)) {
+            TranslateMessage(&msg);
+            DispatchMessageA(&msg);
+        }
+    }
+
+    Log("CreditsWatchThread exiting");
+    return 0;
+}
+
+// ============================================================
+//  Media Foundation callback
+// ============================================================
+
 class MediaPlayerCallback : public IMFPMediaPlayerCallback {
     LONG refCount = 1;
 public:
@@ -81,13 +361,15 @@ public:
 
 MediaPlayerCallback* pCallback = nullptr;
 
+// ============================================================
+//  SMK movie overlay
+// ============================================================
+
 #define WM_CLOSE_OVERLAY (WM_USER + 1)
 
 LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (msg == WM_DESTROY) { overlayWindow = NULL; }
-    if (msg == WM_CLOSE_OVERLAY) {
-        DestroyWindow(hwnd);
-    }
+    if (msg == WM_CLOSE_OVERLAY) { DestroyWindow(hwnd); }
     return DefWindowProcA(hwnd, msg, wParam, lParam);
 }
 
@@ -111,8 +393,6 @@ void CloseOverlayWindow() {
 }
 
 WNDPROC origGameProc = NULL;
-
-void CreateOverlayWindow();
 
 LRESULT CALLBACK GameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if (msg == WM_MOVE && overlayWindow) {
@@ -140,6 +420,10 @@ void CreateOverlayWindow() {
     wc.cbSize = sizeof(wc);
     wc.lpfnWndProc = OverlayWndProc;
     wc.hInstance = GetModuleHandleA(NULL);
+    /*if (credits)
+    {
+        wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH); // credits overlay
+    }*/
     wc.lpszClassName = "SmackOverlay";
     if (!RegisterClassExA(&wc)) {
         // already registered, ignore error
@@ -168,23 +452,24 @@ void CreateOverlayWindow() {
         GetModuleHandleA(NULL), NULL
     );
     ShowWindow(overlayWindow, SW_SHOWNA);
+    /*if (credits)
+    {
+        UpdateWindow(overlayWindow); // credits
+        SetForegroundWindow(overlayWindow); // credits
+    }*/
     if (gameWnd && !origGameProc) {
         origGameProc = (WNDPROC)SetWindowLongPtr(gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc);
     }
     Log("Overlay window created: %dx%d at x=%d y=%d", regWidth, videoHeight, gameRect.left, gameRect.top + offsetY); // logged
 }
 
-struct FakeSmack {
-    uint32_t Width = 0;
-    uint32_t Height = 0;
-    int OffsetY = 0; // 1360 + 1366x768 use the default
-};
+// ============================================================
+//  Smacker stubs
+// ============================================================
 
+struct FakeSmack { uint32_t Width = 0, Height = 0; int OffsetY = 0; };
 FakeSmack dummy;
 
-bool firstMovie = false;
-
-// We use __stdcall (WINAPI) to match the @X byte counts perfectly
 extern "C" {
     void WINAPI SmackClose(void* smk) {
         Log("SmackClose");
@@ -262,6 +547,10 @@ extern "C" {
     }
 }
 
+// ============================================================
+//  Keyboard hook
+// ============================================================
+
 HHOOK kbHook = NULL;
 
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
@@ -277,8 +566,14 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     return CallNextHookEx(kbHook, nCode, wParam, lParam);
 }
 
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
-    if (reason == DLL_PROCESS_ATTACH) {
+// ============================================================
+//  DllMain
+// ============================================================
+
+BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
+{
+    if (reason == DLL_PROCESS_ATTACH)
+    {
         DeleteFileA("Smackw32_log.txt");
         kbHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
         // Note: We use HKEY_LOCAL_MACHINE and the path you provided. 
@@ -335,17 +630,30 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
             //case 2800: offsetY = 150; break;    // 1600x1200
             case 2730: offsetY = 52; break;     // 1680x1050
         }
+
+        GdiplusStartupInput gdiplusInput;
+        GdiplusStartup(&gdiplusToken, &gdiplusInput, NULL);
         MFStartup(MF_VERSION);
+        InstallCreditsHook();
+
+        creditsShutdown = false;
+        creditsThread = CreateThread(NULL, 0, CreditsWatchThread, NULL, 0, NULL);
     }
-    else if (reason == DLL_PROCESS_DETACH) {
+    else if (reason == DLL_PROCESS_DETACH)
+    {
+        creditsShutdown = true;
+        if (creditsThread) {
+            WaitForSingleObject(creditsThread, 500);
+            CloseHandle(creditsThread); creditsThread = NULL;
+        }
+        if (creditsOverlay) { CloseOverlayWindow(); }
         if (kbHook) UnhookWindowsHookEx(kbHook);
         CloseOverlayWindow();
         if (pMediaPlayer) {
-            pMediaPlayer->Shutdown();
-            pMediaPlayer->Release();
-            pMediaPlayer = NULL;
+            pMediaPlayer->Shutdown(); pMediaPlayer->Release(); pMediaPlayer = NULL;
         }
         MFShutdown();
+        GdiplusShutdown(gdiplusToken);
     }
     return TRUE;
 }
