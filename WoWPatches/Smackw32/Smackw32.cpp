@@ -31,6 +31,7 @@ bool  videoFinished = false;
 bool  isFullscreen = false;
 HWND  overlayWindow = NULL;
 IMFPMediaPlayer* pMediaPlayer = NULL;
+bool playerIsHuman = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES);
 
 // Credits scroll state
 Image* creditsImage = nullptr;
@@ -170,7 +171,7 @@ void CreateCreditsOverlay()
     POINT clientPos = { 0, 0 };
     if (gameWnd) ClientToScreen(gameWnd, &clientPos);
     creditsOverlay = CreateWindowExA(
-        isFullscreen ? (WS_EX_TOPMOST | WS_EX_NOACTIVATE) : WS_EX_NOACTIVATE,
+        (isFullscreen ? (WS_EX_TOPMOST | WS_EX_NOACTIVATE) : WS_EX_NOACTIVATE) | WS_EX_TRANSPARENT | WS_EX_LAYERED,
         "WoWCreditsOverlay", NULL, WS_POPUP,
         clientPos.x, clientPos.y, regWidth, regHeight,
         isFullscreen ? NULL : gameWnd,
@@ -178,6 +179,7 @@ void CreateCreditsOverlay()
     );
 
     if (creditsOverlay) {
+        SetLayeredWindowAttributes(creditsOverlay, 0, 255, LWA_ALPHA);  // fully opaque but input-transparent
         ShowWindow(creditsOverlay, SW_SHOWNA);
         // Load credits.png from the same directory as the exe
         char exePath[MAX_PATH];
@@ -197,7 +199,37 @@ void CreateCreditsOverlay()
             // Default: scroll full image in ~60 seconds (tune per language).
             creditsScrollY = 0.0f;
             //creditsScrollPx = (float)(creditsImage->GetHeight() + regHeight) / 60.0f;
-            creditsScrollPx = 52.0f;
+            //creditsScrollPx = 52.0f;
+
+            Log("Player faction: %s", playerIsHuman ? "Human" : "Martian");
+
+            // Timing table: { pngSize, humanDur (s), martianDur (s) }
+            struct CreditsInfo { DWORD pngSize; float humanDur; float martianDur; };
+            DWORD pngSize = 0;
+            HANDLE hf = CreateFileA(exePath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+            if (hf != INVALID_HANDLE_VALUE) { pngSize = GetFileSize(hf, NULL); CloseHandle(hf); }
+
+            static const CreditsInfo kTiming[] = {
+                { 261744, 103.0f, 136.0f },  // English
+                { 287375, 106.0f, 143.0f },  // French
+                { 289388, 106.0f, 143.0f },  // German
+                { 255818, 109.0f, 145.0f },  // Italian
+                { 270546, 107.0f, 144.0f },  // Spanish
+            };
+
+            float dur = playerIsHuman ? 103.0f : 136.0f;  // fallback to English
+            for (const auto& info : kTiming) {
+                if (info.pngSize == pngSize) {
+                    dur = (playerIsHuman ? info.humanDur : info.martianDur) + 2.0f;
+                    Log("Matched language by PNG size %u, dur=%.1fs", pngSize, dur);
+                    break;
+                }
+            }
+
+            creditsScrollPx = (float)creditsImage->GetHeight() / dur;
+            Log("Scroll speed: %.2f px/s over %.1fs", creditsScrollPx, dur);
+
+
             Log("credits.png loaded %dx%d scroll=%.1f px/s",
                 creditsImage->GetWidth(), creditsImage->GetHeight(), creditsScrollPx);
         }
@@ -215,7 +247,6 @@ void CreateCreditsOverlay()
 void DestroyCreditsOverlay()
 {
     if (creditsImage) { delete creditsImage; creditsImage = nullptr; }
-    creditsScrollY = 0.0f;
     if (creditsOverlay) { PostMessage(creditsOverlay, WM_CLOSE_CREDITS, 0, 0); }
     Log("Credits overlay destroyed");
 }
@@ -244,19 +275,13 @@ DWORD WINAPI CreditsWatchThread(LPVOID)
         DWORD s1490 = *ADDR_STATE_1490;
 
         bool postVictory = (s255C == 0x80CA);
-        bool fromMenu = (s1490 == 0x80CA && s255C == 0x90 &&
-            s1490 != last1490Handled);
+        bool fromMenu = (s1490 == 0x80CA && s255C == 0x90 && s1490 != last1490Handled);
 
         if (!postVictory && !fromMenu) { Sleep(10); continue; }
 
-        // Record which variable to watch for end detection
-        DWORD watchAddr = postVictory ? (DWORD)ADDR_STATE_255C
-            : (DWORD)ADDR_STATE_1490;
-        DWORD baseValue = postVictory ? s255C : s1490;
         last1490Handled = s1490;  // prevent re-entry after return
 
-        Log("Credits detected (postVictory=%d s255C=0x%X s1490=0x%X)",
-            postVictory ? 1 : 0, s255C, s1490);
+        Log("Credits detected (postVictory=%d s255C=0x%X s1490=0x%X)", postVictory ? 1 : 0, s255C, s1490);
 
         CreateCreditsOverlay();
 
@@ -269,7 +294,6 @@ DWORD WINAPI CreditsWatchThread(LPVOID)
         {
             DWORD cur255C = *ADDR_STATE_255C;
             DWORD cur1490 = *ADDR_STATE_1490;
-            DWORD baseState = postVictory ? s255C : s1490;
             bool ended = (postVictory ? cur255C : cur1490) != 0x80CA;
 
             if (ended) {
@@ -286,9 +310,15 @@ DWORD WINAPI CreditsWatchThread(LPVOID)
             }
             else if (creditsImage) {
                 creditsScrollY += creditsScrollPx * dt;
-                if (creditsScrollY > (float)creditsImage->GetHeight())
-                    creditsScrollY = (float)creditsImage->GetHeight();
                 InvalidateRect(creditsOverlay, NULL, FALSE);
+                if (creditsScrollY > (float)creditsImage->GetHeight()) {
+                    creditsScrollY = (float)creditsImage->GetHeight();
+                    Sleep(500);
+                    // Send ESC to the game to trigger its own credits exit
+                    HWND gameWnd = FindWindowA(NULL, "The War Of The Worlds");
+                    if (gameWnd) PostMessage(gameWnd, WM_KEYDOWN, VK_ESCAPE, 0);
+                    break;
+                }
             }
 
             MSG msg;
@@ -300,9 +330,11 @@ DWORD WINAPI CreditsWatchThread(LPVOID)
         }
 
         DestroyCreditsOverlay();
+        for (int i = 0; i < 20 && creditsOverlay != NULL; i++) { Sleep(10); }
         last1490Handled = 0;
         creditsScrollY = 0.0f;
         creditsHoldRemaining = 2.0f;
+        lastTick = GetTickCount();
 
         // Drain leftover messages
         MSG msg;
@@ -395,12 +427,15 @@ void CloseOverlayWindow() {
 WNDPROC origGameProc = NULL;
 
 LRESULT CALLBACK GameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    if (msg == WM_MOVE && overlayWindow) {
+    if (msg == WM_MOVE) {
         POINT clientPos = { 0, 0 };
         ClientToScreen(hwnd, &clientPos);
-        SetWindowPos(overlayWindow, HWND_TOP,
-            clientPos.x, clientPos.y + offsetY,
-            0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+        if (overlayWindow) {
+            SetWindowPos(overlayWindow, HWND_TOP, clientPos.x, clientPos.y + offsetY, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+        }
+        if (creditsOverlay) {
+            SetWindowPos(creditsOverlay, HWND_TOP, clientPos.x, clientPos.y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+        }
     }
     if (msg == WM_DESTROY || msg == WM_CLOSE) {
         CloseOverlayWindow();
@@ -420,10 +455,6 @@ void CreateOverlayWindow() {
     wc.cbSize = sizeof(wc);
     wc.lpfnWndProc = OverlayWndProc;
     wc.hInstance = GetModuleHandleA(NULL);
-    /*if (credits)
-    {
-        wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH); // credits overlay
-    }*/
     wc.lpszClassName = "SmackOverlay";
     if (!RegisterClassExA(&wc)) {
         // already registered, ignore error
@@ -452,11 +483,6 @@ void CreateOverlayWindow() {
         GetModuleHandleA(NULL), NULL
     );
     ShowWindow(overlayWindow, SW_SHOWNA);
-    /*if (credits)
-    {
-        UpdateWindow(overlayWindow); // credits
-        SetForegroundWindow(overlayWindow); // credits
-    }*/
     if (gameWnd && !origGameProc) {
         origGameProc = (WNDPROC)SetWindowLongPtr(gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc);
     }
