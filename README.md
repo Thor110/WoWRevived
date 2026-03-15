@@ -66,7 +66,7 @@ The road map for this project.
 	- Export original palette and palette with the shader tables applied.
 	- Preview with the original palette or with the shader tables applied.
 	- Replace single frame and multi-frame sprites with custom ones.
-	- Quantisation of imported images will reduce them to the closest equivalent colour found in the palette.
+	- Quantisation of imported images will reduce them to the closest equivalent colour found in the palette through the associated shader table.
 	- Known "bugs" with the Sprite Viewer.
 		- 1\. Shader tables are not applied to all sprites yet, only a very small number of shader tables are left to be identified.
 - [❌ 4 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
