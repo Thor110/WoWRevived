@@ -12,11 +12,18 @@ namespace WoWLauncher
         {
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
-            Process[] processes = Process.GetProcessesByName("WoWLauncher");
-            if (processes.Length > 1) { return; }
+            if (Process.GetProcessesByName("WoWLauncher").Length > 1)
+            {
+                MessageBox.Show("The launcher is already running!");
+                return;
+            }
+            if (Process.GetProcessesByName("WoW_patched").Length > 0)
+            {
+                MessageBox.Show("The game is already running, please exit before running the launcher!");
+                return;
+            }
             ApplicationConfiguration.Initialize();
-            string basePath = AppDomain.CurrentDomain.BaseDirectory;
-            if (basePath.Contains("OneDrive"))
+            if (AppDomain.CurrentDomain.BaseDirectory.Contains("OneDrive"))
             {
                 MessageBox.Show("Warning: The game is installed in a restricted location. Please move it to a root directory like C:\\Games\\Jeff Wayne's 'The War Of The Worlds' for best results.", "Installation Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
