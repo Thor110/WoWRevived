@@ -23,7 +23,7 @@ using namespace Gdiplus;
 // ============================================================
 
 FILE* logFile = nullptr;
-bool  debug = true;
+bool  debug = false;
 int   regWidth = 640;
 int   regHeight = 480;
 int   offsetY = 0;
