@@ -28,7 +28,7 @@ WANTED : Regional Manuals : We are looking for high-quality scans of the origina
 # Road Map
 
 The road map for this project.
-- [✅ 0 : Main Game Functionality](#main-game-functionality) ( 99% Complete )
+- [✅ 0 : Main Game Functionality](#main-game-functionality) ( 100% Complete )
 	- Iron changed to say Steel in multiple entries in the TEXT.ojd file.
 	- Leading space added to some text to improve appearance in the Critical Event Options menu.
 	- Missing entry created for the Credits button in the options menu.
