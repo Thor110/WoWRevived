@@ -62,7 +62,7 @@ The road map for this project.
 		- 1600x1024	(5:4)
 		- 1680x1050	(16:10)
 		- 1920x1080	(16:9)
-- [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 100% Complete )
+- [✅ 2 : File Extractor](#file-extractor) ( 100% Complete )
 	- .WoW archives can be extracted.
 	- Waveform preview, play and replace sound files from .WoW archives.
 	- Decompressing files optional but enabled by default.
