@@ -121,6 +121,7 @@ namespace WoWLauncher
                 "1600x1024     (5:4)",      // Unusual 5:4 wide — seems to pass internal checks
                 //"1600x1200     (4:3)",      // UXGA — classic high-res 4:3                // DDERR_NOCOOPERATIVELEVELSET
                 "1680x1050     (16:10)",    // WSXGA+ — widescreen 16:10, works well
+                "1920x1080     (16:9)"      // 1080p
             };
             List<string> supported = GetSupportedResolutions();
             List<string> matchedResolutions = supportedResolutions.Where(sr => supported.Any(r => sr.Contains(r))).ToList();
@@ -450,7 +451,7 @@ namespace WoWLauncher
             }
             // larger resolution warmap files
             string[] resolutionFiles = new string[] { "HWM.SPR", "HWMHI.SPR", "MWM.SPR", "MWMHI.SPR" };
-            if (screenSize.Split(",")[0] == "1600" || screenSize.Split(",")[0] == "1680")
+            if (screenSize.Split(",")[0] == "1600" || screenSize.Split(",")[0] == "1680" || screenSize.Split(",")[0] == "1920")
             { foreach (string file in resolutionFiles) { if (File.Exists("DAT\\TEMP-" + file)) { File.Move("DAT\\TEMP-" + file, $"DAT\\" + file); } } }
             else
             { foreach (string file in resolutionFiles) { if (File.Exists("DAT\\" + file)) { File.Move("DAT\\" + file, $"DAT\\TEMP-" + file); } } }

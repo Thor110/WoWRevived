@@ -57,6 +57,11 @@ The road map for this project.
 	- Automatic cleanup of unnecessary files and Smackw32.dll moved to main directory.
 	- Custom pre-set difficulty settings. (Easy, Medium[default], Hard)
 	- Dynamic asset swapping pipeline with custom assets curated for each supported resolution.
+	- New working resolutions added.
+		- 1600x900	(16:9)
+		- 1600x1024	(5:4)
+		- 1680x1050	(16:10)
+		- 1920x1080	(16:9)
 - [✅ 2 : File Extractor](#file-extractor) ( Fully Functional - 100% Complete )
 	- .WoW archives can be extracted.
 	- Waveform preview, play and replace sound files from .WoW archives.
@@ -286,6 +291,8 @@ Many more assets have been reworked, most of which is barely noticeable but in g
 ## Credit
 
 Thanks to old-games.ru and the author for the original executable patch and winmm.dll shim which I used as a reference for my own fixes : https://www.old-games.ru/forum/threads/patchi-vozvraschajuschie-cd-audio-the-patchs-to-restore-cdda-playback.51778/#post-877625
+
+English manual sourced from : https://oldgamesdownload.com/wp-content/uploads/Jeff_Waynes_The_War_of_the_Worlds_Manual_Win_EN_OldGamesDownload.com_.pdf
 
 Thanks to Dan Redfield for the Credits patch to the TEXT.ojd file which I then used as reference to patch the other languages versions of that file.
 
