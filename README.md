@@ -41,6 +41,7 @@ The road map for this project.
 		- 4\. 1 byte to skip checking for the original .smk movie files to save storage space, this patch also allows my movies to play through the wrapper.
 		- 5\. 9 bytes to redirect to the winmm shim to allow localised playback of the games music.
 		- 6\. 2 bytes to skip creation of the resolution slider which doesn't change the resolution without restarting the game.
+		- 7\. 12 bytes changed to adjust the drag select border size from 640x640 to 2048x2048 in the battle map.
 	- Languages supported:
 		- 1\. English
 		- 2\. French
