@@ -49,7 +49,7 @@ The road map for this project.
 		- 5\. Spanish
 	- Features I am considering adjusting:
 		- 1\. Heat-ray construction limit of 12, I may add this limit to the launcher when I locate the relevant values.
-- [✅ 1 : Custom Launcher](#custom-launcher) ( Fully Functional - 95% Complete )
+- [✅ 1 : Custom Launcher](#custom-launcher) ( 95% Complete )
 	- Quick restart after alt-tab error exit of the game.
 	- Advanced registry settings options.
 	- Custom keyboard shortcut settings. (WIP - not enabled currently)
@@ -78,7 +78,7 @@ The road map for this project.
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Override standard limit of 1753 as the minimum date and set the year manually to as low as year zero.
 	- Sector & Area names loaded dynamically from TEXT.ojd to support the regional releases.
-- [✅ 5 : Text Editor](#text-editor) ( 100% Complete - edit and save string entries in the TEXT.ojd file. )
+- [✅ 5 : Text Editor](#text-editor) ( 100% Complete )
 	- All 1397 strings are editable. ( Default game has 1396, new string added for the missing Credits button text, original files also supported )
 	- UTF-8 + ISO-8859-1 encoding supported.
 	- File is recompiled from scratch based on modifications.
@@ -104,7 +104,7 @@ The road map for this project.
 - [❌ 9 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 90% Complete )
 	- Resolution agnostic custom backgrounds have been made but have yet to be finished.
 	- Extended width of the war map, this allows higher resolutions to work.
-- [❌ 10 : Enhanced Original Assets](#enhanced-original-assets) ( 90% Complete )
+- [✅ 10 : Enhanced Original Assets](#enhanced-original-assets) ( 90% Complete )
 	- Reworked many assets in the game to improve their appearance.
 		- Martian & Human Unit Icons are now the same for both factions, which makes it easier to tell when using the infiltration skill.
 		- Music Track Artwork is now brighter.
