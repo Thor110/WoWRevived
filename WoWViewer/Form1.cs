@@ -23,7 +23,7 @@ namespace WoWViewer
                 { "FNT", HandleFNT },   // fonts
                 { "HSH", HandleHSH },   // B16.HSH
                 { "HSM", HandleHSM },   // B15.HSM
-                { "INT", HandleINT },   // terrain geometry or textures
+                { "INT", HandleINT },   // terrain geometry shader tables
                 { "IOB", HandleIOB },   // buildings and terrain objects
                 { "PAL", HandlePAL },   // palettes         // pairs with shaders
                 { "RAW", HandleRAW },   // effects
@@ -33,69 +33,48 @@ namespace WoWViewer
                 { "SPR", HandleSPR },   // sprites, only lowercase exception
                 { "WOF", HandleWOF },   // units
                 //MAPS/MAPS.WoW
-                { "ATM", HandleATM },   // terrain geometry or textures - all named LAND##
-                { "CLS", HandleCLS },   // also all named LAND##
+                { "ATM", HandleATM },   // terrain textures
+                { "CLS", HandleCLS },   // terrain geometry
                 //"SPR"                 // human and martian minimaps
             };
         }
         //DAT/Dat.wow
         private void HandleDAT(WowFileEntry entry)
         {
-            MessageBox.Show("DAT file selected. No action defined.");
+            MessageBox.Show("DAT file selected. No action defined."); // pseudo random dithering
         }
-        private void HandleFNT(WowFileEntry entry)
-        {
-            MessageBox.Show("FNT file selected. No action defined.");
-        }
+        private void HandleFNT(WowFileEntry entry) { MessageBox.Show("These are font files! Not decoded yet."); }
         private void HandleHSH(WowFileEntry entry)
         {
-            MessageBox.Show("HSH file selected. No action defined.");
+            MessageBox.Show("HSH file selected. No action defined."); // global high shader table?
         }
         private void HandleHSM(WowFileEntry entry)
         {
-            MessageBox.Show("HSM file selected. No action defined.");
+            MessageBox.Show("HSM file selected. No action defined."); // global medium shader table?
         }
         private void HandleINT(WowFileEntry entry)
         {
-            MessageBox.Show("INT file selected. No action defined.");
+            MessageBox.Show("INT file selected. No action defined."); // terrain geometry shader tables
         }
         private void HandleIOB(WowFileEntry entry)
         {
-            MessageBox.Show("IOB file selected. No action defined.");
+            MessageBox.Show("These are static model files! Not decoded yet.");
         }
-        private void HandlePAL(WowFileEntry entry)
-        {
-            MessageBox.Show("PAL file selected. No action defined.");
-        }
-        private void HandleRAW(WowFileEntry entry)
-        {
-            MessageBox.Show("RAW file selected. No action defined.");
-        }
-        private void HandleSHH(WowFileEntry entry)
-        {
-            MessageBox.Show("SHH file selected. No action defined.");
-        }
-        private void HandleSHL(WowFileEntry entry)
-        {
-            MessageBox.Show("SHL file selected. No action defined.");
-        }
-        private void HandleSHM(WowFileEntry entry)
-        {
-            MessageBox.Show("SHM file selected. No action defined.");
-        }
+        private void HandlePAL(WowFileEntry entry) { MessageBox.Show("This is a palette file!"); }
+        private void HandleRAW(WowFileEntry entry) { MessageBox.Show("These are visual effects files! Not decoded yet."); }
+        private void HandleSHH(WowFileEntry entry) { MessageBox.Show("This is a High Quality Shader Table! 16-bit. (SHH - Shader High)"); }
+        private void HandleSHL(WowFileEntry entry) { MessageBox.Show("This is a Low Quality Shader Table! 8-bit. (SHH - Shader Low)"); }
+        private void HandleSHM(WowFileEntry entry) { MessageBox.Show("This is a Medium Quality Shader Table! 15-bit. (SHH - Shader Medium)"); }
         private void HandleSPR(WowFileEntry entry) { newForm(new SprViewer(entries, listBox1.SelectedItem!.ToString()!, filePath.Contains("MAPS.WoW"), outputPath)); }
-        private void HandleWOF(WowFileEntry entry)
-        {
-            MessageBox.Show("WOF file selected. No action defined.");
-        }
+        private void HandleWOF(WowFileEntry entry) { newForm(new WOFConverter(entries, listBox1.SelectedItem!.ToString()!, outputPath)); }
         //MAPS/MAPS.WoW
         private void HandleATM(WowFileEntry entry)
         {
-            MessageBox.Show("ATM file selected. No action defined.");
+            MessageBox.Show("ATM file selected. No action defined."); // terrain textures
         }
         private void HandleCLS(WowFileEntry entry)
         {
-            MessageBox.Show("CLS file selected. No action defined.");
+            MessageBox.Show("CLS file selected. No action defined."); // terrain geometry
         }
         public WoWViewer()
         {
