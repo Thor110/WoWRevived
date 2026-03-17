@@ -53,9 +53,14 @@ namespace WoWViewer
         public static Bitmap RenderTileMap(CLSModel model)
         {
             if (model.Tiles == null || model.TileW == 0) return new Bitmap(1, 1);
-            int w = model.TileW, h = model.TileH, n = w * h;
+            int w = model.GridW, h = model.GridH, n = w * h;
             var px = new int[n];
-            for (int i = 0; i < n; i++) px[i] = TileArgb[model.Tiles[i]];
+            for (int i = 0; i < n; i++)
+            {
+                int row = Math.Min(i / w, model.TileH - 1);
+                int col = Math.Min(i % w, model.TileW - 1);
+                px[i] = TileArgb[model.Tiles[row * model.TileW + col]];
+            }
             return WriteBitmap(w, h, px);
         }
 

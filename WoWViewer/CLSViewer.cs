@@ -1,5 +1,4 @@
-﻿using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
+﻿using System.Drawing.Imaging;
 using System.Text;
 
 namespace WoWViewer
@@ -89,7 +88,7 @@ namespace WoWViewer
             string atmName = Path.ChangeExtension(clsName, ".ATM");
             string diskPath = Path.Combine("MAPS", atmName);
             WowFileEntry atmEntry = entries.FirstOrDefault(e => e.Name.Equals(atmName))!;
-            atmData = File.Exists(diskPath) ? File.ReadAllBytes(diskPath) : FfuhDecoder.Decompress(atmEntry.Data!);
+            atmData = File.Exists(diskPath) ? File.ReadAllBytes(diskPath) : atmEntry.Data!;
         }
         private void TryAutoSelectShader()
         {
@@ -197,7 +196,7 @@ namespace WoWViewer
 
         private void UpdateInfoLabel(CLSModel model)
         {
-            label1.Text =
+            label2.Text =
                 $"Grid: {model.GridW}×{model.GridH}  " +
                 $"Verts: {model.VertCount:N0}  Tris: {model.TriCount:N0}\r\n" +
                 $"ATM tiles: {model.Tiles?.Length ?? 0:N0}  " +

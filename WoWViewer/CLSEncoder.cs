@@ -76,13 +76,12 @@
         /// </summary>
         public static byte[] EncodeAtm(CLSModel model)
         {
-            if (model.Tiles == null || model.Tiles.Length != 62500)
-                throw new ArgumentException("ATM tile data must be exactly 62500 bytes (250×250).");
+            int tileCount = model.TileW * model.TileH;
+            if (model.Tiles == null || model.Tiles.Length != tileCount)
+                throw new ArgumentException($"ATM tile data must be exactly {tileCount} bytes ({model.TileW}×{model.TileH}).");
 
-            // ATM format is trivially: raw byte array, no header, no compression applied here
-            // (FfuhEncoder handles compression if needed before writing back to archive)
-            byte[] output = new byte[62500];
-            Array.Copy(model.Tiles, output, 62500);
+            byte[] output = new byte[tileCount];
+            Array.Copy(model.Tiles, output, tileCount);
             return output;
         }
 
