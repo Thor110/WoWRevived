@@ -319,7 +319,11 @@ namespace WoWViewer
             {
                 mtl.AppendLine($"newmtl mat_{mid}");
                 mtl.AppendLine("Ka 1.0 1.0 1.0\nKd 1.0 1.0 1.0\nKs 0.0 0.0 0.0");
-                mtl.AppendLine($"map_Kd {texName}\n");
+                mtl.AppendLine("d 1.0");           // dissolve (opacity) = 1 (use texture alpha)
+                mtl.AppendLine("illum 1");          // basic illumination model
+                mtl.AppendLine($"map_Kd {texName}");
+                mtl.AppendLine($"map_d {texName}"); // alpha mask from same texture
+                mtl.AppendLine();
             }
 
             // Faces
@@ -353,24 +357,29 @@ namespace WoWViewer
         public static Bitmap RenderTexture(byte[] texData, int texHeight, byte[] palData, byte[]? shadeData = null)
         {
             bool useSHH = shadeData?.Length >= 512;
-            var bmp = new Bitmap(TexWidth, texHeight);
+            // RGBA output: palette index 0 = fully transparent (used for gaps between material regions)
+            var bmp = new Bitmap(TexWidth, texHeight, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             for (int y = 0; y < texHeight; y++)
                 for (int x = 0; x < TexWidth; x++)
                 {
                     int pos = y * TexWidth + x;
                     byte idx = pos < texData.Length ? texData[pos] : (byte)0;
                     Color c;
-                    if (useSHH)
+                    if (idx == 0)
+                    {
+                        c = Color.Transparent;  // index 0 = transparent
+                    }
+                    else if (useSHH)
                     {
                         int rgb565 = shadeData![idx * 2] | (shadeData[idx * 2 + 1] << 8);
                         int rv = (rgb565 >> 11) & 0x1F; int r = (rv << 3) | (rv >> 2);
                         int gv = (rgb565 >> 5) & 0x3F; int g = (gv << 2) | (gv >> 4);
                         int bv = rgb565 & 0x1F; int b = (bv << 3) | (bv >> 2);
-                        c = Color.FromArgb(r, g, b);
+                        c = Color.FromArgb(255, r, g, b);
                     }
                     else
                     {
-                        c = Color.FromArgb(
+                        c = Color.FromArgb(255,
                             Math.Min(palData[idx * 3] * 4, 255),
                             Math.Min(palData[idx * 3 + 1] * 4, 255),
                             Math.Min(palData[idx * 3 + 2] * 4, 255));

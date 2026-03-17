@@ -122,7 +122,7 @@ namespace WoWViewer
             {
                 g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
                 g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-                g.DrawImage(bmp, 0, 0, 768, 288);
+                g.DrawImage(bmp, 0, 0, scaledW, scaledH);
             }
             pictureBox1.Image = scaled;
             bmp.Dispose();
