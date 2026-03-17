@@ -13,17 +13,15 @@ namespace WoWViewer
         private byte[] rawData = [];
         private byte[] palData = [];
         private byte[]? shadeData;   // active SHH level-0 slice (512 bytes), null = raw PAL
-        private bool modelType;    // false = WOF units, true = IOB buildings
         private int currentFrame;
         private List<WowFileEntry> palettes = new List<WowFileEntry>();
         private string baseFolder;
-        public ATMViewer(List<WowFileEntry> entryList, string entryName, string output, bool model = false)
+        public ATMViewer(List<WowFileEntry> entryList, string entryName, string output)
         {
             InitializeComponent();
             entries = entryList;
             if(entryName.EndsWith("CLS")) { entryName.Replace("CLS","ATM"); } // direct to ATM if entered via CLS
             selectedEntry = entryName;
-            modelType = model;
             if (output != "")
             {
                 outputPath = output;
