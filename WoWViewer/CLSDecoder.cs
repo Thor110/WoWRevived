@@ -35,10 +35,10 @@
         //   [0x08] uint32  VertCount  = 63001  (GridW × GridH)
         //   [0x0C] uint32  TriCount   = 125000 (250×250×2)
         //   [0x10..0x4F]  additional metadata (section offsets — not needed for height decode)
-        //   [80 .. 80+VertCount-1]  uint8 height array, row-major
-        //   [80+VertCount ..]       triangle strip indices (uint16, 0xFFFF restart)
+        //   [68 .. 68+VertCount-1]  uint8 height array, row-major
+        //   [68+VertCount ..]       triangle strip indices (uint16, 0xFFFF restart)
 
-        private const int HeaderSize = 68;
+        private const int HeaderSize = 68; // corrected header size
         private const ushort StripRestart = 0xFFFF;
 
         public static CLSModel Decode(byte[] cls, byte[]? atm)
