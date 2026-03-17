@@ -1,7 +1,6 @@
 ﻿using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Text;
-using static System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy;
 
 namespace WoWViewer
 {
@@ -19,7 +18,6 @@ namespace WoWViewer
         private byte[]? shadeData;   // active SHH level-0 slice (512 bytes), null = raw PAL
         private int currentFrame;
         private List<WowFileEntry> palettes = new List<WowFileEntry>();
-        private string baseFolder;
         // ── View mode ─────────────────────────────────────────────────────────
         private enum ViewMode { TileMap, Heightmap, Composite }
         private ViewMode currentView = ViewMode.Composite;
@@ -27,7 +25,7 @@ namespace WoWViewer
         {
             InitializeComponent();
             entries = entryList;
-            if (entryName.EndsWith("ATM")) { entryName.Replace("ATM", "CLS"); } // direct to CLS if entered via ATM
+            if (entryName.EndsWith(".ATM")) { entryName = Path.ChangeExtension(entryName, ".CLS"); }
             selectedEntry = entryName;
             if (output != "")
             {
@@ -64,17 +62,17 @@ namespace WoWViewer
         }
         private void PopulateList()
         {
-            foreach (var entry in entries.Where(e => e.Name.EndsWith(".ATM", StringComparison.OrdinalIgnoreCase)).ToList())
+            foreach (var entry in entries.Where(e => e.Name.EndsWith(".CLS")).ToList()) // FIX: was .ATM
             {
-                entry.Data = File.Exists($"{baseFolder}\\{entry.Name}") ? File.ReadAllBytes($"{baseFolder}\\{entry.Name}") : FfuhDecoder.Decompress(entry.Data!);
+                entry.Data = FfuhDecoder.Decompress(entry.Data!); // FIX: removed broken baseFolder branch
                 listBox1.Items.Add(entry.Name);
             }
-            foreach (var entry in palettes.Where(e => e.Name.EndsWith(".PAL", StringComparison.OrdinalIgnoreCase)))
+            foreach (var entry in palettes.Where(e => e.Name.EndsWith(".PAL")))
             {
                 entry.Data = FfuhDecoder.Decompress(entry.Data!);
                 listBox2.Items.Add(entry.Name);
             }
-            foreach (var entry in palettes.Where(e => e.Name.EndsWith(".SHH", StringComparison.OrdinalIgnoreCase)))
+            foreach (var entry in palettes.Where(e => e.Name.EndsWith(".SHH")))
             {
                 entry.Data = FfuhDecoder.Decompress(entry.Data!);
                 listBox3.Items.Add(entry.Name);
@@ -86,7 +84,7 @@ namespace WoWViewer
         {
             string atmName = Path.ChangeExtension(clsName, ".ATM");
             string diskPath = Path.Combine("MAPS", atmName);
-            WowFileEntry atmEntry = entries.FirstOrDefault(e => e.Name.Equals(atmName, StringComparison.OrdinalIgnoreCase))!;
+            WowFileEntry atmEntry = entries.FirstOrDefault(e => e.Name.Equals(atmName))!;
             atmData = File.Exists(diskPath) ? File.ReadAllBytes(diskPath) : FfuhDecoder.Decompress(atmEntry.Data!);
         }
         private void TryAutoSelectShader()
@@ -94,7 +92,7 @@ namespace WoWViewer
             if (listBox3.Items.Count == 0 || listBox3.SelectedIndex >= 0) return;
             for (int i = 0; i < listBox3.Items.Count; i++)
             {
-                if (listBox3.Items[i].ToString()!.StartsWith("LANDR0", StringComparison.OrdinalIgnoreCase))
+                if (listBox3.Items[i].ToString()!.StartsWith("LANDR0"))
                 {
                     listBox3.SelectedIndex = i;
                     return;
@@ -132,11 +130,11 @@ namespace WoWViewer
             int count = 0;
             foreach (string clsName in listBox1.Items)
             {
-                var clsEntry = entries.FirstOrDefault(en => en.Name.Equals(clsName, StringComparison.OrdinalIgnoreCase));
+                var clsEntry = entries.FirstOrDefault(en => en.Name.Equals(clsName));
                 if (clsEntry?.Data == null) continue;
 
                 string atmName = Path.ChangeExtension(clsName, ".ATM");
-                var atmEntry = entries.FirstOrDefault(en => en.Name.Equals(atmName, StringComparison.OrdinalIgnoreCase));
+                var atmEntry = entries.FirstOrDefault(en => en.Name.Equals(atmName));
                 byte[] atm = atmEntry?.Data ?? [];
 
                 var model = CLSDecoder.Decode(clsEntry.Data, atm);
@@ -202,14 +200,14 @@ namespace WoWViewer
                 $"ATM tiles: {model.Tiles?.Length ?? 0:N0}  " +
                 $"Max height: {(model.Heights.Length > 0 ? model.Heights.Max() : 0)}";
         }
-        // atm listbox
+        // cls listbox
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             string clsName = listBox1.SelectedItem!.ToString()!;
             if (clsName == lastSelectedEntry) { return; }
             selectedEntry = clsName;
             lastSelectedEntry = clsName;
-            clsData = entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
+            clsData = entries.First(e => e.Name.Equals(selectedEntry)).Data!;
             LoadMatchingAtm(clsName);
             TryAutoSelectPalette();
             TryAutoSelectShader();
@@ -221,13 +219,13 @@ namespace WoWViewer
             string palName = listBox2.SelectedItem!.ToString()!;
             if (palName == lastSelectedPalette) { return; }
             lastSelectedPalette = palName;
-            palData = palettes.First(e => e.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
+            palData = palettes.First(e => e.Name.Equals(palName)).Data!;
             RenderCurrent();
         }
         // shh listbox
         private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
-            shadeData = palettes.FirstOrDefault(e => e.Name.Equals(listBox3.SelectedItem!.ToString()!, StringComparison.OrdinalIgnoreCase))!.Data![1..513];
+            shadeData = palettes.FirstOrDefault(e => e.Name.Equals(listBox3.SelectedItem!.ToString()!))!.Data![1..513];
             RenderCurrent();
         }
         // export palette button
@@ -241,23 +239,8 @@ namespace WoWViewer
         // shader tables enabled/disabled
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
-            shadeData = checkBox1.Checked ? palettes.FirstOrDefault(e => e.Name.Equals(listBox3.SelectedItem!.ToString()!, StringComparison.OrdinalIgnoreCase))!.Data![1..513] : null;
+            shadeData = checkBox1.Checked ? palettes.FirstOrDefault(e => e.Name.Equals(listBox3.SelectedItem!.ToString()!))!.Data![1..513] : null;
             RenderCurrent();
-        }
-        // preview types
-        private void radioButton1_CheckedChanged(object sender, EventArgs e)
-        {
-            if (radioButton1.Checked) { currentView = ViewMode.TileMap; RenderCurrent(); }
-        }
-
-        private void radioButton2_CheckedChanged(object sender, EventArgs e)
-        {
-            if (radioButton2.Checked) { currentView = ViewMode.Heightmap; RenderCurrent(); }
-        }
-
-        private void radioButton3_CheckedChanged(object sender, EventArgs e)
-        {
-            if (radioButton3.Checked) { currentView = ViewMode.Composite; RenderCurrent(); }
         }
     }
 }

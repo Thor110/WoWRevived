@@ -1,21 +1,18 @@
 ﻿using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 
 namespace WoWViewer
 {
-    // =========================================================================
-    // CLSRenderer  –  creates Bitmaps from a CLSModel for display and export
-    // =========================================================================
     public static class CLSRenderer
     {
         // ── Tile-type colour table ─────────────────────────────────────────────
-        // Index 0 = unused (black), index 1 = water (deep blue), 2–255 = HSV hue ramp
         private static readonly int[] TileArgb = BuildTileArgb();
 
         private static int[] BuildTileArgb()
         {
             var c = new int[256];
-            c[0] = unchecked((int)0xFF000000);              // black  (unused)
-            c[1] = unchecked((int)0xFF1A3A6A);              // water
+            c[0] = unchecked((int)0xFF000000);
+            c[1] = unchecked((int)0xFF1A3A6A);  // water
             for (int i = 2; i < 256; i++)
             {
                 double hue = ((i - 2) / 120.0) % 1.0;
@@ -42,109 +39,82 @@ namespace WoWViewer
             return ((int)(rd * 255), (int)(gd * 255), (int)(bd * 255));
         }
 
-        // ── Tile map (false-colour per tile ID) ───────────────────────────────
+        // ── Shared pixel-write helper (no unsafe needed) ──────────────────────
+        private static Bitmap WriteBitmap(int w, int h, int[] pixels)
+        {
+            var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb);
+            var bd = bmp.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            Marshal.Copy(pixels, 0, bd.Scan0, pixels.Length);
+            bmp.UnlockBits(bd);
+            return bmp;
+        }
+
+        // ── Tile map ──────────────────────────────────────────────────────────
         public static Bitmap RenderTileMap(CLSModel model)
         {
-            if (model.Tiles == null || model.TileW == 0 || model.TileH == 0)
-                return MakePlaceholder();
-
-            int w = model.TileW, h = model.TileH;
-            var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb);
-            WriteToBitmap(bmp, w, h, i => TileArgb[model.Tiles[i]]);
-            return bmp;
+            if (model.Tiles == null || model.TileW == 0) return new Bitmap(1, 1);
+            int w = model.TileW, h = model.TileH, n = w * h;
+            var px = new int[n];
+            for (int i = 0; i < n; i++) px[i] = TileArgb[model.Tiles[i]];
+            return WriteBitmap(w, h, px);
         }
 
-        // ── Heightmap (contrast-stretched grayscale, water tinted blue) ───────
+        // ── Heightmap ─────────────────────────────────────────────────────────
         public static Bitmap RenderHeightmap(CLSModel model)
         {
-            if (model.Heights.Length == 0) return MakePlaceholder();
-
-            int w = model.GridW, h = model.GridH;
-            byte maxH = model.Heights.Max() is byte m && m > 0 ? m : (byte)1;
-
-            var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb);
-            WriteToBitmap(bmp, w, h, i =>
+            if (model.Heights.Length == 0) return new Bitmap(1, 1);
+            int w = model.GridW, h = model.GridH, n = w * h;
+            byte maxH = model.Heights.Max();
+            if (maxH == 0) maxH = 1;
+            var px = new int[n];
+            for (int i = 0; i < n; i++)
             {
-                if (i >= model.Heights.Length) return unchecked((int)0xFF101010);
                 byte raw = model.Heights[i];
-                if (raw == 0) return unchecked((int)0xFF1A2A3A);   // water
+                if (raw == 0) { px[i] = unchecked((int)0xFF1A2A3A); continue; }
                 byte level = (byte)(60 + raw * 195 / maxH);
-                return unchecked((int)(0xFF000000u | ((uint)level << 16) | ((uint)level << 8) | level));
-            });
-            return bmp;
+                px[i] = unchecked((int)(0xFF000000u | ((uint)level << 16) | ((uint)level << 8) | level));
+            }
+            return WriteBitmap(w, h, px);
         }
 
-        // ── Raw heightmap (true uint8 values, no stretch — for export/import) ─
+        // ── Raw heightmap (true uint8 values, for export/reimport) ────────────
         public static Bitmap RenderHeightmapRaw(CLSModel model)
         {
-            if (model.Heights.Length == 0) return MakePlaceholder();
-            int w = model.GridW, h = model.GridH;
-            var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb);
-            WriteToBitmap(bmp, w, h, i =>
+            if (model.Heights.Length == 0) return new Bitmap(1, 1);
+            int w = model.GridW, h = model.GridH, n = w * h;
+            var px = new int[n];
+            for (int i = 0; i < n; i++)
             {
-                byte v = i < model.Heights.Length ? model.Heights[i] : (byte)0;
-                return unchecked((int)(0xFF000000u | ((uint)v << 16) | ((uint)v << 8) | v));
-            });
-            return bmp;
+                byte v = model.Heights[i];
+                px[i] = unchecked((int)(0xFF000000u | ((uint)v << 16) | ((uint)v << 8) | v));
+            }
+            return WriteBitmap(w, h, px);
         }
 
         // ── Composite (tile colour × height brightness) ───────────────────────
         public static Bitmap RenderComposite(CLSModel model)
         {
             if (model.Heights.Length == 0) return RenderTileMap(model);
-
-            int w = model.GridW, h = model.GridH;
-            byte maxH = model.Heights.Max() is byte m && m > 0 ? m : (byte)1;
-
-            var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb);
-            WriteToBitmap(bmp, w, h, vi =>
+            int w = model.GridW, h = model.GridH, n = w * h;
+            byte maxH = model.Heights.Max();
+            if (maxH == 0) maxH = 1;
+            var px = new int[n];
+            for (int i = 0; i < n; i++)
             {
-                int row = vi / w, col = vi % w;
-                byte hgt = vi < model.Heights.Length ? model.Heights[vi] : (byte)0;
+                int row = i / w, col = i % w;
+                byte hgt = model.Heights[i];
 
-                // Tile colour: vertex (row,col) is at the corner of tile (row,col)
-                int baseArgb = TileArgb[1]; // default to water
+                int baseArgb = TileArgb[1]; // default water
                 if (model.Tiles != null && row < model.TileH && col < model.TileW)
-                {
-                    int ti = row * model.TileW + col;
-                    if (ti < model.Tiles.Length)
-                        baseArgb = TileArgb[model.Tiles[ti]];
-                }
+                    baseArgb = TileArgb[model.Tiles[row * model.TileW + col]];
 
                 float bright = hgt == 0 ? 0.25f : 0.35f + hgt / (float)maxH * 0.65f;
-                int br_ = (baseArgb >> 16) & 0xFF;
-                int bg = (baseArgb >> 8) & 0xFF;
-                int bb = (baseArgb) & 0xFF;
-                int r = Math.Min(255, (int)(br_ * bright));
-                int g = Math.Min(255, (int)(bg * bright));
-                int b = Math.Min(255, (int)(bb * bright));
-                return unchecked((int)(0xFF000000u | ((uint)r << 16) | ((uint)g << 8) | (uint)b));
-            });
-            return bmp;
-        }
-
-        // ── Shared fast pixel-write helper ────────────────────────────────────
-        private static unsafe void WriteToBitmap(Bitmap bmp, int w, int h, Func<int, int> pixelFunc)
-        {
-            var bd = bmp.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
-            try
-            {
-                int* ptr = (int*)bd.Scan0;
-                int size = w * h;
-                for (int i = 0; i < size; i++)
-                    ptr[i] = pixelFunc(i);
+                int r = Math.Min(255, (int)(((baseArgb >> 16) & 0xFF) * bright));
+                int g = Math.Min(255, (int)(((baseArgb >> 8) & 0xFF) * bright));
+                int b = Math.Min(255, (int)(((baseArgb) & 0xFF) * bright));
+                px[i] = unchecked((int)(0xFF000000u | ((uint)r << 16) | ((uint)g << 8) | (uint)b));
             }
-            finally
-            {
-                bmp.UnlockBits(bd);
-            }
-        }
-
-        private static Bitmap MakePlaceholder()
-        {
-            var bmp = new Bitmap(1, 1, PixelFormat.Format32bppArgb);
-            bmp.SetPixel(0, 0, Color.FromArgb(30, 30, 30));
-            return bmp;
+            return WriteBitmap(w, h, px);
         }
     }
 }
