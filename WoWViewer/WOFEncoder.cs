@@ -460,7 +460,8 @@ namespace WoWViewer
                 int finalVc = orig != null ? origVc : newVc;
 
                 byte[] block;
-                if (origBlocks.TryGetValue(p, out var ob) && ob[0] == finalVc)
+                if (origBlocks.TryGetValue(p, out var ob) &&
+                    ob.Length == 1 + ob[0] + finalVc * 2)
                 {
                     // Vert count unchanged — copy original block verbatim
                     block = ob;
