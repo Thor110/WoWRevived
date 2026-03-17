@@ -33,29 +33,17 @@ namespace WoWViewer
                 { "SPR", HandleSPR },   // sprites, only lowercase exception
                 { "WOF", HandleWOF },   // units
                 //MAPS/MAPS.WoW
-                { "ATM", HandleATM },   // terrain textures
-                { "CLS", HandleCLS },   // terrain geometry
+                { "ATM", HandleATM },   // terrain textures - ATM
+                { "CLS", HandleATM },   // terrain geometry - CLS
                 //"SPR"                 // human and martian minimaps
             };
         }
         //DAT/Dat.wow
-        private void HandleDAT(WowFileEntry entry)
-        {
-            MessageBox.Show("DAT file selected. No action defined."); // pseudo random dithering
-        }
+        private void HandleDAT(WowFileEntry entry) { MessageBox.Show("DAT files are pseudo random dithering tables."); }
         private void HandleFNT(WowFileEntry entry) { MessageBox.Show("These are font files! Not decoded yet."); }
-        private void HandleHSH(WowFileEntry entry)
-        {
-            MessageBox.Show("HSH file selected. No action defined."); // global high shader table?
-        }
-        private void HandleHSM(WowFileEntry entry)
-        {
-            MessageBox.Show("HSM file selected. No action defined."); // global medium shader table?
-        }
-        private void HandleINT(WowFileEntry entry)
-        {
-            MessageBox.Show("INT file selected. No action defined."); // terrain geometry shader tables
-        }
+        private void HandleHSH(WowFileEntry entry) { MessageBox.Show("HSH file is a global high quality shader table."); }
+        private void HandleHSM(WowFileEntry entry) { MessageBox.Show("HSM file is a global medium quality shader table."); }
+        private void HandleINT(WowFileEntry entry) { MessageBox.Show("INT files are terrain geometry shader tables, load MAPS.WoW and this file will be loaded through that method."); }
         private void HandleIOB(WowFileEntry entry) { newForm(new WOFConverter(entries, listBox1.SelectedItem!.ToString()!, outputPath, true)); }
         private void HandlePAL(WowFileEntry entry) { MessageBox.Show("This is a palette file!"); }
         private void HandleRAW(WowFileEntry entry) { MessageBox.Show("These are visual effects files! Not decoded yet."); }
@@ -65,14 +53,7 @@ namespace WoWViewer
         private void HandleSPR(WowFileEntry entry) { newForm(new SprViewer(entries, listBox1.SelectedItem!.ToString()!, filePath.Contains("MAPS.WoW"), outputPath)); }
         private void HandleWOF(WowFileEntry entry) { newForm(new WOFConverter(entries, listBox1.SelectedItem!.ToString()!, outputPath)); }
         //MAPS/MAPS.WoW
-        private void HandleATM(WowFileEntry entry)
-        {
-            MessageBox.Show("ATM file selected. No action defined."); // terrain textures
-        }
-        private void HandleCLS(WowFileEntry entry)
-        {
-            MessageBox.Show("CLS file selected. No action defined."); // terrain geometry
-        }
+        private void HandleATM(WowFileEntry entry) { newForm(new ATMViewer(entries, listBox1.SelectedItem!.ToString()!, outputPath)); }
         public WoWViewer()
         {
             InitializeComponent();
