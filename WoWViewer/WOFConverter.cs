@@ -1,4 +1,6 @@
-﻿namespace WoWViewer
+﻿using System.Text;
+
+namespace WoWViewer
 {
     public partial class WOFConverter : Form
     {
@@ -11,7 +13,9 @@
         private byte[] rawData;
         private byte[] palData;
         private byte[]? shadeData;   // active shade remap table (level 0, 256 bytes), null = identity
-        public WOFConverter(List<WowFileEntry> entryList, string entryName, string output)
+        private bool modelType;
+        private int currentFrame;
+        public WOFConverter(List<WowFileEntry> entryList, string entryName, string output, bool model = false)
         {
             InitializeComponent();
             entries = entryList;
@@ -24,12 +28,13 @@
                 button3.Enabled = true;
                 button5.Enabled = true;
             }
+            modelType = model;
             PopulateList();
         }
         // populate wof and pal lists
         private void PopulateList()
         {
-            foreach (var entry in entries.Where(e => e.Name.EndsWith(".WOF", StringComparison.OrdinalIgnoreCase)).ToList())
+            foreach (var entry in entries.Where(e => e.Name.EndsWith(modelType ? ".IOB" : ".WOF", StringComparison.OrdinalIgnoreCase)).ToList())
             {
                 entry.Data = File.Exists($"DAT\\{entry.Name}") ? File.ReadAllBytes($"DAT\\{entry.Name}") : FfuhDecoder.Decompress(entry.Data!);
                 listBox1.Items.Add(entry.Name);
@@ -116,8 +121,61 @@
         // render selected model texture with selected palette
         private void RenderCurrent()
         {
-            if (palData == null) { return; }
-            
+            if (palData == null) { return; } // TODO: Palette detection
+            if (currentRenderedEntry != listBox1.SelectedIndex) // repopulate comboBox1 if new entry is selected
+            {
+                comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;
+                comboBox1.Items.Clear();
+                currentRenderedEntry = listBox1.SelectedIndex;
+                int frameCount = 1; // TODO: update once sub textures are detected
+                string name = Path.GetFileNameWithoutExtension(selectedEntry);
+                if (frameCount != 1)
+                {
+                    for (int i = 0; i < frameCount; i++) { comboBox1.Items.Add($"{name}_frame_{i:D2}"); }
+                    comboBox1.Enabled = true;   // enable frames combo box
+                    button6.Enabled = true;     // enable replace all frames button
+                    button1.Enabled = false;    // disable single frame replace button??
+                    comboBox1.SelectedIndex = 0;
+                }
+                else
+                {
+                    comboBox1.Enabled = false;  // disable frames combo box
+                    button6.Enabled = false;    // disable replace all frames button
+                    button1.Enabled = true;     // enable single frame replace button??
+                    comboBox1.Text = name;      // update combobox with entry name
+                    comboBox1.SelectedIndex = -1;
+                }
+                currentFrame = 0; // reset currently selected frame
+                comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged!;
+            }
+            //pictureBox1.Image = SprDecoder.Render(rawData, palData, shadeData: shadeData, frame: currentFrame);
+        }
+        // replace texture
+        private void button1_Click(object sender, EventArgs e)
+        {
+            using var ofd = new OpenFileDialog { Filter = "PNG Image|*.png", Title = "Select a replacement to encode" };
+            if (ofd.ShowDialog() != DialogResult.OK) { return; }
+            var bmp = new Bitmap(ofd.FileName);
+            //byte[] encoded = SprEncoder.Encode(QuantiseToPalette(bmp, palData, checkBox1.Checked ? shadeData : null), bmp.Width, bmp.Height);
+            //string outPath = Path.Combine("DAT", selectedEntry);
+            //if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) { return; }
+            //File.WriteAllBytes(outPath, encoded);
+            //entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
+            //rawData = encoded;
+            RenderCurrent();
+            MessageBox.Show("Encoded and saved.");
+        }
+        // replace all textures
+        private void button6_Click(object sender, EventArgs e)
+        {
+
+        }
+        // select sub texture
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (comboBox1.SelectedIndex == currentFrame) { return; }
+            currentFrame = comboBox1.SelectedIndex;
+            RenderCurrent();
         }
     }
 }

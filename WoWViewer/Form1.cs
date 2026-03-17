@@ -56,10 +56,7 @@ namespace WoWViewer
         {
             MessageBox.Show("INT file selected. No action defined."); // terrain geometry shader tables
         }
-        private void HandleIOB(WowFileEntry entry)
-        {
-            MessageBox.Show("These are static model files! Not decoded yet.");
-        }
+        private void HandleIOB(WowFileEntry entry) { newForm(new WOFConverter(entries, listBox1.SelectedItem!.ToString()!, outputPath, true)); }
         private void HandlePAL(WowFileEntry entry) { MessageBox.Show("This is a palette file!"); }
         private void HandleRAW(WowFileEntry entry) { MessageBox.Show("These are visual effects files! Not decoded yet."); }
         private void HandleSHH(WowFileEntry entry) { MessageBox.Show("This is a High Quality Shader Table! 16-bit. (SHH - Shader High)"); }

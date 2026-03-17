@@ -40,6 +40,10 @@
             listBox2 = new ListBox();
             listBox1 = new ListBox();
             pictureBox1 = new PictureBox();
+            button6 = new Button();
+            label2 = new Label();
+            comboBox1 = new ComboBox();
+            button1 = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -163,11 +167,56 @@
             pictureBox1.TabIndex = 17;
             pictureBox1.TabStop = false;
             // 
+            // button6
+            // 
+            button6.Enabled = false;
+            button6.Location = new Point(531, 526);
+            button6.Name = "button6";
+            button6.Size = new Size(156, 23);
+            button6.TabIndex = 32;
+            button6.Text = "Replace All Frames";
+            button6.UseVisualStyleBackColor = true;
+            button6.Click += button6_Click;
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Location = new Point(878, 501);
+            label2.Name = "label2";
+            label2.Size = new Size(144, 15);
+            label2.TabIndex = 31;
+            label2.Text = "Sprite Information Display";
+            // 
+            // comboBox1
+            // 
+            comboBox1.Enabled = false;
+            comboBox1.FormattingEnabled = true;
+            comboBox1.Location = new Point(693, 497);
+            comboBox1.Name = "comboBox1";
+            comboBox1.Size = new Size(179, 23);
+            comboBox1.TabIndex = 30;
+            comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
+            // 
+            // button1
+            // 
+            button1.Enabled = false;
+            button1.Location = new Point(612, 497);
+            button1.Name = "button1";
+            button1.Size = new Size(75, 23);
+            button1.TabIndex = 29;
+            button1.Text = "Replace";
+            button1.UseVisualStyleBackColor = true;
+            button1.Click += button1_Click;
+            // 
             // WOFConverter
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1264, 777);
+            Controls.Add(button6);
+            Controls.Add(label2);
+            Controls.Add(comboBox1);
+            Controls.Add(button1);
             Controls.Add(label3);
             Controls.Add(listBox3);
             Controls.Add(checkBox1);
@@ -201,5 +250,9 @@
         private ListBox listBox2;
         private ListBox listBox1;
         private PictureBox pictureBox1;
+        private Button button6;
+        private Label label2;
+        private ComboBox comboBox1;
+        private Button button1;
     }
 }
