@@ -334,20 +334,205 @@ namespace WoWViewer
             // Texture
             Array.Copy(texBytes, 0, buf, texOff, texBytes.Length);
 
-            // Skinning table: appended verbatim after end_off (outside the header-described region).
+            // ── Skinning table ────────────────────────────────────────────────
+            // Appended verbatim after end_off (outside the header-described region).
             // The engine reads it at data+end_off immediately after loading.
-            // For new models with no original this will be empty — animation will not work
-            // until the skinning table format is fully decoded and can be generated.
-            byte[] skinning = orig?.SkinningTable ?? [];
-            if (skinning.Length > 0)
+            // Format (fully decoded):
+            //   [0x00]          uint32 = 0                sentinel
+            //   [0x04]          animPc × uint32           absolute file ptrs, one per animated piece
+            //   [0x04+animPc*4] animPc variable blocks    one per animated piece
+            //
+            // Per-block: [N] then N records of (weight, shade_id_0..shade_id_{weight-1}, vert_idx)
+            //   weight=1 for flat shading (all verts → shade_group 0).
+            //
+            // Strategy:
+            //   - If vc unchanged for a piece: copy original block verbatim (preserves smooth shading).
+            //   - If vc changed (or no original): generate a flat-shading block (weight=1, shade=0).
+            //   - The pointer array is always rebuilt with the correct absolute offsets.
+            byte[] skinningTable = BuildSkinningTable(buf.Length, pieces, orig);
+            if (skinningTable.Length > 0)
             {
-                var withSkin = new byte[buf.Length + skinning.Length];
+                var withSkin = new byte[buf.Length + skinningTable.Length];
                 Array.Copy(buf, withSkin, buf.Length);
-                Array.Copy(skinning, 0, withSkin, buf.Length, skinning.Length);
+                Array.Copy(skinningTable, 0, withSkin, buf.Length, skinningTable.Length);
                 return withSkin;
             }
 
             return buf;
+        }
+
+        // ── Skinning table builder ────────────────────────────────────────────
+
+        /// <summary>
+        /// Build the skinning table that is appended after end_off.
+        ///
+        /// Format:
+        ///   uint32 = 0                               sentinel
+        ///   animPc × uint32                          absolute file pointers
+        ///   animPc × variable block                  per animated piece
+        ///
+        /// Per-block:
+        ///   byte  N            = number of vert records (= vc for flat encoding)
+        ///   N × record:
+        ///     byte  weight     = number of shade groups influencing this vert (always 1 here)
+        ///     byte  shade_id   = shade group id (0 = flat)
+        ///     byte  vert_idx   = local piece vert index
+        ///
+        /// If the original WOF has a skinning table and the vert count for a piece is
+        /// unchanged, the original block is preserved verbatim (smooth shading).
+        /// Otherwise a flat-shading block is generated.
+        /// </summary>
+        private static byte[] BuildSkinningTable(int fileBase, List<ObjPiece> pieces, WofModel? orig)
+        {
+            // Identify animated pieces (flags & 0x20) from orig if available,
+            // otherwise treat all pieces as animated (safe fallback).
+            // We need flags and orig vc to decide whether to copy or regenerate.
+            int pc = pieces.Count;
+
+            // Build a parallel list of (flags, origVc, origBlock?) for each piece
+            var pieceInfos = new List<(byte flags, int origVc, byte[]? origBlock)>(pc);
+            for (int p = 0; p < pc; p++)
+            {
+                byte flags = 0;
+                int origVc = pieces[p].Verts.Count;
+                byte[]? origBlock = null;
+
+                if (orig != null && p < orig.PieceCount)
+                {
+                    flags = orig.Pieces[p].Flags;
+                    origVc = orig.Pieces[p].VertCount;
+                }
+                pieceInfos.Add((flags, origVc, origBlock));
+            }
+
+            // Parse the original skinning table blocks if we have one
+            Dictionary<int, byte[]> origBlocks = [];   // piece_index → raw block bytes
+            if (orig?.SkinningTable.Length > 4)
+            {
+                var st = orig.SkinningTable;
+                // st[0..3] = uint32 sentinel (0)
+                // count the pointers: they all point into st itself
+                int animPcOrig = 0;
+                int stBase = orig.TexOffset + (orig.TexHeight * WofDecoder.TexWidth); // = end_off
+                for (int i = 0; i < 64 && 4 + (i + 1) * 4 <= st.Length; i++)
+                {
+                    uint ptr = BitConverter.ToUInt32(st, 4 + i * 4);
+                    if (ptr < stBase || ptr >= stBase + st.Length) break;
+                    animPcOrig++;
+                }
+
+                // Now extract each block (span between consecutive pointers)
+                int animIdx = 0;
+                for (int p = 0; p < orig.PieceCount && animIdx < animPcOrig; p++)
+                {
+                    if ((orig.Pieces[p].Flags & 0x20) == 0) continue;
+
+                    int ptrOff = 4 + animIdx * 4;
+                    uint ptr = BitConverter.ToUInt32(st, ptrOff);
+                    uint nextPtr = (animIdx + 1 < animPcOrig)
+                        ? BitConverter.ToUInt32(st, ptrOff + 4)
+                        : (uint)(stBase + st.Length);
+
+                    int blockOff = (int)(ptr - stBase);
+                    int blockEnd = (int)(nextPtr - stBase);
+                    if (blockOff >= 0 && blockEnd <= st.Length && blockEnd > blockOff)
+                    {
+                        origBlocks[p] = st[blockOff..blockEnd];
+                    }
+                    animIdx++;
+                }
+            }
+
+            // Collect animated pieces and build their blocks
+            var animPieces = new List<int>();   // piece indices that are animated
+            var blocks = new List<byte[]>();
+
+            for (int p = 0; p < pc; p++)
+            {
+                var (flags, origVc, _) = pieceInfos[p];
+                bool isAnimated = orig != null
+                    ? (orig.Pieces[p].Flags & 0x20) != 0
+                    : true;  // if no original, treat all as animated (safe)
+                if (!isAnimated) continue;
+
+                int newVc = p < pieces.Count ? pieces[p].Verts.Count : origVc;
+                // Use reconciled vc (orig takes priority for round-trips)
+                int finalVc = orig != null ? origVc : newVc;
+
+                byte[] block;
+                if (origBlocks.TryGetValue(p, out var ob) && ob[0] == finalVc)
+                {
+                    // Vert count unchanged — copy original block verbatim
+                    block = ob;
+                }
+                else
+                {
+                    // Vert count changed or no original — generate flat-shading block:
+                    // N=finalVc, each vert: (weight=1, shade=0, vert_idx)
+                    block = GenerateFlatSkinningBlock(finalVc);
+                }
+
+                animPieces.Add(p);
+                blocks.Add(block);
+            }
+
+            if (animPieces.Count == 0) return [];
+
+            // Compute absolute file pointers for each block
+            // Layout in the skinning table:
+            //   [0]              uint32 sentinel = 0
+            //   [4..4+apc*4-1]   apc × uint32 pointers
+            //   [4+apc*4...]     blocks sequentially
+            int apc = animPieces.Count;
+            int headerSize = 4 + apc * 4;   // sentinel + pointer array
+            int tableBase = fileBase;       // absolute position of skinning table in file
+
+            int[] blockOffsets = new int[apc];
+            int cursor = headerSize;
+            for (int i = 0; i < apc; i++)
+            {
+                blockOffsets[i] = cursor;
+                cursor += blocks[i].Length;
+            }
+            int totalSize = cursor;
+
+            var table = new byte[totalSize];
+            // Sentinel
+            // (already zero)
+
+            // Pointer array
+            for (int i = 0; i < apc; i++)
+            {
+                uint absPtr = (uint)(tableBase + blockOffsets[i]);
+                table[4 + i * 4] = (byte)absPtr;
+                table[4 + i * 4 + 1] = (byte)(absPtr >> 8);
+                table[4 + i * 4 + 2] = (byte)(absPtr >> 16);
+                table[4 + i * 4 + 3] = (byte)(absPtr >> 24);
+            }
+
+            // Blocks
+            for (int i = 0; i < apc; i++)
+                Array.Copy(blocks[i], 0, table, blockOffsets[i], blocks[i].Length);
+
+            return table;
+        }
+
+        /// <summary>
+        /// Generate a flat-shading skinning block for a piece with vc vertices.
+        /// All verts → shade_group 0, weight 1.
+        /// Format: [N=vc] + [1, 0, 0, 1, 0, 1, ..., 1, 0, vc-1]
+        /// </summary>
+        private static byte[] GenerateFlatSkinningBlock(int vc)
+        {
+            var block = new byte[1 + vc * 3];
+            block[0] = (byte)vc;
+            for (int v = 0; v < vc; v++)
+            {
+                block[1 + v * 3] = 1;       // weight = 1
+                block[1 + v * 3 + 1] = 0;       // shade_group = 0
+                block[1 + v * 3 + 2] = (byte)v; // local vert index
+            }
+            return block;
         }
 
         // ── OBJ parser ────────────────────────────────────────────────────────
