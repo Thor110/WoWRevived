@@ -134,13 +134,13 @@ namespace WoWViewer
             int count = 0;
             foreach (string clsName in listBox1.Items)
             {
-                var clsEntry = entries.FirstOrDefault(en => en.Name.Equals(clsName));
+                WowFileEntry clsEntry = entries.FirstOrDefault(en => en.Name.Equals(clsName))!;
                 if (clsEntry?.Data == null) continue;
 
                 string atmName = Path.ChangeExtension(clsName, ".ATM");
-                var atmEntry = entries.FirstOrDefault(en => en.Name.Equals(atmName));
+                WowFileEntry atmEntry = entries.FirstOrDefault(en => en.Name.Equals(atmName))!;
 
-                var model = CLSDecoder.Decode(clsEntry.Data, atmData);
+                CLSModel model = CLSDecoder.Decode(clsEntry.Data, atmEntry!.Data);
                 string bname = Path.GetFileNameWithoutExtension(clsName);
 
                 using var tileBmp = CLSRenderer.RenderTileMap(model);
