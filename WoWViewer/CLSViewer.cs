@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.Text;
+using static System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy;
 
 namespace WoWViewer
 {
@@ -10,17 +13,21 @@ namespace WoWViewer
         private string lastSelectedEntry = "";
         private int currentRenderedEntry = -1;
         private string lastSelectedPalette = "";
-        private byte[] rawData = [];
+        private byte[] clsData = [];
+        private byte[] atmData = [];
         private byte[] palData = [];
         private byte[]? shadeData;   // active SHH level-0 slice (512 bytes), null = raw PAL
         private int currentFrame;
         private List<WowFileEntry> palettes = new List<WowFileEntry>();
         private string baseFolder;
+        // ── View mode ─────────────────────────────────────────────────────────
+        private enum ViewMode { TileMap, Heightmap, Composite }
+        private ViewMode currentView = ViewMode.Composite;
         public CLSViewer(List<WowFileEntry> entryList, string entryName, string output)
         {
             InitializeComponent();
             entries = entryList;
-            if(entryName.EndsWith("CLS")) { entryName.Replace("CLS","ATM"); } // direct to ATM if entered via CLS
+            if (entryName.EndsWith("ATM")) { entryName.Replace("ATM", "CLS"); } // direct to CLS if entered via ATM
             selectedEntry = entryName;
             if (output != "")
             {
@@ -74,6 +81,39 @@ namespace WoWViewer
             }
             listBox1.SelectedIndex = listBox1.FindStringExact(selectedEntry);
         }
+        // ── Load matching ATM whenever a CLS is selected ──────────────────────
+        private void LoadMatchingAtm(string clsName)
+        {
+            string atmName = Path.ChangeExtension(clsName, ".ATM");
+            string diskPath = Path.Combine("MAPS", atmName);
+            WowFileEntry atmEntry = entries.FirstOrDefault(e => e.Name.Equals(atmName, StringComparison.OrdinalIgnoreCase))!;
+            atmData = File.Exists(diskPath) ? File.ReadAllBytes(diskPath) : FfuhDecoder.Decompress(atmEntry.Data!);
+        }
+        private void TryAutoSelectShader()
+        {
+            if (listBox3.Items.Count == 0 || listBox3.SelectedIndex >= 0) return;
+            for (int i = 0; i < listBox3.Items.Count; i++)
+            {
+                if (listBox3.Items[i].ToString()!.StartsWith("LANDR0", StringComparison.OrdinalIgnoreCase))
+                {
+                    listBox3.SelectedIndex = i;
+                    return;
+                }
+            }
+            listBox3.SelectedIndex = 0;
+        }
+        // ── Auto-select palette / shader (once only) ──────────────────────────
+        private void TryAutoSelectPalette()
+        {
+            if (listBox2.Items.Count == 0 || listBox2.SelectedIndex >= 0) return;
+            string[] preferred = { "CDSEPIA.PAL", "CD1.PAL", "CDNORM.PAL" };
+            foreach (string p in preferred)
+            {
+                int idx = listBox2.FindStringExact(p);
+                if (idx >= 0) { listBox2.SelectedIndex = idx; return; }
+            }
+            listBox2.SelectedIndex = 0;
+        }
         // set output path button
         private void button4_Click(object sender, EventArgs e)
         {
@@ -89,31 +129,90 @@ namespace WoWViewer
         // export all button
         private void button3_Click(object sender, EventArgs e)
         {
+            int count = 0;
+            foreach (string clsName in listBox1.Items)
+            {
+                var clsEntry = entries.FirstOrDefault(en => en.Name.Equals(clsName, StringComparison.OrdinalIgnoreCase));
+                if (clsEntry?.Data == null) continue;
 
+                string atmName = Path.ChangeExtension(clsName, ".ATM");
+                var atmEntry = entries.FirstOrDefault(en => en.Name.Equals(atmName, StringComparison.OrdinalIgnoreCase));
+                byte[] atm = atmEntry?.Data ?? [];
+
+                var model = CLSDecoder.Decode(clsEntry.Data, atm);
+                string bname = Path.GetFileNameWithoutExtension(clsName);
+
+                using var tileBmp = CLSRenderer.RenderTileMap(model);
+                tileBmp.Save(Path.Combine(outputPath, $"{bname}_tilemap.png"), ImageFormat.Png);
+
+                using var hBmp = CLSRenderer.RenderHeightmap(model);
+                hBmp.Save(Path.Combine(outputPath, $"{bname}_heightmap.png"), ImageFormat.Png);
+
+                count++;
+            }
+            MessageBox.Show($"Exported {count} terrain pairs.");
         }
         // export selected button
         private void button2_Click(object sender, EventArgs e)
         {
+            string baseName = Path.GetFileNameWithoutExtension(selectedEntry);
+            var model = CLSDecoder.Decode(clsData, atmData);
 
+            using var tileBmp = CLSRenderer.RenderTileMap(model);
+            tileBmp.Save(Path.Combine(outputPath, $"{baseName}_tilemap.png"), ImageFormat.Png);
+
+            using var hBmp = CLSRenderer.RenderHeightmap(model);
+            hBmp.Save(Path.Combine(outputPath, $"{baseName}_heightmap.png"), ImageFormat.Png);
+
+            using var rawBmp = CLSRenderer.RenderHeightmapRaw(model);
+            rawBmp.Save(Path.Combine(outputPath, $"{baseName}_heights_raw.png"), ImageFormat.Png);
+
+            MessageBox.Show($"Exported:\n  {baseName}_tilemap.png\n  {baseName}_heightmap.png\n  {baseName}_heights_raw.png");
         }
         // replace selected button
         private void button1_Click(object sender, EventArgs e)
         {
-
+            MessageBox.Show("Import not yet implemented.");
         }
         // render selected sprite with selected palette
         private void RenderCurrent()
         {
-            
+            if (clsData.Length == 0) return;
+
+            var model = CLSDecoder.Decode(clsData, atmData);
+            UpdateInfoLabel(model);
+
+            Bitmap bmp = currentView switch
+            {
+                ViewMode.TileMap => CLSRenderer.RenderTileMap(model),
+                ViewMode.Heightmap => CLSRenderer.RenderHeightmap(model),
+                _ => CLSRenderer.RenderComposite(model)
+            };
+
+            var old = pictureBox1.Image;
+            pictureBox1.Image = bmp;
+            old?.Dispose();
+        }
+
+        private void UpdateInfoLabel(CLSModel model)
+        {
+            label1.Text =
+                $"Grid: {model.GridW}×{model.GridH}  " +
+                $"Verts: {model.VertCount:N0}  Tris: {model.TriCount:N0}\r\n" +
+                $"ATM tiles: {model.Tiles?.Length ?? 0:N0}  " +
+                $"Max height: {(model.Heights.Length > 0 ? model.Heights.Max() : 0)}";
         }
         // atm listbox
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            string sprName = listBox1.SelectedItem!.ToString()!;
-            if (sprName == lastSelectedEntry) { return; }
-            selectedEntry = sprName;
-            lastSelectedEntry = sprName;
-            rawData = entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
+            string clsName = listBox1.SelectedItem!.ToString()!;
+            if (clsName == lastSelectedEntry) { return; }
+            selectedEntry = clsName;
+            lastSelectedEntry = clsName;
+            clsData = entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
+            LoadMatchingAtm(clsName);
+            TryAutoSelectPalette();
+            TryAutoSelectShader();
             RenderCurrent();
         }
         // pal listbox
@@ -123,10 +222,6 @@ namespace WoWViewer
             if (palName == lastSelectedPalette) { return; }
             lastSelectedPalette = palName;
             palData = palettes.First(e => e.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
-            // PAL structure: bytes 0–767 = main 256-colour VGA palette (6-bit, ×4 = 8-bit).
-            // Bytes 768–66303 = colour-blend / translucency table (not used for static viewing).
-            // numericUpDown1 is exposed as a "shade level" control (0 = normal brightness).
-            // Range 0–255 corresponds to rows in the shade table; 0 is full brightness.
             RenderCurrent();
         }
         // shh listbox
@@ -148,6 +243,21 @@ namespace WoWViewer
         {
             shadeData = checkBox1.Checked ? palettes.FirstOrDefault(e => e.Name.Equals(listBox3.SelectedItem!.ToString()!, StringComparison.OrdinalIgnoreCase))!.Data![1..513] : null;
             RenderCurrent();
+        }
+        // preview types
+        private void radioButton1_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton1.Checked) { currentView = ViewMode.TileMap; RenderCurrent(); }
+        }
+
+        private void radioButton2_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton2.Checked) { currentView = ViewMode.Heightmap; RenderCurrent(); }
+        }
+
+        private void radioButton3_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButton3.Checked) { currentView = ViewMode.Composite; RenderCurrent(); }
         }
     }
 }

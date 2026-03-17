@@ -42,6 +42,9 @@
             listBox2 = new ListBox();
             listBox1 = new ListBox();
             pictureBox1 = new PictureBox();
+            radioButton1 = new RadioButton();
+            radioButton2 = new RadioButton();
+            radioButton3 = new RadioButton();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -184,11 +187,50 @@
             pictureBox1.TabIndex = 32;
             pictureBox1.TabStop = false;
             // 
-            // ATMViewer
+            // radioButton1
+            // 
+            radioButton1.AutoSize = true;
+            radioButton1.Location = new Point(409, 48);
+            radioButton1.Name = "radioButton1";
+            radioButton1.Size = new Size(67, 19);
+            radioButton1.TabIndex = 46;
+            radioButton1.TabStop = true;
+            radioButton1.Text = "TileMap";
+            radioButton1.UseVisualStyleBackColor = true;
+            radioButton1.CheckedChanged += radioButton1_CheckedChanged;
+            // 
+            // radioButton2
+            // 
+            radioButton2.AutoSize = true;
+            radioButton2.Location = new Point(409, 73);
+            radioButton2.Name = "radioButton2";
+            radioButton2.Size = new Size(85, 19);
+            radioButton2.TabIndex = 47;
+            radioButton2.TabStop = true;
+            radioButton2.Text = "Heightmap";
+            radioButton2.UseVisualStyleBackColor = true;
+            radioButton2.CheckedChanged += radioButton2_CheckedChanged;
+            // 
+            // radioButton3
+            // 
+            radioButton3.AutoSize = true;
+            radioButton3.Location = new Point(409, 98);
+            radioButton3.Name = "radioButton3";
+            radioButton3.Size = new Size(83, 19);
+            radioButton3.TabIndex = 48;
+            radioButton3.TabStop = true;
+            radioButton3.Text = "Composite";
+            radioButton3.UseVisualStyleBackColor = true;
+            radioButton3.CheckedChanged += radioButton3_CheckedChanged;
+            // 
+            // CLSViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1264, 777);
+            Controls.Add(radioButton3);
+            Controls.Add(radioButton2);
+            Controls.Add(radioButton1);
             Controls.Add(label2);
             Controls.Add(button1);
             Controls.Add(label3);
@@ -203,7 +245,7 @@
             Controls.Add(listBox2);
             Controls.Add(listBox1);
             Controls.Add(pictureBox1);
-            Name = "ATMViewer";
+            Name = "CLSViewer";
             Text = "ATMViewer";
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
@@ -226,5 +268,8 @@
         private ListBox listBox2;
         private ListBox listBox1;
         private PictureBox pictureBox1;
+        private RadioButton radioButton1;
+        private RadioButton radioButton2;
+        private RadioButton radioButton3;
     }
 }
