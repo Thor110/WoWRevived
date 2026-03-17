@@ -63,7 +63,7 @@
             Array.Copy(originalCls, output, originalCls.Length);
 
             // Overwrite just the height array at offset 80
-            int heightsStart = 80;
+            int heightsStart = 68;
             Array.Copy(model.Heights, 0, output, heightsStart, model.VertCount);
 
             return output;
