@@ -248,7 +248,8 @@ namespace WoWViewer
 
         // ── OBJ export ────────────────────────────────────────────────────────
 
-        public static (string obj, string mtl) ToObj(WofModel model, string mtlName, float scale = 100f)
+        public static (string obj, string mtl) ToObj(WofModel model, string mtlName,
+            string texName = "texture_atlas.png", float scale = 100f)
         {
             var obj = new StringBuilder();
             var mtl = new StringBuilder();
@@ -308,20 +309,17 @@ namespace WoWViewer
                 obj.AppendLine(FormattableString.Invariant($"vt {nu:F4} {1f - nv:F4}"));
             obj.AppendLine();
 
-            // Materials — one per matId, referencing the shared atlas texture
+            // Materials — all share one atlas texture, named correctly for the export
             var mids = new SortedSet<byte>();
             foreach (var piece in model.Pieces)
                 foreach (var f in piece.Faces)
                     mids.Add(f.MatId);
 
-            mtl.AppendLine("newmtl atlas");
-            mtl.AppendLine("Ka 1.0 1.0 1.0\nKd 1.0 1.0 1.0\nKs 0.0 0.0 0.0");
-            mtl.AppendLine("map_Kd texture_atlas.png\n");
             foreach (byte mid in mids)
             {
                 mtl.AppendLine($"newmtl mat_{mid}");
                 mtl.AppendLine("Ka 1.0 1.0 1.0\nKd 1.0 1.0 1.0\nKs 0.0 0.0 0.0");
-                mtl.AppendLine("map_Kd texture_atlas.png\n");
+                mtl.AppendLine($"map_Kd {texName}\n");
             }
 
             // Faces

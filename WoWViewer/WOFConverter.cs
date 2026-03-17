@@ -25,6 +25,7 @@ namespace WoWViewer
             entries = entryList;
             selectedEntry = entryName;
             modelType = model;
+
             if (output != "")
             {
                 outputPath = output;
@@ -83,6 +84,9 @@ namespace WoWViewer
 
         private void RenderCurrent()
         {
+            if (palData == null || palData.Length < 768) return;
+            if (rawData == null || rawData.Length == 0) return;
+
             if (currentRenderedEntry != listBox1.SelectedIndex)
             {
                 currentModel = WofDecoder.Parse(rawData);
@@ -132,7 +136,8 @@ namespace WoWViewer
             if (name == lastSelectedEntry) return;
             selectedEntry = name;
             lastSelectedEntry = name;
-            rawData = entries.First(en => en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
+            rawData = entries.First(en =>
+                en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
             currentRenderedEntry = -1;
             TryAutoSelectPalette(selectedEntry);
             RenderCurrent();
@@ -143,7 +148,8 @@ namespace WoWViewer
             string palName = listBox2.SelectedItem!.ToString()!;
             if (palName == lastSelectedPalette) return;
             lastSelectedPalette = palName;
-            palData = entries.First(en => en.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
+            palData = entries.First(en =>
+                en.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
             TryAutoSelectShader(palName);
             RenderCurrent();
         }
@@ -152,6 +158,7 @@ namespace WoWViewer
         {
             var entry = entries.FirstOrDefault(en =>
                 en.Name.Equals(listBox3.SelectedItem!.ToString()!, StringComparison.OrdinalIgnoreCase));
+            if (entry?.Data == null) return;
             // SHH: 1-byte count + count × 512 bytes. Level 0 = bytes [1..512].
             shadeData = entry.Data.Length >= 513 ? entry.Data[1..513] : null;
             if (checkBox1.Checked) RenderCurrent();
@@ -187,7 +194,8 @@ namespace WoWViewer
             if (currentModel == null || outputPath == "") return;
             string baseName = Path.GetFileNameWithoutExtension(selectedEntry);
             string mtlName = baseName + ".mtl";
-            var (objText, mtlText) = WofDecoder.ToObj(currentModel, mtlName);
+            string texName = baseName + "_tex.png";
+            var (objText, mtlText) = WofDecoder.ToObj(currentModel, mtlName, texName);
             File.WriteAllText(Path.Combine(outputPath, baseName + ".obj"), objText);
             File.WriteAllText(Path.Combine(outputPath, mtlName), mtlText);
             ExportAtlas(currentModel, palData, checkBox1.Checked ? shadeData : null,
@@ -209,6 +217,7 @@ namespace WoWViewer
                     var model = WofDecoder.Parse(entry.Data!);
                     string base_ = Path.GetFileNameWithoutExtension(entry.Name);
                     string mtlN = base_ + ".mtl";
+                    string texN = base_ + "_tex.png";
 
                     string palName = WofDecoder.SuggestPalette(entry.Name, modelType);
                     var palEntry = entries.FirstOrDefault(en =>
@@ -220,7 +229,7 @@ namespace WoWViewer
                         en.Name.Equals(shdName, StringComparison.OrdinalIgnoreCase));
                     byte[]? shd = shdEntry?.Data?.Length >= 513 ? shdEntry.Data[1..513] : null;
 
-                    var (objText, mtlText) = WofDecoder.ToObj(model, mtlN);
+                    var (objText, mtlText) = WofDecoder.ToObj(model, mtlN, texN);
                     File.WriteAllText(Path.Combine(outputPath, base_ + ".obj"), objText);
                     File.WriteAllText(Path.Combine(outputPath, mtlN), mtlText);
                     ExportAtlas(model, pal, shd, Path.Combine(outputPath, base_ + "_tex.png"));
@@ -254,7 +263,7 @@ namespace WoWViewer
         // Export palette
         private void button5_Click(object sender, EventArgs e)
         {
-            if (palData == null) return;
+            if (palData == null || palData.Length < 768) return;
             byte[] trimmed = new byte[768];
             Array.Copy(palData, 0, trimmed, 0, 768);
             File.WriteAllBytes(
