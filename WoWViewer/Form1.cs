@@ -19,7 +19,7 @@ namespace WoWViewer
             handlers = new Dictionary<string, Action<WowFileEntry>>(StringComparer.OrdinalIgnoreCase)
             {
                 //DAT/Dat.wow
-                { "DAT", HandleDAT },   // pseudo random dithering
+                { "DAT", HandleDAT },   // pseudo random dithering and division tables DITH.DAT and DIV_TAB.DAT
                 { "FNT", HandleFNT },   // fonts
                 { "HSH", HandleHSH },   // B16.HSH
                 { "HSM", HandleHSM },   // B15.HSM
