@@ -123,7 +123,7 @@ Discord server : https://discord.gg/bwG6Z3RK8b
 
 ## Main Game Functionality
 
-Some quality of life changes have been made to the game, from incorrect text entries to the removal of unnecessary buttons.
+Some quality of life changes have been made to the game, from incorrect text entries to the removal of unnecessary buttons and more.
 
 Critical Event Options - Edited
 
@@ -153,6 +153,12 @@ Display Settings - Unedited
 
 <div align="center">
   <img src="images/menu-settings-unedited.png" alt="Display Settings - Unedited">
+</div>
+
+Unit Border Selection - Changed from 640x640 to 2048x2048
+
+<div align="center">
+  <img src="images/custom-border-select.png" alt="Unit Selection Border">
 </div>
 
 ## Custom Launcher
