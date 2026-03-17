@@ -38,7 +38,7 @@
         //   [80 .. 80+VertCount-1]  uint8 height array, row-major
         //   [80+VertCount ..]       triangle strip indices (uint16, 0xFFFF restart)
 
-        private const int HeaderSize = 80;
+        private const int HeaderSize = 68;
         private const ushort StripRestart = 0xFFFF;
 
         public static CLSModel Decode(byte[] cls, byte[]? atm)
