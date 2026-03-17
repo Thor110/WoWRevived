@@ -372,27 +372,46 @@ namespace WoWViewer
             return bmp;
         }
 
+        // ── Faction detection ─────────────────────────────────────────────────
+
+        // Martian unit WOF filename prefixes (confirmed from full WOF file list).
+        // Everything else is treated as Human/neutral.
+        private static readonly string[] MartianPrefixes =
+        [
+            "AN_", "CONS_M", "DRONE", "FLYING", "MED_GU", "MOB_RE",
+            "R_RAY", "SCOU_M", "SEL_PR", "SH_", "TELEPA", "TEMPES"
+        ];
+
+        public static bool IsMartian(string fileName)
+        {
+            string upper = Path.GetFileNameWithoutExtension(fileName).ToUpperInvariant();
+            return MartianPrefixes.Any(p => upper.StartsWith(p, StringComparison.Ordinal));
+        }
+
         // ── Palette / shader suggestions ──────────────────────────────────────
 
-        // WOF unit models use F7.PAL + F7GI.SHH as the general-purpose rendering palette.
-        // IOB building models use BM.PAL + BMGI.SHH.
+        // Human WOF units  → F7.PAL + BMHVB.SHH  (Building Model House Vehicle Base)
+        // Martian WOF units → MW.PAL + BMMVB.SHH  (Building Model Martian Vehicle Base)
+        // IOB buildings     → BM.PAL + BMGI.SHH   (Building Model General Illumination)
+        // Palette slot assignments confirmed from IDA LoadShadeTables (sub_40B6C0).
         public static string SuggestPalette(string fileName, bool isIob)
-            => isIob ? "BM.PAL" : "F7.PAL";
+        {
+            if (isIob) return "BM.PAL";
+            return IsMartian(fileName) ? "MW.PAL" : "F7.PAL";
+        }
 
         public static string SuggestShader(string fileName, string palName)
         {
-            char prefix = Path.GetFileNameWithoutExtension(fileName)
-                              .ToUpperInvariant().FirstOrDefault();
-            bool isMartian = prefix == 'M';
+            bool martian = IsMartian(fileName);
             string stem = Path.GetFileNameWithoutExtension(palName).ToUpperInvariant();
             return stem switch
             {
-                "F7" or "F6" or "F5" or "F4" or "F3" or "F2" or "F1"
-                    => isMartian ? "BMMVB.SHH" : "BMHVB.SHH",
-                "BM" => "BMGI.SHH",
+                // Martian palette families → Martian vehicle shader
                 "MW" or "MB" or "MR" => "BMMVB.SHH",
-                "HW" or "HB" or "HR" => "BMHVB.SHH",
-                _ => isMartian ? "BMMVB.SHH" : "BMHVB.SHH",
+                // Building/map palette → General Illumination shader
+                "BM" => "BMGI.SHH",
+                // Faction terrain palettes (F1-F7) and human palettes → vehicle shader by faction
+                _ => martian ? "BMMVB.SHH" : "BMHVB.SHH",
             };
         }
     }

@@ -220,7 +220,7 @@ namespace WoWViewer
                         en.Name.Equals(palName, StringComparison.OrdinalIgnoreCase));
                     byte[] pal = palEntry?.Data ?? palData;
 
-                    string shdName = WofDecoder.SuggestShader(selectedEntry, palName);
+                    string shdName = WofDecoder.SuggestShader(entry.Name, palName);
                     var shdEntry = entries.FirstOrDefault(en =>
                         en.Name.Equals(shdName, StringComparison.OrdinalIgnoreCase));
                     byte[]? shd = shdEntry?.Data?.Length >= 513 ? shdEntry.Data[1..513] : null;
