@@ -222,22 +222,71 @@ namespace WoWViewer
             MessageBox.Show($"Exported {count} {ext} models to {outputPath}");
         }
 
-        // replace model button obj + mtl + png
+        // Import: select OBJ → encode back to WOF and save to DAT folder
         private void button1_Click(object sender, EventArgs e)
         {
-            using var ofd = new OpenFileDialog { Filter = "PNG Image|*.png", Title = "Select a replacement to encode" };
-            if (ofd.ShowDialog() != DialogResult.OK) { return; }
-            var bmp = new Bitmap(ofd.FileName);
-            //byte[] indices = QuantiseToPalette(bmp, palData, (checkBox1.Checked) ? shadeData : null);
-            // TODO : remove checkBox1?
-            byte[] encoded = null!; //TODO
-            string outPath = Path.Combine("DAT", selectedEntry);
-            if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) { return; }
-            File.WriteAllBytes(outPath, encoded);
-            entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
-            rawData = encoded;
-            RenderCurrent();
-            MessageBox.Show("Encoded and saved.");
+            using var ofd = new OpenFileDialog
+            {
+                Filter = "OBJ Model|*.obj",
+                Title = "Select OBJ to encode as WOF"
+            };
+            if (ofd.ShowDialog() != DialogResult.OK) return;
+
+            string objPath = ofd.FileName;
+            string dir = Path.GetDirectoryName(objPath)!;
+            string baseName = Path.GetFileNameWithoutExtension(objPath);
+            string mtlPath = Path.Combine(dir, baseName + ".mtl");
+            string texPath = Path.Combine(dir, baseName + "_tex.png");
+
+            if (!File.Exists(mtlPath))
+            {
+                MessageBox.Show($"Cannot find {baseName}.mtl next to the OBJ.", "Missing MTL");
+                return;
+            }
+            if (!File.Exists(texPath))
+            {
+                MessageBox.Show($"Cannot find {baseName}_tex.png next to the OBJ.", "Missing Texture");
+                return;
+            }
+            if (palData == null || palData.Length < 768)
+            {
+                MessageBox.Show("Select a palette file first.", "No Palette");
+                return;
+            }
+
+            try
+            {
+                string objText = File.ReadAllText(objPath);
+                string mtlText = File.ReadAllText(mtlPath);
+                byte[] texPng = File.ReadAllBytes(texPath);
+
+                // Pass original WOF data so animation frames are preserved
+                byte[]? origWof = rawData?.Length > 0 ? rawData : null;
+
+                byte[] encoded = WofEncoder.Encode(objText, mtlText, texPng, palData, origWof);
+
+                string outPath = Path.Combine("DAT", selectedEntry);
+                if (File.Exists(outPath) &&
+                    MessageBox.Show($"'{outPath}' exists — overwrite?", "Overwrite",
+                        MessageBoxButtons.YesNo) == DialogResult.No)
+                    return;
+
+                Directory.CreateDirectory("DAT");
+                File.WriteAllBytes(outPath, encoded);
+
+                // Update in-memory entry so the viewer reflects the change immediately
+                entries.First(en =>
+                    en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
+                rawData = encoded;
+                currentRenderedEntry = -1;
+                RenderCurrent();
+
+                MessageBox.Show($"Encoded and saved to {outPath}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Encoding failed: {ex.Message}", "Error");
+            }
         }
 
         private static void ExportAtlas(WofModel model, byte[] pal, byte[]? shd, string path)

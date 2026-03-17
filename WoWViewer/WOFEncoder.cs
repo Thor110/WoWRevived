@@ -286,38 +286,6 @@ namespace WoWViewer
             return (pieces, globalVerts, globalUvs);
         }
 
-        // ── MTL parser ────────────────────────────────────────────────────────
-
-        private static Dictionary<int, (int uOff, int vOff, bool useTex)>
-            ParseMtl(string text)
-        {
-            var result = new Dictionary<int, (int, int, bool)>();
-            int curMat = -1;
-            int uOff = 0, vOff = 0;
-            bool useTex = false;
-
-            foreach (var rawLine in text.Split('\n'))
-            {
-                var line = rawLine.Trim();
-                if (line.StartsWith("newmtl mat_") && int.TryParse(line[11..], out int mid))
-                {
-                    if (curMat >= 0) result[curMat] = (uOff, vOff, useTex);
-                    curMat = mid; uOff = 0; vOff = 0; useTex = false;
-                }
-                else if (line.StartsWith("map_Kd "))
-                {
-                    useTex = true;
-                }
-            }
-            if (curMat >= 0) result[curMat] = (uOff, vOff, useTex);
-
-            // u/v offsets can't be recovered from MTL alone — they come from
-            // the normalised UV coordinates in the OBJ faces themselves.
-            // We'll compute them from the actual UV ranges per material during encoding.
-            // For now return what we have; caller can override.
-            return result;
-        }
-
         // ── MTL parser + UV offset recovery ──────────────────────────────────
 
         // Parse MTL for useTex flag per material.
@@ -415,8 +383,7 @@ namespace WoWViewer
         // ── Animation splice ──────────────────────────────────────────────────
 
         // Copy extra animation vertex frames from original WOF into our re-encoded buffer.
-        // The base frame (frame 0) in the new buffer replaces the original.
-        // Additional frames (after the base vert section) are preserved verbatim.
+        // TODO: for full animation support, grow newBuf and splice anim frames here.
         private static void SpliceAnimationData(byte[] newBuf, byte[] orig,
             int vertSecOff, int baseVertSize, int pc)
         {
@@ -424,12 +391,8 @@ namespace WoWViewer
             int origVertOff = (int)BitConverter.ToUInt32(orig, 0x0C);
             int origMatOff = (int)BitConverter.ToUInt32(orig, 0x24);
             int origAnimSize = origMatOff - origVertOff - baseVertSize;
-            if (origAnimSize <= 0) return;  // no extra animation data
-
-            // Expand buffer to accommodate anim data
-            int origVertSecEnd = vertSecOff + baseVertSize;
-            // Not implementable without buffer expansion in this pass
-            // TODO: for full animation support, grow newBuf here
+            if (origAnimSize <= 0) return;
+            _ = newBuf; _ = vertSecOff; _ = pc;  // suppress unused warnings until implemented
         }
 
         // ── UV helper ─────────────────────────────────────────────────────────
