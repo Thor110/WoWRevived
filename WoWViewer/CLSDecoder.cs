@@ -91,21 +91,12 @@
             // ── ATM ───────────────────────────────────────────────────────────
             if (atm != null && atm.Length > 0)
             {
-                // Confirmed: ATM is always 250×250 = 62500 bytes
-                if (atm.Length == 62500)
-                {
-                    model.TileW = 250;
-                    model.TileH = 250;
-                    model.Tiles = atm;
-                }
-                else
-                {
-                    // Infer square dimensions for non-standard sizes
-                    int side = (int)Math.Round(Math.Sqrt(atm.Length));
-                    model.TileW = side;
-                    model.TileH = atm.Length / side;
-                    model.Tiles = atm;
-                }
+                // ATM dimensions are always (GridW-1) × (GridH-1) — confirmed across all 30 maps.
+                // Do NOT infer from ATM byte count: non-square maps (e.g. 176×301) have
+                // TileW=175, TileH=300 which sqrt() cannot recover.
+                model.TileW = model.GridW - 1;
+                model.TileH = model.GridH - 1;
+                model.Tiles = atm;
             }
 
             return model;

@@ -62,10 +62,14 @@ namespace WoWViewer
         }
         private void PopulateList()
         {
-            foreach (var entry in entries.Where(e => e.Name.EndsWith(".CLS")).ToList()) // FIX: was .ATM
+            foreach (var entry in entries.Where(e => e.Name.EndsWith(".CLS")).ToList())
             {
-                entry.Data = FfuhDecoder.Decompress(entry.Data!); // FIX: removed broken baseFolder branch
+                entry.Data = FfuhDecoder.Decompress(entry.Data!);
                 listBox1.Items.Add(entry.Name);
+            }
+            foreach (var entry in entries.Where(e => e.Name.EndsWith(".ATM")).ToList())
+            {
+                entry.Data = FfuhDecoder.Decompress(entry.Data!);
             }
             foreach (var entry in palettes.Where(e => e.Name.EndsWith(".PAL")))
             {
@@ -135,9 +139,8 @@ namespace WoWViewer
 
                 string atmName = Path.ChangeExtension(clsName, ".ATM");
                 var atmEntry = entries.FirstOrDefault(en => en.Name.Equals(atmName));
-                byte[] atm = atmEntry?.Data ?? [];
 
-                var model = CLSDecoder.Decode(clsEntry.Data, atm);
+                var model = CLSDecoder.Decode(clsEntry.Data, atmData);
                 string bname = Path.GetFileNameWithoutExtension(clsName);
 
                 using var tileBmp = CLSRenderer.RenderTileMap(model);
