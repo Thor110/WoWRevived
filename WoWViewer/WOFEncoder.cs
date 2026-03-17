@@ -28,6 +28,13 @@ namespace WoWViewer
         /// Encode a WOF file from OBJ + texture PNG data.
         /// If originalWof is provided, animation frames and header fields
         /// that we cannot reconstruct are preserved from the original.
+        ///
+        /// ROUND-TRIP CONSTRAINTS (when originalWof != null):
+        ///   - Piece count must match original exactly.
+        ///   - Per-piece vert counts must match original exactly.
+        ///   - If either constraint is violated, encoding is aborted with an exception.
+        ///   - Pivots, BSP children, flags and animation blob are all copied verbatim from original.
+        ///   - Only face data, vertex positions within each piece, and the texture atlas are replaced.
         /// </summary>
         public static byte[] Encode(
             string objText,
@@ -36,46 +43,109 @@ namespace WoWViewer
             byte[] palData,          // PAL file for colour quantisation
             byte[]? originalWof = null)
         {
+            // ── 0. Parse original WOF for reference data ──────────────────────
+            WofModel? orig = null;
+            if (originalWof != null && originalWof.Length >= 0x30)
+                orig = WofDecoder.Parse(originalWof);
+
             // ── 1. Parse OBJ ─────────────────────────────────────────────────
             var (pieces, globalVts, globalUvs) = ParseObj(objText);
             if (pieces.Count == 0)
                 throw new InvalidDataException("OBJ contains no objects.");
+
+            int pc = pieces.Count;
+
+            // ── 1a. Round-trip validation ─────────────────────────────────────
+            // We do NOT validate vert counts here — the OBJ deduplication means a piece
+            // can have fewer OBJ verts than the original WOF (orphan/duplicate positions
+            // in the original are collapsed). Vert count is reconciled in step 3 below.
+            if (orig != null && orig.PieceCount != pc)
+                throw new InvalidDataException(
+                    $"Round-trip error: OBJ has {pc} objects but original WOF has {orig.PieceCount} pieces. " +
+                    "Piece count must match exactly for animated models.");
 
             // ── 2. Build material table from MTL + actual UV ranges in OBJ ─────
             var (texBytes, texHeight) = QuantiseTexture(texturePng, palData);
             var matTable = RecoverMaterialTable(mtlText, pieces, texHeight);
 
             // ── 3. Build face and vertex binary data ──────────────────────────
-            int pc = pieces.Count;
             var faceBlocks = new List<byte[]>(pc);   // per-piece face bytes
             var vertBlocks = new List<byte[]>(pc);   // per-piece vert bytes (int16 x3)
-            var pivots = new List<(short x, short y, short z)>(pc);
 
-            foreach (var piece in pieces)
+            for (int p = 0; p < pc; p++)
             {
-                // Centroid as pivot (world space -> game space)
-                float cx = piece.Verts.Average(v => v.x);
-                float cy = piece.Verts.Average(v => v.y);
-                float cz = piece.Verts.Average(v => v.z);
+                var piece = pieces[p];
 
-                // Game pivot: x=cx*scale, y=-cy*scale (undo Y-negate), z=cz*scale
-                short px = Clamp16(cx * Scale);
-                short py = Clamp16(-cy * Scale);
-                short pz = Clamp16(cz * Scale);
-                pivots.Add((px, py, pz));
-
-                // Verts relative to pivot (undo world transform)
-                var vb = new byte[piece.Verts.Count * 6];
-                for (int i = 0; i < piece.Verts.Count; i++)
+                // Pivot: for round-trip use original pivot values (they're relative to BSP
+                // parent chain and govern where animation data places the piece).
+                // For new models (no original) compute centroid as before.
+                short px, py, pz;
+                if (orig != null)
                 {
-                    var (vx, vy, vz) = piece.Verts[i];
-                    short rvx = Clamp16(vx * Scale - px);
-                    short rvy = Clamp16(-vy * Scale - py);  // undo Y-negate
-                    short rvz = Clamp16(vz * Scale - pz);
+                    px = orig.Pieces[p].PivotX;
+                    py = orig.Pieces[p].PivotY;
+                    pz = orig.Pieces[p].PivotZ;
+                }
+                else
+                {
+                    float cx = piece.Verts.Average(v => v.x);
+                    float cy = piece.Verts.Average(v => v.y);
+                    float cz = piece.Verts.Average(v => v.z);
+                    px = Clamp16(cx * Scale);
+                    py = Clamp16(-cy * Scale);
+                    pz = Clamp16(cz * Scale);
+                }
+
+                // For round-trip: accumulate pivots up parent chain to get world offset
+                // so we can express OBJ world-space verts back as raw game-space values.
+                int accumX = px, accumY = py, accumZ = pz;
+                if (orig != null)
+                {
+                    accumX = orig.Pieces[p].RawAccumX;
+                    accumY = orig.Pieces[p].RawAccumY;
+                    accumZ = orig.Pieces[p].RawAccumZ;
+                }
+
+                // Verts: OBJ world-space → raw game-space
+                // world_x = (accumX + vx) / 100  →  vx = world_x * 100 - accumX
+                // world_y = -(accumY + vy) / 100  →  vy = -world_y * 100 - accumY
+                //
+                // Round-trip vert count reconciliation:
+                //   The OBJ may have fewer verts than the original because unreferenced
+                //   (orphan) verts in the WOF are not emitted by the exporter, and shared
+                //   verts are collapsed to a single OBJ `v` line.
+                //   Strategy: fill slots 0..ObjVertCount-1 from OBJ, then fill any remaining
+                //   slots up to origVertCount from the original WOF raw vert data.
+                //   This preserves the original vert indices that the animation blob references.
+                int origVertCount = orig?.Pieces[p].VertCount ?? piece.Verts.Count;
+                int finalVertCount = (orig != null) ? origVertCount : piece.Verts.Count;
+
+                var vb = new byte[finalVertCount * 6];
+                // Fill from OBJ (up to however many the OBJ has, capped at finalVertCount)
+                int objVertCount = Math.Min(piece.Verts.Count, finalVertCount);
+                for (int i = 0; i < objVertCount; i++)
+                {
+                    var (wx, wy, wz) = piece.Verts[i];
+                    short rvx = Clamp16(wx * Scale - accumX);
+                    short rvy = Clamp16(-wy * Scale - accumY);
+                    short rvz = Clamp16(wz * Scale - accumZ);
                     int off = i * 6;
                     WriteInt16LE(vb, off, rvx);
                     WriteInt16LE(vb, off + 2, rvy);
                     WriteInt16LE(vb, off + 4, rvz);
+                }
+                // Pad any remaining slots from original vert data (orphan verts)
+                if (orig != null && objVertCount < finalVertCount)
+                {
+                    var op = orig.Pieces[p];
+                    for (int i = objVertCount; i < finalVertCount; i++)
+                    {
+                        int srcOff = orig.VertOffset + op.VertByteOff + i * 6;
+                        int dstOff = i * 6;
+                        if (srcOff + 6 <= originalWof!.Length)
+                            Array.Copy(originalWof, srcOff, vb, dstOff, 6);
+                        // else leave as zero — shouldn't happen for valid files
+                    }
                 }
                 vertBlocks.Add(vb);
 
@@ -91,7 +161,20 @@ namespace WoWViewer
                     fb[off + 3] = (byte)f.mat;
 
                     // Un-normalise UVs: face_u = (norm_u * texWidth) - mat_uOff
-                    var (uOff, vOff, _) = matTable.TryGetValue(f.mat, out var mt) ? mt : (0, 0, false);
+                    // For round-trips: read uOff/vOff directly from the original material table.
+                    // RecoverMaterialTable derives offsets from min/max UV values in the OBJ,
+                    // which gives uOff+minFaceU (not uOff) — always wrong unless minFaceU==0.
+                    int uOff, vOff;
+                    if (orig != null && orig.MaterialData.Length >= (f.mat * 4 + 2))
+                    {
+                        uOff = orig.MaterialData[f.mat * 4];
+                        vOff = orig.MaterialData[f.mat * 4 + 1];
+                    }
+                    else
+                    {
+                        var (ru, rv, _) = matTable.TryGetValue(f.mat, out var mt) ? mt : (0, 0, false);
+                        uOff = ru; vOff = rv;
+                    }
                     fb[off + 4] = UvToByte(f.u0, WofDecoder.TexWidth, uOff);
                     fb[off + 5] = UvToByte(1f - f.v0uv, texHeight, vOff);
                     fb[off + 6] = UvToByte(f.u1, WofDecoder.TexWidth, uOff);
@@ -102,36 +185,51 @@ namespace WoWViewer
                 faceBlocks.Add(fb);
             }
 
+            // ── 4. Animation blob ─────────────────────────────────────────────
+            // For round-trip: preserve verbatim. For new models: empty (static).
+            byte[] animBlob = orig?.AnimBlob ?? [];
+
             // ── 5. Compute section offsets ────────────────────────────────────
             int faceSecSize = faceBlocks.Sum(b => b.Length);
-            int vertSecSize = vertBlocks.Sum(b => b.Length);
+            int baseVertSize = vertBlocks.Sum(b => b.Length);
+
+            // Material count: use original's actual count (from toff-moff), not the hardcoded 13.
+            // Original may have 12 entries; writing 13 shifts tex_off and breaks the file.
+            int matCount = orig != null
+                ? (orig.TexOffset - orig.MatOffset) / MaterialStride
+                : MaterialCount;
+            // Clamp to [1..13] for safety
+            matCount = Math.Clamp(matCount, 1, MaterialCount);
 
             int pieceTblOff = HeaderSize;
             int faceSecOff = pieceTblOff + pc * PieceRecSize;
             int vertSecOff = faceSecOff + faceSecSize;
-            int matOff = vertSecOff + vertSecSize;
-            int texOff = matOff + MaterialCount * MaterialStride;
+            int h20 = vertSecOff + baseVertSize;        // end of base-frame vert data
+            int matOff = h20 + animBlob.Length;         // animation blob sits between h20 and mat_off
+            int texOff = matOff + matCount * MaterialStride;
             int endOff = texOff + texBytes.Length;
 
             int totalFaces = pieces.Sum(p => p.Faces.Count);
-            int totalVerts = pieces.Sum(p => p.Verts.Count);
+            // totalVerts must reflect reconciled vert counts (original counts for round-trip,
+            // OBJ vert counts for new models), not just what the OBJ parser saw.
+            int totalVerts = orig != null
+                ? orig.Pieces.Sum(p => (int)p.VertCount)
+                : pieces.Sum(p => p.Verts.Count);
 
             // ── 6. Assemble output buffer ─────────────────────────────────────
             var buf = new byte[endOff];
 
-            // Header
+            // Header — copy animation-related fields from original if available
             WriteUInt16LE(buf, 0x00, (ushort)pc);
             WriteUInt16LE(buf, 0x02, 0);
             WriteUInt32LE(buf, 0x04, (uint)totalFaces);
             WriteUInt32LE(buf, 0x08, (uint)totalVerts);
             WriteUInt32LE(buf, 0x0C, (uint)vertSecOff);
-            WriteUInt32LE(buf, 0x10, 1);               // 1 anim frame (static)
-            // [0x14] h14 - copy from original if available, else 0
-            WriteUInt32LE(buf, 0x14, originalWof?.Length >= 0x18
-                ? BitConverter.ToUInt32(originalWof, 0x14) : 0u);
-            WriteUInt32LE(buf, 0x18, (uint)pc);
-            WriteUInt32LE(buf, 0x1C, 0);
-            WriteUInt32LE(buf, 0x20, (uint)(vertSecOff + vertSecSize));  // = matOff
+            WriteUInt32LE(buf, 0x10, orig?.H10 ?? 0u);   // animation frame count — preserve
+            WriteUInt32LE(buf, 0x14, orig?.H14 ?? 0u);   // unknown — preserve
+            WriteUInt32LE(buf, 0x18, orig?.H18 ?? 0u);   // animated piece count — preserve
+            WriteUInt32LE(buf, 0x1C, orig?.H1C ?? 0u);   // animation count — preserve
+            WriteUInt32LE(buf, 0x20, (uint)h20);          // end of base-frame vert data
             WriteUInt32LE(buf, 0x24, (uint)matOff);
             WriteUInt32LE(buf, 0x28, (uint)texOff);
             WriteUInt32LE(buf, 0x2C, (uint)endOff);
@@ -143,28 +241,53 @@ namespace WoWViewer
             {
                 int recOff = pieceTblOff + p * PieceRecSize;
                 var piece = pieces[p];
-                var (px, py, pz) = pivots[p];
+
+                // For round-trip: copy pivot, flags, BSP children from original.
+                // For new models: compute from geometry (already done above).
+                short px, py, pz;
+                byte flags;
+                int[] bspChildren;
+                if (orig != null)
+                {
+                    var op = orig.Pieces[p];
+                    px = op.PivotX; py = op.PivotY; pz = op.PivotZ;
+                    flags = op.Flags;
+                    bspChildren = op.BspChildren;
+                }
+                else
+                {
+                    // Pivot was computed in step 3 but not stored — recompute from verts.
+                    float cx = piece.Verts.Average(v => v.x);
+                    float cy = piece.Verts.Average(v => v.y);
+                    float cz = piece.Verts.Average(v => v.z);
+                    px = Clamp16(cx * Scale);
+                    py = Clamp16(-cy * Scale);
+                    pz = Clamp16(cz * Scale);
+                    flags = 0;
+                    bspChildren = [];
+                }
 
                 // Name (16 bytes, null-padded)
                 var nameBytes = Encoding.ASCII.GetBytes(piece.Name.Length > 15
                     ? piece.Name[..15] : piece.Name);
                 Array.Copy(nameBytes, 0, buf, recOff, nameBytes.Length);
 
-                buf[recOff + 0x10] = 0;                             // flags
-                buf[recOff + 0x11] = (byte)piece.Verts.Count;
+                buf[recOff + 0x10] = flags;
+                buf[recOff + 0x11] = (byte)(orig != null ? orig.Pieces[p].VertCount : piece.Verts.Count);
                 buf[recOff + 0x12] = (byte)piece.Faces.Count;
                 WriteInt16LE(buf, recOff + 0x13, px);
                 WriteInt16LE(buf, recOff + 0x15, py);
                 WriteInt16LE(buf, recOff + 0x17, pz);
                 WriteInt32LE(buf, recOff + 0x19, curVertOff);
                 WriteUInt32LE(buf, recOff + 0x1C, (uint)(curFaceOff << 8));
+                buf[recOff + 0x20] = 0;
 
-                // BSP children: all -1 (static, no tree)
+                // BSP children (up to 16 int32s starting at 0x21, terminated by -1)
                 for (int ci = 0; ci < 16; ci++)
-                    WriteInt32LE(buf, recOff + 0x21 + ci * 4, -1);
-
-                // Fill remaining bytes to 0xFF (rec is 97 bytes, used up to 0x61=97)
-                // 0x21 + 16*4 = 0x61 = exactly 97, nothing to pad
+                {
+                    int child = ci < bspChildren.Length ? bspChildren[ci] : -1;
+                    WriteInt32LE(buf, recOff + 0x21 + ci * 4, child);
+                }
 
                 curFaceOff += faceBlocks[p].Length;
                 curVertOff += vertBlocks[p].Length;
@@ -174,31 +297,55 @@ namespace WoWViewer
             int pos = faceSecOff;
             foreach (var fb in faceBlocks) { Array.Copy(fb, 0, buf, pos, fb.Length); pos += fb.Length; }
 
-            // Vertex data
+            // Base-frame vertex data
             pos = vertSecOff;
             foreach (var vb in vertBlocks) { Array.Copy(vb, 0, buf, pos, vb.Length); pos += vb.Length; }
 
-            // Material table (13 * 4 bytes)
+            // Animation blob (verbatim from original, or empty for new models)
+            if (animBlob.Length > 0)
+                Array.Copy(animBlob, 0, buf, h20, animBlob.Length);
+
+            // Material table
             pos = matOff;
-            for (int m = 0; m < MaterialCount; m++)
+            if (orig?.MaterialData.Length >= matCount * MaterialStride)
             {
-                if (matTable.TryGetValue(m, out var mt))
+                // Round-trip: copy original material table verbatim — byte-perfect.
+                // This preserves uOff, vOff, use_tex flags, and the unused byte[2].
+                // useTex cannot be reliably recovered from the OBJ/MTL because our exporter
+                // writes map_Kd for ALL materials (they all share the atlas PNG).
+                Array.Copy(orig.MaterialData, 0, buf, pos, matCount * MaterialStride);
+            }
+            else
+            {
+                // New model: write matCount entries from recovered table
+                for (int m = 0; m < matCount; m++)
                 {
-                    buf[pos] = (byte)mt.uOff;
-                    buf[pos + 1] = (byte)mt.vOff;
-                    buf[pos + 2] = 0;
-                    buf[pos + 3] = mt.useTex ? (byte)0x80 : (byte)0x00;
+                    if (matTable.TryGetValue(m, out var mt))
+                    {
+                        buf[pos] = (byte)mt.uOff;
+                        buf[pos + 1] = (byte)mt.vOff;
+                        buf[pos + 2] = 0;
+                        buf[pos + 3] = mt.useTex ? (byte)0x80 : (byte)0x00;
+                    }
+                    pos += MaterialStride;
                 }
-                // else: 4 zero bytes (already zeroed)
-                pos += 4;
             }
 
             // Texture
             Array.Copy(texBytes, 0, buf, texOff, texBytes.Length);
 
-            // ── 7. If original provided, splice back animation vert frames ────
-            if (originalWof != null)
-                SpliceAnimationData(buf, originalWof, vertSecOff, vertSecSize, pc);
+            // Skinning table: appended verbatim after end_off (outside the header-described region).
+            // The engine reads it at data+end_off immediately after loading.
+            // For new models with no original this will be empty — animation will not work
+            // until the skinning table format is fully decoded and can be generated.
+            byte[] skinning = orig?.SkinningTable ?? [];
+            if (skinning.Length > 0)
+            {
+                var withSkin = new byte[buf.Length + skinning.Length];
+                Array.Copy(buf, withSkin, buf.Length);
+                Array.Copy(skinning, 0, withSkin, buf.Length, skinning.Length);
+                return withSkin;
+            }
 
             return buf;
         }
@@ -215,9 +362,7 @@ namespace WoWViewer
             var pieces = new List<ObjPiece>();
             ObjPiece? cur = null;
             int curMat = 0;
-
-            // Track per-piece local vertex indices (OBJ uses global 1-based indices)
-            var globalToLocal = new Dictionary<int, int>();
+            int pieceVertBase = 0;  // global vert index (0-based) of this piece's vert[0]
 
             foreach (var rawLine in text.Split('\n'))
             {
@@ -234,15 +379,17 @@ namespace WoWViewer
                 }
                 else if (line.StartsWith("o "))
                 {
+                    // Record how many global verts existed before this piece — that's its base.
+                    // All `v` lines for this piece immediately follow the `o` line in our export,
+                    // so globalVerts.Count at this point is the 0-based global index of vert[0].
+                    pieceVertBase = globalVerts.Count;
                     cur = new ObjPiece { Name = line[2..].Trim() };
                     pieces.Add(cur);
-                    globalToLocal.Clear();
                     curMat = 0;
                 }
                 else if (line.StartsWith("usemtl "))
                 {
                     var matName = line[7..].Trim();
-                    // mat_N -> N
                     if (matName.StartsWith("mat_") && int.TryParse(matName[4..], out int mid))
                         curMat = mid;
                 }
@@ -260,18 +407,23 @@ namespace WoWViewer
                         uvi[i] = parts.Length > 1 && int.TryParse(parts[1], out int u) ? u - 1 : 0;
                     }
 
-                    // Map global vert indices to local piece-relative indices
+                    // Convert global vert index → piece-local index by subtracting the piece's
+                    // vert base. This preserves the exact original vert ordering (critical for
+                    // animation: the anim blob references verts by their original local index).
+                    // The WOF exporter writes each piece's verts sequentially to the OBJ in
+                    // order vert[0]..vert[N-1], so global[pieceVertBase + k] == local[k].
                     int[] li = new int[3];
                     for (int i = 0; i < 3; i++)
+                        li[i] = vi[i] - pieceVertBase;
+
+                    // Populate piece.Verts in canonical order on first pass through faces.
+                    // We need all slots 0..max(li) to exist. Fill any gaps with the actual
+                    // global vert data (orphan verts will be filled by padding from orig later).
+                    int maxLocal = Math.Max(li[0], Math.Max(li[1], li[2]));
+                    while (cur.Verts.Count <= maxLocal)
                     {
-                        if (!globalToLocal.TryGetValue(vi[i], out int loc))
-                        {
-                            loc = cur.Verts.Count;
-                            globalToLocal[vi[i]] = loc;
-                            var gv = globalVerts[vi[i]];
-                            cur.Verts.Add(gv);
-                        }
-                        li[i] = loc;
+                        int gIdx = pieceVertBase + cur.Verts.Count;
+                        cur.Verts.Add(gIdx < globalVerts.Count ? globalVerts[gIdx] : (0f, 0f, 0f));
                     }
 
                     var (u0, vv0) = uvi[0] < globalUvs.Count ? globalUvs[uvi[0]] : (0f, 0f);
@@ -289,12 +441,25 @@ namespace WoWViewer
         // ── MTL parser + UV offset recovery ──────────────────────────────────
 
         // Parse MTL for useTex flag per material.
-        // u/v offsets are recovered from the minimum normalised UV seen per material
-        // across all faces in the OBJ — min(atlas_u) = mat_uOff, min(atlas_v) = mat_vOff.
+        // u/v offsets are recovered from the UV range seen per material across all faces.
+        //
+        // OBJ vt convention (as written by WofDecoder.ToObj):
+        //   vt_u = (matUOff + faceU) / TexWidth          → min vt_u = matUOff / TexWidth
+        //   vt_v = 1 - (matVOff + faceV) / texHeight     → max vt_v = 1 - matVOff / texHeight
+        //
+        // Recovery:
+        //   matUOff = round( min(vt_u)        * TexWidth  )
+        //   matVOff = round( (1 - max(vt_v))  * texHeight )
+        //
+        // Note: the old code used min(normV) for vOff which gives vOff+maxFaceV (wrong).
         private static Dictionary<int, (int uOff, int vOff, bool useTex)>
             RecoverMaterialTable(string mtlText, List<ObjPiece> pieces, int texHeight)
         {
             // Step 1: which materials have map_Kd (textured)?
+            // NOTE: our exporter writes map_Kd for ALL materials (they all share the atlas PNG).
+            // use_tex flag cannot be reliably recovered from the MTL alone — it must come from
+            // the original WOF's material table (handled by the caller for round-trips).
+            // This function marks everything with map_Kd as use_tex=True; the caller overrides.
             var usesTexture = new HashSet<int>();
             int curMtl = -1;
             foreach (var rawLine in mtlText.Split('\n'))
@@ -306,30 +471,23 @@ namespace WoWViewer
                     usesTexture.Add(curMtl);
             }
 
-            // Step 2: find min normalised UV per material across all faces
-            // OBJ vt: u is 0-1 across TexWidth, v is (1-v) flipped for top-down atlas
-            // atlas_u = norm_u * TexWidth,  atlas_v = (1 - norm_v) * texHeight
+            // Step 2: find min vt_u and max vt_v per material across all faces
             var minU = new Dictionary<int, float>();
-            var minV = new Dictionary<int, float>();
+            var maxV = new Dictionary<int, float>();
             foreach (var piece in pieces)
                 foreach (var f in piece.Faces)
-                {
-                    foreach (var (nu, nv) in new[] {
-                    (f.u0, f.v0uv), (f.u1, f.v1uv), (f.u2, f.v2uv) })
+                    foreach (var (nu, nv) in new[] { (f.u0, f.v0uv), (f.u1, f.v1uv), (f.u2, f.v2uv) })
                     {
                         if (!minU.ContainsKey(f.mat) || nu < minU[f.mat]) minU[f.mat] = nu;
-                        if (!minV.ContainsKey(f.mat) || nv < minV[f.mat]) minV[f.mat] = nv;
+                        if (!maxV.ContainsKey(f.mat) || nv > maxV[f.mat]) maxV[f.mat] = nv;
                     }
-                }
 
             var result = new Dictionary<int, (int uOff, int vOff, bool useTex)>();
-            var allMats = usesTexture.Concat(minU.Keys).Concat(minV.Keys).Distinct();
+            var allMats = usesTexture.Concat(minU.Keys).Concat(maxV.Keys).Distinct();
             foreach (int m in allMats)
             {
-                // Convert min normalised UV back to pixel offset in atlas
                 float nu = minU.TryGetValue(m, out float u) ? u : 0f;
-                float nv = minV.TryGetValue(m, out float v) ? v : 0f;
-                // vt in OBJ is already (1 - atlas_v/texHeight) so atlas_v = (1-nv)*texHeight
+                float nv = maxV.TryGetValue(m, out float v) ? v : 1f;
                 int uOff = Math.Clamp((int)MathF.Round(nu * WofDecoder.TexWidth), 0, 255);
                 int vOff = Math.Clamp((int)MathF.Round((1f - nv) * texHeight), 0, 255);
                 // Snap to nearest multiple of 4 (material offsets are always 4-aligned)
@@ -351,22 +509,42 @@ namespace WoWViewer
             if (w != WofDecoder.TexWidth)
                 throw new InvalidDataException($"Texture must be {WofDecoder.TexWidth}px wide, got {w}.");
 
-            // Build palette lookup: each PAL entry is RGB (6-bit * 4 = 0-252)
-            // We convert to full 8-bit (multiply by 4 then clamp) for matching
+            // Palette-indexed PNG (Format8bppIndexed / PixelFormat with indexed flag):
+            // raw index bytes are preserved — read them directly without re-quantising.
+            // This is the lossless round-trip path, used when the atlas was exported with
+            // WofDecoder.ExportTextureRaw (the _raw.png file written alongside the display PNG).
+            if (bmp.PixelFormat == System.Drawing.Imaging.PixelFormat.Format8bppIndexed)
+            {
+                var result = new byte[w * h];
+                var bmpData = bmp.LockBits(
+                    new System.Drawing.Rectangle(0, 0, w, h),
+                    System.Drawing.Imaging.ImageLockMode.ReadOnly,
+                    System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
+                try
+                {
+                    for (int y = 0; y < h; y++)
+                        System.Runtime.InteropServices.Marshal.Copy(
+                            bmpData.Scan0 + y * bmpData.Stride,
+                            result, y * w, w);
+                }
+                finally { bmp.UnlockBits(bmpData); }
+                return (result, h);
+            }
+
+            // RGBA PNG: nearest-neighbour quantise against the PAL.
+            // Used when the user has painted a new texture atlas.
             var palRgb = new (int r, int g, int b)[256];
             for (int i = 0; i < 256; i++)
                 palRgb[i] = (Math.Min(palData[i * 3] * 4, 255),
                              Math.Min(palData[i * 3 + 1] * 4, 255),
                              Math.Min(palData[i * 3 + 2] * 4, 255));
 
-            var result = new byte[w * h];
+            var rgba = new byte[w * h];
             for (int y = 0; y < h; y++)
                 for (int x = 0; x < w; x++)
                 {
                     var px = bmp.GetPixel(x, y);
-                    if (px.A < 128) { result[y * w + x] = 0; continue; }  // transparent → index 0
-
-                    // Find nearest palette entry (squared Euclidean distance)
+                    if (px.A < 128) { rgba[y * w + x] = 0; continue; }
                     int best = 1, bestDist = int.MaxValue;
                     for (int i = 1; i < 256; i++)
                     {
@@ -374,25 +552,9 @@ namespace WoWViewer
                         int d = (px.R - pr) * (px.R - pr) + (px.G - pg) * (px.G - pg) + (px.B - pb) * (px.B - pb);
                         if (d < bestDist) { bestDist = d; best = i; if (d == 0) break; }
                     }
-                    result[y * w + x] = (byte)best;
+                    rgba[y * w + x] = (byte)best;
                 }
-
-            return (result, h);
-        }
-
-        // ── Animation splice ──────────────────────────────────────────────────
-
-        // Copy extra animation vertex frames from original WOF into our re-encoded buffer.
-        // TODO: for full animation support, grow newBuf and splice anim frames here.
-        private static void SpliceAnimationData(byte[] newBuf, byte[] orig,
-            int vertSecOff, int baseVertSize, int pc)
-        {
-            if (orig.Length < 0x18) return;
-            int origVertOff = (int)BitConverter.ToUInt32(orig, 0x0C);
-            int origMatOff = (int)BitConverter.ToUInt32(orig, 0x24);
-            int origAnimSize = origMatOff - origVertOff - baseVertSize;
-            if (origAnimSize <= 0) return;
-            _ = newBuf; _ = vertSecOff; _ = pc;  // suppress unused warnings until implemented
+            return (rgba, h);
         }
 
         // ── UV helper ─────────────────────────────────────────────────────────

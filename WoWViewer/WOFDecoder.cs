@@ -48,6 +48,20 @@ namespace WoWViewer
         public byte[] TextureData { get; init; } = [];  // 256×TexHeight bytes, stride 256
         public int TexHeight { get; init; }         // actual rows = (end_off - tex_off) / 256
         public byte[] MaterialData { get; init; } = [];  // 52 bytes, 13 × 4-byte entries
+
+        // Raw header fields preserved for round-trip encoding
+        public uint H10 { get; init; }   // animation count / frame count
+        public uint H14 { get; init; }   // unknown — copy verbatim
+        public uint H18 { get; init; }   // number of animated pieces
+        public uint H1C { get; init; }   // animation count
+        // Animation blob: bytes [h20 .. mat_off) — raw, not yet decoded.
+        // Must be preserved verbatim for round-trip until the format is fully understood.
+        public byte[] AnimBlob { get; init; } = [];
+        // Skinning table: bytes [end_off .. file_end) — lives AFTER the header-described data.
+        // Contains: uint32=0, then 1 uint32 pointer per animated piece, then variable-length
+        // per-piece skinning sub-blocks (vertex group / bone weight data).
+        // The engine reads this immediately after end_off. Must be preserved verbatim.
+        public byte[] SkinningTable { get; init; } = [];
     }
 
     // ── Static decoder ────────────────────────────────────────────────────────
@@ -69,6 +83,11 @@ namespace WoWViewer
 
             int pieceCount = BitConverter.ToUInt16(data, 0x00);
             int vertOffset = BitConverter.ToInt32(data, 0x0C);
+            uint h10 = BitConverter.ToUInt32(data, 0x10);
+            uint h14 = BitConverter.ToUInt32(data, 0x14);
+            uint h18 = BitConverter.ToUInt32(data, 0x18);
+            uint h1C = BitConverter.ToUInt32(data, 0x1C);
+            int h20 = BitConverter.ToInt32(data, 0x20);  // end of base-frame vert data
             int matOffset = BitConverter.ToInt32(data, 0x24);
             int texOffset = BitConverter.ToInt32(data, 0x28);
             // header[0x2C] = end of texture section (confirmed from file analysis).
@@ -179,6 +198,30 @@ namespace WoWViewer
             if (matOffset > 0 && matOffset + 52 <= data.Length)
                 Array.Copy(data, matOffset, matData, 0, 52);
 
+            // Animation blob: [h20 .. mat_off) — verbatim, not yet decoded.
+            // h20 = vertOffset + (total base verts × 6). The blob immediately follows base-frame verts.
+            byte[] animBlob = [];
+            if (h20 > 0 && matOffset > h20 && h20 < data.Length && matOffset <= data.Length)
+            {
+                int animSize = matOffset - (int)h20;
+                if (animSize > 0)
+                {
+                    animBlob = new byte[animSize];
+                    Array.Copy(data, (int)h20, animBlob, 0, animSize);
+                }
+            }
+
+            // Skinning table: bytes [end_off .. file_end) — past the header-described region.
+            // Contains per-animated-piece vertex skinning/bone-weight data.
+            // The engine reads it immediately after end_off; must be preserved verbatim.
+            byte[] skinningTable = [];
+            if (endOffset > 0 && endOffset < data.Length)
+            {
+                int skinSize = data.Length - endOffset;
+                skinningTable = new byte[skinSize];
+                Array.Copy(data, endOffset, skinningTable, 0, skinSize);
+            }
+
             return new WofModel
             {
                 PieceCount = pieceCount,
@@ -189,6 +232,12 @@ namespace WoWViewer
                 TextureData = texData,
                 TexHeight = texHeight,
                 MaterialData = matData,
+                H10 = h10,
+                H14 = h14,
+                H18 = h18,
+                H1C = h1C,
+                AnimBlob = animBlob,
+                SkinningTable = skinningTable,
             };
         }
 
@@ -247,7 +296,13 @@ namespace WoWViewer
         }
 
         // ── OBJ export ────────────────────────────────────────────────────────
-
+        //
+        // Layout: one complete block per piece — o, v lines, vt lines, f lines.
+        // This is the standard grouped-OBJ format that Blender imports correctly,
+        // and is REQUIRED for the round-trip encoder: ParseObj captures pieceVertBase
+        // at each `o` line as the count of `v` lines seen so far. If all `v` lines
+        // precede all `o` lines (old layout) pieceVertBase is always totalVerts and
+        // local vert indices become garbage (256-wrap negatives).
         public static (string obj, string mtl) ToObj(WofModel model, string mtlName,
             string texName = "texture_atlas.png", float scale = 100f)
         {
@@ -260,56 +315,7 @@ namespace WoWViewer
             mtl.AppendLine("# WOF material library");
             mtl.AppendLine();
 
-            // Vertices:
-            //   world_x =   (RawAccumX + vx) / scale
-            //   world_y = - (RawAccumY + vy) / scale
-            //   world_z =   (RawAccumZ + vz) / scale
-            var vertBase = new Dictionary<string, int>();
-            int globalIdx = 1;
-
-            foreach (var piece in model.Pieces)
-            {
-                vertBase[piece.Name] = globalIdx;
-                int ax = piece.RawAccumX, ay = piece.RawAccumY, az = piece.RawAccumZ;
-                obj.AppendLine($"# {piece.Name}  ({piece.VertCount}v {piece.FaceCount}f)  rawAccum=({ax},{ay},{az})");
-                foreach (var (vx, vy, vz) in piece.Verts)
-                    obj.AppendLine(FormattableString.Invariant(
-                        $"v {(ax + vx) / scale:F4} {-(ay + vy) / scale:F4} {(az + vz) / scale:F4}"));
-                globalIdx += piece.VertCount;
-            }
-            obj.AppendLine();
-
-            // UV coords — face UVs (0-127, 0-63) mapped into the 256×96 atlas
-            // using per-material offsets from the material table.
-            // For now output normalised UVs relative to the full 256×96 atlas.
-            // Material byte[0] = U atlas offset, byte[1] = V atlas offset.
-            var uvList = new List<(float u, float v)>();
-            var uvIndex = new Dictionary<(byte matId, byte fu, byte fv), int>();
-
-            foreach (var piece in model.Pieces)
-                foreach (var f in piece.Faces)
-                    foreach (var (fu, fv) in new[] { (f.U0, f.V0uv), (f.U1, f.V1uv), (f.U2, f.V2uv) })
-                    {
-                        var key = (f.MatId, fu, fv);
-                        if (!uvIndex.ContainsKey(key))
-                        {
-                            // Apply material atlas offset
-                            byte uOff = model.MaterialData.Length >= (f.MatId * 4 + 2)
-                                ? model.MaterialData[f.MatId * 4] : (byte)0;
-                            byte vOff = model.MaterialData.Length >= (f.MatId * 4 + 2)
-                                ? model.MaterialData[f.MatId * 4 + 1] : (byte)0;
-                            float nu = (uOff + fu) / (float)TexWidth;
-                            float nv = (vOff + fv) / (float)(model.TexHeight > 0 ? model.TexHeight : 96);
-                            uvIndex[key] = uvList.Count + 1;
-                            uvList.Add((nu, nv));
-                        }
-                    }
-
-            foreach (var (nu, nv) in uvList)
-                obj.AppendLine(FormattableString.Invariant($"vt {nu:F4} {1f - nv:F4}"));
-            obj.AppendLine();
-
-            // Materials — all share one atlas texture, named correctly for the export
+            // Build MTL: one entry per material ID used across all pieces.
             var mids = new SortedSet<byte>();
             foreach (var piece in model.Pieces)
                 foreach (var f in piece.Faces)
@@ -319,29 +325,73 @@ namespace WoWViewer
             {
                 mtl.AppendLine($"newmtl mat_{mid}");
                 mtl.AppendLine("Ka 1.0 1.0 1.0\nKd 1.0 1.0 1.0\nKs 0.0 0.0 0.0");
-                mtl.AppendLine("d 1.0");           // dissolve (opacity) = 1 (use texture alpha)
-                mtl.AppendLine("illum 1");          // basic illumination model
+                mtl.AppendLine("d 1.0");
+                mtl.AppendLine("illum 1");
                 mtl.AppendLine($"map_Kd {texName}");
-                mtl.AppendLine($"map_d {texName}"); // alpha mask from same texture
+                mtl.AppendLine($"map_d {texName}");
                 mtl.AppendLine();
             }
 
-            // Faces
+            // Write one complete block per piece.
+            // Global vert counter (1-based OBJ) and UV counter are running totals.
+            int globalVertIdx = 1;   // next `v` line number (1-based)
+            int globalUvIdx = 1;   // next `vt` line number (1-based)
+
             foreach (var piece in model.Pieces)
             {
+                int ax = piece.RawAccumX, ay = piece.RawAccumY, az = piece.RawAccumZ;
+                int pieceVertBase1 = globalVertIdx;  // 1-based OBJ index of this piece's vert[0]
+
+                // `o` line first — ParseObj reads pieceVertBase = (globalVerts.Count at this point)
+                // which equals (globalVertIdx - 1) i.e. verts seen SO FAR, before this piece's v lines.
                 obj.AppendLine($"o {piece.Name}");
-                int vBase = vertBase[piece.Name];
-                foreach (var group in piece.Faces.GroupBy(f => f.MatId).OrderBy(g => g.Key))
+
+                // `v` lines: vert[0]..vert[N-1] in original order.
+                // world_x =  (accumX + vx) / scale
+                // world_y = -(accumY + vy) / scale
+                // world_z =  (accumZ + vz) / scale
+                obj.AppendLine($"# {piece.VertCount}v {piece.FaceCount}f  rawAccum=({ax},{ay},{az})");
+                foreach (var (vx, vy, vz) in piece.Verts)
+                    obj.AppendLine(FormattableString.Invariant(
+                        $"v {(ax + vx) / scale:F4} {-(ay + vy) / scale:F4} {(az + vz) / scale:F4}"));
+                globalVertIdx += piece.VertCount;
+
+                // `vt` lines: deduplicated per-piece (matId,fu,fv) → 1-based global UV index.
+                var uvIndex = new Dictionary<(byte matId, byte fu, byte fv), int>();
+                foreach (var f in piece.Faces)
+                    foreach (var (fu, fv) in new[] { (f.U0, f.V0uv), (f.U1, f.V1uv), (f.U2, f.V2uv) })
+                    {
+                        var key = (f.MatId, fu, fv);
+                        if (!uvIndex.ContainsKey(key))
+                        {
+                            byte uOff = model.MaterialData.Length >= (f.MatId * 4 + 2)
+                                ? model.MaterialData[f.MatId * 4] : (byte)0;
+                            byte vOff = model.MaterialData.Length >= (f.MatId * 4 + 2)
+                                ? model.MaterialData[f.MatId * 4 + 1] : (byte)0;
+                            float nu = (uOff + fu) / (float)TexWidth;
+                            float nv = (vOff + fv) / (float)(model.TexHeight > 0 ? model.TexHeight : 96);
+                            // vt v-coord: flip for top-down atlas (OBJ is bottom-up)
+                            obj.AppendLine(FormattableString.Invariant($"vt {nu:F6} {1f - nv:F6}"));
+                            uvIndex[key] = globalUvIdx++;
+                        }
+                    }
+
+                // `f` lines: faces in ORIGINAL WOF order — do NOT sort by matId.
+                // The engine indexes faces by position within the piece's face block;
+                // re-ordering breaks pieces where faces of different materials are interleaved.
+                // We group usemtl changes minimally but preserve the face sequence.
+                int lastMat = -1;
+                foreach (var f in piece.Faces)
                 {
-                    obj.AppendLine($"usemtl mat_{group.Key}");
-                    foreach (var f in group)
-                        // Note: WOF face winding is inconsistent in source data (artist error).
-                        // After import in Blender, select all and run:
-                        // Edit Mode → Mesh → Normals → Recalculate Outside (Shift+N)
-                        obj.AppendLine(
-                            $"f {vBase + f.V0}/{uvIndex[(f.MatId, f.U0, f.V0uv)]}" +
-                            $" {vBase + f.V1}/{uvIndex[(f.MatId, f.U1, f.V1uv)]}" +
-                            $" {vBase + f.V2}/{uvIndex[(f.MatId, f.U2, f.V2uv)]}");
+                    if (f.MatId != lastMat)
+                    {
+                        obj.AppendLine($"usemtl mat_{f.MatId}");
+                        lastMat = f.MatId;
+                    }
+                    obj.AppendLine(
+                        $"f {pieceVertBase1 + f.V0}/{uvIndex[(f.MatId, f.U0, f.V0uv)]}" +
+                        $" {pieceVertBase1 + f.V1}/{uvIndex[(f.MatId, f.U1, f.V1uv)]}" +
+                        $" {pieceVertBase1 + f.V2}/{uvIndex[(f.MatId, f.U2, f.V2uv)]}");
                 }
                 obj.AppendLine();
             }
@@ -356,6 +406,49 @@ namespace WoWViewer
         // shadeData: optional 512-byte SHH level slice (256 × RGB565). Pass null for raw PAL.
         public static Bitmap RenderTextureAtlas(WofModel model, byte[] palData, byte[]? shadeData = null)
             => RenderTexture(model.TextureData, model.TexHeight, palData, shadeData);
+
+        // Export the atlas as a palette-indexed (8bpp) PNG so the raw palette indices are
+        // preserved losslessly. The encoder detects this format and skips re-quantisation.
+        // palData is embedded in the PNG palette so the file is self-contained for viewers.
+        public static void ExportTextureRaw(WofModel model, byte[] palData, string path)
+        {
+            int w = TexWidth, h = model.TexHeight;
+            var bmp = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
+
+            // Set PNG palette from PAL data (6-bit × 4 → 8-bit)
+            var pal = bmp.Palette;
+            for (int i = 0; i < 256; i++)
+            {
+                int r = i * 3 < palData.Length ? Math.Min(palData[i * 3] * 4, 255) : 0;
+                int g = i * 3 < palData.Length ? Math.Min(palData[i * 3 + 1] * 4, 255) : 0;
+                int b = i * 3 < palData.Length ? Math.Min(palData[i * 3 + 2] * 4, 255) : 0;
+                // Index 0 = transparent
+                pal.Entries[i] = i == 0 ? Color.Transparent : Color.FromArgb(255, r, g, b);
+            }
+            bmp.Palette = pal;
+
+            // Write raw index bytes directly into the bitmap bits
+            var bmpData = bmp.LockBits(
+                new Rectangle(0, 0, w, h),
+                System.Drawing.Imaging.ImageLockMode.WriteOnly,
+                System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
+            try
+            {
+                for (int y = 0; y < h; y++)
+                {
+                    int srcOff = y * w;
+                    int srcLen = Math.Min(w, model.TextureData.Length - srcOff);
+                    if (srcLen <= 0) break;
+                    System.Runtime.InteropServices.Marshal.Copy(
+                        model.TextureData, srcOff,
+                        bmpData.Scan0 + y * bmpData.Stride, srcLen);
+                }
+            }
+            finally { bmp.UnlockBits(bmpData); }
+
+            bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+            bmp.Dispose();
+        }
 
         public static Bitmap RenderTexture(byte[] texData, int texHeight, byte[] palData, byte[]? shadeData = null)
         {

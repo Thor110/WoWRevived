@@ -178,9 +178,13 @@ namespace WoWViewer
             var (objText, mtlText) = WofDecoder.ToObj(currentModel!, mtlName, texName);
             File.WriteAllText(Path.Combine(outputPath, baseName + ".obj"), objText);
             File.WriteAllText(Path.Combine(outputPath, mtlName), mtlText);
+            // Display PNG (RGBA, for viewing/editing)
             ExportAtlas(currentModel, palData, checkBox1.Checked ? shadeData : null,
                 Path.Combine(outputPath, baseName + "_tex.png"));
-            MessageBox.Show($"Exported {baseName}.obj, {mtlName}, {baseName}_tex.png");
+            // Raw-index PNG (palette-indexed 8bpp) — used by the encoder for lossless round-trips
+            WofDecoder.ExportTextureRaw(currentModel!, palData,
+                Path.Combine(outputPath, baseName + "_raw.png"));
+            MessageBox.Show($"Exported {baseName}.obj, {mtlName}, {baseName}_tex.png, {baseName}_raw.png");
         }
 
         // Export all models
@@ -212,6 +216,7 @@ namespace WoWViewer
                     File.WriteAllText(Path.Combine(outputPath, base_ + ".obj"), objText);
                     File.WriteAllText(Path.Combine(outputPath, mtlN), mtlText);
                     ExportAtlas(model, pal, shd, Path.Combine(outputPath, base_ + "_tex.png"));
+                    WofDecoder.ExportTextureRaw(model, pal, Path.Combine(outputPath, base_ + "_raw.png"));
                     count++;
                 }
                 catch (Exception ex)
@@ -237,6 +242,10 @@ namespace WoWViewer
             string baseName = Path.GetFileNameWithoutExtension(objPath);
             string mtlPath = Path.Combine(dir, baseName + ".mtl");
             string texPath = Path.Combine(dir, baseName + "_tex.png");
+            // Prefer the palette-indexed raw PNG for lossless round-trips.
+            // If the user has replaced the texture, they can delete _raw.png to force requantisation.
+            string rawPath = Path.Combine(dir, baseName + "_raw.png");
+            string encodeTexPath = File.Exists(rawPath) ? rawPath : texPath;
 
             if (!File.Exists(mtlPath))
             {
@@ -258,7 +267,7 @@ namespace WoWViewer
             {
                 string objText = File.ReadAllText(objPath);
                 string mtlText = File.ReadAllText(mtlPath);
-                byte[] texPng = File.ReadAllBytes(texPath);
+                byte[] texPng = File.ReadAllBytes(encodeTexPath);
 
                 // Pass original WOF data so animation frames are preserved
                 byte[]? origWof = rawData?.Length > 0 ? rawData : null;
