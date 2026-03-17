@@ -10,33 +10,42 @@ namespace WoWViewer
 
         private static int[] BuildTileArgb()
         {
+            // Terrain type colour table — derived from height/usage analysis of all 30 maps.
+            // 121 tile IDs are organised in 8 base-type groups of 16 (IDs 1–128, 121 used).
+            // Type 1 (IDs 1–16) is split into three water sub-types by variant offset.
+            //   ID 1       = Deep Water    (100% height=0, open sea)
+            //   IDs 2–5    = Shallow Water (avg height 6, tripod-wading depth)
+            //   IDs 6–16   = Coastal       (transition to beach)
+            //   IDs 17–32  = Beach
+            //   IDs 33–48  = Grass
+            //   IDs 49–64  = Road
+            //   IDs 65–80  = Rock
+            //   IDs 81–96  = Highland
+            //   IDs 97–112 = Mountain
+            //   IDs 113–128= Peak
             var c = new int[256];
-            c[0] = unchecked((int)0xFF000000);
-            c[1] = unchecked((int)0xFF1A3A6A);  // water
-            for (int i = 2; i < 256; i++)
-            {
-                double hue = ((i - 2) / 120.0) % 1.0;
-                var (r, g, b) = HsvToRgb(hue, 0.72, 0.85);
-                c[i] = unchecked((int)(0xFF000000u | ((uint)r << 16) | ((uint)g << 8) | (uint)b));
-            }
-            return c;
-        }
+            c[0] = unchecked((int)0xFF000000); // unused
 
-        private static (int r, int g, int b) HsvToRgb(double h, double s, double v)
-        {
-            int hi = (int)(h * 6) % 6;
-            double f = h * 6 - Math.Floor(h * 6);
-            double p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
-            var (rd, gd, bd) = hi switch
+            void Fill(int from, int to, int r, int g, int b)
             {
-                0 => (v, t, p),
-                1 => (q, v, p),
-                2 => (p, v, t),
-                3 => (p, q, v),
-                4 => (t, p, v),
-                _ => (v, p, q)
-            };
-            return ((int)(rd * 255), (int)(gd * 255), (int)(bd * 255));
+                int argb = unchecked((int)(0xFF000000u | ((uint)r << 16) | ((uint)g << 8) | (uint)b));
+                for (int i = from; i <= Math.Min(to, 255); i++) c[i] = argb;
+            }
+
+            Fill(1, 1, 0x1A, 0x2A, 0x6A); // Deep Water
+            Fill(2, 5, 0x3A, 0x6A, 0x9A); // Shallow Water
+            Fill(6, 16, 0x5A, 0x7A, 0x8A); // Coastal
+            Fill(17, 32, 0xC8, 0xB5, 0x60); // Beach
+            Fill(33, 48, 0x4A, 0x7A, 0x3A); // Grass
+            Fill(49, 64, 0x7A, 0x6A, 0x5A); // Road
+            Fill(65, 80, 0x8A, 0x7A, 0x6A); // Rock
+            Fill(81, 96, 0x9A, 0x8A, 0x7A); // Highland
+            Fill(97, 112, 0xAA, 0xAA, 0xAA); // Mountain
+            Fill(113, 128, 0xEE, 0xEE, 0xFF); // Peak
+            // Any IDs above 128 get a visible magenta so they stand out if encountered
+            Fill(129, 255, 0xFF, 0x00, 0xFF);
+
+            return c;
         }
 
         // ── Shared pixel-write helper (no unsafe needed) ──────────────────────

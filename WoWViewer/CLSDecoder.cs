@@ -115,6 +115,23 @@
             return model;
         }
 
+        // ── Terrain material definitions ──────────────────────────────────────
+        // 9 materials derived from height/usage analysis across all 30 maps.
+        // 121 tile IDs in 8 base-type groups of 16; Type 1 (water) split into 3.
+        private static readonly (string Name, int R, int G, int B, int IdFrom, int IdTo)[] TerrainMaterials =
+        {
+            ("DeepWater",    0x1A, 0x2A, 0x6A,   1,   1),
+            ("ShallowWater", 0x3A, 0x6A, 0x9A,   2,   5),
+            ("Coastal",      0x5A, 0x7A, 0x8A,   6,  16),
+            ("Beach",        0xC8, 0xB5, 0x60,  17,  32),
+            ("Grass",        0x4A, 0x7A, 0x3A,  33,  48),
+            ("Road",         0x7A, 0x6A, 0x5A,  49,  64),
+            ("Rock",         0x8A, 0x7A, 0x6A,  65,  80),
+            ("Highland",     0x9A, 0x8A, 0x7A,  81,  96),
+            ("Mountain",     0xAA, 0xAA, 0xAA,  97, 112),
+            ("Peak",         0xEE, 0xEE, 0xFF, 113, 128),
+        };
+
         // ── OBJ Export ────────────────────────────────────────────────────────
         /// <summary>
         /// Exports a CLSModel to a Wavefront OBJ + MTL file pair.
@@ -122,7 +139,7 @@
         ///   world_X = col * 256
         ///   world_Y = (height_byte * HeightScale) >> 16
         ///   world_Z = row * 256
-        /// Faces are grouped by tile type for material assignment.
+        /// Faces are grouped into 9 named terrain materials.
         /// </summary>
         public static void ExportObj(CLSModel model, string objPath)
         {
@@ -130,11 +147,7 @@
             string mtlName = Path.GetFileName(mtlPath);
             string baseName = Path.GetFileNameWithoutExtension(objPath);
 
-            var usedTiles = new SortedSet<byte>();
-            if (model.Tiles != null)
-                foreach (byte t in model.Tiles) usedTiles.Add(t);
-
-            ExportMtl(usedTiles, mtlPath);
+            ExportMtl(mtlPath);
 
             using var sw = new System.IO.StreamWriter(objPath, false, System.Text.Encoding.ASCII);
 
@@ -146,9 +159,6 @@
             sw.WriteLine();
 
             // Vertices — engine world-space coordinates
-            // world_X = col * 256
-            // world_Y = (height_byte * HeightScale) >> 16
-            // world_Z = row * 256
             for (int row = 0; row < model.GridH; row++)
                 for (int col = 0; col < model.GridW; col++)
                 {
@@ -160,81 +170,54 @@
 
             sw.WriteLine();
 
-            // Faces grouped by tile type — CCW winding from above
-            // Quad (row, col) corners (1-based OBJ indices):
-            //   TL = row*GridW + col + 1
-            //   TR = row*GridW + (col+1) + 1
-            //   BL = (row+1)*GridW + col + 1
-            //   BR = (row+1)*GridW + (col+1) + 1
-            // Tri1: TL, BL, TR   Tri2: TR, BL, BR
-            foreach (byte tileId in usedTiles)
+            // Faces grouped by terrain material — CCW winding from above
+            // Quad (row,col): Tri1=TL,BL,TR  Tri2=TR,BL,BR  (1-based OBJ indices)
+            if (model.Tiles != null)
             {
-                bool headerWritten = false;
-                for (int row = 0; row < model.TileH; row++)
+                foreach (var (matName, _, _, _, idFrom, idTo) in TerrainMaterials)
                 {
-                    for (int col = 0; col < model.TileW; col++)
+                    bool headerWritten = false;
+                    for (int row = 0; row < model.TileH; row++)
                     {
-                        if (model.Tiles![row * model.TileW + col] != tileId) continue;
-
-                        if (!headerWritten)
+                        for (int col = 0; col < model.TileW; col++)
                         {
-                            sw.WriteLine($"usemtl tile_{tileId}");
-                            sw.WriteLine($"g {baseName}_tile_{tileId}");
-                            headerWritten = true;
+                            byte tileId = model.Tiles[row * model.TileW + col];
+                            if (tileId < idFrom || tileId > idTo) continue;
+
+                            if (!headerWritten)
+                            {
+                                sw.WriteLine($"usemtl {matName}");
+                                sw.WriteLine($"g {baseName}_{matName}");
+                                headerWritten = true;
+                            }
+
+                            int tl = row * model.GridW + col + 1;
+                            int tr = row * model.GridW + (col + 1) + 1;
+                            int bl = (row + 1) * model.GridW + col + 1;
+                            int br = (row + 1) * model.GridW + (col + 1) + 1;
+
+                            sw.WriteLine($"f {tl} {bl} {tr}");
+                            sw.WriteLine($"f {tr} {bl} {br}");
                         }
-
-                        int tl = row * model.GridW + col + 1;
-                        int tr = row * model.GridW + (col + 1) + 1;
-                        int bl = (row + 1) * model.GridW + col + 1;
-                        int br = (row + 1) * model.GridW + (col + 1) + 1;
-
-                        sw.WriteLine($"f {tl} {bl} {tr}");
-                        sw.WriteLine($"f {tr} {bl} {br}");
                     }
                 }
             }
         }
 
-        private static void ExportMtl(SortedSet<byte> tileIds, string mtlPath)
+        private static void ExportMtl(string mtlPath)
         {
             using var sw = new System.IO.StreamWriter(mtlPath, false, System.Text.Encoding.ASCII);
             sw.WriteLine("# WoWRevived terrain materials");
+            sw.WriteLine("# 9 types: DeepWater ShallowWater Coastal Beach Grass Road Rock Highland Mountain Peak");
             sw.WriteLine();
-
-            foreach (byte id in tileIds)
+            foreach (var (name, r, g, b, _, _) in TerrainMaterials)
             {
-                double r, g, b;
-                if (id == 1)
-                {
-                    r = 0x1A / 255.0; g = 0x3A / 255.0; b = 0x6A / 255.0;
-                }
-                else
-                {
-                    double hue = ((id - 2) / 120.0) % 1.0;
-                    (r, g, b) = HsvToRgb(hue, 0.72, 0.85);
-                }
-                sw.WriteLine($"newmtl tile_{id}");
-                sw.WriteLine($"Kd {r:F4} {g:F4} {b:F4}");
+                sw.WriteLine($"newmtl {name}");
+                sw.WriteLine($"Kd {r / 255.0:F4} {g / 255.0:F4} {b / 255.0:F4}");
                 sw.WriteLine($"Ka 0.1000 0.1000 0.1000");
                 sw.WriteLine($"Ks 0.0000 0.0000 0.0000");
                 sw.WriteLine();
             }
-        }
-
-        private static (double r, double g, double b) HsvToRgb(double h, double s, double v)
-        {
-            int hi = (int)(h * 6) % 6;
-            double f = h * 6 - Math.Floor(h * 6);
-            double p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
-            return hi switch
-            {
-                0 => (v, t, p),
-                1 => (q, v, p),
-                2 => (p, v, t),
-                3 => (p, q, v),
-                4 => (t, p, v),
-                _ => (v, p, q)
-            };
         }
     }
 }
