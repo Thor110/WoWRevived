@@ -275,13 +275,13 @@ Martian Research Menu
 
 ## Enhanced Original Assets
 
-These are the original battle map unit icons.
+These are the human battle map unit icons.
 
 <div align="center">
   <img src="images/human-comparison.gif" alt="Human Battle Map Unit Icons">
 </div>
 
-These are the enhanced battle map unit icons.
+These are the martian battle map unit icons.
 
 <div align="center">
   <img src="images/martian-comparison.gif" alt="Martian Battle Map Unit Icons">
