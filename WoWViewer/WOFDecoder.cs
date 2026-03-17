@@ -20,7 +20,7 @@ namespace WoWViewer
         public int[] BspChildren { get; init; } = [];
 
         // Raw accumulated pivot (sum of stored pivot values up the BSP parent chain).
-        // Set after Parse() resolves the tree. World coords: (-(RawAccumY + vert_y))
+        // Set after Parse() resolves the tree. World coords: world_y = -(RawAccumY + vert_y)
         public int RawAccumX { get; set; }
         public int RawAccumY { get; set; }
         public int RawAccumZ { get; set; }
@@ -45,8 +45,8 @@ namespace WoWViewer
         public int TexOffset { get; init; }
         public int MatOffset { get; init; }
         public WofPiece[] Pieces { get; init; } = [];
-        public byte[] TextureData { get; init; } = [];
-        public byte[] MaterialData { get; init; } = [];
+        public byte[] TextureData { get; init; } = [];  // 24576 bytes = 256×96, stride 256
+        public byte[] MaterialData { get; init; } = [];  // 52 bytes, 13 × 4-byte entries
     }
 
     // ── Static decoder ────────────────────────────────────────────────────────
@@ -55,6 +55,12 @@ namespace WoWViewer
     {
         private const int PieceRecordSize = 97;   // 0x61
         private const int PieceTableStart = 0x30;
+
+        // Confirmed texture layout: 256 pixels wide × 96 rows, 1 byte per pixel (palette index).
+        // stride = 256, total = 24576 bytes.
+        // Material table byte[0] = U offset, byte[1] = V offset into this atlas.
+        public const int TexWidth = 256;
+        public const int TexHeight = 96;
 
         public static WofModel Parse(byte[] data)
         {
@@ -90,7 +96,7 @@ namespace WoWViewer
                 int faceOff = BitConverter.ToInt32(data, base_ + 0x1C) >> 8;
 
                 // Read all BSP children from rec[0x21], rec[0x25], rec[0x29]...
-                // Each is an int32; list terminates at -1. Max 16 (IDA: cmp [arg_0], 10h).
+                // Each is a signed int32; list terminates at -1. Max 16 (IDA: cmp [arg_0], 10h).
                 var bspChildren = new List<int>();
                 for (int ci = 0; ci < 16; ci++)
                 {
@@ -152,13 +158,16 @@ namespace WoWViewer
                 };
             }
 
-            // Resolve accumulated BSP pivots before computing world coords
             ResolvePivots(pieces);
 
+            // Texture: 24576 bytes = 256×96 palette-indexed, stride 256 (confirmed)
             byte[] texData = new byte[24576];
             if (texOffset > 0 && texOffset + 24576 <= data.Length)
                 Array.Copy(data, texOffset, texData, 0, 24576);
 
+            // Material table: 52 bytes (13 × 4 bytes)
+            // byte[0] = U offset in atlas, byte[1] = V offset in atlas,
+            // byte[3] bit7 = use texture flag
             byte[] matData = new byte[52];
             if (matOffset > 0 && matOffset + 52 <= data.Length)
                 Array.Copy(data, matOffset, matData, 0, 52);
@@ -187,8 +196,7 @@ namespace WoWViewer
         {
             int n = pieces.Length;
 
-            // Build parent map from the full children list.
-            // Each piece has at most one parent (confirmed from data).
+            // Build parent map from the full children list
             var parentOf = new int[n];
             for (int i = 0; i < n; i++) parentOf[i] = -1;
             for (int i = 0; i < n; i++)
@@ -196,8 +204,8 @@ namespace WoWViewer
                     if (c >= 0 && c < n)
                         parentOf[c] = i;
 
-            // Accumulate raw (un-negated) pivot values in topological order.
-            // World formula: world = (rawAccumX + vx,  -(rawAccumY + vy),  rawAccumZ + vz)
+            // Accumulate raw pivot values in topological order.
+            // World formula: world_y = -(RawAccumY + vert_y)
             var done = new bool[n];
             bool progress = true;
             while (progress)
@@ -242,10 +250,10 @@ namespace WoWViewer
             mtl.AppendLine("# WOF material library");
             mtl.AppendLine();
 
-            // Vertices — world coords:
-            //   world_x =   (rawAccumX + vx) / scale
-            //   world_y = - (rawAccumY + vy) / scale
-            //   world_z =   (rawAccumZ + vz) / scale
+            // Vertices:
+            //   world_x =   (RawAccumX + vx) / scale
+            //   world_y = - (RawAccumY + vy) / scale
+            //   world_z =   (RawAccumZ + vz) / scale
             var vertBase = new Dictionary<string, int>();
             int globalIdx = 1;
 
@@ -261,29 +269,50 @@ namespace WoWViewer
             }
             obj.AppendLine();
 
-            // UVs
-            var uvList = new List<(byte u, byte v)>();
-            var uvIndex = new Dictionary<(byte, byte), int>();
+            // UV coords — face UVs (0-127, 0-63) mapped into the 256×96 atlas
+            // using per-material offsets from the material table.
+            // For now output normalised UVs relative to the full 256×96 atlas.
+            // Material byte[0] = U atlas offset, byte[1] = V atlas offset.
+            var uvList = new List<(float u, float v)>();
+            var uvIndex = new Dictionary<(byte matId, byte fu, byte fv), int>();
+
             foreach (var piece in model.Pieces)
                 foreach (var f in piece.Faces)
-                    foreach (var uv in new[] { (f.U0, f.V0uv), (f.U1, f.V1uv), (f.U2, f.V2uv) })
-                        if (!uvIndex.ContainsKey(uv))
-                        { uvIndex[uv] = uvList.Count + 1; uvList.Add(uv); }
+                    foreach (var (fu, fv) in new[] { (f.U0, f.V0uv), (f.U1, f.V1uv), (f.U2, f.V2uv) })
+                    {
+                        var key = (f.MatId, fu, fv);
+                        if (!uvIndex.ContainsKey(key))
+                        {
+                            // Apply material atlas offset
+                            byte uOff = model.MaterialData.Length >= (f.MatId * 4 + 2)
+                                ? model.MaterialData[f.MatId * 4] : (byte)0;
+                            byte vOff = model.MaterialData.Length >= (f.MatId * 4 + 2)
+                                ? model.MaterialData[f.MatId * 4 + 1] : (byte)0;
+                            float nu = (uOff + fu) / (float)TexWidth;
+                            float nv = (vOff + fv) / (float)TexHeight;
+                            uvIndex[key] = uvList.Count + 1;
+                            uvList.Add((nu, nv));
+                        }
+                    }
 
-            foreach (var (u, v) in uvList)
-                obj.AppendLine(FormattableString.Invariant($"vt {u / 127f:F4} {v / 63f:F4}"));
+            foreach (var (nu, nv) in uvList)
+                obj.AppendLine(FormattableString.Invariant($"vt {nu:F4} {1f - nv:F4}"));
             obj.AppendLine();
 
-            // Materials
+            // Materials — one per matId, referencing the shared atlas texture
             var mids = new SortedSet<byte>();
             foreach (var piece in model.Pieces)
                 foreach (var f in piece.Faces)
                     mids.Add(f.MatId);
+
+            mtl.AppendLine("newmtl atlas");
+            mtl.AppendLine("Ka 1.0 1.0 1.0\nKd 1.0 1.0 1.0\nKs 0.0 0.0 0.0");
+            mtl.AppendLine("map_Kd texture_atlas.png\n");
             foreach (byte mid in mids)
             {
                 mtl.AppendLine($"newmtl mat_{mid}");
                 mtl.AppendLine("Ka 1.0 1.0 1.0\nKd 1.0 1.0 1.0\nKs 0.0 0.0 0.0");
-                mtl.AppendLine($"map_Kd texture_mat{mid}.png\n");
+                mtl.AppendLine("map_Kd texture_atlas.png\n");
             }
 
             // Faces
@@ -296,9 +325,9 @@ namespace WoWViewer
                     obj.AppendLine($"usemtl mat_{group.Key}");
                     foreach (var f in group)
                         obj.AppendLine(
-                            $"f {vBase + f.V0}/{uvIndex[(f.U0, f.V0uv)]}" +
-                            $" {vBase + f.V1}/{uvIndex[(f.U1, f.V1uv)]}" +
-                            $" {vBase + f.V2}/{uvIndex[(f.U2, f.V2uv)]}");
+                            $"f {vBase + f.V0}/{uvIndex[(f.MatId, f.U0, f.V0uv)]}" +
+                            $" {vBase + f.V1}/{uvIndex[(f.MatId, f.U1, f.V1uv)]}" +
+                            $" {vBase + f.V2}/{uvIndex[(f.MatId, f.U2, f.V2uv)]}");
                 }
                 obj.AppendLine();
             }
@@ -306,17 +335,22 @@ namespace WoWViewer
             return (obj.ToString(), mtl.ToString());
         }
 
-        // ── Texture ───────────────────────────────────────────────────────────
+        // ── Texture rendering ─────────────────────────────────────────────────
+
+        // Render the full 256×96 texture atlas.
+        // palData:   decompressed .PAL bytes (first 768 = 256 × RGB, 6-bit × 4).
+        // shadeData: optional 512-byte SHH level slice (256 × RGB565). Pass null for raw PAL.
+        public static Bitmap RenderTextureAtlas(WofModel model, byte[] palData, byte[]? shadeData = null)
+            => RenderTexture(model.TextureData, palData, shadeData);
 
         public static Bitmap RenderTexture(byte[] texData, byte[] palData, byte[]? shadeData = null)
         {
-            const int W = 128, H = 64;
-            var bmp = new Bitmap(W, H);
             bool useSHH = shadeData?.Length >= 512;
-            for (int y = 0; y < H; y++)
-                for (int x = 0; x < W; x++)
+            var bmp = new Bitmap(TexWidth, TexHeight);
+            for (int y = 0; y < TexHeight; y++)
+                for (int x = 0; x < TexWidth; x++)
                 {
-                    byte idx = texData[y * W + x];
+                    byte idx = texData[y * TexWidth + x];
                     Color c;
                     if (useSHH)
                     {
@@ -338,27 +372,27 @@ namespace WoWViewer
             return bmp;
         }
 
-        public static Bitmap RenderTextureAtlas(WofModel model, byte[] palData, byte[]? shadeData = null)
-            => RenderTexture(model.TextureData, palData, shadeData);
+        // ── Palette / shader suggestions ──────────────────────────────────────
 
+        // WOF unit models use F7.PAL + F7GI.SHH as the general-purpose rendering palette.
+        // IOB building models use BM.PAL + BMGI.SHH.
         public static string SuggestPalette(string fileName, bool isIob)
             => isIob ? "BM.PAL" : "F7.PAL";
 
-        public static string SuggestShader(string palName)
+        public static string SuggestShader(string fileName, string palName)
         {
+            char prefix = Path.GetFileNameWithoutExtension(fileName)
+                              .ToUpperInvariant().FirstOrDefault();
+            bool isMartian = prefix == 'M';
             string stem = Path.GetFileNameWithoutExtension(palName).ToUpperInvariant();
             return stem switch
             {
-                "F1" or "F2" or "F3" or "F4" or "F5" or "F6" or "F7" => stem + "GI.SHH",
+                "F7" or "F6" or "F5" or "F4" or "F3" or "F2" or "F1"
+                    => isMartian ? "BMMVB.SHH" : "BMHVB.SHH",
                 "BM" => "BMGI.SHH",
-                "SE" => "SEGI.SHH",
-                "HW" => "HWGI.SHH",
-                "HB" => "HBGI.SHH",
-                "HR" => "HRGI.SHH",
-                "MW" => "MWGI.SHH",
-                "MB" => "MBGI.SHH",
-                "MR" => "MRGI.SHH",
-                _ => "F7GI.SHH",
+                "MW" or "MB" or "MR" => "BMMVB.SHH",
+                "HW" or "HB" or "HR" => "BMHVB.SHH",
+                _ => isMartian ? "BMMVB.SHH" : "BMHVB.SHH",
             };
         }
     }
