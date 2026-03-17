@@ -335,6 +335,9 @@ namespace WoWViewer
                 {
                     obj.AppendLine($"usemtl mat_{group.Key}");
                     foreach (var f in group)
+                        // Note: WOF face winding is inconsistent in source data (artist error).
+                        // After import in Blender, select all and run:
+                        // Edit Mode → Mesh → Normals → Recalculate Outside (Shift+N)
                         obj.AppendLine(
                             $"f {vBase + f.V0}/{uvIndex[(f.MatId, f.U0, f.V0uv)]}" +
                             $" {vBase + f.V1}/{uvIndex[(f.MatId, f.U1, f.V1uv)]}" +

@@ -25,7 +25,6 @@ namespace WoWViewer
             entries = entryList;
             selectedEntry = entryName;
             modelType = model;
-
             if (output != "")
             {
                 outputPath = output;
@@ -84,39 +83,21 @@ namespace WoWViewer
 
         private void RenderCurrent()
         {
-            if (palData == null || palData.Length < 768) return;
-            if (rawData == null || rawData.Length == 0) return;
-
             if (currentRenderedEntry != listBox1.SelectedIndex)
             {
                 currentModel = WofDecoder.Parse(rawData);
                 currentRenderedEntry = listBox1.SelectedIndex;
-
-                comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;
-                comboBox1.Items.Clear();
-                string name = Path.GetFileNameWithoutExtension(selectedEntry);
-                comboBox1.Enabled = false;
-                button6.Enabled = false;
-                button1.Enabled = true;
-                comboBox1.Text = name;
-                comboBox1.SelectedIndex = -1;
-                currentFrame = 0;
-                comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged!;
-
-                if (currentModel != null)
-                    label2.Text =
+                label2.Text =
                         $"{currentModel.PieceCount} pieces  " +
                         $"{currentModel.Pieces.Sum(p => (int)p.VertCount)} verts  " +
                         $"{currentModel.Pieces.Sum(p => (int)p.FaceCount)} faces";
             }
 
-            if (currentModel == null) return;
-
             byte[]? shdSlice = checkBox1.Checked ? shadeData : null;
             // Render atlas at actual size, scale up for visibility (width ×3, height ×3)
-            var bmp = WofDecoder.RenderTextureAtlas(currentModel, palData, shdSlice);
+            var bmp = WofDecoder.RenderTextureAtlas(currentModel!, palData, shdSlice);
             int scaledW = WofDecoder.TexWidth * 3;
-            int scaledH = currentModel.TexHeight * 3;
+            int scaledH = currentModel!.TexHeight * 3;
             var scaled = new Bitmap(scaledW, scaledH);
             using (var g = Graphics.FromImage(scaled))
             {
@@ -174,7 +155,7 @@ namespace WoWViewer
             }
             RenderCurrent();
         }
-
+        // set output directory
         private void button4_Click(object sender, EventArgs e)
         {
             using var fbd = new FolderBrowserDialog
@@ -191,11 +172,10 @@ namespace WoWViewer
         // Export current model as OBJ + MTL + texture atlas PNG
         private void button2_Click(object sender, EventArgs e)
         {
-            if (currentModel == null || outputPath == "") return;
             string baseName = Path.GetFileNameWithoutExtension(selectedEntry);
             string mtlName = baseName + ".mtl";
             string texName = baseName + "_tex.png";
-            var (objText, mtlText) = WofDecoder.ToObj(currentModel, mtlName, texName);
+            var (objText, mtlText) = WofDecoder.ToObj(currentModel!, mtlName, texName);
             File.WriteAllText(Path.Combine(outputPath, baseName + ".obj"), objText);
             File.WriteAllText(Path.Combine(outputPath, mtlName), mtlText);
             ExportAtlas(currentModel, palData, checkBox1.Checked ? shadeData : null,
@@ -206,7 +186,6 @@ namespace WoWViewer
         // Export all models
         private void button3_Click(object sender, EventArgs e)
         {
-            if (outputPath == "") return;
             string ext = modelType ? ".IOB" : ".WOF";
             int count = 0;
             foreach (var entry in entries.Where(en =>
@@ -243,14 +222,22 @@ namespace WoWViewer
             MessageBox.Show($"Exported {count} {ext} models to {outputPath}");
         }
 
-        // Export texture atlas as PNG
+        // replace model button obj + mtl + png
         private void button1_Click(object sender, EventArgs e)
         {
-            if (currentModel == null || outputPath == "") return;
-            string baseName = Path.GetFileNameWithoutExtension(selectedEntry);
-            ExportAtlas(currentModel, palData, checkBox1.Checked ? shadeData : null,
-                Path.Combine(outputPath, baseName + "_tex.png"));
-            MessageBox.Show($"{baseName}_tex.png exported.");
+            using var ofd = new OpenFileDialog { Filter = "PNG Image|*.png", Title = "Select a replacement to encode" };
+            if (ofd.ShowDialog() != DialogResult.OK) { return; }
+            var bmp = new Bitmap(ofd.FileName);
+            //byte[] indices = QuantiseToPalette(bmp, palData, (checkBox1.Checked) ? shadeData : null);
+            // TODO : remove checkBox1?
+            byte[] encoded = null!; //TODO
+            string outPath = Path.Combine("DAT", selectedEntry);
+            if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) { return; }
+            File.WriteAllBytes(outPath, encoded);
+            entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
+            rawData = encoded;
+            RenderCurrent();
+            MessageBox.Show("Encoded and saved.");
         }
 
         private static void ExportAtlas(WofModel model, byte[] pal, byte[]? shd, string path)
@@ -270,15 +257,6 @@ namespace WoWViewer
                 outputPath + Path.GetFileNameWithoutExtension(selectedEntry) +
                 (checkBox1.Checked ? "_SHADED.PAL" : ".PAL"), trimmed);
             MessageBox.Show("Palette exported.");
-        }
-
-        private void button6_Click(object sender, EventArgs e) { }
-
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (comboBox1.SelectedIndex == currentFrame) return;
-            currentFrame = comboBox1.SelectedIndex;
-            RenderCurrent();
         }
     }
 }
