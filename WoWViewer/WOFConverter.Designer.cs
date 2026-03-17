@@ -60,6 +60,7 @@
             listBox3.Name = "listBox3";
             listBox3.Size = new Size(120, 244);
             listBox3.TabIndex = 27;
+            listBox3.SelectedIndexChanged += listBox3_SelectedIndexChanged;
             // 
             // checkBox1
             // 
@@ -72,6 +73,7 @@
             checkBox1.TabIndex = 26;
             checkBox1.Text = "Shader Tables";
             checkBox1.UseVisualStyleBackColor = true;
+            checkBox1.CheckedChanged += checkBox1_CheckedChanged;
             // 
             // button5
             // 
@@ -141,6 +143,7 @@
             listBox2.Name = "listBox2";
             listBox2.Size = new Size(120, 244);
             listBox2.TabIndex = 19;
+            listBox2.SelectedIndexChanged += listBox2_SelectedIndexChanged;
             // 
             // listBox1
             // 
@@ -150,6 +153,7 @@
             listBox1.Name = "listBox1";
             listBox1.Size = new Size(139, 754);
             listBox1.TabIndex = 18;
+            listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged;
             // 
             // pictureBox1
             // 

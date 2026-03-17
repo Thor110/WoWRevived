@@ -344,7 +344,6 @@ namespace WoWViewer
             rawData = entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
             TryAutoSelectPalette(selectedEntry);
             TryAutoSelectShader(selectedEntry);
-            // TODO : add RenderCurrent here when palette and shader selection is perfect, then remove listBox2 and listBox3.
             RenderCurrent();
         }
         // palette selection
