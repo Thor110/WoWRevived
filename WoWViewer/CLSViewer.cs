@@ -17,13 +17,15 @@ namespace WoWViewer
         private byte[]? shadeData;   // active SHH level-0 slice (512 bytes), null = raw PAL
         private int currentFrame;
         private List<WowFileEntry> palettes = new List<WowFileEntry>();
+        private string archivePath = "";  // path to MAPS.WoW, for saving back
         // ── View mode ─────────────────────────────────────────────────────────
         private enum ViewMode { TileMap, Heightmap, Composite }
         private ViewMode currentView = ViewMode.Composite;
-        public CLSViewer(List<WowFileEntry> entryList, string entryName, string output)
+        public CLSViewer(List<WowFileEntry> entryList, string entryName, string output, string archive = "")
         {
             InitializeComponent();
             entries = entryList;
+            archivePath = archive;
             if (entryName.EndsWith(".ATM")) { entryName = Path.ChangeExtension(entryName, ".CLS"); }
             selectedEntry = entryName;
             if (output != "")
@@ -170,24 +172,121 @@ namespace WoWViewer
 
             MessageBox.Show($"Exported:\n  {baseName}_tilemap.png\n  {baseName}_heightmap.png\n  {baseName}.obj + .mtl");
         }
-        // import OBJ button
+        // import OBJ and save back to MAPS.WoW
         private void button1_Click(object sender, EventArgs e)
         {
             using var ofd = new OpenFileDialog { Filter = "Wavefront OBJ (*.obj)|*.obj", Title = "Import OBJ" };
             if (ofd.ShowDialog() != DialogResult.OK) return;
 
+            // Decode current state, import new heights, encode back
             var model = CLSDecoder.Decode(clsData, atmData);
-            CLSEncoder.ImportHeightsFromObj(model, ofd.FileName);
+            try { CLSEncoder.ImportHeightsFromObj(model, ofd.FileName); }
+            catch (Exception ex) { MessageBox.Show($"Import failed:\n{ex.Message}"); return; }
 
-            // Write back to archive entry so preview updates
-            byte[] updated = CLSEncoder.EncodeCls(model, clsData);
-            var entry = entries.First(e => e.Name.Equals(selectedEntry));
-            entry.Data = updated;
-            entry.Edited = true;
-            clsData = updated;
+            byte[] updatedCls = CLSEncoder.EncodeCls(model, clsData);
+
+            // Update in-memory entry so preview is live
+            var clsEntry = entries.First(e => e.Name.Equals(selectedEntry));
+            clsEntry.Data = updatedCls;
+            clsEntry.Edited = true;
+            clsData = updatedCls;
 
             RenderCurrent();
-            MessageBox.Show("Heights imported. Use the main viewer Save button to write back to the archive.");
+
+            // Save back to MAPS.WoW archive
+            if (archivePath == "" || !File.Exists(archivePath))
+            {
+                MessageBox.Show("Heights imported and preview updated.\nNo archive path available — use the main viewer Save button to write to disk.");
+                return;
+            }
+
+            try
+            {
+                SaveToArchive(archivePath);
+                MessageBox.Show($"Saved to {Path.GetFileName(archivePath)} successfully.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Archive write failed:\n{ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Rewrites the KAT! archive at archivePath, substituting any entries
+        /// marked Edited with their updated Data. Mirrors the structure of
+        /// Form1.button11_Click but handles the KAT! 44-byte directory format:
+        ///   skip(4) + offset(4) + length(4) + name(12) + padding(20) = 44 bytes
+        /// The skip(4) field is unknown — preserved verbatim from the original.
+        /// Uncompressed data is written as-is; the engine checks for the FFUH header
+        /// before decompressing, so raw bytes are safe.
+        /// </summary>
+        private void SaveToArchive(string path)
+        {
+            // Read the original directory to get the skip(4) values we don't store
+            int fileCount;
+            int[] skipValues;
+            using (var br = new BinaryReader(File.OpenRead(path)))
+            {
+                br.ReadInt32();                          // magic
+                fileCount = br.ReadInt32();
+                skipValues = new int[fileCount];
+                for (int i = 0; i < fileCount; i++)
+                {
+                    skipValues[i] = br.ReadInt32();      // preserve unknown field
+                    br.ReadInt32();                      // offset  (will be recomputed)
+                    br.ReadInt32();                      // length  (will be recomputed)
+                    br.ReadBytes(12);                    // name
+                    br.BaseStream.Seek(20, SeekOrigin.Current); // padding
+                }
+            }
+
+            string tmp = path + ".tmp";
+            using (var bw = new BinaryWriter(File.Create(tmp)))
+            {
+                // Archive header
+                bw.Write(System.Text.Encoding.ASCII.GetBytes("KAT!"));
+                bw.Write(entries.Count);
+
+                // Directory placeholder — will be filled in after data is written
+                long dirStart = bw.BaseStream.Position;
+                foreach (var entry in entries)
+                {
+                    bw.Write(0);  // skip — placeholder
+                    bw.Write(0);  // offset
+                    bw.Write(0);  // length
+                    byte[] nameBytes = System.Text.Encoding.ASCII.GetBytes(entry.Name.PadRight(12, '\0'));
+                    bw.Write(nameBytes[..12]);
+                    bw.Write(new byte[20]);  // padding
+                }
+
+                // Write file data, record actual offsets and lengths
+                var offsets = new int[entries.Count];
+                var lengths = new int[entries.Count];
+                for (int i = 0; i < entries.Count; i++)
+                {
+                    offsets[i] = (int)bw.BaseStream.Position;
+                    // Use updated data if edited, otherwise use what's in memory
+                    byte[] data = entries[i].Data!;
+                    bw.Write(data);
+                    lengths[i] = data.Length;
+                    entries[i].Edited = false;
+                }
+
+                // Rewrite directory with real offsets and lengths
+                bw.BaseStream.Seek(dirStart, SeekOrigin.Begin);
+                for (int i = 0; i < entries.Count; i++)
+                {
+                    bw.Write(i < skipValues.Length ? skipValues[i] : 0);
+                    bw.Write(offsets[i]);
+                    bw.Write(lengths[i]);
+                    byte[] nameBytes = System.Text.Encoding.ASCII.GetBytes(entries[i].Name.PadRight(12, '\0'));
+                    bw.Write(nameBytes[..12]);
+                    bw.Write(new byte[20]);
+                }
+            }
+
+            // Atomic replace — backs up original as .bak
+            File.Replace(tmp, path, path + ".bak");
         }
         // render selected sprite with selected palette
         private void RenderCurrent()

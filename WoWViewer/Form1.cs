@@ -53,7 +53,7 @@ namespace WoWViewer
         private void HandleSPR(WowFileEntry entry) { newForm(new SprViewer(entries, listBox1.SelectedItem!.ToString()!, filePath.Contains("MAPS.WoW"), outputPath)); }
         private void HandleWOF(WowFileEntry entry) { newForm(new WOFConverter(entries, listBox1.SelectedItem!.ToString()!, outputPath)); }
         //MAPS/MAPS.WoW
-        private void HandleATM(WowFileEntry entry) { newForm(new CLSViewer(entries, listBox1.SelectedItem!.ToString()!, outputPath)); }
+        private void HandleATM(WowFileEntry entry) { newForm(new CLSViewer(entries, listBox1.SelectedItem!.ToString()!, outputPath, filePath)); }
         public WoWViewer()
         {
             InitializeComponent();

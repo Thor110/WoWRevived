@@ -22,6 +22,12 @@
         // Triangle strip indices (uint16[], 0xFFFF = strip restart)
         // For future OBJ/3D export — not needed for 2D rendering
         public ushort[]? StripIndices { get; set; }
+
+        // World-space scale factors (from CLS header, used for OBJ export/import)
+        // world_Y = (height_byte * HeightScale) >> 16
+        // world_X = col * 256,  world_Z = row * 256
+        public uint HeightScale { get; set; }   // [0x3C] — varies per map
+        public int YBase { get; set; }   // [0x18] + [0x30] — vertical datum offset
     }
 
     // =========================================================================
@@ -52,6 +58,13 @@
                 model.GridH = (int)BitConverter.ToUInt32(cls, 0x04);
                 model.VertCount = (int)BitConverter.ToUInt32(cls, 0x08);
                 model.TriCount = (int)BitConverter.ToUInt32(cls, 0x0C);
+
+                // World-space scale factors (from IDA sub_47B900 / sub_47BD80)
+                // world_Y = (height_byte * HeightScale) >> 16
+                // world_X = col * 256,  world_Z = row * 256
+                model.HeightScale = BitConverter.ToUInt32(cls, 0x3C);
+                model.YBase = (int)BitConverter.ToUInt32(cls, 0x18)
+                                  + (int)BitConverter.ToUInt32(cls, 0x30);
 
                 // Sanity: VertCount should equal GridW × GridH
                 int expected = model.GridW * model.GridH;
@@ -104,9 +117,12 @@
 
         // ── OBJ Export ────────────────────────────────────────────────────────
         /// <summary>
-        /// Exports a CLSModel to a Wavefront OBJ file with a matching MTL file.
-        /// Vertices use grid coordinates: X=col, Y=height, Z=row.
-        /// Faces are grouped by tile type. Scale in your 3D tool as needed.
+        /// Exports a CLSModel to a Wavefront OBJ + MTL file pair.
+        /// World coordinates use the engine's exact scale (confirmed from IDA sub_47B900):
+        ///   world_X = col * 256
+        ///   world_Y = (height_byte * HeightScale) >> 16
+        ///   world_Z = row * 256
+        /// Faces are grouped by tile type for material assignment.
         /// </summary>
         public static void ExportObj(CLSModel model, string objPath)
         {
@@ -114,40 +130,43 @@
             string mtlName = Path.GetFileName(mtlPath);
             string baseName = Path.GetFileNameWithoutExtension(objPath);
 
-            // Collect unique tile IDs used by this map (for MTL)
             var usedTiles = new SortedSet<byte>();
             if (model.Tiles != null)
                 foreach (byte t in model.Tiles) usedTiles.Add(t);
 
-            // Write MTL first
             ExportMtl(usedTiles, mtlPath);
 
-            // Write OBJ
             using var sw = new System.IO.StreamWriter(objPath, false, System.Text.Encoding.ASCII);
 
             sw.WriteLine($"# WoWRevived terrain export — {baseName}");
             sw.WriteLine($"# Grid: {model.GridW}×{model.GridH}  Verts: {model.VertCount}  Tris: {model.TriCount}");
+            sw.WriteLine($"# World scale: X/Z cell=256  Y=(byte*{model.HeightScale})>>16  YBase={model.YBase}");
             sw.WriteLine($"mtllib {mtlName}");
             sw.WriteLine($"o {baseName}");
             sw.WriteLine();
 
-            // Vertices: v col height row
+            // Vertices — engine world-space coordinates
+            // world_X = col * 256
+            // world_Y = (height_byte * HeightScale) >> 16
+            // world_Z = row * 256
             for (int row = 0; row < model.GridH; row++)
                 for (int col = 0; col < model.GridW; col++)
-                    sw.WriteLine($"v {col} {model.Heights[row * model.GridW + col]} {row}");
+                {
+                    int worldX = col * 256;
+                    int worldY = (int)((model.Heights[row * model.GridW + col] * (long)model.HeightScale) >> 16);
+                    int worldZ = row * 256;
+                    sw.WriteLine($"v {worldX} {worldY} {worldZ}");
+                }
 
             sw.WriteLine();
 
-            // Faces grouped by tile type
-            // OBJ vertex indices are 1-based
-            // Quad (row, col) vertices:
+            // Faces grouped by tile type — CCW winding from above
+            // Quad (row, col) corners (1-based OBJ indices):
             //   TL = row*GridW + col + 1
             //   TR = row*GridW + (col+1) + 1
             //   BL = (row+1)*GridW + col + 1
             //   BR = (row+1)*GridW + (col+1) + 1
-            // CCW winding from above: Tri1 = TL,BL,TR  Tri2 = TR,BL,BR
-
-            byte lastTile = 0;
+            // Tri1: TL, BL, TR   Tri2: TR, BL, BR
             foreach (byte tileId in usedTiles)
             {
                 bool headerWritten = false;

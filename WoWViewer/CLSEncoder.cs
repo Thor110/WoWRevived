@@ -88,14 +88,16 @@
         // ── Import heights from OBJ ───────────────────────────────────────────
         /// <summary>
         /// Reads vertex Y values from a Wavefront OBJ exported by CLSDecoder.ExportObj
-        /// and writes them back into model.Heights.
-        /// The OBJ must have been exported from this map — vertex count and X/Z 
-        /// positions must match. Y values are clamped to uint8 (0–255).
+        /// and converts them back to height bytes using the inverse of the engine formula:
+        ///   height_byte = (world_Y * 65536) / HeightScale
+        /// X and Z are used to recover the grid position (col = X/256, row = Z/256).
         /// </summary>
         public static void ImportHeightsFromObj(CLSModel model, string objPath)
         {
+            if (model.HeightScale == 0)
+                throw new InvalidDataException("Model has no HeightScale — was it decoded from a valid CLS?");
+
             var newHeights = new byte[model.VertCount];
-            bool[] written = new bool[model.VertCount];
             int found = 0;
 
             foreach (string raw in File.ReadLines(objPath))
@@ -103,7 +105,6 @@
                 string line = raw.Trim();
                 if (!line.StartsWith("v ")) continue;
 
-                // "v col height row"
                 string[] parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length < 4) continue;
 
@@ -114,15 +115,16 @@
                 if (!float.TryParse(parts[3], System.Globalization.NumberStyles.Float,
                         System.Globalization.CultureInfo.InvariantCulture, out float fz)) continue;
 
-                int col = (int)Math.Round(fx);
-                int row = (int)Math.Round(fz);
-                int y = Math.Clamp((int)Math.Round(fy), 0, 255);
+                // Invert world-space coords back to grid position and height byte
+                int col = (int)Math.Round(fx / 256.0);
+                int row = (int)Math.Round(fz / 256.0);
+                int heightByte = Math.Clamp(
+                    (int)Math.Round((double)fy * 65536.0 / model.HeightScale),
+                    0, 255);
 
                 if (col < 0 || col >= model.GridW || row < 0 || row >= model.GridH) continue;
 
-                int idx = row * model.GridW + col;
-                newHeights[idx] = (byte)y;
-                written[idx] = true;
+                newHeights[row * model.GridW + col] = (byte)heightByte;
                 found++;
             }
 
