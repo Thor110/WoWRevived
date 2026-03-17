@@ -278,21 +278,13 @@ Martian Research Menu
 These are the original battle map unit icons.
 
 <div align="center">
-  <img src="images/hu-original-spritesheet.png" alt="Original Human Battle Map Unit Icons">
-</div>
-
-<div align="center">
-  <img src="images/ma-original-spritesheet.png" alt="Original Martian Battle Map Unit Icons">
+  <img src="images/human-comparison.gif" alt="Human Battle Map Unit Icons">
 </div>
 
 These are the enhanced battle map unit icons.
 
 <div align="center">
-  <img src="images/hu-output-spritesheet.png" alt="Enhanced Human Battle Map Unit Icons">
-</div>
-
-<div align="center">
-  <img src="images/ma-output-spritesheet.png" alt="Enhanced Martian Battle Map Unit Icons">
+  <img src="images/martian-comparison.gif" alt="Martian Battle Map Unit Icons">
 </div>
 
 Many more assets have been reworked, most of which is barely noticeable but in general adds a little more colour depth to the interface.
