@@ -25,7 +25,6 @@ namespace WoWViewer
             entries = entryList;
             selectedEntry = entryName;
             modelType = model;
-
             if (output != "")
             {
                 outputPath = output;
@@ -84,9 +83,6 @@ namespace WoWViewer
 
         private void RenderCurrent()
         {
-            if (palData == null || palData.Length < 768) return;
-            if (rawData == null || rawData.Length == 0) return;
-
             if (currentRenderedEntry != listBox1.SelectedIndex)
             {
                 currentModel = WofDecoder.Parse(rawData);
@@ -113,9 +109,11 @@ namespace WoWViewer
             if (currentModel == null) return;
 
             byte[]? shdSlice = checkBox1.Checked ? shadeData : null;
-            // Render 256×96 atlas, scale up for visibility (×3 → 768×288)
+            // Render atlas at actual size, scale up for visibility (width ×3, height ×3)
             var bmp = WofDecoder.RenderTextureAtlas(currentModel, palData, shdSlice);
-            var scaled = new Bitmap(768, 288);
+            int scaledW = WofDecoder.TexWidth * 3;
+            int scaledH = currentModel.TexHeight * 3;
+            var scaled = new Bitmap(scaledW, scaledH);
             using (var g = Graphics.FromImage(scaled))
             {
                 g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
@@ -134,8 +132,7 @@ namespace WoWViewer
             if (name == lastSelectedEntry) return;
             selectedEntry = name;
             lastSelectedEntry = name;
-            rawData = entries.First(en =>
-                en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
+            rawData = entries.First(en => en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
             currentRenderedEntry = -1;
             TryAutoSelectPalette(selectedEntry);
             RenderCurrent();
@@ -146,8 +143,7 @@ namespace WoWViewer
             string palName = listBox2.SelectedItem!.ToString()!;
             if (palName == lastSelectedPalette) return;
             lastSelectedPalette = palName;
-            palData = entries.First(en =>
-                en.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
+            palData = entries.First(en => en.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
             TryAutoSelectShader(palName);
             RenderCurrent();
         }
@@ -156,7 +152,6 @@ namespace WoWViewer
         {
             var entry = entries.FirstOrDefault(en =>
                 en.Name.Equals(listBox3.SelectedItem!.ToString()!, StringComparison.OrdinalIgnoreCase));
-            if (entry?.Data == null) return;
             // SHH: 1-byte count + count × 512 bytes. Level 0 = bytes [1..512].
             shadeData = entry.Data.Length >= 513 ? entry.Data[1..513] : null;
             if (checkBox1.Checked) RenderCurrent();
@@ -259,7 +254,7 @@ namespace WoWViewer
         // Export palette
         private void button5_Click(object sender, EventArgs e)
         {
-            if (palData == null || palData.Length < 768) return;
+            if (palData == null) return;
             byte[] trimmed = new byte[768];
             Array.Copy(palData, 0, trimmed, 0, 768);
             File.WriteAllBytes(

@@ -45,7 +45,8 @@ namespace WoWViewer
         public int TexOffset { get; init; }
         public int MatOffset { get; init; }
         public WofPiece[] Pieces { get; init; } = [];
-        public byte[] TextureData { get; init; } = [];  // 24576 bytes = 256×96, stride 256
+        public byte[] TextureData { get; init; } = [];  // 256×TexHeight bytes, stride 256
+        public int TexHeight { get; init; }         // actual rows = (end_off - tex_off) / 256
         public byte[] MaterialData { get; init; } = [];  // 52 bytes, 13 × 4-byte entries
     }
 
@@ -56,11 +57,11 @@ namespace WoWViewer
         private const int PieceRecordSize = 97;   // 0x61
         private const int PieceTableStart = 0x30;
 
-        // Confirmed texture layout: 256 pixels wide × 96 rows, 1 byte per pixel (palette index).
-        // stride = 256, total = 24576 bytes.
+        // Texture layout: 256 pixels wide × N rows, 1 byte per pixel (palette index).
+        // Stride = 256. Height varies per model: (header[0x2C] - header[0x28]) / 256.
+        // header[0x2C] = end_off (confirmed = tex_off + tex_size in all tested models).
         // Material table byte[0] = U offset, byte[1] = V offset into this atlas.
         public const int TexWidth = 256;
-        public const int TexHeight = 96;
 
         public static WofModel Parse(byte[] data)
         {
@@ -70,6 +71,12 @@ namespace WoWViewer
             int vertOffset = BitConverter.ToInt32(data, 0x0C);
             int matOffset = BitConverter.ToInt32(data, 0x24);
             int texOffset = BitConverter.ToInt32(data, 0x28);
+            // header[0x2C] = end of texture section (confirmed from file analysis).
+            // True texture size = endOffset - texOffset; height = size / 256.
+            int endOffset = BitConverter.ToInt32(data, 0x2C);
+            int texSize = (endOffset > texOffset && endOffset <= data.Length)
+                             ? endOffset - texOffset : 24576;
+            int texHeight = texSize / TexWidth;  // always stride=256
 
             // Guard against corrupt / IOB files
             if (vertOffset <= 0 || vertOffset >= data.Length || pieceCount is <= 0 or > 500)
@@ -160,10 +167,10 @@ namespace WoWViewer
 
             ResolvePivots(pieces);
 
-            // Texture: 24576 bytes = 256×96 palette-indexed, stride 256 (confirmed)
-            byte[] texData = new byte[24576];
-            if (texOffset > 0 && texOffset + 24576 <= data.Length)
-                Array.Copy(data, texOffset, texData, 0, 24576);
+            // Texture: 256×texHeight bytes, stride 256. Size from header[0x2C]-header[0x28].
+            byte[] texData = new byte[texSize];
+            if (texOffset > 0 && texOffset + texSize <= data.Length)
+                Array.Copy(data, texOffset, texData, 0, texSize);
 
             // Material table: 52 bytes (13 × 4 bytes)
             // byte[0] = U offset in atlas, byte[1] = V offset in atlas,
@@ -180,6 +187,7 @@ namespace WoWViewer
                 MatOffset = matOffset,
                 Pieces = pieces,
                 TextureData = texData,
+                TexHeight = texHeight,
                 MaterialData = matData,
             };
         }
@@ -188,7 +196,8 @@ namespace WoWViewer
         {
             PieceCount = 0,
             Pieces = [],
-            TextureData = new byte[24576],
+            TextureData = new byte[256 * 96],
+            TexHeight = 96,
             MaterialData = new byte[52]
         };
 
@@ -289,7 +298,7 @@ namespace WoWViewer
                             byte vOff = model.MaterialData.Length >= (f.MatId * 4 + 2)
                                 ? model.MaterialData[f.MatId * 4 + 1] : (byte)0;
                             float nu = (uOff + fu) / (float)TexWidth;
-                            float nv = (vOff + fv) / (float)TexHeight;
+                            float nv = (vOff + fv) / (float)(model.TexHeight > 0 ? model.TexHeight : 96);
                             uvIndex[key] = uvList.Count + 1;
                             uvList.Add((nu, nv));
                         }
@@ -337,20 +346,21 @@ namespace WoWViewer
 
         // ── Texture rendering ─────────────────────────────────────────────────
 
-        // Render the full 256×96 texture atlas.
+        // Render the full texture atlas at its actual height (256 × model.TexHeight).
         // palData:   decompressed .PAL bytes (first 768 = 256 × RGB, 6-bit × 4).
         // shadeData: optional 512-byte SHH level slice (256 × RGB565). Pass null for raw PAL.
         public static Bitmap RenderTextureAtlas(WofModel model, byte[] palData, byte[]? shadeData = null)
-            => RenderTexture(model.TextureData, palData, shadeData);
+            => RenderTexture(model.TextureData, model.TexHeight, palData, shadeData);
 
-        public static Bitmap RenderTexture(byte[] texData, byte[] palData, byte[]? shadeData = null)
+        public static Bitmap RenderTexture(byte[] texData, int texHeight, byte[] palData, byte[]? shadeData = null)
         {
             bool useSHH = shadeData?.Length >= 512;
-            var bmp = new Bitmap(TexWidth, TexHeight);
-            for (int y = 0; y < TexHeight; y++)
+            var bmp = new Bitmap(TexWidth, texHeight);
+            for (int y = 0; y < texHeight; y++)
                 for (int x = 0; x < TexWidth; x++)
                 {
-                    byte idx = texData[y * TexWidth + x];
+                    int pos = y * TexWidth + x;
+                    byte idx = pos < texData.Length ? texData[pos] : (byte)0;
                     Color c;
                     if (useSHH)
                     {
@@ -374,8 +384,8 @@ namespace WoWViewer
 
         // ── Faction detection ─────────────────────────────────────────────────
 
-        // Martian unit WOF filename prefixes (confirmed from full WOF file list).
-        // Everything else is treated as Human/neutral.
+        // Martian unit WOF filename prefixes (confirmed from full 145-file WOF list).
+        // Everything else (including BIKE2, S_BRIDGE) is treated as Human/neutral.
         private static readonly string[] MartianPrefixes =
         [
             "AN_", "CONS_M", "DRONE", "FLYING", "MED_GU", "MOB_RE",
@@ -389,29 +399,31 @@ namespace WoWViewer
         }
 
         // ── Palette / shader suggestions ──────────────────────────────────────
-
-        // Human WOF units  → F7.PAL + BMHVB.SHH  (Building Model House Vehicle Base)
-        // Martian WOF units → MW.PAL + BMMVB.SHH  (Building Model Martian Vehicle Base)
-        // IOB buildings     → BM.PAL + BMGI.SHH   (Building Model General Illumination)
-        // Palette slot assignments confirmed from IDA LoadShadeTables (sub_40B6C0).
+        //
+        // ALL WOF models use palette slot 752 (0x2F0) in LoadShadeTables (IDA sub_40B6C0).
+        // Palette slot 752 loads BMHV*.SHH (human-side rendering) AND BMMV*.SHH (martian-side).
+        // The suffix letter (B/L/M/N/R/X/Y) comes from the terrain type at runtime.
+        // 'B' = base/default terrain, used here for static export.
+        // The race prefix (H/M in var_3C) is NOT part of the BMHV/BMMV filename —
+        // it only affects %sW*, %sB*, %sR*, %sMINIB* format strings for other palette slots.
+        //
+        // PAL selection: All WOF units use F7.PAL (faction terrain palette).
+        // IOB buildings use BM.PAL.
         public static string SuggestPalette(string fileName, bool isIob)
-        {
-            if (isIob) return "BM.PAL";
-            return IsMartian(fileName) ? "MW.PAL" : "F7.PAL";
-        }
+            => isIob ? "BM.PAL" : "F7.PAL";
 
+        // For WOF units: BMHVB.SHH is correct for all models (both human and martian)
+        // because slot 752 loads the BMHV family unconditionally.
+        // BMMVB.SHH is the martian-faction equivalent — offer it as an alternative
+        // but default to BMHVB which was confirmed working for FIGHT1.
         public static string SuggestShader(string fileName, string palName)
         {
-            bool martian = IsMartian(fileName);
             string stem = Path.GetFileNameWithoutExtension(palName).ToUpperInvariant();
             return stem switch
             {
-                // Martian palette families → Martian vehicle shader
-                "MW" or "MB" or "MR" => "BMMVB.SHH",
-                // Building/map palette → General Illumination shader
-                "BM" => "BMGI.SHH",
-                // Faction terrain palettes (F1-F7) and human palettes → vehicle shader by faction
-                _ => martian ? "BMMVB.SHH" : "BMHVB.SHH",
+                "BM" => "BMGI.SHH",   // IOB buildings
+                "MW" or "MB" or "MR" => "BMMVB.SHH",  // explicitly martian palette chosen
+                _ => "BMHVB.SHH",  // all WOF units (slot 752)
             };
         }
     }
