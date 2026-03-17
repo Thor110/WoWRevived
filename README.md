@@ -79,11 +79,14 @@ The road map for this project.
 	- Quantisation of imported images will reduce them to the closest equivalent colour found in the palette through the associated shader table.
 	- Known "bugs" with the Sprite Viewer.
 		- 1\. Shader tables are not applied to all sprites yet, only a very small number of shader tables are left to be identified.
-- [❌ 4 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
+- [✅ 4 : Model Viewer](#model-viewer) ( 75% Complete )
+	- Model viewer can export models and their embedded textures.
+	- Ability to import custom models.
+- [❌ 5 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Override standard limit of 1753 as the minimum date and set the year manually to as low as year zero.
 	- Sector & Area names loaded dynamically from TEXT.ojd to support the regional releases.
-- [✅ 5 : Text Editor](#text-editor) ( 100% Complete )
+- [✅ 6 : Text Editor](#text-editor) ( 100% Complete )
 	- All 1397 strings are editable. ( Default game has 1396, new string added for the missing Credits button text, original files also supported )
 	- UTF-8 + ISO-8859-1 encoding supported.
 	- File is recompiled from scratch based on modifications.
@@ -91,25 +94,25 @@ The road map for this project.
 	- Undo changes to current string.
 	- Edited strings highlighted.
 	- Rich text editing with newline support (\n to \r\n handling when loading and the opposite when saving )
-- ❌ 6 : Map Editor ( Basic Parsing Implemented - 1% Complete )
+- ❌ 7 : Map Editor ( Basic Parsing Implemented - 1% Complete )
 	- Basic parsing of .nsb filetypes.
 	- .ojd files can be parsed, but there is still more decoding to do.
-- ✅ 7 : No-CD Music Fix ( 99% Complete )
+- ✅ 8 : No-CD Music Fix ( 99% Complete )
 	- Uses a winmm shim that allows for localised audio playback.
 	- Added functionality to allow music playback to continue when not in fullscreen and the window loses focus.
 	- Known "bugs" which I consider non-issues for the time-being.
 		- 1\. The counter increases indefinitely.
 		- 2\. Doesn't progress to the next track when a track finishes in the CD player menu.
-- [✅ 8 : Video Playback Intercept](#video-playback-intercept) ( 100% Complete )
+- [✅ 9 : Video Playback Intercept](#video-playback-intercept) ( 100% Complete )
 	- Custom Smackw32.dll that plays upscaled videos at the games resolution.
 	- Simple 1920x1080 upscales of all the original videos which get scaled to the games resolution.
 	- Alt-Tab detection when in fullscreen used to close the game automatically to save the user time encountering an error.
 		- This is because alt-tabbing is broken in the game by default.
 	- Includes code for hijacking the credits sequence so that it doesn't crash and creating an overlay to display the credits sequence.
-- [❌ 9 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 90% Complete )
+- [❌ 10 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 90% Complete )
 	- Resolution agnostic custom backgrounds have been made but have yet to be finished.
 	- Extended width of the war map, this allows higher resolutions to work.
-- [✅ 10 : Enhanced Original Assets](#enhanced-original-assets) ( 90% Complete )
+- [✅ 11 : Enhanced Original Assets](#enhanced-original-assets) ( 90% Complete )
 	- Reworked many assets in the game to improve their appearance.
 		- Martian & Human Unit Icons are now the same for both factions, which makes it easier to tell when using the infiltration skill.
 		- Music Track Artwork is now brighter.
@@ -118,7 +121,7 @@ The road map for this project.
 			- The extended warmap background includes another 4 files.
 			- Full count 142/445 .spr files.
 			- Remaining sprite files include mouse cursors, visual effects and parts of menus where there is very little space to add any detail.
-- ❌ 11 : Decomp/Recomp ( Started - 1% Complete )
+- ❌ 12 : Decomp/Recomp ( Started - 1% Complete )
 	- Begun mapping out virtual key addresses for use in the launchers custom keyboard shortcut settings. ( "WoWRevived\WoWDecomp\ida-map.txt" )
 
 This might not all happen but I wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
@@ -304,5 +307,7 @@ Thanks to Dan Redfield for the Credits patch to the TEXT.ojd file which I then u
 Thanks to RetroKet for setting up and managing the Discord server as well as encouragement and helping identify some bytes in the .WoW archive format.
 
 Thanks to yereverluvinunclebert for creating the front of the filing cabinet drawer, which will be used in a future version for the expanded backgrounds : https://www.deviantart.com/yereverluvinuncleber/gallery
+
+Thanks to Z-Fighter for help testing the project and providing a never-ending supply of screenshots for reference which have saved me a lot of time not needing to fire the game up to see how something should look, as well as for finding a crash in the original game that would occur when using infiltration if lights are disabled in the options.
 
 Thanks to the Discord community for supporting the project and helping out with testing.
