@@ -148,6 +148,8 @@ namespace WoWViewer
                 using var hBmp = CLSRenderer.RenderHeightmap(model);
                 hBmp.Save(Path.Combine(outputPath, $"{bname}_heightmap.png"), ImageFormat.Png);
 
+                CLSDecoder.ExportObj(model, Path.Combine(outputPath, $"{bname}.obj"));
+
                 count++;
             }
             MessageBox.Show($"Exported {count} terrain pairs.");
@@ -164,12 +166,28 @@ namespace WoWViewer
             using var hBmp = CLSRenderer.RenderHeightmap(model);
             hBmp.Save(Path.Combine(outputPath, $"{baseName}_heightmap.png"), ImageFormat.Png);
 
-            MessageBox.Show($"Exported:\n  {baseName}_tilemap.png\n  {baseName}_heightmap.png");
+            CLSDecoder.ExportObj(model, Path.Combine(outputPath, $"{baseName}.obj"));
+
+            MessageBox.Show($"Exported:\n  {baseName}_tilemap.png\n  {baseName}_heightmap.png\n  {baseName}.obj + .mtl");
         }
-        // replace selected button
+        // import OBJ button
         private void button1_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Import not yet implemented.");
+            using var ofd = new OpenFileDialog { Filter = "Wavefront OBJ (*.obj)|*.obj", Title = "Import OBJ" };
+            if (ofd.ShowDialog() != DialogResult.OK) return;
+
+            var model = CLSDecoder.Decode(clsData, atmData);
+            CLSEncoder.ImportHeightsFromObj(model, ofd.FileName);
+
+            // Write back to archive entry so preview updates
+            byte[] updated = CLSEncoder.EncodeCls(model, clsData);
+            var entry = entries.First(e => e.Name.Equals(selectedEntry));
+            entry.Data = updated;
+            entry.Edited = true;
+            clsData = updated;
+
+            RenderCurrent();
+            MessageBox.Show("Heights imported. Use the main viewer Save button to write back to the archive.");
         }
         // render selected sprite with selected palette
         private void RenderCurrent()

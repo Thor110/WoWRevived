@@ -101,5 +101,121 @@
 
             return model;
         }
+
+        // ── OBJ Export ────────────────────────────────────────────────────────
+        /// <summary>
+        /// Exports a CLSModel to a Wavefront OBJ file with a matching MTL file.
+        /// Vertices use grid coordinates: X=col, Y=height, Z=row.
+        /// Faces are grouped by tile type. Scale in your 3D tool as needed.
+        /// </summary>
+        public static void ExportObj(CLSModel model, string objPath)
+        {
+            string mtlPath = Path.ChangeExtension(objPath, ".mtl");
+            string mtlName = Path.GetFileName(mtlPath);
+            string baseName = Path.GetFileNameWithoutExtension(objPath);
+
+            // Collect unique tile IDs used by this map (for MTL)
+            var usedTiles = new SortedSet<byte>();
+            if (model.Tiles != null)
+                foreach (byte t in model.Tiles) usedTiles.Add(t);
+
+            // Write MTL first
+            ExportMtl(usedTiles, mtlPath);
+
+            // Write OBJ
+            using var sw = new System.IO.StreamWriter(objPath, false, System.Text.Encoding.ASCII);
+
+            sw.WriteLine($"# WoWRevived terrain export — {baseName}");
+            sw.WriteLine($"# Grid: {model.GridW}×{model.GridH}  Verts: {model.VertCount}  Tris: {model.TriCount}");
+            sw.WriteLine($"mtllib {mtlName}");
+            sw.WriteLine($"o {baseName}");
+            sw.WriteLine();
+
+            // Vertices: v col height row
+            for (int row = 0; row < model.GridH; row++)
+                for (int col = 0; col < model.GridW; col++)
+                    sw.WriteLine($"v {col} {model.Heights[row * model.GridW + col]} {row}");
+
+            sw.WriteLine();
+
+            // Faces grouped by tile type
+            // OBJ vertex indices are 1-based
+            // Quad (row, col) vertices:
+            //   TL = row*GridW + col + 1
+            //   TR = row*GridW + (col+1) + 1
+            //   BL = (row+1)*GridW + col + 1
+            //   BR = (row+1)*GridW + (col+1) + 1
+            // CCW winding from above: Tri1 = TL,BL,TR  Tri2 = TR,BL,BR
+
+            byte lastTile = 0;
+            foreach (byte tileId in usedTiles)
+            {
+                bool headerWritten = false;
+                for (int row = 0; row < model.TileH; row++)
+                {
+                    for (int col = 0; col < model.TileW; col++)
+                    {
+                        if (model.Tiles![row * model.TileW + col] != tileId) continue;
+
+                        if (!headerWritten)
+                        {
+                            sw.WriteLine($"usemtl tile_{tileId}");
+                            sw.WriteLine($"g {baseName}_tile_{tileId}");
+                            headerWritten = true;
+                        }
+
+                        int tl = row * model.GridW + col + 1;
+                        int tr = row * model.GridW + (col + 1) + 1;
+                        int bl = (row + 1) * model.GridW + col + 1;
+                        int br = (row + 1) * model.GridW + (col + 1) + 1;
+
+                        sw.WriteLine($"f {tl} {bl} {tr}");
+                        sw.WriteLine($"f {tr} {bl} {br}");
+                    }
+                }
+            }
+        }
+
+        private static void ExportMtl(SortedSet<byte> tileIds, string mtlPath)
+        {
+            using var sw = new System.IO.StreamWriter(mtlPath, false, System.Text.Encoding.ASCII);
+            sw.WriteLine("# WoWRevived terrain materials");
+            sw.WriteLine();
+
+            foreach (byte id in tileIds)
+            {
+                double r, g, b;
+                if (id == 1)
+                {
+                    r = 0x1A / 255.0; g = 0x3A / 255.0; b = 0x6A / 255.0;
+                }
+                else
+                {
+                    double hue = ((id - 2) / 120.0) % 1.0;
+                    (r, g, b) = HsvToRgb(hue, 0.72, 0.85);
+                }
+                sw.WriteLine($"newmtl tile_{id}");
+                sw.WriteLine($"Kd {r:F4} {g:F4} {b:F4}");
+                sw.WriteLine($"Ka 0.1000 0.1000 0.1000");
+                sw.WriteLine($"Ks 0.0000 0.0000 0.0000");
+                sw.WriteLine();
+            }
+        }
+
+        private static (double r, double g, double b) HsvToRgb(double h, double s, double v)
+        {
+            int hi = (int)(h * 6) % 6;
+            double f = h * 6 - Math.Floor(h * 6);
+            double p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+            return hi switch
+            {
+                0 => (v, t, p),
+                1 => (q, v, p),
+                2 => (p, v, t),
+                3 => (p, q, v),
+                4 => (t, p, v),
+                _ => (v, p, q)
+            };
+        }
     }
 }

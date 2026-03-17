@@ -11,21 +11,21 @@
     //   [0x0C]  uint32  TriCount   (= 250×250×2 = 125000)
     //   [0x10]  uint32  h10        (= 5001)   — metadata, copy verbatim
     //   [0x14]  uint32  h14        (= 3536)   — metadata, copy verbatim
-    //   [0x18]  uint32  h18        — metadata, copy verbatim
-    //   [0x1C]  uint32  h1C        — metadata, copy verbatim
-    //   [0x20]  uint32  h20        — metadata, copy verbatim
-    //   [0x24]  uint32  h24        — metadata, copy verbatim
-    //   [0x28]  uint32  h28        — metadata, copy verbatim
-    //   [0x2C]  uint32  h2C        — metadata / strip section offset
-    //   [0x30]  uint32  h30        — metadata, copy verbatim
-    //   [0x34]  uint32  h34        — metadata, copy verbatim
-    //   [0x38]  uint32  h38        — = VertCount again
-    //   [0x3C]  uint32  h3C        — metadata, copy verbatim
-    //   [0x40]  uint32  h40        — metadata, copy verbatim
-    //                              ↑ header ends here at byte 68 (17 × uint32)
+    //   [0x18]  uint32  h18        (= 0)      — padding
+    //   [0x1C]  uint32  h1C        (= 2)      — metadata
+    //   [0x20]  uint32  h20        (= 171)    — metadata
+    //   [0x24]  uint32  h24        (= 1310982)— metadata
+    //   [0x28]  uint32  h28        (= 927004) — metadata
+    //   [0x2C]  uint32  h2C        (= 76947)  — metadata / strip section offset
+    //   [0x30]  uint32  h30        (= 0)      — padding
+    //   [0x34]  uint32  h34        (= 248)    — metadata
+    //   [0x38]  uint32  h38        (= 63001)  — = VertCount again
+    //   [0x3C]  uint32  h3C        (= 313001) — metadata
+    //   [0x40]  uint32  h40        (= 465253) — metadata
+    //   [0x44..0x4F]    zeros      — padding to 80-byte header boundary
     //
-    //   [68 .. 68+VertCount-1]  uint8[] heights (row-major, GridW cols × GridH rows)
-    //   [68+VertCount ..]       uint16[] triangle strip indices with 0xFFFF restart
+    //   [80 .. 80+VertCount-1]  uint8[] heights (row-major, 251 cols × 251 rows)
+    //   [80+VertCount ..]       uint16[] triangle strip indices with 0xFFFF restart
     //                           (rest of file — copy verbatim when only editing heights)
     //
     // ATM layout (confirmed):
@@ -62,8 +62,8 @@
             // Copy the entire original file first (preserves header + strip section verbatim)
             Array.Copy(originalCls, output, originalCls.Length);
 
-            // Overwrite just the height array at offset 68
-            int heightsStart = 68;
+            // Overwrite just the height array at offset 80
+            int heightsStart = 80;
             Array.Copy(model.Heights, 0, output, heightsStart, model.VertCount);
 
             return output;
@@ -85,37 +85,62 @@
             return output;
         }
 
-        // ── Import heights from PNG ───────────────────────────────────────────
+        // ── Import heights from OBJ ───────────────────────────────────────────
         /// <summary>
-        /// Reads a grayscale PNG (exported by RenderHeightmapRaw) back into the model's
-        /// Heights array. The PNG must be 251×251 pixels.
+        /// Reads vertex Y values from a Wavefront OBJ exported by CLSDecoder.ExportObj
+        /// and writes them back into model.Heights.
+        /// The OBJ must have been exported from this map — vertex count and X/Z 
+        /// positions must match. Y values are clamped to uint8 (0–255).
         /// </summary>
-        public static void ImportHeightsFromPng(CLSModel model, string pngPath)
+        public static void ImportHeightsFromObj(CLSModel model, string objPath)
         {
-            using var bmp = new System.Drawing.Bitmap(pngPath);
-            if (bmp.Width != model.GridW || bmp.Height != model.GridH)
-                throw new ArgumentException(
-                    $"PNG size {bmp.Width}×{bmp.Height} does not match grid {model.GridW}×{model.GridH}.");
+            var newHeights = new byte[model.VertCount];
+            bool[] written = new bool[model.VertCount];
+            int found = 0;
 
-            var heights = new byte[model.VertCount];
-            for (int row = 0; row < model.GridH; row++)
-                for (int col = 0; col < model.GridW; col++)
-                    heights[row * model.GridW + col] = bmp.GetPixel(col, row).R; // R=G=B for grayscale
+            foreach (string raw in File.ReadLines(objPath))
+            {
+                string line = raw.Trim();
+                if (!line.StartsWith("v ")) continue;
 
-            model.Heights = heights;
+                // "v col height row"
+                string[] parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length < 4) continue;
+
+                if (!float.TryParse(parts[1], System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out float fx)) continue;
+                if (!float.TryParse(parts[2], System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out float fy)) continue;
+                if (!float.TryParse(parts[3], System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out float fz)) continue;
+
+                int col = (int)Math.Round(fx);
+                int row = (int)Math.Round(fz);
+                int y = Math.Clamp((int)Math.Round(fy), 0, 255);
+
+                if (col < 0 || col >= model.GridW || row < 0 || row >= model.GridH) continue;
+
+                int idx = row * model.GridW + col;
+                newHeights[idx] = (byte)y;
+                written[idx] = true;
+                found++;
+            }
+
+            if (found != model.VertCount)
+                throw new InvalidDataException(
+                    $"OBJ has {found} vertices but model expects {model.VertCount}. " +
+                    "Make sure this OBJ was exported from the same map.");
+
+            model.Heights = newHeights;
         }
 
         // ── Import tile map from PNG ──────────────────────────────────────────
         /// <summary>
         /// Placeholder for importing a recoloured tile-map PNG back to ATM tile indices.
-        /// Since the tile-map uses false colours, a lookup table approach will be needed.
         /// Not yet implemented — requires the false-colour → tile-ID reverse map.
         /// </summary>
         public static void ImportTilesFromPng(CLSModel model, string pngPath)
         {
-            // TODO: Implement reverse colour lookup
-            // The CLSRenderer colour table is deterministic (HSV hue ramp),
-            // so the reverse mapping is: for each pixel colour, find closest entry in TileArgb.
             throw new NotImplementedException("Tile map import from PNG is not yet implemented.");
         }
     }
