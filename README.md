@@ -59,6 +59,10 @@ The road map for this project.
 	- Custom pre-set difficulty settings. (Easy, Medium[default], Hard)
 	- Dynamic asset swapping pipeline with custom assets curated for each supported resolution.
 	- New working resolutions added.
+		- 1280x768 &nbsp;&nbsp;(15:9)
+		- 1280x1024	(5:4)
+		- 1360x768 &nbsp;&nbsp;(16:9)
+		- 1366x768 &nbsp;&nbsp;(16:9)
 		- 1600x900 &nbsp;&nbsp;(16:9)
 		- 1600x1024	(5:4)
 		- 1680x1050	(16:10)
