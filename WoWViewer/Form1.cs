@@ -50,7 +50,7 @@ namespace WoWViewer
         private void HandleSHH(WowFileEntry entry) { MessageBox.Show("This is a High Quality Shader Table! 16-bit. (SHH - Shader High)"); }
         private void HandleSHL(WowFileEntry entry) { MessageBox.Show("This is a Low Quality Shader Table! 8-bit. (SHH - Shader Low)"); }
         private void HandleSHM(WowFileEntry entry) { MessageBox.Show("This is a Medium Quality Shader Table! 15-bit. (SHH - Shader Medium)"); }
-        private void HandleSPR(WowFileEntry entry) { newForm(new SprViewer(entries, listBox1.SelectedItem!.ToString()!, filePath.Contains("MAPS.WoW"), outputPath)); }
+        private void HandleSPR(WowFileEntry entry) { newForm(new SprViewer(entries, listBox1.SelectedItem!.ToString()!, filePath.Contains("MAPS.WoW"), outputPath, filePath)); }
         private void HandleWOF(WowFileEntry entry) { newForm(new WOFConverter(entries, listBox1.SelectedItem!.ToString()!, outputPath)); }
         //MAPS/MAPS.WoW
         private void HandleATM(WowFileEntry entry) { newForm(new CLSViewer(entries, listBox1.SelectedItem!.ToString()!, outputPath, filePath)); }

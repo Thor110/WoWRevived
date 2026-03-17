@@ -14,6 +14,7 @@ namespace WoWViewer
         private byte[] palData;
         private string outputPath = "";
         private bool isMaps;
+        private string archivePath = "";  // path to MAPS.WoW, for saving back when isMaps
         private List<WowFileEntry> palettes = new List<WowFileEntry>();
         private string baseFolder;
         private int currentFrame;
@@ -112,12 +113,13 @@ namespace WoWViewer
             { "CDBTRALP.SPR",  "CD.PAL" }, { "CD_DTALP.SPR",  "CD.PAL" },
             { "CDTMALPH.SPR",  "CD.PAL" },
         };
-        public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps, string output)
+        public SprViewer(List<WowFileEntry> entryList, string entryName, bool maps, string output, string archive = "")
         {
             InitializeComponent();
             entries = entryList;
             selectedEntry = entryName;
             isMaps = maps;
+            archivePath = archive;
             if (output != "")
             {
                 outputPath = output;
@@ -403,16 +405,27 @@ namespace WoWViewer
             using var ofd = new OpenFileDialog { Filter = "PNG Image|*.png", Title = "Select a replacement to encode" };
             if (ofd.ShowDialog() != DialogResult.OK) { return; }
             var bmp = new Bitmap(ofd.FileName);
-            //byte[] indices = QuantiseToPalette(bmp, palData, (checkBox1.Checked) ? shadeData : null);
-            // TODO : remove checkBox1?
             byte[] encoded = SprEncoder.Encode(QuantiseToPalette(bmp, palData, checkBox1.Checked ? shadeData : null), bmp.Width, bmp.Height);
-            string outPath = Path.Combine(baseFolder, selectedEntry);
-            if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) { return; }
-            File.WriteAllBytes(outPath, encoded);
-            (isMaps ? palettes : entries).First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
+
+            // Update in-memory entry
+            entries.First(e => e.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
             rawData = encoded;
             RenderCurrent();
-            MessageBox.Show("Encoded and saved.");
+
+            if (isMaps)
+            {
+                // SPR lives in MAPS.WoW — repack the archive
+                try { SaveToArchive(archivePath); MessageBox.Show("Encoded and saved to MAPS.WoW."); }
+                catch (Exception ex) { MessageBox.Show($"Archive write failed:\n{ex.Message}"); }
+            }
+            else
+            {
+                // DAT sprite — write loose file as before
+                string outPath = Path.Combine(baseFolder, selectedEntry);
+                if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) { return; }
+                File.WriteAllBytes(outPath, encoded);
+                MessageBox.Show("Encoded and saved.");
+            }
         }
         // Quantise each pixel of bmp to the nearest available palette index.
         //
@@ -633,10 +646,93 @@ namespace WoWViewer
             string outPath = Path.Combine(baseFolder, selectedEntry);
             if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists, overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No) return;
             File.WriteAllBytes(outPath, encoded);
-            (isMaps ? palettes : entries).First(en => en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
+            entries.First(en => en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
             rawData = encoded;
             RenderCurrent();
             MessageBox.Show($"All {tc} frames encoded and saved to {outPath}");
+        }
+        /// <summary>
+        /// Rewrites the KAT! archive at path with any edited entries substituted.
+        /// Identical logic to CLSViewer.SaveToArchive — preserves skip(4), 0xCD padding,
+        /// and the post-directory gap from the original.
+        /// </summary>
+        private void SaveToArchive(string path)
+        {
+            if (path == "" || !File.Exists(path))
+                throw new FileNotFoundException("Archive path not set or file not found.", path);
+
+            int fileCount;
+            int[] skipValues;
+            int postDirGap;
+            using (var br = new BinaryReader(File.OpenRead(path)))
+            {
+                br.ReadInt32();
+                fileCount = br.ReadInt32();
+                skipValues = new int[fileCount];
+                int firstDataOffset = int.MaxValue;
+                for (int i = 0; i < fileCount; i++)
+                {
+                    skipValues[i] = br.ReadInt32();
+                    int entryOffset = br.ReadInt32();
+                    br.ReadInt32();
+                    br.ReadBytes(12);
+                    br.BaseStream.Seek(20, SeekOrigin.Current);
+                    if (entryOffset > 0 && entryOffset < firstDataOffset)
+                        firstDataOffset = entryOffset;
+                }
+                int dirEnd = 8 + fileCount * 44;
+                postDirGap = firstDataOffset != int.MaxValue ? Math.Max(0, firstDataOffset - dirEnd) : 0;
+            }
+
+            byte[] cdPad20 = Enumerable.Repeat((byte)0xCD, 20).ToArray();
+            byte[] cdGap = Enumerable.Repeat((byte)0xCD, postDirGap).ToArray();
+
+            string tmp = path + ".tmp";
+            using (var bw = new BinaryWriter(File.Create(tmp)))
+            {
+                bw.Write(Encoding.ASCII.GetBytes("KAT!"));
+                bw.Write(entries.Count);
+
+                long dirStart = bw.BaseStream.Position;
+                foreach (var entry in entries)
+                {
+                    bw.Write(0); bw.Write(0); bw.Write(0);
+                    bw.Write(MakeNameField(entry.Name));
+                    bw.Write(cdPad20);
+                }
+                bw.Write(cdGap);
+
+                var offsets = new int[entries.Count];
+                var lengths = new int[entries.Count];
+                for (int i = 0; i < entries.Count; i++)
+                {
+                    offsets[i] = (int)bw.BaseStream.Position;
+                    bw.Write(entries[i].Data!);
+                    lengths[i] = entries[i].Data!.Length;
+                    entries[i].Edited = false;
+                }
+
+                bw.BaseStream.Seek(dirStart, SeekOrigin.Begin);
+                for (int i = 0; i < entries.Count; i++)
+                {
+                    bw.Write(i < skipValues.Length ? skipValues[i] : 0);
+                    bw.Write(offsets[i]);
+                    bw.Write(lengths[i]);
+                    bw.Write(MakeNameField(entries[i].Name));
+                    bw.Write(cdPad20);
+                }
+            }
+            File.Replace(tmp, path, path + ".bak");
+        }
+
+        private static byte[] MakeNameField(string name)
+        {
+            var field = Enumerable.Repeat((byte)0xCD, 12).ToArray();
+            byte[] nb = Encoding.ASCII.GetBytes(name);
+            int copy = Math.Min(nb.Length, 11);
+            Array.Copy(nb, field, copy);
+            field[copy] = 0;
+            return field;
         }
     }
 }

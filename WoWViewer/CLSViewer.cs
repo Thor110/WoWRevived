@@ -17,7 +17,7 @@ namespace WoWViewer
         private byte[]? shadeData;   // active SHH level-0 slice (512 bytes), null = raw PAL
         private int currentFrame;
         private List<WowFileEntry> palettes = new List<WowFileEntry>();
-        private string archivePath = "";  // path to MAPS.WoW, for saving back
+        private string archivePath = "";  // path to MAPS.WoW for saving back
         // ── View mode ─────────────────────────────────────────────────────────
         private enum ViewMode { TileMap, Heightmap, Composite }
         private ViewMode currentView = ViewMode.Composite;
@@ -178,7 +178,6 @@ namespace WoWViewer
             using var ofd = new OpenFileDialog { Filter = "Wavefront OBJ (*.obj)|*.obj", Title = "Import OBJ" };
             if (ofd.ShowDialog() != DialogResult.OK) return;
 
-            // Decode current state, import new heights, encode back
             var model = CLSDecoder.Decode(clsData, atmData);
             try { CLSEncoder.ImportHeightsFromObj(model, ofd.FileName); }
             catch (Exception ex) { MessageBox.Show($"Import failed:\n{ex.Message}"); return; }
@@ -193,7 +192,6 @@ namespace WoWViewer
 
             RenderCurrent();
 
-            // Save back to MAPS.WoW archive
             if (archivePath == "" || !File.Exists(archivePath))
             {
                 MessageBox.Show("Heights imported and preview updated.\nNo archive path available — use the main viewer Save button to write to disk.");
@@ -212,80 +210,93 @@ namespace WoWViewer
         }
 
         /// <summary>
-        /// Rewrites the KAT! archive at archivePath, substituting any entries
-        /// marked Edited with their updated Data. Mirrors the structure of
-        /// Form1.button11_Click but handles the KAT! 44-byte directory format:
-        ///   skip(4) + offset(4) + length(4) + name(12) + padding(20) = 44 bytes
-        /// The skip(4) field is unknown — preserved verbatim from the original.
-        /// Uncompressed data is written as-is; the engine checks for the FFUH header
-        /// before decompressing, so raw bytes are safe.
+        /// Rewrites the KAT! archive at path with any edited entries substituted.
+        /// Preserves the original skip(4) field, 0xCD padding, and post-directory gap.
+        /// KAT! directory entry: skip(4) + offset(4) + length(4) + name(12) + padding(20) = 44 bytes
         /// </summary>
         private void SaveToArchive(string path)
         {
-            // Read the original directory to get the skip(4) values we don't store
+            // Re-read directory to preserve skip(4) values and measure post-directory gap
             int fileCount;
             int[] skipValues;
+            int postDirGap;
             using (var br = new BinaryReader(File.OpenRead(path)))
             {
                 br.ReadInt32();                          // magic
                 fileCount = br.ReadInt32();
                 skipValues = new int[fileCount];
+                int firstDataOffset = int.MaxValue;
                 for (int i = 0; i < fileCount; i++)
                 {
-                    skipValues[i] = br.ReadInt32();      // preserve unknown field
-                    br.ReadInt32();                      // offset  (will be recomputed)
-                    br.ReadInt32();                      // length  (will be recomputed)
+                    skipValues[i] = br.ReadInt32();
+                    int entryOffset = br.ReadInt32();
+                    br.ReadInt32();                      // length
                     br.ReadBytes(12);                    // name
-                    br.BaseStream.Seek(20, SeekOrigin.Current); // padding
+                    br.BaseStream.Seek(20, SeekOrigin.Current);
+                    if (entryOffset > 0 && entryOffset < firstDataOffset)
+                        firstDataOffset = entryOffset;
                 }
+                int dirEnd = 8 + fileCount * 44;
+                postDirGap = firstDataOffset != int.MaxValue
+                    ? Math.Max(0, firstDataOffset - dirEnd)
+                    : 0;
+            }
+
+            byte[] cdPad20 = Enumerable.Repeat((byte)0xCD, 20).ToArray();
+            byte[] cdGap = Enumerable.Repeat((byte)0xCD, postDirGap).ToArray();
+
+            // Name field: 12 bytes filled with 0xCD, then name+\0 written over the start
+            byte[] MakeNameField(string name)
+            {
+                var field = Enumerable.Repeat((byte)0xCD, 12).ToArray();
+                byte[] nb = Encoding.ASCII.GetBytes(name);
+                int copy = Math.Min(nb.Length, 11); // leave room for \0
+                Array.Copy(nb, field, copy);
+                field[copy] = 0;
+                return field;
             }
 
             string tmp = path + ".tmp";
             using (var bw = new BinaryWriter(File.Create(tmp)))
             {
-                // Archive header
-                bw.Write(System.Text.Encoding.ASCII.GetBytes("KAT!"));
+                bw.Write(Encoding.ASCII.GetBytes("KAT!"));
                 bw.Write(entries.Count);
 
-                // Directory placeholder — will be filled in after data is written
+                // Directory placeholder
                 long dirStart = bw.BaseStream.Position;
                 foreach (var entry in entries)
                 {
-                    bw.Write(0);  // skip — placeholder
-                    bw.Write(0);  // offset
-                    bw.Write(0);  // length
-                    byte[] nameBytes = System.Text.Encoding.ASCII.GetBytes(entry.Name.PadRight(12, '\0'));
-                    bw.Write(nameBytes[..12]);
-                    bw.Write(new byte[20]);  // padding
+                    bw.Write(0); bw.Write(0); bw.Write(0);
+                    bw.Write(MakeNameField(entry.Name));
+                    bw.Write(cdPad20);
                 }
 
-                // Write file data, record actual offsets and lengths
+                // Post-directory gap matching original
+                bw.Write(cdGap);
+
+                // File data
                 var offsets = new int[entries.Count];
                 var lengths = new int[entries.Count];
                 for (int i = 0; i < entries.Count; i++)
                 {
                     offsets[i] = (int)bw.BaseStream.Position;
-                    // Use updated data if edited, otherwise use what's in memory
-                    byte[] data = entries[i].Data!;
-                    bw.Write(data);
-                    lengths[i] = data.Length;
+                    bw.Write(entries[i].Data!);
+                    lengths[i] = entries[i].Data!.Length;
                     entries[i].Edited = false;
                 }
 
-                // Rewrite directory with real offsets and lengths
+                // Fill in real offsets and lengths
                 bw.BaseStream.Seek(dirStart, SeekOrigin.Begin);
                 for (int i = 0; i < entries.Count; i++)
                 {
                     bw.Write(i < skipValues.Length ? skipValues[i] : 0);
                     bw.Write(offsets[i]);
                     bw.Write(lengths[i]);
-                    byte[] nameBytes = System.Text.Encoding.ASCII.GetBytes(entries[i].Name.PadRight(12, '\0'));
-                    bw.Write(nameBytes[..12]);
-                    bw.Write(new byte[20]);
+                    bw.Write(MakeNameField(entries[i].Name));
+                    bw.Write(cdPad20);
                 }
             }
 
-            // Atomic replace — backs up original as .bak
             File.Replace(tmp, path, path + ".bak");
         }
         // render selected sprite with selected palette
