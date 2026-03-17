@@ -1,6 +1,6 @@
 ﻿namespace WoWViewer
 {
-    partial class ATMViewer
+    partial class CLSViewer
     {
         /// <summary>
         /// Required designer variable.

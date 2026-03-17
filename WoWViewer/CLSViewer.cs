@@ -2,7 +2,7 @@
 
 namespace WoWViewer
 {
-    public partial class ATMViewer : Form
+    public partial class CLSViewer : Form
     {
         private List<WowFileEntry> entries;
         private string selectedEntry;
@@ -16,7 +16,7 @@ namespace WoWViewer
         private int currentFrame;
         private List<WowFileEntry> palettes = new List<WowFileEntry>();
         private string baseFolder;
-        public ATMViewer(List<WowFileEntry> entryList, string entryName, string output)
+        public CLSViewer(List<WowFileEntry> entryList, string entryName, string output)
         {
             InitializeComponent();
             entries = entryList;
