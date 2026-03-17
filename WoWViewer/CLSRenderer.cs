@@ -82,20 +82,6 @@ namespace WoWViewer
             return WriteBitmap(w, h, px);
         }
 
-        // ── Raw heightmap (true uint8 values, for export/reimport) ────────────
-        public static Bitmap RenderHeightmapRaw(CLSModel model)
-        {
-            if (model.Heights.Length == 0) return new Bitmap(1, 1);
-            int w = model.GridW, h = model.GridH, n = w * h;
-            var px = new int[n];
-            for (int i = 0; i < n; i++)
-            {
-                byte v = model.Heights[i];
-                px[i] = unchecked((int)(0xFF000000u | ((uint)v << 16) | ((uint)v << 8) | v));
-            }
-            return WriteBitmap(w, h, px);
-        }
-
         // ── Composite (tile colour × height brightness) ───────────────────────
         public static Bitmap RenderComposite(CLSModel model)
         {

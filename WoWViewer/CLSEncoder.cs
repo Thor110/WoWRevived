@@ -11,21 +11,21 @@
     //   [0x0C]  uint32  TriCount   (= 250×250×2 = 125000)
     //   [0x10]  uint32  h10        (= 5001)   — metadata, copy verbatim
     //   [0x14]  uint32  h14        (= 3536)   — metadata, copy verbatim
-    //   [0x18]  uint32  h18        (= 0)      — padding
-    //   [0x1C]  uint32  h1C        (= 2)      — metadata
-    //   [0x20]  uint32  h20        (= 171)    — metadata
-    //   [0x24]  uint32  h24        (= 1310982)— metadata
-    //   [0x28]  uint32  h28        (= 927004) — metadata
-    //   [0x2C]  uint32  h2C        (= 76947)  — metadata / strip section offset
-    //   [0x30]  uint32  h30        (= 0)      — padding
-    //   [0x34]  uint32  h34        (= 248)    — metadata
-    //   [0x38]  uint32  h38        (= 63001)  — = VertCount again
-    //   [0x3C]  uint32  h3C        (= 313001) — metadata
-    //   [0x40]  uint32  h40        (= 465253) — metadata
-    //   [0x44..0x4F]    zeros      — padding to 80-byte header boundary
+    //   [0x18]  uint32  h18        — metadata, copy verbatim
+    //   [0x1C]  uint32  h1C        — metadata, copy verbatim
+    //   [0x20]  uint32  h20        — metadata, copy verbatim
+    //   [0x24]  uint32  h24        — metadata, copy verbatim
+    //   [0x28]  uint32  h28        — metadata, copy verbatim
+    //   [0x2C]  uint32  h2C        — metadata / strip section offset
+    //   [0x30]  uint32  h30        — metadata, copy verbatim
+    //   [0x34]  uint32  h34        — metadata, copy verbatim
+    //   [0x38]  uint32  h38        — = VertCount again
+    //   [0x3C]  uint32  h3C        — metadata, copy verbatim
+    //   [0x40]  uint32  h40        — metadata, copy verbatim
+    //                              ↑ header ends here at byte 68 (17 × uint32)
     //
-    //   [80 .. 80+VertCount-1]  uint8[] heights (row-major, 251 cols × 251 rows)
-    //   [80+VertCount ..]       uint16[] triangle strip indices with 0xFFFF restart
+    //   [68 .. 68+VertCount-1]  uint8[] heights (row-major, GridW cols × GridH rows)
+    //   [68+VertCount ..]       uint16[] triangle strip indices with 0xFFFF restart
     //                           (rest of file — copy verbatim when only editing heights)
     //
     // ATM layout (confirmed):
@@ -62,8 +62,8 @@
             // Copy the entire original file first (preserves header + strip section verbatim)
             Array.Copy(originalCls, output, originalCls.Length);
 
-            // Overwrite just the height array at offset 80
-            int heightsStart = 80;
+            // Overwrite just the height array at offset 68
+            int heightsStart = 68;
             Array.Copy(model.Heights, 0, output, heightsStart, model.VertCount);
 
             return output;

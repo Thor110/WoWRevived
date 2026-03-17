@@ -164,10 +164,7 @@ namespace WoWViewer
             using var hBmp = CLSRenderer.RenderHeightmap(model);
             hBmp.Save(Path.Combine(outputPath, $"{baseName}_heightmap.png"), ImageFormat.Png);
 
-            using var rawBmp = CLSRenderer.RenderHeightmapRaw(model);
-            rawBmp.Save(Path.Combine(outputPath, $"{baseName}_heights_raw.png"), ImageFormat.Png);
-
-            MessageBox.Show($"Exported:\n  {baseName}_tilemap.png\n  {baseName}_heightmap.png\n  {baseName}_heights_raw.png");
+            MessageBox.Show($"Exported:\n  {baseName}_tilemap.png\n  {baseName}_heightmap.png");
         }
         // replace selected button
         private void button1_Click(object sender, EventArgs e)
