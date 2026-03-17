@@ -382,47 +382,51 @@ namespace WoWViewer
             return bmp;
         }
 
-        // ── Faction detection ─────────────────────────────────────────────────
+        // ── Faction / palette detection ───────────────────────────────────────
 
-        // Martian unit WOF filename prefixes (confirmed from full 145-file WOF list).
-        // Everything else (including BIKE2, S_BRIDGE) is treated as Human/neutral.
-        private static readonly string[] MartianPrefixes =
+        // Models that use MB.PAL (Martian Blue palette).
+        // Determined empirically from the full 145-file WOF list.
+        // Note: some martian-themed prefixes (AN_, DRONE, MED_GU, MOB_RE, SEL_PR, SH_)
+        // render correctly with F7.PAL and are deliberately excluded.
+        private static readonly string[] MbPalPrefixes =
         [
-            "AN_", "CONS_M", "DRONE", "FLYING", "MED_GU", "MOB_RE",
-            "R_RAY", "SCOU_M", "SEL_PR", "SH_", "TELEPA", "TEMPES"
+            "ELECTR", "FIGHT", "FLYING", "HANDLE",
+            "HEAT_R", "HEAT_RT", "PROJEC", "PROJECT",
+            "R_RAY", "SCANIN", "SCOU_", "SCOU_M",
+            "TELEPA", "TEMPES", "BOMBAR_", "CONS_M",
+            "DIGGER_", "DRONE_"
         ];
 
-        public static bool IsMartian(string fileName)
+        public static bool NeedsMbPal(string fileName)
         {
             string upper = Path.GetFileNameWithoutExtension(fileName).ToUpperInvariant();
-            return MartianPrefixes.Any(p => upper.StartsWith(p, StringComparison.Ordinal));
+            return MbPalPrefixes.Any(p => upper.StartsWith(p, StringComparison.Ordinal));
         }
 
         // ── Palette / shader suggestions ──────────────────────────────────────
         //
-        // ALL WOF models use palette slot 752 (0x2F0) in LoadShadeTables (IDA sub_40B6C0).
-        // Palette slot 752 loads BMHV*.SHH (human-side rendering) AND BMMV*.SHH (martian-side).
-        // The suffix letter (B/L/M/N/R/X/Y) comes from the terrain type at runtime.
-        // 'B' = base/default terrain, used here for static export.
-        // The race prefix (H/M in var_3C) is NOT part of the BMHV/BMMV filename —
-        // it only affects %sW*, %sB*, %sR*, %sMINIB* format strings for other palette slots.
+        // ALL WOF models use palette slot 752 (0x2F0) in LoadShadeTables (IDA sub_40B6C0),
+        // which loads BMHVB.SHH unconditionally for all WOF unit models.
+        // The faction prefix (H/M in var_3C) is NOT inserted into the BMHV filename.
         //
-        // PAL selection: All WOF units use F7.PAL (faction terrain palette).
-        // IOB buildings use BM.PAL.
+        // PAL selection varies by model group:
+        //   F7.PAL  — default for most WOF units (human vehicles, martian drones etc.)
+        //   MB.PAL  — Martian Blue, for the models listed in MbPalPrefixes above
+        //   BM.PAL  — IOB buildings
         public static string SuggestPalette(string fileName, bool isIob)
-            => isIob ? "BM.PAL" : "F7.PAL";
+        {
+            if (isIob) return "BM.PAL";
+            if (NeedsMbPal(fileName)) return "MB.PAL";
+            return "F7.PAL";
+        }
 
-        // For WOF units: BMHVB.SHH is correct for all models (both human and martian)
-        // because slot 752 loads the BMHV family unconditionally.
-        // BMMVB.SHH is the martian-faction equivalent — offer it as an alternative
-        // but default to BMHVB which was confirmed working for FIGHT1.
         public static string SuggestShader(string fileName, string palName)
         {
             string stem = Path.GetFileNameWithoutExtension(palName).ToUpperInvariant();
             return stem switch
             {
                 "BM" => "BMGI.SHH",   // IOB buildings
-                "MW" or "MB" or "MR" => "BMMVB.SHH",  // explicitly martian palette chosen
+                "MW" or "MB" or "MR" => "BMMVB.SHH",  // Martian palette families
                 _ => "BMHVB.SHH",  // all WOF units (slot 752)
             };
         }
