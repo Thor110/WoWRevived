@@ -14,10 +14,11 @@ namespace WoWViewer
         private byte[] rawData = [];
         private byte[] palData = [];
         private byte[]? shadeData;   // active SHH level-0 slice (512 bytes), null = raw PAL
-        private bool modelType;    // false = WOF units, true = IOB buildings
+        private bool modelType;      // false = WOF units, true = IOB buildings
         private int currentFrame;
 
-        private WofModel? currentModel;
+        private WofModel? currentModel;      // non-null when modelType == false
+        private IobModel? currentIobModel;   // non-null when modelType == true
 
         public WOFConverter(List<WowFileEntry> entryList, string entryName, string output, bool model = false)
         {
@@ -59,13 +60,19 @@ namespace WoWViewer
                 listBox3.Items.Add(entry.Name);
             }
             listBox1.SelectedIndex = listBox1.FindStringExact(selectedEntry);
+
+            // IOB buildings have no OBJ import support yet
+            if (modelType)
+                button1.Enabled = false;
         }
 
         // ── Auto-select helpers ───────────────────────────────────────────────
 
         private void TryAutoSelectPalette(string entryName)
         {
-            string suggested = WofDecoder.SuggestPalette(entryName, modelType);
+            string suggested = modelType
+                ? IobDecoder.SuggestPalette(entryName)
+                : WofDecoder.SuggestPalette(entryName, modelType);
             int idx = listBox2.FindStringExact(suggested);
             if (idx >= 0 && idx != listBox2.SelectedIndex)
                 listBox2.SelectedIndex = idx;
@@ -73,7 +80,9 @@ namespace WoWViewer
 
         private void TryAutoSelectShader(string palName)
         {
-            string suggested = WofDecoder.SuggestShader(selectedEntry, palName);
+            string suggested = modelType
+                ? IobDecoder.SuggestShader(selectedEntry, palName)
+                : WofDecoder.SuggestShader(selectedEntry, palName);
             int idx = listBox3.FindStringExact(suggested);
             if (idx >= 0 && idx != listBox3.SelectedIndex)
                 listBox3.SelectedIndex = idx;
@@ -82,6 +91,15 @@ namespace WoWViewer
         // ── Rendering ────────────────────────────────────────────────────────
 
         private void RenderCurrent()
+        {
+            byte[]? shdSlice = checkBox1.Checked ? shadeData : null;
+            if (modelType)
+                RenderCurrentIob(shdSlice);
+            else
+                RenderCurrentWof(shdSlice);
+        }
+
+        private void RenderCurrentWof(byte[]? shdSlice)
         {
             if (currentRenderedEntry != listBox1.SelectedIndex)
             {
@@ -93,11 +111,35 @@ namespace WoWViewer
                         $"{currentModel.Pieces.Sum(p => (int)p.FaceCount)} faces";
             }
 
-            byte[]? shdSlice = checkBox1.Checked ? shadeData : null;
-            // Render atlas at actual size, scale up for visibility (width ×3, height ×3)
             var bmp = WofDecoder.RenderTextureAtlas(currentModel!, palData, shdSlice);
-            int scaledW = WofDecoder.TexWidth * 3;
-            int scaledH = currentModel!.TexHeight * 3;
+            DisplayScaled(bmp, WofDecoder.TexWidth * 3, currentModel!.TexHeight * 3);
+        }
+
+        private void RenderCurrentIob(byte[]? shdSlice)
+        {
+            if (currentRenderedEntry != listBox1.SelectedIndex)
+            {
+                currentIobModel = IobDecoder.Parse(rawData);
+                currentRenderedEntry = listBox1.SelectedIndex;
+                label2.Text =
+                        $"IOB building  " +
+                        $"{currentIobModel.FaceCount} BSP planes  " +
+                        $"{currentIobModel.TexHeight} tex rows  " +
+                        $"anim={currentIobModel.AnimatedFlag}";
+            }
+
+            if (currentIobModel == null || currentIobModel.TexHeight == 0)
+            {
+                label2.Text = "IOB building — no texture data";
+                return;
+            }
+
+            var bmp = IobDecoder.RenderTextureAtlas(currentIobModel, palData, shdSlice);
+            DisplayScaled(bmp, IobDecoder.TexWidth * 3, currentIobModel.TexHeight * 3);
+        }
+
+        private void DisplayScaled(Bitmap bmp, int scaledW, int scaledH)
+        {
             var scaled = new Bitmap(scaledW, scaledH);
             using (var g = Graphics.FromImage(scaled))
             {
@@ -105,7 +147,9 @@ namespace WoWViewer
                 g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
                 g.DrawImage(bmp, 0, 0, scaledW, scaledH);
             }
+            var old = pictureBox1.Image;
             pictureBox1.Image = scaled;
+            old?.Dispose();
             bmp.Dispose();
         }
 
@@ -155,6 +199,7 @@ namespace WoWViewer
             }
             RenderCurrent();
         }
+
         // set output directory
         private void button4_Click(object sender, EventArgs e)
         {
@@ -169,8 +214,16 @@ namespace WoWViewer
             button2.Enabled = button3.Enabled = button5.Enabled = true;
         }
 
-        // Export current model as OBJ + MTL + texture atlas PNG
+        // Export current model
         private void button2_Click(object sender, EventArgs e)
+        {
+            if (modelType)
+                ExportCurrentIob();
+            else
+                ExportCurrentWof();
+        }
+
+        private void ExportCurrentWof()
         {
             string baseName = Path.GetFileNameWithoutExtension(selectedEntry);
             string mtlName = baseName + ".mtl";
@@ -178,22 +231,49 @@ namespace WoWViewer
             var (objText, mtlText) = WofDecoder.ToObj(currentModel!, mtlName, texName);
             File.WriteAllText(Path.Combine(outputPath, baseName + ".obj"), objText);
             File.WriteAllText(Path.Combine(outputPath, mtlName), mtlText);
-            // Display PNG (RGBA, for viewing/editing)
-            ExportAtlas(currentModel, palData, checkBox1.Checked ? shadeData : null,
+            ExportAtlasWof(currentModel!, palData, checkBox1.Checked ? shadeData : null,
                 Path.Combine(outputPath, baseName + "_tex.png"));
-            // Raw-index PNG (palette-indexed 8bpp) — used by the encoder for lossless round-trips
             WofDecoder.ExportTextureRaw(currentModel!, palData,
                 Path.Combine(outputPath, baseName + "_raw.png"));
             MessageBox.Show($"Exported {baseName}.obj, {mtlName}, {baseName}_tex.png, {baseName}_raw.png");
         }
 
+        private void ExportCurrentIob()
+        {
+            if (currentIobModel == null) return;
+            string baseName = Path.GetFileNameWithoutExtension(selectedEntry);
+            string mtlName = baseName + ".mtl";
+            string texName = baseName + "_tex.png";
+
+            var (objText, mtlText) = IobDecoder.ToObj(currentIobModel, mtlName, texName);
+            File.WriteAllText(Path.Combine(outputPath, baseName + ".obj"), objText);
+            File.WriteAllText(Path.Combine(outputPath, mtlName), mtlText);
+
+            ExportAtlasIob(currentIobModel, palData, checkBox1.Checked ? shadeData : null,
+                Path.Combine(outputPath, texName));
+            IobDecoder.ExportTextureRaw(currentIobModel, palData,
+                Path.Combine(outputPath, baseName + "_raw.png"));
+
+            bool hasGeom = currentIobModel.AnimatedFlag != 0 && currentIobModel.FaceCount > 0;
+            MessageBox.Show(hasGeom
+                ? $"Exported {baseName}.obj ({currentIobModel.FaceCount} verts, {currentIobModel.LitTriCount} faces), {mtlName}, {texName}, {baseName}_raw.png"
+                : $"Exported {texName}, {baseName}_raw.png\n(Static IOB: no vertex geometry — OBJ contains a comment only)");
+        }
+
         // Export all models
         private void button3_Click(object sender, EventArgs e)
         {
-            string ext = modelType ? ".IOB" : ".WOF";
+            if (modelType)
+                ExportAllIob();
+            else
+                ExportAllWof();
+        }
+
+        private void ExportAllWof()
+        {
             int count = 0;
             foreach (var entry in entries.Where(en =>
-                en.Name.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+                en.Name.EndsWith(".WOF", StringComparison.OrdinalIgnoreCase)))
             {
                 try
                 {
@@ -202,7 +282,7 @@ namespace WoWViewer
                     string mtlN = base_ + ".mtl";
                     string texN = base_ + "_tex.png";
 
-                    string palName = WofDecoder.SuggestPalette(entry.Name, modelType);
+                    string palName = WofDecoder.SuggestPalette(entry.Name, false);
                     var palEntry = entries.FirstOrDefault(en =>
                         en.Name.Equals(palName, StringComparison.OrdinalIgnoreCase));
                     byte[] pal = palEntry?.Data ?? palData;
@@ -215,7 +295,7 @@ namespace WoWViewer
                     var (objText, mtlText) = WofDecoder.ToObj(model, mtlN, texN);
                     File.WriteAllText(Path.Combine(outputPath, base_ + ".obj"), objText);
                     File.WriteAllText(Path.Combine(outputPath, mtlN), mtlText);
-                    ExportAtlas(model, pal, shd, Path.Combine(outputPath, base_ + "_tex.png"));
+                    ExportAtlasWof(model, pal, shd, Path.Combine(outputPath, base_ + "_tex.png"));
                     WofDecoder.ExportTextureRaw(model, pal, Path.Combine(outputPath, base_ + "_raw.png"));
                     count++;
                 }
@@ -224,12 +304,58 @@ namespace WoWViewer
                     System.Diagnostics.Debug.WriteLine($"WOF export failed for {entry.Name}: {ex.Message}");
                 }
             }
-            MessageBox.Show($"Exported {count} {ext} models to {outputPath}");
+            MessageBox.Show($"Exported {count} WOF models to {outputPath}");
         }
 
-        // Import: select OBJ → encode back to WOF and save to DAT folder
+        private void ExportAllIob()
+        {
+            int count = 0;
+            foreach (var entry in entries.Where(en =>
+                en.Name.EndsWith(".IOB", StringComparison.OrdinalIgnoreCase)))
+            {
+                try
+                {
+                    var model = IobDecoder.Parse(entry.Data!);
+                    if (model.TexHeight == 0) continue;
+
+                    string base_ = Path.GetFileNameWithoutExtension(entry.Name);
+                    string mtlN = base_ + ".mtl";
+                    string texN = base_ + "_tex.png";
+
+                    string palName = IobDecoder.SuggestPalette(entry.Name);
+                    var palEntry = entries.FirstOrDefault(en =>
+                        en.Name.Equals(palName, StringComparison.OrdinalIgnoreCase));
+                    byte[] pal = palEntry?.Data ?? palData;
+
+                    string shdName = IobDecoder.SuggestShader(entry.Name, palName);
+                    var shdEntry = entries.FirstOrDefault(en =>
+                        en.Name.Equals(shdName, StringComparison.OrdinalIgnoreCase));
+                    byte[]? shd = shdEntry?.Data?.Length >= 513 ? shdEntry.Data[1..513] : null;
+
+                    var (objText, mtlText) = IobDecoder.ToObj(model, mtlN, texN);
+                    File.WriteAllText(Path.Combine(outputPath, base_ + ".obj"), objText);
+                    File.WriteAllText(Path.Combine(outputPath, mtlN), mtlText);
+                    ExportAtlasIob(model, pal, shd, Path.Combine(outputPath, texN));
+                    IobDecoder.ExportTextureRaw(model, pal, Path.Combine(outputPath, base_ + "_raw.png"));
+                    count++;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"IOB export failed for {entry.Name}: {ex.Message}");
+                }
+            }
+            MessageBox.Show($"Exported {count} IOB buildings to {outputPath}");
+        }
+
+        // Import OBJ → WOF  (IOB import not yet supported)
         private void button1_Click(object sender, EventArgs e)
         {
+            if (modelType)
+            {
+                MessageBox.Show("IOB import is not yet supported.", "Not supported");
+                return;
+            }
+
             using var ofd = new OpenFileDialog
             {
                 Filter = "OBJ Model|*.obj",
@@ -242,8 +368,6 @@ namespace WoWViewer
             string baseName = Path.GetFileNameWithoutExtension(objPath);
             string mtlPath = Path.Combine(dir, baseName + ".mtl");
             string texPath = Path.Combine(dir, baseName + "_tex.png");
-            // Prefer the palette-indexed raw PNG for lossless round-trips.
-            // If the user has replaced the texture, they can delete _raw.png to force requantisation.
             string rawPath = Path.Combine(dir, baseName + "_raw.png");
             string encodeTexPath = File.Exists(rawPath) ? rawPath : texPath;
 
@@ -268,8 +392,6 @@ namespace WoWViewer
                 string objText = File.ReadAllText(objPath);
                 string mtlText = File.ReadAllText(mtlPath);
                 byte[] texPng = File.ReadAllBytes(encodeTexPath);
-
-                // Pass original WOF data so animation frames are preserved
                 byte[]? origWof = rawData?.Length > 0 ? rawData : null;
 
                 byte[] encoded = WofEncoder.Encode(objText, mtlText, texPng, palData, origWof);
@@ -283,7 +405,6 @@ namespace WoWViewer
                 Directory.CreateDirectory("DAT");
                 File.WriteAllBytes(outPath, encoded);
 
-                // Update in-memory entry so the viewer reflects the change immediately
                 entries.First(en =>
                     en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
                 rawData = encoded;
@@ -298,9 +419,18 @@ namespace WoWViewer
             }
         }
 
-        private static void ExportAtlas(WofModel model, byte[] pal, byte[]? shd, string path)
+        // ── Atlas export helpers ──────────────────────────────────────────────
+
+        private static void ExportAtlasWof(WofModel model, byte[] pal, byte[]? shd, string path)
         {
             var bmp = WofDecoder.RenderTextureAtlas(model, pal, shd);
+            bmp.Save(path, ImageFormat.Png);
+            bmp.Dispose();
+        }
+
+        private static void ExportAtlasIob(IobModel model, byte[] pal, byte[]? shd, string path)
+        {
+            var bmp = IobDecoder.RenderTextureAtlas(model, pal, shd);
             bmp.Save(path, ImageFormat.Png);
             bmp.Dispose();
         }
