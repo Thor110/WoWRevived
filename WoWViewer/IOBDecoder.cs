@@ -42,7 +42,7 @@ namespace WoWViewer
     //    Height = (file_size - pixel_start) / 256  (truncated; remainder bytes
     //             form an incomplete final row and are discarded).
 
-    public class IobModel
+    public record class IobModel
     {
         // ── Header fields ──────────────────────────────────────────────────────
         public int ViewingDirCount { get; init; }   // [0x00] uint16 — always 3
@@ -67,10 +67,28 @@ namespace WoWViewer
         /// Present for both static and animated IOBs.</summary>
         public (int V0, int V1, int V2)[] Faces { get; init; } = [];
 
+        /// <summary>
+        /// Screen-space patch layout. Each entry describes one triangular sprite patch:
+        /// its position relative to the building centre, and the pixel dimensions of the patch.
+        /// Populated from the 18-byte index table (confirmed from IDA sub_457C60).
+        /// </summary>
+        public PatchInfo[] Patches { get; init; } = [];
+
         // ── Sprite atlas ───────────────────────────────────────────────────────
+        /// <summary>Raw patch data bytes starting at pixelStart in the file.</summary>
         public byte[] TexData { get; init; } = [];
         public int TexHeight { get; init; }
+        /// <summary>
+        /// Offset to subtract from a raw PatchOffset (uint16 from index table) to get
+        /// an index into TexData. Equals pixelStart - HeaderSize (0x22).
+        /// patch_in_texdata = patchOffset - PatchDataBase
+        /// </summary>
+        public int PatchDataBase { get; init; }
     }
+
+    public record PatchInfo(int ScreenX, int ScreenY, int Width, int Height,
+                            int NormV0, int NormV1, int NormV2,
+                            int Mode, int PatchOffset);
 
     public static class IobDecoder
     {
@@ -136,43 +154,111 @@ namespace WoWViewer
                 normals[i] = ((sbyte)data[off], (sbyte)data[off + 1], (sbyte)data[off + 2]);
             }
 
-            // ── Index table → face connectivity ───────────────────────────────
-            // [0x1E] is the index table start offset (from 0x22 base) for BOTH static
-            // and animated. The table contains litTriCount × 18-byte entries.
-            // Vertex indices are int16 at entry offsets [8],[10],[12]
-            // (ebx = entry_base+10; reads [ebx-2],[ebx],[ebx+2] per IDA sub_49DF40).
-            // Pixel data immediately follows the index table.
-            int idxStart = HeaderSize + normalsEndOffset;
-            int pixelStart = idxStart + litTriCount * 18;
+            // ── Index table — animated only ───────────────────────────────────
+            // STATIC buildings (animatedFlag == 0):
+            //   NO index table. Pixel data starts immediately after the normals section.
+            //   pixelStart = normEnd = bspEnd + litTriCount × 3
+            //   (normalsEndOffset [0x1E] = bspSectionSize + litTriCount×3, verified exact)
+            //
+            // ANIMATED buildings (animatedFlag != 0):
+            //   Index table starts at 0x22 + [0x1E] = normEnd.
+            //   Contains litTriCount × 18-byte entries.
+            //
+            // Confirmed field layout (IDA sub_457C60, sub_4579A4):
+            //   [+0..1]  uint16 = world-data offset (internal use)
+            //   [+2..3]  uint16 = (hi byte = piece id?, lo byte split)
+            //   [+3]     byte   = render_mode
+            //   [+4..5]  int16  = screen_X pixel offset from building centre
+            //   [+6..7]  int16  = screen_Y pixel offset from building centre
+            //   [+8..9]  uint16 = normal index v0 (for lighting — NOT a mesh vertex)
+            //   [+10..11] uint16 = normal index v1
+            //   [+12..13] uint16 = normal index v2
+            //   [+14..15] uint16 = sprite patch offset P where patch = file[0x22 + P]
+            //   [+16..17] uint16 = always 0
+            //
+            // NOTE: v0/v1/v2 are lighting normal indices only. No 3D vertex positions.
+            //
+            // BOTH static and animated buildings have an index table immediately after
+            // the normals section. normalsEndOffset [0x1E] points to the index table
+            // start (= normals end). Pixel/patch data always follows the index table.
+            int idxStart = HeaderSize + normalsEndOffset;   // index table start
+            int pixelStart = idxStart + litTriCount * 18;     // patch data start
 
             if (idxStart < 0 || pixelStart > data.Length)
                 return new IobModel();
 
             var faces = new (int V0, int V1, int V2)[litTriCount];
+            var patches = new PatchInfo[litTriCount];
+
+            // Both static and animated have an index table (litTriCount × 18 bytes).
             for (int i = 0; i < litTriCount; i++)
             {
-                int ebx = idxStart + 10 + i * 18;
-                if (ebx + 2 >= data.Length) break;
-                faces[i] = (
-                    BitConverter.ToInt16(data, ebx - 2),
-                    BitConverter.ToInt16(data, ebx),
-                    BitConverter.ToInt16(data, ebx + 2)
-                );
+                int entryBase = idxStart + i * 18;
+                if (entryBase + 18 > data.Length) break;
+
+                int width = data[entryBase] & 0x7F;
+                int height = data[entryBase + 1] & 0x7F;
+                int mode = data[entryBase + 2];
+
+                int screenX = BitConverter.ToInt16(data, entryBase + 4);
+                int screenY = BitConverter.ToInt16(data, entryBase + 6);
+
+                int v0 = BitConverter.ToUInt16(data, entryBase + 8);
+                int v1 = BitConverter.ToUInt16(data, entryBase + 10);
+                int v2 = BitConverter.ToUInt16(data, entryBase + 12);
+                int patchOff = BitConverter.ToUInt16(data, entryBase + 14);
+                faces[i] = (v0, v1, v2);
+                patches[i] = new PatchInfo(screenX, screenY, width, height, v0, v1, v2, mode, patchOff);
             }
 
-            if (pixelStart < 0 || pixelStart > data.Length)
-                return new IobModel();
+            // ── Face winding correction ────────────────────────────────────────
+            // The game renderer has no back-face cull (sub_456DD0 sorts by Y only),
+            // so individual faces may have inconsistent CCW/CW winding in the source data.
+            // Correct each face: if cross(e1,e2) · outward_normal < 0, swap v1 and v2.
+            // Stored normals are INWARD (they are negated before the lighting dot product
+            // in sub_49DF40: "neg eax/ecx/edx"), so outward = -stored_normal.
+            // Only applies to animated buildings where BSP has real 3D positions.
+            if (animatedFlag != 0)
+            {
+                for (int i = 0; i < faces.Length; i++)
+                {
+                    var (v0, v1, v2) = faces[i];
+                    if (v0 >= bspPlanes.Length || v1 >= bspPlanes.Length || v2 >= bspPlanes.Length) continue;
+                    if (v0 >= normals.Length) continue;
 
-            // ── Texture atlas ─────────────────────────────────────────────────
-            // 256 pixels wide, runs from pixelStart to EOF.
-            // Any trailing bytes < 256 form an incomplete last row and are discarded.
-            int texBytes = data.Length - pixelStart;
-            int texHeight = texBytes / TexWidth;
-            int texSize = texHeight * TexWidth;
+                    var (px0, py0, pz0) = bspPlanes[v0];
+                    var (px1, py1, pz1) = bspPlanes[v1];
+                    var (px2, py2, pz2) = bspPlanes[v2];
 
-            var texData = new byte[texSize];
-            if (texSize > 0)
-                Array.Copy(data, pixelStart, texData, 0, texSize);
+                    float e1x = px1 - px0, e1y = py1 - py0, e1z = pz1 - pz0;
+                    float e2x = px2 - px0, e2y = py2 - py0, e2z = pz2 - pz0;
+
+                    float cx = e1y * e2z - e1z * e2y;
+                    float cy = e1z * e2x - e1x * e2z;
+                    float cz = e1x * e2y - e1y * e2x;
+
+                    float magSq = cx * cx + cy * cy + cz * cz;
+                    if (magSq < 1e-10f) continue;  // degenerate triangle
+
+                    // Outward normal = negate stored (stored normals are inward)
+                    var (nx, ny, nz) = normals[v0];
+                    float dot = cx * (-nx) + cy * (-ny) + cz * (-nz);
+
+                    if (dot < 0f)
+                        faces[i] = (v0, v2, v1);  // flip winding
+                }
+            }
+
+            // Patch data: all bytes from 0x22 to EOF, so that PatchOffset values
+            // from the index table (which are relative to 0x22) index directly into
+            // this array without any rebasing. Some patches point into the BSP/normals
+            // region (before pixelStart) — this is correct game behaviour.
+            int texBytes = Math.Max(0, data.Length - HeaderSize);
+            int texHeight = texBytes / TexWidth;   // kept for display size reference only
+
+            var texData = new byte[texBytes];
+            if (texBytes > 0)
+                Array.Copy(data, HeaderSize, texData, 0, texBytes);
 
             return new IobModel
             {
@@ -188,65 +274,191 @@ namespace WoWViewer
                 BspPlanes = bspPlanes,
                 Normals = normals,
                 Faces = faces,
+                Patches = patches,
                 TexData = texData,
                 TexHeight = texHeight,
+                PatchDataBase = 0,   // PatchOffset directly indexes TexData (= file[0x22..])
             };
         }
 
         // ── Texture rendering ─────────────────────────────────────────────────
 
         /// <summary>
-        /// Renders the IOB sprite atlas as a 32-bit ARGB bitmap using the
-        /// supplied 768-byte palette (256 × RGB triples). Palette index 0 = transparent.
-        /// Returns a TexWidth × TexHeight pixel bitmap.
+        /// Renders the IOB building sprite as a 32-bit ARGB bitmap by decoding all
+        /// RLE triangle patches onto a canvas sized HalfWidthScale×HeightScale pixels.
+        ///
+        /// Patch RLE format (confirmed from IDA sub_457C60 / sub_4579A4):
+        ///   patch[0]  = width hint (& 0x7F, informational only)
+        ///   patch[1]  = height flags (0x80 = full-RLE-height mode)
+        ///   patch[2]  = base colour index
+        ///   patch[3+] = rows, each encoded as: [skip][run_byte] ...
+        ///     skip     = pixel offset from triangle's screen_X origin
+        ///     run_byte:
+        ///       bit7=1 → RLE run: (run_byte & 0x7F) copies of the next byte
+        ///       bit7=0 → literal:  run_byte literal palette bytes follow
+        ///     [0x00, 0x00] = end-of-patch sentinel
+        ///
+        /// Each patch's origin on canvas = (screen_X + canvasW/2,  screen_Y).
+        /// Palette index 0 = transparent.
         /// </summary>
         public static Bitmap RenderTextureAtlas(IobModel model, byte[] palData, byte[]? shadeData = null)
         {
-            int w = TexWidth;
-            int h = Math.Max(1, model.TexHeight);
-            var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb);
+            int W = Math.Max(1, model.HalfWidthScale);
+            int H = Math.Max(1, model.HeightScale);
+            var canvas = new byte[W * H];   // palette indices, 0 = transparent
 
-            if (palData == null || palData.Length < 3)
-                return bmp;
+            DecodePatchesToCanvas(model, canvas, W, H);
 
-            var pixels = new int[w * h];
-            for (int i = 0; i < pixels.Length; i++)
+            // Palette → ARGB
+            var pixels = new int[W * H];
+            for (int i = 0; i < canvas.Length; i++)
             {
-                byte palIdx = i < model.TexData.Length ? model.TexData[i] : (byte)0;
-                if (palIdx == 0) { pixels[i] = 0; continue; }
+                byte idx = canvas[i];
+                if (idx == 0) { pixels[i] = 0; continue; }
 
                 byte r, g, b;
-                if (shadeData != null && shadeData.Length >= 512)
+                if (shadeData != null && shadeData.Length > idx)
                 {
-                    int shaded = shadeData[palIdx];
-                    r = palData[shaded * 3];
-                    g = palData[shaded * 3 + 1];
-                    b = palData[shaded * 3 + 2];
+                    int s = shadeData[idx];
+                    r = palData.Length > s * 3 + 2 ? palData[s * 3] : (byte)0;
+                    g = palData.Length > s * 3 + 2 ? palData[s * 3 + 1] : (byte)0;
+                    b = palData.Length > s * 3 + 2 ? palData[s * 3 + 2] : (byte)0;
                 }
                 else
                 {
-                    r = palData[palIdx * 3];
-                    g = palData[palIdx * 3 + 1];
-                    b = palData[palIdx * 3 + 2];
+                    r = palData.Length > idx * 3 + 2 ? palData[idx * 3] : (byte)0;
+                    g = palData.Length > idx * 3 + 2 ? palData[idx * 3 + 1] : (byte)0;
+                    b = palData.Length > idx * 3 + 2 ? palData[idx * 3 + 2] : (byte)0;
                 }
                 pixels[i] = (255 << 24) | (r << 16) | (g << 8) | b;
             }
 
-            var bmpData = bmp.LockBits(new Rectangle(0, 0, w, h),
-                ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            var bmp = new Bitmap(W, H, PixelFormat.Format32bppArgb);
+            var bmpData = bmp.LockBits(new Rectangle(0, 0, W, H),
+                              ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
             Marshal.Copy(pixels, 0, bmpData.Scan0, pixels.Length);
             bmp.UnlockBits(bmpData);
             return bmp;
         }
 
+        /// <summary>
+        /// Exports the rendered sprite as a palette-indexed 8-bpp PNG (lossless,
+        /// suitable for round-trip re-import via IobEncoder.FromObj).
+        /// </summary>
+        public static void ExportTextureRaw(IobModel model, byte[] palData, string path)
+        {
+            int W = Math.Max(1, model.HalfWidthScale);
+            int H = Math.Max(1, model.HeightScale);
+            var canvas = new byte[W * H];
+            DecodePatchesToCanvas(model, canvas, W, H);
+
+            var bmp = new Bitmap(W, H, PixelFormat.Format8bppIndexed);
+            var palette = bmp.Palette;
+            for (int i = 0; i < 256; i++)
+            {
+                byte r = palData.Length > i * 3 + 2 ? palData[i * 3] : (byte)0;
+                byte g = palData.Length > i * 3 + 2 ? palData[i * 3 + 1] : (byte)0;
+                byte b = palData.Length > i * 3 + 2 ? palData[i * 3 + 2] : (byte)0;
+                palette.Entries[i] = Color.FromArgb(i == 0 ? 0 : 255, r, g, b);
+            }
+            bmp.Palette = palette;
+
+            var bmpData = bmp.LockBits(new Rectangle(0, 0, W, H),
+                              ImageLockMode.WriteOnly, PixelFormat.Format8bppIndexed);
+            int stride = bmpData.Stride;
+            for (int row = 0; row < H; row++)
+            {
+                var rowBuf = new byte[stride];
+                Array.Copy(canvas, row * W, rowBuf, 0, Math.Min(W, stride));
+                Marshal.Copy(rowBuf, 0, bmpData.Scan0 + row * stride, stride);
+            }
+            bmp.UnlockBits(bmpData);
+            bmp.Save(path, ImageFormat.Png);
+            bmp.Dispose();
+        }
+
+        /// <summary>
+        /// Decodes all RLE triangle patches from model.TexData onto the supplied
+        /// palette-index canvas (W × H, row-major). Called by both render and export.
+        /// </summary>
+        private static void DecodePatchesToCanvas(IobModel model, byte[] canvas, int W, int H)
+        {
+            int originX = W / 2;
+            byte[] raw = model.TexData;
+            int patchBase = model.PatchDataBase;  // subtract from raw PatchOffset → index into TexData
+
+            for (int i = 0; i < model.Patches.Length; i++)
+            {
+                var patch = model.Patches[i];
+                int patchIdx = patch.PatchOffset - patchBase; // index into TexData
+
+                if (patchIdx < 0 || patchIdx + 3 > raw.Length) continue;
+
+                int pos = patchIdx + 3;   // skip w, h_flags, base_colour
+                int baseX = patch.ScreenX + originX;
+                int baseY = patch.ScreenY;
+                int row = 0;
+
+                while (pos + 1 < raw.Length)
+                {
+                    int skip = raw[pos++];
+                    int runByte = raw[pos++];
+                    if (skip == 0 && runByte == 0) break;
+
+                    int py = baseY + row;
+                    int cx = baseX + skip;
+
+                    if (runByte >= 0x80)
+                    {
+                        int count = runByte & 0x7F;
+                        if (pos >= raw.Length) break;
+                        byte colour = raw[pos++];
+                        for (int k = 0; k < count; k++)
+                        {
+                            int fx = cx + k;
+                            if ((uint)py < (uint)H && (uint)fx < (uint)W)
+                                canvas[py * W + fx] = colour;
+                        }
+                    }
+                    else
+                    {
+                        int count = runByte;
+                        for (int k = 0; k < count; k++, pos++)
+                        {
+                            if (pos >= raw.Length) break;
+                            int fx = cx + k;
+                            if ((uint)py < (uint)H && (uint)fx < (uint)W)
+                                canvas[py * W + fx] = raw[pos];
+                        }
+                    }
+                    row++;
+                }
+            }
+        }
+
         // ── OBJ export ────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Exports the IOB building mesh as OBJ + MTL.
-        /// BSP section = vertex positions (int16 × 3).
-        /// Index table = face connectivity (litTriCount × 18 bytes, vertex indices at [8],[10],[12]).
-        /// Both static and animated IOBs share this layout — animatedFlag only controls
-        /// whether the building geometry animates in-game, not the file structure.
+        /// Exports the IOB building as an OBJ mesh.
+        ///
+        /// Two vertex position modes — selected automatically per building:
+        ///
+        /// FULL-XYZ mode (e.g. CON_MAIN, LONDST):
+        ///   BSP section has real XYZ vertex positions. Used directly.
+        ///   Detected when BSP has non-trivial X or Z variation (range > 1).
+        ///
+        /// NORMAL-DERIVED mode (e.g. LIGHTHSE):
+        ///   BSP stores only Y height tiers (X=Z=0 for every vertex).
+        ///   XZ positions are reconstructed from the surface normals:
+        ///     vertex.XZ = normalize(normal.XZ) × R
+        ///   where R = (SpriteWidth / 2) / pixel_scale.
+        ///   Pixel scale is calibrated from CON_MAIN (f0E=183, X_range=36 → 5.083 px/unit).
+        ///   This produces a correct cylindrical/polygonal outline approximation.
+        ///   Confirmed: LIGHTHSE normals encode octagonal side directions; BSP Y encodes
+        ///   height tiers (0=base, 5=shaft, 6=lantern cap).
+        ///
+        /// Scale: divide by 100 for world-unit scale consistent with WOF exports.
+        /// Winding correction: per-face cross-product vs outward-normal dot test.
         /// </summary>
         public static (string ObjText, string MtlText) ToObj(IobModel model, string mtlName, string texName)
         {
@@ -254,38 +466,78 @@ namespace WoWViewer
             var mtl = new System.Text.StringBuilder();
 
             obj.AppendLine($"# IOB building — {model.FaceCount} vertices, {model.LitTriCount} faces");
+            obj.AppendLine($"# AnimatedFlag={model.AnimatedFlag}  HalfWidthScale={model.HalfWidthScale}");
             obj.AppendLine($"mtllib {mtlName}");
             obj.AppendLine($"usemtl iob_building");
             obj.AppendLine();
 
-            // Vertex positions from BSP section (int16 × 3).
-            // Same coordinate scale as WOF units — divide by 100 for world units.
             const float Scale = 100f;
-            foreach (var (nx, ny, nz) in model.BspPlanes)
-                obj.AppendLine(FormattableString.Invariant(
-                    $"v {nx / Scale:F4} {ny / Scale:F4} {nz / Scale:F4}"));
+
+            // Detect whether BSP has real XZ data or only Y heights.
+            bool hasXzData = false;
+            foreach (var (bx, _, bz) in model.BspPlanes)
+                if (Math.Abs(bx) > 1 || Math.Abs(bz) > 1) { hasXzData = true; break; }
+
+            // Compute vertex positions.
+            float[] vx = new float[model.FaceCount];
+            float[] vy = new float[model.FaceCount];
+            float[] vz = new float[model.FaceCount];
+
+            if (hasXzData)
+            {
+                // Full XYZ from BSP section.
+                for (int i = 0; i < model.FaceCount; i++)
+                {
+                    vx[i] = model.BspPlanes[i].Nx / Scale;
+                    vy[i] = model.BspPlanes[i].Ny / Scale;
+                    vz[i] = model.BspPlanes[i].Nz / Scale;
+                }
+            }
+            else
+            {
+                // No XZ vertex data available for this building.
+                // The BSP section deliberately stores only Y height tiers (e.g. 0, 5, 6
+                // for LIGHTHSE) with X=Z=0 — the game uses a vertical-rod collision model
+                // for cylindrical/symmetric buildings. The 3D visual appearance is encoded
+                // entirely in the 2D sprite patches and cannot be reconstructed as a mesh.
+                //
+                // Export what we have: BSP Y values as height, XZ=0.
+                // This produces a degenerate vertical stack which is geometrically honest.
+                for (int i = 0; i < model.FaceCount; i++)
+                {
+                    vx[i] = 0f;
+                    vy[i] = model.BspPlanes[i].Ny / Scale;
+                    vz[i] = 0f;
+                }
+            }
+
+            for (int i = 0; i < model.FaceCount; i++)
+                obj.AppendLine(FormattableString.Invariant($"v {vx[i]:F4} {vy[i]:F4} {vz[i]:F4}"));
             obj.AppendLine();
 
-            // Per-vertex normals from the normals section (int8 × 3, normalised to ±1).
-            // normals array has min(faceCount, litTriCount) entries — pad with zeros if short.
+            // Per-vertex normals (int8 × 3 → normalised float, negated = outward).
             for (int i = 0; i < model.FaceCount; i++)
             {
                 if (i < model.Normals.Length)
                 {
                     var (nx, ny, nz) = model.Normals[i];
+                    // Stored normals are inward; negate for outward-facing OBJ normals.
                     obj.AppendLine(FormattableString.Invariant(
-                        $"vn {nx / 127f:F4} {ny / 127f:F4} {nz / 127f:F4}"));
+                        $"vn {-nx / 127f:F4} {-ny / 127f:F4} {-nz / 127f:F4}"));
                 }
                 else
                     obj.AppendLine("vn 0.0000 1.0000 0.0000");
             }
             obj.AppendLine();
 
-            // Faces — 1-based OBJ indices.
-            foreach (var (v0, v1, v2) in model.Faces)
+            // Faces — v0/v1/v2 from index table, 1-based OBJ indices.
+            // For normal-derived buildings (no BSP XZ data), the in-Parse winding
+            // correction was skipped (degenerate BSP). We do NOT apply a secondary
+            // winding correction here — the cross-product test is unreliable for
+            // ring-section triangles that are nearly flat or share identical positions.
+            foreach (var (v0raw, v1raw, v2raw) in model.Faces)
             {
-                int a = v0 + 1, b = v1 + 1, c = v2 + 1;
-                obj.AppendLine($"f {a}//{a} {b}//{b} {c}//{c}");
+                obj.AppendLine($"f {v0raw + 1}//{v0raw + 1} {v1raw + 1}//{v1raw + 1} {v2raw + 1}//{v2raw + 1}");
             }
 
             mtl.AppendLine("newmtl iob_building");
@@ -310,47 +562,6 @@ namespace WoWViewer
         {
             string pal = Path.GetFileNameWithoutExtension(palName).ToUpperInvariant();
             return pal + ".SHH";
-        }
-
-        // ── Raw texture export ────────────────────────────────────────────────
-
-        /// <summary>
-        /// Exports the palette-indexed sprite atlas as an 8-bpp PNG for lossless
-        /// round-trips. Stride padding is handled via Marshal.Copy row-by-row.
-        /// </summary>
-        public static void ExportTextureRaw(IobModel model, byte[] palData, string path)
-        {
-            int w = TexWidth;
-            int h = model.TexHeight;
-            if (h <= 0) return;
-
-            var bmp = new Bitmap(w, h, PixelFormat.Format8bppIndexed);
-            var palette = bmp.Palette;
-            for (int i = 0; i < 256; i++)
-            {
-                byte r = (i * 3 + 0 < palData.Length) ? palData[i * 3] : (byte)0;
-                byte g = (i * 3 + 1 < palData.Length) ? palData[i * 3 + 1] : (byte)0;
-                byte b = (i * 3 + 2 < palData.Length) ? palData[i * 3 + 2] : (byte)0;
-                palette.Entries[i] = Color.FromArgb(i == 0 ? 0 : 255, r, g, b);
-            }
-            bmp.Palette = palette;
-
-            var bmpData = bmp.LockBits(new Rectangle(0, 0, w, h),
-                ImageLockMode.WriteOnly, PixelFormat.Format8bppIndexed);
-            int stride = bmpData.Stride;
-            var rowBuf = new byte[stride];
-            for (int row = 0; row < h; row++)
-            {
-                for (int col = 0; col < w; col++)
-                {
-                    int idx = row * w + col;
-                    rowBuf[col] = idx < model.TexData.Length ? model.TexData[idx] : (byte)0;
-                }
-                Marshal.Copy(rowBuf, 0, bmpData.Scan0 + row * stride, stride);
-            }
-            bmp.UnlockBits(bmpData);
-            bmp.Save(path, ImageFormat.Png);
-            bmp.Dispose();
         }
     }
 }

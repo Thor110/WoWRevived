@@ -59,10 +59,6 @@ namespace WoWViewer
                 listBox3.Items.Add(entry.Name);
             }
             listBox1.SelectedIndex = listBox1.FindStringExact(selectedEntry);
-
-            // IOB buildings have no OBJ import support yet
-            if (modelType)
-                button1.Enabled = false;
         }
 
         // ── Auto-select helpers ───────────────────────────────────────────────
@@ -123,18 +119,19 @@ namespace WoWViewer
                 label2.Text =
                         $"IOB building  " +
                         $"{currentIobModel.FaceCount} BSP planes  " +
-                        $"{currentIobModel.TexHeight} tex rows  " +
+                        $"{currentIobModel.LitTriCount} triangles  " +
+                        $"{currentIobModel.HalfWidthScale}×{currentIobModel.HeightScale}px  " +
                         $"anim={currentIobModel.AnimatedFlag}";
             }
 
-            if (currentIobModel == null || currentIobModel.TexHeight == 0)
+            if (currentIobModel == null || currentIobModel.Patches.Length == 0)
             {
-                label2.Text = "IOB building — no texture data";
+                label2.Text = "IOB building — no patch data";
                 return;
             }
 
             var bmp = IobDecoder.RenderTextureAtlas(currentIobModel, palData, shdSlice);
-            DisplayScaled(bmp, IobDecoder.TexWidth * 3, currentIobModel.TexHeight * 3);
+            DisplayScaled(bmp, currentIobModel.HalfWidthScale * 3, currentIobModel.HeightScale * 3);
         }
 
         private void DisplayScaled(Bitmap bmp, int scaledW, int scaledH)
@@ -343,15 +340,88 @@ namespace WoWViewer
             MessageBox.Show($"Exported {count} IOB buildings to {outputPath}");
         }
 
-        // Import OBJ → WOF  (IOB import not yet supported)
+        // Import/Replace — OBJ → WOF  or  raw PNG → IOB
         private void button1_Click(object sender, EventArgs e)
         {
             if (modelType)
+                ReplaceIob();
+            else
+                ReplaceWof();
+        }
+
+        // ── IOB replace ───────────────────────────────────────────────────────
+        // IOB buildings consist of:
+        //   • BSP planes  — 3D collision geometry (vertex positions)
+        //   • Normals     — surface normals for lighting
+        //   • Index table — per-triangle screen positions and normal indices (fixed)
+        //   • Patch data  — compressed sprite pixels                         (fixed)
+        //
+        // Importing an OBJ replaces only the BSP planes and normals.  The sprite
+        // appearance (index table + patches) is unchanged — the game renders IOB
+        // buildings as pre-rendered sprites; the 3D mesh is collision/lighting only.
+        //
+        // The imported OBJ MUST have exactly the same number of vertices as the
+        // original model (model.FaceCount), because the index table v0/v1/v2 fields
+        // reference normals[0..FaceCount-1] and cannot be changed without rewriting
+        // all patch offsets.
+        //
+        // Workflow:
+        //   1. Export the current IOB (button2) — writes <n>.obj + <n>_tex.png.
+        //   2. Edit the OBJ in your modelling tool (move/rotate/scale geometry).
+        //      Do NOT add or remove vertices — only reposition existing ones.
+        //   3. Click Replace, select the edited .obj.
+        private void ReplaceIob()
+        {
+            if (currentIobModel == null)
             {
-                MessageBox.Show("IOB import is not yet supported.", "Not supported");
+                MessageBox.Show("Load an IOB file first.", "No model");
                 return;
             }
 
+            using var ofd = new OpenFileDialog
+            {
+                Filter = "OBJ Model|*.obj",
+                Title = "Select edited OBJ to import as IOB collision mesh"
+            };
+            if (ofd.ShowDialog() != DialogResult.OK) return;
+
+            try
+            {
+                string objText = File.ReadAllText(ofd.FileName);
+                var newModel = IobEncoder.FromObj(objText, currentIobModel);
+                byte[] encoded = IobEncoder.Encode(newModel);
+
+                string outPath = Path.Combine("DAT", selectedEntry);
+                if (File.Exists(outPath) &&
+                    MessageBox.Show($"'{outPath}' exists — overwrite?", "Overwrite",
+                        MessageBoxButtons.YesNo) == DialogResult.No)
+                    return;
+
+                Directory.CreateDirectory("DAT");
+                File.WriteAllBytes(outPath, encoded);
+
+                entries.First(en =>
+                    en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
+                rawData = encoded;
+                currentIobModel = newModel;
+                currentRenderedEntry = -1;
+                RenderCurrent();
+
+                MessageBox.Show(
+                    $"Imported and saved to {outPath}\n" +
+                    $"{newModel.FaceCount} BSP verts, {newModel.LitTriCount} triangles, " +
+                    $"{encoded.Length} bytes total");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"IOB import failed: {ex.Message}", "Error");
+            }
+        }
+
+
+        // ── WOF replace ───────────────────────────────────────────────────────
+        private void ReplaceWof()
+        {
             using var ofd = new OpenFileDialog
             {
                 Filter = "OBJ Model|*.obj",
