@@ -1,5 +1,4 @@
 ﻿using System.Drawing.Imaging;
-using System.Text;
 
 namespace WoWViewer
 {
@@ -254,10 +253,7 @@ namespace WoWViewer
             IobDecoder.ExportTextureRaw(currentIobModel, palData,
                 Path.Combine(outputPath, baseName + "_raw.png"));
 
-            bool hasGeom = currentIobModel.AnimatedFlag != 0 && currentIobModel.FaceCount > 0;
-            MessageBox.Show(hasGeom
-                ? $"Exported {baseName}.obj ({currentIobModel.FaceCount} verts, {currentIobModel.LitTriCount} faces), {mtlName}, {texName}, {baseName}_raw.png"
-                : $"Exported {texName}, {baseName}_raw.png\n(Static IOB: no vertex geometry — OBJ contains a comment only)");
+            MessageBox.Show($"Exported {baseName}.obj ({currentIobModel.FaceCount} verts, {currentIobModel.LitTriCount} faces), {mtlName}, {texName}, {baseName}_raw.png");
         }
 
         // Export all models
@@ -316,7 +312,7 @@ namespace WoWViewer
                 try
                 {
                     var model = IobDecoder.Parse(entry.Data!);
-                    if (model.TexHeight == 0) continue;
+                    if (model.FaceCount == 0) continue;
 
                     string base_ = Path.GetFileNameWithoutExtension(entry.Name);
                     string mtlN = base_ + ".mtl";

@@ -56,18 +56,18 @@ namespace WoWViewer
         public int NormalsEndOffset { get; init; }   // [0x1E] relative to 0x22
 
         // ── Geometry ───────────────────────────────────────────────────────────
-        /// <summary>BSP plane position vectors. One per face; stored as int16 triplets.</summary>
+        /// <summary>Vertex positions. Stored as int16 triplets (x,y,z). Divide by 100 for world units.
+        /// Used for both collision (BSP) and as the renderable mesh vertex array.</summary>
         public (short Nx, short Ny, short Nz)[] BspPlanes { get; init; } = [];
 
         /// <summary>Compressed surface normals for lighting; one per face; stored as int8 triplets.</summary>
         public (sbyte Nx, sbyte Ny, sbyte Nz)[] Normals { get; init; } = [];
 
-        /// <summary>
-        /// Triangle face index table. Only populated for animated IOBs
-        /// (AnimatedFlag != 0). Each entry is three vertex indices into BspPlanes.
-        /// </summary>
+        /// <summary>Triangle faces. Each entry is (V0,V1,V2) indices into BspPlanes (the vertex array).
+        /// Present for both static and animated IOBs.</summary>
         public (int V0, int V1, int V2)[] Faces { get; init; } = [];
-        /// <summary>Raw palette-indexed pixel data. Width is always 256. Height = TexData.Length / 256.</summary>
+
+        // ── Sprite atlas ───────────────────────────────────────────────────────
         public byte[] TexData { get; init; } = [];
         public int TexHeight { get; init; }
     }
@@ -118,54 +118,46 @@ namespace WoWViewer
             }
 
             // ── Normals ───────────────────────────────────────────────────────
-            // Immediately after BSP section: faceCount × int8[3].
+            // Immediately after BSP section: normalsCount × int8[3].
+            // Static  (animatedFlag == 0): normalsCount = litTriCount  (one normal per lit triangle)
+            // Animated(animatedFlag != 0): normalsCount = faceCount    (full normal pool)
+            // Confirmed exact for ABBEY, PARLMENT (static) and CON_MAIN, LIGHTHSE (animated).
+            int normCount = (animatedFlag == 0) ? litTriCount : faceCount;
             int normStart = bspEnd;
-            int normEnd = normStart + faceCount * 3;
+            int normEnd = normStart + normCount * 3;
 
             if (normEnd > data.Length)
                 return new IobModel();
 
-            var normals = new (sbyte Nx, sbyte Ny, sbyte Nz)[faceCount];
-            for (int i = 0; i < faceCount; i++)
+            var normals = new (sbyte Nx, sbyte Ny, sbyte Nz)[normCount];
+            for (int i = 0; i < normCount; i++)
             {
                 int off = normStart + i * 3;
                 normals[i] = ((sbyte)data[off], (sbyte)data[off + 1], (sbyte)data[off + 2]);
             }
 
-            // ── Face index table (animated only) ─────────────────────────────
-            // Entry layout (18 bytes): [0-7]=misc, [8-9]=v0, [10-11]=v1, [12-13]=v2, [14-17]=misc
-            // ebx starts at idxStart+10; reads [ebx-2],[ebx+0],[ebx+2] per triangle.
-            var faces = new (int V0, int V1, int V2)[animatedFlag != 0 ? litTriCount : 0];
-            if (animatedFlag != 0)
-            {
-                int idxStart = HeaderSize + normalsEndOffset;
-                for (int i = 0; i < litTriCount; i++)
-                {
-                    int ebx = idxStart + 10 + i * 18;
-                    if (ebx + 2 >= data.Length) break;
-                    int v0 = BitConverter.ToInt16(data, ebx - 2);
-                    int v1 = BitConverter.ToInt16(data, ebx);
-                    int v2 = BitConverter.ToInt16(data, ebx + 2);
-                    faces[i] = (v0, v1, v2);
-                }
-            }
+            // ── Index table → face connectivity ───────────────────────────────
+            // [0x1E] is the index table start offset (from 0x22 base) for BOTH static
+            // and animated. The table contains litTriCount × 18-byte entries.
+            // Vertex indices are int16 at entry offsets [8],[10],[12]
+            // (ebx = entry_base+10; reads [ebx-2],[ebx],[ebx+2] per IDA sub_49DF40).
+            // Pixel data immediately follows the index table.
+            int idxStart = HeaderSize + normalsEndOffset;
+            int pixelStart = idxStart + litTriCount * 18;
 
-            // ── Pixel data start ──────────────────────────────────────────────
-            // Static:   normsEndOffset points to end of used normals = pixel start.
-            // Animated: normsEndOffset points to index table start; pixels follow
-            //           lit_tri_count × 18 bytes later.
-            int pixelStart;
-            if (animatedFlag == 0)
+            if (idxStart < 0 || pixelStart > data.Length)
+                return new IobModel();
+
+            var faces = new (int V0, int V1, int V2)[litTriCount];
+            for (int i = 0; i < litTriCount; i++)
             {
-                // Static: pixel_start = 0x22 + normalsEndOffset
-                // This equals normStart + litTriCount*3 (confirmed exact for all tested files).
-                pixelStart = HeaderSize + normalsEndOffset;
-            }
-            else
-            {
-                // Animated: index table at 0x22 + normalsEndOffset, each entry = 18 bytes.
-                int idxStart = HeaderSize + normalsEndOffset;
-                pixelStart = idxStart + litTriCount * 18;
+                int ebx = idxStart + 10 + i * 18;
+                if (ebx + 2 >= data.Length) break;
+                faces[i] = (
+                    BitConverter.ToInt16(data, ebx - 2),
+                    BitConverter.ToInt16(data, ebx),
+                    BitConverter.ToInt16(data, ebx + 2)
+                );
             }
 
             if (pixelStart < 0 || pixelStart > data.Length)
@@ -250,61 +242,53 @@ namespace WoWViewer
         // ── OBJ export ────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Exports the IOB model as an OBJ + MTL string pair.
-        /// Only animated IOBs (AnimatedFlag != 0) carry explicit vertex positions
-        /// and a face index table; static IOBs contain only BSP plane normals and
-        /// produce no mesh output (the method returns empty strings with a comment).
+        /// Exports the IOB building mesh as OBJ + MTL.
+        /// BSP section = vertex positions (int16 × 3).
+        /// Index table = face connectivity (litTriCount × 18 bytes, vertex indices at [8],[10],[12]).
+        /// Both static and animated IOBs share this layout — animatedFlag only controls
+        /// whether the building geometry animates in-game, not the file structure.
         /// </summary>
         public static (string ObjText, string MtlText) ToObj(IobModel model, string mtlName, string texName)
         {
-            if (model.AnimatedFlag == 0 || model.FaceCount == 0)
-            {
-                return (
-                    $"# IOB static building — no explicit vertex geometry (BSP normals only)\n",
-                    $"# No material — static IOB has no mesh\n"
-                );
-            }
-
             var obj = new System.Text.StringBuilder();
             var mtl = new System.Text.StringBuilder();
 
-            obj.AppendLine($"# IOB animated building — {model.FaceCount} vertices, {model.LitTriCount} faces");
+            obj.AppendLine($"# IOB building — {model.FaceCount} vertices, {model.LitTriCount} faces");
             obj.AppendLine($"mtllib {mtlName}");
             obj.AppendLine($"usemtl iob_building");
             obj.AppendLine();
 
-            // Vertices — BSP planes store int16 positions; scale by 1/100 to match
-            // the world-unit convention used by the engine (same as WOF Scale=100).
+            // Vertex positions from BSP section (int16 × 3).
+            // Same coordinate scale as WOF units — divide by 100 for world units.
             const float Scale = 100f;
             foreach (var (nx, ny, nz) in model.BspPlanes)
+                obj.AppendLine(FormattableString.Invariant(
+                    $"v {nx / Scale:F4} {ny / Scale:F4} {nz / Scale:F4}"));
+            obj.AppendLine();
+
+            // Per-vertex normals from the normals section (int8 × 3, normalised to ±1).
+            // normals array has min(faceCount, litTriCount) entries — pad with zeros if short.
+            for (int i = 0; i < model.FaceCount; i++)
             {
-                float wx = nx / Scale;
-                float wy = ny / Scale;   // Y is up in world space
-                float wz = nz / Scale;
-                obj.AppendLine(FormattableString.Invariant($"v {wx:F4} {wy:F4} {wz:F4}"));
+                if (i < model.Normals.Length)
+                {
+                    var (nx, ny, nz) = model.Normals[i];
+                    obj.AppendLine(FormattableString.Invariant(
+                        $"vn {nx / 127f:F4} {ny / 127f:F4} {nz / 127f:F4}"));
+                }
+                else
+                    obj.AppendLine("vn 0.0000 1.0000 0.0000");
             }
             obj.AppendLine();
 
-            // Normals — int8 → float, normalised to [-1, 1].
-            foreach (var (nx, ny, nz) in model.Normals)
-            {
-                float fnx = nx / 127f;
-                float fny = ny / 127f;
-                float fnz = nz / 127f;
-                obj.AppendLine(FormattableString.Invariant($"vn {fnx:F4} {fny:F4} {fnz:F4}"));
-            }
-            obj.AppendLine();
-
-            // Faces — the index table encodes triangle vertex indices.
-            // OBJ indices are 1-based; vertex and normal arrays are parallel (same index).
+            // Faces — 1-based OBJ indices.
             foreach (var (v0, v1, v2) in model.Faces)
             {
                 int a = v0 + 1, b = v1 + 1, c = v2 + 1;
                 obj.AppendLine($"f {a}//{a} {b}//{b} {c}//{c}");
             }
 
-            // MTL
-            mtl.AppendLine($"newmtl iob_building");
+            mtl.AppendLine("newmtl iob_building");
             mtl.AppendLine("Ka 0.2 0.2 0.2");
             mtl.AppendLine("Kd 0.8 0.8 0.8");
             mtl.AppendLine("Ks 0.0 0.0 0.0");
