@@ -1,6 +1,6 @@
 ﻿namespace WoWViewer
 {
-    partial class WOFConverter
+    partial class WOFViewer
     {
         /// <summary>
         /// Required designer variable.
@@ -204,7 +204,7 @@
             Controls.Add(listBox1);
             Controls.Add(pictureBox1);
             Name = "WOFConverter";
-            Text = "WOFConverter";
+            Text = "WOFViewer";
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
             PerformLayout();

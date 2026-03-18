@@ -44,14 +44,14 @@ namespace WoWViewer
         private void HandleHSH(WowFileEntry entry) { MessageBox.Show("HSH file is a global high quality shader table."); }
         private void HandleHSM(WowFileEntry entry) { MessageBox.Show("HSM file is a global medium quality shader table."); }
         private void HandleINT(WowFileEntry entry) { MessageBox.Show("INT files are terrain geometry shader tables, load MAPS.WoW and this file will be loaded through that method."); }
-        private void HandleIOB(WowFileEntry entry) { newForm(new WOFConverter(entries, listBox1.SelectedItem!.ToString()!, outputPath, true)); }
+        private void HandleIOB(WowFileEntry entry) { newForm(new WOFViewer(entries, listBox1.SelectedItem!.ToString()!, outputPath, true)); }
         private void HandlePAL(WowFileEntry entry) { MessageBox.Show("This is a palette file!"); }
         private void HandleRAW(WowFileEntry entry) { MessageBox.Show("These are visual effects files! Not decoded yet."); }
         private void HandleSHH(WowFileEntry entry) { MessageBox.Show("This is a High Quality Shader Table! 16-bit. (SHH - Shader High)"); }
         private void HandleSHL(WowFileEntry entry) { MessageBox.Show("This is a Low Quality Shader Table! 8-bit. (SHH - Shader Low)"); }
         private void HandleSHM(WowFileEntry entry) { MessageBox.Show("This is a Medium Quality Shader Table! 15-bit. (SHH - Shader Medium)"); }
         private void HandleSPR(WowFileEntry entry) { newForm(new SprViewer(entries, listBox1.SelectedItem!.ToString()!, filePath.Contains("MAPS.WoW"), outputPath, filePath)); }
-        private void HandleWOF(WowFileEntry entry) { newForm(new WOFConverter(entries, listBox1.SelectedItem!.ToString()!, outputPath)); }
+        private void HandleWOF(WowFileEntry entry) { newForm(new WOFViewer(entries, listBox1.SelectedItem!.ToString()!, outputPath)); }
         //MAPS/MAPS.WoW
         private void HandleATM(WowFileEntry entry) { newForm(new CLSViewer(entries, listBox1.SelectedItem!.ToString()!, outputPath, filePath)); }
         public WoWViewer()

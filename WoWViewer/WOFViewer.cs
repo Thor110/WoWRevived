@@ -3,7 +3,7 @@ using System.Text;
 
 namespace WoWViewer
 {
-    public partial class WOFConverter : Form
+    public partial class WOFViewer : Form
     {
         private List<WowFileEntry> entries;
         private string selectedEntry;
@@ -20,7 +20,7 @@ namespace WoWViewer
         private WofModel? currentModel;      // non-null when modelType == false
         private IobModel? currentIobModel;   // non-null when modelType == true
 
-        public WOFConverter(List<WowFileEntry> entryList, string entryName, string output, bool model = false)
+        public WOFViewer(List<WowFileEntry> entryList, string entryName, string output, bool model = false)
         {
             InitializeComponent();
             entries = entryList;

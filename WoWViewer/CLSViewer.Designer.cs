@@ -204,7 +204,7 @@
             Controls.Add(listBox1);
             Controls.Add(pictureBox1);
             Name = "CLSViewer";
-            Text = "ATMViewer";
+            Text = "CLSViewer";
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
             PerformLayout();
