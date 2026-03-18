@@ -227,7 +227,7 @@ A work in progress terrain viewer.
 
 ## Building Viewer
 
-A work in progress building viewer.
+A work in progress building viewer, this uses the same window as the unit viewer.
 
 <div align="center">
   <img src="images/building-viewer.png" alt="Building Viewer">
