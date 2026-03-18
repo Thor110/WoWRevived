@@ -227,6 +227,12 @@ A work in progress terrain viewer.
 
 ## Building Viewer
 
+A work in progress building viewer.
+
+<div align="center">
+  <img src="images/building-viewer.png" alt="Building Viewer">
+</div>
+
 ## Save Editor
 
 A work in progress save editor.
