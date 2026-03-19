@@ -193,19 +193,27 @@ namespace WoWViewer
             int faceSecSize = faceBlocks.Sum(b => b.Length);
             int baseVertSize = vertBlocks.Sum(b => b.Length);
 
-            // Material count: use original's actual count (from toff-moff), not the hardcoded 13.
-            // Original may have 12 entries; writing 13 shifts tex_off and breaks the file.
+            // Material count: derive from the original's actual section size.
+            // Do not clamp — some models have more than 13 materials and clamping
+            // shifts texOff/endOff, corrupting the texture atlas and crashing the game.
             int matCount = orig != null
                 ? (orig.TexOffset - orig.MatOffset) / MaterialStride
                 : MaterialCount;
-            // Clamp to [1..13] for safety
-            matCount = Math.Clamp(matCount, 1, MaterialCount);
+            if (matCount < 1) matCount = MaterialCount;
 
             int pieceTblOff = HeaderSize;
             int faceSecOff = pieceTblOff + pc * PieceRecSize;
             int vertSecOff = faceSecOff + faceSecSize;
-            int h20 = vertSecOff + baseVertSize;        // end of base-frame vert data
-            int matOff = h20 + animBlob.Length;         // animation blob sits between h20 and mat_off
+            int computedH20 = vertSecOff + baseVertSize;   // end of base-frame vert data
+
+            // h20 == 0 in some files (the field is unused / not a vert-end marker).
+            // In that case the animation blob length is still mat_off - computed_h20,
+            // but we must write h20=0 back, not the computed value.
+            // When h20 > 0: matOff = h20 + animBlob.Length  (standard case).
+            // When h20 == 0: write h20=0, place matOff after the vert+anim data.
+            bool origH20IsZero = orig != null && orig.H20 == 0;
+            int h20 = origH20IsZero ? 0 : computedH20;
+            int matOff = computedH20 + animBlob.Length;    // always after actual vert+anim data
             int texOff = matOff + matCount * MaterialStride;
             int endOff = texOff + texBytes.Length;
 
@@ -361,179 +369,38 @@ namespace WoWViewer
             return buf;
         }
 
-        // ── Skinning table builder ────────────────────────────────────────────
+        // ── Skinning table ────────────────────────────────────────────────────
+        //
+        // Format (confirmed from AA_GU_1.WOF):
+        //   pc × uint32   — absolute file pointers, one per piece
+        //                   null (0) for non-animated pieces
+        //   blocks        — variable-length per-animated-piece data
+        //
+        // The pointer count equals the piece count (not H18 which is something else).
+        // Block format varies per piece (record sizes differ), so we never regenerate
+        // blocks — always preserve verbatim and only rebase the pointers.
 
-        /// <summary>
-        /// Build the skinning table that is appended after end_off.
-        ///
-        /// Format:
-        ///   uint32 = 0                               sentinel
-        ///   animPc × uint32                          absolute file pointers
-        ///   animPc × variable block                  per animated piece
-        ///
-        /// Per-block:
-        ///   byte  N            = number of vert records (= vc for flat encoding)
-        ///   N × record:
-        ///     byte  weight     = number of shade groups influencing this vert (always 1 here)
-        ///     byte  shade_id   = shade group id (0 = flat)
-        ///     byte  vert_idx   = local piece vert index
-        ///
-        /// If the original WOF has a skinning table and the vert count for a piece is
-        /// unchanged, the original block is preserved verbatim (smooth shading).
-        /// Otherwise a flat-shading block is generated.
-        /// </summary>
-        private static byte[] BuildSkinningTable(int fileBase, List<ObjPiece> pieces, WofModel? orig)
+        private static byte[] BuildSkinningTable(int newFileBase, List<ObjPiece> pieces, WofModel? orig)
         {
-            // Identify animated pieces (flags & 0x20) from orig if available,
-            // otherwise treat all pieces as animated (safe fallback).
-            // We need flags and orig vc to decide whether to copy or regenerate.
-            int pc = pieces.Count;
+            if (orig?.SkinningTable.Length == 0) return [];
 
-            // Build a parallel list of (flags, origVc, origBlock?) for each piece
-            var pieceInfos = new List<(byte flags, int origVc, byte[]? origBlock)>(pc);
-            for (int p = 0; p < pc; p++)
+            var st = orig!.SkinningTable;
+            int pc = orig.PieceCount;
+            int origBase = orig.TexOffset + orig.TexHeight * WofDecoder.TexWidth; // original end_off
+
+            // Rebuild: copy the whole table verbatim, then fix up non-null pointers.
+            var newSt = (byte[])st.Clone();
+            int delta = newFileBase - origBase;   // how far the table moved
+
+            for (int i = 0; i < pc && i * 4 + 4 <= newSt.Length; i++)
             {
-                byte flags = 0;
-                int origVc = pieces[p].Verts.Count;
-                byte[]? origBlock = null;
-
-                if (orig != null && p < orig.PieceCount)
-                {
-                    flags = orig.Pieces[p].Flags;
-                    origVc = orig.Pieces[p].VertCount;
-                }
-                pieceInfos.Add((flags, origVc, origBlock));
+                uint ptr = BitConverter.ToUInt32(newSt, i * 4);
+                if (ptr == 0) continue;   // non-animated piece — leave null
+                uint newPtr = (uint)(ptr + delta);
+                BitConverter.GetBytes(newPtr).CopyTo(newSt, i * 4);
             }
 
-            // Parse the original skinning table blocks if we have one
-            Dictionary<int, byte[]> origBlocks = [];   // piece_index → raw block bytes
-            if (orig?.SkinningTable.Length > 4)
-            {
-                var st = orig.SkinningTable;
-                // st[0..3] = uint32 sentinel (0)
-                // count the pointers: they all point into st itself
-                int animPcOrig = 0;
-                int stBase = orig.TexOffset + (orig.TexHeight * WofDecoder.TexWidth); // = end_off
-                for (int i = 0; i < 64 && 4 + (i + 1) * 4 <= st.Length; i++)
-                {
-                    uint ptr = BitConverter.ToUInt32(st, 4 + i * 4);
-                    if (ptr < stBase || ptr >= stBase + st.Length) break;
-                    animPcOrig++;
-                }
-
-                // Now extract each block (span between consecutive pointers)
-                int animIdx = 0;
-                for (int p = 0; p < orig.PieceCount && animIdx < animPcOrig; p++)
-                {
-                    if ((orig.Pieces[p].Flags & 0x20) == 0) continue;
-
-                    int ptrOff = 4 + animIdx * 4;
-                    uint ptr = BitConverter.ToUInt32(st, ptrOff);
-                    uint nextPtr = (animIdx + 1 < animPcOrig)
-                        ? BitConverter.ToUInt32(st, ptrOff + 4)
-                        : (uint)(stBase + st.Length);
-
-                    int blockOff = (int)(ptr - stBase);
-                    int blockEnd = (int)(nextPtr - stBase);
-                    if (blockOff >= 0 && blockEnd <= st.Length && blockEnd > blockOff)
-                    {
-                        origBlocks[p] = st[blockOff..blockEnd];
-                    }
-                    animIdx++;
-                }
-            }
-
-            // Collect animated pieces and build their blocks
-            var animPieces = new List<int>();   // piece indices that are animated
-            var blocks = new List<byte[]>();
-
-            for (int p = 0; p < pc; p++)
-            {
-                var (flags, origVc, _) = pieceInfos[p];
-                bool isAnimated = orig != null
-                    ? (orig.Pieces[p].Flags & 0x20) != 0
-                    : true;  // if no original, treat all as animated (safe)
-                if (!isAnimated) continue;
-
-                int newVc = p < pieces.Count ? pieces[p].Verts.Count : origVc;
-                // Use reconciled vc (orig takes priority for round-trips)
-                int finalVc = orig != null ? origVc : newVc;
-
-                byte[] block;
-                if (origBlocks.TryGetValue(p, out var ob) &&
-                    ob.Length == 1 + ob[0] + finalVc * 2)
-                {
-                    // Vert count unchanged — copy original block verbatim
-                    block = ob;
-                }
-                else
-                {
-                    // Vert count changed or no original — generate flat-shading block:
-                    // N=finalVc, each vert: (weight=1, shade=0, vert_idx)
-                    block = GenerateFlatSkinningBlock(finalVc);
-                }
-
-                animPieces.Add(p);
-                blocks.Add(block);
-            }
-
-            if (animPieces.Count == 0) return [];
-
-            // Compute absolute file pointers for each block
-            // Layout in the skinning table:
-            //   [0]              uint32 sentinel = 0
-            //   [4..4+apc*4-1]   apc × uint32 pointers
-            //   [4+apc*4...]     blocks sequentially
-            int apc = animPieces.Count;
-            int headerSize = 4 + apc * 4;   // sentinel + pointer array
-            int tableBase = fileBase;       // absolute position of skinning table in file
-
-            int[] blockOffsets = new int[apc];
-            int cursor = headerSize;
-            for (int i = 0; i < apc; i++)
-            {
-                blockOffsets[i] = cursor;
-                cursor += blocks[i].Length;
-            }
-            int totalSize = cursor;
-
-            var table = new byte[totalSize];
-            // Sentinel
-            // (already zero)
-
-            // Pointer array
-            for (int i = 0; i < apc; i++)
-            {
-                uint absPtr = (uint)(tableBase + blockOffsets[i]);
-                table[4 + i * 4] = (byte)absPtr;
-                table[4 + i * 4 + 1] = (byte)(absPtr >> 8);
-                table[4 + i * 4 + 2] = (byte)(absPtr >> 16);
-                table[4 + i * 4 + 3] = (byte)(absPtr >> 24);
-            }
-
-            // Blocks
-            for (int i = 0; i < apc; i++)
-                Array.Copy(blocks[i], 0, table, blockOffsets[i], blocks[i].Length);
-
-            return table;
-        }
-
-        /// <summary>
-        /// Generate a flat-shading skinning block for a piece with vc vertices.
-        /// All verts → shade_group 0, weight 1.
-        /// Format: [N=vc] + [1, 0, 0, 1, 0, 1, ..., 1, 0, vc-1]
-        /// </summary>
-        private static byte[] GenerateFlatSkinningBlock(int vc)
-        {
-            var block = new byte[1 + vc * 3];
-            block[0] = (byte)vc;
-            for (int v = 0; v < vc; v++)
-            {
-                block[1 + v * 3] = 1;       // weight = 1
-                block[1 + v * 3 + 1] = 0;       // shade_group = 0
-                block[1 + v * 3 + 2] = (byte)v; // local vert index
-            }
-            return block;
+            return newSt;
         }
 
         // ── OBJ parser ────────────────────────────────────────────────────────
@@ -695,10 +562,9 @@ namespace WoWViewer
             if (w != WofDecoder.TexWidth)
                 throw new InvalidDataException($"Texture must be {WofDecoder.TexWidth}px wide, got {w}.");
 
-            // Palette-indexed PNG (Format8bppIndexed / PixelFormat with indexed flag):
-            // raw index bytes are preserved — read them directly without re-quantising.
-            // This is the lossless round-trip path, used when the atlas was exported with
-            // WofDecoder.ExportTextureRaw (the _raw.png file written alongside the display PNG).
+            // Palette-indexed PNG (Format8bppIndexed):
+            // raw index bytes are read directly — lossless, no re-quantisation needed.
+            // A user can save their edited _tex.png as 8bpp indexed to use this path.
             if (bmp.PixelFormat == System.Drawing.Imaging.PixelFormat.Format8bppIndexed)
             {
                 var result = new byte[w * h];

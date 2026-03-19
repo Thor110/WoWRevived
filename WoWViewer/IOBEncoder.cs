@@ -251,5 +251,216 @@ namespace WoWViewer
                 TexData = newTexData,
             };
         }
+
+        // ── Texture replacement ───────────────────────────────────────────────
+        //
+        // IOB patch format confirmed:
+        //   HEADER: [w_byte][0x80][height]   (height = render param, not row count)
+        //   ROWS (variable, to end of patch bytes — NO sentinel):
+        //     [skip][run][colour?] where:
+        //       run = 0x00 or 0x80 → transparent, no colour byte (2 bytes)
+        //       run = 0x01..0x7F  → literal run of `run` colour bytes
+        //       run = 0x81..0xFF  → RLE run: (run&0x7F) copies of 1 colour byte
+        //   Patch ends at the next patch's offset (boundaries from sorted offset list).
+        //   Some patches contain literal runs that deliberately span into the next
+        //   patch's byte range — do not attempt to re-encode these.
+        //
+        // Strategy: IN-PLACE colour substitution.
+        //   Walk each patch's byte stream, identify each colour byte and its canvas
+        //   position, then overwrite it with the new canvas colour.
+        //   Structural bytes (skip, run) are never modified.
+        //   File size stays IDENTICAL → no offset fixup required.
+        //
+        // Note: pixels painted by multiple overlapping patches will use the new
+        // canvas colour for ALL their writes, which matches the composited result
+        // the user edited in their image editor.
+
+        /// <summary>
+        /// Returns a new IobModel with sprite colours replaced by pixels from
+        /// <paramref name="pngBytes"/> (must be HalfWidthScale × HeightScale px).
+        /// Uses in-place colour substitution — file size is unchanged.
+        /// </summary>
+        public static IobModel ReplaceTexture(IobModel model, byte[] pngBytes, byte[] palData)
+        {
+            int W = Math.Max(1, model.HalfWidthScale);
+            int H = Math.Max(1, model.HeightScale);
+
+            byte[] canvas = QuantisePng(pngBytes, W, H, palData);
+            byte[] newTex = (byte[])model.TexData.Clone();
+
+            int litTri = model.LitTriCount;
+            int idxOff = model.NormalsEndOffset;
+            int idxSize = litTri * 18;
+            int patchStart = idxOff + idxSize;
+            int originX = W / 2;
+
+            // Build sorted unique offset list for patch boundary computation.
+            var sortedUnique = Enumerable.Range(0, litTri)
+                .Select(i => (int)BitConverter.ToUInt16(newTex, idxOff + i * 18 + 14))
+                .Where(o => o >= patchStart)
+                .Distinct()
+                .OrderBy(o => o)
+                .ToList();
+
+            var seen = new HashSet<int>();
+
+            for (int i = 0; i < litTri; i++)
+            {
+                int entryBase = idxOff + i * 18;
+                int patchOff = BitConverter.ToUInt16(newTex, entryBase + 14);
+                if (!seen.Add(patchOff)) continue;
+                if (patchOff < patchStart || patchOff + 3 > newTex.Length) continue;
+
+                int sx = BitConverter.ToInt16(newTex, entryBase + 4);
+                int sy = BitConverter.ToInt16(newTex, entryBase + 6);
+                int baseX = sx + originX;
+                int baseY = sy;
+
+                // Patch byte range: [patchOff, patchEnd).
+                int sortedIdx = sortedUnique.IndexOf(patchOff);
+                int patchEnd = (sortedIdx + 1 < sortedUnique.Count)
+                                ? sortedUnique[sortedIdx + 1]
+                                : newTex.Length;
+
+                SubstituteColours(newTex, patchOff, patchEnd, canvas, W, H, baseX, baseY);
+            }
+
+            return model with { TexData = newTex };
+        }
+
+        /// <summary>
+        /// Walks a patch's byte stream within [patchOff, patchEnd) and replaces
+        /// each colour byte with the corresponding pixel from <paramref name="canvas"/>.
+        /// Structural bytes (skip, run) are never touched.
+        /// </summary>
+        private static void SubstituteColours(byte[] tex, int patchOff, int patchEnd,
+                                               byte[] canvas, int W, int H, int baseX, int baseY)
+        {
+            int pos = patchOff + 3;   // skip 3-byte header
+            int row = 0;
+
+            while (pos + 1 < patchEnd)
+            {
+                int skip = tex[pos++];
+                int runByte = tex[pos++];
+
+                // End-of-patch sentinel (used by some buildings e.g. CON_MAIN).
+                // Without this check, we'd read into the next patch's bytes and
+                // corrupt them with wrong canvas positions.
+                if (skip == 0 && runByte == 0) break;
+
+                if (runByte == 0x80)
+                {
+                    // Transparent row — no colour byte.
+                    row++;
+                    continue;
+                }
+
+                int cy = baseY + row;
+                int cx = baseX + skip;
+
+                if (runByte >= 0x81)
+                {
+                    // RLE: one colour byte applies to (runByte & 0x7F) pixels.
+                    if (pos < patchEnd)
+                    {
+                        if (cx >= 0 && cx < W && cy >= 0 && cy < H)
+                        {
+                            byte newColour = canvas[cy * W + cx];
+                            // Only substitute if the canvas has an actual colour here.
+                            // A zero canvas pixel means this position was not rendered
+                            // (e.g. from a cross-boundary literal run), so leave original.
+                            if (newColour != 0)
+                                tex[pos] = newColour;
+                        }
+                        pos++;
+                    }
+                }
+                else
+                {
+                    // Literal: runByte colour bytes, one per pixel.
+                    int count = runByte;
+                    for (int k = 0; k < count; k++, pos++)
+                    {
+                        if (pos >= patchEnd) break;
+                        int fx = cx + k;
+                        if (fx >= 0 && fx < W && cy >= 0 && cy < H)
+                        {
+                            byte newColour = canvas[cy * W + fx];
+                            if (newColour != 0)
+                                tex[pos] = newColour;
+                        }
+                    }
+                }
+
+                row++;
+            }
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Decodes a PNG to a palette-index canvas of size expectedW × expectedH.
+        /// 8-bpp indexed PNGs are read losslessly; RGBA PNGs are nearest-colour matched.
+        /// </summary>
+        private static byte[] QuantisePng(byte[] pngBytes, int expectedW, int expectedH, byte[] palData)
+        {
+            using var ms = new System.IO.MemoryStream(pngBytes);
+            using var bmp = new Bitmap(ms);
+
+            if (bmp.Width != expectedW || bmp.Height != expectedH)
+                throw new InvalidDataException(
+                    $"PNG size {bmp.Width}×{bmp.Height} does not match expected " +
+                    $"{expectedW}×{expectedH}. Export the current building first to get " +
+                    "the correct canvas dimensions.");
+
+            byte[] result = new byte[expectedW * expectedH];
+
+            // Fast path: palette-indexed PNG — read raw indices directly.
+            if (bmp.PixelFormat == PixelFormat.Format8bppIndexed)
+            {
+                var bd = bmp.LockBits(new Rectangle(0, 0, expectedW, expectedH),
+                             ImageLockMode.ReadOnly, PixelFormat.Format8bppIndexed);
+                for (int y = 0; y < expectedH; y++)
+                    Marshal.Copy(bd.Scan0 + y * bd.Stride, result, y * expectedW, expectedW);
+                bmp.UnlockBits(bd);
+                return result;
+            }
+
+            // Slow path: RGBA — nearest-colour in RGB space.
+            // PAL values are 6-bit (0-63), scale ×4 to reach 8-bit range.
+            var palRgb = new (int r, int g, int b)[256];
+            for (int i = 0; i < 256; i++)
+                palRgb[i] = (Math.Min(palData[i * 3] * 4, 255),
+                             Math.Min(palData[i * 3 + 1] * 4, 255),
+                             Math.Min(palData[i * 3 + 2] * 4, 255));
+
+            using var argbBmp = bmp.Clone(new Rectangle(0, 0, expectedW, expectedH),
+                                           PixelFormat.Format32bppArgb);
+            var bd2 = argbBmp.LockBits(new Rectangle(0, 0, expectedW, expectedH),
+                          ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            var argb = new byte[expectedH * bd2.Stride];
+            Marshal.Copy(bd2.Scan0, argb, 0, argb.Length);
+            argbBmp.UnlockBits(bd2);
+
+            for (int y = 0; y < expectedH; y++)
+                for (int x = 0; x < expectedW; x++)
+                {
+                    int off = y * bd2.Stride + x * 4;
+                    byte b = argb[off], g = argb[off + 1], r = argb[off + 2], a = argb[off + 3];
+                    if (a < 128) { result[y * expectedW + x] = 0; continue; }
+
+                    int best = 1, bestDist = int.MaxValue;
+                    for (int p = 1; p < 256; p++)
+                    {
+                        var (pr, pg, pb) = palRgb[p];
+                        int d = (r - pr) * (r - pr) + (g - pg) * (g - pg) + (b - pb) * (b - pb);
+                        if (d < bestDist) { bestDist = d; best = p; if (d == 0) break; }
+                    }
+                    result[y * expectedW + x] = (byte)best;
+                }
+
+            return result;
+        }
     }
 }

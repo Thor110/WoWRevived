@@ -227,11 +227,9 @@ namespace WoWViewer
             var (objText, mtlText) = WofDecoder.ToObj(currentModel!, mtlName, texName);
             File.WriteAllText(Path.Combine(outputPath, baseName + ".obj"), objText);
             File.WriteAllText(Path.Combine(outputPath, mtlName), mtlText);
-            ExportAtlasWof(currentModel!, palData, checkBox1.Checked ? shadeData : null,
+            ExportAtlasWof(currentModel!, palData, null,  // shader not baked into export
                 Path.Combine(outputPath, baseName + "_tex.png"));
-            WofDecoder.ExportTextureRaw(currentModel!, palData,
-                Path.Combine(outputPath, baseName + "_raw.png"));
-            MessageBox.Show($"Exported {baseName}.obj, {mtlName}, {baseName}_tex.png, {baseName}_raw.png");
+            MessageBox.Show($"Exported {baseName}.obj, {mtlName}, {baseName}_tex.png");
         }
 
         private void ExportCurrentIob()
@@ -245,12 +243,10 @@ namespace WoWViewer
             File.WriteAllText(Path.Combine(outputPath, baseName + ".obj"), objText);
             File.WriteAllText(Path.Combine(outputPath, mtlName), mtlText);
 
-            ExportAtlasIob(currentIobModel, palData, checkBox1.Checked ? shadeData : null,
+            ExportAtlasIob(currentIobModel, palData, null,  // shader not baked into export
                 Path.Combine(outputPath, texName));
-            IobDecoder.ExportTextureRaw(currentIobModel, palData,
-                Path.Combine(outputPath, baseName + "_raw.png"));
 
-            MessageBox.Show($"Exported {baseName}.obj ({currentIobModel.FaceCount} verts, {currentIobModel.LitTriCount} faces), {mtlName}, {texName}, {baseName}_raw.png");
+            MessageBox.Show($"Exported {baseName}.obj ({currentIobModel.FaceCount} verts, {currentIobModel.LitTriCount} faces), {mtlName}, {texName}");
         }
 
         // Export all models
@@ -288,8 +284,7 @@ namespace WoWViewer
                     var (objText, mtlText) = WofDecoder.ToObj(model, mtlN, texN);
                     File.WriteAllText(Path.Combine(outputPath, base_ + ".obj"), objText);
                     File.WriteAllText(Path.Combine(outputPath, mtlN), mtlText);
-                    ExportAtlasWof(model, pal, shd, Path.Combine(outputPath, base_ + "_tex.png"));
-                    WofDecoder.ExportTextureRaw(model, pal, Path.Combine(outputPath, base_ + "_raw.png"));
+                    ExportAtlasWof(model, pal, null, Path.Combine(outputPath, base_ + "_tex.png"));
                     count++;
                 }
                 catch (Exception ex)
@@ -328,8 +323,7 @@ namespace WoWViewer
                     var (objText, mtlText) = IobDecoder.ToObj(model, mtlN, texN);
                     File.WriteAllText(Path.Combine(outputPath, base_ + ".obj"), objText);
                     File.WriteAllText(Path.Combine(outputPath, mtlN), mtlText);
-                    ExportAtlasIob(model, pal, shd, Path.Combine(outputPath, texN));
-                    IobDecoder.ExportTextureRaw(model, pal, Path.Combine(outputPath, base_ + "_raw.png"));
+                    ExportAtlasIob(model, pal, null, Path.Combine(outputPath, texN));
                     count++;
                 }
                 catch (Exception ex)
@@ -378,44 +372,73 @@ namespace WoWViewer
                 return;
             }
 
+            // IOB import: load an OBJ for geometry and the matching _tex.png for texture,
+            // exactly like WOF. Both are applied in one operation.
             using var ofd = new OpenFileDialog
             {
                 Filter = "OBJ Model|*.obj",
-                Title = "Select edited OBJ to import as IOB collision mesh"
+                Title = "Select OBJ to import (matching _tex.png will be loaded automatically)"
             };
             if (ofd.ShowDialog() != DialogResult.OK) return;
 
+            string objPath = ofd.FileName;
+            string dir = Path.GetDirectoryName(objPath)!;
+            string baseName = Path.GetFileNameWithoutExtension(objPath);
+            string texPath = Path.Combine(dir, baseName + "_tex.png");
+
+            if (!File.Exists(texPath))
+            {
+                MessageBox.Show($"Cannot find {baseName}_tex.png next to the OBJ.\n" +
+                                "Export the current IOB first to generate the texture file.",
+                                "Missing Texture");
+                return;
+            }
+            if (palData == null || palData.Length < 768)
+            {
+                MessageBox.Show("Select a palette file first.", "No Palette");
+                return;
+            }
+
             try
             {
-                string objText = File.ReadAllText(ofd.FileName);
-                var newModel = IobEncoder.FromObj(objText, currentIobModel);
-                byte[] encoded = IobEncoder.Encode(newModel);
+                string objText = File.ReadAllText(objPath);
+                byte[] pngBytes = File.ReadAllBytes(texPath);
 
-                string outPath = Path.Combine("DAT", selectedEntry);
-                if (File.Exists(outPath) &&
-                    MessageBox.Show($"'{outPath}' exists — overwrite?", "Overwrite",
-                        MessageBoxButtons.YesNo) == DialogResult.No)
-                    return;
+                // Apply geometry update then texture update.
+                var newModel = IobEncoder.FromObj(objText, currentIobModel!);
+                newModel = IobEncoder.ReplaceTexture(newModel, pngBytes, palData);
 
-                Directory.CreateDirectory("DAT");
-                File.WriteAllBytes(outPath, encoded);
-
-                entries.First(en =>
-                    en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
-                rawData = encoded;
-                currentIobModel = newModel;
-                currentRenderedEntry = -1;
-                RenderCurrent();
-
-                MessageBox.Show(
-                    $"Imported and saved to {outPath}\n" +
-                    $"{newModel.FaceCount} BSP verts, {newModel.LitTriCount} triangles, " +
-                    $"{encoded.Length} bytes total");
+                SaveIob(newModel,
+                    $"{newModel.FaceCount} BSP verts, {newModel.LitTriCount} triangles, texture replaced");
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"IOB import failed: {ex.Message}", "Error");
             }
+        }
+
+        // Shared save + refresh for IOB import operations.
+        private void SaveIob(IobModel newModel, string detail)
+        {
+            byte[] encoded = IobEncoder.Encode(newModel);
+            string outPath = Path.Combine("DAT", selectedEntry);
+
+            if (File.Exists(outPath) &&
+                MessageBox.Show($"'{outPath}' exists — overwrite?", "Overwrite",
+                    MessageBoxButtons.YesNo) == DialogResult.No)
+                return;
+
+            Directory.CreateDirectory("DAT");
+            File.WriteAllBytes(outPath, encoded);
+
+            entries.First(en =>
+                en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
+            rawData = encoded;
+            currentIobModel = newModel;
+            currentRenderedEntry = -1;
+            RenderCurrent();
+
+            MessageBox.Show($"Saved to {outPath}  ({detail})");
         }
 
 
@@ -434,8 +457,6 @@ namespace WoWViewer
             string baseName = Path.GetFileNameWithoutExtension(objPath);
             string mtlPath = Path.Combine(dir, baseName + ".mtl");
             string texPath = Path.Combine(dir, baseName + "_tex.png");
-            string rawPath = Path.Combine(dir, baseName + "_raw.png");
-            string encodeTexPath = File.Exists(rawPath) ? rawPath : texPath;
 
             if (!File.Exists(mtlPath))
             {
@@ -457,7 +478,7 @@ namespace WoWViewer
             {
                 string objText = File.ReadAllText(objPath);
                 string mtlText = File.ReadAllText(mtlPath);
-                byte[] texPng = File.ReadAllBytes(encodeTexPath);
+                byte[] texPng = File.ReadAllBytes(texPath);
                 byte[]? origWof = rawData?.Length > 0 ? rawData : null;
 
                 byte[] encoded = WofEncoder.Encode(objText, mtlText, texPng, palData, origWof);

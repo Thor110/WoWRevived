@@ -47,13 +47,14 @@ namespace WoWViewer
         public WofPiece[] Pieces { get; init; } = [];
         public byte[] TextureData { get; init; } = [];  // 256×TexHeight bytes, stride 256
         public int TexHeight { get; init; }         // actual rows = (end_off - tex_off) / 256
-        public byte[] MaterialData { get; init; } = [];  // 52 bytes, 13 × 4-byte entries
+        public byte[] MaterialData { get; init; } = [];  // matCount × 4 bytes (derived from texOff - matOff)
 
         // Raw header fields preserved for round-trip encoding
         public uint H10 { get; init; }   // animation count / frame count
         public uint H14 { get; init; }   // unknown — copy verbatim
         public uint H18 { get; init; }   // number of animated pieces
         public uint H1C { get; init; }   // animation count
+        public int H20 { get; init; }   // end of base-frame vert data (0 in some files)
         // Animation blob: bytes [h20 .. mat_off) — raw, not yet decoded.
         // Must be preserved verbatim for round-trip until the format is fully understood.
         public byte[] AnimBlob { get; init; } = [];
@@ -194,9 +195,11 @@ namespace WoWViewer
             // Material table: 52 bytes (13 × 4 bytes)
             // byte[0] = U offset in atlas, byte[1] = V offset in atlas,
             // byte[3] bit7 = use texture flag
-            byte[] matData = new byte[52];
-            if (matOffset > 0 && matOffset + 52 <= data.Length)
-                Array.Copy(data, matOffset, matData, 0, 52);
+            int matDataLen = (texOffset > matOffset && matOffset > 0)
+                             ? texOffset - matOffset : 52;
+            byte[] matData = new byte[matDataLen];
+            if (matOffset > 0 && matOffset + matDataLen <= data.Length)
+                Array.Copy(data, matOffset, matData, 0, matDataLen);
 
             // Animation blob: [h20 .. mat_off) — verbatim, not yet decoded.
             // h20 = vertOffset + (total base verts × 6). The blob immediately follows base-frame verts.
@@ -236,6 +239,7 @@ namespace WoWViewer
                 H14 = h14,
                 H18 = h18,
                 H1C = h1C,
+                H20 = h20,
                 AnimBlob = animBlob,
                 SkinningTable = skinningTable,
             };
@@ -247,7 +251,7 @@ namespace WoWViewer
             Pieces = [],
             TextureData = new byte[256 * 96],
             TexHeight = 96,
-            MaterialData = new byte[52]
+            MaterialData = new byte[13 * 4]   // 13 materials × 4 bytes = default
         };
 
         private static void ResolvePivots(WofPiece[] pieces)
@@ -406,49 +410,6 @@ namespace WoWViewer
         // shadeData: optional 512-byte SHH level slice (256 × RGB565). Pass null for raw PAL.
         public static Bitmap RenderTextureAtlas(WofModel model, byte[] palData, byte[]? shadeData = null)
             => RenderTexture(model.TextureData, model.TexHeight, palData, shadeData);
-
-        // Export the atlas as a palette-indexed (8bpp) PNG so the raw palette indices are
-        // preserved losslessly. The encoder detects this format and skips re-quantisation.
-        // palData is embedded in the PNG palette so the file is self-contained for viewers.
-        public static void ExportTextureRaw(WofModel model, byte[] palData, string path)
-        {
-            int w = TexWidth, h = model.TexHeight;
-            var bmp = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
-
-            // Set PNG palette from PAL data (6-bit × 4 → 8-bit)
-            var pal = bmp.Palette;
-            for (int i = 0; i < 256; i++)
-            {
-                int r = i * 3 < palData.Length ? Math.Min(palData[i * 3] * 4, 255) : 0;
-                int g = i * 3 < palData.Length ? Math.Min(palData[i * 3 + 1] * 4, 255) : 0;
-                int b = i * 3 < palData.Length ? Math.Min(palData[i * 3 + 2] * 4, 255) : 0;
-                // Index 0 = transparent
-                pal.Entries[i] = i == 0 ? Color.Transparent : Color.FromArgb(255, r, g, b);
-            }
-            bmp.Palette = pal;
-
-            // Write raw index bytes directly into the bitmap bits
-            var bmpData = bmp.LockBits(
-                new Rectangle(0, 0, w, h),
-                System.Drawing.Imaging.ImageLockMode.WriteOnly,
-                System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
-            try
-            {
-                for (int y = 0; y < h; y++)
-                {
-                    int srcOff = y * w;
-                    int srcLen = Math.Min(w, model.TextureData.Length - srcOff);
-                    if (srcLen <= 0) break;
-                    System.Runtime.InteropServices.Marshal.Copy(
-                        model.TextureData, srcOff,
-                        bmpData.Scan0 + y * bmpData.Stride, srcLen);
-                }
-            }
-            finally { bmp.UnlockBits(bmpData); }
-
-            bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
-            bmp.Dispose();
-        }
 
         public static Bitmap RenderTexture(byte[] texData, int texHeight, byte[] palData, byte[]? shadeData = null)
         {

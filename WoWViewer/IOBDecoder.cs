@@ -342,42 +342,6 @@ namespace WoWViewer
         }
 
         /// <summary>
-        /// Exports the rendered sprite as a palette-indexed 8-bpp PNG (lossless,
-        /// suitable for round-trip re-import via IobEncoder.FromObj).
-        /// </summary>
-        public static void ExportTextureRaw(IobModel model, byte[] palData, string path)
-        {
-            int W = Math.Max(1, model.HalfWidthScale);
-            int H = Math.Max(1, model.HeightScale);
-            var canvas = new byte[W * H];
-            DecodePatchesToCanvas(model, canvas, W, H);
-
-            var bmp = new Bitmap(W, H, PixelFormat.Format8bppIndexed);
-            var palette = bmp.Palette;
-            for (int i = 0; i < 256; i++)
-            {
-                byte r = palData.Length > i * 3 + 2 ? palData[i * 3] : (byte)0;
-                byte g = palData.Length > i * 3 + 2 ? palData[i * 3 + 1] : (byte)0;
-                byte b = palData.Length > i * 3 + 2 ? palData[i * 3 + 2] : (byte)0;
-                palette.Entries[i] = Color.FromArgb(i == 0 ? 0 : 255, r, g, b);
-            }
-            bmp.Palette = palette;
-
-            var bmpData = bmp.LockBits(new Rectangle(0, 0, W, H),
-                              ImageLockMode.WriteOnly, PixelFormat.Format8bppIndexed);
-            int stride = bmpData.Stride;
-            for (int row = 0; row < H; row++)
-            {
-                var rowBuf = new byte[stride];
-                Array.Copy(canvas, row * W, rowBuf, 0, Math.Min(W, stride));
-                Marshal.Copy(rowBuf, 0, bmpData.Scan0 + row * stride, stride);
-            }
-            bmp.UnlockBits(bmpData);
-            bmp.Save(path, ImageFormat.Png);
-            bmp.Dispose();
-        }
-
-        /// <summary>
         /// Decodes all RLE triangle patches from model.TexData onto the supplied
         /// palette-index canvas (W × H, row-major). Called by both render and export.
         /// </summary>
@@ -408,7 +372,11 @@ namespace WoWViewer
                     int py = baseY + row;
                     int cx = baseX + skip;
 
-                    if (runByte >= 0x80)
+                    if (runByte == 0x80)
+                    {
+                        // Transparent row — no colour byte follows.
+                    }
+                    else if (runByte >= 0x81)
                     {
                         int count = runByte & 0x7F;
                         if (pos >= raw.Length) break;
@@ -551,17 +519,18 @@ namespace WoWViewer
 
         // ── Palette/shader helpers ────────────────────────────────────────────
 
-        public static string SuggestPalette(string iobName)
-        {
-            // Buildings share a common palette.
-            // Refine with prefix matching once palette assignments are confirmed.
-            return "BUILD.PAL";
-        }
+        // ── Palette / shader suggestions ──────────────────────────────────────
+        //
+        // All IOB buildings use BM.PAL and BMGI.SHH, confirmed from IDA analysis
+        // (same conclusion reached independently by WofDecoder.SuggestPalette with
+        // isIob=true). BM likely stands for "Building Map".  BMGI.SHH is the
+        // single shade table used for all building lighting passes.
+        //
+        // Martian-faction buildings (MB_, MT_, HE_, HX_, SF_, AH_, TC_, PP_, EWP_)
+        // are included in BM.PAL — they share the same palette as human buildings.
 
-        public static string SuggestShader(string iobName, string palName)
-        {
-            string pal = Path.GetFileNameWithoutExtension(palName).ToUpperInvariant();
-            return pal + ".SHH";
-        }
+        public static string SuggestPalette(string iobName) => "BM.PAL";
+
+        public static string SuggestShader(string iobName, string palName) => "BMGI.SHH";
     }
 }
