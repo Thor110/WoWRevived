@@ -42,6 +42,7 @@
             listBox2 = new ListBox();
             listBox1 = new ListBox();
             pictureBox1 = new PictureBox();
+            button6 = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -184,11 +185,22 @@
             pictureBox1.TabIndex = 32;
             pictureBox1.TabStop = false;
             // 
+            // button6
+            // 
+            button6.Location = new Point(157, 327);
+            button6.Name = "button6";
+            button6.Size = new Size(120, 23);
+            button6.TabIndex = 46;
+            button6.Text = "Deselect Palette";
+            button6.UseVisualStyleBackColor = true;
+            button6.Click += button6_Click;
+            // 
             // FNTViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1264, 777);
+            Controls.Add(button6);
             Controls.Add(label2);
             Controls.Add(button1);
             Controls.Add(label3);
@@ -226,5 +238,6 @@
         private ListBox listBox2;
         private ListBox listBox1;
         private PictureBox pictureBox1;
+        private Button button6;
     }
 }

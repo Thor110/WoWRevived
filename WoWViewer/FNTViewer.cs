@@ -82,7 +82,7 @@ namespace WoWViewer
         // render selected sprite with selected palette
         private void RenderCurrent()
         {
-            if (palData == null) palData = GenerateDefaultFontPalette();
+            if (palData == null) palData = GenerateFontPalette();
 
             var fontModel = FNTDecoder.Parse(rawData);
             var atlas = FNTDecoder.RenderFontAtlas(fontModel, palData);
@@ -227,24 +227,28 @@ namespace WoWViewer
             RenderCurrent();
             MessageBox.Show($"{selectedEntry} successfully imported, encoded, and saved to the DAT folder!", "Import Complete");
         }
-        private byte[] GenerateDefaultFontPalette()
+        private byte[] GenerateFontPalette()
         {
-            byte[] pal = new byte[768]; // 256 colors * 3 bytes (RGB)
+            byte[] pal = new byte[768];
 
-            // Index 0 is transparent (0,0,0)
-
-            // Create a smooth grayscale gradient for indices 1 through 31
-            for (int i = 1; i < 32; i++)
+            for (int i = 1; i < 256; i++)
             {
-                // Scale 1-31 up to 0-255 for the RGB values
-                byte intensity = (byte)(i * 8);
-                if (intensity > 255) intensity = 255;
+                // Create a smooth grayscale curve.
+                // We ensure no two consecutive indices result in the exact same RGB value
+                // after the *4 multiplication in your RenderGlyph method.
+                int val = i;
+                if (val > 63) val = 63; // Cap at 63 because standard game palettes are 6-bit
 
-                // Set R, G, and B to the same value for grayscale (divided by 4 to match VGA 6-bit shift)
-                pal[i * 3] = (byte)(intensity / 4);
-                pal[i * 3 + 1] = (byte)(intensity / 4);
-                pal[i * 3 + 2] = (byte)(intensity / 4);
+                pal[i * 3] = (byte)val;       // R
+                pal[i * 3 + 1] = (byte)val;   // G
+                pal[i * 3 + 2] = (byte)val;   // B
+
+                // To prevent collisions between index 63 and index 64+ (which both cap at 63),
+                // we inject the raw index into the blue channel slightly so the reverse-matcher 
+                // can always mathematically tell them apart.
+                pal[i * 3 + 2] = (byte)(i % 64);
             }
+
             return pal;
         }
         // export all
@@ -273,6 +277,16 @@ namespace WoWViewer
             button2.Enabled = true;
             button3.Enabled = true;
             button5.Enabled = true;
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            listBox2.SelectedIndexChanged -= listBox2_SelectedIndexChanged!;
+            listBox2.SelectedIndex = -1;
+            listBox2.SelectedIndexChanged += listBox2_SelectedIndexChanged!;
+            lastSelectedPalette = "";
+            palData = GenerateFontPalette();
+            RenderCurrent();
         }
     }
 }
