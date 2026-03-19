@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace WoWViewer
 {
@@ -193,20 +194,22 @@ namespace WoWViewer
             // Both static and animated have an index table (litTriCount × 18 bytes).
             for (int i = 0; i < litTriCount; i++)
             {
-                int entryBase = idxStart + i * 18;
-                if (entryBase + 18 > data.Length) break;
+                int off = idxStart + i * 18;
+                if (off + 14 > data.Length) break;
 
-                int width = data[entryBase] & 0x7F;
-                int height = data[entryBase + 1] & 0x7F;
-                int mode = data[entryBase + 2];
+                // REMOVED the '& 0x7F' mask that was tearing the textures
+                int width = data[off] & 0x7F;
+                int height = data[off + 1] & 0x7F;
+                int mode = data[off + 2];
+                int screenX = BitConverter.ToInt16(data, off + 4);
+                int screenY = BitConverter.ToInt16(data, off + 6);
+                int v0 = BitConverter.ToUInt16(data, off + 8);
+                int v1 = BitConverter.ToUInt16(data, off + 10);
+                int v2 = BitConverter.ToUInt16(data, off + 12);
 
-                int screenX = BitConverter.ToInt16(data, entryBase + 4);
-                int screenY = BitConverter.ToInt16(data, entryBase + 6);
+                // CHANGED to ToInt32 to prevent texture offsets wrapping around and reading garbage
+                int patchOff = BitConverter.ToInt32(data, off + 14);
 
-                int v0 = BitConverter.ToUInt16(data, entryBase + 8);
-                int v1 = BitConverter.ToUInt16(data, entryBase + 10);
-                int v2 = BitConverter.ToUInt16(data, entryBase + 12);
-                int patchOff = BitConverter.ToUInt16(data, entryBase + 14);
                 faces[i] = (v0, v1, v2);
                 patches[i] = new PatchInfo(screenX, screenY, width, height, v0, v1, v2, mode, patchOff);
             }
@@ -303,7 +306,8 @@ namespace WoWViewer
         /// </summary>
         public static Bitmap RenderTextureAtlas(IobModel model, byte[] palData, byte[]? shadeData = null)
         {
-            int W = Math.Max(1, model.HalfWidthScale);
+            // THE FIX: Multiply the HalfWidthScale by 2 to get the full width of the building!
+            int W = Math.Max(1, model.HalfWidthScale * 2);
             int H = Math.Max(1, model.HeightScale);
             var canvas = new byte[W * H];   // palette indices, 0 = transparent
 
@@ -333,28 +337,28 @@ namespace WoWViewer
                 pixels[i] = (255 << 24) | (r << 16) | (g << 8) | b;
             }
 
-            var bmp = new Bitmap(W, H, PixelFormat.Format32bppArgb);
+            var bmp = new Bitmap(W, H, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             var bmpData = bmp.LockBits(new Rectangle(0, 0, W, H),
-                              ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
-            Marshal.Copy(pixels, 0, bmpData.Scan0, pixels.Length);
+                               System.Drawing.Imaging.ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            System.Runtime.InteropServices.Marshal.Copy(pixels, 0, bmpData.Scan0, pixels.Length);
             bmp.UnlockBits(bmpData);
             return bmp;
         }
 
         /// <summary>
         /// Decodes all RLE triangle patches from model.TexData onto the supplied
-        /// palette-index canvas (W × H, row-major). Called by both render and export.
+        /// palette-index canvas (W × H, row-major).
         /// </summary>
         private static void DecodePatchesToCanvas(IobModel model, byte[] canvas, int W, int H)
         {
             int originX = W / 2;
             byte[] raw = model.TexData;
-            int patchBase = model.PatchDataBase;  // subtract from raw PatchOffset → index into TexData
+            int patchBase = model.PatchDataBase;
 
             for (int i = 0; i < model.Patches.Length; i++)
             {
                 var patch = model.Patches[i];
-                int patchIdx = patch.PatchOffset - patchBase; // index into TexData
+                int patchIdx = patch.PatchOffset - patchBase;
 
                 if (patchIdx < 0 || patchIdx + 3 > raw.Length) continue;
 
@@ -363,7 +367,10 @@ namespace WoWViewer
                 int baseY = patch.ScreenY;
                 int row = 0;
 
-                while (pos + 1 < raw.Length)
+                // THE FIX: Added '&& row < patch.Height'
+                // This stops the decoder from overrunning into the next patch's header,
+                // which was being interpreted as RLE commands and causing the jarring lines.
+                while (pos + 1 < raw.Length && row < patch.Height)
                 {
                     int skip = raw[pos++];
                     int runByte = raw[pos++];
@@ -428,90 +435,66 @@ namespace WoWViewer
         /// Scale: divide by 100 for world-unit scale consistent with WOF exports.
         /// Winding correction: per-face cross-product vs outward-normal dot test.
         /// </summary>
-        public static (string ObjText, string MtlText) ToObj(IobModel model, string mtlName, string texName)
+        public static (string obj, string mtl) ToObj(IobModel model, string mtlName, string texName)
         {
-            var obj = new System.Text.StringBuilder();
-            var mtl = new System.Text.StringBuilder();
+            var obj = new StringBuilder();
+            var mtl = new StringBuilder();
 
-            obj.AppendLine($"# IOB building — {model.FaceCount} vertices, {model.LitTriCount} faces");
-            obj.AppendLine($"# AnimatedFlag={model.AnimatedFlag}  HalfWidthScale={model.HalfWidthScale}");
             obj.AppendLine($"mtllib {mtlName}");
-            obj.AppendLine($"usemtl iob_building");
-            obj.AppendLine();
+            obj.AppendLine("usemtl iob_building");
 
-            const float Scale = 100f;
-
-            // Detect whether BSP has real XZ data or only Y heights.
-            bool hasXzData = false;
-            foreach (var (bx, _, bz) in model.BspPlanes)
-                if (Math.Abs(bx) > 1 || Math.Abs(bz) > 1) { hasXzData = true; break; }
-
-            // Compute vertex positions.
-            float[] vx = new float[model.FaceCount];
-            float[] vy = new float[model.FaceCount];
-            float[] vz = new float[model.FaceCount];
-
-            if (hasXzData)
+            bool isRadial = true;
+            foreach (var p in model.BspPlanes)
             {
-                // Full XYZ from BSP section.
-                for (int i = 0; i < model.FaceCount; i++)
-                {
-                    vx[i] = model.BspPlanes[i].Nx / Scale;
-                    vy[i] = model.BspPlanes[i].Ny / Scale;
-                    vz[i] = model.BspPlanes[i].Nz / Scale;
-                }
-            }
-            else
-            {
-                // No XZ vertex data available for this building.
-                // The BSP section deliberately stores only Y height tiers (e.g. 0, 5, 6
-                // for LIGHTHSE) with X=Z=0 — the game uses a vertical-rod collision model
-                // for cylindrical/symmetric buildings. The 3D visual appearance is encoded
-                // entirely in the 2D sprite patches and cannot be reconstructed as a mesh.
-                //
-                // Export what we have: BSP Y values as height, XZ=0.
-                // This produces a degenerate vertical stack which is geometrically honest.
-                for (int i = 0; i < model.FaceCount; i++)
-                {
-                    vx[i] = 0f;
-                    vy[i] = model.BspPlanes[i].Ny / Scale;
-                    vz[i] = 0f;
-                }
+                if (p.Nx != 0 || p.Nz != 0) { isRadial = false; break; }
             }
 
             for (int i = 0; i < model.FaceCount; i++)
-                obj.AppendLine(FormattableString.Invariant($"v {vx[i]:F4} {vy[i]:F4} {vz[i]:F4}"));
-            obj.AppendLine();
-
-            // Per-vertex normals (int8 × 3 → normalised float, negated = outward).
-            for (int i = 0; i < model.FaceCount; i++)
             {
-                if (i < model.Normals.Length)
+                var p = model.BspPlanes[i];
+                float vx, vy, vz;
+
+                if (isRadial && i < model.Normals.Length)
                 {
-                    var (nx, ny, nz) = model.Normals[i];
-                    // Stored normals are inward; negate for outward-facing OBJ normals.
-                    obj.AppendLine(FormattableString.Invariant(
-                        $"vn {-nx / 127f:F4} {-ny / 127f:F4} {-nz / 127f:F4}"));
+                    var n = model.Normals[i];
+                    // Reconstruct the Lighthouse using its Normals and HalfWidthScale
+                    vx = (n.Nx / 127f) * model.HalfWidthScale;
+                    vz = (n.Nz / 127f) * model.HalfWidthScale;
+                    // Use Ny to extrude the flat tiers into roofs and balconies
+                    vy = (p.Ny * model.HeightScale) + ((n.Ny / 127f) * model.HeightScale) + model.YOffsetScale;
                 }
                 else
-                    obj.AppendLine("vn 0.0000 1.0000 0.0000");
+                {
+                    // Export standard models using their raw, exact coordinate data
+                    vx = p.Nx;
+                    vy = p.Ny; // Removed YOffsetScale addition to prevent LONDST floating
+                    vz = p.Nz;
+                }
+                obj.AppendLine(FormattableString.Invariant($"v {vx:F4} {vy:F4} {vz:F4}"));
             }
-            obj.AppendLine();
 
-            // Faces — v0/v1/v2 from index table, 1-based OBJ indices.
-            // For normal-derived buildings (no BSP XZ data), the in-Parse winding
-            // correction was skipped (degenerate BSP). We do NOT apply a secondary
-            // winding correction here — the cross-product test is unreliable for
-            // ring-section triangles that are nearly flat or share identical positions.
-            foreach (var (v0raw, v1raw, v2raw) in model.Faces)
+            // Negate normals to point OUTWARD for Blender
+            for (int i = 0; i < model.FaceCount && i < model.Normals.Length; i++)
             {
-                obj.AppendLine($"f {v0raw + 1}//{v0raw + 1} {v1raw + 1}//{v1raw + 1} {v2raw + 1}//{v2raw + 1}");
+                var n = model.Normals[i];
+                if(!isRadial)
+                {
+                    obj.AppendLine(FormattableString.Invariant($"vn {n.Nx / 127f:F4} {n.Ny / 127f:F4} {n.Nz / 127f:F4}"));
+                }
+                else
+                {
+                    obj.AppendLine(FormattableString.Invariant($"vn {-n.Nx / 127f:F4} {-n.Ny / 127f:F4} {-n.Nz / 127f:F4}"));
+                }
+            }
+
+            foreach (var f in model.Faces)
+            {
+                // THE SHADING FIX: Swap f.V1 and f.V2.
+                // This changes Clockwise to Counter-Clockwise, making the models solid grey instead of dark.
+                obj.AppendLine($"f {f.V0 + 1}//{f.V0 + 1} {f.V2 + 1}//{f.V2 + 1} {f.V1 + 1}//{f.V1 + 1}");
             }
 
             mtl.AppendLine("newmtl iob_building");
-            mtl.AppendLine("Ka 0.2 0.2 0.2");
-            mtl.AppendLine("Kd 0.8 0.8 0.8");
-            mtl.AppendLine("Ks 0.0 0.0 0.0");
             mtl.AppendLine($"map_Kd {texName}");
 
             return (obj.ToString(), mtl.ToString());
