@@ -86,7 +86,7 @@ namespace WoWViewer
 
             try
             {
-                var fontModel = FNTDecoder.FntModel.Parse(rawData);
+                var fontModel = FNTDecoder.Parse(rawData);
                 var atlas = FNTDecoder.RenderFontAtlas(fontModel, palData);
 
                 // Assuming your PictureBox is named pictureBox1
