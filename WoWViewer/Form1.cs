@@ -40,7 +40,7 @@ namespace WoWViewer
         }
         //DAT/Dat.wow
         private void HandleDAT(WowFileEntry entry) { MessageBox.Show("DAT files are pseudo random dithering tables."); }
-        private void HandleFNT(WowFileEntry entry) { MessageBox.Show("These are font files! Not decoded yet."); }
+        private void HandleFNT(WowFileEntry entry) { newForm(new FNTViewer(entries, listBox1.SelectedItem!.ToString()!, outputPath)); }
         private void HandleHSH(WowFileEntry entry) { MessageBox.Show("HSH file is a global high quality shader table."); }
         private void HandleHSM(WowFileEntry entry) { MessageBox.Show("HSM file is a global medium quality shader table."); }
         private void HandleINT(WowFileEntry entry) { MessageBox.Show("INT files are terrain geometry shader tables, load MAPS.WoW and this file will be loaded through that method."); }
