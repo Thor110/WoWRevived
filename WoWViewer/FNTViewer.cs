@@ -84,19 +84,12 @@ namespace WoWViewer
         {
             if (rawData == null || palData == null) return;
 
-            try
-            {
-                var fontModel = FNTDecoder.Parse(rawData);
-                var atlas = FNTDecoder.RenderFontAtlas(fontModel, palData);
+            var fontModel = FNTDecoder.Parse(rawData);
+            var atlas = FNTDecoder.RenderFontAtlas(fontModel, palData);
 
-                // Assuming your PictureBox is named pictureBox1
-                pictureBox1.Image?.Dispose();
-                pictureBox1.Image = atlas;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Rendering failed: " + ex.Message);
-            }
+            // Assuming your PictureBox is named pictureBox1
+            pictureBox1.Image?.Dispose();
+            pictureBox1.Image = atlas;
         }
         // export shader mapped palette
         private void button5_Click(object sender, EventArgs e)
@@ -122,12 +115,22 @@ namespace WoWViewer
         // replace
         private void button1_Click(object sender, EventArgs e)
         {
-
+            MessageBox.Show("Replace font logic not setup yet!");
         }
         // export all
         private void button3_Click(object sender, EventArgs e)
         {
-
+            Bitmap font;
+            foreach (WowFileEntry entry in entries.Where(e => e.Name.EndsWith(".FNT", StringComparison.OrdinalIgnoreCase)))
+            {
+                for (int i = 0; i < listBox1.Items.Count; i++)
+                {
+                    font = FNTDecoder.RenderFontAtlas(FNTDecoder.Parse(entry.Data!), palData);
+                    font.Save(Path.Combine(outputPath, Path.GetFileNameWithoutExtension(entry.Name) + ".png"), ImageFormat.Png);
+                    font.Dispose();
+                }
+            }
+            MessageBox.Show("All font files exported as .png files.");
         }
         // set output path
         private void button4_Click(object sender, EventArgs e)
