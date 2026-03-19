@@ -351,7 +351,7 @@ namespace WoWViewer
         /// </summary>
         private static void DecodePatchesToCanvas(IobModel model, byte[] canvas, int W, int H)
         {
-            int originX = W / 2;
+            int originX = model.HalfWidthScale;
             byte[] raw = model.TexData;
             int patchBase = model.PatchDataBase;
 
@@ -359,17 +359,17 @@ namespace WoWViewer
             {
                 var patch = model.Patches[i];
                 int patchIdx = patch.PatchOffset - patchBase;
-
                 if (patchIdx < 0 || patchIdx + 3 > raw.Length) continue;
 
-                int pos = patchIdx + 3;   // skip w, h_flags, base_colour
+                // Byte 0 of the patch is Width. 
+                // In this engine, Width/2 is often subtracted to center the triangle slice.
+                int pWidth = raw[patchIdx];
+                int pos = patchIdx + 3;
+
                 int baseX = patch.ScreenX + originX;
                 int baseY = patch.ScreenY;
                 int row = 0;
 
-                // THE FIX: Added '&& row < patch.Height'
-                // This stops the decoder from overrunning into the next patch's header,
-                // which was being interpreted as RLE commands and causing the jarring lines.
                 while (pos + 1 < raw.Length && row < patch.Height)
                 {
                     int skip = raw[pos++];
@@ -377,12 +377,13 @@ namespace WoWViewer
                     if (skip == 0 && runByte == 0) break;
 
                     int py = baseY + row;
-                    int cx = baseX + skip;
 
-                    if (runByte == 0x80)
-                    {
-                        // Transparent row — no colour byte follows.
-                    }
+                    // THE ALIGNMENT FIX: 
+                    // We subtract half the patch width (pWidth / 2) to center the span.
+                    // This is the "Sub-pixel" correction the engine does in fixed-point.
+                    int cx = baseX + skip - (pWidth / 2);
+
+                    if (runByte == 0x80) { /* Transparent row skip */ }
                     else if (runByte >= 0x81)
                     {
                         int count = runByte & 0x7F;

@@ -26,44 +26,62 @@ namespace WoWViewer
             int count = BitConverter.ToUInt16(data, 4);
 
             int tableStart = 0x08;
-            int dataStart = tableStart + (count * 4);
+
+            // The flawless mathematical start of the Row-Major pixel data
+            int dataStart = tableStart + (count * 4) + 2;
 
             var font = new FntModel
             {
-                AtlasWidth = atlasWidth,
                 Height = height,
                 Glyphs = new FntModel.Glyph[count]
             };
 
+            // STEP 1: Pre-read all X-Coordinates so we can calculate exact pixel widths
+            int[] allX = new int[count];
             for (int i = 0; i < count; i++)
             {
-                int entryOff = tableStart + (i * 4);
+                allX[i] = BitConverter.ToUInt16(data, tableStart + i * 4);
+            }
 
-                // This is NOT a memory offset. It is the X-Coordinate on the giant image!
-                int startX = BitConverter.ToUInt16(data, entryOff);
-                int charWidth = BitConverter.ToUInt16(data, entryOff + 2);
+            // STEP 2: Extract tightly packed characters
+            for (int i = 0; i < count; i++)
+            {
+                int startX = allX[i];
 
-                byte[] charPixels = new byte[charWidth * height];
+                // Calculate the exact pixel width by finding the next X-coordinate in the atlas
+                int endX = atlasWidth;
+                for (int j = 0; j < count; j++)
+                {
+                    // Find the closest X coordinate to our right
+                    if (allX[j] > startX && allX[j] < endX)
+                    {
+                        endX = allX[j];
+                    }
+                }
 
-                // "Cut out" the character from the giant 2D image
+                int pixelWidth = endX - startX;
+
+                // Fallback for Space or empty characters to prevent Windows Forms Red X crash
+                if (pixelWidth <= 0) pixelWidth = 1;
+
+                byte[] charPixels = new byte[pixelWidth * height];
+
+                // Standard Row-Major Atlas extraction, strictly bound by the true pixelWidth
                 for (int y = 0; y < height; y++)
                 {
-                    for (int x = 0; x < charWidth; x++)
+                    for (int x = 0; x < pixelWidth; x++)
                     {
-                        int globalX = startX + x;
-                        int globalY = y;
+                        int fileOffset = dataStart + (y * atlasWidth) + (startX + x);
 
-                        // Row-major calculation for the giant atlas
-                        int fileOffset = dataStart + (globalY * atlasWidth) + globalX;
-
-                        if (fileOffset < data.Length)
+                        if (fileOffset >= 0 && fileOffset < data.Length)
                         {
-                            charPixels[y * charWidth + x] = data[fileOffset];
+                            charPixels[y * pixelWidth + x] = data[fileOffset];
                         }
                     }
                 }
 
-                font.Glyphs[i] = new FntModel.Glyph { Width = charWidth, Pixels = charPixels };
+                // We assign pixelWidth so the viewer Bitmap is exactly the size of the drawn pixels
+                font.Glyphs[i] = new FntModel.Glyph { Width = pixelWidth, Pixels = charPixels };
             }
             return font;
         }
