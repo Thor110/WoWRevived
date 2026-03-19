@@ -505,7 +505,6 @@ namespace WoWViewer
                 multiFrame = frameCount > 1;
                 for (int i = 0; i < frameCount; i++)
                 {
-                    System.Diagnostics.Debug.WriteLine($"{entry.Name} : {i}");
                     img = SprDecoder.Render(entry.Data!, palData, shadeData, frame: i);
                     img.Save(multiFrame ? $"{fileName}_frame_{i:D2}.png" : fileName + ".png", ImageFormat.Png);
                     img.Dispose();
