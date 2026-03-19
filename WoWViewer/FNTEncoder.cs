@@ -1,8 +1,4 @@
-﻿using System;
-using System.Drawing.Imaging;
-using static WoWViewer.FNTDecoder;
-
-namespace WoWViewer
+﻿namespace WoWViewer
 {
     internal class FNTEncoder
     {
