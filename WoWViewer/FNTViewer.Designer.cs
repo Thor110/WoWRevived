@@ -49,11 +49,11 @@
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(878, 501);
+            label2.Location = new Point(693, 501);
             label2.Name = "label2";
-            label2.Size = new Size(144, 15);
+            label2.Size = new Size(210, 15);
             label2.TabIndex = 45;
-            label2.Text = "Sprite Information Display";
+            label2.Text = "Replace Functionality Not Working Yet";
             // 
             // button1
             // 
