@@ -86,7 +86,7 @@ The road map for this project.
 	- Preview the units texture.
 - [✅ 5 : Terrain Viewer](#terrain-viewer) ( 95% Complete )
 	- Terrain viewer can export .CLS geometry and their tile indexed texture map.
-	- Ability to import custom geoemetry.
+	- Ability to import custom geometry.
 	- Preview the terrains tilemap.
 - [✅ 6 : Building Viewer](#building-viewer) ( 50% Complete )
 	- Building viewer can export .IOB geometry.
