@@ -16,8 +16,13 @@ HWAVEOUT hWaveOut = NULL;
 WAVEHDR waveHdr = {};
 HGLOBAL hWaveData = NULL;
 FILE* logFile = nullptr;
-bool debug = false; // true for logging
+bool debug = true; // true for logging
 bool musicFocus = (GetFileAttributesA("music_focus.txt") != INVALID_FILE_ATTRIBUTES); // allow music to continue playing while the window is out of focus
+int* pGameMusicEnabled = (int*)0x004B8A88; // detect if music is enabled or disabled
+// Pointers to the game's internal Menu State
+volatile DWORD* pMenuState1 = (volatile DWORD*)0x4D1490;
+// The Control ID for the CD Player menu
+const DWORD CD_PLAYER_MENU_ID = 0x803E;
 
 CRITICAL_SECTION audioLock;
 
@@ -59,8 +64,19 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		GetModuleFileNameA(NULL, exeName, MAX_PATH);
 		isNetworkVersion = (strstr(exeName, "WoW_network") != NULL);
 		InitializeCriticalSection(&audioLock);
+		// LOAD STATE: Check which file currently exists
+		if (GetFileAttributesA("music_disabled.txt") != INVALID_FILE_ATTRIBUTES) {
+			*pGameMusicEnabled = 0; // Force UI to "Off"
+		}
 	}
 	else if (fdwReason == DLL_PROCESS_DETACH) {
+		// SAVE STATE: When the game closes, check the current UI value
+		if (*pGameMusicEnabled == 0) {
+			MoveFileA("music_enabled.txt", "music_disabled.txt");
+		}
+		else {
+			MoveFileA("music_disabled.txt", "music_enabled.txt");
+		}
 		DeleteCriticalSection(&audioLock);
 	}
 	return TRUE;
@@ -73,8 +89,17 @@ bool gainingFocus = false;
 
 DWORD lastFocusEventTick = 0;
 
+void StopAudio();
+
 LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	// --- IN-GAME MUSIC OVERRIDE ---
+	// If the user disabled music in the UI, kill any active audio and ignore all MCI spam.
+	// EXCEPTION: If the CD Player menu is currently open, allow MCI commands to pass through.
+	if (*pGameMusicEnabled == 0 && *pMenuState1 != CD_PLAYER_MENU_ID) {
+		StopAudio();
+		return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
+	}
 	if (msg == WM_ACTIVATEAPP) {
 		lastFocusEventTick = GetTickCount(); // Mark exactly WHEN focus shifted
 		EnterCriticalSection(&audioLock);
@@ -182,6 +207,13 @@ void PlayWav(const char* path) {
 
 extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR fdwCommand, DWORD_PTR dwParam)
 {
+	// --- IN-GAME MUSIC OVERRIDE ---
+	// If the user disabled music in the UI, kill any active audio and ignore all MCI spam.
+	// EXCEPTION: If the CD Player menu is currently open, allow MCI commands to pass through.
+	if (*pGameMusicEnabled == 0 && *pMenuState1 != CD_PLAYER_MENU_ID) {
+		StopAudio();
+		return 0;
+	}
 	//Log("MCI_COMMAND: ID=%X, Msg=%X, Flags=%X", IDDevice, uMsg, fdwCommand);
 	// 1. Success for SET
 	if (uMsg == MCI_SET) return 0;
