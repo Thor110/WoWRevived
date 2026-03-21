@@ -32,6 +32,7 @@ The road map for this project.
 	- Iron changed to say Steel in multiple entries in the TEXT.ojd file.
 	- Leading space added to some text to improve appearance in the Critical Event Options menu.
 	- Missing entry created for the Credits button in the options menu.
+	- Build List screen location is now dynamically set as per the resolution setting chosen in the launcher.
 	- Various executable edits:
 		- 1\. 1 byte to skip the "NO CD INSERTED" message in the CD Player menu.
 		- 2\. 2 bytes to skip creation of the 8/16 bit colour toggles in the "Display Settings" menu.
@@ -89,11 +90,13 @@ The road map for this project.
 	- Preview the terrains tilemap.
 - [✅ 6 : Building Viewer](#building-viewer) ( 50% Complete )
 	- Building viewer can export .IOB geometry.
-- [❌ 7 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
+- [✅ 7 : Font Viewer](#font-viewer) ( 50% Complete )
+	- Font viewer can export .FNT files to .png images.
+- [❌ 8 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Override standard limit of 1753 as the minimum date and set the year manually to as low as year zero.
 	- Sector & Area names loaded dynamically from TEXT.ojd to support the regional releases.
-- [✅ 8 : Text Editor](#text-editor) ( 100% Complete )
+- [✅ 9 : Text Editor](#text-editor) ( 100% Complete )
 	- All 1397 strings are editable. ( Default game has 1396, new string added for the missing Credits button text, original files also supported )
 	- UTF-8 + ISO-8859-1 encoding supported.
 	- File is recompiled from scratch based on modifications.
@@ -101,25 +104,26 @@ The road map for this project.
 	- Undo changes to current string.
 	- Edited strings highlighted.
 	- Rich text editing with newline support (\n to \r\n handling when loading and the opposite when saving )
-- ❌ 9 : Map Editor ( Basic Parsing Implemented - 1% Complete )
+- ❌ 10 : Map Editor ( Basic Parsing Implemented - 1% Complete )
 	- Basic parsing of .nsb filetypes.
 	- .ojd files can be parsed, but there is still more decoding to do.
-- ✅ 10 : No-CD Music Fix ( 99% Complete )
+- ✅ 11 : No-CD Music Fix ( 99% Complete )
 	- Uses a winmm shim that allows for localised audio playback.
 	- Added functionality to allow music playback to continue when not in fullscreen and the window loses focus.
+	- Permanence added to the "In-Game Music Enabled/Disabled" option through the winmm shim.
 	- Known "bugs" which I consider non-issues for the time-being.
 		- 1\. The counter increases indefinitely.
 		- 2\. Doesn't progress to the next track when a track finishes in the CD player menu.
-- [✅ 11 : Video Playback Intercept](#video-playback-intercept) ( 100% Complete )
+- [✅ 12 : Video Playback Intercept](#video-playback-intercept) ( 100% Complete )
 	- Custom Smackw32.dll that plays upscaled videos at the games resolution.
 	- Simple 1920x1080 upscales of all the original videos which get scaled to the games resolution.
 	- Alt-Tab detection when in fullscreen used to close the game automatically to save the user time encountering an error.
 		- This is because alt-tabbing is broken in the game by default.
 	- Includes code for hijacking the credits sequence so that it doesn't crash and creating an overlay to display the credits sequence.
-- [❌ 12 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 90% Complete )
+- [❌ 13 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 90% Complete )
 	- Resolution agnostic custom backgrounds have been made but have yet to be finished.
 	- Extended width of the war map, this allows higher resolutions to work.
-- [✅ 13 : Enhanced Original Assets](#enhanced-original-assets) ( 90% Complete )
+- [✅ 14 : Enhanced Original Assets](#enhanced-original-assets) ( 90% Complete )
 	- Reworked many assets in the game to improve their appearance.
 		- Martian & Human Unit Icons are now the same for both factions, which makes it easier to tell when using the infiltration skill.
 		- Music Track Artwork is now brighter.
@@ -128,7 +132,7 @@ The road map for this project.
 			- The extended warmap background includes another 4 files.
 			- Full count 142/445 .spr files.
 			- Remaining sprite files include mouse cursors, visual effects and parts of menus where there is very little space to add any detail.
-- ❌ 14 : Decomp/Recomp ( Started - 1% Complete )
+- ❌ 15 : Decomp/Recomp ( Started - 1% Complete )
 	- Begun mapping out virtual key addresses for use in the launchers custom keyboard shortcut settings. ( "WoWRevived\WoWDecomp\ida-map.txt" )
 
 This might not all happen but I wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
@@ -231,6 +235,14 @@ A work in progress building viewer, this uses the same window as the unit viewer
 
 <div align="center">
   <img src="images/building-viewer.png" alt="Building Viewer">
+</div>
+
+## Font Viewer
+
+A work in progress font viewer.
+
+<div align="center">
+  <img src="images/font-viewer.png" alt="Font Viewer">
 </div>
 
 ## Save Editor
