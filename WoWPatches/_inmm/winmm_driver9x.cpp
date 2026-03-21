@@ -16,7 +16,7 @@ HWAVEOUT hWaveOut = NULL;
 WAVEHDR waveHdr = {};
 HGLOBAL hWaveData = NULL;
 FILE* logFile = nullptr;
-bool debug = true; // true for logging
+bool debug = false; // true for logging
 bool musicFocus = (GetFileAttributesA("music_focus.txt") != INVALID_FILE_ATTRIBUTES); // allow music to continue playing while the window is out of focus
 int* pGameMusicEnabled = (int*)0x004B8A88; // detect if music is enabled or disabled
 // Pointers to the game's internal Menu State
@@ -82,48 +82,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	return TRUE;
 }
 
-HWND gameWindow = NULL;
-WNDPROC origWndProc = NULL;
-bool losingFocus = false;
-bool gainingFocus = false;
-
-DWORD lastFocusEventTick = 0;
-
-void StopAudio();
-
-LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	// --- IN-GAME MUSIC OVERRIDE ---
-	// If the user disabled music in the UI, kill any active audio and ignore all MCI spam.
-	// EXCEPTION: If the CD Player menu is currently open, allow MCI commands to pass through.
-	if (*pGameMusicEnabled == 0 && *pMenuState1 != CD_PLAYER_MENU_ID) {
-		StopAudio();
-		return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
-	}
-	if (msg == WM_ACTIVATEAPP) {
-		lastFocusEventTick = GetTickCount(); // Mark exactly WHEN focus shifted
-		EnterCriticalSection(&audioLock);
-		if (!wParam) {
-			Log("HOOK: Focus Lost");
-			if (hWaveOut && !isPaused && !musicFocus) {
-				totalElapsedBeforePause = GetTickCount() - dwStartTime;
-				isPaused = true;
-				waveOutPause(hWaveOut);
-			}
-		}
-		else {
-			Log("HOOK: Focus Gained");
-			if (hWaveOut && isPaused && !musicFocus) {
-				isPaused = false;
-				dwStartTime = GetTickCount() - totalElapsedBeforePause;
-				waveOutRestart(hWaveOut);
-			}
-		}
-		LeaveCriticalSection(&audioLock);
-	}
-	return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
-}
-
 // Simple helper to get duration in milliseconds
 uint32_t GetWavDuration(const char* filename) {
 	std::ifstream file(filename, std::ios::binary);
@@ -167,6 +125,46 @@ void StopAudio() {
 		hWaveData = NULL;
 	}
 	LeaveCriticalSection(&audioLock);
+}
+
+HWND gameWindow = NULL;
+WNDPROC origWndProc = NULL;
+bool losingFocus = false;
+bool gainingFocus = false;
+
+DWORD lastFocusEventTick = 0;
+
+LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	// --- IN-GAME MUSIC OVERRIDE ---
+	// If the user disabled music in the UI, kill any active audio and ignore all MCI spam.
+	// EXCEPTION: If the CD Player menu is currently open, allow MCI commands to pass through.
+	if (*pGameMusicEnabled == 0 && *pMenuState1 != CD_PLAYER_MENU_ID) {
+		StopAudio();
+		return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
+	}
+	if (msg == WM_ACTIVATEAPP) {
+		lastFocusEventTick = GetTickCount(); // Mark exactly WHEN focus shifted
+		EnterCriticalSection(&audioLock);
+		if (!wParam) {
+			Log("HOOK: Focus Lost");
+			if (hWaveOut && !isPaused && !musicFocus) {
+				totalElapsedBeforePause = GetTickCount() - dwStartTime;
+				isPaused = true;
+				waveOutPause(hWaveOut);
+			}
+		}
+		else {
+			Log("HOOK: Focus Gained");
+			if (hWaveOut && isPaused && !musicFocus) {
+				isPaused = false;
+				dwStartTime = GetTickCount() - totalElapsedBeforePause;
+				waveOutRestart(hWaveOut);
+			}
+		}
+		LeaveCriticalSection(&audioLock);
+	}
+	return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
 }
 
 void PlayWav(const char* path) {
