@@ -51,6 +51,7 @@
             button7 = new Button();
             checkBox5 = new CheckBox();
             checkBox6 = new CheckBox();
+            checkBox7 = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -271,7 +272,7 @@
             // 
             checkBox5.AccessibleDescription = "Enabling this will allow the music to continue playing when the window loses focus, if not in fullscreen mode.";
             checkBox5.AutoSize = true;
-            checkBox5.Location = new Point(12, 412);
+            checkBox5.Location = new Point(11, 412);
             checkBox5.Name = "checkBox5";
             checkBox5.Size = new Size(108, 19);
             checkBox5.TabIndex = 20;
@@ -283,7 +284,7 @@
             // 
             checkBox6.AccessibleDescription = "This setting enables the enhanced user interface assets. ( This adds a little more colour depth to the interface. )";
             checkBox6.AutoSize = true;
-            checkBox6.Location = new Point(12, 387);
+            checkBox6.Location = new Point(11, 387);
             checkBox6.Name = "checkBox6";
             checkBox6.Size = new Size(114, 19);
             checkBox6.TabIndex = 21;
@@ -291,11 +292,25 @@
             checkBox6.UseVisualStyleBackColor = true;
             checkBox6.Visible = false;
             // 
+            // checkBox7
+            // 
+            checkBox7.AccessibleDescription = "This toggles whether or not enemy forces are visible on the warmap.";
+            checkBox7.AutoSize = true;
+            checkBox7.Location = new Point(11, 362);
+            checkBox7.Name = "checkBox7";
+            checkBox7.Size = new Size(136, 19);
+            checkBox7.TabIndex = 22;
+            checkBox7.Text = "Enemy Forces Visible";
+            checkBox7.UseVisualStyleBackColor = true;
+            checkBox7.Visible = false;
+            checkBox7.CheckedChanged += checkBox7_CheckedChanged;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(424, 504);
+            Controls.Add(checkBox7);
             Controls.Add(checkBox6);
             Controls.Add(checkBox5);
             Controls.Add(button7);
@@ -350,5 +365,6 @@
         private Button button7;
         private CheckBox checkBox5;
         private CheckBox checkBox6;
+        private CheckBox checkBox7;
     }
 }

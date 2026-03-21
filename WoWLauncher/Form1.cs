@@ -16,6 +16,7 @@ namespace WoWLauncher
         private RegistryKey researchKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true)!;
         private RegistryKey optionsKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Options", true)!;
         private RegistryKey buildListKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BuildList", true)!;
+        private RegistryKey debugKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true)!;
         [StructLayout(LayoutKind.Sequential)]
         public struct DEVMODE
         {
@@ -189,7 +190,7 @@ namespace WoWLauncher
                 screenKey.SetValue("BPP", 16, RegistryValueKind.DWord);
                 MessageBox.Show("The \"BPP\" registry entry must be set to 16 as I have removed the 8/16 bit toggle from the games executable, surely you don't want to play it in 8 bit colour mode in the 21st century?");
             }
-            if(File.Exists("DAT\\cd_bd1.spr")) { checkBox6.Checked = true; }
+            if (File.Exists("DAT\\cd_bd1.spr")) { checkBox6.Checked = true; }
             // add event handlers here for the checkboxes and comboboxes to prevent them firing when the form is loaded
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
@@ -321,6 +322,7 @@ namespace WoWLauncher
             //checkBox4.Visible = true;     // resize window not supported
             checkBox5.Visible = true;
             checkBox6.Visible = true;
+            checkBox7.Visible = true;
             comboBox2.Visible = true;
             //comboBox3.Visible = true;     // game frequency is not supported
             comboBox4.Visible = true;
@@ -352,6 +354,7 @@ namespace WoWLauncher
                 //checkBox4.Visible = false;    // resize window not supported
                 checkBox5.Visible = false;
                 checkBox6.Visible = false;
+                checkBox7.Visible = false;
                 comboBox1.Visible = false;
                 comboBox2.Visible = false;
                 //comboBox3.Visible = false;     // game frequency is not supported
@@ -563,8 +566,10 @@ namespace WoWLauncher
         };
         private void checkBox6_CheckedChanged(object sender, EventArgs e)
         {
-            if (checkBox6.Checked) { foreach(string file in upscaledFiles) { File.Move($"DAT-EXTRA\\HD\\{file}",$"DAT\\{file}"); } }
+            if (checkBox6.Checked) { foreach (string file in upscaledFiles) { File.Move($"DAT-EXTRA\\HD\\{file}", $"DAT\\{file}"); } }
             else { foreach (string file in upscaledFiles) { File.Move($"DAT\\{file}", $"DAT-EXTRA\\HD\\{file}"); } }
         }
+        // Debug "Enemy Visible" value determines if enemy units are visible on the warmap
+        private void checkBox7_CheckedChanged(object sender, EventArgs e) { registryCompare(debugKey, "Enemy Visible", checkBox7.Checked ? "1" : "0"); }
     }
 }
