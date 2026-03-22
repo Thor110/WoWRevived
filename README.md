@@ -9,13 +9,13 @@ The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War O
 - 1 : Copy the Human disc contents to your installation folder.
 - 2 : Rename the file "Human.cd" to "Human.cd.bak"
 - 3 : Rename the folder "FMV" to "FMV-Human"
-- 4 : Copy the Martian disc to your installation folder ( when prompted, choose *not* to replace files — or do, it doesn't matter anymore, but fewer writes are better for SSD longevity )
+- 4 : Copy the contents of the Martian disc to your installation folder ( when prompted, choose *not* to replace files — or do, it doesn't matter anymore, but fewer writes are better for SSD longevity )
 - 5 : Download the latest version from the Releases page, extract the contents and place the files in your install folder.
-- 6 : Right-click the launcher and choose **Send to > Desktop (create shortcut)**, then launch it and enjoy the game!
+- 6 : Right-click "WoWLauncher.exe" and choose **Send to > Desktop (create shortcut)**, then launch it and enjoy the game!
 
 LANGUAGES : Language packs are now stand-alone releases.
 
-COMPATIBILITY : Windows 11 users might have to adjust the properties for "WoW_patched.exe" by setting compatibility to Windows XP Service Pack 3 as well as setting the colour depth to 16 bit.
+COMPATIBILITY : Windows 11 users might have to adjust the properties for "WoW_patched.exe" by setting compatibility to "Windows XP Service Pack 3" as well as setting the colour depth to "16-bit (65536) colour".
 
 IE : Right click "wow_patched.exe" and go to the compatibility tab, then adjust the settings accordingly.
 
