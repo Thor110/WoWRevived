@@ -5,6 +5,7 @@
         public Form3()
         {
             InitializeComponent();
+            // Plans for more registry settings?
         }
     }
 }

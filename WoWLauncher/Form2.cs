@@ -73,5 +73,17 @@ namespace WoWLauncher
         private void trackBar4_ValueChanged(object sender, EventArgs e) { label12.Text = trackBar4.Value.ToString(); }  // Martian Open Rate
         private void trackBar6_ValueChanged(object sender, EventArgs e) { label13.Text = trackBar6.Value.ToString(); }  // Pod Interval (hours)
         private void trackBar7_ValueChanged(object sender, EventArgs e) { label14.Text = trackBar7.Value.ToString(); }  // AI Hours Per Turn
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            registryCompare(battleKey, "Damage reduction divisor", "500");
+            registryCompare(tweakKey, "Max units in sector", "15");
+            registryCompare(tweakKey, "Max boats in sector", "5");
+            registryCompare(researchKey, "Human Open Rate", "20");
+            registryCompare(researchKey, "Martian Open Rate", "10");
+            registryCompare(tweakKey, "Pod Interval (hours)", "24");
+            registryCompare(tweakKey, "AI Hours Per Turn", "5");
+            registryCompare(mainKey, "Difficulty", "Medium");
+        }
     }
 }
