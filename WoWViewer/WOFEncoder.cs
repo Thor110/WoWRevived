@@ -196,9 +196,7 @@ namespace WoWViewer
             // Material count: derive from the original's actual section size.
             // Do not clamp — some models have more than 13 materials and clamping
             // shifts texOff/endOff, corrupting the texture atlas and crashing the game.
-            int matCount = orig != null
-                ? (orig.TexOffset - orig.MatOffset) / MaterialStride
-                : MaterialCount;
+            int matCount = orig != null ? (orig.TexOffset - orig.MatOffset) / MaterialStride : MaterialCount;
             if (matCount < 1) matCount = MaterialCount;
 
             int pieceTblOff = HeaderSize;
@@ -220,9 +218,7 @@ namespace WoWViewer
             int totalFaces = pieces.Sum(p => p.Faces.Count);
             // totalVerts must reflect reconciled vert counts (original counts for round-trip,
             // OBJ vert counts for new models), not just what the OBJ parser saw.
-            int totalVerts = orig != null
-                ? orig.Pieces.Sum(p => (int)p.VertCount)
-                : pieces.Sum(p => p.Verts.Count);
+            int totalVerts = orig != null ? orig.Pieces.Sum(p => (int)p.VertCount) : pieces.Sum(p => p.Verts.Count);
 
             // ── 6. Assemble output buffer ─────────────────────────────────────
             var buf = new byte[endOff];
@@ -276,8 +272,7 @@ namespace WoWViewer
                 }
 
                 // Name (16 bytes, null-padded)
-                var nameBytes = Encoding.ASCII.GetBytes(piece.Name.Length > 15
-                    ? piece.Name[..15] : piece.Name);
+                var nameBytes = Encoding.ASCII.GetBytes(piece.Name.Length > 15 ? piece.Name[..15] : piece.Name);
                 Array.Copy(nameBytes, 0, buf, recOff, nameBytes.Length);
 
                 buf[recOff + 0x10] = flags;
@@ -483,8 +478,7 @@ namespace WoWViewer
                     var (u1, vv1) = uvi[1] < globalUvs.Count ? globalUvs[uvi[1]] : (0f, 0f);
                     var (u2, vv2) = uvi[2] < globalUvs.Count ? globalUvs[uvi[2]] : (0f, 0f);
 
-                    cur.Faces.Add((li[0], li[1], li[2], curMat,
-                                   u0, vv0, u1, vv1, u2, vv2));
+                    cur.Faces.Add((li[0], li[1], li[2], curMat, u0, vv0, u1, vv1, u2, vv2));
                 }
             }
 
@@ -555,8 +549,8 @@ namespace WoWViewer
 
         private static (byte[] data, int height) QuantiseTexture(byte[] pngBytes, byte[] palData)
         {
-            using var ms = new System.IO.MemoryStream(pngBytes);
-            using var bmp = new System.Drawing.Bitmap(ms);
+            using var ms = new MemoryStream(pngBytes);
+            using var bmp = new Bitmap(ms);
 
             int w = bmp.Width, h = bmp.Height;
             if (w != WofDecoder.TexWidth)
@@ -569,7 +563,7 @@ namespace WoWViewer
             {
                 var result = new byte[w * h];
                 var bmpData = bmp.LockBits(
-                    new System.Drawing.Rectangle(0, 0, w, h),
+                    new Rectangle(0, 0, w, h),
                     System.Drawing.Imaging.ImageLockMode.ReadOnly,
                     System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
                 try

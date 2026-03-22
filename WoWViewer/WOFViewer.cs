@@ -14,8 +14,6 @@ namespace WoWViewer
         private byte[] palData = [];
         private byte[]? shadeData;   // active SHH level-0 slice (512 bytes), null = raw PAL
         private bool modelType;      // false = WOF units, true = IOB buildings
-        private int currentFrame;
-
         private WofModel? currentModel;      // non-null when modelType == false
         private IobModel? currentIobModel;   // non-null when modelType == true
 
@@ -39,13 +37,9 @@ namespace WoWViewer
         private void PopulateList()
         {
             string ext = modelType ? ".IOB" : ".WOF";
-            foreach (var entry in entries
-                .Where(e => e.Name.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
-                .ToList())
+            foreach (var entry in entries.Where(e => e.Name.EndsWith(ext, StringComparison.OrdinalIgnoreCase)).ToList())
             {
-                entry.Data = File.Exists($"DAT\\{entry.Name}")
-                    ? File.ReadAllBytes($"DAT\\{entry.Name}")
-                    : FfuhDecoder.Decompress(entry.Data!);
+                entry.Data = File.Exists($"DAT\\{entry.Name}") ? File.ReadAllBytes($"DAT\\{entry.Name}") : FfuhDecoder.Decompress(entry.Data!);
                 listBox1.Items.Add(entry.Name);
             }
             foreach (var entry in entries.Where(e => e.Name.EndsWith(".PAL", StringComparison.OrdinalIgnoreCase)))
@@ -65,9 +59,7 @@ namespace WoWViewer
 
         private void TryAutoSelectPalette(string entryName)
         {
-            string suggested = modelType
-                ? IobDecoder.SuggestPalette(entryName)
-                : WofDecoder.SuggestPalette(entryName, modelType);
+            string suggested = modelType ? IobDecoder.SuggestPalette(entryName) : WofDecoder.SuggestPalette(entryName, modelType);
             int idx = listBox2.FindStringExact(suggested);
             if (idx >= 0 && idx != listBox2.SelectedIndex)
                 listBox2.SelectedIndex = idx;
@@ -75,9 +67,7 @@ namespace WoWViewer
 
         private void TryAutoSelectShader(string palName)
         {
-            string suggested = modelType
-                ? IobDecoder.SuggestShader(selectedEntry, palName)
-                : WofDecoder.SuggestShader(selectedEntry, palName);
+            string suggested = modelType ? IobDecoder.SuggestShader(selectedEntry, palName) : WofDecoder.SuggestShader(selectedEntry, palName);
             int idx = listBox3.FindStringExact(suggested);
             if (idx >= 0 && idx != listBox3.SelectedIndex)
                 listBox3.SelectedIndex = idx;
@@ -124,14 +114,8 @@ namespace WoWViewer
                         $"anim={currentIobModel.AnimatedFlag}";
             }
 
-            if (currentIobModel == null || currentIobModel.Patches.Length == 0)
-            {
-                label2.Text = "IOB building — no patch data";
-                return;
-            }
-
-            var bmp = IobDecoder.RenderTextureAtlas(currentIobModel, palData, shdSlice);
-            DisplayScaled(bmp, currentIobModel.HalfWidthScale * 3, currentIobModel.HeightScale * 3);
+            var bmp = IobDecoder.RenderTextureAtlas(currentIobModel!, palData, shdSlice);
+            DisplayScaled(bmp, currentIobModel!.HalfWidthScale * 3, currentIobModel.HeightScale * 3);
         }
 
         private void DisplayScaled(Bitmap bmp, int scaledW, int scaledH)
@@ -157,8 +141,7 @@ namespace WoWViewer
             if (name == lastSelectedEntry) return;
             selectedEntry = name;
             lastSelectedEntry = name;
-            rawData = entries.First(en =>
-                en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
+            rawData = entries.First(en => en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
             currentRenderedEntry = -1;
             TryAutoSelectPalette(selectedEntry);
             RenderCurrent();
@@ -169,16 +152,14 @@ namespace WoWViewer
             string palName = listBox2.SelectedItem!.ToString()!;
             if (palName == lastSelectedPalette) return;
             lastSelectedPalette = palName;
-            palData = entries.First(en =>
-                en.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
+            palData = entries.First(en => en.Name.Equals(palName, StringComparison.OrdinalIgnoreCase)).Data!;
             TryAutoSelectShader(palName);
             RenderCurrent();
         }
 
         private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
-            var entry = entries.FirstOrDefault(en =>
-                en.Name.Equals(listBox3.SelectedItem!.ToString()!, StringComparison.OrdinalIgnoreCase));
+            var entry = entries.FirstOrDefault(en => en.Name.Equals(listBox3.SelectedItem!.ToString()!, StringComparison.OrdinalIgnoreCase));
             if (entry?.Data == null) return;
             // SHH: 1-byte count + count × 512 bytes. Level 0 = bytes [1..512].
             shadeData = entry.Data.Length >= 513 ? entry.Data[1..513] : null;
@@ -189,8 +170,7 @@ namespace WoWViewer
         {
             if (checkBox1.Checked && listBox3.SelectedItem != null)
             {
-                var entry = entries.FirstOrDefault(en =>
-                    en.Name.Equals(listBox3.SelectedItem.ToString()!, StringComparison.OrdinalIgnoreCase));
+                var entry = entries.FirstOrDefault(en => en.Name.Equals(listBox3.SelectedItem.ToString()!, StringComparison.OrdinalIgnoreCase));
                 shadeData = entry?.Data?.Length >= 513 ? entry.Data[1..513] : null;
             }
             RenderCurrent();
@@ -296,8 +276,7 @@ namespace WoWViewer
         private void ExportAllIob()
         {
             int count = 0;
-            foreach (var entry in entries.Where(en =>
-                en.Name.EndsWith(".IOB", StringComparison.OrdinalIgnoreCase)))
+            foreach (var entry in entries.Where(en => en.Name.EndsWith(".IOB", StringComparison.OrdinalIgnoreCase)))
             {
                 try
                 {
@@ -391,11 +370,6 @@ namespace WoWViewer
                                 "Missing Texture");
                 return;
             }
-            if (palData == null || palData.Length < 768)
-            {
-                MessageBox.Show("Select a palette file first.", "No Palette");
-                return;
-            }
 
             try
             {
@@ -429,8 +403,7 @@ namespace WoWViewer
             Directory.CreateDirectory("DAT");
             File.WriteAllBytes(outPath, encoded);
 
-            entries.First(en =>
-                en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
+            entries.First(en => en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
             rawData = encoded;
             currentIobModel = newModel;
             currentRenderedEntry = -1;
@@ -518,9 +491,7 @@ namespace WoWViewer
             if (palData == null || palData.Length < 768) return;
             byte[] trimmed = new byte[768];
             Array.Copy(palData, 0, trimmed, 0, 768);
-            File.WriteAllBytes(
-                outputPath + Path.GetFileNameWithoutExtension(selectedEntry) +
-                (checkBox1.Checked ? "_SHADED.PAL" : ".PAL"), trimmed);
+            File.WriteAllBytes(outputPath + Path.GetFileNameWithoutExtension(selectedEntry) + (checkBox1.Checked ? "_SHADED.PAL" : ".PAL"), trimmed);
             MessageBox.Show("Palette exported.");
         }
     }
