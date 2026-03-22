@@ -477,16 +477,13 @@ namespace WoWViewer
                 byte[] encoded = WofEncoder.Encode(objText, mtlText, texPng, palData, origWof);
 
                 string outPath = Path.Combine("DAT", selectedEntry);
-                if (File.Exists(outPath) &&
-                    MessageBox.Show($"'{outPath}' exists — overwrite?", "Overwrite",
-                        MessageBoxButtons.YesNo) == DialogResult.No)
+                if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists — overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No)
                     return;
 
                 Directory.CreateDirectory("DAT");
                 File.WriteAllBytes(outPath, encoded);
 
-                entries.First(en =>
-                    en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
+                entries.First(en => en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data = encoded;
                 rawData = encoded;
                 currentRenderedEntry = -1;
                 RenderCurrent();
