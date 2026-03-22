@@ -227,8 +227,7 @@ namespace WoWViewer
             var (objText, mtlText) = WofDecoder.ToObj(currentModel!, mtlName, texName);
             File.WriteAllText(Path.Combine(outputPath, baseName + ".obj"), objText);
             File.WriteAllText(Path.Combine(outputPath, mtlName), mtlText);
-            ExportAtlasWof(currentModel!, palData, null,  // shader not baked into export
-                Path.Combine(outputPath, baseName + "_tex.png"));
+            ExportAtlasWof(currentModel!, palData, shadeData, Path.Combine(outputPath, baseName + "_tex.png"));
             MessageBox.Show($"Exported {baseName}.obj, {mtlName}, {baseName}_tex.png");
         }
 
@@ -261,15 +260,14 @@ namespace WoWViewer
         private void ExportAllWof()
         {
             int count = 0;
-            foreach (var entry in entries.Where(en =>
-                en.Name.EndsWith(".WOF", StringComparison.OrdinalIgnoreCase)))
+            foreach (var entry in entries.Where(en => en.Name.EndsWith(".WOF", StringComparison.OrdinalIgnoreCase)))
             {
                 try
                 {
                     var model = WofDecoder.Parse(entry.Data!);
-                    string base_ = Path.GetFileNameWithoutExtension(entry.Name);
-                    string mtlN = base_ + ".mtl";
-                    string texN = base_ + "_tex.png";
+                    string baseName = Path.GetFileNameWithoutExtension(entry.Name);
+                    string mtlN = baseName + ".mtl";
+                    string texN = baseName + "_tex.png";
 
                     string palName = WofDecoder.SuggestPalette(entry.Name, false);
                     var palEntry = entries.FirstOrDefault(en =>
@@ -282,9 +280,9 @@ namespace WoWViewer
                     byte[]? shd = shdEntry?.Data?.Length >= 513 ? shdEntry.Data[1..513] : null;
 
                     var (objText, mtlText) = WofDecoder.ToObj(model, mtlN, texN);
-                    File.WriteAllText(Path.Combine(outputPath, base_ + ".obj"), objText);
+                    File.WriteAllText(Path.Combine(outputPath, baseName + ".obj"), objText);
                     File.WriteAllText(Path.Combine(outputPath, mtlN), mtlText);
-                    ExportAtlasWof(model, pal, null, Path.Combine(outputPath, base_ + "_tex.png"));
+                    ExportAtlasWof(model, pal, shd, Path.Combine(outputPath, baseName + "_tex.png"));
                     count++;
                 }
                 catch (Exception ex)
@@ -466,11 +464,6 @@ namespace WoWViewer
             if (!File.Exists(texPath))
             {
                 MessageBox.Show($"Cannot find {baseName}_tex.png next to the OBJ.", "Missing Texture");
-                return;
-            }
-            if (palData == null || palData.Length < 768)
-            {
-                MessageBox.Show("Select a palette file first.", "No Palette");
                 return;
             }
 
