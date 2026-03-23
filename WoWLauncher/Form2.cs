@@ -13,10 +13,57 @@ namespace WoWLauncher
         public Form2()
         {
             InitializeComponent();
+            ApplyLocalization();
             RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             InitializeRegistry();
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(Label), typeof(Button) });
+        }
+        private void ApplyLocalization()
+        {
+            trackBar1.AccessibleDescription = Program.Interface["damage_reduction"];
+            label1.Text = Program.Interface["damage"];
+            button1.Text = Program.Interface["return"];
+            label2.Text = Program.Interface["max_units"];
+            trackBar2.AccessibleDescription = Program.Interface["max_units_description"];
+            label3.Text = Program.Interface["max_boats"];
+            trackBar3.AccessibleDescription = Program.Interface["max_boats_description"];
+            label4.Text = Program.Interface["martian_open_rate"];
+            trackBar4.AccessibleDescription = Program.Interface["martian_open_rate_description"];
+            label5.Text = Program.Interface["human_open_rate"];
+            trackBar5.AccessibleDescription = Program.Interface["human_open_rate_description"];
+            label6.Text = Program.Interface["pod_interval"];
+            trackBar6.AccessibleDescription = Program.Interface["pod_interval_description"];
+            label7.Text = Program.Interface["ai_hours"];
+            trackBar7.AccessibleDescription = Program.Interface["ai_hours_description"];
+            button2.AccessibleDescription = Program.Interface["restore_description"];
+            button2.Text = Program.Interface["restore"];
+            label15.Text = Program.Interface["description"];
+            label16.Text = Program.Interface["description_suggestion"];
+            label19.Text = Program.Interface["martian_strength"];
+            trackBar8.AccessibleDescription = Program.Interface["martian_strength_description"];
+            label20.Text = Program.Interface["human_strength"];
+            trackBar9.AccessibleDescription = Program.Interface["human_strength_description"];
+            //
+            Text = Program.Interface["advanced"];
+            // language specific interface nudges
+            if (Program.CurrentLanguage == "French")
+            {
+
+            }
+            else if (Program.CurrentLanguage == "German")
+            {
+
+            }
+            else if (Program.CurrentLanguage == "Italian")
+            {
+
+            }
+            else if (Program.CurrentLanguage == "Spanish")
+            {
+
+            }
+            // English - Default
         }
         /// This method compares the registry entry with the value and sets it if they are different.
         private void registryCompare(RegistryKey key, string entry, string value) { if ((string)key.GetValue(entry)! != value) { key.SetValue(entry, value); config = true; } }

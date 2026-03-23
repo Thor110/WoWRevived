@@ -228,7 +228,7 @@
             button5.Name = "button5";
             button5.Size = new Size(195, 23);
             button5.TabIndex = 16;
-            button5.Text = "Advanced";
+            button5.Text = "Advanced Settings";
             button5.UseVisualStyleBackColor = true;
             button5.Visible = false;
             button5.Click += button5_Click;

@@ -208,7 +208,7 @@ void CreateCreditsOverlay()
             if (hf != INVALID_HANDLE_VALUE) { pngSize = GetFileSize(hf, NULL); CloseHandle(hf); }
 
             static const CreditsInfo kTiming[] = {
-                { 261744, 103.0f, 136.0f },  // English
+                { 252640, 103.0f, 136.0f },  // English
                 { 287375, 106.0f, 143.0f },  // French
                 { 289388, 106.0f, 143.0f },  // German
                 { 255818, 109.0f, 145.0f },  // Italian

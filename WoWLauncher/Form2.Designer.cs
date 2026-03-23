@@ -292,7 +292,7 @@
             // 
             // button2
             // 
-            button2.AccessibleDescription = "Reset the settings to their default state.";
+            button2.AccessibleDescription = "Restore the settings to their default state.";
             button2.Location = new Point(647, 12);
             button2.Name = "button2";
             button2.Size = new Size(141, 23);

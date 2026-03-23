@@ -50,16 +50,17 @@ namespace WoWLauncher
         public Form1()
         {
             InitializeComponent();
+            ApplyLocalization();
             if (!Utilities.IsDirectoryWritable(AppDomain.CurrentDomain.BaseDirectory))
             {
-                MessageBox.Show($"Warning: The folder {Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory)!.FullName} is Read-Only or Protected.\n\n" +
-                                "The launcher may fail to save settings. Please run as Administrator, uncheck read-only permissions on the folder " +
-                                "or move the game to a different folder (e.g., C:\\Games\\).");
+                string parentDir = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory)!.FullName;
+                string localizedMessage = string.Format(Program.Interface["dir_warning"], parentDir);
+                MessageBox.Show(localizedMessage, Program.Interface["dir_warning_error"], MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Environment.Exit(0);
             }
             if (File.Exists("_alttab_exit.txt"))
             {
-                if (MessageBox.Show("Alt-tabbing is not supported in fullscreen mode.\n\nDo you want to restart the game?", "Alt Tab Error", MessageBoxButtons.YesNo) == DialogResult.Yes) { launchGame(); }
+                if (MessageBox.Show(Program.Interface["alt_tab"], Program.Interface["alt_tab_error"], MessageBoxButtons.YesNo) == DialogResult.Yes) { launchGame(); }
                 File.Delete("_alttab_exit.txt");
             }
             var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
@@ -87,7 +88,7 @@ namespace WoWLauncher
                 battleKey.SetValue("EnableFogOfWar", "1");
                 battleKey.SetValue("Damage reduction divisor", "500");
                 // alternatively I could create whatever values we use here
-                MessageBox.Show("Registry entry missing, base registry entries recreated from scratch.\n\nPlease run the game once to create the rest of the registry entries.");
+                MessageBox.Show(Program.Interface["registry_missing"]);
             }
             registryCompare(mainKey, "CD Path", AppDomain.CurrentDomain.BaseDirectory); // update the cd path in the registry automatically.
             registryCompare(mainKey, "Install Path", AppDomain.CurrentDomain.BaseDirectory); // update the install path in the registry automatically.
@@ -133,13 +134,65 @@ namespace WoWLauncher
             //comboBox3.Items.Add("60");     // game frequency is not supported
             //comboBox3.Items.Add("120");
             //comboBox3.Items.Add("240");
-            comboBox4.Items.Add("Easy");
-            comboBox4.Items.Add("Medium");
-            comboBox4.Items.Add("Hard");
-            comboBox4.Items.Add("Extreme");
+            comboBox4.Items.Add(Program.Interface["easy"]);
+            comboBox4.Items.Add(Program.Interface["medium"]);
+            comboBox4.Items.Add(Program.Interface["hard"]);
+            comboBox4.Items.Add(Program.Interface["extreme"]);
             InitializeRegistry();
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(PictureBox), typeof(Label), typeof(Button) });
+        }
+        private void ApplyLocalization()
+        {
+            // commented are unused currently
+            button1.Text = Program.Interface["start_human"];
+            button2.Text = Program.Interface["start_martian"];
+            button3.Text = Program.Interface["config"];
+            button4.Text = Program.Interface["exit"];
+            //checkBox1.AccessibleDescription = "Enable or disable multiplayer. ( This option messes with single player resume and save campaign options, careful! )";
+            //checkBox1.Text = "Enable Network Version";
+            checkBox2.AccessibleDescription = Program.Interface["fullscreen_description"];
+            checkBox2.Text = Program.Interface["fullscreen"];
+            //comboBox1.AccessibleDescription = "Language options are not available, if you have a version other than English, let us know! Thanks.";
+            comboBox2.AccessibleDescription = Program.Interface["resolution_description"];
+            label2.Text = Program.Interface["resolution"];
+            //comboBox3.AccessibleDescription = "The refresh rate for the game. ( Higher than 30 might effect game stability )";
+            //label3.Text = "Refresh Rate";
+            comboBox4.AccessibleDescription = Program.Interface["difficulty_description"];
+            label4.Text = Program.Interface["difficulty"];
+            checkBox3.AccessibleDescription = Program.Interface["fog_description"];
+            checkBox3.Text = Program.Interface["fog"];
+            button5.Text = Program.Interface["advanced"];
+            button6.Text = Program.Interface["tools"];
+            //checkBox4.AccessibleDescription = "Enable or disable resizing of the window.";
+            //checkBox4.Text = "Resize";
+            button7.Text = Program.Interface["keyboard"];
+            checkBox5.AccessibleDescription = Program.Interface["music_playback_description"];
+            checkBox5.Text = Program.Interface["music_playback"];
+            checkBox6.AccessibleDescription = Program.Interface["enhanced_assets_description"];
+            checkBox6.Text = Program.Interface["enhanced_assets"];
+            checkBox7.AccessibleDescription = Program.Interface["enemy_visible_description"];
+            checkBox7.Text = Program.Interface["enemy_visible"];
+            //
+            Text = Program.Interface["game_name"];
+            // language specific interface nudges
+            if (Program.CurrentLanguage == "French")
+            {
+
+            }
+            else if (Program.CurrentLanguage == "German")
+            {
+
+            }
+            else if (Program.CurrentLanguage == "Italian")
+            {
+
+            }
+            else if (Program.CurrentLanguage == "Spanish")
+            {
+
+            }
+            // English - Default
         }
         /// This method compares the registry entry with the value and sets it if they are different.
         private void registryCompare(RegistryKey key, string entry, string value) { if ((string)key.GetValue(entry)! != value) { key.SetValue(entry, value); } }
@@ -180,7 +233,7 @@ namespace WoWLauncher
                     comboBox4.SelectedIndex = 2;
                     break;
                 case "Custom":
-                    comboBox4.Items.Add("Custom");
+                    comboBox4.Items.Add(Program.Interface["custom"]);
                     comboBox4.SelectedIndex = 3;
                     break;
             }
@@ -188,12 +241,12 @@ namespace WoWLauncher
             if (Convert.ToInt32(optionsKey.GetValue("Show lights")) != 1)
             {
                 optionsKey.SetValue("Show lights", 1, RegistryValueKind.DWord);
-                MessageBox.Show("The \"Show lights\" registry entry must be set to one to prevent crashes when using the Infiltration skill in-game, so it has been reset.");
+                MessageBox.Show(Program.Interface["lights"]);
             }
             if (Convert.ToInt32(screenKey.GetValue("BPP")) != 16)
             {
                 screenKey.SetValue("BPP", 16, RegistryValueKind.DWord);
-                MessageBox.Show("The \"BPP\" registry entry must be set to 16 as I have removed the 8/16 bit toggle from the games executable, surely you don't want to play it in 8 bit colour mode in the 21st century?");
+                MessageBox.Show(Program.Interface["colour"]);
             }
             // add event handlers here for the checkboxes and comboboxes to prevent them firing when the form is loaded
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
@@ -226,7 +279,7 @@ namespace WoWLauncher
                 proc.StartInfo.Verb = "runas";
                 proc.Start();
             }
-            else { MessageBox.Show("Executable not found, please reinstall the game and follow the instructions."); }
+            else { MessageBox.Show(Program.Interface["executable"]); }
             Close();
         }
         /// This is the event handler for the "Start Human Game" button
@@ -237,7 +290,7 @@ namespace WoWLauncher
                 // double check if the human game is installed // prevent exceptions if these files do not exist
                 if (!File.Exists("human.cd.bak") || !Directory.Exists("FMV"))
                 {
-                    MessageBox.Show("Human game not installed, please reinstall the game and follow the instructions.");
+                    MessageBox.Show(Program.Interface["human_game"]);
                     return;
                 }
                 File.Move("FMV\\RAGELOGO.MP4", "FMV-Human\\RAGELOGO.MP4");
@@ -279,7 +332,7 @@ namespace WoWLauncher
                 // double check if the martian game is installed // prevent exceptions if these files do not exist
                 if (!File.Exists("MARTIAN.cd.bak") || !Directory.Exists("FMV"))
                 {
-                    MessageBox.Show("Martian game not installed, please reinstall the game and follow the instructions.");
+                    MessageBox.Show(Program.Interface["martian_game"]);
                     return;
                 }
                 File.Move("FMV\\RAGELOGO.MP4", "FMV-Martian\\RAGELOGO.MP4");
@@ -320,8 +373,8 @@ namespace WoWLauncher
             button2.Visible = false;
             button3.Visible = false;
             config = true;
-            button4.Text = "Back";
-            checkBox1.Visible = true;
+            button4.Text = Program.Interface["back"];
+            //checkBox1.Visible = true;     // network enabled
             checkBox2.Visible = true;
             checkBox3.Visible = true;
             //checkBox4.Visible = true;     // resize window not supported
@@ -352,8 +405,8 @@ namespace WoWLauncher
                 button2.Visible = true;
                 button3.Visible = true;
                 config = false;
-                button4.Text = "Exit";
-                checkBox1.Visible = false;
+                button4.Text = Program.Interface["exit"];
+                //checkBox1.Visible = false;    // network enabled
                 checkBox2.Visible = false;
                 checkBox3.Visible = false;
                 //checkBox4.Visible = false;    // resize window not supported
@@ -486,9 +539,9 @@ namespace WoWLauncher
         private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (comboBox4.Text == (string)mainKey.GetValue("Difficulty")!) { return; }
-            switch (comboBox4.SelectedItem!.ToString())
+            switch (comboBox4.SelectedIndex)
             {
-                case "Easy":
+                case 0:
                     registryCompare(mainKey, "Difficulty", "Easy");
                     registryCompare(battleKey, "Damage reduction divisor", "400");
                     // new settings
@@ -502,7 +555,7 @@ namespace WoWLauncher
                     registryCompare(tweakKey, "AI Hours Per Turn", "5");
                     registryCompare(tweakKey, "Max boats in sector", "5");
                     break;
-                case "Medium":
+                case 1:
                     registryCompare(mainKey, "Difficulty", "Medium");
                     registryCompare(battleKey, "Damage reduction divisor", "500");
                     // new settings
@@ -516,7 +569,7 @@ namespace WoWLauncher
                     registryCompare(tweakKey, "AI Hours Per Turn", "5");
                     registryCompare(tweakKey, "Max boats in sector", "5");
                     break;
-                case "Hard":
+                case 2:
                     registryCompare(mainKey, "Difficulty", "Hard");
                     registryCompare(battleKey, "Damage reduction divisor", "600");
                     // new settings
@@ -530,7 +583,7 @@ namespace WoWLauncher
                     registryCompare(tweakKey, "AI Hours Per Turn", "5");
                     registryCompare(tweakKey, "Max boats in sector", "5");
                     break;
-                case "Extreme":
+                case 3:
                     registryCompare(mainKey, "Difficulty", "Extreme");
                     registryCompare(battleKey, "Damage reduction divisor", "700");
                     // new settings
@@ -544,10 +597,10 @@ namespace WoWLauncher
                     registryCompare(tweakKey, "AI Hours Per Turn", "5");
                     registryCompare(tweakKey, "Max boats in sector", "5");
                     break;
-                case "Custom":
+                case 4:
                     return; // do nothing if custom is selected
             }
-            if (comboBox4.Items.Count > 3) { comboBox4.Items.Remove("Custom"); } // remove custom from the combo box
+            if (comboBox4.Items.Count > 3) { comboBox4.Items.Remove(Program.Interface["custom"]); } // remove custom from the combo box
         }
         // open advanced settings
         private void button5_Click(object sender, EventArgs e) { newForm(new Form2()); }
@@ -556,7 +609,7 @@ namespace WoWLauncher
         {
             if (!File.Exists("WoWViewer.exe"))
             {
-                MessageBox.Show("Editor not found, please reinstall the game and follow the instructions.");
+                MessageBox.Show(Program.Interface["editor"]);
                 return;
             }
             Process.Start("WoWViewer.exe");
@@ -591,7 +644,7 @@ namespace WoWLauncher
         {
             if (checkBox2.Checked)
             {
-                if (MessageBox.Show("Disable Full Screen to enable this feature.", "Full Screen Detected", MessageBoxButtons.YesNo) == DialogResult.No)
+                if (MessageBox.Show(Program.Interface["fullscreen_disable"], Program.Interface["fullscreen_detected"], MessageBoxButtons.YesNo) == DialogResult.No)
                 {
                     checkBox5.CheckedChanged -= checkBox5_CheckedChanged!;
                     checkBox5.Checked = false;
