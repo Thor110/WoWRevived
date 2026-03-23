@@ -136,6 +136,7 @@ namespace WoWLauncher
             comboBox4.Items.Add("Easy");
             comboBox4.Items.Add("Medium");
             comboBox4.Items.Add("Hard");
+            comboBox4.Items.Add("Extreme");
             InitializeRegistry();
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(PictureBox), typeof(Label), typeof(Button) });
@@ -488,23 +489,47 @@ namespace WoWLauncher
                 case "Easy":
                     registryCompare(mainKey, "Difficulty", "Easy");
                     registryCompare(battleKey, "Damage reduction divisor", "400");
+                    // new settings
+                    registryCompare(tweakKey, "AI Aggression Value", "0.400000");
+                    registryCompare(tweakKey, "HumanEnemy Armour Modifier", "1.500000");
+                    registryCompare(tweakKey, "HumanFriend Armour Modifier", "2.200000");
+                    registryCompare(tweakKey, "AI Invasion Threshold PC", "200.000000");
+                    registryCompare(tweakKey, "Max units in sector", "15");
                     break;
                 case "Medium":
                     registryCompare(mainKey, "Difficulty", "Medium");
                     registryCompare(battleKey, "Damage reduction divisor", "500");
+                    // new settings
+                    registryCompare(tweakKey, "AI Aggression Value", "0.500000");
+                    registryCompare(tweakKey, "HumanEnemy Armour Modifier", "1.800000");
+                    registryCompare(tweakKey, "HumanFriend Armour Modifier", "1.800000");
+                    registryCompare(tweakKey, "AI Invasion Threshold PC", "150.000000");
+                    registryCompare(tweakKey, "Max units in sector", "15");
                     break;
                 case "Hard":
                     registryCompare(mainKey, "Difficulty", "Hard");
                     registryCompare(battleKey, "Damage reduction divisor", "600");
+                    // new settings
+                    registryCompare(tweakKey, "AI Aggression Value", "0.900000");
+                    registryCompare(tweakKey, "HumanEnemy Armour Modifier", "2.200000");
+                    registryCompare(tweakKey, "HumanFriend Armour Modifier", "1.500000");
+                    registryCompare(tweakKey, "AI Invasion Threshold PC", "100.000000");
+                    registryCompare(tweakKey, "Max units in sector", "25");
+                    break;
+                case "Extreme":
+                    registryCompare(mainKey, "Difficulty", "Extreme");
+                    registryCompare(battleKey, "Damage reduction divisor", "700");
+                    // new settings
+                    registryCompare(tweakKey, "AI Aggression Value", "1.000000");
+                    registryCompare(tweakKey, "HumanEnemy Armour Modifier", "2.400000");
+                    registryCompare(tweakKey, "HumanFriend Armour Modifier", "1.400000");
+                    registryCompare(tweakKey, "AI Invasion Threshold PC", "90.000000");
+                    registryCompare(tweakKey, "Max units in sector", "30");
                     break;
                 case "Custom":
                     return; // do nothing if custom is selected
-            } // reset the custom settings to default
-            registryCompare(tweakKey, "Max units in sector", "15");
-            registryCompare(tweakKey, "Max boats in sector", "5");
-            registryCompare(tweakKey, "Pod Interval (hours)", "24");
-            registryCompare(tweakKey, "AI Hours Per Turn", "5");
-            if (comboBox4.Items.Count > 2) { comboBox4.Items.Remove("Custom"); } // remove custom from the combo box
+            }
+            if (comboBox4.Items.Count > 3) { comboBox4.Items.Remove("Custom"); } // remove custom from the combo box
         }
         // open advanced settings
         private void button5_Click(object sender, EventArgs e) { newForm(new Form2()); }

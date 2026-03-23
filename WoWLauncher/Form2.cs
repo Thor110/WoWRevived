@@ -94,6 +94,11 @@ namespace WoWLauncher
             registryCompare(mainKey, "Difficulty", "Medium");
             registryCompare(battleKey, "EnableFogOfWar", "1");
             registryCompare(debugKey, "Enemy Visible", "0");
+            // new settings
+            registryCompare(tweakKey, "AI Aggression Value", "0.500000");
+            registryCompare(tweakKey, "HumanEnemy Armour Modifier", "1.800000");
+            registryCompare(tweakKey, "HumanFriend Armour Modifier", "1.800000");
+            registryCompare(tweakKey, "AI Invasion Threshold PC", "150.000000");
             config = false;
         }
     }
