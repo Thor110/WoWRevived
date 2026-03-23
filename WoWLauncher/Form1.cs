@@ -177,24 +177,6 @@ namespace WoWLauncher
             checkBox7.Text = Program.Interface["enemy_visible"];
             //
             Text = Program.Interface["game_name"];
-            // language specific interface nudges
-            if (Program.CurrentLanguage == "French")
-            {
-
-            }
-            else if (Program.CurrentLanguage == "German")
-            {
-
-            }
-            else if (Program.CurrentLanguage == "Italian")
-            {
-
-            }
-            else if (Program.CurrentLanguage == "Spanish")
-            {
-
-            }
-            // English - Default
         }
         /// This method compares the registry entry with the value and sets it if they are different.
         private void registryCompare(RegistryKey key, string entry, string value) { if ((string)key.GetValue(entry)! != value) { key.SetValue(entry, value); } }
