@@ -75,7 +75,7 @@
             // 
             trackBar1.AccessibleDescription = "Adjust the damage reduction divisor in increments of 100 the default value is 500 for the game.";
             trackBar1.LargeChange = 2;
-            trackBar1.Location = new Point(238, 25);
+            trackBar1.Location = new Point(363, 25);
             trackBar1.Minimum = 1;
             trackBar1.Name = "trackBar1";
             trackBar1.Size = new Size(327, 45);
@@ -84,10 +84,10 @@
             // 
             // label1
             // 
-            label1.AutoSize = true;
-            label1.Location = new Point(83, 25);
+            label1.Location = new Point(7, 25);
             label1.Name = "label1";
-            label1.Size = new Size(149, 15);
+            label1.RightToLeft = RightToLeft.No;
+            label1.Size = new Size(350, 15);
             label1.TabIndex = 1;
             label1.Text = "Damage reduction divisor :";
             // 
@@ -103,10 +103,10 @@
             // 
             // label2
             // 
-            label2.AutoSize = true;
-            label2.Location = new Point(119, 76);
+            label2.Location = new Point(7, 76);
             label2.Name = "label2";
-            label2.Size = new Size(113, 15);
+            label2.RightToLeft = RightToLeft.No;
+            label2.Size = new Size(350, 15);
             label2.TabIndex = 4;
             label2.Text = "Max units in sector :";
             // 
@@ -114,7 +114,7 @@
             // 
             trackBar2.AccessibleDescription = "Adjust the maximum units per sector. ( default is 15 )";
             trackBar2.LargeChange = 2;
-            trackBar2.Location = new Point(238, 76);
+            trackBar2.Location = new Point(363, 76);
             trackBar2.Maximum = 255;
             trackBar2.Minimum = 15;
             trackBar2.Name = "trackBar2";
@@ -124,10 +124,10 @@
             // 
             // label3
             // 
-            label3.AutoSize = true;
-            label3.Location = new Point(116, 127);
+            label3.Location = new Point(7, 127);
             label3.Name = "label3";
-            label3.Size = new Size(116, 15);
+            label3.RightToLeft = RightToLeft.No;
+            label3.Size = new Size(350, 15);
             label3.TabIndex = 6;
             label3.Text = "Max boats in sector :";
             // 
@@ -135,7 +135,7 @@
             // 
             trackBar3.AccessibleDescription = "Adjust the maximum boats per sector. ( default is 5 )";
             trackBar3.LargeChange = 2;
-            trackBar3.Location = new Point(238, 127);
+            trackBar3.Location = new Point(363, 127);
             trackBar3.Maximum = 255;
             trackBar3.Minimum = 5;
             trackBar3.Name = "trackBar3";
@@ -145,10 +145,10 @@
             // 
             // label4
             // 
-            label4.AutoSize = true;
-            label4.Location = new Point(120, 229);
+            label4.Location = new Point(7, 229);
             label4.Name = "label4";
-            label4.Size = new Size(112, 15);
+            label4.RightToLeft = RightToLeft.No;
+            label4.Size = new Size(350, 15);
             label4.TabIndex = 10;
             label4.Text = "Martian Open Rate :";
             // 
@@ -156,7 +156,7 @@
             // 
             trackBar4.AccessibleDescription = "Adjust the Martian Open Rate research value. ( default is 10 )";
             trackBar4.LargeChange = 2;
-            trackBar4.Location = new Point(238, 229);
+            trackBar4.Location = new Point(363, 229);
             trackBar4.Maximum = 255;
             trackBar4.Minimum = 1;
             trackBar4.Name = "trackBar4";
@@ -166,10 +166,10 @@
             // 
             // label5
             // 
-            label5.AutoSize = true;
-            label5.Location = new Point(121, 178);
+            label5.Location = new Point(7, 178);
             label5.Name = "label5";
-            label5.Size = new Size(111, 15);
+            label5.RightToLeft = RightToLeft.No;
+            label5.Size = new Size(350, 15);
             label5.TabIndex = 8;
             label5.Text = "Human Open Rate :";
             // 
@@ -177,7 +177,7 @@
             // 
             trackBar5.AccessibleDescription = "Adjust the Human Open Rate research value. ( default is 20 )";
             trackBar5.LargeChange = 2;
-            trackBar5.Location = new Point(238, 178);
+            trackBar5.Location = new Point(363, 178);
             trackBar5.Maximum = 255;
             trackBar5.Minimum = 1;
             trackBar5.Name = "trackBar5";
@@ -187,10 +187,10 @@
             // 
             // label6
             // 
-            label6.AutoSize = true;
-            label6.Location = new Point(115, 280);
+            label6.Location = new Point(7, 280);
             label6.Name = "label6";
-            label6.Size = new Size(117, 15);
+            label6.RightToLeft = RightToLeft.No;
+            label6.Size = new Size(350, 15);
             label6.TabIndex = 12;
             label6.Text = "Pod Interval (hours) :";
             // 
@@ -198,7 +198,7 @@
             // 
             trackBar6.AccessibleDescription = "Adjust the Pod interval (hours) value. ( default is 24 )";
             trackBar6.LargeChange = 2;
-            trackBar6.Location = new Point(238, 280);
+            trackBar6.Location = new Point(363, 280);
             trackBar6.Maximum = 255;
             trackBar6.Minimum = 1;
             trackBar6.Name = "trackBar6";
@@ -208,10 +208,10 @@
             // 
             // label7
             // 
-            label7.AutoSize = true;
-            label7.Location = new Point(126, 331);
+            label7.Location = new Point(7, 331);
             label7.Name = "label7";
-            label7.Size = new Size(106, 15);
+            label7.RightToLeft = RightToLeft.No;
+            label7.Size = new Size(350, 15);
             label7.TabIndex = 14;
             label7.Text = "AI Hours Per Turn :";
             // 
@@ -219,7 +219,7 @@
             // 
             trackBar7.AccessibleDescription = "Adjust the AI Hours Per Turn value. ( default is 5 )";
             trackBar7.LargeChange = 2;
-            trackBar7.Location = new Point(238, 331);
+            trackBar7.Location = new Point(363, 331);
             trackBar7.Maximum = 255;
             trackBar7.Minimum = 1;
             trackBar7.Name = "trackBar7";
@@ -230,7 +230,7 @@
             // label8
             // 
             label8.AutoSize = true;
-            label8.Location = new Point(571, 25);
+            label8.Location = new Point(696, 25);
             label8.Name = "label8";
             label8.Size = new Size(38, 15);
             label8.TabIndex = 15;
@@ -239,7 +239,7 @@
             // label9
             // 
             label9.AutoSize = true;
-            label9.Location = new Point(571, 76);
+            label9.Location = new Point(696, 76);
             label9.Name = "label9";
             label9.Size = new Size(38, 15);
             label9.TabIndex = 16;
@@ -248,7 +248,7 @@
             // label10
             // 
             label10.AutoSize = true;
-            label10.Location = new Point(571, 127);
+            label10.Location = new Point(696, 127);
             label10.Name = "label10";
             label10.Size = new Size(44, 15);
             label10.TabIndex = 17;
@@ -257,7 +257,7 @@
             // label11
             // 
             label11.AutoSize = true;
-            label11.Location = new Point(571, 178);
+            label11.Location = new Point(696, 178);
             label11.Name = "label11";
             label11.Size = new Size(44, 15);
             label11.TabIndex = 18;
@@ -266,7 +266,7 @@
             // label12
             // 
             label12.AutoSize = true;
-            label12.Location = new Point(571, 229);
+            label12.Location = new Point(696, 229);
             label12.Name = "label12";
             label12.Size = new Size(44, 15);
             label12.TabIndex = 19;
@@ -275,7 +275,7 @@
             // label13
             // 
             label13.AutoSize = true;
-            label13.Location = new Point(571, 280);
+            label13.Location = new Point(696, 280);
             label13.Name = "label13";
             label13.Size = new Size(44, 15);
             label13.TabIndex = 20;
@@ -284,7 +284,7 @@
             // label14
             // 
             label14.AutoSize = true;
-            label14.Location = new Point(571, 331);
+            label14.Location = new Point(696, 331);
             label14.Name = "label14";
             label14.Size = new Size(44, 15);
             label14.TabIndex = 21;
@@ -293,9 +293,9 @@
             // button2
             // 
             button2.AccessibleDescription = "Restore the settings to their default state.";
-            button2.Location = new Point(647, 12);
+            button2.Location = new Point(621, 528);
             button2.Name = "button2";
-            button2.Size = new Size(141, 23);
+            button2.Size = new Size(167, 23);
             button2.TabIndex = 22;
             button2.Text = "Restore Default Settings";
             button2.UseVisualStyleBackColor = true;
@@ -322,7 +322,7 @@
             // label17
             // 
             label17.AutoSize = true;
-            label17.Location = new Point(571, 433);
+            label17.Location = new Point(696, 433);
             label17.Name = "label17";
             label17.Size = new Size(44, 15);
             label17.TabIndex = 30;
@@ -331,7 +331,7 @@
             // label18
             // 
             label18.AutoSize = true;
-            label18.Location = new Point(571, 382);
+            label18.Location = new Point(696, 382);
             label18.Name = "label18";
             label18.Size = new Size(44, 15);
             label18.TabIndex = 29;
@@ -339,10 +339,10 @@
             // 
             // label19
             // 
-            label19.AutoSize = true;
-            label19.Location = new Point(34, 433);
+            label19.Location = new Point(7, 433);
             label19.Name = "label19";
-            label19.Size = new Size(198, 15);
+            label19.RightToLeft = RightToLeft.No;
+            label19.Size = new Size(350, 15);
             label19.TabIndex = 28;
             label19.Text = "AI strength table Martian multiplier :";
             // 
@@ -350,7 +350,7 @@
             // 
             trackBar8.AccessibleDescription = "Adjust the AI Martian strength table multiplier.";
             trackBar8.LargeChange = 2;
-            trackBar8.Location = new Point(238, 433);
+            trackBar8.Location = new Point(363, 433);
             trackBar8.Maximum = 300;
             trackBar8.Minimum = 10;
             trackBar8.Name = "trackBar8";
@@ -360,10 +360,10 @@
             // 
             // label20
             // 
-            label20.AutoSize = true;
-            label20.Location = new Point(35, 382);
+            label20.Location = new Point(7, 382);
             label20.Name = "label20";
-            label20.Size = new Size(197, 15);
+            label20.RightToLeft = RightToLeft.No;
+            label20.Size = new Size(350, 15);
             label20.TabIndex = 26;
             label20.Text = "AI strength table Human multiplier :";
             // 
@@ -371,7 +371,7 @@
             // 
             trackBar9.AccessibleDescription = "Adjust the AI Human strength table multiplier.";
             trackBar9.LargeChange = 2;
-            trackBar9.Location = new Point(238, 382);
+            trackBar9.Location = new Point(363, 382);
             trackBar9.Maximum = 300;
             trackBar9.Minimum = 10;
             trackBar9.Name = "trackBar9";

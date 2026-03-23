@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using System.Globalization;
 
 namespace WoWLauncher
 {
@@ -21,6 +22,15 @@ namespace WoWLauncher
         }
         private void ApplyLocalization()
         {
+            label1.TextAlign = ContentAlignment.MiddleRight;
+            label2.TextAlign = ContentAlignment.MiddleRight;
+            label3.TextAlign = ContentAlignment.MiddleRight;
+            label4.TextAlign = ContentAlignment.MiddleRight;
+            label5.TextAlign = ContentAlignment.MiddleRight;
+            label6.TextAlign = ContentAlignment.MiddleRight;
+            label7.TextAlign = ContentAlignment.MiddleRight;
+            label19.TextAlign = ContentAlignment.MiddleRight;
+            label20.TextAlign = ContentAlignment.MiddleRight;
             trackBar1.AccessibleDescription = Program.Interface["damage_reduction"];
             label1.Text = Program.Interface["damage"];
             button1.Text = Program.Interface["return"];
@@ -93,12 +103,13 @@ namespace WoWLauncher
             trackBar7.Value = aiHoursPerTurn;
             label14.Text = aiHoursPerTurn.ToString();
             // new settings
-            double humanMultiplier = Convert.ToDouble(tweakKey.GetValue("AI strength table Human multiplier"));
+            // Use this for more robust loading from Registry
+            double humanMultiplier = double.Parse(tweakKey.GetValue("AI strength table Human multiplier")!.ToString()!, CultureInfo.InvariantCulture);
             trackBar9.Value = (int)humanMultiplier * 100;
-            label18.Text = humanMultiplier.ToString("F6");
-            double martianMultiplier = Convert.ToDouble(tweakKey.GetValue("AI strength table Martian multiplier"));
+            label18.Text = humanMultiplier.ToString("F6", CultureInfo.InvariantCulture);// Use this for more robust loading from Registry
+            double martianMultiplier = double.Parse(tweakKey.GetValue("AI strength table Martian multiplier")!.ToString()!, CultureInfo.InvariantCulture);
             trackBar8.Value = (int)martianMultiplier * 100;
-            label17.Text = martianMultiplier.ToString("F6");
+            label17.Text = martianMultiplier.ToString("F6", CultureInfo.InvariantCulture);
             trackBar1.ValueChanged += trackBar1_ValueChanged!;
             trackBar2.ValueChanged += trackBar2_ValueChanged!;
             trackBar3.ValueChanged += trackBar3_ValueChanged!;
@@ -120,8 +131,8 @@ namespace WoWLauncher
             registryCompare(tweakKey, "Pod Interval (hours)", trackBar6.Value.ToString());
             registryCompare(tweakKey, "AI Hours Per Turn", trackBar7.Value.ToString());
             // new settings
-            registryCompare(tweakKey, "AI strength table Human multiplier", ((double)trackBar9.Value / 100).ToString("F6"));
-            registryCompare(tweakKey, "AI strength table Martian multiplier", ((double)trackBar8.Value / 100).ToString("F6"));
+            registryCompare(tweakKey, "AI strength table Human multiplier", ((double)trackBar9.Value / 100).ToString("F6", CultureInfo.InvariantCulture));
+            registryCompare(tweakKey, "AI strength table Martian multiplier", ((double)trackBar8.Value / 100).ToString("F6", CultureInfo.InvariantCulture));
             if (config) { registryCompare(mainKey, "Difficulty", "Custom"); }
             this.Close();
         }
@@ -134,9 +145,9 @@ namespace WoWLauncher
         private void trackBar6_ValueChanged(object sender, EventArgs e) { label13.Text = trackBar6.Value.ToString(); }  // Pod Interval (hours)
         private void trackBar7_ValueChanged(object sender, EventArgs e) { label14.Text = trackBar7.Value.ToString(); }  // AI Hours Per Turn
         // AI strength table Human multiplier
-        private void trackBar9_ValueChanged(object sender, EventArgs e) { label18.Text = ((double)trackBar9.Value / 100).ToString("F6"); }
+        private void trackBar9_ValueChanged(object sender, EventArgs e) { label18.Text = ((double)trackBar9.Value / 100).ToString("F6", CultureInfo.InvariantCulture); }
         // AI strength table Martian multiplier
-        private void trackBar8_ValueChanged(object sender, EventArgs e) { label17.Text = ((double)trackBar8.Value / 100).ToString("F6"); }
+        private void trackBar8_ValueChanged(object sender, EventArgs e) { label17.Text = ((double)trackBar8.Value / 100).ToString("F6", CultureInfo.InvariantCulture); }
         // default
         private void button2_Click(object sender, EventArgs e)
         {

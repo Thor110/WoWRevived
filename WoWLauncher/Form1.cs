@@ -144,6 +144,8 @@ namespace WoWLauncher
         }
         private void ApplyLocalization()
         {
+            label2.TextAlign = ContentAlignment.MiddleRight;
+            label4.TextAlign = ContentAlignment.MiddleRight;
             // commented are unused currently
             button1.Text = Program.Interface["start_human"];
             button2.Text = Program.Interface["start_martian"];
@@ -373,7 +375,7 @@ namespace WoWLauncher
             button2.Visible = false;
             button3.Visible = false;
             config = true;
-            button4.Text = Program.Interface["back"];
+            button4.Text = Program.Interface["return"];
             //checkBox1.Visible = true;     // network enabled
             checkBox2.Visible = true;
             checkBox3.Visible = true;

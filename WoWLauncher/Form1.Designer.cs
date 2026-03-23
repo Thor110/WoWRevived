@@ -162,10 +162,9 @@
             // 
             // label2
             // 
-            label2.AutoSize = true;
-            label2.Location = new Point(209, 354);
+            label2.Location = new Point(172, 354);
             label2.Name = "label2";
-            label2.Size = new Size(63, 15);
+            label2.Size = new Size(100, 15);
             label2.TabIndex = 10;
             label2.Text = "Resolution";
             label2.Visible = false;
@@ -202,10 +201,9 @@
             // 
             // label4
             // 
-            label4.AutoSize = true;
-            label4.Location = new Point(217, 383);
+            label4.Location = new Point(172, 382);
             label4.Name = "label4";
-            label4.Size = new Size(55, 15);
+            label4.Size = new Size(100, 15);
             label4.TabIndex = 14;
             label4.Text = "Difficulty";
             label4.Visible = false;
