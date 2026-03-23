@@ -249,25 +249,26 @@ namespace WoWLauncher
                 Directory.Move("Music", "MusicMartian");
                 Directory.Move("MusicHuman", "Music");
             }
-            // research variance testing
-            string openRate = "20"; // default
+            // difficulty variance testing
             switch ((string)mainKey.GetValue("Difficulty")!)
             {
                 case "Easy":
-                    openRate = "25";
+                    registryCompare(tweakKey, "AI strength table Human multiplier", "1.200000");
+                    registryCompare(tweakKey, "AI strength table Martian multiplier", "1.800000");
                     break;
                 case "Medium":
-                    openRate = "20"; // default
+                    registryCompare(tweakKey, "AI strength table Human multiplier", "1.000000");
+                    registryCompare(tweakKey, "AI strength table Martian multiplier", "2.000000");
                     break;
                 case "Hard":
-                    openRate = "15";
+                    registryCompare(tweakKey, "AI strength table Human multiplier", "0.900000");
+                    registryCompare(tweakKey, "AI strength table Martian multiplier", "2.100000");
                     break;
-                case "Custom":
-                    launchGame();
-                    return; // do not set the open rate if custom is selected
+                case "Extreme":
+                    registryCompare(tweakKey, "AI strength table Human multiplier", "0.800000");
+                    registryCompare(tweakKey, "AI strength table Martian multiplier", "2.200000");
+                    break;
             }
-            registryCompare(researchKey, "Human Open Rate", openRate);
-            registryCompare(researchKey, "Martian Open Rate", "10"); // default
             launchGame();
         }
         /// This is the event handler for the "Start Martian Game" button
@@ -290,25 +291,26 @@ namespace WoWLauncher
                 Directory.Move("Music", "MusicHuman");
                 Directory.Move("MusicMartian", "Music");
             }
-            // research variance testing
-            string openRate = "10"; // default
+            // difficulty variance testing
             switch ((string)mainKey.GetValue("Difficulty")!)
             {
                 case "Easy":
-                    openRate = "15";
+                    registryCompare(tweakKey, "AI strength table Human multiplier", "0.800000");
+                    registryCompare(tweakKey, "AI strength table Martian multiplier", "2.200000");
                     break;
                 case "Medium":
-                    openRate = "10"; // default
+                    registryCompare(tweakKey, "AI strength table Human multiplier", "1.000000");
+                    registryCompare(tweakKey, "AI strength table Martian multiplier", "2.000000");
                     break;
                 case "Hard":
-                    openRate = "5";
+                    registryCompare(tweakKey, "AI strength table Human multiplier", "1.100000");
+                    registryCompare(tweakKey, "AI strength table Martian multiplier", "1.900000");
                     break;
-                case "Custom":
-                    launchGame();
-                    return; // do not set the open rate if custom is selected
+                case "Extreme":
+                    registryCompare(tweakKey, "AI strength table Human multiplier", "1.200000");
+                    registryCompare(tweakKey, "AI strength table Martian multiplier", "1.800000");
+                    break;
             }
-            registryCompare(researchKey, "Martian Open Rate", openRate);
-            registryCompare(researchKey, "Human Open Rate", "20"); // default
             launchGame();
         }
         /// This is the event handler for the "Configuration Settings" button
@@ -491,40 +493,58 @@ namespace WoWLauncher
                     registryCompare(battleKey, "Damage reduction divisor", "400");
                     // new settings
                     registryCompare(tweakKey, "AI Aggression Value", "0.400000");
-                    registryCompare(tweakKey, "HumanEnemy Armour Modifier", "1.500000");
-                    registryCompare(tweakKey, "HumanFriend Armour Modifier", "2.200000");
                     registryCompare(tweakKey, "AI Invasion Threshold PC", "200.000000");
                     registryCompare(tweakKey, "Max units in sector", "15");
+                    // custom settings reset
+                    registryCompare(researchKey, "Human Open Rate", "20");
+                    registryCompare(researchKey, "Martian Open Rate", "10");
+                    registryCompare(tweakKey, "Pod Interval (hours)", "24");
+                    registryCompare(tweakKey, "AI Hours Per Turn", "5");
+                    registryCompare(tweakKey, "Max boats in sector", "5");
                     break;
                 case "Medium":
                     registryCompare(mainKey, "Difficulty", "Medium");
                     registryCompare(battleKey, "Damage reduction divisor", "500");
                     // new settings
                     registryCompare(tweakKey, "AI Aggression Value", "0.500000");
-                    registryCompare(tweakKey, "HumanEnemy Armour Modifier", "1.800000");
-                    registryCompare(tweakKey, "HumanFriend Armour Modifier", "1.800000");
                     registryCompare(tweakKey, "AI Invasion Threshold PC", "150.000000");
                     registryCompare(tweakKey, "Max units in sector", "15");
+                    //AI strength table Human multiplier
+                    //AI strength table Martian multiplier
+                    // custom settings reset
+                    registryCompare(researchKey, "Human Open Rate", "20");
+                    registryCompare(researchKey, "Martian Open Rate", "10");
+                    registryCompare(tweakKey, "Pod Interval (hours)", "24");
+                    registryCompare(tweakKey, "AI Hours Per Turn", "5");
+                    registryCompare(tweakKey, "Max boats in sector", "5");
                     break;
                 case "Hard":
                     registryCompare(mainKey, "Difficulty", "Hard");
                     registryCompare(battleKey, "Damage reduction divisor", "600");
                     // new settings
                     registryCompare(tweakKey, "AI Aggression Value", "0.900000");
-                    registryCompare(tweakKey, "HumanEnemy Armour Modifier", "2.200000");
-                    registryCompare(tweakKey, "HumanFriend Armour Modifier", "1.500000");
                     registryCompare(tweakKey, "AI Invasion Threshold PC", "100.000000");
                     registryCompare(tweakKey, "Max units in sector", "25");
+                    // custom settings reset
+                    registryCompare(researchKey, "Human Open Rate", "20");
+                    registryCompare(researchKey, "Martian Open Rate", "10");
+                    registryCompare(tweakKey, "Pod Interval (hours)", "24");
+                    registryCompare(tweakKey, "AI Hours Per Turn", "5");
+                    registryCompare(tweakKey, "Max boats in sector", "5");
                     break;
                 case "Extreme":
                     registryCompare(mainKey, "Difficulty", "Extreme");
                     registryCompare(battleKey, "Damage reduction divisor", "700");
                     // new settings
                     registryCompare(tweakKey, "AI Aggression Value", "1.000000");
-                    registryCompare(tweakKey, "HumanEnemy Armour Modifier", "2.400000");
-                    registryCompare(tweakKey, "HumanFriend Armour Modifier", "1.400000");
                     registryCompare(tweakKey, "AI Invasion Threshold PC", "90.000000");
                     registryCompare(tweakKey, "Max units in sector", "30");
+                    // custom settings reset
+                    registryCompare(researchKey, "Human Open Rate", "20");
+                    registryCompare(researchKey, "Martian Open Rate", "10");
+                    registryCompare(tweakKey, "Pod Interval (hours)", "24");
+                    registryCompare(tweakKey, "AI Hours Per Turn", "5");
+                    registryCompare(tweakKey, "Max boats in sector", "5");
                     break;
                 case "Custom":
                     return; // do nothing if custom is selected

@@ -192,7 +192,7 @@
             // 
             // comboBox4
             // 
-            comboBox4.AccessibleDescription = "Simple difficulty settings.";
+            comboBox4.AccessibleDescription = "Difficulty settings. (Medium is the default)";
             comboBox4.FormattingEnabled = true;
             comboBox4.Location = new Point(278, 379);
             comboBox4.Name = "comboBox4";
