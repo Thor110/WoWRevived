@@ -329,6 +329,7 @@
             Controls.Add(pictureBox1);
             Controls.Add(button2);
             Controls.Add(button1);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "Form1";
             Text = "Jeff Wayne's 'The War Of The Worlds'";

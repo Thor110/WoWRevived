@@ -415,6 +415,7 @@
             Controls.Add(button1);
             Controls.Add(label1);
             Controls.Add(trackBar1);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "Form2";
             Text = "Advanced Settings";
