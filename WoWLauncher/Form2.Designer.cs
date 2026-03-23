@@ -348,7 +348,7 @@
             // 
             // trackBar8
             // 
-            trackBar8.AccessibleDescription = "Adjust the Martian Open Rate research value. ( default is 10 )";
+            trackBar8.AccessibleDescription = "Adjust the AI Martian strength table multiplier.";
             trackBar8.LargeChange = 2;
             trackBar8.Location = new Point(238, 433);
             trackBar8.Maximum = 300;
@@ -369,7 +369,7 @@
             // 
             // trackBar9
             // 
-            trackBar9.AccessibleDescription = "Adjust the Human Open Rate research value. ( default is 20 )";
+            trackBar9.AccessibleDescription = "Adjust the AI Human strength table multiplier.";
             trackBar9.LargeChange = 2;
             trackBar9.Location = new Point(238, 382);
             trackBar9.Maximum = 300;
