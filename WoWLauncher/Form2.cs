@@ -111,10 +111,12 @@ namespace WoWLauncher
             registryCompare(battleKey, "EnableFogOfWar", "1");
             registryCompare(debugKey, "Enemy Visible", "0");
             // new settings
-            registryCompare(tweakKey, "AI Aggression Value", "0.500000");
-            registryCompare(tweakKey, "AI Invasion Threshold PC", "150.000000");
+            registryCompare(tweakKey, "AI Aggression Value", "0.500000");                   // not added to menu
+            registryCompare(tweakKey, "AI Invasion Threshold PC", "150.000000");            // not added to menu
             registryCompare(tweakKey, "AI strength table Human multiplier", "1.000000");
+            trackBar9.Value = 100;
             registryCompare(tweakKey, "AI strength table Martian multiplier", "2.000000");
+            trackBar8.Value = 200;
             config = false;
         }
     }

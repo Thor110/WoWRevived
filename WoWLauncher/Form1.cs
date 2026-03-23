@@ -509,8 +509,6 @@ namespace WoWLauncher
                     registryCompare(tweakKey, "AI Aggression Value", "0.500000");
                     registryCompare(tweakKey, "AI Invasion Threshold PC", "150.000000");
                     registryCompare(tweakKey, "Max units in sector", "15");
-                    //AI strength table Human multiplier
-                    //AI strength table Martian multiplier
                     // custom settings reset
                     registryCompare(researchKey, "Human Open Rate", "20");
                     registryCompare(researchKey, "Martian Open Rate", "10");
