@@ -54,6 +54,12 @@
             button2 = new Button();
             label15 = new Label();
             label16 = new Label();
+            label17 = new Label();
+            label18 = new Label();
+            label19 = new Label();
+            trackBar8 = new TrackBar();
+            label20 = new Label();
+            trackBar9 = new TrackBar();
             ((System.ComponentModel.ISupportInitialize)trackBar1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar3).BeginInit();
@@ -61,6 +67,8 @@
             ((System.ComponentModel.ISupportInitialize)trackBar5).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar6).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar7).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)trackBar8).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)trackBar9).BeginInit();
             SuspendLayout();
             // 
             // trackBar1
@@ -85,7 +93,7 @@
             // 
             // button1
             // 
-            button1.Location = new Point(363, 415);
+            button1.Location = new Point(363, 528);
             button1.Name = "button1";
             button1.Size = new Size(75, 23);
             button1.TabIndex = 2;
@@ -296,7 +304,7 @@
             // label15
             // 
             label15.AutoSize = true;
-            label15.Location = new Point(145, 370);
+            label15.Location = new Point(145, 483);
             label15.Name = "label15";
             label15.Size = new Size(500, 15);
             label15.TabIndex = 23;
@@ -305,17 +313,83 @@
             // label16
             // 
             label16.AutoSize = true;
-            label16.Location = new Point(196, 385);
+            label16.Location = new Point(196, 498);
             label16.Name = "label16";
             label16.Size = new Size(403, 15);
             label16.TabIndex = 24;
             label16.Text = "I suggest leaving them as they are unless you have played the game before.";
             // 
+            // label17
+            // 
+            label17.AutoSize = true;
+            label17.Location = new Point(571, 433);
+            label17.Name = "label17";
+            label17.Size = new Size(44, 15);
+            label17.TabIndex = 30;
+            label17.Text = "label17";
+            // 
+            // label18
+            // 
+            label18.AutoSize = true;
+            label18.Location = new Point(571, 382);
+            label18.Name = "label18";
+            label18.Size = new Size(44, 15);
+            label18.TabIndex = 29;
+            label18.Text = "label18";
+            // 
+            // label19
+            // 
+            label19.AutoSize = true;
+            label19.Location = new Point(34, 433);
+            label19.Name = "label19";
+            label19.Size = new Size(198, 15);
+            label19.TabIndex = 28;
+            label19.Text = "AI strength table Martian multiplier :";
+            // 
+            // trackBar8
+            // 
+            trackBar8.AccessibleDescription = "Adjust the Martian Open Rate research value. ( default is 10 )";
+            trackBar8.LargeChange = 2;
+            trackBar8.Location = new Point(238, 433);
+            trackBar8.Maximum = 300;
+            trackBar8.Minimum = 10;
+            trackBar8.Name = "trackBar8";
+            trackBar8.Size = new Size(327, 45);
+            trackBar8.TabIndex = 27;
+            trackBar8.Value = 200;
+            // 
+            // label20
+            // 
+            label20.AutoSize = true;
+            label20.Location = new Point(35, 382);
+            label20.Name = "label20";
+            label20.Size = new Size(197, 15);
+            label20.TabIndex = 26;
+            label20.Text = "AI strength table Human multiplier :";
+            // 
+            // trackBar9
+            // 
+            trackBar9.AccessibleDescription = "Adjust the Human Open Rate research value. ( default is 20 )";
+            trackBar9.LargeChange = 2;
+            trackBar9.Location = new Point(238, 382);
+            trackBar9.Maximum = 300;
+            trackBar9.Minimum = 10;
+            trackBar9.Name = "trackBar9";
+            trackBar9.Size = new Size(327, 45);
+            trackBar9.TabIndex = 25;
+            trackBar9.Value = 100;
+            // 
             // Form2
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(800, 563);
+            Controls.Add(label17);
+            Controls.Add(label18);
+            Controls.Add(label19);
+            Controls.Add(trackBar8);
+            Controls.Add(label20);
+            Controls.Add(trackBar9);
             Controls.Add(label16);
             Controls.Add(label15);
             Controls.Add(button2);
@@ -351,6 +425,8 @@
             ((System.ComponentModel.ISupportInitialize)trackBar5).EndInit();
             ((System.ComponentModel.ISupportInitialize)trackBar6).EndInit();
             ((System.ComponentModel.ISupportInitialize)trackBar7).EndInit();
+            ((System.ComponentModel.ISupportInitialize)trackBar8).EndInit();
+            ((System.ComponentModel.ISupportInitialize)trackBar9).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -382,5 +458,11 @@
         private Button button2;
         private Label label15;
         private Label label16;
+        private Label label17;
+        private Label label18;
+        private Label label19;
+        private TrackBar trackBar8;
+        private Label label20;
+        private TrackBar trackBar9;
     }
 }

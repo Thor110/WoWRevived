@@ -45,6 +45,13 @@ namespace WoWLauncher
             int aiHoursPerTurn = Convert.ToInt32(tweakKey.GetValue("AI Hours Per Turn"));
             trackBar7.Value = aiHoursPerTurn;
             label14.Text = aiHoursPerTurn.ToString();
+            // new settings
+            double humanMultiplier = Convert.ToDouble(tweakKey.GetValue("AI strength table Human multiplier"));
+            trackBar9.Value = (int)humanMultiplier * 100;
+            label18.Text = humanMultiplier.ToString("F6");
+            double martianMultiplier = Convert.ToDouble(tweakKey.GetValue("AI strength table Martian multiplier"));
+            trackBar8.Value = (int)martianMultiplier * 100;
+            label17.Text = martianMultiplier.ToString("F6");
             trackBar1.ValueChanged += trackBar1_ValueChanged!;
             trackBar2.ValueChanged += trackBar2_ValueChanged!;
             trackBar3.ValueChanged += trackBar3_ValueChanged!;
@@ -52,6 +59,8 @@ namespace WoWLauncher
             trackBar5.ValueChanged += trackBar5_ValueChanged!;
             trackBar6.ValueChanged += trackBar6_ValueChanged!;
             trackBar7.ValueChanged += trackBar7_ValueChanged!;
+            trackBar8.ValueChanged += trackBar8_ValueChanged!;
+            trackBar9.ValueChanged += trackBar9_ValueChanged!;
         }
         // return button saves the settings and closes the form
         private void button1_Click(object sender, EventArgs e)
@@ -63,6 +72,9 @@ namespace WoWLauncher
             registryCompare(researchKey, "Martian Open Rate", trackBar5.Value.ToString());
             registryCompare(tweakKey, "Pod Interval (hours)", trackBar6.Value.ToString());
             registryCompare(tweakKey, "AI Hours Per Turn", trackBar7.Value.ToString());
+            // new settings
+            registryCompare(tweakKey, "AI strength table Human multiplier", ((double)trackBar9.Value / 100).ToString("F6"));
+            registryCompare(tweakKey, "AI strength table Martian multiplier", ((double)trackBar8.Value / 100).ToString("F6"));
             if (config) { registryCompare(mainKey, "Difficulty", "Custom"); }
             this.Close();
         }
@@ -74,6 +86,10 @@ namespace WoWLauncher
         private void trackBar4_ValueChanged(object sender, EventArgs e) { label12.Text = trackBar4.Value.ToString(); }  // Martian Open Rate
         private void trackBar6_ValueChanged(object sender, EventArgs e) { label13.Text = trackBar6.Value.ToString(); }  // Pod Interval (hours)
         private void trackBar7_ValueChanged(object sender, EventArgs e) { label14.Text = trackBar7.Value.ToString(); }  // AI Hours Per Turn
+        // AI strength table Human multiplier
+        private void trackBar9_ValueChanged(object sender, EventArgs e) { label18.Text = ((double)trackBar9.Value / 100).ToString("F6"); }
+        // AI strength table Martian multiplier
+        private void trackBar8_ValueChanged(object sender, EventArgs e) { label17.Text = ((double)trackBar8.Value / 100).ToString("F6"); }
         // default
         private void button2_Click(object sender, EventArgs e)
         {
@@ -96,9 +112,9 @@ namespace WoWLauncher
             registryCompare(debugKey, "Enemy Visible", "0");
             // new settings
             registryCompare(tweakKey, "AI Aggression Value", "0.500000");
-            registryCompare(tweakKey, "HumanEnemy Armour Modifier", "1.800000");
-            registryCompare(tweakKey, "HumanFriend Armour Modifier", "1.800000");
             registryCompare(tweakKey, "AI Invasion Threshold PC", "150.000000");
+            registryCompare(tweakKey, "AI strength table Human multiplier", "1.000000");
+            registryCompare(tweakKey, "AI strength table Martian multiplier", "2.000000");
             config = false;
         }
     }
