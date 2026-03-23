@@ -212,7 +212,7 @@
             // 
             checkBox3.AccessibleDescription = "Enable or disable fog of war.";
             checkBox3.AutoSize = true;
-            checkBox3.Location = new Point(256, 322);
+            checkBox3.Location = new Point(291, 322);
             checkBox3.Name = "checkBox3";
             checkBox3.Size = new Size(84, 19);
             checkBox3.TabIndex = 15;
@@ -246,7 +246,7 @@
             checkBox4.AccessibleDescription = "Enable or disable resizing of the window.";
             checkBox4.AutoSize = true;
             checkBox4.Enabled = false;
-            checkBox4.Location = new Point(346, 322);
+            checkBox4.Location = new Point(12, 474);
             checkBox4.Name = "checkBox4";
             checkBox4.Size = new Size(58, 19);
             checkBox4.TabIndex = 18;
