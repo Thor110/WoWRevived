@@ -17,6 +17,7 @@ namespace WoWLauncher
         private RegistryKey optionsKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Options", true)!;
         private RegistryKey buildListKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BuildList", true)!;
         private RegistryKey debugKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true)!;
+        private RegistryKey soundKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound", true)!;
         [StructLayout(LayoutKind.Sequential)]
         public struct DEVMODE
         {
@@ -146,8 +147,11 @@ namespace WoWLauncher
         {
             if ((int)mainKey.GetValue("Enable Network Version")! == 1) { checkBox1.Checked = true; }
             if (Convert.ToInt32(mainKey.GetValue("Full Screen")) == 1) { checkBox2.Checked = true; }
-            if (Convert.ToInt32(battleKey.GetValue("EnableFogOfWar")) == 1) { checkBox3.Checked = true; }
+            checkBox3.Checked = Convert.ToInt32(battleKey.GetValue("EnableFogOfWar")) == 1; // for restore default settings
             //if (Convert.ToInt32(screenKey.GetValue("AllowResize")) == 1) { checkBox4.Checked = true; }
+            checkBox5.Checked = File.Exists("music_focus.txt"); //music playback when out of focus
+            if (File.Exists("DAT\\cd_bd1.spr")) { checkBox6.Checked = true; } // enhanced assets enabled
+            checkBox7.Checked = Convert.ToInt32(debugKey.GetValue("Enemy Visible")) == 1; // for restore default settings
             foreach (string res in comboBox2.Items)
             {
                 if (res.StartsWith(((string)screenKey.GetValue("Size")!).Replace(",", "x").Split(' ')[0])) // set combobox to the registry resolution
@@ -190,20 +194,18 @@ namespace WoWLauncher
                 screenKey.SetValue("BPP", 16, RegistryValueKind.DWord);
                 MessageBox.Show("The \"BPP\" registry entry must be set to 16 as I have removed the 8/16 bit toggle from the games executable, surely you don't want to play it in 8 bit colour mode in the 21st century?");
             }
-            if (File.Exists("DAT\\cd_bd1.spr")) { checkBox6.Checked = true; }
             // add event handlers here for the checkboxes and comboboxes to prevent them firing when the form is loaded
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
             checkBox3.CheckedChanged += checkBox3_CheckedChanged!;
             //checkBox4.CheckedChanged += checkBox4_CheckedChanged!; // allow resize - disabled because it doesn't display right when resized
-            comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged!;
+            //comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged!; // language options disabled
             comboBox2.SelectedIndexChanged += comboBox2_SelectedIndexChanged!;
             //comboBox3.SelectedIndexChanged += comboBox3_SelectedIndexChanged!;     // game frequency is not supported
             comboBox4.SelectedIndexChanged += comboBox4_SelectedIndexChanged!;
-            //music playback when out of focus
-            checkBox5.Checked = File.Exists("music_focus.txt");
             checkBox5.CheckedChanged += checkBox5_CheckedChanged!;
             checkBox6.CheckedChanged += checkBox6_CheckedChanged!;
+            checkBox7.CheckedChanged += checkBox7_CheckedChanged!;
         }
         /// <summary>
         /// InitializeTooltips prepares a tooltip for every control in the form.
@@ -323,14 +325,14 @@ namespace WoWLauncher
             checkBox5.Visible = true;
             checkBox6.Visible = true;
             checkBox7.Visible = true;
-            comboBox2.Visible = true;
-            //comboBox3.Visible = true;     // game frequency is not supported
-            comboBox4.Visible = true;
-            if (comboBox1.Items.Count > 1)
+            /*if (comboBox1.Items.Count > 1)// language settings not supported
             {
                 comboBox1.Visible = true;
                 label1.Visible = true;
-            }
+            }*/
+            comboBox2.Visible = true;
+            //comboBox3.Visible = true;     // game frequency is not supported
+            comboBox4.Visible = true;
             label2.Visible = true;
             //label3.Visible = true;     // game frequency is not supported
             label4.Visible = true;
@@ -355,13 +357,13 @@ namespace WoWLauncher
                 checkBox5.Visible = false;
                 checkBox6.Visible = false;
                 checkBox7.Visible = false;
-                comboBox1.Visible = false;
+                //comboBox1.Visible = false;    // language settings not spported
                 comboBox2.Visible = false;
-                //comboBox3.Visible = false;     // game frequency is not supported
+                //comboBox3.Visible = false;    // game frequency is not supported
                 comboBox4.Visible = false;
-                label1.Visible = false;
+                //label1.Visible = false;       // language setting not supported
                 label2.Visible = false;
-                //label3.Visible = false;     // game frequency is not supported
+                //label3.Visible = false;       // game frequency is not supported
                 label4.Visible = false;
                 button5.Visible = false;
                 button6.Visible = true;
@@ -391,6 +393,7 @@ namespace WoWLauncher
         }
         private void checkBox3_CheckedChanged(object sender, EventArgs e) { battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? "1" : "0"); }
         //private void checkBox4_CheckedChanged(object sender, EventArgs e) { screenKey.SetValue("AllowResize", checkBox4.Checked ? "1" : "0"); }
+        // language options disabled
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             return; // forget language switching, save space for the end user.
@@ -440,6 +443,7 @@ namespace WoWLauncher
                 return; // do nothing if the files do not exist
             }
         }
+        // resolution combobox
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (resolution == comboBox2.SelectedIndex) { return; }
@@ -447,6 +451,15 @@ namespace WoWLauncher
             registryCompare(screenKey, "Size", screenSize);                 // "Size" is the in-game resolution
             registryCompare(screenKey, "Support screen size", screenSize);  // "Support screen size" is the resolution used by the main menu
             registryCompare(buildListKey, "Top", ((Int32.Parse(screenSize.Split(',')[1]) - 340) / 2).ToString()); // build list resolution adjustment
+            string soundOne = screenSize.Split(",")[0];                 // x string
+            string soundTwo = screenSize.Split(",")[1];                 // y string
+            int soundThree = Int32.Parse(screenSize.Split(',')[0]);     // x int
+            int soundFour = Int32.Parse(screenSize.Split(',')[1]);      // y int
+            string reusedSound = "-" + soundOne + ",-" + (soundFour - 80).ToString();
+            registryCompare(soundKey, "Inner Ambient border", reusedSound);
+            registryCompare(soundKey, "Inner border", "-" + (soundThree / 2).ToString() + ",-" + (soundFour / 2 - 40).ToString());
+            registryCompare(soundKey, "Outer Ambient border", "-" + (soundThree + 320).ToString() + ",-" + (soundFour + 120).ToString());
+            registryCompare(soundKey, "Outer border", reusedSound);
             // future prep for moving resolution specific assets back and forth
             string[] moveFiles = new string[] { "humanbd.spr", "legal1.spr", "legal2.spr", "martbd.spr" };
             foreach (string file in moveFiles)
@@ -519,7 +532,10 @@ namespace WoWLauncher
             checkBox2.CheckedChanged -= checkBox2_CheckedChanged!;
             checkBox3.CheckedChanged -= checkBox3_CheckedChanged!;
             //checkBox4.CheckedChanged -= checkBox4_CheckedChanged!;
-            comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;
+            checkBox5.CheckedChanged -= checkBox5_CheckedChanged!;
+            checkBox6.CheckedChanged -= checkBox6_CheckedChanged!;
+            checkBox7.CheckedChanged -= checkBox7_CheckedChanged!;
+            //comboBox1.SelectedIndexChanged -= comboBox1_SelectedIndexChanged!;    // language settings not supported
             comboBox2.SelectedIndexChanged -= comboBox2_SelectedIndexChanged!;
             //comboBox3.SelectedIndexChanged -= comboBox3_SelectedIndexChanged!;     // game frequency is not supported
             comboBox4.SelectedIndexChanged -= comboBox4_SelectedIndexChanged!;

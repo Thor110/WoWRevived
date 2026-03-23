@@ -139,7 +139,6 @@
             comboBox1.Size = new Size(121, 23);
             comboBox1.TabIndex = 7;
             comboBox1.Visible = false;
-            comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
             // 
             // label1
             // 
@@ -303,7 +302,6 @@
             checkBox7.Text = "Enemy Forces Visible";
             checkBox7.UseVisualStyleBackColor = true;
             checkBox7.Visible = false;
-            checkBox7.CheckedChanged += checkBox7_CheckedChanged;
             // 
             // Form1
             // 
