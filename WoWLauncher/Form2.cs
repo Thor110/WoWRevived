@@ -9,6 +9,7 @@ namespace WoWLauncher
         private RegistryKey tweakKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true)!;
         private RegistryKey battleKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true)!;
         private RegistryKey researchKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true)!;
+        private RegistryKey debugKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true)!;
         public Form2()
         {
             InitializeComponent();
@@ -73,17 +74,27 @@ namespace WoWLauncher
         private void trackBar4_ValueChanged(object sender, EventArgs e) { label12.Text = trackBar4.Value.ToString(); }  // Martian Open Rate
         private void trackBar6_ValueChanged(object sender, EventArgs e) { label13.Text = trackBar6.Value.ToString(); }  // Pod Interval (hours)
         private void trackBar7_ValueChanged(object sender, EventArgs e) { label14.Text = trackBar7.Value.ToString(); }  // AI Hours Per Turn
-
+        // default
         private void button2_Click(object sender, EventArgs e)
         {
             registryCompare(battleKey, "Damage reduction divisor", "500");
+            trackBar1.Value = 5;
             registryCompare(tweakKey, "Max units in sector", "15");
+            trackBar2.Value = 15;
             registryCompare(tweakKey, "Max boats in sector", "5");
+            trackBar3.Value = 5;
             registryCompare(researchKey, "Human Open Rate", "20");
+            trackBar4.Value = 20;
             registryCompare(researchKey, "Martian Open Rate", "10");
+            trackBar5.Value = 10;
             registryCompare(tweakKey, "Pod Interval (hours)", "24");
+            trackBar6.Value = 24;
             registryCompare(tweakKey, "AI Hours Per Turn", "5");
+            trackBar7.Value = 5;
             registryCompare(mainKey, "Difficulty", "Medium");
+            registryCompare(battleKey, "EnableFogOfWar", "1");
+            registryCompare(debugKey, "Enemy Visible", "0");
+            config = false;
         }
     }
 }

@@ -284,12 +284,12 @@
             // 
             // button2
             // 
-            button2.AccessibleDescription = "Reset these settings to their default state.";
-            button2.Location = new Point(713, 12);
+            button2.AccessibleDescription = "Reset the settings to their default state.";
+            button2.Location = new Point(647, 12);
             button2.Name = "button2";
-            button2.Size = new Size(75, 23);
+            button2.Size = new Size(141, 23);
             button2.TabIndex = 22;
-            button2.Text = "Default";
+            button2.Text = "Restore Default Settings";
             button2.UseVisualStyleBackColor = true;
             button2.Click += button2_Click;
             // 
