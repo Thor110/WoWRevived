@@ -147,6 +147,12 @@ namespace WoWViewer
             rawData = entries.First(en => en.Name.Equals(selectedEntry, StringComparison.OrdinalIgnoreCase)).Data!;
             currentRenderedEntry = -1;
             TryAutoSelectPalette(selectedEntry);
+            // Always auto-select the shader for the new entry, even if the palette did not
+            // change (BM.PAL is shared by all IOB files so listBox2 often stays the same,
+            // meaning listBox2_SelectedIndexChanged never fires and TryAutoSelectShader
+            // would otherwise be skipped entirely).
+            string currentPal = listBox2.SelectedItem?.ToString() ?? "";
+            TryAutoSelectShader(currentPal);
             RenderCurrent();
         }
 
@@ -166,7 +172,10 @@ namespace WoWViewer
             if (entry?.Data == null) return;
             // SHH: 1-byte count + count × 512 bytes. Level 0 = bytes [1..512].
             shadeData = entry.Data.Length >= 513 ? entry.Data[1..513] : null;
-            if (checkBox1.Checked) RenderCurrent();
+            // Always re-render so the viewer reflects the newly selected shader.
+            // RenderCurrent respects the checkbox when deciding whether to apply shadeData,
+            // so this is safe to call unconditionally.
+            RenderCurrent();
         }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
