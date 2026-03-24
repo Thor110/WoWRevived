@@ -97,7 +97,7 @@ namespace WoWViewer
             }
 
             var bmp = WofDecoder.RenderTextureAtlas(currentModel!, palData, shdSlice);
-            DisplayScaled(bmp, WofDecoder.TexWidth * 3, currentModel!.TexHeight * 3);
+            pictureBox1.Image = bmp;
         }
 
         private void RenderCurrentIob(byte[]? shdSlice)
@@ -115,25 +115,7 @@ namespace WoWViewer
             }
 
             var bmp = IobDecoder.RenderTextureAtlas(currentIobModel!, palData, shdSlice);
-            // Scale the display to 3× like WOF, and guard against HeightScale=0
-            // (some IOBs such as RF_DOORS store 0 — RenderTextureAtlas derives the real
-            // height from patch extents, so bmp.Height is always at least 1).
-            DisplayScaled(bmp, Math.Max(1, bmp.Width) * 3, Math.Max(1, bmp.Height) * 3);
-        }
-
-        private void DisplayScaled(Bitmap bmp, int scaledW, int scaledH)
-        {
-            var scaled = new Bitmap(scaledW, scaledH);
-            using (var g = Graphics.FromImage(scaled))
-            {
-                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-                g.DrawImage(bmp, 0, 0, scaledW, scaledH);
-            }
-            var old = pictureBox1.Image;
-            pictureBox1.Image = scaled;
-            old?.Dispose();
-            bmp.Dispose();
+            pictureBox1.Image = bmp;
         }
 
         // ── Event handlers ────────────────────────────────────────────────────
