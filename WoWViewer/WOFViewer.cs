@@ -115,7 +115,7 @@ namespace WoWViewer
             }
 
             var bmp = IobDecoder.RenderTextureAtlas(currentIobModel!, palData, shdSlice);
-            DisplayScaled(bmp, currentIobModel!.HalfWidthScale * 3, currentIobModel.HeightScale * 3);
+            DisplayScaled(bmp, currentIobModel!.HalfWidthScale, currentIobModel.HeightScale);
         }
 
         private void DisplayScaled(Bitmap bmp, int scaledW, int scaledH)

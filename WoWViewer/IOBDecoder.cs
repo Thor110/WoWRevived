@@ -45,8 +45,8 @@ namespace WoWViewer
     //    [+8..9]  uint16 norm_v0      normal index for lighting vertex 0
     //    [+10..11]uint16 norm_v1      normal index for lighting vertex 1
     //    [+12..13]uint16 norm_v2      normal index for lighting vertex 2
-    //    [+14..15]uint16 patch_offset offset from file[0x22] to start of patch RLE data
-    //    [+16..17]uint16 always 0
+    //    [+14..17]uint32 patch_offset offset from file[0x22] to start of patch RLE data
+    //            (high word non-zero for large files; previously misread as uint16)
     //
     //  PATCH RLE DATA (from index table end to EOF):
     //    The patch byte stream begins immediately at patch_offset — NO separate header.
@@ -200,8 +200,9 @@ namespace WoWViewer
                 //   [+8..9]  norm_v0 (uint16)
                 //   [+10..11]norm_v1 (uint16)
                 //   [+12..13]norm_v2 (uint16)
-                //   [+14..15]patch_offset (uint16) — offset from file[0x22]
-                //   [+16..17]always 0
+                //   [+14..17]patch_offset (uint32) — offset from file[0x22]
+                //            The high word [+16..17] is non-zero for large IOB files
+                //            (e.g. POD.IOB). Previously misread as uint16 + zero pad.
                 int wByte = data[off];
                 int hByte = data[off + 1];
                 int colourMode = data[off + 2];
@@ -211,7 +212,7 @@ namespace WoWViewer
                 int v0 = BitConverter.ToUInt16(data, off + 8);
                 int v1 = BitConverter.ToUInt16(data, off + 10);
                 int v2 = BitConverter.ToUInt16(data, off + 12);
-                int patchOff = BitConverter.ToUInt16(data, off + 14);
+                int patchOff = (int)BitConverter.ToUInt32(data, off + 14);
 
                 faces[i] = (v0, v1, v2);
                 patches[i] = new PatchInfo(
@@ -500,11 +501,25 @@ namespace WoWViewer
         // ── Palette / shader suggestions ──────────────────────────────────────
         //
         // All IOB buildings use BM.PAL (confirmed from IDA).
-        // All IOB buildings use BMHBB.SHH as their shade table (user-confirmed).
-        // "BM" = Building Map. Martian buildings share the same palette.
+        // Shader selection depends on faction:
+        //   BMHBB.SHH — human buildings  (CP_, AB_, CH_, CON_, LONDST, etc.)
+        //   BMMBB.SHH — martian buildings (MB_, MT_, HE_, HX_, SF_, AH_, TC_,
+        //                                  PP_, EWP_, POD, WEED, etc.)
+        // Note: red weed sprites may require a separate palette/shader — TBD.
+
+        private static readonly HashSet<string> MartianPrefixes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "MB_", "MT_", "HE_", "HX_", "SF_", "AH_", "TC_", "PP_", "EWP_",
+            "POD", "WEED", "MRTPOD", "MBASE"
+        };
 
         public static string SuggestPalette(string iobName) => "BM.PAL";
 
-        public static string SuggestShader(string iobName, string palName) => "BMHBB.SHH";
+        public static string SuggestShader(string iobName, string palName)
+        {
+            string name = Path.GetFileNameWithoutExtension(iobName).ToUpperInvariant();
+            bool isMartian = MartianPrefixes.Any(p => name.StartsWith(p, StringComparison.OrdinalIgnoreCase));
+            return isMartian ? "BMMBB.SHH" : "BMHBB.SHH";
+        }
     }
 }
