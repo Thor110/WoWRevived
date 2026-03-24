@@ -269,7 +269,8 @@ namespace WoWViewer
         /// The PNG must be HalfWidthScale × HeightScale pixels (or the derived
         /// height for files where HeightScale == 0).
         /// </summary>
-        public static IobModel ReplaceTexture(IobModel model, byte[] pngBytes, byte[] palData)
+        public static IobModel ReplaceTexture(IobModel model, byte[] pngBytes, byte[] palData,
+                                               byte[]? shadeData = null)
         {
             int W = Math.Max(1, model.HalfWidthScale);
             int H = model.HeightScale > 0
@@ -279,7 +280,10 @@ namespace WoWViewer
                     : 1;
             H = Math.Max(1, H);
 
-            byte[] canvas = QuantisePng(pngBytes, W, H, palData);
+            // When shadeData is provided the exported PNG was rendered with the shader
+            // applied, so we must reverse-map shaded colours back to raw palette indices
+            // using the SHH table — exactly as WofEncoder.QuantiseTexture does.
+            byte[] canvas = QuantisePng(pngBytes, W, H, palData, shadeData);
             byte[] newTex = (byte[])model.TexData.Clone();
 
             // Build sorted list of distinct patch offsets for boundary computation.
@@ -393,7 +397,8 @@ namespace WoWViewer
         /// <paramref name="expectedH"/>. 8-bpp indexed PNGs are read losslessly; true-colour
         /// PNGs are nearest-colour matched against <paramref name="palData"/>.
         /// </summary>
-        private static byte[] QuantisePng(byte[] pngBytes, int expectedW, int expectedH, byte[] palData)
+        private static byte[] QuantisePng(byte[] pngBytes, int expectedW, int expectedH,
+                                           byte[] palData, byte[]? shadeData = null)
         {
             using var ms = new MemoryStream(pngBytes);
             using var bmp = new Bitmap(ms);
@@ -407,7 +412,9 @@ namespace WoWViewer
             byte[] result = new byte[expectedW * expectedH];
 
             // Fast path: palette-indexed PNG — read raw indices directly.
-            if (bmp.PixelFormat == PixelFormat.Format8bppIndexed)
+            // Only valid when no shader was applied during export (shadeData == null),
+            // because a shaded export produces true-colour ARGB, not indexed.
+            if (bmp.PixelFormat == PixelFormat.Format8bppIndexed && shadeData == null)
             {
                 var bd = bmp.LockBits(new Rectangle(0, 0, expectedW, expectedH),
                              ImageLockMode.ReadOnly, PixelFormat.Format8bppIndexed);
@@ -417,13 +424,30 @@ namespace WoWViewer
                 return result;
             }
 
-            // Slow path: RGBA — nearest-colour match in RGB space.
-            // PAL values are 6-bit (0–63); scale ×4 to reach 8-bit range.
+            // Build colour lookup table.
+            // When shadeData is provided: each entry is the shaded RGB565 colour for that
+            // palette index — this is what the renderer wrote into the PNG.
+            // When shadeData is null: use raw PAL RGB (6-bit × 4 → 8-bit).
             var palRgb = new (int r, int g, int b)[256];
-            for (int i = 0; i < 256 && i * 3 + 2 < palData.Length; i++)
-                palRgb[i] = (Math.Min(palData[i * 3] * 4, 255),
-                             Math.Min(palData[i * 3 + 1] * 4, 255),
-                             Math.Min(palData[i * 3 + 2] * 4, 255));
+            if (shadeData != null && shadeData.Length >= 512)
+            {
+                // SHH level-0 slice: 256 × RGB565, little-endian.
+                for (int i = 0; i < 256; i++)
+                {
+                    int rgb565 = shadeData[i * 2] | (shadeData[i * 2 + 1] << 8);
+                    int rv = (rgb565 >> 11) & 0x1F; palRgb[i].r = (rv << 3) | (rv >> 2);
+                    int gv = (rgb565 >> 5) & 0x3F; palRgb[i].g = (gv << 2) | (gv >> 4);
+                    int bv = rgb565 & 0x1F; palRgb[i].b = (bv << 3) | (bv >> 2);
+                }
+            }
+            else
+            {
+                // Raw PAL: 6-bit RGB values scaled to 8-bit.
+                for (int i = 0; i < 256 && i * 3 + 2 < palData.Length; i++)
+                    palRgb[i] = (Math.Min(palData[i * 3] * 4, 255),
+                                 Math.Min(palData[i * 3 + 1] * 4, 255),
+                                 Math.Min(palData[i * 3 + 2] * 4, 255));
+            }
 
             using var argbBmp = bmp.Clone(new Rectangle(0, 0, expectedW, expectedH),
                                           PixelFormat.Format32bppArgb);

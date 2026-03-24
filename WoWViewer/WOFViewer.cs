@@ -293,7 +293,7 @@ namespace WoWViewer
                     var (objText, mtlText) = IobDecoder.ToObj(model, mtlN, texN);
                     File.WriteAllText(Path.Combine(outputPath, base_ + ".obj"), objText);
                     File.WriteAllText(Path.Combine(outputPath, mtlN), mtlText);
-                    ExportAtlasIob(model, pal, shadeData, Path.Combine(outputPath, texN));
+                    ExportAtlasIob(model, pal, shd, Path.Combine(outputPath, texN));
                     count++;
                 }
                 catch (Exception ex)
@@ -371,7 +371,7 @@ namespace WoWViewer
 
                 // Apply geometry update then texture update.
                 var newModel = IobEncoder.FromObj(objText, currentIobModel!);
-                newModel = IobEncoder.ReplaceTexture(newModel, pngBytes, palData);
+                newModel = IobEncoder.ReplaceTexture(newModel, pngBytes, palData, shadeData);
 
                 SaveIob(newModel,
                     $"{newModel.FaceCount} BSP verts, {newModel.LitTriCount} triangles, texture replaced");

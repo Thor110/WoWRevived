@@ -619,6 +619,7 @@ namespace WoWViewer
             { "PP_ENDP8",   "BMMBB.SHH" },
             { "PP_EYE",     "BMMBB.SHH" },
             { "PP_MAIN",    "BMMBB.SHH" },
+            { "RF_DOORS",   "BMMBB.SHH" },
             { "RF_MAIN",    "BMMBB.SHH" },
             { "SF_ARM1",    "BMMBB.SHH" },
             { "SF_ARM2",    "BMMBB.SHH" },
@@ -674,7 +675,6 @@ namespace WoWViewer
             { "TREE16",     "MWMW.SHH"  },
             { "TREE17",     "MWMW.SHH"  },
 
-            //RF_DOORS uses human shader?
             //MWIREW? Unknown?
             //MF_BUNKD? no render?
         };
