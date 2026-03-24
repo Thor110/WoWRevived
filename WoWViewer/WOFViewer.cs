@@ -222,8 +222,7 @@ namespace WoWViewer
             File.WriteAllText(Path.Combine(outputPath, baseName + ".obj"), objText);
             File.WriteAllText(Path.Combine(outputPath, mtlName), mtlText);
 
-            ExportAtlasIob(currentIobModel, palData, null,  // shader not baked into export
-                Path.Combine(outputPath, texName));
+            ExportAtlasIob(currentIobModel, palData, shadeData, Path.Combine(outputPath, texName));
 
             MessageBox.Show($"Exported {baseName}.obj ({currentIobModel.FaceCount} verts, {currentIobModel.LitTriCount} faces), {mtlName}, {texName}");
         }
@@ -300,7 +299,7 @@ namespace WoWViewer
                     var (objText, mtlText) = IobDecoder.ToObj(model, mtlN, texN);
                     File.WriteAllText(Path.Combine(outputPath, base_ + ".obj"), objText);
                     File.WriteAllText(Path.Combine(outputPath, mtlN), mtlText);
-                    ExportAtlasIob(model, pal, null, Path.Combine(outputPath, texN));
+                    ExportAtlasIob(model, pal, shadeData, Path.Combine(outputPath, texN));
                     count++;
                 }
                 catch (Exception ex)
