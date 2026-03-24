@@ -88,10 +88,11 @@ The road map for this project.
 	- Terrain viewer can export .CLS geometry and their tile indexed texture map.
 	- Ability to import custom geometry.
 	- Preview the terrains tilemap.
-- [✅ 6 : Building Viewer](#building-viewer) ( 50% Complete )
+- [✅ 6 : Building Viewer](#building-viewer) ( 100% Complete )
 	- Building viewer can export .IOB geometry.
-- [✅ 7 : Font Viewer](#font-viewer) ( 50% Complete )
+- [✅ 7 : Font Viewer](#font-viewer) ( 100% Complete )
 	- Font viewer can export .FNT files to .png images.
+	- Ability to import edited fonts.
 - [❌ 8 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Override standard limit of 1753 as the minimum date and set the year manually to as low as year zero.
