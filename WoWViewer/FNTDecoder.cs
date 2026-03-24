@@ -58,27 +58,47 @@ namespace WoWViewer
                 }
 
                 int pixelWidth = endX - startX;
-
-                // Fallback for Space or empty characters to prevent Windows Forms Red X crash
                 if (pixelWidth <= 0) pixelWidth = 1;
 
-                byte[] charPixels = new byte[pixelWidth * height];
-
-                // Standard Row-Major Atlas extraction, strictly bound by the true pixelWidth
-                for (int y = 0; y < height; y++)
+                // Homeless-glyph check: some characters (notably space) have their
+                // atlas_x placed inside a larger glyph's slot because they carry no
+                // pixels of their own. Reading those atlas bytes would show the host
+                // glyph's pixels instead of transparency.
+                // Detection: is [startX, startX+pixelWidth) fully inside another
+                // glyph's field2 slot [xj, xj+fj), with xj strictly less than startX?
+                bool isHomeless = false;
+                for (int j = 0; j < count; j++)
                 {
-                    for (int x = 0; x < pixelWidth; x++)
+                    if (j == i) continue;
+                    int xj = allX[j];
+                    int fj = BitConverter.ToUInt16(data, tableStart + j * 4 + 2);
+                    if (xj < startX && (startX + pixelWidth) <= (xj + fj))
                     {
-                        int fileOffset = dataStart + (y * atlasWidth) + (startX + x);
-
-                        if (fileOffset >= 0 && fileOffset < data.Length)
-                        {
-                            charPixels[y * pixelWidth + x] = data[fileOffset];
-                        }
+                        isHomeless = true;
+                        break;
                     }
                 }
 
-                // We assign pixelWidth so the viewer Bitmap is exactly the size of the drawn pixels
+                byte[] charPixels = new byte[pixelWidth * height];
+
+                if (!isHomeless)
+                {
+                    // Standard Row-Major Atlas extraction
+                    for (int y = 0; y < height; y++)
+                    {
+                        for (int x = 0; x < pixelWidth; x++)
+                        {
+                            int fileOffset = dataStart + (y * atlasWidth) + (startX + x);
+
+                            if (fileOffset >= 0 && fileOffset < data.Length)
+                            {
+                                charPixels[y * pixelWidth + x] = data[fileOffset];
+                            }
+                        }
+                    }
+                }
+                // else: charPixels stays all-zero — glyph has no pixels of its own.
+
                 font.Glyphs[i] = new FntModel.Glyph { Width = pixelWidth, Pixels = charPixels };
             }
             return font;
