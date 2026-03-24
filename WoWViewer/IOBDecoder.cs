@@ -18,30 +18,55 @@ namespace WoWViewer
     //   [0x02]  uint32  face_count          total BSP planes = total normals
     //   [0x06]  uint32  lit_tri_count       triangles processed per lighting pass
     //   [0x0A]  uint32  animated_flag       0 = static, 1 = animated (index table present)
-    //   [0x0E]  uint32  half_width_scale    sprite half-width in world units
+    //   [0x0E]  uint32  half_width_scale    sprite canvas pixel width (full, despite name)
     //   [0x12]  uint32  y_offset_scale      sprite Y anchor in world units
-    //   [0x16]  uint32  height_scale        sprite height × 100 in world units
+    //   [0x16]  uint32  height_scale        sprite canvas pixel height
     //   [0x1A]  uint32  bsp_section_size    = face_count × 6  (confirmed exact)
-    //   [0x1E]  uint32  normals_end_offset  relative to 0x22:
-    //                     static:   points to end of used normals = pixel data start
-    //                     animated: points to start of index table (= end of normals)
+    //   [0x1E]  uint32  normals_end_offset  offset from 0x22 to index table start
+    //                     (= end of normals section for both static and animated)
     //
     //  BSP PLANES (face_count × 6 bytes, starting at 0x22):
-    //    Per entry: int16 nx, int16 ny, int16 nz  (position/plane vectors)
+    //    Per entry: int16 nx, int16 ny, int16 nz  (world-unit vertex positions)
     //
-    //  NORMALS (face_count × 3 bytes, immediately after BSP planes):
-    //    Per entry: int8 nx, int8 ny, int8 nz  (compressed surface normals for lighting)
-    //    Static files: only lit_tri_count entries are used (rest may be padding)
+    //  NORMALS (after BSP):
+    //    Static  (animatedFlag == 0): litTriCount × int8[3]
+    //    Animated(animatedFlag != 0): faceCount   × int8[3]
     //
-    //  INDEX TABLE — animated only (lit_tri_count × 18 bytes):
-    //    Immediately after the normals block. Contains per-triangle lighting indices
-    //    and transform data. Starts at 0x22 + [0x1E].
+    //  INDEX TABLE (litTriCount × 18 bytes, at 0x22 + normalsEndOffset):
+    //    [+0]     byte   w_byte       patch width hint (& 0x7F); also used as row count
+    //                                 when h_byte bit7 is SET (mode B)
+    //    [+1]     byte   h_byte       patch height / row count:
+    //                                   bit7=0 → h_byte IS the row count (mode A)
+    //                                   bit7=1 → w_byte is the row count (mode B)
+    //    [+2]     byte   colour_mode  base colour index for the patch
+    //    [+3]     byte   render_mode  selects pixel-writer function
+    //    [+4..5]  int16  screen_X     pixel offset from building anchor (X)
+    //    [+6..7]  int16  screen_Y     pixel offset from building anchor (Y)
+    //    [+8..9]  uint16 norm_v0      normal index for lighting vertex 0
+    //    [+10..11]uint16 norm_v1      normal index for lighting vertex 1
+    //    [+12..13]uint16 norm_v2      normal index for lighting vertex 2
+    //    [+14..15]uint16 patch_offset offset from file[0x22] to start of patch RLE data
+    //    [+16..17]uint16 always 0
     //
-    //  PIXEL DATA (256 pixels wide, palette-indexed, to EOF):
-    //    Static:   pixel_start = 0x22 + face_count*6 + lit_tri_count*3
-    //    Animated: pixel_start = 0x22 + [0x1E] + lit_tri_count*18
-    //    Height = (file_size - pixel_start) / 256  (truncated; remainder bytes
-    //             form an incomplete final row and are discarded).
+    //  PATCH RLE DATA (from index table end to EOF):
+    //    The patch byte stream begins immediately at patch_offset — NO separate header.
+    //    w_byte / h_byte / colour_mode live in the index table entry (confirmed: IDA
+    //    sub_4579A4 reads them from [esi+0/1/2] = the index table entry pointer, while
+    //    the pixel writer sub_45702D reads its data pointer 4CA0D0 = file[0x22] +
+    //    patch_offset directly with no skip).
+    //
+    //    Per row: [skip_byte][run_byte] then either colour bytes or nothing:
+    //      skip_byte                  = pixel offset from patch's screen_X anchor
+    //      run_byte == 0x00           → end-of-patch sentinel (with skip_byte == 0x00)
+    //                                   OR transparent row when skip_byte != 0x00
+    //      run_byte & 0x80 == 0, > 0 → LITERAL: run_byte colour bytes follow
+    //      run_byte & 0x80 != 0       → RLE: (run_byte & 0x7F) copies of one colour byte
+    //
+    //    Termination: [0x00][0x00] sentinel pair OR patch boundary (next patch's offset),
+    //    whichever comes first. Both must be honoured. Verified byte-perfect across all
+    //    patches in CP_BUNK.IOB — consumed bytes match inter-patch gaps exactly.
+    //
+    //    Pixel Y = screenY + rowIndex  (no +1 offset; game's Y increment is cosmetic)
 
     public record class IobModel
     {
@@ -50,46 +75,42 @@ namespace WoWViewer
         public int FaceCount { get; init; }   // [0x02] total BSP planes / normals
         public int LitTriCount { get; init; }   // [0x06] lit triangles per pass
         public int AnimatedFlag { get; init; }   // [0x0A] 0=static, 1=animated
-        public int HalfWidthScale { get; init; }   // [0x0E]
+        public int HalfWidthScale { get; init; }   // [0x0E] canvas pixel width
         public int YOffsetScale { get; init; }   // [0x12]
-        public int HeightScale { get; init; }   // [0x16]
+        public int HeightScale { get; init; }   // [0x16] canvas pixel height
         public int BspSectionSize { get; init; }   // [0x1A] = FaceCount × 6
         public int NormalsEndOffset { get; init; }   // [0x1E] relative to 0x22
 
         // ── Geometry ───────────────────────────────────────────────────────────
-        /// <summary>Vertex positions. Stored as int16 triplets (x,y,z). Divide by 100 for world units.
-        /// Used for both collision (BSP) and as the renderable mesh vertex array.</summary>
+        /// <summary>Vertex positions. int16 triplets (x,y,z) in world units.</summary>
         public (short Nx, short Ny, short Nz)[] BspPlanes { get; init; } = [];
 
-        /// <summary>Compressed surface normals for lighting; one per face; stored as int8 triplets.</summary>
+        /// <summary>Compressed surface normals for lighting; int8 triplets, stored inward.</summary>
         public (sbyte Nx, sbyte Ny, sbyte Nz)[] Normals { get; init; } = [];
 
-        /// <summary>Triangle faces. Each entry is (V0,V1,V2) indices into BspPlanes (the vertex array).
-        /// Present for both static and animated IOBs.</summary>
+        /// <summary>Triangle faces — (V0,V1,V2) indices into BspPlanes.</summary>
         public (int V0, int V1, int V2)[] Faces { get; init; } = [];
 
-        /// <summary>
-        /// Screen-space patch layout. Each entry describes one triangular sprite patch:
-        /// its position relative to the building centre, and the pixel dimensions of the patch.
-        /// Populated from the 18-byte index table (confirmed from IDA sub_457C60).
-        /// </summary>
+        /// <summary>Per-patch screen layout from the index table.</summary>
         public PatchInfo[] Patches { get; init; } = [];
 
         // ── Sprite atlas ───────────────────────────────────────────────────────
-        /// <summary>Raw patch data bytes starting at pixelStart in the file.</summary>
+        /// <summary>
+        /// Raw bytes from file[0x22] to EOF. PatchOffset values from the index table
+        /// index directly into this array (they are relative to file[0x22]).
+        /// </summary>
         public byte[] TexData { get; init; } = [];
         public int TexHeight { get; init; }
-        /// <summary>
-        /// Offset to subtract from a raw PatchOffset (uint16 from index table) to get
-        /// an index into TexData. Equals pixelStart - HeaderSize (0x22).
-        /// patch_in_texdata = patchOffset - PatchDataBase
-        /// </summary>
-        public int PatchDataBase { get; init; }
+        public int PatchDataBase { get; init; }  // always 0; kept for clarity
     }
 
-    public record PatchInfo(int ScreenX, int ScreenY, int Width, int Height,
-                            int NormV0, int NormV1, int NormV2,
-                            int Mode, int PatchOffset);
+    public record PatchInfo(
+        int ScreenX, int ScreenY,
+        int WByte, int HByte,   // raw index-table [+0] and [+1] (width/height hints)
+        int ColourMode,           // index-table [+2]
+        int RenderMode,           // index-table [+3]
+        int NormV0, int NormV1, int NormV2,
+        int PatchOffset);
 
     public static class IobDecoder
     {
@@ -103,7 +124,6 @@ namespace WoWViewer
             if (data == null || data.Length < HeaderSize)
                 return new IobModel();
 
-            // Read all header fields as uint32 (the format stores them zero-padded to dword).
             int viewingDirCount = BitConverter.ToUInt16(data, 0x00);
             int faceCount = BitConverter.ToInt32(data, 0x02);
             int litTriCount = BitConverter.ToInt32(data, 0x06);
@@ -114,13 +134,13 @@ namespace WoWViewer
             int bspSectionSize = BitConverter.ToInt32(data, 0x1A);
             int normalsEndOffset = BitConverter.ToInt32(data, 0x1E);
 
-            // Validate: bspSectionSize must equal faceCount × 6 (confirmed invariant).
+            // bspSectionSize must equal faceCount × 6 (confirmed invariant).
             if (faceCount <= 0 || bspSectionSize != faceCount * 6)
                 return new IobModel();
 
             // ── BSP planes ────────────────────────────────────────────────────
             int bspStart = HeaderSize;
-            int bspEnd = bspStart + bspSectionSize;  // = 0x22 + faceCount*6
+            int bspEnd = bspStart + bspSectionSize;
 
             if (bspEnd > data.Length)
                 return new IobModel();
@@ -132,15 +152,12 @@ namespace WoWViewer
                 bspPlanes[i] = (
                     BitConverter.ToInt16(data, off),
                     BitConverter.ToInt16(data, off + 2),
-                    BitConverter.ToInt16(data, off + 4)
-                );
+                    BitConverter.ToInt16(data, off + 4));
             }
 
             // ── Normals ───────────────────────────────────────────────────────
-            // Immediately after BSP section: normalsCount × int8[3].
-            // Static  (animatedFlag == 0): normalsCount = litTriCount  (one normal per lit triangle)
-            // Animated(animatedFlag != 0): normalsCount = faceCount    (full normal pool)
-            // Confirmed exact for ABBEY, PARLMENT (static) and CON_MAIN, LIGHTHSE (animated).
+            // Static  (animatedFlag == 0): litTriCount normals
+            // Animated(animatedFlag != 0): faceCount   normals
             int normCount = (animatedFlag == 0) ? litTriCount : faceCount;
             int normStart = bspEnd;
             int normEnd = normStart + normCount * 3;
@@ -155,35 +172,12 @@ namespace WoWViewer
                 normals[i] = ((sbyte)data[off], (sbyte)data[off + 1], (sbyte)data[off + 2]);
             }
 
-            // ── Index table — animated only ───────────────────────────────────
-            // STATIC buildings (animatedFlag == 0):
-            //   NO index table. Pixel data starts immediately after the normals section.
-            //   pixelStart = normEnd = bspEnd + litTriCount × 3
-            //   (normalsEndOffset [0x1E] = bspSectionSize + litTriCount×3, verified exact)
-            //
-            // ANIMATED buildings (animatedFlag != 0):
-            //   Index table starts at 0x22 + [0x1E] = normEnd.
-            //   Contains litTriCount × 18-byte entries.
-            //
-            // Confirmed field layout (IDA sub_457C60, sub_4579A4):
-            //   [+0..1]  uint16 = world-data offset (internal use)
-            //   [+2..3]  uint16 = (hi byte = piece id?, lo byte split)
-            //   [+3]     byte   = render_mode
-            //   [+4..5]  int16  = screen_X pixel offset from building centre
-            //   [+6..7]  int16  = screen_Y pixel offset from building centre
-            //   [+8..9]  uint16 = normal index v0 (for lighting — NOT a mesh vertex)
-            //   [+10..11] uint16 = normal index v1
-            //   [+12..13] uint16 = normal index v2
-            //   [+14..15] uint16 = sprite patch offset P where patch = file[0x22 + P]
-            //   [+16..17] uint16 = always 0
-            //
-            // NOTE: v0/v1/v2 are lighting normal indices only. No 3D vertex positions.
-            //
-            // BOTH static and animated buildings have an index table immediately after
-            // the normals section. normalsEndOffset [0x1E] points to the index table
-            // start (= normals end). Pixel/patch data always follows the index table.
-            int idxStart = HeaderSize + normalsEndOffset;   // index table start
-            int pixelStart = idxStart + litTriCount * 18;     // patch data start
+            // ── Index table ───────────────────────────────────────────────────
+            // Starts at 0x22 + normalsEndOffset for BOTH static and animated.
+            // normalsEndOffset [0x1E] always points to the index table start
+            // (= end of normals). Patch byte data follows immediately after.
+            int idxStart = HeaderSize + normalsEndOffset;
+            int pixelStart = idxStart + litTriCount * 18;
 
             if (idxStart < 0 || pixelStart > data.Length)
                 return new IobModel();
@@ -191,36 +185,47 @@ namespace WoWViewer
             var faces = new (int V0, int V1, int V2)[litTriCount];
             var patches = new PatchInfo[litTriCount];
 
-            // Both static and animated have an index table (litTriCount × 18 bytes).
             for (int i = 0; i < litTriCount; i++)
             {
                 int off = idxStart + i * 18;
-                if (off + 14 > data.Length) break;
+                if (off + 16 > data.Length) break;
 
-                // REMOVED the '& 0x7F' mask that was tearing the textures
-                int width = data[off] & 0x7F;
-                int height = data[off + 1] & 0x7F;
-                int mode = data[off + 2];
+                // Index table layout (confirmed from IDA sub_4579A4 / sub_457C60):
+                //   [+0] w_byte      — width hint (used as row count when h_byte bit7 set)
+                //   [+1] h_byte      — height hint (used as row count when bit7 clear)
+                //   [+2] colour_mode — base colour index
+                //   [+3] render_mode — pixel-writer selector
+                //   [+4..5]  screen_X (int16)
+                //   [+6..7]  screen_Y (int16)
+                //   [+8..9]  norm_v0 (uint16)
+                //   [+10..11]norm_v1 (uint16)
+                //   [+12..13]norm_v2 (uint16)
+                //   [+14..15]patch_offset (uint16) — offset from file[0x22]
+                //   [+16..17]always 0
+                int wByte = data[off];
+                int hByte = data[off + 1];
+                int colourMode = data[off + 2];
+                int renderMode = data[off + 3];
                 int screenX = BitConverter.ToInt16(data, off + 4);
                 int screenY = BitConverter.ToInt16(data, off + 6);
                 int v0 = BitConverter.ToUInt16(data, off + 8);
                 int v1 = BitConverter.ToUInt16(data, off + 10);
                 int v2 = BitConverter.ToUInt16(data, off + 12);
-
-                // CHANGED to ToInt32 to prevent texture offsets wrapping around and reading garbage
                 int patchOff = BitConverter.ToUInt16(data, off + 14);
 
                 faces[i] = (v0, v1, v2);
-                patches[i] = new PatchInfo(screenX, screenY, width, height, v0, v1, v2, mode, patchOff);
+                patches[i] = new PatchInfo(
+                    screenX, screenY,
+                    wByte, hByte,
+                    colourMode, renderMode,
+                    v0, v1, v2,
+                    patchOff);
             }
 
             // ── Face winding correction ────────────────────────────────────────
-            // The game renderer has no back-face cull (sub_456DD0 sorts by Y only),
-            // so individual faces may have inconsistent CCW/CW winding in the source data.
-            // Correct each face: if cross(e1,e2) · outward_normal < 0, swap v1 and v2.
-            // Stored normals are INWARD (they are negated before the lighting dot product
-            // in sub_49DF40: "neg eax/ecx/edx"), so outward = -stored_normal.
-            // Only applies to animated buildings where BSP has real 3D positions.
+            // Stored normals are INWARD (negated in sub_49DF40 before lighting dot).
+            // Correct each face so cross(e1,e2) · outward_normal > 0.
+            // Only meaningful for animated buildings with real 3D BSP positions.
             if (animatedFlag != 0)
             {
                 for (int i = 0; i < faces.Length; i++)
@@ -240,24 +245,19 @@ namespace WoWViewer
                     float cy = e1z * e2x - e1x * e2z;
                     float cz = e1x * e2y - e1y * e2x;
 
-                    float magSq = cx * cx + cy * cy + cz * cz;
-                    if (magSq < 1e-10f) continue;  // degenerate triangle
+                    if (cx * cx + cy * cy + cz * cz < 1e-10f) continue;
 
-                    // Outward normal = negate stored (stored normals are inward)
                     var (nx, ny, nz) = normals[v0];
-                    float dot = cx * (-nx) + cy * (-ny) + cz * (-nz);
-
-                    if (dot < 0f)
-                        faces[i] = (v0, v2, v1);  // flip winding
+                    // outward = -stored normal
+                    if (cx * (-nx) + cy * (-ny) + cz * (-nz) < 0f)
+                        faces[i] = (v0, v2, v1);
                 }
             }
 
-            // Patch data: all bytes from 0x22 to EOF, so that PatchOffset values
-            // from the index table (which are relative to 0x22) index directly into
-            // this array without any rebasing. Some patches point into the BSP/normals
-            // region (before pixelStart) — this is correct game behaviour.
+            // TexData: all bytes from file[0x22] to EOF.
+            // PatchOffset values index directly into this array.
             int texBytes = Math.Max(0, data.Length - HeaderSize);
-            int texHeight = texBytes / TexWidth;   // kept for display size reference only
+            int texHeight = texBytes / TexWidth;
 
             var texData = new byte[texBytes];
             if (texBytes > 0)
@@ -280,35 +280,34 @@ namespace WoWViewer
                 Patches = patches,
                 TexData = texData,
                 TexHeight = texHeight,
-                PatchDataBase = 0,   // PatchOffset directly indexes TexData (= file[0x22..])
+                PatchDataBase = 0,
             };
         }
 
         // ── Texture rendering ─────────────────────────────────────────────────
 
         /// <summary>
-        /// Renders the IOB building sprite as a 32-bit ARGB bitmap by decoding all
-        /// RLE triangle patches onto a canvas sized HalfWidthScale×HeightScale pixels.
+        /// Renders the IOB building sprite onto a HalfWidthScale × HeightScale canvas.
         ///
-        /// Patch RLE format (confirmed from IDA sub_457C60 / sub_4579A4):
-        ///   patch[0]  = width hint (& 0x7F, informational only)
-        ///   patch[1]  = height flags (0x80 = full-RLE-height mode)
-        ///   patch[2]  = base colour index
-        ///   patch[3+] = rows, each encoded as: [skip][run_byte] ...
-        ///     skip     = pixel offset from triangle's screen_X origin
-        ///     run_byte:
-        ///       bit7=1 → RLE run: (run_byte & 0x7F) copies of the next byte
-        ///       bit7=0 → literal:  run_byte literal palette bytes follow
-        ///     [0x00, 0x00] = end-of-patch sentinel
+        /// Patch RLE format (confirmed byte-perfect from CP_BUNK.IOB analysis):
         ///
-        /// Each patch's origin on canvas = (screen_X + canvasW/2,  screen_Y).
-        /// Palette index 0 = transparent.
+        ///   The stream starts at file[0x22 + patchOffset] with NO header bytes to skip.
+        ///   w_byte / h_byte / colourMode live in the index table entry, not the stream.
+        ///
+        ///   Per row: [skip_byte][run_byte] then zero or more colour bytes:
+        ///     skip == 0 &amp;&amp; run == 0  → end-of-patch sentinel, stop decoding this patch
+        ///     run &amp; 0x80 == 0, > 0   → LITERAL: run colour bytes follow
+        ///     run &amp; 0x80 != 0        → RLE: (run &amp; 0x7F) copies of the next colour byte
+        ///     run == 0 (skip != 0)   → transparent row, no colour bytes
+        ///
+        ///   Termination: sentinel [0x00][0x00] OR patch boundary, whichever first.
+        ///   Pixel X = screenX + skip_byte,  Pixel Y = screenY + rowIndex
         /// </summary>
         public static Bitmap RenderTextureAtlas(IobModel model, byte[] palData, byte[]? shadeData = null)
         {
             int W = Math.Max(1, model.HalfWidthScale);
             int H = Math.Max(1, model.HeightScale);
-            var canvas = new byte[W * H];   // palette indices, 0 = transparent
+            var canvas = new byte[W * H];   // palette indices; 0 = transparent
 
             DecodePatchesToCanvas(model, canvas, W, H);
 
@@ -320,9 +319,9 @@ namespace WoWViewer
                 if (idx == 0) { pixels[i] = 0; continue; }
 
                 int r, g, b;
-                if (shadeData != null && shadeData.Length >= (idx * 2 + 2))
+                if (shadeData != null && shadeData.Length >= idx * 2 + 2)
                 {
-                    // BMGI.SHH stores 256 × RGB565 exactly like WOF shade tables.
+                    // SHH level-0 slice: 256 × RGB565
                     int rgb565 = shadeData[idx * 2] | (shadeData[idx * 2 + 1] << 8);
                     int rv = (rgb565 >> 11) & 0x1F; r = (rv << 3) | (rv >> 2);
                     int gv = (rgb565 >> 5) & 0x3F; g = (gv << 2) | (gv >> 4);
@@ -330,10 +329,10 @@ namespace WoWViewer
                 }
                 else
                 {
+                    // PAL: 6-bit RGB → 8-bit
                     r = palData.Length > idx * 3 + 2 ? palData[idx * 3] : 0;
                     g = palData.Length > idx * 3 + 2 ? palData[idx * 3 + 1] : 0;
                     b = palData.Length > idx * 3 + 2 ? palData[idx * 3 + 2] : 0;
-                    // PAL values are 6-bit; scale to 8-bit.
                     r = Math.Min(r * 4, 255);
                     g = Math.Min(g * 4, 255);
                     b = Math.Min(b * 4, 255);
@@ -341,55 +340,67 @@ namespace WoWViewer
                 pixels[i] = (255 << 24) | (r << 16) | (g << 8) | b;
             }
 
-            var bmp = new Bitmap(W, H, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            var bmp = new Bitmap(W, H, PixelFormat.Format32bppArgb);
             var bmpData = bmp.LockBits(new Rectangle(0, 0, W, H),
-                               System.Drawing.Imaging.ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            System.Runtime.InteropServices.Marshal.Copy(pixels, 0, bmpData.Scan0, pixels.Length);
+                              ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            Marshal.Copy(pixels, 0, bmpData.Scan0, pixels.Length);
             bmp.UnlockBits(bmpData);
             return bmp;
         }
 
         /// <summary>
-        /// Decodes all RLE triangle patches from model.TexData onto the supplied
-        /// palette-index canvas (W × H, row-major).
+        /// Decodes all RLE/literal patches from model.TexData onto a palette-index canvas (W×H).
         /// </summary>
         private static void DecodePatchesToCanvas(IobModel model, byte[] canvas, int W, int H)
         {
-            int originX = 0;   // canvas centre — patches are positioned relative to this
             byte[] raw = model.TexData;
-            int patchBase = model.PatchDataBase;
+
+            // Build a sorted list of patch offsets so we know each patch's byte boundary.
+            // A patch ends at either its [0x00][0x00] sentinel or the next patch's offset,
+            // whichever comes first.
+            var sortedOffsets = model.Patches
+                .Select(p => p.PatchOffset)
+                .Distinct()
+                .OrderBy(o => o)
+                .ToList();
+            sortedOffsets.Add(raw.Length);  // sentinel for the last patch
 
             for (int i = 0; i < model.Patches.Length; i++)
             {
                 var patch = model.Patches[i];
-                int patchIdx = patch.PatchOffset - patchBase;
-                if (patchIdx < 0 || patchIdx + 3 > raw.Length) continue;
 
-                int pos = patchIdx + 3;   // skip 3-byte header (w_byte, h_byte, height)
+                // PatchOffset is relative to file[0x22] = start of TexData.
+                int patchStart = patch.PatchOffset - model.PatchDataBase;
+                if (patchStart < 0 || patchStart >= raw.Length) continue;
 
-                int baseX = patch.ScreenX + originX;
+                // Determine the hard boundary for this patch (next distinct patch offset).
+                int nextIdx = sortedOffsets.BinarySearch(patch.PatchOffset);
+                int patchEnd = (nextIdx + 1 < sortedOffsets.Count)
+                                 ? sortedOffsets[nextIdx + 1]
+                                 : raw.Length;
+
+                // screen_X values are direct canvas X coordinates (originX = 0).
+                int baseX = patch.ScreenX;
                 int baseY = patch.ScreenY;
+                int pos = patchStart;
                 int row = 0;
 
-                // Patch boundary: next patch's offset (from sorted offset list).
-                // Some patches use a 00 00 sentinel instead, so we honour both.
-                int patchEnd = raw.Length;   // overridden per-patch in the caller when available
-
-                while (pos + 1 < raw.Length)
+                while (pos + 1 < patchEnd)
                 {
                     int skip = raw[pos++];
                     int runByte = raw[pos++];
-                    if (skip == 0 && runByte == 0) break;   // sentinel terminator
+
+                    // [0x00][0x00] = end-of-patch sentinel.
+                    if (skip == 0 && runByte == 0) break;
 
                     int py = baseY + row;
-                    // skip is the left-edge offset from baseX — no pWidth correction.
                     int cx = baseX + skip;
+                    int count = runByte & 0x7F;
 
-                    if (runByte == 0x80) { /* Transparent row skip */ }
-                    else if (runByte >= 0x81)
+                    if ((runByte & 0x80) != 0)
                     {
-                        int count = runByte & 0x7F;
-                        if (pos >= raw.Length) break;
+                        // RLE: (runByte & 0x7F) copies of the next colour byte.
+                        if (pos >= patchEnd) break;
                         byte colour = raw[pos++];
                         for (int k = 0; k < count; k++)
                         {
@@ -398,17 +409,19 @@ namespace WoWViewer
                                 canvas[py * W + fx] = colour;
                         }
                     }
-                    else
+                    else if (count > 0)
                     {
-                        int count = runByte;
+                        // Literal: `count` individual colour bytes.
                         for (int k = 0; k < count; k++, pos++)
                         {
-                            if (pos >= raw.Length) break;
+                            if (pos >= patchEnd) break;
                             int fx = cx + k;
                             if ((uint)py < (uint)H && (uint)fx < (uint)W)
                                 canvas[py * W + fx] = raw[pos];
                         }
                     }
+                    // count == 0 (run_byte == 0x00, skip != 0): transparent row, nothing written.
+
                     row++;
                 }
             }
@@ -417,26 +430,18 @@ namespace WoWViewer
         // ── OBJ export ────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Exports the IOB building as an OBJ mesh.
-        ///
-        /// Two vertex position modes — selected automatically per building:
+        /// Exports the IOB building as a Wavefront OBJ mesh.
         ///
         /// FULL-XYZ mode (e.g. CON_MAIN, LONDST):
-        ///   BSP section has real XYZ vertex positions. Used directly.
-        ///   Detected when BSP has non-trivial X or Z variation (range > 1).
+        ///   BSP planes have real XYZ positions — exported verbatim.
+        ///   Detected by non-trivial X or Z variation across planes.
         ///
         /// NORMAL-DERIVED mode (e.g. LIGHTHSE):
-        ///   BSP stores only Y height tiers (X=Z=0 for every vertex).
-        ///   XZ positions are reconstructed from the surface normals:
-        ///     vertex.XZ = normalize(normal.XZ) × R
-        ///   where R = (SpriteWidth / 2) / pixel_scale.
-        ///   Pixel scale is calibrated from CON_MAIN (f0E=183, X_range=36 → 5.083 px/unit).
-        ///   This produces a correct cylindrical/polygonal outline approximation.
-        ///   Confirmed: LIGHTHSE normals encode octagonal side directions; BSP Y encodes
-        ///   height tiers (0=base, 5=shaft, 6=lantern cap).
-        ///
-        /// Scale: divide by 100 for world-unit scale consistent with WOF exports.
-        /// Winding correction: per-face cross-product vs outward-normal dot test.
+        ///   All BSP planes have X=Z=0 (radial/cylindrical building).
+        ///   XZ positions are reconstructed from surface normals:
+        ///     vx = (n.Nx / 127) × HalfWidthScale
+        ///     vz = (n.Nz / 127) × HalfWidthScale
+        ///   (pixel-to-world scale not yet calibrated; ~12.3 px/unit estimated)
         /// </summary>
         public static (string obj, string mtl) ToObj(IobModel model, string mtlName, string texName)
         {
@@ -448,9 +453,7 @@ namespace WoWViewer
 
             bool isRadial = true;
             foreach (var p in model.BspPlanes)
-            {
                 if (p.Nx != 0 || p.Nz != 0) { isRadial = false; break; }
-            }
 
             for (int i = 0; i < model.FaceCount; i++)
             {
@@ -460,40 +463,31 @@ namespace WoWViewer
                 if (isRadial && i < model.Normals.Length)
                 {
                     var n = model.Normals[i];
-                    // Reconstruct the Lighthouse using its Normals and HalfWidthScale
                     vx = (n.Nx / 127f) * model.HalfWidthScale;
                     vz = (n.Nz / 127f) * model.HalfWidthScale;
-                    // Use Ny to extrude the flat tiers into roofs and balconies
                     vy = (p.Ny * model.HeightScale) + ((n.Ny / 127f) * model.HeightScale) + model.YOffsetScale;
                 }
                 else
                 {
-                    // Export standard models using their raw, exact coordinate data
                     vx = p.Nx;
-                    vy = p.Ny; // Removed YOffsetScale addition to prevent LONDST floating
+                    vy = p.Ny;
                     vz = p.Nz;
                 }
                 obj.AppendLine(FormattableString.Invariant($"v {vx:F4} {vy:F4} {vz:F4}"));
             }
 
-            // Negate normals to point OUTWARD for Blender
             for (int i = 0; i < model.FaceCount && i < model.Normals.Length; i++)
             {
                 var n = model.Normals[i];
-                if (!isRadial)
-                {
-                    obj.AppendLine(FormattableString.Invariant($"vn {n.Nx / 127f:F4} {n.Ny / 127f:F4} {n.Nz / 127f:F4}"));
-                }
-                else
-                {
-                    obj.AppendLine(FormattableString.Invariant($"vn {-n.Nx / 127f:F4} {-n.Ny / 127f:F4} {-n.Nz / 127f:F4}"));
-                }
+                // Negate stored (inward) normals to produce outward normals for Blender.
+                // Radial buildings already face inward by construction so negate those too.
+                obj.AppendLine(FormattableString.Invariant(
+                    $"vn {-n.Nx / 127f:F4} {-n.Ny / 127f:F4} {-n.Nz / 127f:F4}"));
             }
 
             foreach (var f in model.Faces)
             {
-                // THE SHADING FIX: Swap f.V1 and f.V2.
-                // This changes Clockwise to Counter-Clockwise, making the models solid grey instead of dark.
+                // V1/V2 swap corrects CW→CCW winding for solid shading in Blender.
                 obj.AppendLine($"f {f.V0 + 1}//{f.V0 + 1} {f.V2 + 1}//{f.V2 + 1} {f.V1 + 1}//{f.V1 + 1}");
             }
 
@@ -503,17 +497,11 @@ namespace WoWViewer
             return (obj.ToString(), mtl.ToString());
         }
 
-        // ── Palette/shader helpers ────────────────────────────────────────────
-
         // ── Palette / shader suggestions ──────────────────────────────────────
         //
-        // All IOB buildings use BM.PAL and BMGI.SHH, confirmed from IDA analysis
-        // (same conclusion reached independently by WofDecoder.SuggestPalette with
-        // isIob=true). BM likely stands for "Building Map".  BMGI.SHH is the
-        // single shade table used for all building lighting passes.
-        //
-        // Martian-faction buildings (MB_, MT_, HE_, HX_, SF_, AH_, TC_, PP_, EWP_)
-        // are included in BM.PAL — they share the same palette as human buildings.
+        // All IOB buildings use BM.PAL (confirmed from IDA).
+        // All IOB buildings use BMHBB.SHH as their shade table (user-confirmed).
+        // "BM" = Building Map. Martian buildings share the same palette.
 
         public static string SuggestPalette(string iobName) => "BM.PAL";
 
