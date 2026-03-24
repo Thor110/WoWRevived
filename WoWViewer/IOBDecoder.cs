@@ -208,7 +208,7 @@ namespace WoWViewer
                 int v2 = BitConverter.ToUInt16(data, off + 12);
 
                 // CHANGED to ToInt32 to prevent texture offsets wrapping around and reading garbage
-                int patchOff = BitConverter.ToInt32(data, off + 14);
+                int patchOff = BitConverter.ToUInt16(data, off + 14);
 
                 faces[i] = (v0, v1, v2);
                 patches[i] = new PatchInfo(screenX, screenY, width, height, v0, v1, v2, mode, patchOff);
@@ -306,7 +306,7 @@ namespace WoWViewer
         /// </summary>
         public static Bitmap RenderTextureAtlas(IobModel model, byte[] palData, byte[]? shadeData = null)
         {
-            int W = Math.Max(1, model.HalfWidthScale * 2);
+            int W = Math.Max(1, model.HalfWidthScale);
             int H = Math.Max(1, model.HeightScale);
             var canvas = new byte[W * H];   // palette indices, 0 = transparent
 
@@ -355,7 +355,7 @@ namespace WoWViewer
         /// </summary>
         private static void DecodePatchesToCanvas(IobModel model, byte[] canvas, int W, int H)
         {
-            int originX = W / 2;   // canvas centre — patches are positioned relative to this
+            int originX = 0;   // canvas centre — patches are positioned relative to this
             byte[] raw = model.TexData;
             int patchBase = model.PatchDataBase;
 
