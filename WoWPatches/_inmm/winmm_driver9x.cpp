@@ -59,7 +59,7 @@ bool isNetworkVersion = false;
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 	if (fdwReason == DLL_PROCESS_ATTACH) {
-		if(debug) DeleteFileA("_inmm_log.txt");
+		if (debug) DeleteFileA("_inmm_log.txt");
 		char exeName[MAX_PATH];
 		GetModuleFileNameA(NULL, exeName, MAX_PATH);
 		isNetworkVersion = (strstr(exeName, "WoW_network") != NULL);
@@ -98,25 +98,18 @@ uint32_t GetWavDuration(const char* filename) {
 	return (uint32_t)((double)dataSize / byteRate * 1000);
 }
 
-void StopAudio() {
-	EnterCriticalSection(&audioLock);
+// StopAudio_Locked: must be called with audioLock already held.
+// Separating the locked body lets PlayWav_Locked reuse it without re-entering.
+static void StopAudio_Locked() {
 	if (hWaveOut) {
-		waveOutReset(hWaveOut); // stops playback immediately
-		// Wait for the driver to release the buffer
-		// If we don't wait here, GlobalFree will kill the memory 
-		// while wdmaud is still cleaning up its header list.
-		// Wait for driver to signal buffer completion
+		waveOutReset(hWaveOut);
 		int timeout = 0;
 		while (!(waveHdr.dwFlags & WHDR_DONE) && timeout < 100) {
 			Sleep(1);
 			timeout++;
 		}
-
-		// Unprepare MUST happen before Close or Free
 		MMRESULT res = waveOutUnprepareHeader(hWaveOut, &waveHdr, sizeof(WAVEHDR));
 		if (res != MMSYSERR_NOERROR) Log("StopAudio: Unprepare failed: %d", res);
-		//
-		//waveOutUnprepareHeader(hWaveOut, &waveHdr, sizeof(WAVEHDR));
 		waveOutClose(hWaveOut);
 		hWaveOut = NULL;
 	}
@@ -124,14 +117,19 @@ void StopAudio() {
 		GlobalFree(hWaveData);
 		hWaveData = NULL;
 	}
+}
+
+void StopAudio() {
+	EnterCriticalSection(&audioLock);
+	StopAudio_Locked();
 	LeaveCriticalSection(&audioLock);
 }
 
 HWND gameWindow = NULL;
 WNDPROC origWndProc = NULL;
-bool losingFocus = false;
-bool gainingFocus = false;
 
+// lastFocusEventTick is written only inside audioLock (in WndProcHook) and read
+// only inside audioLock (in _ciSendCommandA MCI_STOP), so no separate guard needed.
 DWORD lastFocusEventTick = 0;
 
 LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -144,8 +142,11 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
 	}
 	if (msg == WM_ACTIVATEAPP) {
-		lastFocusEventTick = GetTickCount(); // Mark exactly WHEN focus shifted
+		// Acquire the lock before touching lastFocusEventTick so the timestamp
+		// and the isPaused state change are a single atomic operation from the
+		// perspective of _ciSendCommandA.
 		EnterCriticalSection(&audioLock);
+		lastFocusEventTick = GetTickCount();
 		if (!wParam) {
 			Log("HOOK: Focus Lost");
 			if (hWaveOut && !isPaused && !musicFocus) {
@@ -156,6 +157,8 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		else {
 			Log("HOOK: Focus Gained");
+			// Only restart if we still have a valid handle — PlayWav may have
+			// raced ahead and already opened a new one.
 			if (hWaveOut && isPaused && !musicFocus) {
 				isPaused = false;
 				dwStartTime = GetTickCount() - totalElapsedBeforePause;
@@ -167,9 +170,10 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
 }
 
-void PlayWav(const char* path) {
-	StopAudio(); // always clean up first
-
+// PlayWav_Locked: must be called with audioLock already held.
+static void PlayWav_Locked(const char* path) {
+	// Stop any existing playback while we still own the lock.
+	StopAudio_Locked();
 	// Read the whole file into memory
 	HMMIO hmmio = mmioOpenA((LPSTR)path, NULL, MMIO_READ);
 	if (!hmmio) return;
@@ -212,52 +216,51 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		StopAudio();
 		return 0;
 	}
-	//Log("MCI_COMMAND: ID=%X, Msg=%X, Flags=%X", IDDevice, uMsg, fdwCommand);
-	// 1. Success for SET
+
 	if (uMsg == MCI_SET) return 0;
 
-	// 2. STOP & CLOSE: Use the most generic command possible
+	// 2. STOP & CLOSE
 	if (uMsg == MCI_STOP || uMsg == MCI_CLOSE) {
+		EnterCriticalSection(&audioLock);
 		DWORD currentTick = GetTickCount();
 
-		// If musicFocus is enabled AND a focus event happened within the last 250ms
-		// we can safely assume this STOP is a redundant 'auto-stop' from the engine/OS.
+		// lastFocusEventTick is now written inside the lock by WndProcHook,
+		// so this read is safe.
 		if (musicFocus && (currentTick - lastFocusEventTick < 250)) {
 			Log("MCI_STOP: Suppressing focus-related stop spam.");
+			LeaveCriticalSection(&audioLock);
 			return 0;
 		}
-		// network version specific
 		if (isNetworkVersion && GetTickCount() - lastPlayTime < 1000) {
 			Log("Suppressed post-play stop");
-			Log("MCI_STOP Tick: %d", GetTickCount());
-			Log("MCI_STOP Last: %d", lastPlayTime);
+			LeaveCriticalSection(&audioLock);
 			return 0;
 		}
 		dwStartTime = 0;
 		totalElapsedBeforePause = 0;
 		isPaused = false;
-		StopAudio();
+		StopAudio_Locked();
+		LeaveCriticalSection(&audioLock);
 		Log("MCI_STOP/MCI_CLOSE");
 		return 0;
 	}
 
-	// 3. SEEK: Track selection
+	// 3. SEEK
 	if (uMsg == MCI_SEEK) {
 		LPMCI_SEEK_PARMS lpSeek = (LPMCI_SEEK_PARMS)dwParam;
+		// currentTrack is only written here and read in MCI_PLAY/STATUS — both on
+		// the same game thread — so no lock needed for this assignment.
 		currentTrack = (int)lpSeek->dwTo;
-
-		if (isNetworkVersion) {
-			Log("MCI_SEEK Tick: %d", GetTickCount());
-			Log("MCI_SEEK Last: %d", lastPlayTime);
-			seekAfterOpen = true; // network version specific
-		}
-
+		if (isNetworkVersion) seekAfterOpen = true;
 		Log("MCI_SEEK to: %d", (int)lpSeek->dwTo);
 		return 0;
 	}
 
-	// 4. OPEN: Handle the fake device ID
+	// 4. OPEN
 	if (uMsg == MCI_OPEN) {
+		// gameWindow init: guard against double-hook from rapid MCI_OPEN calls.
+		// The check-then-act must be atomic; use the existing lock.
+		EnterCriticalSection(&audioLock);
 		if (!gameWindow) {
 			HWND hw = GetForegroundWindow();
 			char title[256];
@@ -269,38 +272,36 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 				origWndProc = (WNDPROC)SetWindowLongPtr(gameWindow, GWLP_WNDPROC, (LONG_PTR)WndProcHook);
 			}
 		}
+		lastOpenTime = GetTickCount();
+		if (isNetworkVersion) seekAfterOpen = false;
+		LeaveCriticalSection(&audioLock);
+
 		LPMCI_OPEN_PARMS lpOpen = (LPMCI_OPEN_PARMS)dwParam;
 		if (lpOpen) lpOpen->wDeviceID = (MCIDEVICEID)FAKE_CD_ID;
-		lastOpenTime = GetTickCount();
-
-		if (isNetworkVersion) {
-			Log("MCI_OPEN Tick: %d", GetTickCount());
-			Log("MCI_OPEN Last: %d", lastPlayTime);
-			seekAfterOpen = false; // network version specific
-		}
-
-		Log("MCI_OPEN close");
+		Log("MCI_OPEN");
 		return 0;
 	}
 
-	// 5. PLAY: 
+	// 5. PLAY
 	if (uMsg == MCI_PLAY) {
-		// this fails in network version because it fires MCI_OPEN
+		EnterCriticalSection(&audioLock);
+
 		if (!isNetworkVersion && !seekAfterOpen && GetTickCount() - lastOpenTime < 1000) {
 			Log("Suppressed focus-triggered play");
+			LeaveCriticalSection(&audioLock);
 			return 0;
 		}
 		Log("MCI_PLAY: Initializing track %d", currentTrack);
 		// only play track values within range to prevent seeking to tracks that dont exist
 
 		if (isNetworkVersion) {
-			lastPlayTime = GetTickCount(); // network version specific
-			Log("MCI_PLAY Tick: %d", GetTickCount());
-			Log("MCI_PLAY Last: %d", lastPlayTime);
+			lastPlayTime = GetTickCount();
+			Log("MCI_PLAY Tick: %d", lastPlayTime);
 		}
 
 		if (currentTrack >= 2 && currentTrack <= 5) {
 			if (isPaused) {
+				// Resume: hWaveOut is still valid (we hold the lock, nobody can close it)
 				isPaused = false;
 				dwStartTime = GetTickCount() - totalElapsedBeforePause;
 				waveOutRestart(hWaveOut);
@@ -309,37 +310,40 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 				char path[MAX_PATH];
 				wsprintfA(path, "Music\\%02d Track%02d.wav", currentTrack, currentTrack);
 				currentTrackLength = GetWavDuration(path);
-				//Log("Track %d duration: %d ms", currentTrack, currentTrackLength);
 				dwStartTime = GetTickCount();
-				PlayWav(path);
+				// PlayWav_Locked opens the new handle inside the lock, so WndProcHook
+				// can never observe the window between StopAudio and waveOutWrite.
+				PlayWav_Locked(path);
 			}
 		}
+		LeaveCriticalSection(&audioLock);
 		return 0;
 	}
 
 	// 6. STATUS
 	if (uMsg == MCI_STATUS) {
 		LPMCI_STATUS_PARMS lpStatus = (LPMCI_STATUS_PARMS)dwParam;
-		//Log("MCI_STATUS: dwItem=%X, dwTrack=%d, flags=%X", lpStatus->dwItem, lpStatus->dwTrack, fdwCommand);
-		if (lpStatus->dwItem == MCI_STATUS_POSITION)
-		{
-			DWORD elapsed = (dwStartTime > 0) ? GetTickCount() - dwStartTime : 0;
-			if (elapsed > currentTrackLength) elapsed = currentTrackLength;
 
+		if (lpStatus->dwItem == MCI_STATUS_POSITION) {
+			// Read dwStartTime and currentTrackLength inside the lock so a concurrent
+			// MCI_STOP can't zero dwStartTime mid-calculation and produce a wrapped
+			// elapsed value.
+			EnterCriticalSection(&audioLock);
+			DWORD elapsed = (dwStartTime > 0) ? GetTickCount() - dwStartTime : 0;
+			DWORD trackLen = currentTrackLength;
+			LeaveCriticalSection(&audioLock);
+
+			if (elapsed > trackLen) elapsed = trackLen;
 			DWORD seconds = elapsed / 1000;
 			DWORD minutes = seconds / 60;
 			seconds = seconds % 60;
-
 			lpStatus->dwReturn = MCI_MAKE_TMSF(currentTrack, minutes, seconds, 0);
-			//Log("MCI_STATUS_POSITION %d", lpStatus->dwReturn);
 		}
 		else if (lpStatus->dwItem == MCI_STATUS_NUMBER_OF_TRACKS) {
 			lpStatus->dwReturn = 5;
-			//Log("MCI_STATUS_NUMBER_OF_TRACKS %d", lpStatus->dwReturn);
 		}
 		else if (lpStatus->dwItem == MCI_STATUS_CURRENT_TRACK) {
 			lpStatus->dwReturn = currentTrack;
-			//Log("MCI_STATUS_CURRENT_TRACK %d", lpStatus->dwReturn);
 		}
 		else if (lpStatus->dwItem == MCI_STATUS_LENGTH) {
 			/* // stop counter? progress? something
@@ -355,13 +359,14 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 
 	// 7. PAUSE
 	if (uMsg == MCI_PAUSE) {
+		EnterCriticalSection(&audioLock);
 		if (!isPaused) {
-			Log("MCI_PAUSE Tick: %d", GetTickCount());
-			Log("MCI_PAUSE Last: %d", lastPlayTime);
 			totalElapsedBeforePause = GetTickCount() - dwStartTime;
 			isPaused = true;
 			waveOutPause(hWaveOut);
+			Log("MCI_PAUSE");
 		}
+		LeaveCriticalSection(&audioLock);
 		return 0;
 	}
 	return 0;
