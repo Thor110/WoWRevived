@@ -41,7 +41,8 @@ namespace WoWViewer
             string mtlText,
             byte[] texturePng,       // RGBA PNG, 256 wide
             byte[] palData,          // PAL file for colour quantisation
-            byte[]? originalWof = null)
+            byte[]? originalWof = null,
+            byte[]? shadeData = null) // SHH level-0 slice — when provided, quantise against shaded colours
         {
             // ── 0. Parse original WOF for reference data ──────────────────────
             WofModel? orig = null;
@@ -65,7 +66,7 @@ namespace WoWViewer
                     "Piece count must match exactly for animated models.");
 
             // ── 2. Build material table from MTL + actual UV ranges in OBJ ─────
-            var (texBytes, texHeight) = QuantiseTexture(texturePng, palData);
+            var (texBytes, texHeight) = QuantiseTexture(texturePng, palData, shadeData);
             var matTable = RecoverMaterialTable(mtlText, pieces, texHeight);
 
             // ── 3. Build face and vertex binary data ──────────────────────────
@@ -547,7 +548,7 @@ namespace WoWViewer
 
         // ── Texture quantisation ──────────────────────────────────────────────
 
-        private static (byte[] data, int height) QuantiseTexture(byte[] pngBytes, byte[] palData)
+        private static (byte[] data, int height) QuantiseTexture(byte[] pngBytes, byte[] palData, byte[]? shadeData = null)
         {
             using var ms = new MemoryStream(pngBytes);
             using var bmp = new Bitmap(ms);
@@ -558,7 +559,6 @@ namespace WoWViewer
 
             // Palette-indexed PNG (Format8bppIndexed):
             // raw index bytes are read directly — lossless, no re-quantisation needed.
-            // A user can save their edited _tex.png as 8bpp indexed to use this path.
             if (bmp.PixelFormat == System.Drawing.Imaging.PixelFormat.Format8bppIndexed)
             {
                 var result = new byte[w * h];
@@ -577,13 +577,34 @@ namespace WoWViewer
                 return (result, h);
             }
 
-            // RGBA PNG: nearest-neighbour quantise against the PAL.
-            // Used when the user has painted a new texture atlas.
-            var palRgb = new (int r, int g, int b)[256];
+            // RGBA PNG: nearest-neighbour quantise.
+            //
+            // When shadeData (SHH level-0 slice, 256 × RGB565) is provided the export
+            // PNG was rendered with the shader applied, so we build the colour table from
+            // the shaded RGB values — each entry i maps to the RGB565 colour that palette
+            // index i displays as after shading.  Quantising against this table maps the
+            // shaded pixel back to the correct original palette index.
+            //
+            // When shadeData is null we fall back to raw palette RGB.
+            bool useShade = shadeData?.Length >= 512;
+            var quantColour = new (int r, int g, int b)[256];
             for (int i = 0; i < 256; i++)
-                palRgb[i] = (Math.Min(palData[i * 3] * 4, 255),
-                             Math.Min(palData[i * 3 + 1] * 4, 255),
-                             Math.Min(palData[i * 3 + 2] * 4, 255));
+            {
+                if (useShade)
+                {
+                    int rgb565 = shadeData![i * 2] | (shadeData[i * 2 + 1] << 8);
+                    int rv = (rgb565 >> 11) & 0x1F; int r = (rv << 3) | (rv >> 2);
+                    int gv = (rgb565 >> 5) & 0x3F; int g = (gv << 2) | (gv >> 4);
+                    int bv = rgb565 & 0x1F; int b = (bv << 3) | (bv >> 2);
+                    quantColour[i] = (r, g, b);
+                }
+                else
+                {
+                    quantColour[i] = (Math.Min(palData[i * 3] * 4, 255),
+                                      Math.Min(palData[i * 3 + 1] * 4, 255),
+                                      Math.Min(palData[i * 3 + 2] * 4, 255));
+                }
+            }
 
             var rgba = new byte[w * h];
             for (int y = 0; y < h; y++)
@@ -594,7 +615,7 @@ namespace WoWViewer
                     int best = 1, bestDist = int.MaxValue;
                     for (int i = 1; i < 256; i++)
                     {
-                        var (pr, pg, pb) = palRgb[i];
+                        var (pr, pg, pb) = quantColour[i];
                         int d = (px.R - pr) * (px.R - pr) + (px.G - pg) * (px.G - pg) + (px.B - pb) * (px.B - pb);
                         if (d < bestDist) { bestDist = d; best = i; if (d == 0) break; }
                     }

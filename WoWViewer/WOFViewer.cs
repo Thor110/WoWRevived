@@ -447,7 +447,7 @@ namespace WoWViewer
                 byte[] texPng = File.ReadAllBytes(texPath);
                 byte[]? origWof = rawData?.Length > 0 ? rawData : null;
 
-                byte[] encoded = WofEncoder.Encode(objText, mtlText, texPng, palData, origWof);
+                byte[] encoded = WofEncoder.Encode(objText, mtlText, texPng, palData, origWof, shadeData);
 
                 string outPath = Path.Combine("DAT", selectedEntry);
                 if (File.Exists(outPath) && MessageBox.Show($"'{outPath}' exists — overwrite?", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.No)
