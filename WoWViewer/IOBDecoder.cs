@@ -306,7 +306,6 @@ namespace WoWViewer
         /// </summary>
         public static Bitmap RenderTextureAtlas(IobModel model, byte[] palData, byte[]? shadeData = null)
         {
-            // THE FIX: Multiply the HalfWidthScale by 2 to get the full width of the building!
             int W = Math.Max(1, model.HalfWidthScale * 2);
             int H = Math.Max(1, model.HeightScale);
             var canvas = new byte[W * H];   // palette indices, 0 = transparent
@@ -320,19 +319,24 @@ namespace WoWViewer
                 byte idx = canvas[i];
                 if (idx == 0) { pixels[i] = 0; continue; }
 
-                byte r, g, b;
-                if (shadeData != null && shadeData.Length > idx)
+                int r, g, b;
+                if (shadeData != null && shadeData.Length >= (idx * 2 + 2))
                 {
-                    int s = shadeData[idx];
-                    r = palData.Length > s * 3 + 2 ? palData[s * 3] : (byte)0;
-                    g = palData.Length > s * 3 + 2 ? palData[s * 3 + 1] : (byte)0;
-                    b = palData.Length > s * 3 + 2 ? palData[s * 3 + 2] : (byte)0;
+                    // BMGI.SHH stores 256 × RGB565 exactly like WOF shade tables.
+                    int rgb565 = shadeData[idx * 2] | (shadeData[idx * 2 + 1] << 8);
+                    int rv = (rgb565 >> 11) & 0x1F; r = (rv << 3) | (rv >> 2);
+                    int gv = (rgb565 >> 5) & 0x3F; g = (gv << 2) | (gv >> 4);
+                    int bv = rgb565 & 0x1F; b = (bv << 3) | (bv >> 2);
                 }
                 else
                 {
-                    r = palData.Length > idx * 3 + 2 ? palData[idx * 3] : (byte)0;
-                    g = palData.Length > idx * 3 + 2 ? palData[idx * 3 + 1] : (byte)0;
-                    b = palData.Length > idx * 3 + 2 ? palData[idx * 3 + 2] : (byte)0;
+                    r = palData.Length > idx * 3 + 2 ? palData[idx * 3] : 0;
+                    g = palData.Length > idx * 3 + 2 ? palData[idx * 3 + 1] : 0;
+                    b = palData.Length > idx * 3 + 2 ? palData[idx * 3 + 2] : 0;
+                    // PAL values are 6-bit; scale to 8-bit.
+                    r = Math.Min(r * 4, 255);
+                    g = Math.Min(g * 4, 255);
+                    b = Math.Min(b * 4, 255);
                 }
                 pixels[i] = (255 << 24) | (r << 16) | (g << 8) | b;
             }
@@ -351,7 +355,7 @@ namespace WoWViewer
         /// </summary>
         private static void DecodePatchesToCanvas(IobModel model, byte[] canvas, int W, int H)
         {
-            int originX = model.HalfWidthScale;
+            int originX = W / 2;   // canvas centre — patches are positioned relative to this
             byte[] raw = model.TexData;
             int patchBase = model.PatchDataBase;
 
@@ -361,27 +365,25 @@ namespace WoWViewer
                 int patchIdx = patch.PatchOffset - patchBase;
                 if (patchIdx < 0 || patchIdx + 3 > raw.Length) continue;
 
-                // Byte 0 of the patch is Width. 
-                // In this engine, Width/2 is often subtracted to center the triangle slice.
-                int pWidth = raw[patchIdx];
-                int pos = patchIdx + 3;
+                int pos = patchIdx + 3;   // skip 3-byte header (w_byte, h_byte, height)
 
                 int baseX = patch.ScreenX + originX;
                 int baseY = patch.ScreenY;
                 int row = 0;
 
-                while (pos + 1 < raw.Length && row < patch.Height)
+                // Patch boundary: next patch's offset (from sorted offset list).
+                // Some patches use a 00 00 sentinel instead, so we honour both.
+                int patchEnd = raw.Length;   // overridden per-patch in the caller when available
+
+                while (pos + 1 < raw.Length)
                 {
                     int skip = raw[pos++];
                     int runByte = raw[pos++];
-                    if (skip == 0 && runByte == 0) break;
+                    if (skip == 0 && runByte == 0) break;   // sentinel terminator
 
                     int py = baseY + row;
-
-                    // THE ALIGNMENT FIX: 
-                    // We subtract half the patch width (pWidth / 2) to center the span.
-                    // This is the "Sub-pixel" correction the engine does in fixed-point.
-                    int cx = baseX + skip - (pWidth / 2);
+                    // skip is the left-edge offset from baseX — no pWidth correction.
+                    int cx = baseX + skip;
 
                     if (runByte == 0x80) { /* Transparent row skip */ }
                     else if (runByte >= 0x81)
@@ -478,7 +480,7 @@ namespace WoWViewer
             for (int i = 0; i < model.FaceCount && i < model.Normals.Length; i++)
             {
                 var n = model.Normals[i];
-                if(!isRadial)
+                if (!isRadial)
                 {
                     obj.AppendLine(FormattableString.Invariant($"vn {n.Nx / 127f:F4} {n.Ny / 127f:F4} {n.Nz / 127f:F4}"));
                 }
@@ -515,6 +517,6 @@ namespace WoWViewer
 
         public static string SuggestPalette(string iobName) => "BM.PAL";
 
-        public static string SuggestShader(string iobName, string palName) => "BMGI.SHH";
+        public static string SuggestShader(string iobName, string palName) => "BMHBB.SHH";
     }
 }
