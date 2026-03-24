@@ -307,7 +307,14 @@ namespace WoWViewer
         public static Bitmap RenderTextureAtlas(IobModel model, byte[] palData, byte[]? shadeData = null)
         {
             int W = Math.Max(1, model.HalfWidthScale);
-            int H = Math.Max(1, model.HeightScale);
+            // HeightScale can be 0 for some IOB files (e.g. RF_DOORS). Derive from
+            // patch extents so we still produce a valid bitmap in those cases.
+            int H = model.HeightScale > 0
+                ? model.HeightScale
+                : model.Patches.Length > 0
+                    ? model.Patches.Max(p => p.ScreenY + p.HByte) + 1
+                    : 1;
+            H = Math.Max(1, H);
             var canvas = new byte[W * H];   // palette indices; 0 = transparent
 
             DecodePatchesToCanvas(model, canvas, W, H);
@@ -500,26 +507,36 @@ namespace WoWViewer
 
         // ── Palette / shader suggestions ──────────────────────────────────────
         //
-        // All IOB buildings use BM.PAL (confirmed from IDA).
-        // Shader selection depends on faction:
-        //   BMHBB.SHH — human buildings  (CP_, AB_, CH_, CON_, LONDST, etc.)
-        //   BMMBB.SHH — martian buildings (MB_, MT_, HE_, HX_, SF_, AH_, TC_,
-        //                                  PP_, EWP_, POD, WEED, etc.)
-        // Note: red weed sprites may require a separate palette/shader — TBD.
+        // All IOB buildings share BM.PAL (confirmed from IDA).
+        //
+        // The game selects shaders at session start via a single global faction flag
+        // (byte_4B84C4 in sub_40B6C0): non-zero = Human → BMHBB.SHH, zero = Martian →
+        // BMMBB.SHH. There is no per-filename logic in the game itself.
+        //
+        // For the viewer we use a manual dictionary so you can add/correct entries as
+        // you encounter them. The default fallback is BMHBB.SHH (human buildings).
+        // RED.IOB uses HWHW.SHH (confirmed).
+        // Add entries here in the form: { "FILENAME_WITHOUT_EXTENSION", "SHADER.SHH" }
 
-        private static readonly HashSet<string> MartianPrefixes = new(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, string> ShaderMap =
+            new(StringComparer.OrdinalIgnoreCase)
         {
-            "MB_", "MT_", "HE_", "HX_", "SF_", "AH_", "TC_", "PP_", "EWP_",
-            "POD", "WEED", "MRTPOD", "MBASE"
+            // ── Human buildings ────────────────────────────────────── BMHBB.SHH (default)
+            // (no entry needed — covered by fallback)
+
+            // ── Martian buildings ──────────────────────────────────── BMMBB.SHH
+            { "POD",       "BMMBB.SHH" },
+
+            // ── Special / override ─────────────────────────────────────────────
+            { "RED",       "HWHW.SHH"  },
         };
 
         public static string SuggestPalette(string iobName) => "BM.PAL";
 
         public static string SuggestShader(string iobName, string palName)
         {
-            string name = Path.GetFileNameWithoutExtension(iobName).ToUpperInvariant();
-            bool isMartian = MartianPrefixes.Any(p => name.StartsWith(p, StringComparison.OrdinalIgnoreCase));
-            return isMartian ? "BMMBB.SHH" : "BMHBB.SHH";
+            string key = Path.GetFileNameWithoutExtension(iobName);
+            return ShaderMap.TryGetValue(key, out string? shd) ? shd : "BMHBB.SHH";
         }
     }
 }

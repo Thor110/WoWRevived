@@ -115,7 +115,10 @@ namespace WoWViewer
             }
 
             var bmp = IobDecoder.RenderTextureAtlas(currentIobModel!, palData, shdSlice);
-            DisplayScaled(bmp, currentIobModel!.HalfWidthScale, currentIobModel.HeightScale);
+            // Scale the display to 3× like WOF, and guard against HeightScale=0
+            // (some IOBs such as RF_DOORS store 0 — RenderTextureAtlas derives the real
+            // height from patch extents, so bmp.Height is always at least 1).
+            DisplayScaled(bmp, Math.Max(1, bmp.Width) * 3, Math.Max(1, bmp.Height) * 3);
         }
 
         private void DisplayScaled(Bitmap bmp, int scaledW, int scaledH)
