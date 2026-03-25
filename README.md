@@ -90,7 +90,9 @@ The road map for this project.
 	- Ability to import custom geometry.
 	- Preview the terrains tilemap.
 - [✅ 6 : Building Viewer](#building-viewer) ( 100% Complete )
-	- Building viewer can export .IOB geometry.
+	- Building viewer can export .IOB BSP geometry.
+	- Ability to export building sprites.
+	- Import currently only allows for replacing existing pixels in a sprite due to run-length encoding.
 - [✅ 7 : Font Viewer](#font-viewer) ( 100% Complete )
 	- Font viewer can export .FNT files to .png images.
 	- Ability to import edited fonts.
@@ -113,7 +115,7 @@ The road map for this project.
 	- Uses a winmm shim that allows for localised audio playback.
 	- Added functionality to allow music playback to continue when not in fullscreen and the window loses focus.
 	- Permanence added to the "In-Game Music Enabled/Disabled" option through the winmm shim.
-	- Known "bugs" which I consider non-issues for the time-being.
+	- Known "bugs" which I consider non-issues for the time-being. ( The remaining 1% )
 		- 1\. The counter increases indefinitely.
 		- 2\. Doesn't progress to the next track when a track finishes in the CD player menu.
 - [✅ 12 : Video Playback Intercept](#video-playback-intercept) ( 100% Complete )
