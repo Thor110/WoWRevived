@@ -33,6 +33,7 @@ The road map for this project.
 	- Leading space added to some text to improve appearance in the Critical Event Options menu.
 	- Missing entry created for the Credits button in the options menu.
 	- Build List screen location is now dynamically set as per the resolution setting chosen in the launcher.
+	- Missing pixels have been restored for some building sprites.
 	- Various executable edits:
 		- 1\. 1 byte to skip the "NO CD INSERTED" message in the CD Player menu.
 		- 2\. 2 bytes to skip creation of the 8/16 bit colour toggles in the "Display Settings" menu.
@@ -178,6 +179,12 @@ Unit Border Selection - Changed from 640x640 to 2048x2048
 
 <div align="center">
   <img src="images/custom-border-select.png" alt="Unit Selection Border">
+</div>
+
+Some missing pixels have been restored for building sprites, seen in the following previews.
+
+<div align="center">
+  <img src="images/building-martian-pixels-restored.png" alt="Missing Pixels Restored">
 </div>
 
 ## Custom Launcher
