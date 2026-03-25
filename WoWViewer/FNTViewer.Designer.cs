@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            label2 = new Label();
             button1 = new Button();
             label3 = new Label();
             listBox3 = new ListBox();
@@ -45,15 +44,6 @@
             button6 = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
-            // 
-            // label2
-            // 
-            label2.AutoSize = true;
-            label2.Location = new Point(693, 501);
-            label2.Name = "label2";
-            label2.Size = new Size(210, 15);
-            label2.TabIndex = 45;
-            label2.Text = "Replace Functionality Not Working Yet";
             // 
             // button1
             // 
@@ -201,7 +191,6 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1264, 777);
             Controls.Add(button6);
-            Controls.Add(label2);
             Controls.Add(button1);
             Controls.Add(label3);
             Controls.Add(listBox3);
@@ -223,8 +212,6 @@
         }
 
         #endregion
-
-        private Label label2;
         private Button button1;
         private Label label3;
         private ListBox listBox3;
