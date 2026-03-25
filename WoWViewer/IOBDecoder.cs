@@ -128,8 +128,9 @@ namespace WoWViewer
             int litTriCount = BitConverter.ToInt32(data, 0x06);
             int animatedFlag = BitConverter.ToInt32(data, 0x0A);
             int halfWidthScale = BitConverter.ToInt32(data, 0x0E);
-            int yOffsetScale = BitConverter.ToInt32(data, 0x12);
-            int heightScale = BitConverter.ToInt32(data, 0x16);
+            int yOffsetScale = BitConverter.ToInt32(data, 0x12); // this is wrong
+            int heightScale = BitConverter.ToInt32(data, 0x12);
+            //int heightScale = BitConverter.ToInt32(data, 0x16); // this was wrong
             int bspSectionSize = BitConverter.ToInt32(data, 0x1A);
             int normalsEndOffset = BitConverter.ToInt32(data, 0x1E);
 
