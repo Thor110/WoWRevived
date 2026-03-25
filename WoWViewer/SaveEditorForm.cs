@@ -349,48 +349,309 @@ namespace WoWViewer
         private void listBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             selectedSectorIndex = listBox2.SelectedIndex;
-            label9.Text = listBox2.Text; // update the label with the selected sector
+            label9.Text = listBox2.Text;
 
+            listBox3.Items.Clear();
+            listBox4.Items.Clear();
+
+            if (selectedSectorIndex < 0 || sectorData[selectedSectorIndex] == null) return;
             byte[] sec = sectorData[selectedSectorIndex];
-            // Show: header line + first 256 bytes as hex + unparsed count
-            var sb = new StringBuilder();
-            sb.AppendLine($"Sector {selectedSectorIndex + 1}  |  {sec.Length} bytes total");
-            sb.AppendLine();
 
-            // Known header: SECTHUNIWMOB (12) + unit_count byte (1) + padding (3) + first_bmol_id (4) + SELO (4) + a (4) + b (4) + c (4) = 0x24 bytes
-            bool hasPlayerUnits = sec[0x0C] != 0 || BitConverter.ToUInt32(sec, 0x14) != 0x494E5541; // 0x494E5541 = "AUNI"
-            if (hasPlayerUnits)
-            {
-                int unit_count = sec[0x0C];
-                uint first_bmol = BitConverter.ToUInt32(sec, 0x10);
-                uint selo_a = BitConverter.ToUInt32(sec, 0x18);
-                uint selo_b = BitConverter.ToUInt32(sec, 0x1C);
-                uint selo_c = BitConverter.ToUInt32(sec, 0x20);
-                sb.AppendLine($"  unit_count  = {unit_count}");
-                sb.AppendLine($"  first_bmol  = {first_bmol}");
-                sb.AppendLine($"  SELO a/b/c  = {selo_a} / {selo_b} / {selo_c}");
-            }
-            else
-            {
-                sb.AppendLine("  (no player units — enemy/neutral sector)");
-            }
-            sb.AppendLine();
+            // ── Units → listBox4 ────────────────────────────────────────────────────
+            var units = ParseUnits(sec);
+            foreach (var u in units)
+                listBox4.Items.Add($"{u.Name}  ×{u.PartCount}  HP:{u.HP}");
 
-            // Raw hex dump of first N bytes
-            int dumpLen = sec.Length;
-            for (int i = 0; i < dumpLen; i += 16)
+            // ── Buildings → listBox3 ────────────────────────────────────────────────
+            var buildings = ParseBuildings(sec);
+            foreach (var bld in buildings)
             {
-                sb.Append($"  {i:X4}: ");
-                for (int j = 0; j < 16 && i + j < dumpLen; j++)
-                    sb.Append($"{sec[i + j]:X2} ");
-                sb.Append("  ");
-                for (int j = 0; j < 16 && i + j < dumpLen; j++)
-                    sb.Append(sec[i + j] >= 32 && sec[i + j] < 127 ? (char)sec[i + j] : '.');
-                sb.AppendLine();
+                string prog = bld.Progress >= 1f ? "Complete"
+                            : bld.Progress <= 0f ? "Not started"
+                            : $"{bld.Progress * 100f:F0}%";
+                listBox3.Items.Add($"{bld.Name}  [{prog}]  HP:{bld.HP}");
             }
-            if (sec.Length > 512) sb.AppendLine($"  ... ({sec.Length - 512} more bytes)");
 
-            richTextBox1.Text = sb.ToString(); // or whatever your textbox is named
+            // ── Debug hex in richTextBox1 ────────────────────────────────────────────
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"Sector {selectedSectorIndex + 1}  |  {sec.Length} bytes  |  " +
+                          $"{units.Count} unit group(s)  |  {buildings.Count} building(s)");
+            listBox3.Items.Count.ToString(); // suppress warning
+            richTextBox1.Text = sb.ToString();
+        }
+        // === SECTOR PARSING ADDITIONS FOR SaveEditorForm.cs ===
+        // Insert these methods inside the SaveEditorForm class,
+        // and replace the listBox2_SelectedIndexChanged body with the new version.
+
+        // ── Data classes ────────────────────────────────────────────────────────────
+
+        public class UnitGroup
+        {
+            public int BmolId { get; set; }
+            public int PartCount { get; set; }
+            public string Name { get; set; } = "";
+            public float X { get; set; }
+            public float Z { get; set; }
+            public int HP { get; set; }
+        }
+
+        public class BuildingEntry
+        {
+            public int BmolId { get; set; }
+            public string Name { get; set; } = "";
+            public float Progress { get; set; }  // 0.0 – 1.0
+            public float X { get; set; }
+            public float Z { get; set; }
+            public int HP { get; set; }
+        }
+
+        // ── BMOL ID → display name lookup ───────────────────────────────────────────
+
+        private static readonly Dictionary<int, string> BmolNames = new()
+        {
+            {1,   "Mark I Armoured Lorry"},
+            {4,   "Mark I Armoured Track Layer"},
+            {7,   "Mark I Tunnelling Track Layer"},
+            {10,  "Mark I Self Propelled Gun"},
+            {14,  "Mark I Mobile Anti-Aircraft Array"},
+            {17,  "Sappers Lorry"},
+            {19,  "Formidable Class Ironclad"},
+            {22,  "Model A Submersible"},
+            {25,  "Observation Balloon"},
+            {28,  "Construction Vehicle"},
+            {30,  "Mobile Repair Vehicle"},
+            {32,  "Mark I Mortar Bike"},
+            {35,  "Vehicle Factory Level 1"},
+            {38,  "Training Centre"},
+            {39,  "Ship Yard Level 1"},
+            {42,  "Aircraft Hangar Level 1"},
+            {45,  "Munitions Factory"},
+            {46,  "Construction Labs"},
+            {47,  "Steel Refinery"},
+            {48,  "Coal Mine"},
+            {49,  "Oil Refinery"},
+            {58,  "Command Post"},
+            {59,  "Railway Platform"},
+            {60,  "Repair Workshop"},
+            {62,  "Scout Machine - 1st Gen"},
+            {65,  "Fighting Machine - 1st Gen"},
+            {68,  "Tempest - 1st Gen"},
+            {71,  "Bombarding Machine - 1st Gen"},
+            {74,  "Electric Machine - 1st Gen"},
+            {77,  "Flying Machine - 1st Gen"},
+            {80,  "Scanning Machine - 1st Gen"},
+            {83,  "Constrictor - 1st Gen"},
+            {86,  "Xeno Telepath - 1st Gen"},
+            {89,  "Handling Machine"},
+            {91,  "Digging Mechanism"},
+            {93,  "Drone - 1st Gen"},
+            {96,  "Constructor Level 1"},
+            {99,  "Energy Weapon Plant"},
+            {100, "Suspension Field Site Level 1"},
+            {103, "Telepathic Training Centre Level 1"},
+            {106, "Biochemical Plant"},
+            {107, "Explosives Plant"},
+            {108, "Human Farm"},
+            {109, "Copper Forge"},
+            {110, "Heavy Element Plant"},
+            {111, "12 KrK Rapid Heat Ray"},
+            {113, "46 KrK Heat Ray Turret"},
+            {116, "102 DnO Projectile Launcher"},
+            {119, "Power Plant"},
+            {120, "Communications Centre"},
+            {121, "Repair Facility"},
+            {122, "Matter Transfer Station"},
+            {278, "Parliament"},
+            {830, "Martian Base"},
+        };
+
+        private static string BmolName(int id)
+            => BmolNames.TryGetValue(id, out var n) ? n : $"#{id}";
+
+        // ── Tag helpers ──────────────────────────────────────────────────────────────
+
+        private static readonly byte[] TAG_SELO = { (byte)'S', (byte)'E', (byte)'L', (byte)'O' };
+        private static readonly byte[] TAG_WMOB = { (byte)'W', (byte)'M', (byte)'O', (byte)'B' };
+        private static readonly byte[] TAG_BMOL = { (byte)'B', (byte)'M', (byte)'O', (byte)'L' };
+        private static readonly byte[] TAG_BAMO = { (byte)'B', (byte)'A', (byte)'M', (byte)'O' };
+        private static readonly byte[] TAG_BATP = { (byte)'B', (byte)'A', (byte)'T', (byte)'P' };
+        private static readonly byte[] TAG_VEHI = { (byte)'V', (byte)'E', (byte)'H', (byte)'I' };
+        private static readonly byte[] TAG_VEHU = { (byte)'V', (byte)'E', (byte)'H', (byte)'U' };
+        private static readonly byte[] TAG_HCON = { (byte)'H', (byte)'C', (byte)'O', (byte)'N' };
+        private static readonly byte[] TAG_AUNI = { (byte)'A', (byte)'U', (byte)'N', (byte)'I' };
+
+        private static bool IsTag(byte[] data, int pos, byte[] tag)
+        {
+            if (pos + 4 > data.Length) return false;
+            return data[pos] == tag[0] && data[pos + 1] == tag[1]
+                && data[pos + 2] == tag[2] && data[pos + 3] == tag[3];
+        }
+
+        private static int SkipToTag(byte[] data, int pos, byte[] tag)
+        {
+            for (int i = pos; i <= data.Length - 4; i++)
+                if (IsTag(data, i, tag)) return i;
+            return -1;
+        }
+
+        // ── Unit group parser ────────────────────────────────────────────────────────
+        // Parses HUNI block within a sector byte array.
+        // sec[] starts at SECTHUNIWMOB.
+
+        private List<UnitGroup> ParseUnits(byte[] sec)
+        {
+            var result = new List<UnitGroup>();
+            int i = 12; // skip SECTHUNIWMOB tag
+
+            if (i + 8 > sec.Length) return result;
+            int unitCount = BitConverter.ToInt32(sec, i); i += 4;
+            int firstWmob = BitConverter.ToInt32(sec, i); i += 4;
+
+            // Sanity: if firstWmob looks like "AUNI" sentinel there are no units
+            if (unitCount == 0 || firstWmob == 0x494E5541) return result;
+
+            // Group-level SELO
+            if (IsTag(sec, i, TAG_SELO)) i += 16; // SELO + seq + a + b
+
+            // WMOB
+            if (IsTag(sec, i, TAG_WMOB)) i += 8; // WMOB + sector
+
+            // Iterate unit groups until we hit HCON or AUNI or end
+            while (i < sec.Length - 4)
+            {
+                // Each group starts with BMOL
+                if (!IsTag(sec, i, TAG_BMOL)) break;
+                i += 4;
+                if (i + 8 > sec.Length) break;
+                int partCount = BitConverter.ToInt32(sec, i); i += 4;
+                int bmolId = BitConverter.ToInt32(sec, i); i += 4;
+
+                var group = new UnitGroup
+                {
+                    BmolId = bmolId,
+                    PartCount = partCount,
+                    Name = BmolName(bmolId),
+                };
+
+                // Parse lead part: SELO + BAMO
+                if (IsTag(sec, i, TAG_SELO)) i += 16;
+                if (IsTag(sec, i, TAG_BAMO))
+                {
+                    i += 4;
+                    if (i + 20 <= sec.Length)
+                    {
+                        i += 4; // unk
+                        group.X = BitConverter.ToSingle(sec, i); i += 4;
+                        group.Z = BitConverter.ToSingle(sec, i); i += 4;
+                        i += 4; // unk2
+                        group.HP = BitConverter.ToInt32(sec, i); i += 4;
+                    }
+                }
+
+                // Skip remaining parts: BATPVEHI chains until VEHU
+                for (int part = 1; part < partCount; part++)
+                {
+                    if (IsTag(sec, i, TAG_BATP)) i += 4;
+                    if (IsTag(sec, i, TAG_VEHI)) i += 8; // VEHI + wmob_id
+                    if (IsTag(sec, i, TAG_SELO)) i += 16;
+                    if (IsTag(sec, i, TAG_BAMO)) i += 24; // BAMO + 5 uint32s
+                }
+
+                // BATP terminator for this group
+                if (IsTag(sec, i, TAG_BATP))
+                {
+                    i += 4;
+                    // skip until VEHU
+                    while (i < sec.Length - 4 && !IsTag(sec, i, TAG_VEHU))
+                        i++;
+                }
+
+                // VEHU: group terminator, contains next group's wmob_id
+                if (IsTag(sec, i, TAG_VEHU))
+                {
+                    i += 4;
+                    int nextWmob = BitConverter.ToInt32(sec, i); i += 4;
+
+                    // If next thing is a new unit group, there should be SELO then WMOB then BMOL
+                    if (IsTag(sec, i, TAG_SELO)) i += 16;
+                    if (IsTag(sec, i, TAG_WMOB)) i += 8;
+                }
+
+                result.Add(group);
+            }
+
+            return result;
+        }
+
+        // ── Building parser ──────────────────────────────────────────────────────────
+        // Finds HCONWMOB within the full save data and parses buildings for a sector.
+        // We search by position: each SECTHUNIWMOB block contains one HCONWMOB.
+
+        private List<BuildingEntry> ParseBuildings(byte[] sec)
+        {
+            var result = new List<BuildingEntry>();
+
+            // Find HCONWMOB within sec
+            byte[] hconTag = System.Text.Encoding.ASCII.GetBytes("HCONWMOB");
+            int hconPos = -1;
+            for (int k = 0; k <= sec.Length - 8; k++)
+            {
+                bool match = true;
+                for (int m = 0; m < 8; m++)
+                    if (sec[k + m] != hconTag[m]) { match = false; break; }
+                if (match) { hconPos = k; break; }
+            }
+            if (hconPos < 0) return result;
+
+            int i = hconPos + 8; // skip HCONWMOB tag
+            if (i + 4 > sec.Length) return result;
+
+            int buildingCount = BitConverter.ToInt32(sec, i); i += 4;
+            if (buildingCount == 0) return result;
+
+            // Preamble for first building: bmol_id(4) + progress1(4) + progress2(4)
+            for (int b = 0; b < buildingCount; b++)
+            {
+                if (i + 12 > sec.Length) break;
+                int preambleBmol = BitConverter.ToInt32(sec, i); i += 4;
+                float progress1 = BitConverter.ToSingle(sec, i); i += 4;
+                float progress2 = BitConverter.ToSingle(sec, i); i += 4;
+
+                var entry = new BuildingEntry
+                {
+                    BmolId = preambleBmol,
+                    Name = BmolName(preambleBmol),
+                    Progress = Math.Min(progress1, progress2),
+                };
+
+                // SELO
+                if (IsTag(sec, i, TAG_SELO)) i += 16;
+                // WMOB
+                if (IsTag(sec, i, TAG_WMOB)) i += 8;
+                // BMOL: skip, preamble already has the id
+                if (IsTag(sec, i, TAG_BMOL)) i += 12;
+                // SELO (per-building)
+                if (IsTag(sec, i, TAG_SELO)) i += 16;
+                // BAMO
+                if (IsTag(sec, i, TAG_BAMO))
+                {
+                    i += 4;
+                    if (i + 20 <= sec.Length)
+                    {
+                        i += 4; // unk
+                        entry.X = BitConverter.ToSingle(sec, i); i += 4;
+                        entry.Z = BitConverter.ToSingle(sec, i); i += 4;
+                        i += 4; // unk2
+                        entry.HP = BitConverter.ToInt32(sec, i); i += 4;
+                    }
+                }
+                // BATP (8 zero bytes for buildings)
+                if (IsTag(sec, i, TAG_BATP)) i += 12; // BATP + 8 bytes
+
+                result.Add(entry);
+            }
+
+            return result;
         }
         // list box 3 selection ( building selection )
         private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
