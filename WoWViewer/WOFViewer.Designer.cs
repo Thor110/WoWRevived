@@ -184,7 +184,7 @@
             button1.UseVisualStyleBackColor = true;
             button1.Click += button1_Click;
             // 
-            // WOFConverter
+            // WOFViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -203,7 +203,7 @@
             Controls.Add(listBox2);
             Controls.Add(listBox1);
             Controls.Add(pictureBox1);
-            Name = "WOFConverter";
+            Name = "WOFViewer";
             Text = "WOFViewer";
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
