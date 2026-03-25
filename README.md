@@ -13,17 +13,17 @@ The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War O
 - 5 : Download the latest version from the Releases page, extract the contents and place the files in your install folder.
 - 6 : Right-click "WoWLauncher.exe" and choose **Send to > Desktop (create shortcut)**, then launch it and enjoy the game!
 
-**LANGUAGES : Language packs are now stand-alone releases.**
+LANGUAGES : Language packs are now stand-alone releases.
 
-**COMPATIBILITY : Windows 11 users might have to adjust the properties for "WoW_patched.exe" by setting compatibility to "Windows XP Service Pack 3" as well as setting the colour depth to "16-bit (65536) colour".**
+COMPATIBILITY : Windows 11 users might have to adjust the properties for "WoW_patched.exe" by setting compatibility to "Windows XP Service Pack 3" as well as setting the colour depth to "16-bit (65536) colour".
 
-**IE : Right click "wow_patched.exe" and go to the compatibility tab, then adjust the settings accordingly.**
+IE : Right click "wow_patched.exe" and go to the compatibility tab, then adjust the settings accordingly.
 
-**ADDITIONAL : The launcher will automatically request administrator permissions to ensure registry settings are correctly applied.**
+ADDITIONAL : The launcher will automatically request administrator permissions to ensure registry settings are correctly applied.
 
-**NOTE : If you choose to make a language patch using the text editor, feel free to send the "TEXT.ojd" file my way and I will add it to the releases.**
+NOTE : If you choose to make a language patch using the text editor, feel free to send the "TEXT.ojd" file my way and I will add it to the releases.
 
-**WANTED : Regional Manuals : We are looking for high-quality scans of the original physical German (DE) and Spanish (ES) manuals. If you own a physical copy and can provide a scan, please join the Discord or open an Issue!**
+WANTED : Regional Manuals : We are looking for high-quality scans of the original physical German (DE) and Spanish (ES) manuals. If you own a physical copy and can provide a scan, please join the Discord or open an Issue!
 
 # Road Map
 
