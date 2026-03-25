@@ -299,8 +299,6 @@ These are a work in-progress, AI (Gemini) was used to generate portions of the e
 
 There is still a lot of cleanup left to do before these images are viable for use, but I have done my best to try and ensure that they are resolution agnostic and people using different resolutions won't miss out on much.
 
-NOTE : The "random" colours in the background is just my template that showcases all of the space that each available resolution would see.
-
 CD Player Menu
 
 <div align="center">
