@@ -693,6 +693,7 @@ namespace WoWViewer
         {
 
         }
+        // dump compressed/decompressed level data
         private void button4_Click(object sender, EventArgs e)
         {
             if (selectedSectorIndex < 0 || sectorData[selectedSectorIndex] == null) return;
