@@ -79,7 +79,7 @@ The road map for this project.
 	- Preview with the original palette or with the shader tables applied.
 	- Replace single frame and multi-frame sprites with custom ones.
 	- Quantisation of imported images will reduce them to the closest equivalent colour found in the palette through the associated shader table.
-	- Known "bugs" with the Sprite Viewer.
+	- Known "bugs" with the Sprite Viewer. ( The remaining 1% )
 		- 1\. Shader tables are not applied to all sprites yet, only a very small number of shader tables are left to be identified.
 - [✅ 4 : Unit Viewer](#unit-viewer) ( 100% Complete )
 	- Unit viewer can export .WOF models and their embedded textures.
