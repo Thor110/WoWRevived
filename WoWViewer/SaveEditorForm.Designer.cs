@@ -63,6 +63,9 @@
             button4 = new Button();
             numericUpDown7 = new NumericUpDown();
             label13 = new Label();
+            listBox5 = new ListBox();
+            label14 = new Label();
+            checkBox3 = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown3).BeginInit();
@@ -317,6 +320,7 @@
             numericUpDown5.Size = new Size(41, 23);
             numericUpDown5.TabIndex = 25;
             numericUpDown5.Value = new decimal(new int[] { 100, 0, 0, 0 });
+            numericUpDown5.ValueChanged += numericUpDown5_ValueChanged;
             // 
             // label10
             // 
@@ -330,7 +334,7 @@
             // label11
             // 
             label11.AutoSize = true;
-            label11.Location = new Point(661, 177);
+            label11.Location = new Point(938, 177);
             label11.Name = "label11";
             label11.Size = new Size(48, 15);
             label11.TabIndex = 28;
@@ -339,12 +343,13 @@
             // numericUpDown6
             // 
             numericUpDown6.Enabled = false;
-            numericUpDown6.Location = new Point(715, 175);
+            numericUpDown6.Location = new Point(992, 175);
             numericUpDown6.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             numericUpDown6.Name = "numericUpDown6";
             numericUpDown6.Size = new Size(41, 23);
             numericUpDown6.TabIndex = 27;
             numericUpDown6.Value = new decimal(new int[] { 100, 0, 0, 0 });
+            numericUpDown6.ValueChanged += numericUpDown6_ValueChanged;
             // 
             // textBox2
             // 
@@ -365,14 +370,15 @@
             // 
             // richTextBox1
             // 
-            richTextBox1.Location = new Point(794, 12);
+            richTextBox1.Location = new Point(1035, 12);
             richTextBox1.Name = "richTextBox1";
-            richTextBox1.Size = new Size(460, 496);
+            richTextBox1.Size = new Size(219, 154);
             richTextBox1.TabIndex = 31;
             richTextBox1.Text = "";
             // 
             // button4
             // 
+            button4.Enabled = false;
             button4.Location = new Point(1063, 514);
             button4.Name = "button4";
             button4.Size = new Size(191, 23);
@@ -383,26 +389,58 @@
             // 
             // numericUpDown7
             // 
-            numericUpDown7.Location = new Point(715, 204);
+            numericUpDown7.Location = new Point(747, 175);
             numericUpDown7.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
             numericUpDown7.Name = "numericUpDown7";
             numericUpDown7.Size = new Size(41, 23);
             numericUpDown7.TabIndex = 33;
+            numericUpDown7.ValueChanged += numericUpDown7_ValueChanged;
             // 
             // label13
             // 
             label13.AutoSize = true;
-            label13.Location = new Point(669, 206);
+            label13.Location = new Point(701, 177);
             label13.Name = "label13";
             label13.Size = new Size(40, 15);
             label13.TabIndex = 34;
             label13.Text = "Units :";
+            // 
+            // listBox5
+            // 
+            listBox5.FormattingEnabled = true;
+            listBox5.ItemHeight = 15;
+            listBox5.Location = new Point(794, 175);
+            listBox5.Name = "listBox5";
+            listBox5.Size = new Size(120, 364);
+            listBox5.TabIndex = 35;
+            // 
+            // label14
+            // 
+            label14.AutoSize = true;
+            label14.Location = new Point(794, 157);
+            label14.Name = "label14";
+            label14.Size = new Size(46, 15);
+            label14.TabIndex = 36;
+            label14.Text = "Group :";
+            // 
+            // checkBox3
+            // 
+            checkBox3.AutoSize = true;
+            checkBox3.Location = new Point(953, 517);
+            checkBox3.Name = "checkBox3";
+            checkBox3.Size = new Size(104, 19);
+            checkBox3.TabIndex = 37;
+            checkBox3.Text = "Decompressed";
+            checkBox3.UseVisualStyleBackColor = true;
             // 
             // SaveEditorForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1266, 550);
+            Controls.Add(checkBox3);
+            Controls.Add(label14);
+            Controls.Add(listBox5);
             Controls.Add(label13);
             Controls.Add(numericUpDown7);
             Controls.Add(button4);
@@ -488,5 +526,8 @@
         private Button button4;
         private NumericUpDown numericUpDown7;
         private Label label13;
+        private ListBox listBox5;
+        private Label label14;
+        private CheckBox checkBox3;
     }
 }

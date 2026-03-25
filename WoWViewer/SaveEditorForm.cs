@@ -83,7 +83,7 @@ namespace WoWViewer
             for (int i = 0; i < entryCount; i++) // there are only 1396 entries
             {
                 byte category = data[offset + 4];  // Faction: 00 = Martian, 01 = Human, 02 = UI
-                ushort tag = (ushort)(data[offset + 6] | (data[offset + 7] << 8));
+                ushort tag = (ushort)(data[offset + 6] | (data[offset + 7] << 8)); // TEXT.ojd key (2 bytes)
                 ushort length = (ushort)(data[offset + 8] | (data[offset + 9] << 8)); // bytes 9 and 10 are the string length
                 int stringOffset = offset + 10; // string offset
                 string text = Latin1.GetString(data, stringOffset, length - 1).Replace("\\n", "\n");
@@ -149,6 +149,7 @@ namespace WoWViewer
             dateTimePicker1.ValueChanged -= AnyControlChanged!;
             checkBox1.CheckedChanged -= checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged -= checkBox2_CheckedChanged!;
+            button4.Enabled = false;
             // parse the save file which adds the event handlers back
             parseSaveFile();
         }
@@ -229,6 +230,9 @@ namespace WoWViewer
             button2.Enabled = true; // enable the swap sides button
             button3.Enabled = true; // enable the delete save button
             listBox2.Items.Clear(); // clear the sector list box
+            listBox3.Items.Clear(); // clear the buildings
+            listBox4.Items.Clear(); // clear the units
+            listBox5.Items.Clear(); // clear the group
             isHuman = fileName.Contains("Human");
             label6.Text = isHuman ? $"{entries[193].Name} :" : $"{entries[196].Name} :"; // pulled from entries for localisation
             label7.Text = isHuman ? $"{entries[194].Name} :" : $"{entries[197].Name} :";
@@ -353,6 +357,7 @@ namespace WoWViewer
             selectedSectorIndex = listBox2.SelectedIndex;
             label9.Text = listBox2.Text;
 
+            button4.Enabled = true;
             listBox3.Items.Clear();
             listBox4.Items.Clear();
 
@@ -465,7 +470,7 @@ namespace WoWViewer
 
                 ushort textKey = (ushort)(obj[r + 5] | (obj[r + 6] << 8));
 
-                // Match against already-parsed entries by their TEXT.ojd key (stored as ID)
+                // Match against already-parsed entries by their TEXT.ojd key (ID)
                 var entry = entries.FirstOrDefault(e => e.ID == textKey && e.BmolId == null);
                 if (entry != null)
                     entry.BmolId = bmolId;
@@ -670,8 +675,66 @@ namespace WoWViewer
         {
 
         }
+        // unit counter numeric up down (add units to group)
+        private void numericUpDown7_ValueChanged(object sender, EventArgs e)
+        {
 
+        }
         private void button4_Click(object sender, EventArgs e)
+        {
+            if (selectedSectorIndex < 0 || sectorData[selectedSectorIndex] == null) return;
+            byte[] sec = sectorData[selectedSectorIndex];
+
+            // Find FFUH within this sector
+            int ffuhPos = -1;
+            for (int i = 0; i <= sec.Length - 4; i++)
+            {
+                if (sec[i] == 'F' && sec[i + 1] == 'F' && sec[i + 2] == 'U' && sec[i + 3] == 'H')
+                { ffuhPos = i; break; }
+            }
+            if (ffuhPos < 0) { MessageBox.Show("No FFUH block found in this sector."); return; }
+
+            // Extract the FFUH block: 1040 bytes header + compDataSize bytes bitstream
+            uint compDataSize = BitConverter.ToUInt32(sec, ffuhPos + 8);
+            int totalLen = 1040 + (int)compDataSize;
+            if (ffuhPos + totalLen > sec.Length) totalLen = sec.Length - ffuhPos;
+            byte[] ffuhBlock = new byte[totalLen];
+            Array.Copy(sec, ffuhPos, ffuhBlock, 0, totalLen);
+
+            byte[] output;
+            string ext;
+            if (checkBox3.Checked)
+            {
+                // Decompress
+                output = FfuhDecoder.Decompress(ffuhBlock);
+                ext = "_decompressed.bin";
+            }
+            else
+            {
+                // Raw compressed
+                output = ffuhBlock;
+                ext = "_compressed.bin";
+            }
+
+            using var dlg = new SaveFileDialog
+            {
+                Title = "Save FFUH Data",
+                FileName = $"sector{selectedSectorIndex + 1}{ext}",
+                Filter = "Binary files (*.bin)|*.bin|All files (*.*)|*.*"
+            };
+            if (dlg.ShowDialog() == DialogResult.OK)
+            {
+                File.WriteAllBytes(dlg.FileName, output);
+                MessageBox.Show($"Written {output.Length} bytes to {dlg.FileName}");
+            }
+        }
+        // building health [some buildings have pieces, so this might need forwarding to group eventually]
+        private void numericUpDown5_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
+        // group [unit] health
+        private void numericUpDown6_ValueChanged(object sender, EventArgs e)
         {
 
         }
