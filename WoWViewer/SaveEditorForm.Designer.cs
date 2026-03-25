@@ -60,6 +60,7 @@
             textBox2 = new TextBox();
             label12 = new Label();
             richTextBox1 = new RichTextBox();
+            button4 = new Button();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown3).BeginInit();
@@ -363,15 +364,26 @@
             // 
             richTextBox1.Location = new Point(794, 12);
             richTextBox1.Name = "richTextBox1";
-            richTextBox1.Size = new Size(460, 526);
+            richTextBox1.Size = new Size(460, 447);
             richTextBox1.TabIndex = 31;
             richTextBox1.Text = "";
+            // 
+            // button4
+            // 
+            button4.Location = new Point(1063, 514);
+            button4.Name = "button4";
+            button4.Size = new Size(191, 23);
+            button4.TabIndex = 32;
+            button4.Text = "Dump Sector Data";
+            button4.UseVisualStyleBackColor = true;
+            button4.Click += button4_Click;
             // 
             // SaveEditorForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1266, 550);
+            Controls.Add(button4);
             Controls.Add(richTextBox1);
             Controls.Add(label12);
             Controls.Add(textBox2);
@@ -450,5 +462,6 @@
         private TextBox textBox2;
         private Label label12;
         private RichTextBox richTextBox1;
+        private Button button4;
     }
 }
