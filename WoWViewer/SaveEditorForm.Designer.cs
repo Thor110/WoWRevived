@@ -247,9 +247,9 @@
             label5.AutoSize = true;
             label5.Location = new Point(516, 157);
             label5.Name = "label5";
-            label5.Size = new Size(40, 15);
+            label5.Size = new Size(46, 15);
             label5.TabIndex = 17;
-            label5.Text = "Units :";
+            label5.Text = "Group :";
             // 
             // numericUpDown2
             // 
@@ -399,11 +399,11 @@
             // label13
             // 
             label13.AutoSize = true;
-            label13.Location = new Point(701, 177);
+            label13.Location = new Point(670, 177);
             label13.Name = "label13";
-            label13.Size = new Size(40, 15);
+            label13.Size = new Size(71, 15);
             label13.TabIndex = 34;
-            label13.Text = "Units :";
+            label13.Text = "Unit Count :";
             // 
             // listBox5
             // 
@@ -413,15 +413,16 @@
             listBox5.Name = "listBox5";
             listBox5.Size = new Size(120, 364);
             listBox5.TabIndex = 35;
+            listBox5.SelectedIndexChanged += listBox5_SelectedIndexChanged;
             // 
             // label14
             // 
             label14.AutoSize = true;
             label14.Location = new Point(794, 157);
             label14.Name = "label14";
-            label14.Size = new Size(46, 15);
+            label14.Size = new Size(40, 15);
             label14.TabIndex = 36;
-            label14.Text = "Group :";
+            label14.Text = "Units :";
             // 
             // checkBox3
             // 

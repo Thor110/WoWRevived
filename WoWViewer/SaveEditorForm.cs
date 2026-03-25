@@ -149,7 +149,7 @@ namespace WoWViewer
             dateTimePicker1.ValueChanged -= AnyControlChanged!;
             checkBox1.CheckedChanged -= checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged -= checkBox2_CheckedChanged!;
-            button4.Enabled = false;
+            button4.Enabled = false; // disable debug dump decompressed button
             // parse the save file which adds the event handlers back
             parseSaveFile();
         }
@@ -357,9 +357,10 @@ namespace WoWViewer
             selectedSectorIndex = listBox2.SelectedIndex;
             label9.Text = listBox2.Text;
 
-            button4.Enabled = true;
-            listBox3.Items.Clear();
-            listBox4.Items.Clear();
+            button4.Enabled = true; // enable debug dump decompressed button
+            listBox3.Items.Clear(); // clear buildings
+            listBox4.Items.Clear(); // clear units
+            listBox5.Items.Clear(); // clear group [individual units]
 
             if (selectedSectorIndex < 0 || sectorData[selectedSectorIndex] == null) return;
             byte[] sec = sectorData[selectedSectorIndex];
@@ -386,9 +387,6 @@ namespace WoWViewer
             listBox3.Items.Count.ToString(); // suppress warning
             richTextBox1.Text = sb.ToString();
         }
-        // === SECTOR PARSING ADDITIONS FOR SaveEditorForm.cs ===
-        // Insert these methods inside the SaveEditorForm class,
-        // and replace the listBox2_SelectedIndexChanged body with the new version.
 
         // ── Data classes ────────────────────────────────────────────────────────────
 
@@ -665,13 +663,28 @@ namespace WoWViewer
 
             return result;
         }
-        // list box 3 selection ( building selection )
+        // list box 3 building selection
         private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            listBox5.Items.Clear(); // clear individual unit listbox [some buildings have pieces, so that listbox can be reused later]
+        }
+        // list box 4 unit group selection
+        private void listBox4_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            listBox5.Items.Clear(); // clear individual unit listbox
+        }
+        // list box 5 individual unit from group selection
+        private void listBox5_SelectedIndexChanged(object sender, EventArgs e)
         {
 
         }
-        // list box 4 selection ( unit selection )
-        private void listBox4_SelectedIndexChanged(object sender, EventArgs e)
+        // building health [some buildings have pieces, so this might need forwarding to group eventually]
+        private void numericUpDown5_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
+        // group [unit] health
+        private void numericUpDown6_ValueChanged(object sender, EventArgs e)
         {
 
         }
@@ -727,16 +740,6 @@ namespace WoWViewer
                 File.WriteAllBytes(dlg.FileName, output);
                 MessageBox.Show($"Written {output.Length} bytes to {dlg.FileName}");
             }
-        }
-        // building health [some buildings have pieces, so this might need forwarding to group eventually]
-        private void numericUpDown5_ValueChanged(object sender, EventArgs e)
-        {
-
-        }
-        // group [unit] health
-        private void numericUpDown6_ValueChanged(object sender, EventArgs e)
-        {
-
         }
     }
 }
