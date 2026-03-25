@@ -96,10 +96,11 @@ The road map for this project.
 - [✅ 7 : Font Viewer](#font-viewer) ( 100% Complete )
 	- Font viewer can export .FNT files to .png images.
 	- Ability to import edited fonts.
-- [❌ 8 : Save Editor](#save-editor) ( Partially Implemented - 10% Complete )
+- [❌ 8 : Save Editor](#save-editor) ( Partially Implemented - 15% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Override standard limit of 1753 as the minimum date and set the year manually to as low as year zero.
 	- Sector & Area names loaded dynamically from TEXT.ojd to support the regional releases.
+	- Building, unit group and unit parsing implemented.
 - [✅ 9 : Text Editor](#text-editor) ( 100% Complete )
 	- All 1397 strings are editable. ( Default game has 1396, new string added for the missing Credits button text, original files also supported )
 	- UTF-8 + ISO-8859-1 encoding supported.
