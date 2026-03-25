@@ -46,7 +46,7 @@ namespace WoWViewer
         private int selectedSectorIndex = -1;
         private HashSet<uint> usedSeloSeqs = new HashSet<uint>();
         private uint maxSeloSeq = 0;
-        private List<UnitGroup> currentSectorUnits = new();
+        private SectorData? currentSector = null;
         private RegistryKey tweakKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true)!;
         private int unitsValue;
         private int boatsValue;
@@ -369,13 +369,14 @@ namespace WoWViewer
             byte[] sec = sectorData[selectedSectorIndex];
 
             // ── Units → listBox4 ────────────────────────────────────────────────────
-            currentSectorUnits = ParseUnits(sec);
-            foreach (var u in currentSectorUnits)
+            currentSector = new SectorData();
+            currentSector.Units = ParseUnits(sec);
+            currentSector.Buildings = ParseBuildings(sec);
+            foreach (var u in currentSector!.Units)
                 listBox4.Items.Add($"{u.Name}  ×{u.PartCount}  HP:{u.HP}");
 
             // ── Buildings → listBox3 ────────────────────────────────────────────────
-            var buildings = ParseBuildings(sec);
-            foreach (var bld in buildings)
+            foreach (var bld in currentSector!.Buildings)
             {
                 string prog = bld.Progress >= 1f ? "Complete"
                             : bld.Progress <= 0f ? "Not started"
@@ -386,41 +387,91 @@ namespace WoWViewer
             // ── Debug hex in richTextBox1 ────────────────────────────────────────────
             var sb = new StringBuilder();
             sb.AppendLine($"Sector {selectedSectorIndex + 1}  |  {sec.Length} bytes  |  " +
-                          $"{currentSectorUnits.Count} unit group(s)  |  {buildings.Count} building(s)");
-            listBox3.Items.Count.ToString(); // suppress warning
+                          $"{currentSector.Units.Count} unit group(s)  |  {currentSector.Buildings.Count} building(s)");
             richTextBox1.Text = sb.ToString();
         }
 
         // ── Data classes ────────────────────────────────────────────────────────────
 
-        public class UnitPart
+        public class SeloData
         {
-            public int VehicleId { get; set; } // VEHI wmob_id (matches group BmolId for standard parts)
-            public uint SeloSeq { get; set; }
+            public uint Seq { get; set; }
+            public uint A { get; set; }
+            public uint B { get; set; }
+        }
+
+        public class BamoData
+        {
+            public uint Unk { get; set; }
             public float X { get; set; }
             public float Z { get; set; }
+            public uint Unk2 { get; set; }
             public int HP { get; set; }
+        }
+
+        public class UnitPart
+        {
+            public int VehicleId { get; set; }  // VEHI wmob_id (0 for lead part)
+            public byte[] BatpPayload { get; set; } = Array.Empty<byte>(); // raw BATP bytes before VEHI (lead part only stores post-BAMO BATP)
+            public SeloData Selo { get; set; } = new();
+            public BamoData Bamo { get; set; } = new();
+            // convenience
+            public float X => Bamo.X;
+            public float Z => Bamo.Z;
+            public int HP => Bamo.HP;
+            public uint SeloSeq => Selo.Seq;
         }
 
         public class UnitGroup
         {
             public int BmolId { get; set; }
-            public int PartCount { get; set; }
             public string Name { get; set; } = "";
-            public float X { get; set; }
-            public float Z { get; set; }
-            public int HP { get; set; }
+            // Group-level SELO (before WMOB)
+            public SeloData GroupSelo { get; set; } = new();
+            public int WmobSector { get; set; }
+            // VEHU next wmob_id (links to next group or terminator)
+            public int VehuNextWmob { get; set; }
             public List<UnitPart> Parts { get; set; } = new();
+            // Convenience — lead part values
+            public int PartCount => Parts.Count;
+            public float X => Parts.Count > 0 ? Parts[0].X : 0f;
+            public float Z => Parts.Count > 0 ? Parts[0].Z : 0f;
+            public int HP => Parts.Count > 0 ? Parts[0].HP : 0;
         }
 
         public class BuildingEntry
         {
             public int BmolId { get; set; }
             public string Name { get; set; } = "";
-            public float Progress { get; set; }  // 0.0 – 1.0
-            public float X { get; set; }
-            public float Z { get; set; }
-            public int HP { get; set; }
+            // Preamble (war map lookahead)
+            public float Progress1 { get; set; }
+            public float Progress2 { get; set; }
+            public float Progress => Math.Min(Progress1, Progress2);
+            // Per-building SELO (group level)
+            public SeloData Selo1 { get; set; } = new();
+            public int WmobSector { get; set; }
+            // BMOL inside entry (battle map)
+            public int BmolCount { get; set; }
+            public int BmolIdInner { get; set; }
+            // Per-building SELO (battle map)
+            public SeloData Selo2 { get; set; } = new();
+            public BamoData Bamo { get; set; } = new();
+            public byte[] BatpBytes { get; set; } = Array.Empty<byte>(); // 8 zero bytes for buildings
+            // Convenience
+            public float X => Bamo.X;
+            public float Z => Bamo.Z;
+            public int HP => Bamo.HP;
+        }
+
+        public class SectorData
+        {
+            // SECTHUNIWMOB header
+            public int UnitCount { get; set; }
+            public int FirstWmob { get; set; }
+            public List<UnitGroup> Units { get; set; } = new();
+            public List<BuildingEntry> Buildings { get; set; } = new();
+            // Tail: ACON, HRES, ARES, DMGL, FFUH — stored raw
+            public byte[] TailBytes { get; set; } = Array.Empty<byte>();
         }
 
         // Add this method to SaveEditorForm.
@@ -530,16 +581,20 @@ namespace WoWViewer
             int unitCount = BitConverter.ToInt32(sec, i); i += 4;
             int firstWmob = BitConverter.ToInt32(sec, i); i += 4;
 
-            // Sanity: if firstWmob looks like "AUNI" sentinel there are no units
             if (unitCount == 0 || firstWmob == 0x494E5541) return result;
 
-            // Group-level SELO
-            if (IsTag(sec, i, TAG_SELO)) i += 16;
+            // Group-level SELO (read before first BMOL, updated after each VEHU)
+            var groupSelo = new SeloData();
+            if (IsTag(sec, i, TAG_SELO))
+            {
+                i += 4;
+                groupSelo.Seq = BitConverter.ToUInt32(sec, i); i += 4;
+                groupSelo.A = BitConverter.ToUInt32(sec, i); i += 4;
+                groupSelo.B = BitConverter.ToUInt32(sec, i); i += 4;
+            }
+            int wmobSector = 0;
+            if (IsTag(sec, i, TAG_WMOB)) { i += 4; wmobSector = BitConverter.ToInt32(sec, i); i += 4; }
 
-            // WMOB
-            if (IsTag(sec, i, TAG_WMOB)) i += 8;
-
-            // Iterate unit groups until we hit HCON or AUNI or end
             while (i < sec.Length - 4)
             {
                 if (!IsTag(sec, i, TAG_BMOL)) break;
@@ -551,24 +606,29 @@ namespace WoWViewer
                 var group = new UnitGroup
                 {
                     BmolId = bmolId,
-                    PartCount = partCount,
                     Name = BmolName(bmolId),
+                    GroupSelo = groupSelo,
+                    WmobSector = wmobSector,
                 };
 
-                // Parse all parts
                 for (int part = 0; part < partCount; part++)
                 {
                     var p = new UnitPart();
 
                     if (part == 0)
                     {
-                        // Lead part: no BATPVEHI prefix
                         p.VehicleId = bmolId;
                     }
                     else
                     {
-                        // Subsequent parts: BATP then VEHI wmob_id
-                        if (IsTag(sec, i, TAG_BATP)) i += 4;
+                        if (IsTag(sec, i, TAG_BATP))
+                        {
+                            i += 4;
+                            int batpStart = i;
+                            while (i < sec.Length - 4 && !IsTag(sec, i, TAG_VEHI) && !IsTag(sec, i, TAG_SELO))
+                                i++;
+                            p.BatpPayload = sec[batpStart..i];
+                        }
                         if (IsTag(sec, i, TAG_VEHI))
                         {
                             i += 4;
@@ -576,54 +636,55 @@ namespace WoWViewer
                         }
                     }
 
-                    // SELO: read seq ID
                     if (IsTag(sec, i, TAG_SELO))
                     {
                         i += 4;
-                        p.SeloSeq = BitConverter.ToUInt32(sec, i); i += 4;
-                        i += 8; // skip a and b
+                        p.Selo.Seq = BitConverter.ToUInt32(sec, i); i += 4;
+                        p.Selo.A = BitConverter.ToUInt32(sec, i); i += 4;
+                        p.Selo.B = BitConverter.ToUInt32(sec, i); i += 4;
                     }
 
-                    // BAMO: read X, Z, HP
                     if (IsTag(sec, i, TAG_BAMO))
                     {
                         i += 4;
                         if (i + 20 <= sec.Length)
                         {
-                            i += 4; // unk
-                            p.X = BitConverter.ToSingle(sec, i); i += 4;
-                            p.Z = BitConverter.ToSingle(sec, i); i += 4;
-                            i += 4; // unk2
-                            p.HP = BitConverter.ToInt32(sec, i); i += 4;
+                            p.Bamo.Unk = BitConverter.ToUInt32(sec, i); i += 4;
+                            p.Bamo.X = BitConverter.ToSingle(sec, i); i += 4;
+                            p.Bamo.Z = BitConverter.ToSingle(sec, i); i += 4;
+                            p.Bamo.Unk2 = BitConverter.ToUInt32(sec, i); i += 4;
+                            p.Bamo.HP = BitConverter.ToInt32(sec, i); i += 4;
                         }
                     }
 
                     group.Parts.Add(p);
-
-                    // Store lead part position/HP on group for listBox4 display
-                    if (part == 0)
-                    {
-                        group.X = p.X;
-                        group.Z = p.Z;
-                        group.HP = p.HP;
-                    }
                 }
 
-                // BATP terminator + scan to VEHU
+                // Last part's terminating BATP payload (up to VEHU)
                 if (IsTag(sec, i, TAG_BATP))
                 {
                     i += 4;
+                    int batpStart = i;
                     while (i < sec.Length - 4 && !IsTag(sec, i, TAG_VEHU))
                         i++;
+                    if (group.Parts.Count > 0)
+                        group.Parts[^1].BatpPayload = sec[batpStart..i];
                 }
 
-                // VEHU: group terminator
                 if (IsTag(sec, i, TAG_VEHU))
                 {
                     i += 4;
-                    i += 4; // next wmob_id
-                    if (IsTag(sec, i, TAG_SELO)) i += 16;
-                    if (IsTag(sec, i, TAG_WMOB)) i += 8;
+                    group.VehuNextWmob = BitConverter.ToInt32(sec, i); i += 4;
+                    groupSelo = new SeloData();
+                    if (IsTag(sec, i, TAG_SELO))
+                    {
+                        i += 4;
+                        groupSelo.Seq = BitConverter.ToUInt32(sec, i); i += 4;
+                        groupSelo.A = BitConverter.ToUInt32(sec, i); i += 4;
+                        groupSelo.B = BitConverter.ToUInt32(sec, i); i += 4;
+                    }
+                    wmobSector = 0;
+                    if (IsTag(sec, i, TAG_WMOB)) { i += 4; wmobSector = BitConverter.ToInt32(sec, i); i += 4; }
                 }
 
                 result.Add(group);
@@ -640,7 +701,6 @@ namespace WoWViewer
         {
             var result = new List<BuildingEntry>();
 
-            // Find HCONWMOB within sec
             byte[] hconTag = System.Text.Encoding.ASCII.GetBytes("HCONWMOB");
             int hconPos = -1;
             for (int k = 0; k <= sec.Length - 8; k++)
@@ -652,50 +712,75 @@ namespace WoWViewer
             }
             if (hconPos < 0) return result;
 
-            int i = hconPos + 8; // skip HCONWMOB tag
+            int i = hconPos + 8;
             if (i + 4 > sec.Length) return result;
 
             int buildingCount = BitConverter.ToInt32(sec, i); i += 4;
             if (buildingCount == 0) return result;
 
-            // Preamble for first building: bmol_id(4) + progress1(4) + progress2(4)
             for (int b = 0; b < buildingCount; b++)
             {
                 if (i + 12 > sec.Length) break;
-                int preambleBmol = BitConverter.ToInt32(sec, i); i += 4;
-                float progress1 = BitConverter.ToSingle(sec, i); i += 4;
-                float progress2 = BitConverter.ToSingle(sec, i); i += 4;
 
-                var entry = new BuildingEntry
+                var entry = new BuildingEntry();
+
+                // Preamble: bmol_id + progress1 + progress2
+                entry.BmolId = BitConverter.ToInt32(sec, i); i += 4;
+                entry.Progress1 = BitConverter.ToSingle(sec, i); i += 4;
+                entry.Progress2 = BitConverter.ToSingle(sec, i); i += 4;
+                entry.Name = BmolName(entry.BmolId);
+
+                // SELO 1
+                if (IsTag(sec, i, TAG_SELO))
                 {
-                    BmolId = preambleBmol,
-                    Name = BmolName(preambleBmol),
-                    Progress = Math.Min(progress1, progress2),
-                };
+                    i += 4;
+                    entry.Selo1.Seq = BitConverter.ToUInt32(sec, i); i += 4;
+                    entry.Selo1.A = BitConverter.ToUInt32(sec, i); i += 4;
+                    entry.Selo1.B = BitConverter.ToUInt32(sec, i); i += 4;
+                }
 
-                // SELO
-                if (IsTag(sec, i, TAG_SELO)) i += 16;
                 // WMOB
-                if (IsTag(sec, i, TAG_WMOB)) i += 8;
-                // BMOL: skip, preamble already has the id
-                if (IsTag(sec, i, TAG_BMOL)) i += 12;
-                // SELO (per-building)
-                if (IsTag(sec, i, TAG_SELO)) i += 16;
+                if (IsTag(sec, i, TAG_WMOB)) { i += 4; entry.WmobSector = BitConverter.ToInt32(sec, i); i += 4; }
+
+                // BMOL
+                if (IsTag(sec, i, TAG_BMOL))
+                {
+                    i += 4;
+                    entry.BmolCount = BitConverter.ToInt32(sec, i); i += 4;
+                    entry.BmolIdInner = BitConverter.ToInt32(sec, i); i += 4;
+                }
+
+                // SELO 2
+                if (IsTag(sec, i, TAG_SELO))
+                {
+                    i += 4;
+                    entry.Selo2.Seq = BitConverter.ToUInt32(sec, i); i += 4;
+                    entry.Selo2.A = BitConverter.ToUInt32(sec, i); i += 4;
+                    entry.Selo2.B = BitConverter.ToUInt32(sec, i); i += 4;
+                }
+
                 // BAMO
                 if (IsTag(sec, i, TAG_BAMO))
                 {
                     i += 4;
                     if (i + 20 <= sec.Length)
                     {
-                        i += 4; // unk
-                        entry.X = BitConverter.ToSingle(sec, i); i += 4;
-                        entry.Z = BitConverter.ToSingle(sec, i); i += 4;
-                        i += 4; // unk2
-                        entry.HP = BitConverter.ToInt32(sec, i); i += 4;
+                        entry.Bamo.Unk = BitConverter.ToUInt32(sec, i); i += 4;
+                        entry.Bamo.X = BitConverter.ToSingle(sec, i); i += 4;
+                        entry.Bamo.Z = BitConverter.ToSingle(sec, i); i += 4;
+                        entry.Bamo.Unk2 = BitConverter.ToUInt32(sec, i); i += 4;
+                        entry.Bamo.HP = BitConverter.ToInt32(sec, i); i += 4;
                     }
                 }
-                // BATP (8 zero bytes for buildings)
-                if (IsTag(sec, i, TAG_BATP)) i += 12; // BATP + 8 bytes
+
+                // BATP (8 bytes for buildings)
+                if (IsTag(sec, i, TAG_BATP))
+                {
+                    i += 4;
+                    int batpEnd = Math.Min(i + 8, sec.Length);
+                    entry.BatpBytes = sec[i..batpEnd];
+                    i = batpEnd;
+                }
 
                 result.Add(entry);
             }
@@ -707,7 +792,7 @@ namespace WoWViewer
         {
             listBox5.Items.Clear(); // clear individual unit listbox [some buildings have pieces, so that listbox can be reused later]
             // if has parts // populate listbox5
-            
+            numericUpDown5.Enabled = true;
         }
         // list box 4 unit group selection
         private void listBox4_SelectedIndexChanged(object sender, EventArgs e)
@@ -715,22 +800,22 @@ namespace WoWViewer
             listBox5.Items.Clear();
             numericUpDown7.ValueChanged -= numericUpDown7_ValueChanged!;
             int idx = listBox4.SelectedIndex;
-            if (idx < 0 || idx >= currentSectorUnits.Count) return;
-            var group = currentSectorUnits[idx];
+            if (idx < 0 || currentSector == null || idx >= currentSector.Units.Count) return;
+            var group = currentSector.Units[idx];
             int count = group.Parts.Count;
             numericUpDown7.Value = count;
             for (int p = 0; p < count; p++)
             {
                 var part = group.Parts[p];
                 string label = p == 0 ? "Lead" : $"Part {p + 1}";
-                listBox5.Items.Add($"{label}  HP:{part.HP}  X:{part.X:F0}  Z:{part.Z:F0}  SELO:{part.SeloSeq}");
+                listBox5.Items.Add($"{label}  HP:{part.HP}  X:{part.X:F0}  Z:{part.Z:F0}  SELO:{part.Selo.Seq}");
             }
             numericUpDown7.ValueChanged += numericUpDown7_ValueChanged!;
         }
         // list box 5 individual unit from group selection
         private void listBox5_SelectedIndexChanged(object sender, EventArgs e)
         {
-
+            numericUpDown6.Enabled = true;
         }
         // building health [some buildings have pieces, so this might need forwarding to group eventually]
         private void numericUpDown5_ValueChanged(object sender, EventArgs e)
@@ -747,9 +832,9 @@ namespace WoWViewer
         {
             // get current size
             int idx = listBox4.SelectedIndex;
-            var group = currentSectorUnits[idx];
+            var group = currentSector!.Units[idx];
             int count = group.Parts.Count;
-            if(numericUpDown7.Value > count) // unit ++
+            if (numericUpDown7.Value > count) // unit ++
             {
 
             }
