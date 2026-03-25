@@ -203,6 +203,7 @@
             Controls.Add(listBox2);
             Controls.Add(listBox1);
             Controls.Add(pictureBox1);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
             Name = "CLSViewer";
             Text = "CLSViewer";
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();

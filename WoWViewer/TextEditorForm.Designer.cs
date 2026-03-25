@@ -197,6 +197,7 @@
             Controls.Add(label1);
             Controls.Add(listBox1);
             Controls.Add(button1);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "TextEditorForm";
             Text = "Text Editor";

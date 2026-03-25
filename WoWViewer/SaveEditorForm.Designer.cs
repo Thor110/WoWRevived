@@ -59,6 +59,7 @@
             numericUpDown6 = new NumericUpDown();
             textBox2 = new TextBox();
             label12 = new Label();
+            richTextBox1 = new RichTextBox();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown3).BeginInit();
@@ -358,11 +359,20 @@
             label12.TabIndex = 30;
             label12.Text = "Unparsed Bytes :";
             // 
+            // richTextBox1
+            // 
+            richTextBox1.Location = new Point(794, 12);
+            richTextBox1.Name = "richTextBox1";
+            richTextBox1.Size = new Size(460, 526);
+            richTextBox1.TabIndex = 31;
+            richTextBox1.Text = "";
+            // 
             // SaveEditorForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 550);
+            ClientSize = new Size(1266, 550);
+            Controls.Add(richTextBox1);
             Controls.Add(label12);
             Controls.Add(textBox2);
             Controls.Add(label11);
@@ -393,6 +403,7 @@
             Controls.Add(label1);
             Controls.Add(listBox1);
             Controls.Add(button1);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "SaveEditorForm";
             Text = "Save Editor";
@@ -438,5 +449,6 @@
         private NumericUpDown numericUpDown6;
         private TextBox textBox2;
         private Label label12;
+        private RichTextBox richTextBox1;
     }
 }

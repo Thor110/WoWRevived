@@ -187,6 +187,7 @@
             Controls.Add(button2);
             Controls.Add(button1);
             Controls.Add(listBox1);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
             Name = "OJDParser";
             Text = "OJDParser";
             ResumeLayout(false);

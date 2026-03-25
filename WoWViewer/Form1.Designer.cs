@@ -334,6 +334,7 @@
             Controls.Add(listBox1);
             Controls.Add(textBox1);
             Controls.Add(button1);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "WoWViewer";
             Text = "WoWViewer";

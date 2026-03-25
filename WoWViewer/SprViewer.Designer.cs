@@ -229,6 +229,7 @@
             Controls.Add(listBox2);
             Controls.Add(listBox1);
             Controls.Add(pictureBox1);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
             Name = "SprViewer";
             Text = "SprViewer";
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
