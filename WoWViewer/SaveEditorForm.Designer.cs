@@ -61,12 +61,15 @@
             label12 = new Label();
             richTextBox1 = new RichTextBox();
             button4 = new Button();
+            numericUpDown7 = new NumericUpDown();
+            label13 = new Label();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown3).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown4).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown5).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown6).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown7).BeginInit();
             SuspendLayout();
             // 
             // button1
@@ -364,7 +367,7 @@
             // 
             richTextBox1.Location = new Point(794, 12);
             richTextBox1.Name = "richTextBox1";
-            richTextBox1.Size = new Size(460, 447);
+            richTextBox1.Size = new Size(460, 496);
             richTextBox1.TabIndex = 31;
             richTextBox1.Text = "";
             // 
@@ -378,11 +381,30 @@
             button4.UseVisualStyleBackColor = true;
             button4.Click += button4_Click;
             // 
+            // numericUpDown7
+            // 
+            numericUpDown7.Location = new Point(715, 204);
+            numericUpDown7.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
+            numericUpDown7.Name = "numericUpDown7";
+            numericUpDown7.Size = new Size(41, 23);
+            numericUpDown7.TabIndex = 33;
+            // 
+            // label13
+            // 
+            label13.AutoSize = true;
+            label13.Location = new Point(669, 206);
+            label13.Name = "label13";
+            label13.Size = new Size(40, 15);
+            label13.TabIndex = 34;
+            label13.Text = "Units :";
+            // 
             // SaveEditorForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1266, 550);
+            Controls.Add(label13);
+            Controls.Add(numericUpDown7);
             Controls.Add(button4);
             Controls.Add(richTextBox1);
             Controls.Add(label12);
@@ -425,6 +447,7 @@
             ((System.ComponentModel.ISupportInitialize)numericUpDown4).EndInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown5).EndInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown6).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown7).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -463,5 +486,7 @@
         private Label label12;
         private RichTextBox richTextBox1;
         private Button button4;
+        private NumericUpDown numericUpDown7;
+        private Label label13;
     }
 }

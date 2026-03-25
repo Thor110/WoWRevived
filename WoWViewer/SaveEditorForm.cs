@@ -83,13 +83,15 @@ namespace WoWViewer
             for (int i = 0; i < entryCount; i++) // there are only 1396 entries
             {
                 byte category = data[offset + 4];  // Faction: 00 = Martian, 01 = Human, 02 = UI
+                ushort tag = (ushort)(data[offset + 6] | (data[offset + 7] << 8));
                 ushort length = (ushort)(data[offset + 8] | (data[offset + 9] << 8)); // bytes 9 and 10 are the string length
                 int stringOffset = offset + 10; // string offset
                 string text = Latin1.GetString(data, stringOffset, length - 1).Replace("\\n", "\n");
                 // string length is one less than the ushort length as length contains the null operator // replaces \n with actual new line
-                entries.Add(new WowTextEntry { Name = text, Faction = category, Index = (ushort)i });
+                entries.Add(new WowTextEntry { Name = text, Faction = category, Index = (ushort)i, ID = tag });
                 offset += (int)length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
             }
+            LoadObjLookup(); // populate BmolId on entries from OBJ.ojd
         }
         // initialize save loader and count saves
         private void InitializeSaveLoader() { for (int i = 1; i <= 5; i++) { SaveLoader("Human", i); } for (int i = 1; i <= 5; i++) { SaveLoader("Martian", i); } }
@@ -373,7 +375,7 @@ namespace WoWViewer
             }
 
             // ── Debug hex in richTextBox1 ────────────────────────────────────────────
-            var sb = new System.Text.StringBuilder();
+            var sb = new StringBuilder();
             sb.AppendLine($"Sector {selectedSectorIndex + 1}  |  {sec.Length} bytes  |  " +
                           $"{units.Count} unit group(s)  |  {buildings.Count} building(s)");
             listBox3.Items.Count.ToString(); // suppress warning
@@ -405,68 +407,73 @@ namespace WoWViewer
             public int HP { get; set; }
         }
 
-        // ── BMOL ID → display name lookup ───────────────────────────────────────────
+        // Add this method to SaveEditorForm.
+        // Call it from the constructor after entries is populated and TEXT.ojd is parsed.
+        // Requires OBJ.ojd alongside TEXT.ojd.
+        //
+        // OBJ.ojd structure around each OTYPE entry (offsets from 'O' of OTYPE_):
+        //   -14: FF XX XX              (0F record start)
+        //   -11: 0F 00                 (record type)
+        //    -9: BMOL_lo BMOL_hi       (BMOL ID, uint16 LE)
+        //    -7: FF XX XX              (10 record start)
+        //    -4: 10 00                 (record type)
+        //    -2: len 00                (string length including null)
+        //     0: O T Y P E _ ...      (OTYPE_ string)
+        //   +N+1: FF XX XX 15 00      (15 record, N = strlen including null)
+        //   +N+6: TEXT_key_lo          (TEXT.ojd lookup key, uint16 LE)
+        //   +N+7: TEXT_key_hi
+        //
+        // TEXT.ojd structure:
+        //   FF XX XX 02 00 key_lo key_hi len 00 string\0
 
-        private static readonly Dictionary<int, string> BmolNames = new()
+        private void LoadObjLookup()
         {
-            {1,   "Mark I Armoured Lorry"},
-            {4,   "Mark I Armoured Track Layer"},
-            {7,   "Mark I Tunnelling Track Layer"},
-            {10,  "Mark I Self Propelled Gun"},
-            {14,  "Mark I Mobile Anti-Aircraft Array"},
-            {17,  "Sappers Lorry"},
-            {19,  "Formidable Class Ironclad"},
-            {22,  "Model A Submersible"},
-            {25,  "Observation Balloon"},
-            {28,  "Construction Vehicle"},
-            {30,  "Mobile Repair Vehicle"},
-            {32,  "Mark I Mortar Bike"},
-            {35,  "Vehicle Factory Level 1"},
-            {38,  "Training Centre"},
-            {39,  "Ship Yard Level 1"},
-            {42,  "Aircraft Hangar Level 1"},
-            {45,  "Munitions Factory"},
-            {46,  "Construction Labs"},
-            {47,  "Steel Refinery"},
-            {48,  "Coal Mine"},
-            {49,  "Oil Refinery"},
-            {58,  "Command Post"},
-            {59,  "Railway Platform"},
-            {60,  "Repair Workshop"},
-            {62,  "Scout Machine - 1st Gen"},
-            {65,  "Fighting Machine - 1st Gen"},
-            {68,  "Tempest - 1st Gen"},
-            {71,  "Bombarding Machine - 1st Gen"},
-            {74,  "Electric Machine - 1st Gen"},
-            {77,  "Flying Machine - 1st Gen"},
-            {80,  "Scanning Machine - 1st Gen"},
-            {83,  "Constrictor - 1st Gen"},
-            {86,  "Xeno Telepath - 1st Gen"},
-            {89,  "Handling Machine"},
-            {91,  "Digging Mechanism"},
-            {93,  "Drone - 1st Gen"},
-            {96,  "Constructor Level 1"},
-            {99,  "Energy Weapon Plant"},
-            {100, "Suspension Field Site Level 1"},
-            {103, "Telepathic Training Centre Level 1"},
-            {106, "Biochemical Plant"},
-            {107, "Explosives Plant"},
-            {108, "Human Farm"},
-            {109, "Copper Forge"},
-            {110, "Heavy Element Plant"},
-            {111, "12 KrK Rapid Heat Ray"},
-            {113, "46 KrK Heat Ray Turret"},
-            {116, "102 DnO Projectile Launcher"},
-            {119, "Power Plant"},
-            {120, "Communications Centre"},
-            {121, "Repair Facility"},
-            {122, "Matter Transfer Station"},
-            {278, "Parliament"},
-            {830, "Martian Base"},
-        };
+            if (!File.Exists("OBJ.ojd"))
+                return;
 
-        private static string BmolName(int id)
-            => BmolNames.TryGetValue(id, out var n) ? n : $"#{id}";
+            byte[] obj = File.ReadAllBytes("OBJ.ojd");
+
+            // Scan OBJ.ojd for OTYPE_ entries
+            byte[] otype = Encoding.ASCII.GetBytes("OTYPE_");
+            for (int i = 14; i <= obj.Length - 6; i++)
+            {
+                // Match OTYPE_ at position i
+                bool match = true;
+                for (int m = 0; m < 6; m++)
+                    if (obj[i + m] != otype[m]) { match = false; break; }
+                if (!match) continue;
+
+                // Validate 0F record 14 bytes before OTYPE_
+                if (obj[i - 14] != 0xFF || obj[i - 11] != 0x0F || obj[i - 10] != 0x00)
+                    continue;
+                // Validate 10 record 7 bytes before OTYPE_
+                if (obj[i - 7] != 0xFF || obj[i - 4] != 0x10 || obj[i - 3] != 0x00)
+                    continue;
+
+                ushort bmolId = (ushort)(obj[i - 9] | (obj[i - 8] << 8));
+
+                // Find null terminator of OTYPE_ string
+                int nullPos = i;
+                while (nullPos < obj.Length && obj[nullPos] != 0x00) nullPos++;
+                if (nullPos >= obj.Length) continue;
+
+                // 15 record immediately after null
+                int r = nullPos + 1;
+                if (r + 7 >= obj.Length) continue;
+                if (obj[r] != 0xFF || obj[r + 3] != 0x15 || obj[r + 4] != 0x00)
+                    continue;
+
+                ushort textKey = (ushort)(obj[r + 5] | (obj[r + 6] << 8));
+
+                // Match against already-parsed entries by their TEXT.ojd key (stored as ID)
+                var entry = entries.FirstOrDefault(e => e.ID == textKey && e.BmolId == null);
+                if (entry != null)
+                    entry.BmolId = bmolId;
+            }
+        }
+
+        private string BmolName(int id)
+            => entries.FirstOrDefault(e => e.BmolId == (ushort)id)?.Name ?? $"#{id}";
 
         // ── Tag helpers ──────────────────────────────────────────────────────────────
 
