@@ -924,7 +924,7 @@ namespace WoWViewer
 //56     = AAGunEmplacement2                        = 38 00 = OTYPE_AAGunEmplacement2
 //57     = AAGunEmplacement3                        = 39 00 = OTYPE_AAGunEmplacement3
 //58     = Command Post                             = 3A 00 = OTYPE_CommandPost
-//59     = Railway Platform                         = 3B 00 = OTYPE_RailwayPlatform             CRASH
+//59     = Railway Platform                         = 3B 00 = OTYPE_RailwayPlatform             CANCELLED
 //60     = Repair Workshop                          = 3C 00 = OTYPE_RepairWorkshops
 //62     = Scout Machine - 1st Gen                  = 3E 00 = OTYPE_ScoutM1
 //65     = Fighting Machine - 1st Gen               = 41 00 = OTYPE_FightingM1
@@ -1010,7 +1010,7 @@ namespace WoWViewer
 //176    = MT leg4                                  = B0 00 = OTYPE_MT_leg4
 //177    = MT mainb                                 = B1 00 = OTYPE_MT_mainb
 //178    = MT maint                                 = B2 00 = OTYPE_MT_maint
-//179    = Pod                                      = B3 00 = OTYPE_Pod                     CRASH
+//179    = Pod                                      = B3 00 = OTYPE_Pod
 //180    = Pp Endp1                                 = B4 00 = OTYPE_Pp_Endp1
 //181    = Pp Endp2                                 = B5 00 = OTYPE_Pp_Endp2
 //182    = Pp Endp3                                 = B6 00 = OTYPE_Pp_Endp3
