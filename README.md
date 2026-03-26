@@ -50,11 +50,9 @@ The road map for this project.
 		- 3\. German
 		- 4\. Italian
 		- 5\. Spanish
-	- Features I am considering adjusting:
-		- 1\. Heat-ray construction limit of 12, I may add this limit to the launcher when I locate the relevant values.
 - [✅ 1 : Custom Launcher](#custom-launcher) ( 95% Complete )
 	- Quick restart after alt-tab error exit of the game.
-	- Advanced registry settings options.
+	- Advanced registry settings options, now including the ability to adjust the turret build limit.
 	- Custom keyboard shortcut settings. (WIP - not enabled currently)
 	- Automatic regeneration of base registry settings, making the installation portable.
 	- Automatic cleanup of unnecessary files and Smackw32.dll moved to main directory.
