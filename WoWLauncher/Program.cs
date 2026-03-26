@@ -115,6 +115,9 @@ namespace WoWLauncher
             Interface["martian_strength_description"] = "Adjust the 'AI strength table Martian multiplier' registry value. Default is 2.000000.";
             Interface["human_strength"] = "AI strength table Human multiplier :";
             Interface["human_strength_description"] = "Adjust the 'AI strength table Human multiplier' registry value. Default is 1.000000.";
+            // new values
+            Interface["turret_description"] = "Adjust the turret build limit.";
+            Interface["turret_label"] = "Turret Build Limit :";
         }
         private static void SetFrench()
         {
@@ -189,6 +192,9 @@ namespace WoWLauncher
             Interface["martian_strength_description"] = "Modifiez la valeur du registre 'AI strength table Martian multiplier'. La valeur par défaut est 2,000000.";
             Interface["human_strength"] = "Tableau de puissance de l'IA Multiplicateur humain :";
             Interface["human_strength_description"] = "Modifiez la valeur du registre 'AI strength table Human multiplier'. La valeur par défaut est 1,000000.";
+            // new values
+            Interface["turret_description"] = "Ajuster la limite de construction de la tourette.";
+            Interface["turret_label"] = "Limite de construction de la tourette :";
         }
         private static void SetGerman()
         {
@@ -263,6 +269,9 @@ namespace WoWLauncher
             Interface["martian_strength_description"] = "Passen Sie den Registrierungswert 'AI strength table Martian multiplier' an. Der Standardwert ist 2,000000.";
             Interface["human_strength"] = "KI-Stärketabelle Menschlicher Multiplikator:";
             Interface["human_strength_description"] = "Passen Sie den Registrierungswert 'AI strength table Human multiplier' an. Der Standardwert ist 1,000000.";
+            // new values
+            Interface["turret_description"] = "Passe das Turmbaulimit an.";
+            Interface["turret_label"] = "Turmbaulimit:";
         }
         private static void SetItalian()
         {
@@ -337,6 +346,9 @@ namespace WoWLauncher
             Interface["martian_strength_description"] = "Modifica il valore del registro 'AI strength table Martian multiplier'. Il valore predefinito è 2.000000.";
             Interface["human_strength"] = "Tabella di forza dell'IA Moltiplicatore umano :";
             Interface["human_strength_description"] = "Modifica il valore del registro di sistema 'AI strength table Human multiplier'. Il valore predefinito è 1,000000.";
+            // new values
+            Interface["turret_description"] = "Regola il limite di costruzione della torretta.";
+            Interface["turret_label"] = "Limite di costruzione della torretta:";
         }
         private static void SetSpanish()
         {
@@ -411,6 +423,9 @@ namespace WoWLauncher
             Interface["martian_strength_description"] = "Ajusta el valor del registro 'AI strength table Martian multiplier'. El valor predeterminado es 2.000000.";
             Interface["human_strength"] = "Tabla de fuerza de la IA Multiplicador humano :";
             Interface["human_strength_description"] = "Ajuste el valor del registro 'AI strength table Human multiplier'. El valor predeterminado es 1,000000.";
+            // new values
+            Interface["turret_description"] = "Ajusta el límite de construcción de la torreta.";
+            Interface["turret_label"] = "Límite de construcción de la torreta:";
         }
     }
 }

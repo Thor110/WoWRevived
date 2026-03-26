@@ -60,6 +60,9 @@
             trackBar8 = new TrackBar();
             label20 = new Label();
             trackBar9 = new TrackBar();
+            trackBar10 = new TrackBar();
+            label21 = new Label();
+            label22 = new Label();
             ((System.ComponentModel.ISupportInitialize)trackBar1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar3).BeginInit();
@@ -69,6 +72,7 @@
             ((System.ComponentModel.ISupportInitialize)trackBar7).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar8).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar9).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)trackBar10).BeginInit();
             SuspendLayout();
             // 
             // trackBar1
@@ -93,7 +97,7 @@
             // 
             // button1
             // 
-            button1.Location = new Point(363, 528);
+            button1.Location = new Point(363, 620);
             button1.Name = "button1";
             button1.Size = new Size(75, 23);
             button1.TabIndex = 2;
@@ -293,7 +297,7 @@
             // button2
             // 
             button2.AccessibleDescription = "Restore the settings to their default state.";
-            button2.Location = new Point(621, 528);
+            button2.Location = new Point(621, 620);
             button2.Name = "button2";
             button2.Size = new Size(167, 23);
             button2.TabIndex = 22;
@@ -304,7 +308,7 @@
             // label15
             // 
             label15.AutoSize = true;
-            label15.Location = new Point(66, 483);
+            label15.Location = new Point(66, 575);
             label15.Name = "label15";
             label15.Size = new Size(500, 15);
             label15.TabIndex = 23;
@@ -313,7 +317,7 @@
             // label16
             // 
             label16.AutoSize = true;
-            label16.Location = new Point(117, 498);
+            label16.Location = new Point(117, 590);
             label16.Name = "label16";
             label16.Size = new Size(403, 15);
             label16.TabIndex = 24;
@@ -379,11 +383,44 @@
             trackBar9.TabIndex = 25;
             trackBar9.Value = 100;
             // 
+            // trackBar10
+            // 
+            trackBar10.AccessibleDescription = "Adjust the turret build limit.";
+            trackBar10.LargeChange = 2;
+            trackBar10.Location = new Point(363, 484);
+            trackBar10.Maximum = 50;
+            trackBar10.Minimum = 12;
+            trackBar10.Name = "trackBar10";
+            trackBar10.Size = new Size(327, 45);
+            trackBar10.TabIndex = 31;
+            trackBar10.Value = 50;
+            // 
+            // label21
+            // 
+            label21.AutoSize = true;
+            label21.Location = new Point(696, 484);
+            label21.Name = "label21";
+            label21.Size = new Size(44, 15);
+            label21.TabIndex = 32;
+            label21.Text = "label21";
+            // 
+            // label22
+            // 
+            label22.Location = new Point(7, 484);
+            label22.Name = "label22";
+            label22.RightToLeft = RightToLeft.No;
+            label22.Size = new Size(350, 15);
+            label22.TabIndex = 33;
+            label22.Text = "Turret Build Limit :";
+            // 
             // Form2
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 563);
+            ClientSize = new Size(800, 655);
+            Controls.Add(label22);
+            Controls.Add(label21);
+            Controls.Add(trackBar10);
             Controls.Add(label17);
             Controls.Add(label18);
             Controls.Add(label19);
@@ -428,6 +465,7 @@
             ((System.ComponentModel.ISupportInitialize)trackBar7).EndInit();
             ((System.ComponentModel.ISupportInitialize)trackBar8).EndInit();
             ((System.ComponentModel.ISupportInitialize)trackBar9).EndInit();
+            ((System.ComponentModel.ISupportInitialize)trackBar10).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -465,5 +503,8 @@
         private TrackBar trackBar8;
         private Label label20;
         private TrackBar trackBar9;
+        private TrackBar trackBar10;
+        private Label label21;
+        private Label label22;
     }
 }

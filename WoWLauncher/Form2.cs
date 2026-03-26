@@ -11,6 +11,7 @@ namespace WoWLauncher
         private RegistryKey battleKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true)!;
         private RegistryKey researchKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true)!;
         private RegistryKey debugKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true)!;
+        private byte value = 0x0C;
         public Form2()
         {
             InitializeComponent();
@@ -31,6 +32,7 @@ namespace WoWLauncher
             label7.TextAlign = ContentAlignment.MiddleRight;
             label19.TextAlign = ContentAlignment.MiddleRight;
             label20.TextAlign = ContentAlignment.MiddleRight;
+            label22.TextAlign = ContentAlignment.MiddleRight;
             trackBar1.AccessibleDescription = Program.Interface["damage_reduction"];
             label1.Text = Program.Interface["damage"];
             button1.Text = Program.Interface["return"];
@@ -56,6 +58,9 @@ namespace WoWLauncher
             trackBar9.AccessibleDescription = Program.Interface["human_strength_description"];
             //
             Text = Program.Interface["advanced"];
+            // turret build limit
+            trackBar10.AccessibleDescription = Program.Interface["turret_description"];
+            label22.Text = Program.Interface["turret_label"];
         }
         /// This method compares the registry entry with the value and sets it if they are different.
         private void registryCompare(RegistryKey key, string entry, string value) { if ((string)key.GetValue(entry)! != value) { key.SetValue(entry, value); config = true; } }
@@ -92,6 +97,10 @@ namespace WoWLauncher
             double martianMultiplier = double.Parse(tweakKey.GetValue("AI strength table Martian multiplier")!.ToString()!, CultureInfo.InvariantCulture);
             trackBar8.Value = (int)martianMultiplier * 100;
             label17.Text = martianMultiplier.ToString("F6", CultureInfo.InvariantCulture);
+            // turret build limit
+            value = BinaryUtility.ReadByteAtOffset("OBJ.ojd", 0x1C623L);
+            trackBar10.Value = Convert.ToInt32(value);
+            label21.Text = value.ToString();
             trackBar1.ValueChanged += trackBar1_ValueChanged!;
             trackBar2.ValueChanged += trackBar2_ValueChanged!;
             trackBar3.ValueChanged += trackBar3_ValueChanged!;
@@ -101,6 +110,7 @@ namespace WoWLauncher
             trackBar7.ValueChanged += trackBar7_ValueChanged!;
             trackBar8.ValueChanged += trackBar8_ValueChanged!;
             trackBar9.ValueChanged += trackBar9_ValueChanged!;
+            trackBar10.ValueChanged += trackBar10_ValueChanged!;
         }
         // return button saves the settings and closes the form
         private void button1_Click(object sender, EventArgs e)
@@ -115,6 +125,20 @@ namespace WoWLauncher
             // new settings
             registryCompare(tweakKey, "AI strength table Human multiplier", ((double)trackBar9.Value / 100).ToString("F6", CultureInfo.InvariantCulture));
             registryCompare(tweakKey, "AI strength table Martian multiplier", ((double)trackBar8.Value / 100).ToString("F6", CultureInfo.InvariantCulture));
+            byte limit = (byte)trackBar10.Value;
+            if (value != limit)
+            {
+                List<Tuple<long, byte[]>> replacements = new List<Tuple<long, byte[]>>()
+                {
+                    Tuple.Create(0x1C623L, new byte[] { limit }),
+                    Tuple.Create(0x1C741L, new byte[] { limit }),
+                    Tuple.Create(0x1C8C7L, new byte[] { limit }),
+                    Tuple.Create(0x1B18BL, new byte[] { limit }),
+                    Tuple.Create(0x1AEBAL, new byte[] { limit }),
+                    Tuple.Create(0x1AFE8L, new byte[] { limit }),
+                };
+                BinaryUtility.ReplaceBytes(replacements, "OBJ.ojd");
+            }
             if (config) { registryCompare(mainKey, "Difficulty", "Custom"); }
             this.Close();
         }
@@ -130,6 +154,7 @@ namespace WoWLauncher
         private void trackBar9_ValueChanged(object sender, EventArgs e) { label18.Text = ((double)trackBar9.Value / 100).ToString("F6", CultureInfo.InvariantCulture); }
         // AI strength table Martian multiplier
         private void trackBar8_ValueChanged(object sender, EventArgs e) { label17.Text = ((double)trackBar8.Value / 100).ToString("F6", CultureInfo.InvariantCulture); }
+        private void trackBar10_ValueChanged(object sender, EventArgs e) { label21.Text = trackBar10.Value.ToString(); }      // Turret Build Limit
         // default
         private void button2_Click(object sender, EventArgs e)
         {
@@ -157,6 +182,21 @@ namespace WoWLauncher
             trackBar9.Value = 100;
             registryCompare(tweakKey, "AI strength table Martian multiplier", "2.000000");
             trackBar8.Value = 200;
+            // turret build limit
+            if (value != 0x0C)
+            {
+                List<Tuple<long, byte[]>> replacements = new List<Tuple<long, byte[]>>()
+                {
+                    Tuple.Create(0x1C623L, new byte[] { 0x0C }),
+                    Tuple.Create(0x1C741L, new byte[] { 0x0C }),
+                    Tuple.Create(0x1C8C7L, new byte[] { 0x0C }),
+                    Tuple.Create(0x1B18BL, new byte[] { 0x0C }),
+                    Tuple.Create(0x1AEBAL, new byte[] { 0x0C }),
+                    Tuple.Create(0x1AFE8L, new byte[] { 0x0C }),
+                };
+                BinaryUtility.ReplaceBytes(replacements, "OBJ.ojd");
+                trackBar10.Value = 12;
+            }
             config = false;
         }
     }
