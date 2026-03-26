@@ -271,7 +271,7 @@ namespace WoWLauncher
             Interface["human_strength_description"] = "Passen Sie den Registrierungswert 'AI strength table Human multiplier' an. Der Standardwert ist 1,000000.";
             // new values
             Interface["turret_description"] = "Passe das Turmbaulimit an.";
-            Interface["turret_label"] = "Turmbaulimit:";
+            Interface["turret_label"] = "Turmbaulimit :";
         }
         private static void SetItalian()
         {
@@ -348,7 +348,7 @@ namespace WoWLauncher
             Interface["human_strength_description"] = "Modifica il valore del registro di sistema 'AI strength table Human multiplier'. Il valore predefinito è 1,000000.";
             // new values
             Interface["turret_description"] = "Regola il limite di costruzione della torretta.";
-            Interface["turret_label"] = "Limite di costruzione della torretta:";
+            Interface["turret_label"] = "Limite di costruzione della torretta :";
         }
         private static void SetSpanish()
         {
@@ -425,7 +425,7 @@ namespace WoWLauncher
             Interface["human_strength_description"] = "Ajuste el valor del registro 'AI strength table Human multiplier'. El valor predeterminado es 1,000000.";
             // new values
             Interface["turret_description"] = "Ajusta el límite de construcción de la torreta.";
-            Interface["turret_label"] = "Límite de construcción de la torreta:";
+            Interface["turret_label"] = "Límite de construcción de la torreta :";
         }
     }
 }
