@@ -67,6 +67,8 @@
             label14 = new Label();
             checkBox3 = new CheckBox();
             richTextBox2 = new RichTextBox();
+            numericUpDown8 = new NumericUpDown();
+            label15 = new Label();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown3).BeginInit();
@@ -74,6 +76,7 @@
             ((System.ComponentModel.ISupportInitialize)numericUpDown5).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown6).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown7).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown8).BeginInit();
             SuspendLayout();
             // 
             // button1
@@ -401,11 +404,11 @@
             // label13
             // 
             label13.AutoSize = true;
-            label13.Location = new Point(670, 177);
+            label13.Location = new Point(659, 176);
             label13.Name = "label13";
-            label13.Size = new Size(71, 15);
+            label13.Size = new Size(82, 15);
             label13.TabIndex = 34;
-            label13.Text = "Unit Count :";
+            label13.Text = "Group Count :";
             // 
             // listBox5
             // 
@@ -443,11 +446,32 @@
             richTextBox2.TabIndex = 38;
             richTextBox2.Text = "";
             // 
+            // numericUpDown8
+            // 
+            numericUpDown8.Enabled = false;
+            numericUpDown8.Location = new Point(988, 203);
+            numericUpDown8.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            numericUpDown8.Name = "numericUpDown8";
+            numericUpDown8.Size = new Size(41, 23);
+            numericUpDown8.TabIndex = 39;
+            numericUpDown8.Value = new decimal(new int[] { 100, 0, 0, 0 });
+            // 
+            // label15
+            // 
+            label15.AutoSize = true;
+            label15.Location = new Point(945, 205);
+            label15.Name = "label15";
+            label15.Size = new Size(37, 15);
+            label15.TabIndex = 40;
+            label15.Text = "Type :";
+            // 
             // SaveEditorForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1266, 550);
+            Controls.Add(label15);
+            Controls.Add(numericUpDown8);
             Controls.Add(richTextBox2);
             Controls.Add(checkBox3);
             Controls.Add(label14);
@@ -497,6 +521,7 @@
             ((System.ComponentModel.ISupportInitialize)numericUpDown5).EndInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown6).EndInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown7).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown8).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -541,5 +566,7 @@
         private Label label14;
         private CheckBox checkBox3;
         private RichTextBox richTextBox2;
+        private NumericUpDown numericUpDown8;
+        private Label label15;
     }
 }
