@@ -138,12 +138,13 @@ namespace WoWLauncher
                     Tuple.Create(0x1AFE8L, new byte[] { limit }),
                 };
                 BinaryUtility.ReplaceBytes(replacements, "OBJ.ojd");
+                if(limit != 0x0C) { config = true; }
             }
             if (config) { registryCompare(mainKey, "Difficulty", "Custom"); }
             this.Close();
         }
         // update labels when track Sbar values change
-        private void trackBar1_ValueChanged(object sender, EventArgs e) { label8.Text = trackBar1.Value.ToString(); }   // Damage Reduction Divisor
+        private void trackBar1_ValueChanged(object sender, EventArgs e) { label8.Text = (trackBar1.Value * 100).ToString(); }   // Damage Reduction Divisor
         private void trackBar2_ValueChanged(object sender, EventArgs e) { label9.Text = trackBar2.Value.ToString(); }   // Max Units In Sector
         private void trackBar3_ValueChanged(object sender, EventArgs e) { label10.Text = trackBar3.Value.ToString(); }  // Max Boats In Sector
         private void trackBar5_ValueChanged(object sender, EventArgs e) { label11.Text = trackBar5.Value.ToString(); }  // Human Open Rate

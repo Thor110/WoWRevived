@@ -190,24 +190,16 @@ namespace WoWLauncher
                 }
             }
             // custom registry entry so it will be null once // medium by default
+            if (comboBox4.Items.Count > 3) { comboBox4.Items.Remove(Program.Interface["custom"]); } // remove custom from the combo box on return
             switch ((string)mainKey.GetValue("Difficulty")!)
             {
-                case null:
-                    mainKey.SetValue("Difficulty", "Medium");
-                    comboBox4.SelectedIndex = 1;
-                    break;
-                case "Easy":
-                    comboBox4.SelectedIndex = 0;
-                    break;
-                case "Medium":
-                    comboBox4.SelectedIndex = 1;
-                    break;
-                case "Hard":
-                    comboBox4.SelectedIndex = 2;
-                    break;
+                case "Easy":    comboBox4.SelectedIndex = 0; break;
+                case "Medium":  comboBox4.SelectedIndex = 1; break;
+                case "Hard":    comboBox4.SelectedIndex = 2; break;
+                case "Extreme": comboBox4.SelectedIndex = 3; break;
                 case "Custom":
                     comboBox4.Items.Add(Program.Interface["custom"]);
-                    comboBox4.SelectedIndex = 3;
+                    comboBox4.SelectedIndex = 4;
                     break;
             }
             // force registry settings for removed options to prevent user meddling
