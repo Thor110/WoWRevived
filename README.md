@@ -50,10 +50,10 @@ The road map for this project.
 		- 3\. German
 		- 4\. Italian
 		- 5\. Spanish
-- [✅ 1 : Custom Launcher](#custom-launcher) ( 95% Complete )
+- [✅ 1 : Custom Launcher](#custom-launcher) ( 100% Complete )
 	- Quick restart after alt-tab error exit of the game.
 	- Advanced registry settings options, now including the ability to adjust the turret build limit.
-	- Custom keyboard shortcut settings. (WIP - not enabled currently)
+	- Custom keyboard shortcut settings. (WIP - cancelled)
 	- Automatic regeneration of base registry settings, making the installation portable.
 	- Automatic cleanup of unnecessary files and Smackw32.dll moved to main directory.
 	- Custom pre-set difficulty settings. (Easy, Medium[default], Hard)
@@ -94,7 +94,7 @@ The road map for this project.
 - [✅ 7 : Font Viewer](#font-viewer) ( 100% Complete )
 	- Font viewer can export .FNT files to .png images.
 	- Ability to import edited fonts.
-- [❌ 8 : Save Editor](#save-editor) ( Partially Implemented - 15% Complete )
+- [❌ 8 : Save Editor](#save-editor) ( 25% Complete - Cancelled )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Override standard limit of 1753 as the minimum date and set the year manually to as low as year zero.
 	- Sector & Area names loaded dynamically from TEXT.ojd to support the regional releases.
@@ -107,7 +107,7 @@ The road map for this project.
 	- Undo changes to current string.
 	- Edited strings highlighted.
 	- Rich text editing with newline support (\n to \r\n handling when loading and the opposite when saving )
-- ❌ 10 : Map Editor ( Basic Parsing Implemented - 1% Complete )
+- ❌ 10 : Map Editor ( Basic Parsing Implemented - 1% Complete - Cancelled )
 	- Basic parsing of .nsb filetypes.
 	- .ojd files can be parsed, but there is still more decoding to do.
 - ✅ 11 : No-CD Music Fix ( 99% Complete )
@@ -126,6 +126,7 @@ The road map for this project.
 - [❌ 13 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 90% Complete )
 	- Resolution agnostic custom backgrounds have been made but have yet to be finished.
 	- Extended width of the war map, this allows higher resolutions to work.
+	- Martian war map now shows Europe in the bottom right corner.
 - [✅ 14 : Enhanced Original Assets](#enhanced-original-assets) ( 90% Complete )
 	- Reworked many assets in the game to improve their appearance.
 		- Martian & Human Unit Icons are now the same for both factions, which makes it easier to tell when using the infiltration skill.
@@ -294,6 +295,12 @@ All of the original menu backgrounds sat in the corner at 640x480 no matter the 
 
 <div align="center">
   <img src="images/menu-background-original.png" alt="Menu Background Original">
+</div>
+
+Martian War Map - Europe
+
+<div align="center">
+  <img src="images/custom-martian-warmap.png" alt="Martian War Map">
 </div>
 
 These are a work in-progress, AI (Gemini) was used to generate portions of the extended backgrounds, but they have undergone extensive editing.

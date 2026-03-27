@@ -432,9 +432,33 @@ namespace WoWLauncher
             // larger resolution warmap files
             string[] resolutionFiles = new string[] { "HWM.SPR", "HWMHI.SPR", "MWM.SPR", "MWMHI.SPR" };
             if (screenSize.Split(",")[0] == "1600" || screenSize.Split(",")[0] == "1680" || screenSize.Split(",")[0] == "1920")
-            { foreach (string file in resolutionFiles) { if (File.Exists("DAT\\TEMP-" + file)) { File.Move("DAT\\TEMP-" + file, $"DAT\\" + file); } } }
+            {
+                if (File.Exists("DAT\\MWM.SPR"))
+                {
+                    File.Move("DAT\\MWM.SPR", $"DAT\\NORM-MWM.SPR"); // just for MWM - EUROPE
+                }
+                foreach (string file in resolutionFiles)
+                {
+                    if (File.Exists("DAT\\TEMP-" + file))
+                    {
+                        File.Move("DAT\\TEMP-" + file, $"DAT\\" + file);
+                    }
+                }
+            }
             else
-            { foreach (string file in resolutionFiles) { if (File.Exists("DAT\\" + file)) { File.Move("DAT\\" + file, $"DAT\\TEMP-" + file); } } }
+            {
+                foreach (string file in resolutionFiles)
+                {
+                    if (File.Exists("DAT\\" + file))
+                    {
+                        File.Move("DAT\\" + file, $"DAT\\TEMP-" + file);
+                    }
+                }
+                if (File.Exists("DAT\\NORM-MWM.SPR"))
+                {
+                    File.Move("DAT\\NORM-MWM.SPR", $"DAT\\MWM.SPR"); // just for MWM - EUROPE
+                }
+            }
             resolution = comboBox2.SelectedIndex; // update resolution tracker
         }
         private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
