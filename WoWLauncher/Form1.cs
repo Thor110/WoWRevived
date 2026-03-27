@@ -130,10 +130,6 @@ namespace WoWLauncher
             List<string> supported = GetSupportedResolutions();
             List<string> matchedResolutions = supportedResolutions.Where(sr => supported.Any(r => sr.Contains(r))).ToList();
             foreach (string resolution in matchedResolutions) { comboBox2.Items.Add(resolution); keptResolutions.Add(resolution.Split(' ')[0]); } // list and keep only supported resolutions for later use
-            //comboBox3.Items.Add("30"); // should probably not support this option
-            //comboBox3.Items.Add("60");     // game frequency is not supported
-            //comboBox3.Items.Add("120");
-            //comboBox3.Items.Add("240");
             comboBox4.Items.Add(Program.Interface["easy"]);
             comboBox4.Items.Add(Program.Interface["medium"]);
             comboBox4.Items.Add(Program.Interface["hard"]);
@@ -155,20 +151,15 @@ namespace WoWLauncher
             //checkBox1.Text = "Enable Network Version";
             checkBox2.AccessibleDescription = Program.Interface["fullscreen_description"];
             checkBox2.Text = Program.Interface["fullscreen"];
-            //comboBox1.AccessibleDescription = "Language options are not available, if you have a version other than English, let us know! Thanks.";
             comboBox2.AccessibleDescription = Program.Interface["resolution_description"];
             label2.Text = Program.Interface["resolution"];
-            //comboBox3.AccessibleDescription = "The refresh rate for the game. ( Higher than 30 might effect game stability )";
-            //label3.Text = "Refresh Rate";
             comboBox4.AccessibleDescription = Program.Interface["difficulty_description"];
             label4.Text = Program.Interface["difficulty"];
             checkBox3.AccessibleDescription = Program.Interface["fog_description"];
             checkBox3.Text = Program.Interface["fog"];
             button5.Text = Program.Interface["advanced"];
             button6.Text = Program.Interface["tools"];
-            //checkBox4.AccessibleDescription = "Enable or disable resizing of the window.";
-            //checkBox4.Text = "Resize";
-            button7.Text = Program.Interface["keyboard"];
+            //button7.Text = Program.Interface["keyboard"];
             checkBox5.AccessibleDescription = Program.Interface["music_playback_description"];
             checkBox5.Text = Program.Interface["music_playback"];
             checkBox6.AccessibleDescription = Program.Interface["enhanced_assets_description"];
@@ -186,7 +177,6 @@ namespace WoWLauncher
             if ((int)mainKey.GetValue("Enable Network Version")! == 1) { checkBox1.Checked = true; }
             if (Convert.ToInt32(mainKey.GetValue("Full Screen")) == 1) { checkBox2.Checked = true; }
             checkBox3.Checked = Convert.ToInt32(battleKey.GetValue("EnableFogOfWar")) == 1; // for restore default settings
-            //if (Convert.ToInt32(screenKey.GetValue("AllowResize")) == 1) { checkBox4.Checked = true; }
             checkBox5.Checked = File.Exists("music_focus.txt"); //music playback when out of focus
             if (File.Exists("DAT\\cd_bd1.spr")) { checkBox6.Checked = true; } // enhanced assets enabled
             checkBox7.Checked = Convert.ToInt32(debugKey.GetValue("Enemy Visible")) == 1; // for restore default settings
@@ -199,7 +189,6 @@ namespace WoWLauncher
                     break;
                 }
             }
-            //comboBox3.SelectedItem = (string)mainKey.GetValue("Game Frequency")!;     // game frequency is not supported
             // custom registry entry so it will be null once // medium by default
             switch ((string)mainKey.GetValue("Difficulty")!)
             {
@@ -236,10 +225,7 @@ namespace WoWLauncher
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
             checkBox3.CheckedChanged += checkBox3_CheckedChanged!;
-            //checkBox4.CheckedChanged += checkBox4_CheckedChanged!; // allow resize - disabled because it doesn't display right when resized
-            //comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged!; // language options disabled
             comboBox2.SelectedIndexChanged += comboBox2_SelectedIndexChanged!;
-            //comboBox3.SelectedIndexChanged += comboBox3_SelectedIndexChanged!;     // game frequency is not supported
             comboBox4.SelectedIndexChanged += comboBox4_SelectedIndexChanged!;
             checkBox5.CheckedChanged += checkBox5_CheckedChanged!;
             checkBox6.CheckedChanged += checkBox6_CheckedChanged!;
@@ -361,24 +347,16 @@ namespace WoWLauncher
             //checkBox1.Visible = true;     // network enabled
             checkBox2.Visible = true;
             checkBox3.Visible = true;
-            //checkBox4.Visible = true;     // resize window not supported
             checkBox5.Visible = true;
             checkBox6.Visible = true;
             checkBox7.Visible = true;
-            /*if (comboBox1.Items.Count > 1)// language settings not supported
-            {
-                comboBox1.Visible = true;
-                label1.Visible = true;
-            }*/
             comboBox2.Visible = true;
-            //comboBox3.Visible = true;     // game frequency is not supported
             comboBox4.Visible = true;
             label2.Visible = true;
-            //label3.Visible = true;     // game frequency is not supported
             label4.Visible = true;
             button5.Visible = true;
             button6.Visible = false;
-            button7.Visible = false;
+            //button7.Visible = false;      // keyboard shortcut remapper cancelled
         }
         /// This is the event handler for the "Exit" button
         private void button4_Click(object sender, EventArgs e)
@@ -393,21 +371,16 @@ namespace WoWLauncher
                 //checkBox1.Visible = false;    // network enabled
                 checkBox2.Visible = false;
                 checkBox3.Visible = false;
-                //checkBox4.Visible = false;    // resize window not supported
                 checkBox5.Visible = false;
                 checkBox6.Visible = false;
                 checkBox7.Visible = false;
-                //comboBox1.Visible = false;    // language settings not spported
                 comboBox2.Visible = false;
-                //comboBox3.Visible = false;    // game frequency is not supported
                 comboBox4.Visible = false;
-                //label1.Visible = false;       // language setting not supported
                 label2.Visible = false;
-                //label3.Visible = false;       // game frequency is not supported
                 label4.Visible = false;
                 button5.Visible = false;
                 button6.Visible = true;
-                button7.Visible = true;
+                //button7.Visible = true;   // keyboard shortcut remapper cancelled
             }
             else { Close(); }
         }
@@ -432,57 +405,6 @@ namespace WoWLauncher
             key?.Close();
         }
         private void checkBox3_CheckedChanged(object sender, EventArgs e) { battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? "1" : "0"); }
-        //private void checkBox4_CheckedChanged(object sender, EventArgs e) { screenKey.SetValue("AllowResize", checkBox4.Checked ? "1" : "0"); }
-        // language options disabled
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            return; // forget language switching, save space for the end user.
-            if (comboBox1.Text == (string)mainKey.GetValue("Language")!) { return; } // do nothing if the same language is selected
-            switch (comboBox1.Text)
-            {
-                case "German":
-                    {
-                        MessageBox.Show("TEST");
-                    }
-                    break;
-                case "Spanish":
-                    {
-                        MessageBox.Show("TEST");
-                    }
-                    break;
-                case "French":
-                    {
-                        MessageBox.Show("TEST");
-                    }
-                    break;
-                case "Italian":
-                    {
-                        MessageBox.Show("TEST");
-                    }
-                    break;
-                case "English":
-                    {
-                        MessageBox.Show("TEST");
-                    }
-                    break;
-            }
-
-
-            return;
-            string rename = (string)mainKey.GetValue("Language")!; // Default = English
-            if (comboBox1.Text == rename) { return; } // do nothing if the same language is selected
-            if (File.Exists($"{comboBox1.Text.ToUpper()}.ojd") && File.Exists("TEXT.ojd")) // double check if the files exist
-            {
-                File.Move("TEXT.ojd", $"{rename.ToUpper()}.ojd"); // rename the current language file
-                File.Move($"{comboBox1.Text.ToUpper()}.ojd", $"TEXT.ojd"); // rename the new language file
-                mainKey.SetValue("Language", comboBox1.SelectedItem!.ToString()!); // update the registry
-            }
-            else // can only happen if the user has deleted, renamed or moved the language files, or messed with the registry.
-            {
-                MessageBox.Show("Language file not found, please reinstall the game and follow the instructions.");
-                return; // do nothing if the files do not exist
-            }
-        }
         // resolution combobox
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -515,11 +437,6 @@ namespace WoWLauncher
             { foreach (string file in resolutionFiles) { if (File.Exists("DAT\\" + file)) { File.Move("DAT\\" + file, $"DAT\\TEMP-" + file); } } }
             resolution = comboBox2.SelectedIndex; // update resolution tracker
         }
-        /*private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (comboBox3.Text == (string)mainKey.GetValue("Game Frequency")!) { return; }
-            mainKey.SetValue("Game Frequency", comboBox3.SelectedItem!.ToString()!);
-        }*/
         private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (comboBox4.Text == (string)mainKey.GetValue("Difficulty")!) { return; }

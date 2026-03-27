@@ -36,18 +36,13 @@
             button4 = new Button();
             checkBox1 = new CheckBox();
             checkBox2 = new CheckBox();
-            comboBox1 = new ComboBox();
-            label1 = new Label();
             comboBox2 = new ComboBox();
             label2 = new Label();
-            comboBox3 = new ComboBox();
-            label3 = new Label();
             comboBox4 = new ComboBox();
             label4 = new Label();
             checkBox3 = new CheckBox();
             button5 = new Button();
             button6 = new Button();
-            checkBox4 = new CheckBox();
             button7 = new Button();
             checkBox5 = new CheckBox();
             checkBox6 = new CheckBox();
@@ -109,7 +104,7 @@
             // 
             checkBox1.AccessibleDescription = "Enable or disable multiplayer. ( This option messes with single player resume and save campaign options, careful! )";
             checkBox1.AutoSize = true;
-            checkBox1.Location = new Point(11, 322);
+            checkBox1.Location = new Point(172, 410);
             checkBox1.Name = "checkBox1";
             checkBox1.Size = new Size(150, 19);
             checkBox1.TabIndex = 5;
@@ -121,7 +116,7 @@
             // 
             checkBox2.AccessibleDescription = "Enable or disable fullscreen. Note : Alt-Tabbing crashes the game when in fullscreen mode.";
             checkBox2.AutoSize = true;
-            checkBox2.Location = new Point(167, 322);
+            checkBox2.Location = new Point(239, 326);
             checkBox2.Name = "checkBox2";
             checkBox2.Size = new Size(83, 19);
             checkBox2.TabIndex = 6;
@@ -129,32 +124,11 @@
             checkBox2.UseVisualStyleBackColor = true;
             checkBox2.Visible = false;
             // 
-            // comboBox1
-            // 
-            comboBox1.AccessibleDescription = "Language options are not available, if you have a version other than English, let us know! Thanks.";
-            comboBox1.BackColor = SystemColors.Window;
-            comboBox1.FormattingEnabled = true;
-            comboBox1.Location = new Point(291, 409);
-            comboBox1.Name = "comboBox1";
-            comboBox1.Size = new Size(121, 23);
-            comboBox1.TabIndex = 7;
-            comboBox1.Visible = false;
-            // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Location = new Point(323, 441);
-            label1.Name = "label1";
-            label1.Size = new Size(59, 15);
-            label1.TabIndex = 8;
-            label1.Text = "Language";
-            label1.Visible = false;
-            // 
             // comboBox2
             // 
             comboBox2.AccessibleDescription = "The resolution for the game.";
             comboBox2.FormattingEnabled = true;
-            comboBox2.Location = new Point(278, 351);
+            comboBox2.Location = new Point(278, 353);
             comboBox2.Name = "comboBox2";
             comboBox2.Size = new Size(134, 23);
             comboBox2.TabIndex = 9;
@@ -162,38 +136,18 @@
             // 
             // label2
             // 
-            label2.Location = new Point(172, 354);
+            label2.Location = new Point(172, 356);
             label2.Name = "label2";
             label2.Size = new Size(100, 15);
             label2.TabIndex = 10;
             label2.Text = "Resolution";
             label2.Visible = false;
             // 
-            // comboBox3
-            // 
-            comboBox3.AccessibleDescription = "The refresh rate for the game. ( Higher than 30 might effect game stability )";
-            comboBox3.FormattingEnabled = true;
-            comboBox3.Location = new Point(291, 437);
-            comboBox3.Name = "comboBox3";
-            comboBox3.Size = new Size(121, 23);
-            comboBox3.TabIndex = 11;
-            comboBox3.Visible = false;
-            // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Location = new Point(323, 470);
-            label3.Name = "label3";
-            label3.Size = new Size(72, 15);
-            label3.TabIndex = 12;
-            label3.Text = "Refresh Rate";
-            label3.Visible = false;
-            // 
             // comboBox4
             // 
             comboBox4.AccessibleDescription = "Difficulty settings. (Medium is the default)";
             comboBox4.FormattingEnabled = true;
-            comboBox4.Location = new Point(278, 379);
+            comboBox4.Location = new Point(278, 381);
             comboBox4.Name = "comboBox4";
             comboBox4.Size = new Size(134, 23);
             comboBox4.TabIndex = 13;
@@ -201,7 +155,7 @@
             // 
             // label4
             // 
-            label4.Location = new Point(172, 382);
+            label4.Location = new Point(172, 384);
             label4.Name = "label4";
             label4.Size = new Size(100, 15);
             label4.TabIndex = 14;
@@ -212,7 +166,7 @@
             // 
             checkBox3.AccessibleDescription = "Enable or disable fog of war.";
             checkBox3.AutoSize = true;
-            checkBox3.Location = new Point(291, 322);
+            checkBox3.Location = new Point(12, 326);
             checkBox3.Name = "checkBox3";
             checkBox3.Size = new Size(84, 19);
             checkBox3.TabIndex = 15;
@@ -241,19 +195,6 @@
             button6.UseVisualStyleBackColor = true;
             button6.Click += button6_Click;
             // 
-            // checkBox4
-            // 
-            checkBox4.AccessibleDescription = "Enable or disable resizing of the window.";
-            checkBox4.AutoSize = true;
-            checkBox4.Enabled = false;
-            checkBox4.Location = new Point(12, 474);
-            checkBox4.Name = "checkBox4";
-            checkBox4.Size = new Size(58, 19);
-            checkBox4.TabIndex = 18;
-            checkBox4.Text = "Resize";
-            checkBox4.UseVisualStyleBackColor = true;
-            checkBox4.Visible = false;
-            // 
             // button7
             // 
             button7.Enabled = false;
@@ -263,13 +204,14 @@
             button7.TabIndex = 19;
             button7.Text = "Keyboard Shortcuts";
             button7.UseVisualStyleBackColor = true;
+            button7.Visible = false;
             button7.Click += button7_Click;
             // 
             // checkBox5
             // 
             checkBox5.AccessibleDescription = "Enabling this will allow the music to continue playing when the window loses focus, if not in fullscreen mode.";
             checkBox5.AutoSize = true;
-            checkBox5.Location = new Point(11, 412);
+            checkBox5.Location = new Point(12, 401);
             checkBox5.Name = "checkBox5";
             checkBox5.Size = new Size(108, 19);
             checkBox5.TabIndex = 20;
@@ -281,7 +223,7 @@
             // 
             checkBox6.AccessibleDescription = "This setting enables the enhanced user interface assets. ( This adds a little more colour depth to the interface. )";
             checkBox6.AutoSize = true;
-            checkBox6.Location = new Point(11, 387);
+            checkBox6.Location = new Point(12, 376);
             checkBox6.Name = "checkBox6";
             checkBox6.Size = new Size(114, 19);
             checkBox6.TabIndex = 21;
@@ -293,7 +235,7 @@
             // 
             checkBox7.AccessibleDescription = "This toggles whether or not enemy forces are visible on the warmap.";
             checkBox7.AutoSize = true;
-            checkBox7.Location = new Point(11, 362);
+            checkBox7.Location = new Point(12, 351);
             checkBox7.Name = "checkBox7";
             checkBox7.Size = new Size(136, 19);
             checkBox7.TabIndex = 22;
@@ -306,29 +248,24 @@
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(424, 504);
+            Controls.Add(checkBox1);
             Controls.Add(checkBox7);
             Controls.Add(checkBox6);
             Controls.Add(checkBox5);
-            Controls.Add(button7);
-            Controls.Add(checkBox4);
             Controls.Add(button6);
             Controls.Add(button5);
             Controls.Add(checkBox3);
             Controls.Add(label4);
             Controls.Add(comboBox4);
-            Controls.Add(label3);
-            Controls.Add(comboBox3);
             Controls.Add(label2);
             Controls.Add(comboBox2);
-            Controls.Add(label1);
-            Controls.Add(comboBox1);
             Controls.Add(checkBox2);
-            Controls.Add(checkBox1);
             Controls.Add(button4);
             Controls.Add(button3);
             Controls.Add(pictureBox1);
             Controls.Add(button2);
             Controls.Add(button1);
+            Controls.Add(button7);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "Form1";
@@ -347,18 +284,13 @@
         private Button button4;
         private CheckBox checkBox1;
         private CheckBox checkBox2;
-        private ComboBox comboBox1;
-        private Label label1;
         private ComboBox comboBox2;
         private Label label2;
-        private ComboBox comboBox3;
-        private Label label3;
         private ComboBox comboBox4;
         private Label label4;
         private CheckBox checkBox3;
         private Button button5;
         private Button button6;
-        private CheckBox checkBox4;
         private Button button7;
         private CheckBox checkBox5;
         private CheckBox checkBox6;
