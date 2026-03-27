@@ -66,6 +66,7 @@
             listBox5 = new ListBox();
             label14 = new Label();
             checkBox3 = new CheckBox();
+            richTextBox2 = new RichTextBox();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown3).BeginInit();
@@ -334,7 +335,7 @@
             // label11
             // 
             label11.AutoSize = true;
-            label11.Location = new Point(938, 177);
+            label11.Location = new Point(934, 176);
             label11.Name = "label11";
             label11.Size = new Size(48, 15);
             label11.TabIndex = 28;
@@ -343,7 +344,7 @@
             // numericUpDown6
             // 
             numericUpDown6.Enabled = false;
-            numericUpDown6.Location = new Point(992, 175);
+            numericUpDown6.Location = new Point(988, 174);
             numericUpDown6.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             numericUpDown6.Name = "numericUpDown6";
             numericUpDown6.Size = new Size(41, 23);
@@ -389,6 +390,7 @@
             // 
             // numericUpDown7
             // 
+            numericUpDown7.Enabled = false;
             numericUpDown7.Location = new Point(747, 175);
             numericUpDown7.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
             numericUpDown7.Name = "numericUpDown7";
@@ -434,11 +436,20 @@
             checkBox3.Text = "Decompressed";
             checkBox3.UseVisualStyleBackColor = true;
             // 
+            // richTextBox2
+            // 
+            richTextBox2.Location = new Point(1035, 172);
+            richTextBox2.Name = "richTextBox2";
+            richTextBox2.Size = new Size(219, 67);
+            richTextBox2.TabIndex = 38;
+            richTextBox2.Text = "";
+            // 
             // SaveEditorForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1266, 550);
+            Controls.Add(richTextBox2);
             Controls.Add(checkBox3);
             Controls.Add(label14);
             Controls.Add(listBox5);
@@ -530,5 +541,6 @@
         private ListBox listBox5;
         private Label label14;
         private CheckBox checkBox3;
+        private RichTextBox richTextBox2;
     }
 }

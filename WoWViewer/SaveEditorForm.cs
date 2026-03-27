@@ -153,6 +153,7 @@ namespace WoWViewer
             checkBox1.CheckedChanged -= checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged -= checkBox2_CheckedChanged!;
             button4.Enabled = false; // disable debug dump decompressed button
+            numericUpDown7.Enabled = false; // disable unit count
             // parse the save file which adds the event handlers back
             parseSaveFile();
         }
@@ -361,6 +362,7 @@ namespace WoWViewer
             label9.Text = listBox2.Text;
 
             button4.Enabled = true; // enable debug dump decompressed button
+            numericUpDown7.Enabled = false; // disable unit count
             listBox3.Items.Clear(); // clear buildings
             listBox4.Items.Clear(); // clear units
             listBox5.Items.Clear(); // clear group [individual units]
@@ -539,8 +541,7 @@ namespace WoWViewer
             }
         }
 
-        private string BmolName(int id)
-            => entries.FirstOrDefault(e => e.BmolId == (ushort)id)?.Name ?? $"#{id}";
+        private string BmolName(int id) => entries.FirstOrDefault(e => e.BmolId == (ushort)id)?.Name ?? $"#{id}";
 
         // ── Tag helpers ──────────────────────────────────────────────────────────────
 
@@ -791,14 +792,18 @@ namespace WoWViewer
         private void listBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
             listBox5.Items.Clear(); // clear individual unit listbox [some buildings have pieces, so that listbox can be reused later]
+            richTextBox2.Text = listBox3.SelectedItem!.ToString();
             // if has parts // populate listbox5
             numericUpDown5.Enabled = true;
+            numericUpDown7.Enabled = false; // disable unit count
         }
         // list box 4 unit group selection
         private void listBox4_SelectedIndexChanged(object sender, EventArgs e)
         {
             listBox5.Items.Clear();
+            richTextBox2.Text = listBox4.SelectedItem!.ToString();
             numericUpDown7.ValueChanged -= numericUpDown7_ValueChanged!;
+            numericUpDown7.Enabled = true;
             int idx = listBox4.SelectedIndex;
             if (idx < 0 || currentSector == null || idx >= currentSector.Units.Count) return;
             var group = currentSector.Units[idx];
@@ -816,6 +821,7 @@ namespace WoWViewer
         private void listBox5_SelectedIndexChanged(object sender, EventArgs e)
         {
             numericUpDown6.Enabled = true;
+            richTextBox2.Text = listBox5.SelectedItem!.ToString();
         }
         // building health [some buildings have pieces, so this might need forwarding to group eventually]
         private void numericUpDown5_ValueChanged(object sender, EventArgs e)
