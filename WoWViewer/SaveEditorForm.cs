@@ -60,6 +60,7 @@ namespace WoWViewer
             listBox2.SelectedIndexChanged += listBox2_SelectedIndexChanged!;
             listBox3.SelectedIndexChanged += listBox3_SelectedIndexChanged!;
             listBox4.SelectedIndexChanged += listBox4_SelectedIndexChanged!;
+            listBox5.SelectedIndexChanged += listBox5_SelectedIndexChanged!;
             // parse TEXT.ojd
             if (!File.Exists("TEXT.ojd"))
             {
@@ -553,6 +554,8 @@ namespace WoWViewer
         private static readonly byte[] TAG_VEHI = { (byte)'V', (byte)'E', (byte)'H', (byte)'I' };
         private static readonly byte[] TAG_VEHU = { (byte)'V', (byte)'E', (byte)'H', (byte)'U' };
         private static readonly byte[] TAG_HCON = { (byte)'H', (byte)'C', (byte)'O', (byte)'N' };
+        private static readonly byte[] TAG_ACON = { (byte)'A', (byte)'C', (byte)'O', (byte)'N' };
+        private static readonly byte[] TAG_HUNI = { (byte)'H', (byte)'U', (byte)'N', (byte)'I' };
         private static readonly byte[] TAG_AUNI = { (byte)'A', (byte)'U', (byte)'N', (byte)'I' };
 
         private static bool IsTag(byte[] data, int pos, byte[] tag)
@@ -804,9 +807,7 @@ namespace WoWViewer
             richTextBox2.Text = listBox4.SelectedItem!.ToString();
             numericUpDown7.ValueChanged -= numericUpDown7_ValueChanged!;
             numericUpDown7.Enabled = true;
-            int idx = listBox4.SelectedIndex;
-            if (idx < 0 || currentSector == null || idx >= currentSector.Units.Count) return;
-            var group = currentSector.Units[idx];
+            var group = currentSector!.Units[listBox4.SelectedIndex];
             int count = group.Parts.Count;
             numericUpDown7.Value = count;
             for (int p = 0; p < count; p++)
