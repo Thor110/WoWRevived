@@ -508,9 +508,8 @@ namespace WoWViewer
                 return;
 
             byte[] obj = File.ReadAllBytes("OBJ.ojd");
-
-            // Scan OBJ.ojd for OTYPE_ entries
             byte[] otype = Encoding.ASCII.GetBytes("OTYPE_");
+
             for (int i = 14; i <= obj.Length - 6; i++)
             {
                 // Match OTYPE_ at position i
@@ -528,27 +527,50 @@ namespace WoWViewer
 
                 ushort bmolId = (ushort)(obj[i - 9] | (obj[i - 8] << 8));
 
-                // Find null terminator of OTYPE_ string
-                int nullPos = i;
-                while (nullPos < obj.Length && obj[nullPos] != 0x00) nullPos++;
-                if (nullPos >= obj.Length) continue;
+                // Read OTYPE_ string using length byte at i-2 (includes null terminator in count)
+                int strLen = obj[i - 2] - 1; // exclude null terminator
+                if (i + strLen > obj.Length) continue;
+                string otypeStr = Encoding.ASCII.GetString(obj, i, strLen);
 
-                // 15 record immediately after null
-                int r = nullPos + 1;
-                if (r + 7 >= obj.Length) continue;
-                if (obj[r] != 0xFF || obj[r + 3] != 0x15 || obj[r + 4] != 0x00)
-                    continue;
+                ushort textKey = 0;
+                bool hasTextKey = false;
 
-                ushort textKey = (ushort)(obj[r + 5] | (obj[r + 6] << 8));
+                // 15 record immediately after the string+null (optional — many effect types have none)
+                int r = i + strLen + 1;
+                if (r + 7 < obj.Length && obj[r] == 0xFF && obj[r + 3] == 0x15 && obj[r + 4] == 0x00)
+                {
+                    textKey = (ushort)(obj[r + 5] | (obj[r + 6] << 8));
+                    hasTextKey = true;
+                }
 
-                // Match against already-parsed entries by their TEXT.ojd key (ID)
-                var entry = entries.FirstOrDefault(e => e.ID == textKey && e.BmolId == null);
+                // Try to match an existing text entry via TEXT.ojd key
+                WowTextEntry? entry = hasTextKey
+                    ? entries.FirstOrDefault(e => e.ID == textKey && e.BmolId == null)
+                    : null;
+
                 if (entry != null)
+                {
                     entry.BmolId = bmolId;
+                    entry.OTypeName = otypeStr;
+                }
+                else
+                {
+                    // No text entry — add a fallback so BmolName can resolve this type
+                    entries.Add(new WowTextEntry { BmolId = bmolId, OTypeName = otypeStr, Name = otypeStr });
+                }
             }
         }
 
-        private string BmolName(int id) => entries.FirstOrDefault(e => e.BmolId == (ushort)id)?.Name ?? $"#{id}";
+        //private string BmolName(int id) => entries.FirstOrDefault(e => e.BmolId == (ushort)id)?.Name ?? $"#{id}";
+        private string BmolName(int id)
+        {
+            var entry = entries.FirstOrDefault(e => e.BmolId == (ushort)id);
+            if (entry == null) return $"#{id}";
+            // Prefer localised text name; fall back to OTYPE_ string; last resort is raw ID
+            return !string.IsNullOrEmpty(entry.Name) ? entry.Name
+                 : !string.IsNullOrEmpty(entry.OTypeName) ? entry.OTypeName
+                 : $"#{id}";
+        }
 
         // ── Tag helpers ──────────────────────────────────────────────────────────────
 

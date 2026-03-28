@@ -32,6 +32,7 @@
         public ushort Index { get; set; } // used for getting entry index when filtering by type
         public ushort? ID { get; set; } // TEXT.ojd key (2 bytes at offset+6 in each entry)
         public ushort? BmolId { get; set; } // BMOL ID from OBJ.ojd lookup, null if not a battle map object
+        public string? OTypeName { get; set; } // OTYPE_ string from OBJ.ojd, used as fallback display name
         public bool Edited { get; set; } = false;
     }
     class WowTextBackup { public string Name { get; set; } = ""; }
