@@ -15,6 +15,7 @@ namespace WoWLauncher
         {
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             switch (new FileInfo("credits.png").Length)
             {
                 case 252640: SetEnglish(); break;
