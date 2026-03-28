@@ -33,6 +33,16 @@ namespace WoWViewer
             }
             return entries;
         }
+        //private string BmolName(int id) => entries.FirstOrDefault(e => e.BmolId == (ushort)id)?.Name ?? $"#{id}";
+        public string BmolName(int id, List<WowTextEntry> entries)
+        {
+            var entry = entries.FirstOrDefault(e => e.BmolId == (ushort)id);
+            if (entry == null) return $"#{id}";
+            // Prefer localised text name; fall back to OTYPE_ string; last resort is raw ID
+            return !string.IsNullOrEmpty(entry.Name) ? entry.Name
+                 : !string.IsNullOrEmpty(entry.OTypeName) ? entry.OTypeName
+                 : $"#{id}";
+        }
         // Add this method to SaveEditorForm.
         // Call it from the constructor after entries is populated and TEXT.ojd is parsed.
         // Requires OBJ.ojd alongside TEXT.ojd.

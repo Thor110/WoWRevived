@@ -4,6 +4,7 @@
     {
         private List<WowTextEntry> entries = new List<WowTextEntry>();
         private byte[]? levelData;
+        private Reusables loadText = new Reusables();
         public MapEditorForm()
         {
             InitializeComponent();
@@ -13,7 +14,6 @@
                 this.Close();
                 return;
             }
-            Reusables loadText = new Reusables();
             entries = loadText.LoadEntries(File.ReadAllBytes("TEXT.ojd"));
             entries = loadText.LoadObjLookup(entries);
             ToolTip tooltip = new ToolTip();
@@ -32,7 +32,7 @@
                 ushort type = (ushort)(levelData[position] | (levelData[position + 1] << 8));
                 ushort x = (ushort)(levelData[position + 4] | (levelData[position + 5] << 8));
                 ushort y = (ushort)(levelData[position + 8] | (levelData[position + 9] << 8));
-                string name = BmolName(type);
+                string name = loadText.BmolName(type, entries);
                 // Only show entries with a resolved OTYPE name; skip internal engine types
                 if (!name.StartsWith("#"))
                 {
@@ -44,16 +44,6 @@
                 }
                 position += 12;
             }
-        }
-        //private string BmolName(int id) => entries.FirstOrDefault(e => e.BmolId == (ushort)id)?.Name ?? $"#{id}";
-        private string BmolName(int id)
-        {
-            var entry = entries.FirstOrDefault(e => e.BmolId == (ushort)id);
-            if (entry == null) return $"#{id}";
-            // Prefer localised text name; fall back to OTYPE_ string; last resort is raw ID
-            return !string.IsNullOrEmpty(entry.Name) ? entry.Name
-                 : !string.IsNullOrEmpty(entry.OTypeName) ? entry.OTypeName
-                 : $"#{id}";
         }
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {

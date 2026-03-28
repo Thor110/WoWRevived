@@ -49,6 +49,7 @@ namespace WoWViewer
         private RegistryKey tweakKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true)!;
         private int unitsValue;
         private int boatsValue;
+        private Reusables loadText = new Reusables();
         public SaveEditorForm()
         {
             InitializeComponent();
@@ -62,7 +63,6 @@ namespace WoWViewer
             unitsValue = Convert.ToInt32(tweakKey.GetValue("Max units in sector"));
             boatsValue = Convert.ToInt32(tweakKey.GetValue("Max boats in sector"));
             // parse TEXT.ojd
-            Reusables loadText = new Reusables();
             entries = loadText.LoadEntries(File.ReadAllBytes("TEXT.ojd"));
             entries = loadText.LoadObjLookup(entries);
             InitializeSaveLoader();
@@ -458,17 +458,6 @@ namespace WoWViewer
             public byte[] TailBytes { get; set; } = Array.Empty<byte>();
         }
 
-        //private string BmolName(int id) => entries.FirstOrDefault(e => e.BmolId == (ushort)id)?.Name ?? $"#{id}";
-        private string BmolName(int id)
-        {
-            var entry = entries.FirstOrDefault(e => e.BmolId == (ushort)id);
-            if (entry == null) return $"#{id}";
-            // Prefer localised text name; fall back to OTYPE_ string; last resort is raw ID
-            return !string.IsNullOrEmpty(entry.Name) ? entry.Name
-                 : !string.IsNullOrEmpty(entry.OTypeName) ? entry.OTypeName
-                 : $"#{id}";
-        }
-
         // ── Tag helpers ──────────────────────────────────────────────────────────────
 
         private static readonly byte[] TAG_SELO = { (byte)'S', (byte)'E', (byte)'L', (byte)'O' };
@@ -535,7 +524,7 @@ namespace WoWViewer
                 var group = new UnitGroup
                 {
                     BmolId = bmolId,
-                    Name = BmolName(bmolId),
+                    Name = loadText.BmolName(bmolId, entries),
                     GroupSelo = groupSelo,
                     WmobSector = wmobSector,
                 };
@@ -630,7 +619,7 @@ namespace WoWViewer
         {
             var result = new List<BuildingEntry>();
 
-            byte[] hconTag = System.Text.Encoding.ASCII.GetBytes("HCONWMOB");
+            byte[] hconTag = Encoding.ASCII.GetBytes("HCONWMOB");
             int hconPos = -1;
             for (int k = 0; k <= sec.Length - 8; k++)
             {
@@ -657,7 +646,7 @@ namespace WoWViewer
                 entry.BmolId = BitConverter.ToInt32(sec, i); i += 4;
                 entry.Progress1 = BitConverter.ToSingle(sec, i); i += 4;
                 entry.Progress2 = BitConverter.ToSingle(sec, i); i += 4;
-                entry.Name = BmolName(entry.BmolId);
+                entry.Name = loadText.BmolName(entry.BmolId, entries);
 
                 // SELO 1
                 if (IsTag(sec, i, TAG_SELO))
@@ -777,7 +766,6 @@ namespace WoWViewer
         }
         private void button4_Click(object sender, EventArgs e)
         {
-            if (selectedSectorIndex < 0 || sectorData[selectedSectorIndex] == null) return;
             byte[] sec = sectorData[selectedSectorIndex];
 
             // Find FFUH within this sector
