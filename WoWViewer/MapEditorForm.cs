@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using System.Xml.Linq;
 
 namespace WoWViewer
 {
@@ -48,8 +47,8 @@ namespace WoWViewer
             for(int i = 0; i < length; i++)
             {
                 ushort type = (ushort)(levelData[position] | (levelData[position + 1] << 8));
-                ushort x = levelData[position + 4];
-                ushort y = levelData[position + 8];
+                ushort x = (ushort)(levelData[position + 4] | (levelData[position + 5] << 8));
+                ushort y = (ushort)(levelData[position + 8] | (levelData[position + 9] << 8));
                 string name = BmolName(type);
                 // Only show entries with a resolved OTYPE name; skip internal engine types
                 if (!name.StartsWith("#"))
@@ -170,12 +169,16 @@ namespace WoWViewer
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
+            int index = listBox1.SelectedIndex;
+            listBox1.SelectedIndexChanged -= listBox1_SelectedIndexChanged!;
             listBox1.Items.Clear();
             int start = checkBox1.Checked ? 31 : 0; // skip entry 0 (campaign name) in each faction group
             for (int i = 1; i < 31; i++)
             {
                 listBox1.Items.Add(entries[start + i].Name);
             }
+            listBox1.SelectedIndex = index;
+            listBox1.SelectedIndexChanged += listBox1_SelectedIndexChanged!;
         }
     }
 }

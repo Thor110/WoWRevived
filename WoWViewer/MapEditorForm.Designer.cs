@@ -55,7 +55,7 @@
             listBox2.ItemHeight = 15;
             listBox2.Location = new Point(138, 56);
             listBox2.Name = "listBox2";
-            listBox2.Size = new Size(120, 424);
+            listBox2.Size = new Size(195, 424);
             listBox2.TabIndex = 2;
             listBox2.SelectedIndexChanged += listBox2_SelectedIndexChanged;
             // 
@@ -74,7 +74,7 @@
             // 
             listBox3.FormattingEnabled = true;
             listBox3.ItemHeight = 15;
-            listBox3.Location = new Point(264, 56);
+            listBox3.Location = new Point(339, 56);
             listBox3.Name = "listBox3";
             listBox3.Size = new Size(120, 424);
             listBox3.TabIndex = 4;
@@ -100,7 +100,7 @@
             // label3
             // 
             label3.AutoSize = true;
-            label3.Location = new Point(264, 38);
+            label3.Location = new Point(339, 38);
             label3.Name = "label3";
             label3.Size = new Size(107, 15);
             label3.TabIndex = 7;
