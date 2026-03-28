@@ -94,7 +94,7 @@ The road map for this project.
 - [✅ 7 : Font Viewer](#font-viewer) ( 100% Complete )
 	- Font viewer can export .FNT files to .png images.
 	- Ability to import edited fonts.
-- [❌ 8 : Save Editor](#save-editor) ( 25% Complete - Cancelled )
+- [❌ 8 : Save Editor](#save-editor) ( 25% Complete )
 	- Save Name, Time & Date editing functionality implemented, along with Swap Sides and Delete Save buttons.
 	- Override standard limit of 1753 as the minimum date and set the year manually to as low as year zero.
 	- Sector & Area names loaded dynamically from TEXT.ojd to support the regional releases.
@@ -107,8 +107,8 @@ The road map for this project.
 	- Undo changes to current string.
 	- Edited strings highlighted.
 	- Rich text editing with newline support (\n to \r\n handling when loading and the opposite when saving )
-- ❌ 10 : Map Editor ( Basic Parsing Implemented - 1% Complete - Cancelled )
-	- Basic parsing of .nsb filetypes.
+- [❌ 10 : Map Editor](#map-editor) ( 10% Complete )
+	- Basic parsing of .nsb levels.
 	- .ojd files can be parsed, but there is still more decoding to do.
 - ✅ 11 : No-CD Music Fix ( 99% Complete )
 	- Uses a winmm shim that allows for localised audio playback.
@@ -266,6 +266,14 @@ A work in progress save editor.
 A text editor that makes it easy to adjust any entry in the TEXT.ojd file.
 
 ![Text Editor](images/text-editor.png)
+
+## Map editor
+
+A work in progress "Map Editor" that currently just parses the .nsb level data.
+
+<div align="center">
+  <img src="images/map-editor.png" alt="Map Editor">
+</div>
 
 ## Video Playback Intercept
 
