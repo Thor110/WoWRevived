@@ -142,21 +142,6 @@ namespace WoWViewer
             label1.Text = $"Total Entries: {count}";
         }
         private static string getFaction(byte category) => category == 0x00 ? "Martian" : category == 0x01 ? "Human" : category == 0x02 ? "UI" : "Unknown";
-        // OBJ.ojd
-        public void parseOBJOJD()
-        {
-            cleanList();
-            entries = ParseOJDFile();
-            //
-            string logPath = "ojd_log.txt";
-            if (File.Exists(logPath)) { File.Delete(logPath); }
-            foreach (var entry in entries)
-            {
-                listBox1.Items.Add(entry.Name);
-                File.AppendAllText(logPath, $"{entry}\n");
-            }
-            label1.Text = $"Total Entries: {entries.Count}";
-        }
         // SFX.ojd
         public void parseSFXOJD()
         {
@@ -194,7 +179,7 @@ namespace WoWViewer
             label1.Text = $"Total Entries: {count}";
         }
         private static bool IsAsciiChar(byte b) => b >= 0x20 && b <= 0x7E;
-        private void button1_Click(object sender, EventArgs e) { parseOBJOJD(); } // OBJ.ojd
+        private void button1_Click(object sender, EventArgs e) { MessageBox.Show("OBJ.ojd decoding offloaded to Reusables.cs via MapEditorForm.cs and SaveEditorForm.cs forms!"); } // OBJ.ojd
         private void button2_Click(object sender, EventArgs e) { parseSFXOJD(); } // SFX.ojd
         private void button3_Click(object sender, EventArgs e) { MessageBox.Show("TEXT.ojd fully decoded!"); } // Disabled, now handled by TextEditorForm.cs
         private void button4_Click(object sender, EventArgs e) { parseAIOJD(); } // AI.ojd

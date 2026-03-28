@@ -48,29 +48,12 @@ namespace WoWViewer
         // for initial parsing the TEXT.ojd file into the listBox for the TextEditorForm
         public void parseTEXTOJD()
         {
-            byte[] data = File.ReadAllBytes(inputPath); // read the file into a byte array
-            switch(data.Length) // check file size
+            Reusables loadText = new Reusables();
+            entries = loadText.LoadEntries(File.ReadAllBytes(inputPath));
+            for (int i = 0; i < entries.Count; i++)
             {
-                case 63839: // english  - 63839 bytes
-                case 75224: // french   - 75224 bytes
-                case 70448: // german   - 70448 bytes
-                case 70218: // italian  - 70218 bytes
-                case 71617: // spanish  - 71617 bytes
-                    entryCount = 1396; // support for the original TEXT.ojd file without the added Credits entry.
-                    break;
-            }
-            int offset = 0x289; // first string starts at 0x289
-            for (int i = 0; i < entryCount; i++) // there are only 1396 entries
-            {
-                byte category = data[offset + 4];  // Faction: 00 = Martian, 01 = Human, 02 = UI
-                ushort length = (ushort)(data[offset + 8] | (data[offset + 9] << 8)); // bytes 9 and 10 are the string length
-                int stringOffset = offset + 10; // string offset
-                string text = Latin1.GetString(data, stringOffset, length - 1).Replace("\\n", "\n");
-                // string length is one less than the ushort length as length contains the null operator // replaces \n with actual new line
-                listBox1.Items.Add($"{i:D4} : [{getFaction(category)}] : {text}");
-                entries.Add(new WowTextEntry { Name = text, Faction = category, Index = (ushort)i });
-                backup.Add(new WowTextBackup { Name = text }); // create backup for entries to undo changes
-                offset += (int)length + 9; // move offset to next entry // not + 10 because length contains the null operator ( hence - 1 above at text )
+                backup.Add(new WowTextBackup { Name = entries[i].Name });
+                listBox1.Items.Add($"{i:D4} : [{getFaction(entries[i].Faction)}] : {entries[i].Name}");
             }
         }
         // list box selected index changed event
