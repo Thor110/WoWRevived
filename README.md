@@ -267,7 +267,7 @@ A text editor that makes it easy to adjust any entry in the TEXT.ojd file.
 
 ![Text Editor](images/text-editor.png)
 
-## Map editor
+## Map Editor
 
 A work in progress "Map Editor" that currently just parses the .nsb level data.
 
