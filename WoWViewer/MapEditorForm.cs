@@ -78,8 +78,8 @@
             int index = listBox1.SelectedIndex;
             listBox1.SelectedIndexChanged -= listBox1_SelectedIndexChanged!;
             listBox1.Items.Clear();
-            int start = checkBox1.Checked ? 31 : 0; // skip entry 0 (campaign name) in each faction group
-            for (int i = 1; i < 31; i++)
+            int start = checkBox1.Checked ? 32 : 1; // skip entry 0 (ocean name) in each faction group
+            for (int i = 0; i < 30; i++)
             {
                 listBox1.Items.Add(entries[start + i].Name);
             }
