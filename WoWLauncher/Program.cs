@@ -75,8 +75,6 @@ namespace WoWLauncher
                             "The launcher may fail to save settings. Please run as Administrator, " +
                             "uncheck read-only permissions on the folder or move the game to a different folder (e.g., C:\\Games\\).";
             Interface["dir_warning_error"] = "Permissions Error";
-            Interface["alt_tab"] = "Alt-tabbing is not supported in fullscreen mode.\n\nDo you want to restart the game?";
-            Interface["alt_tab_error"] = "Alt Tab Error";
             Interface["lights"] = "The \"Show lights\" registry entry must be set to one to prevent crashes when using the Infiltration skill in-game, so it has been reset.";
             Interface["colour"] = "The \"BPP\" registry entry must be set to 16 as I have removed the 8/16 bit toggle from the games executable, surely you don't want to play it in 8 bit colour mode in the 21st century?";
             Interface["executable"] = "Executable not found, please reinstall the game and follow the instructions.";
@@ -157,8 +155,6 @@ namespace WoWLauncher
                             "Le lanceur peut ne pas enregistrer les paramètres. Veuillez l'exécuter en tant qu'administrateur, " +
                             "Décochez les autorisations de lecture seule sur le dossier ou déplacez le jeu vers un autre dossier (e.g., C:\\Jeux\\).";
             Interface["dir_warning_error"] = "Erreur d'autorisation";
-            Interface["alt_tab"] = "Le passage d'une application à l'autre (Alt+Tab) n'est pas pris en charge en mode plein écran.\n\nVoulez-vous redémarrer le jeu?";
-            Interface["alt_tab_error"] = "Erreur Alt Tab";
             Interface["lights"] = "L'entrée de registre \"Show lights\" doit être définie sur un pour éviter les plantages lors de l'utilisation de la compétence Infiltration en jeu ; elle a donc été réinitialisée.";
             Interface["colour"] = "L'entrée de registre \"BPP\" doit être définie sur 16 car j'ai supprimé l'option de basculement 8/16 bits de l'exécutable du jeu ; vous ne voudriez tout de même pas y jouer en mode couleur 8 bits au XXIe siècle?";
             Interface["executable"] = "Fichier exécutable introuvable, veuillez réinstaller le jeu et suivre les instructions.";
@@ -238,8 +234,6 @@ namespace WoWLauncher
                             "\r\nDer Launcher speichert die Einstellungen möglicherweise nicht. Bitte führen Sie ihn als Administrator aus " +
                             "Deaktivieren Sie die Schreibschutzberechtigungen für den Ordner oder verschieben Sie das Spiel in einen anderen Ordner (e.g., C:\\Spiele\\).";
             Interface["dir_warning_error"] = "Berechtigungsfehler";
-            Interface["alt_tab"] = "Alt+Tab wird im Vollbildmodus nicht unterstützt.\n\nMöchten Sie das Spiel neu starten?";
-            Interface["alt_tab_error"] = "Alt-Tab-Fehler";
             Interface["lights"] = "Der Registry-Eintrag \"Show lights\" muss auf eins gesetzt werden, um Abstürze bei der Verwendung der Infiltrationsfähigkeit im Spiel zu verhindern. Daher wurde er zurückgesetzt.";
             Interface["colour"] = "Der Registrierungseintrag \"BPP\" muss auf 16 gesetzt werden, da ich die 8/16-Bit-Umschaltung aus der ausführbaren Datei des Spiels entfernt habe. Sie wollen es im 21. Jahrhundert doch nicht im 8-Bit-Farbmodus spielen?";
             Interface["executable"] = "Die ausführbare Datei wurde nicht gefunden. Bitte installieren Sie das Spiel neu und folgen Sie den Anweisungen.";
@@ -319,8 +313,6 @@ namespace WoWLauncher
                             "Il programma di avvio potrebbe non salvare le impostazioni. Eseguilo come amministratore, " +
                             "Deseleziona le autorizzazioni di sola lettura per la cartella oppure sposta il gioco in una cartella diversa (e.g., C:\\Giochi\\).";
             Interface["dir_warning_error"] = "Errore di autorizzazioni";
-            Interface["alt_tab"] = "La combinazione di tasti Alt+Tab non è supportata in modalità a schermo intero.\n\nVuoi riavviare il gioco?";
-            Interface["alt_tab_error"] = "Errore Alt-Tab";
             Interface["lights"] = "La voce del registro di sistema \"Show lights\" deve essere impostata su uno per evitare arresti anomali quando si utilizza l'abilità Infiltrazione nel gioco, quindi è stata reimpostata.";
             Interface["colour"] = "La voce di registro \"BPP\" deve essere impostata su 16 poiché ho rimosso l'opzione per passare da 8 a 16 bit dall'eseguibile del gioco; sicuramente non vorrai giocarci in modalità colore a 8 bit nel XXI secolo, vero?";
             Interface["executable"] = "File eseguibile non trovato. Reinstallare il gioco e seguire le istruzioni.";
@@ -400,8 +392,6 @@ namespace WoWLauncher
                             "Es posible que el lanzador no guarde la configuración. Ejecútelo como administrador, " +
                             "Desactive los permisos de solo lectura en la carpeta o mueva el juego a una carpeta diferente (por ejemplo, C:\\Juegos\\).";
             Interface["dir_warning_error"] = "Error de permisos";
-            Interface["alt_tab"] = "El cambio de ventana (Alt+Tab) no es compatible en el modo de pantalla completa.\n\n¿Quieres reiniciar el juego?";
-            Interface["alt_tab_error"] = "Error de Alt-Tab";
             Interface["lights"] = "La entrada de registro \"Show lights\" debe estar configurada en uno para evitar bloqueos al usar la habilidad Infiltración en el juego, por lo que se ha restablecido.";
             Interface["colour"] = "La entrada de registro \"BPP\" debe estar configurada en 16, ya que he eliminado la opción de alternar entre 8 y 16 bits del ejecutable del juego. ¿Seguro que no quieres jugarlo en modo de color de 8 bits en el siglo XXI?";
             Interface["executable"] = "No se encontró el archivo ejecutable. Por favor, reinstale el juego y siga las instrucciones.";

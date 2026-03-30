@@ -14,8 +14,8 @@ bool isPaused = false;
 DWORD lastOpenTime = 0;
 HWAVEOUT hWaveOut = NULL;
 FILE* logFile = nullptr;
-bool debug = true; // true for logging
-bool musicFocus = (GetFileAttributesA("music_focus.txt") != INVALID_FILE_ATTRIBUTES); // allow music to continue playing while the window is out of focus
+bool debug = false; // true for logging
+bool musicFocus = false; // allow music to continue playing while the window is out of focus
 // Pointers to the game's internal Menu State
 volatile DWORD* pMenuState1 = (volatile DWORD*)0x4D1490;
 // The Control ID for the CD Player menu
@@ -86,8 +86,12 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			ReadFloat("Speech", 0x004CA86C);
 
 			DWORD cdSize = sizeof(DWORD);
+			DWORD cdFocus = 1;
 			if (RegQueryValueExA(hKey, "CD", NULL, &type, (LPBYTE)&cdState, &cdSize) == ERROR_SUCCESS) {
 				*(int*)0x004B8A88 = (int)cdState;
+			}
+			if (RegQueryValueExA(hKey, "CD-Focus", NULL, &type, (LPBYTE)&cdFocus, &cdSize) == ERROR_SUCCESS) {
+				musicFocus = (bool)cdFocus;
 			}
 			RegCloseKey(hKey);
 		}
@@ -155,16 +159,25 @@ static void StopAudio_Locked() {
         isStopping = true;        // tell callback to stop queueing
         waveOutReset(hWaveOut);   // returns all pending buffers
         for (int b = 0; b < NUM_BUFFERS; b++) {
-            if (waveHdrs[b].dwFlags & WHDR_PREPARED)
+            if (waveHdrs[b].dwFlags & WHDR_PREPARED) {
                 waveOutUnprepareHeader(hWaveOut, &waveHdrs[b], sizeof(WAVEHDR));
-            if (hWaveData[b]) { GlobalFree(hWaveData[b]); hWaveData[b] = nullptr; }
+            }
+            if (hWaveData[b]) { 
+                GlobalUnlock(hWaveData[b]);
+                GlobalFree(hWaveData[b]); 
+                hWaveData[b] = nullptr; 
+            }
             waveHdrs[b] = {};
         }
         waveOutClose(hWaveOut);
         hWaveOut = NULL;
         isStopping = false;       // reset for next use
     }
-    if (pAudioData) { GlobalFree(pAudioData); pAudioData = nullptr; }
+	if (pAudioData) {
+		GlobalUnlock(pAudioData); // Ensure we unlock if we used GlobalLock
+		GlobalFree(pAudioData);
+		pAudioData = nullptr;
+	}
     audioDataSize = 0;
     audioReadPos = 0;
 }

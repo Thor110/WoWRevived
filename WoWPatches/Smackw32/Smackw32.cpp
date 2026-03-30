@@ -433,16 +433,6 @@ LRESULT CALLBACK GameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             SetWindowPos(creditsOverlay, HWND_TOP, clientPos.x, clientPos.y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
         }
     }
-    if (msg == WM_DESTROY || msg == WM_CLOSE) {
-        CloseOverlayWindow();
-    }
-    if (msg == WM_ACTIVATEAPP && isFullscreen) {
-        if (!wParam) {
-            videoFinished = true;
-            CloseOverlayWindow();
-            TerminateProcess(GetCurrentProcess(), 0); // force kill the process because alt-tabbing doesn't work in full-screen mode
-        }
-    }
     return CallWindowProc(origGameProc, hwnd, msg, wParam, lParam);
 }
 
@@ -492,7 +482,6 @@ FakeSmack dummy;
 
 extern "C" {
     void WINAPI SmackClose(void* smk) {
-        // reset dud frame count
         uint32_t* smkData = (uint32_t*)smk;
         if (smkData) {
             smkData[2] = 1;
@@ -576,25 +565,6 @@ extern "C" {
 }
 
 // ============================================================
-//  Keyboard hook
-// ============================================================
-
-HHOOK kbHook = NULL;
-
-LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
-    if (nCode >= 0 && isFullscreen) {
-        KBDLLHOOKSTRUCT* kb = (KBDLLHOOKSTRUCT*)lParam;
-        if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
-            if (kb->vkCode == VK_TAB && (GetAsyncKeyState(VK_MENU) & 0x8000)) {
-                FILE* f = fopen("_alttab_exit.txt", "w");
-                if (f) fclose(f);
-            }
-        }
-    }
-    return CallNextHookEx(kbHook, nCode, wParam, lParam);
-}
-
-// ============================================================
 //  DllMain
 // ============================================================
 
@@ -603,7 +573,6 @@ BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
     if (reason == DLL_PROCESS_ATTACH)
     {
         DeleteFileA("Smackw32_log.txt");
-        kbHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
         // Note: We use HKEY_LOCAL_MACHINE and the path you provided. 
         // Since your app is 32-bit, Windows automatically handles the WOW6432Node redirection.
         HKEY hKey;
@@ -675,7 +644,6 @@ BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
             CloseHandle(creditsThread); creditsThread = NULL;
         }
         if (creditsOverlay) { CloseOverlayWindow(); }
-        if (kbHook) UnhookWindowsHookEx(kbHook);
         CloseOverlayWindow();
         if (pMediaPlayer) {
             pMediaPlayer->Shutdown(); pMediaPlayer->Release(); pMediaPlayer = NULL;

@@ -19,6 +19,7 @@ namespace WoWLauncher
         private RegistryKey buildListKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BuildList", true);
         private RegistryKey debugKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true);
         private RegistryKey soundKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound", true);
+        private RegistryKey volumeKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound\Volume", true);
         [StructLayout(LayoutKind.Sequential)]
         public struct DEVMODE
         {
@@ -66,11 +67,6 @@ namespace WoWLauncher
                 MessageBox.Show(localizedMessage, Program.Interface["dir_warning_error"], MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Environment.Exit(0);
             }
-            if (File.Exists("_alttab_exit.txt"))
-            {
-                if (MessageBox.Show(Program.Interface["alt_tab"], Program.Interface["alt_tab_error"], MessageBoxButtons.YesNo) == DialogResult.Yes) { launchGame(); }
-                File.Delete("_alttab_exit.txt");
-            }
             // TODO : add tweak key creation below and check what happens if it doesn't exist when altering settings etc
             // TODO : or just repopulate every registry entry
             if (mainKey == null) // set default registry settings which are required for the launcher, the rest are created when the game starts.
@@ -98,6 +94,7 @@ namespace WoWLauncher
                 mainKey.SetValue("Timer Enable", "0");
                 // default difficulty settings
                 mainKey.SetValue("Difficulty", "Medium");
+                volumeKey.SetValue("CD-Focus", 1, RegistryValueKind.DWord);
                 battleKey.SetValue("EnableFogOfWar", "1");
                 battleKey.SetValue("Damage reduction divisor", "500");
             }
@@ -245,7 +242,7 @@ namespace WoWLauncher
             if ((int)mainKey.GetValue("Enable Network Version")! == 1) { checkBox1.Checked = true; }
             if (Convert.ToInt32(mainKey.GetValue("Full Screen")) == 1) { checkBox2.Checked = true; }
             checkBox3.Checked = Convert.ToInt32(battleKey.GetValue("EnableFogOfWar")) == 1; // for restore default settings
-            checkBox5.Checked = File.Exists("music_focus.txt"); //music playback when out of focus
+            checkBox5.Checked = (int)volumeKey.GetValue("CD-Focus")! == 1; //music playback when out of focus
             if (File.Exists("DAT\\cd_bd1.spr")) { checkBox6.Checked = true; } // enhanced assets enabled
             checkBox7.Checked = Convert.ToInt32(debugKey.GetValue("Enemy Visible")) == 1; // for restore default settings
             foreach (string res in comboBox2.Items)
@@ -447,7 +444,19 @@ namespace WoWLauncher
             else { Close(); }
         }
         private void checkBox1_CheckedChanged(object sender, EventArgs e) { mainKey.SetValue("Enable Network Version", checkBox1.Checked ? 1 : 0); }
-        private void checkBox2_CheckedChanged(object sender, EventArgs e) { mainKey.SetValue("Full Screen", checkBox2.Checked ? "1" : "0"); }
+        private void checkBox2_CheckedChanged(object sender, EventArgs e)
+        {
+            if(checkBox2.Checked)
+            {
+                File.Move("ddraw-off.dll", "ddraw.dll");
+                mainKey.SetValue("Full Screen", "1");
+            }
+            else
+            {
+                File.Move("ddraw.dll", "ddraw-off.dll");
+                mainKey.SetValue("Full Screen", "0");
+            }
+        }
         private void checkBox3_CheckedChanged(object sender, EventArgs e) { battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? "1" : "0"); }
         // resolution combobox
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
@@ -609,22 +618,7 @@ namespace WoWLauncher
             form.Move += (s, args) => { if (this.Location != form.Location) { this.Location = form.Location; } };
         }
         // music focus checkbox
-        private void checkBox5_CheckedChanged(object sender, EventArgs e)
-        {
-            if (checkBox2.Checked)
-            {
-                if (MessageBox.Show(Program.Interface["fullscreen_disable"], Program.Interface["fullscreen_detected"], MessageBoxButtons.YesNo) == DialogResult.No)
-                {
-                    checkBox5.CheckedChanged -= checkBox5_CheckedChanged!;
-                    checkBox5.Checked = false;
-                    checkBox5.CheckedChanged += checkBox5_CheckedChanged!;
-                    return;
-                }
-                checkBox2.Checked = false;
-            }
-            if (checkBox5.Checked) { File.Move("no_music_focus.txt", "music_focus.txt"); }
-            else { File.Move("music_focus.txt", "no_music_focus.txt"); }
-        }
+        private void checkBox5_CheckedChanged(object sender, EventArgs e) { volumeKey.SetValue("CD-Focus", checkBox5.Checked ? 1 : 0, RegistryValueKind.DWord); }
         // enable or disable hd upscale
         private string[] upscaledFiles = new string[] {
             "cd_bd1.spr", "cd_bd2.spr", "cd_bd3.spr", "cd_bd4.spr", "cd_bd5.spr", "cd_bd6.spr", "cd_bd7.spr",
