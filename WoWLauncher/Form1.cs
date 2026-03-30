@@ -1,11 +1,40 @@
+using IniParser;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 namespace WoWLauncher
 {
     public partial class Form1 : Form
     {
+        // overclocked resolutions through cnc-ddraw.dll
+        private Dictionary<string, string> resolutionMap = new Dictionary<string, string>
+        {
+            // 16:9 Mappings
+            { "2048x1152     (16:9)", "1920,1080" },
+            { "2560x1440     (16:9)", "1920,1080" },
+            { "1620x2880     (16:9)", "1920,1080" },
+            { "1800x3200     (16:9)", "1920,1080" },
+            { "2160x3840     (16:9)", "1920,1080" },
+            { "2880x5120     (16:9)", "1920,1080" },
+            { "4320x7680     (16:9)", "1920,1080" },
+            // 16:10 Mappings
+            { "1920x1200     (16:10)", "1680,1050" },
+            { "1600x2560     (16:10)", "1680,1050" },
+            { "1800x2880     (16:10)", "1680,1050" },
+            { "2400x3840     (16:10)", "1680,1050" },
+            // 4:3 Mappings
+            { "1600x1200     (4:3)", "1152,864" },
+            { "1536x2048     (4:3)", "1152,864" },
+            { "2100x2800     (4:3)", "1152,864" },
+            { "2400x3200     (4:3)", "1152,864" },
+            // 15:9 Mappings
+            { "1200x2000     (15:9)", "1280,768" },
+            // 5:4 Mappings
+            { "2048x2560     (5:4)", "1600,1024" }
+        };
+        //
         private bool config; // are settings open or not
         private int resolution; // temp resolution combobox index for swapping files in future versions
         private List<string> keptResolutions = new List<string>(); // keep listed resolutions for future versions
@@ -157,6 +186,20 @@ namespace WoWLauncher
             List<string> supported = GetSupportedResolutions();
             List<string> matchedResolutions = supportedResolutions.Where(sr => supported.Any(r => sr.Contains(r))).ToList();
             foreach (string resolution in matchedResolutions) { comboBox2.Items.Add(resolution); keptResolutions.Add(resolution.Split(' ')[0]); } // list and keep only supported resolutions for later use
+            // overclocked resolutions
+            foreach (var entry in resolutionMap)
+            {
+                string rawRes = entry.Key.Split(' ')[0];
+                var dims = rawRes.Split('x');
+                if (int.TryParse(dims[0], out int w) && int.TryParse(dims[1], out int h))
+                {
+                    if (supported.Contains(rawRes) && (w > 1920 || h > 1080))
+                    {
+                        comboBox2.Items.Add(entry.Key);
+                    }
+                }
+            }
+            // normal code
             comboBox4.Items.Add(Program.Interface["easy"]);
             comboBox4.Items.Add(Program.Interface["medium"]);
             comboBox4.Items.Add(Program.Interface["hard"]);
@@ -481,7 +524,32 @@ namespace WoWLauncher
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (resolution == comboBox2.SelectedIndex) { return; }
-            string screenSize = comboBox2.SelectedItem!.ToString()!.Replace("x", ",").Split(' ')[0]; // convert to the format used in the registry
+            string overclocked = comboBox2.SelectedItem!.ToString()!;
+            string screenSize = overclocked.Replace("x", ",").Split(' ')[0]; // convert to the format used in the registry
+            // overclocked resolutions
+            IniFile iniFile = new IniFile("ddraw.ini");
+            string width = iniFile.Read("width", "ddraw");
+            string height = iniFile.Read("height", "ddraw");
+            string filter = iniFile.Read("d3d9_filter", "ddraw");
+            if (resolutionMap.ContainsKey(overclocked)) // map overclocked to regular screen size here
+            {
+                // set ini options
+                iniFile.Write("width", $"{screenSize.Split(',')[0]}", "ddraw");
+                iniFile.Write("height", $"{screenSize.Split(',')[1]}", "ddraw");
+                iniFile.Write("d3d9_filter", "3", "ddraw");
+                screenSize = resolutionMap[overclocked]; // set to resolution to scale from
+            }
+            else
+            {
+                // check if overclocked was set previously and isn't set now = unset etc
+                if (filter != "") // reset values to nothing if they are already set
+                {
+                    iniFile.Write("width", "0", "ddraw");
+                    iniFile.Write("height", "0", "ddraw");
+                    iniFile.Write("d3d9_filter", "", "ddraw");
+                }
+            }
+            // continue current code
             registryCompare(screenKey, "Size", screenSize);                 // "Size" is the in-game resolution
             registryCompare(screenKey, "Support screen size", screenSize);  // "Support screen size" is the resolution used by the main menu
             registryCompare(buildListKey, "Top", ((Int32.Parse(screenSize.Split(',')[1]) - 340) / 2).ToString()); // build list resolution adjustment
@@ -503,7 +571,7 @@ namespace WoWLauncher
             }
             // larger resolution warmap files
             string[] resolutionFiles = new string[] { "HWM.SPR", "HWMHI.SPR", "MWM.SPR", "MWMHI.SPR" };
-            if (screenSize.Split(",")[0] == "1600" || screenSize.Split(",")[0] == "1680" || screenSize.Split(",")[0] == "1920")
+            if (screenSize.Split(",")[0] == "1600" || screenSize.Split(",")[0] == "1680" || screenSize.Split(",")[0] == "1920" )
             {
                 if (File.Exists("DAT\\MWM.SPR") && !File.Exists("DAT\\NORM-MWM.SPR")) // high resolutions check
                 {
