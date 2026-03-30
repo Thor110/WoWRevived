@@ -9,17 +9,16 @@ namespace WoWLauncher
         private bool config; // are settings open or not
         private int resolution; // temp resolution combobox index for swapping files in future versions
         private List<string> keptResolutions = new List<string>(); // keep listed resolutions for future versions
-        private static RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
-        private RegistryKey mainKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true);
-        private RegistryKey tweakKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true);
-        private RegistryKey screenKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Screen", true);
-        private RegistryKey battleKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true);
-        private RegistryKey researchKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true);
-        private RegistryKey optionsKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Options", true);
-        private RegistryKey buildListKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BuildList", true);
-        private RegistryKey debugKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true);
-        private RegistryKey soundKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound", true);
-        private RegistryKey volumeKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound\Volume", true);
+        private RegistryKey mainKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
+        private RegistryKey tweakKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true)!;
+        private RegistryKey screenKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Screen", true)!;
+        private RegistryKey battleKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true)!;
+        private RegistryKey researchKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true)!;
+        private RegistryKey optionsKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Options", true)!;
+        private RegistryKey buildListKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BuildList", true)!;
+        private RegistryKey debugKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true)!;
+        private RegistryKey soundKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound", true)!;
+        private RegistryKey volumeKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound\Volume", true)!;
         [StructLayout(LayoutKind.Sequential)]
         public struct DEVMODE
         {
@@ -69,6 +68,7 @@ namespace WoWLauncher
             }
             // TODO : add tweak key creation below and check what happens if it doesn't exist when altering settings etc
             // TODO : or just repopulate every registry entry
+            RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             if (mainKey == null) // set default registry settings which are required for the launcher, the rest are created when the game starts.
             {
                 mainKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
@@ -80,6 +80,7 @@ namespace WoWLauncher
                 buildListKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BuildList", true)!;
                 debugKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true)!;
                 soundKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound", true)!;
+                volumeKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound\Volume", true);
                 // these values are set because the launcher accesses them.
                 mainKey.SetValue("Enable Network Version", 0, RegistryValueKind.DWord);
                 mainKey.SetValue("Full Screen", "1");
@@ -94,9 +95,27 @@ namespace WoWLauncher
                 mainKey.SetValue("Timer Enable", "0");
                 // default difficulty settings
                 mainKey.SetValue("Difficulty", "Medium");
-                volumeKey.SetValue("CD-Focus", 1, RegistryValueKind.DWord);
+                tweakKey.SetValue("AI Aggression Value", "0.500000");
+                tweakKey.SetValue("AI Invasion Threshold PC", "150.000000");
+                tweakKey.SetValue("Max units in sector", "15");
+                tweakKey.SetValue("Pod Interval (hours)", "24");
+                tweakKey.SetValue("AI Hours Per Turn", "5");
+                tweakKey.SetValue("Max boats in sector", "5");
+                tweakKey.SetValue("AI strength table Human multiplier", "1.000000");
+                tweakKey.SetValue("AI strength table Martian multiplier", "2.000000");
                 battleKey.SetValue("EnableFogOfWar", "1");
                 battleKey.SetValue("Damage reduction divisor", "500");
+                researchKey.SetValue("Human Open Rate", "20");
+                researchKey.SetValue("Martian Open Rate", "10");
+                optionsKey.SetValue("Show lights", 1, RegistryValueKind.DWord);
+                screenKey.SetValue("BPP", 16, RegistryValueKind.DWord);
+                buildListKey.SetValue("Top", "70");
+                debugKey.SetValue("Enemy Visible", "0");
+                soundKey.SetValue("Inner Ambient border", "-640,-400");
+                soundKey.SetValue("Inner border", "-320,-200");
+                soundKey.SetValue("Outer Ambient border", "-960,-600");
+                soundKey.SetValue("Outer border", "-640,-400");
+                volumeKey.SetValue("CD-Focus", 0, RegistryValueKind.DWord);
             }
             registryCompare(mainKey, "CD Path", AppDomain.CurrentDomain.BaseDirectory); // update the cd path in the registry automatically.
             registryCompare(mainKey, "Install Path", AppDomain.CurrentDomain.BaseDirectory); // update the install path in the registry automatically.
