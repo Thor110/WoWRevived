@@ -15,10 +15,6 @@ The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War O
 
 LANGUAGES : Language packs are now stand-alone releases.
 
-COMPATIBILITY : Windows 11 users might have to adjust the properties for "WoW_patched.exe" by setting compatibility to "Windows XP Service Pack 3" as well as setting the colour depth to "16-bit (65536) colour".
-
-IE : Right click "wow_patched.exe" and go to the compatibility tab, then adjust the settings accordingly.
-
 ADDITIONAL : The launcher will automatically request administrator permissions to ensure registry settings are correctly applied.
 
 NOTE : If you choose to make a language patch using the text editor, feel free to send the "TEXT.ojd" file my way and I will add it to the releases.

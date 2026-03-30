@@ -47,6 +47,13 @@ namespace WoWLauncher
             while (EnumDisplaySettings(null!, i++, ref devMode)) { resolutions.Add($"{devMode.dmPelsWidth}x{devMode.dmPelsHeight}"); }
             return resolutions.OrderBy(r => int.Parse(r.Split('x')[0])).ToList();
         }
+        public static bool IsWindows11()
+        {
+            var os = Environment.OSVersion;
+            // Both Win 10 and 11 are major version 10
+            // Windows 11 is Build 22000 or higher
+            return os.Platform == PlatformID.Win32NT && os.Version.Build >= 22000;
+        }
         public Form1()
         {
             InitializeComponent();
@@ -85,6 +92,7 @@ namespace WoWLauncher
                 mainKey.SetValue("Thread Enable", "1");
                 mainKey.SetValue("Timer Enable", "0");
                 // default difficulty settings
+                mainKey.SetValue("Difficulty", "Medium");
                 battleKey.SetValue("EnableFogOfWar", "1");
                 battleKey.SetValue("Damage reduction divisor", "500");
                 // alternatively I could create whatever values we use here
@@ -134,9 +142,64 @@ namespace WoWLauncher
             comboBox4.Items.Add(Program.Interface["medium"]);
             comboBox4.Items.Add(Program.Interface["hard"]);
             comboBox4.Items.Add(Program.Interface["extreme"]);
+            string exePath = Path.GetFullPath("WoW_patched.exe");
+            RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers");
+            string current = key?.GetValue(exePath) as string ?? "";
+            if (!current.Contains("16BITCOLOR") || !current.Contains("WINXPSP3") && IsWindows11())
+            {
+                var flags = current.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                if (!flags.Contains("~")) flags.Insert(0, "~");
+                if (!flags.Contains("WINXPSP3") && IsWindows11()) flags.Add("WINXPSP3"); // only for W11
+                if (!flags.Contains("16BITCOLOR")) flags.Add("16BITCOLOR");
+                key?.SetValue(exePath, string.Join(" ", flags));
+            }
+            key?.Close();
+            if (IsWindows11()) { EnsureDirectPlay(); }
             InitializeRegistry();
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(PictureBox), typeof(Label), typeof(Button) });
+        }
+        // Helper to enable DirectPlay silently
+        private void EnsureDirectPlay()
+        {
+            using (RegistryKey? dpKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\DirectPlay", false))
+            {
+                object? value = dpKey?.GetValue("Installed");
+                if (value == null || (int)value != 1)
+                {
+                    // Trigger DISM
+                    ProcessStartInfo psi = new ProcessStartInfo
+                    {
+                        FileName = "dism.exe",
+                        Arguments = "/online /enable-feature /featurename:LegacyComponents /featurename:DirectPlay /all /norestart",
+                        UseShellExecute = true,
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        Verb = "runas"
+                    };
+
+                    try
+                    {
+                        using (Process? proc = Process.Start(psi))
+                        {
+                            proc?.WaitForExit();
+                            // --- THE FIX: Manually set the registry flag so the loop breaks ---
+                            RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
+                            RegistryKey newKey = baseKey.CreateSubKey(@"SOFTWARE\Microsoft\DirectPlay", true);
+                            newKey.SetValue("Installed", 1, RegistryValueKind.DWord);
+                            newKey?.Close();
+                            // Notify the user after a successful DISM run
+                            MessageBox.Show(Program.Interface["directplay_installed"],
+                                            Program.Interface["directplay_title"],
+                                            MessageBoxButtons.OK,
+                                            MessageBoxIcon.Information);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("DirectPlay Automation Failed: " + ex.Message);
+                    }
+                }
+            }
         }
         private void ApplyLocalization()
         {
@@ -160,6 +223,8 @@ namespace WoWLauncher
             button5.Text = Program.Interface["advanced"];
             button6.Text = Program.Interface["tools"];
             //button7.Text = Program.Interface["keyboard"];
+            button8.Text = Program.Interface["instruction_button"];
+            if(Program.CurrentLanguage == "German" || Program.CurrentLanguage == "Spanish") { button8.Enabled = false; }
             checkBox5.AccessibleDescription = Program.Interface["music_playback_description"];
             checkBox5.Text = Program.Interface["music_playback"];
             checkBox6.AccessibleDescription = Program.Interface["enhanced_assets_description"];
@@ -193,9 +258,9 @@ namespace WoWLauncher
             if (comboBox4.Items.Count > 3) { comboBox4.Items.Remove(Program.Interface["custom"]); } // remove custom from the combo box on return
             switch ((string)mainKey.GetValue("Difficulty")!)
             {
-                case "Easy":    comboBox4.SelectedIndex = 0; break;
-                case "Medium":  comboBox4.SelectedIndex = 1; break;
-                case "Hard":    comboBox4.SelectedIndex = 2; break;
+                case "Easy": comboBox4.SelectedIndex = 0; break;
+                case "Medium": comboBox4.SelectedIndex = 1; break;
+                case "Hard": comboBox4.SelectedIndex = 2; break;
                 case "Extreme": comboBox4.SelectedIndex = 3; break;
                 case "Custom":
                     comboBox4.Items.Add(Program.Interface["custom"]);
@@ -349,6 +414,7 @@ namespace WoWLauncher
             button5.Visible = true;
             button6.Visible = false;
             //button7.Visible = false;      // keyboard shortcut remapper cancelled
+            button8.Visible = false;
         }
         /// This is the event handler for the "Exit" button
         private void button4_Click(object sender, EventArgs e)
@@ -373,29 +439,12 @@ namespace WoWLauncher
                 button5.Visible = false;
                 button6.Visible = true;
                 //button7.Visible = true;   // keyboard shortcut remapper cancelled
+                button8.Visible = true;
             }
             else { Close(); }
         }
         private void checkBox1_CheckedChanged(object sender, EventArgs e) { mainKey.SetValue("Enable Network Version", checkBox1.Checked ? 1 : 0); }
-        private void checkBox2_CheckedChanged(object sender, EventArgs e)
-        {
-            mainKey.SetValue("Full Screen", checkBox2.Checked ? "1" : "0");
-            string exePath = Path.GetFullPath("WoW_patched.exe");
-            RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers");
-            string existing = key?.GetValue(exePath) as string ?? "";
-            if (checkBox2.Checked && existing.Contains("16BITCOLOR")) // Set the registry key to enable compatibility mode for 16-bit color
-            {
-                string updated = string.Join(" ", existing!.Split(new[] { ' ' }).Where(flag => !string.Equals(flag, "16BITCOLOR")));
-                if (string.IsNullOrWhiteSpace(updated) || updated == "~") { key?.DeleteValue(exePath, false); } // because windows adds this ~
-                else { key?.SetValue(exePath, updated); } // retain any other user options
-            }
-            else if (!checkBox2.Checked && !existing.Contains("16BITCOLOR")) // Add the compatibility mode setting if unchecked
-            {
-                string updated = existing + " " + "16BITCOLOR"; // ensures "16BITCOLOR" is recorded as a string literal and gets interned by the compiler
-                key?.SetValue(exePath, updated);
-            }
-            key?.Close();
-        }
+        private void checkBox2_CheckedChanged(object sender, EventArgs e) { mainKey.SetValue("Full Screen", checkBox2.Checked ? "1" : "0"); }
         private void checkBox3_CheckedChanged(object sender, EventArgs e) { battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? "1" : "0"); }
         // resolution combobox
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
@@ -425,29 +474,29 @@ namespace WoWLauncher
             string[] resolutionFiles = new string[] { "HWM.SPR", "HWMHI.SPR", "MWM.SPR", "MWMHI.SPR" };
             if (screenSize.Split(",")[0] == "1600" || screenSize.Split(",")[0] == "1680" || screenSize.Split(",")[0] == "1920")
             {
-                if (File.Exists("DAT\\MWM.SPR"))
+                if (File.Exists("DAT\\MWM.SPR") && !File.Exists("DAT\\NORM-MWM.SPR")) // high resolutions check
                 {
-                    File.Move("DAT\\MWM.SPR", $"DAT\\NORM-MWM.SPR"); // just for MWM - EUROPE
-                }
-                foreach (string file in resolutionFiles)
-                {
-                    if (File.Exists("DAT\\TEMP-" + file))
+                    foreach (string file in resolutionFiles)
                     {
-                        File.Move("DAT\\TEMP-" + file, $"DAT\\" + file);
+                        if (File.Exists("DAT\\TEMP-" + file))
+                        {
+                            File.Move("DAT\\TEMP-" + file, $"DAT\\" + file);
+                        }
                     }
+                    File.Move("DAT\\MWM.SPR", $"DAT\\NORM-MWM.SPR"); // just for MWM - EUROPE
                 }
             }
             else
             {
-                foreach (string file in resolutionFiles)
+                if (File.Exists("DAT\\NORM-MWM.SPR") && !File.Exists("DAT\\TEMP-MWM.SPR")) // low resolutions check
                 {
-                    if (File.Exists("DAT\\" + file))
+                    foreach (string file in resolutionFiles)
                     {
-                        File.Move("DAT\\" + file, $"DAT\\TEMP-" + file);
+                        if (File.Exists("DAT\\" + file))
+                        {
+                            File.Move("DAT\\" + file, $"DAT\\TEMP-" + file);
+                        }
                     }
-                }
-                if (File.Exists("DAT\\NORM-MWM.SPR"))
-                {
                     File.Move("DAT\\NORM-MWM.SPR", $"DAT\\MWM.SPR"); // just for MWM - EUROPE
                 }
             }
@@ -600,5 +649,12 @@ namespace WoWLauncher
         }
         // Debug "Enemy Visible" value determines if enemy units are visible on the warmap
         private void checkBox7_CheckedChanged(object sender, EventArgs e) { registryCompare(debugKey, "Enemy Visible", checkBox7.Checked ? "1" : "0"); }
+        // open game manual
+        private void button8_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show(Program.Interface["instruction_readme"]);
+            ProcessStartInfo psi = new ProcessStartInfo { FileName = Program.Interface["instruction_location"], UseShellExecute = true };
+            Process.Start(psi);
+        }
     }
 }

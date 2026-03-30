@@ -47,6 +47,7 @@
             checkBox5 = new CheckBox();
             checkBox6 = new CheckBox();
             checkBox7 = new CheckBox();
+            button8 = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -198,7 +199,7 @@
             // button7
             // 
             button7.Enabled = false;
-            button7.Location = new Point(122, 412);
+            button7.Location = new Point(228, 441);
             button7.Name = "button7";
             button7.Size = new Size(195, 23);
             button7.TabIndex = 19;
@@ -243,11 +244,22 @@
             checkBox7.UseVisualStyleBackColor = true;
             checkBox7.Visible = false;
             // 
+            // button8
+            // 
+            button8.Location = new Point(122, 412);
+            button8.Name = "button8";
+            button8.Size = new Size(195, 23);
+            button8.TabIndex = 23;
+            button8.Text = "Instruction Manual";
+            button8.UseVisualStyleBackColor = true;
+            button8.Click += button8_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(424, 504);
+            Controls.Add(button8);
             Controls.Add(checkBox1);
             Controls.Add(checkBox7);
             Controls.Add(checkBox6);
@@ -295,5 +307,6 @@
         private CheckBox checkBox5;
         private CheckBox checkBox6;
         private CheckBox checkBox7;
+        private Button button8;
     }
 }
