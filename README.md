@@ -52,8 +52,11 @@ The road map for this project.
 	- Custom keyboard shortcut settings. (WIP - cancelled)
 	- Automatic regeneration of base registry settings, making the installation portable.
 	- Automatic cleanup of unnecessary files and Smackw32.dll moved to main directory.
-	- Custom pre-set difficulty settings. (Easy, Medium[default], Hard)
+	- Custom pre-set difficulty settings. (Easy, Medium[default], Hard, Extreme)
 	- Dynamic asset swapping pipeline with custom assets curated for each supported resolution.
+	- Automatic Windows 11 DirectPlay setup.
+	- Automatic Compatibility settings applied.
+	- Inner and outer, regular and ambient sound borders now updated through the launcher according to the users chosen resolution.
 	- New working resolutions added.
 		- 1280x768 &nbsp;&nbsp;(15:9)
 		- 1280x1024	(5:4)
@@ -109,7 +112,8 @@ The road map for this project.
 - ✅ 11 : No-CD Music Fix ( 99% Complete )
 	- Uses a winmm shim that allows for localised audio playback.
 	- Added functionality to allow music playback to continue when not in fullscreen and the window loses focus.
-	- Permanence added to the "In-Game Music Enabled/Disabled" option through the winmm shim.
+	- Persistence added to the "In-Game Music Enabled/Disabled" and sound options through the winmm shim.
+	- Master volume now applies to music playback.
 	- Known "bugs" which I consider non-issues for the time-being. ( The remaining 1% )
 		- 1\. The counter increases indefinitely.
 		- 2\. Doesn't progress to the next track when a track finishes in the CD player menu.
