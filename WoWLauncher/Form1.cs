@@ -95,8 +95,6 @@ namespace WoWLauncher
                 mainKey.SetValue("Difficulty", "Medium");
                 battleKey.SetValue("EnableFogOfWar", "1");
                 battleKey.SetValue("Damage reduction divisor", "500");
-                // alternatively I could create whatever values we use here
-                MessageBox.Show(Program.Interface["registry_missing"]);
             }
             registryCompare(mainKey, "CD Path", AppDomain.CurrentDomain.BaseDirectory); // update the cd path in the registry automatically.
             registryCompare(mainKey, "Install Path", AppDomain.CurrentDomain.BaseDirectory); // update the install path in the registry automatically.
