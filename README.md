@@ -30,6 +30,7 @@ The road map for this project.
 	- Missing entry created for the Credits button in the options menu.
 	- Build List screen location is now dynamically set as per the resolution setting chosen in the launcher.
 	- Missing pixels have been restored for some building sprites.
+	- Alt-tabbing now works as cnc-ddraw is working with the latest version of the smacker wrapper.
 	- Various executable edits:
 		- 1\. 1 byte to skip the "NO CD INSERTED" message in the CD Player menu.
 		- 2\. 2 bytes to skip creation of the 8/16 bit colour toggles in the "Display Settings" menu.
@@ -111,7 +112,7 @@ The road map for this project.
 	- .ojd files can be parsed, but there is still more decoding to do.
 - ✅ 11 : No-CD Music Fix ( 99% Complete )
 	- Uses a winmm shim that allows for localised audio playback.
-	- Added functionality to allow music playback to continue when not in fullscreen and the window loses focus.
+	- Added functionality to allow music playback to continue when the window loses focus or is minimised.
 	- Persistence added to the "In-Game Music Enabled/Disabled" and sound options through the winmm shim.
 	- Master volume now applies to music playback.
 	- Known "bugs" which I consider non-issues for the time-being. ( The remaining 1% )
@@ -120,8 +121,6 @@ The road map for this project.
 - [✅ 12 : Video Playback Intercept](#video-playback-intercept) ( 100% Complete )
 	- Custom Smackw32.dll that plays upscaled videos at the games resolution.
 	- Simple 1920x1080 upscales of all the original videos which get scaled to the games resolution.
-	- Alt-Tab detection when in fullscreen used to close the game automatically to save the user time encountering an error.
-		- This is because alt-tabbing is broken in the game by default.
 	- Includes code for hijacking the credits sequence so that it doesn't crash and creating an overlay to display the credits sequence.
 - [❌ 13 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 90% Complete )
 	- Resolution agnostic custom backgrounds have been made but have yet to be finished.
