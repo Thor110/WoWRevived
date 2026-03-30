@@ -533,6 +533,7 @@ namespace WoWLauncher
             string filter = iniFile.Read("d3d9_filter", "ddraw");
             if (resolutionMap.ContainsKey(overclocked)) // map overclocked to regular screen size here
             {
+                MessageBox.Show("Overclocked resolutions only work in fullscreen currently, please enable it or the game will launch at the resolution it is scaling from.");
                 // set ini options
                 iniFile.Write("width", $"{screenSize.Split(',')[0]}", "ddraw");
                 iniFile.Write("height", $"{screenSize.Split(',')[1]}", "ddraw");
