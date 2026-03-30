@@ -374,4 +374,6 @@ Thanks to yereverluvinunclebert for creating the front of the filing cabinet dra
 
 Thanks to Z-Fighter for help testing the project and providing a never-ending supply of screenshots for reference which have saved me a lot of time not needing to fire the game up to see how something should look, as well as for finding a crash in the original game that would occur when using infiltration if lights are disabled in the options.
 
+Thanks to FunkyFr3sh for cnc-ddraw, which provides the DirectDraw translation layer for modern systems. See ddraw-license.txt for the full MIT license.
+
 Thanks to the Discord community for supporting the project and helping out with testing.
