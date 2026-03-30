@@ -13,17 +13,13 @@ DWORD totalElapsedBeforePause = 0;
 bool isPaused = false;
 DWORD lastOpenTime = 0;
 HWAVEOUT hWaveOut = NULL;
-WAVEHDR waveHdr = {};
-HGLOBAL hWaveData = NULL;
 FILE* logFile = nullptr;
-bool debug = false; // true for logging
+bool debug = true; // true for logging
 bool musicFocus = (GetFileAttributesA("music_focus.txt") != INVALID_FILE_ATTRIBUTES); // allow music to continue playing while the window is out of focus
-int* pGameMusicEnabled = (int*)0x004B8A88; // detect if music is enabled or disabled
 // Pointers to the game's internal Menu State
 volatile DWORD* pMenuState1 = (volatile DWORD*)0x4D1490;
 // The Control ID for the CD Player menu
 const DWORD CD_PLAYER_MENU_ID = 0x803E;
-
 CRITICAL_SECTION audioLock;
 
 // === Logging === //
@@ -55,6 +51,11 @@ extern "C" DLLEXPORT DWORD WINAPI _imeGetTime(void) { return timeGetTime(); }
 bool seekAfterOpen = false;
 DWORD lastPlayTime = 0;
 bool isNetworkVersion = false;
+//float masterVolume = 1.0f; // flt_4CA870
+//float ambientVolume = 1.0f; // flt_4CA858
+//float speechVolume = 1.0f; // unk_4CA86C
+DWORD cdState = 1;
+volatile bool isStopping = false;
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
@@ -64,18 +65,58 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		GetModuleFileNameA(NULL, exeName, MAX_PATH);
 		isNetworkVersion = (strstr(exeName, "WoW_network") != NULL);
 		InitializeCriticalSection(&audioLock);
-		// LOAD STATE: Check which file currently exists
-		if (GetFileAttributesA("music_disabled.txt") != INVALID_FILE_ATTRIBUTES) {
-			*pGameMusicEnabled = 0; // Force UI to "Off"
+		HKEY hKey;
+		cdState = 1; // Default to ON
+
+		if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000\\Sound\\Volume", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+			char buffer[256];
+			DWORD type = 0;
+			DWORD bufferSize;
+
+			auto ReadFloat = [&](const char* valueName, DWORD addr) {
+				bufferSize = sizeof(buffer);
+				if (RegQueryValueExA(hKey, valueName, NULL, &type, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS) {
+					buffer[min(bufferSize, (DWORD)255)] = '\0';
+					*(float*)addr = (float)atof(buffer);
+				}
+			};
+
+			ReadFloat("Master", 0x004CA870);
+			ReadFloat("Ambient", 0x004CA858);
+			ReadFloat("Speech", 0x004CA86C);
+
+			DWORD cdSize = sizeof(DWORD);
+			if (RegQueryValueExA(hKey, "CD", NULL, &type, (LPBYTE)&cdState, &cdSize) == ERROR_SUCCESS) {
+				*(int*)0x004B8A88 = (int)cdState;
+			}
+			RegCloseKey(hKey);
 		}
 	}
 	else if (fdwReason == DLL_PROCESS_DETACH) {
-		// SAVE STATE: When the game closes, check the current UI value
-		if (*pGameMusicEnabled == 0) {
-			MoveFileA("music_enabled.txt", "music_disabled.txt");
-		}
-		else {
-			MoveFileA("music_disabled.txt", "music_enabled.txt");
+		// Volume Persistence (Master, Ambient, Speech, In-Game CD Music)
+		HKEY hKey;
+		if (RegCreateKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000\\Sound\\Volume",
+			0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+
+			char volBuffer[32];
+
+			// Master Volume
+			sprintf(volBuffer, "%f", *(float*)0x004CA870);
+			RegSetValueExA(hKey, "Master", 0, REG_SZ, (LPBYTE)volBuffer, (DWORD)(strlen(volBuffer) + 1));
+
+			// Ambient Volume
+			sprintf(volBuffer, "%f", *(float*)0x004CA858);
+			RegSetValueExA(hKey, "Ambient", 0, REG_SZ, (LPBYTE)volBuffer, (DWORD)(strlen(volBuffer) + 1));
+
+			// Speech Volume
+			sprintf(volBuffer, "%f", *(float*)0x004CA86C);
+			RegSetValueExA(hKey, "Speech", 0, REG_SZ, (LPBYTE)volBuffer, (DWORD)(strlen(volBuffer) + 1));
+
+			// In-Game CD Music
+			DWORD cdState = (DWORD)*(int*)0x004B8A88;
+			RegSetValueExA(hKey, "CD", 0, REG_DWORD, (const BYTE*)&cdState, sizeof(DWORD));
+
+			RegCloseKey(hKey);
 		}
 		DeleteCriticalSection(&audioLock);
 	}
@@ -98,25 +139,34 @@ uint32_t GetWavDuration(const char* filename) {
 	return (uint32_t)((double)dataSize / byteRate * 1000);
 }
 
+#define CHUNK_SIZE 8192  // bytes per chunk — adjust for latency vs responsiveness
+#define NUM_BUFFERS 2    // double buffering
+
+WAVEHDR waveHdrs[NUM_BUFFERS] = {};
+HGLOBAL hWaveData[NUM_BUFFERS] = {};
+LPSTR pAudioData = nullptr;   // full decoded PCM
+DWORD audioDataSize = 0;
+DWORD audioReadPos = 0;
+
 // StopAudio_Locked: must be called with audioLock already held.
 // Separating the locked body lets PlayWav_Locked reuse it without re-entering.
 static void StopAudio_Locked() {
-	if (hWaveOut) {
-		waveOutReset(hWaveOut);
-		int timeout = 0;
-		while (!(waveHdr.dwFlags & WHDR_DONE) && timeout < 100) {
-			Sleep(1);
-			timeout++;
-		}
-		MMRESULT res = waveOutUnprepareHeader(hWaveOut, &waveHdr, sizeof(WAVEHDR));
-		if (res != MMSYSERR_NOERROR) Log("StopAudio: Unprepare failed: %d", res);
-		waveOutClose(hWaveOut);
-		hWaveOut = NULL;
-	}
-	if (hWaveData) {
-		GlobalFree(hWaveData);
-		hWaveData = NULL;
-	}
+    if (hWaveOut) {
+        isStopping = true;        // tell callback to stop queueing
+        waveOutReset(hWaveOut);   // returns all pending buffers
+        for (int b = 0; b < NUM_BUFFERS; b++) {
+            if (waveHdrs[b].dwFlags & WHDR_PREPARED)
+                waveOutUnprepareHeader(hWaveOut, &waveHdrs[b], sizeof(WAVEHDR));
+            if (hWaveData[b]) { GlobalFree(hWaveData[b]); hWaveData[b] = nullptr; }
+            waveHdrs[b] = {};
+        }
+        waveOutClose(hWaveOut);
+        hWaveOut = NULL;
+        isStopping = false;       // reset for next use
+    }
+    if (pAudioData) { GlobalFree(pAudioData); pAudioData = nullptr; }
+    audioDataSize = 0;
+    audioReadPos = 0;
 }
 
 void StopAudio() {
@@ -137,7 +187,7 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	// --- IN-GAME MUSIC OVERRIDE ---
 	// If the user disabled music in the UI, kill any active audio and ignore all MCI spam.
 	// EXCEPTION: If the CD Player menu is currently open, allow MCI commands to pass through.
-	if (*pGameMusicEnabled == 0 && *pMenuState1 != CD_PLAYER_MENU_ID) {
+	if ((int)cdState == 0 && *pMenuState1 != CD_PLAYER_MENU_ID) {
 		StopAudio();
 		return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
 	}
@@ -170,41 +220,78 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
 }
 
-// PlayWav_Locked: must be called with audioLock already held.
+void CALLBACK WaveOutCallback(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2)
+{
+	if (uMsg != WOM_DONE) return;
+	if (isStopping) return;  // bail out during stop/cleanup
+	WAVEHDR* hdr = (WAVEHDR*)dwParam1;
+
+	EnterCriticalSection(&audioLock);
+	if (audioReadPos >= audioDataSize || !hWaveOut) {
+		LeaveCriticalSection(&audioLock);
+		return;
+	}
+
+	DWORD remaining = audioDataSize - audioReadPos;
+	DWORD toWrite = min(remaining, (DWORD)CHUNK_SIZE);
+	float vol = *(float*)0x004CA870;
+
+	// Copy and scale into the buffer
+	int16_t* src = (int16_t*)(pAudioData + audioReadPos);
+	int16_t* dst = (int16_t*)hdr->lpData;
+	DWORD samples = toWrite / sizeof(int16_t);
+	for (DWORD i = 0; i < samples; i++) {
+		int32_t s = (int32_t)(src[i] * vol);
+		if (s > 32767) s = 32767;
+		if (s < -32768) s = -32768;
+		dst[i] = (int16_t)s;
+	}
+
+	audioReadPos += toWrite;
+	hdr->dwBufferLength = toWrite;
+	waveOutPrepareHeader(hWaveOut, hdr, sizeof(WAVEHDR));
+	waveOutWrite(hWaveOut, hdr, sizeof(WAVEHDR));
+	LeaveCriticalSection(&audioLock);
+}
+
 static void PlayWav_Locked(const char* path) {
-	// Stop any existing playback while we still own the lock.
 	StopAudio_Locked();
-	// Read the whole file into memory
+
 	HMMIO hmmio = mmioOpenA((LPSTR)path, NULL, MMIO_READ);
 	if (!hmmio) return;
 
-	MMCKINFO riff = {}, data = {};
+	MMCKINFO riff = {}, fmt = {}, data = {};
 	riff.fccType = mmioFOURCC('W', 'A', 'V', 'E');
 	mmioDescend(hmmio, &riff, NULL, MMIO_FINDRIFF);
-
-	MMCKINFO fmt = {};
 	fmt.ckid = mmioFOURCC('f', 'm', 't', ' ');
 	mmioDescend(hmmio, &fmt, &riff, MMIO_FINDCHUNK);
-
 	WAVEFORMATEX wfx = {};
 	mmioRead(hmmio, (HPSTR)&wfx, sizeof(WAVEFORMATEX));
 	mmioAscend(hmmio, &fmt, 0);
-
 	data.ckid = mmioFOURCC('d', 'a', 't', 'a');
 	mmioDescend(hmmio, &data, &riff, MMIO_FINDCHUNK);
 
-	hWaveData = GlobalAlloc(GMEM_MOVEABLE, data.cksize);
-	LPSTR pData = (LPSTR)GlobalLock(hWaveData);
-	mmioRead(hmmio, pData, data.cksize);
+	// Load full PCM into pAudioData
+	if (pAudioData) { GlobalFree(pAudioData); pAudioData = nullptr; }
+	HGLOBAL hRaw = GlobalAlloc(GMEM_MOVEABLE, data.cksize);
+	pAudioData = (LPSTR)GlobalLock(hRaw);
+	mmioRead(hmmio, pAudioData, data.cksize);
 	mmioClose(hmmio, 0);
+	audioDataSize = data.cksize;
+	audioReadPos = 0;
 
-	waveOutOpen(&hWaveOut, WAVE_MAPPER, &wfx, 0, 0, CALLBACK_NULL);
+	// Open with callback
+	waveOutOpen(&hWaveOut, WAVE_MAPPER, &wfx,
+		(DWORD_PTR)WaveOutCallback, 0, CALLBACK_FUNCTION);
 
-	waveHdr = {};
-	waveHdr.lpData = pData;
-	waveHdr.dwBufferLength = data.cksize;
-	waveOutPrepareHeader(hWaveOut, &waveHdr, sizeof(WAVEHDR));
-	waveOutWrite(hWaveOut, &waveHdr, sizeof(WAVEHDR));
+	// Allocate chunk buffers and prime both
+	for (int b = 0; b < NUM_BUFFERS; b++) {
+		hWaveData[b] = GlobalAlloc(GMEM_MOVEABLE, CHUNK_SIZE);
+		waveHdrs[b].lpData = (LPSTR)GlobalLock(hWaveData[b]);
+		waveHdrs[b].dwBufferLength = CHUNK_SIZE;
+		// Prime by calling the callback logic directly
+		WaveOutCallback(hWaveOut, WOM_DONE, 0, (DWORD_PTR)&waveHdrs[b], 0);
+	}
 }
 
 extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR fdwCommand, DWORD_PTR dwParam)
@@ -212,7 +299,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// --- IN-GAME MUSIC OVERRIDE ---
 	// If the user disabled music in the UI, kill any active audio and ignore all MCI spam.
 	// EXCEPTION: If the CD Player menu is currently open, allow MCI commands to pass through.
-	if (*pGameMusicEnabled == 0 && *pMenuState1 != CD_PLAYER_MENU_ID) {
+	if ((int)cdState == 0 && *pMenuState1 != CD_PLAYER_MENU_ID) {
 		StopAudio();
 		return 0;
 	}
@@ -322,8 +409,23 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 
 	// 6. STATUS
 	if (uMsg == MCI_STATUS) {
-		LPMCI_STATUS_PARMS lpStatus = (LPMCI_STATUS_PARMS)dwParam;
+		if (hWaveOut) {
+			float liveVolume = *(float*)0x004CA870;
 
+			// FORCE a value just to see if the hardware responds at all
+			// If you hardcode this to 0.1f and the music stays loud, 
+			// then waveOutSetVolume is being ignored by the OS.
+			static float lastVol = -1.0f;
+			if (liveVolume != lastVol) {
+				Log("Volume Change Detected in Memory: %f", liveVolume);
+				lastVol = liveVolume;
+
+				WORD volWord = (WORD)(liveVolume * 0xFFFF);
+				DWORD dwVolume = ((DWORD)volWord << 16) | volWord;
+				waveOutSetVolume(NULL, dwVolume);
+			}
+		}
+		LPMCI_STATUS_PARMS lpStatus = (LPMCI_STATUS_PARMS)dwParam;
 		if (lpStatus->dwItem == MCI_STATUS_POSITION) {
 			// Read dwStartTime and currentTrackLength inside the lock so a concurrent
 			// MCI_STOP can't zero dwStartTime mid-calculation and produce a wrapped
