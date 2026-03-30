@@ -9,15 +9,16 @@ namespace WoWLauncher
         private bool config; // are settings open or not
         private int resolution; // temp resolution combobox index for swapping files in future versions
         private List<string> keptResolutions = new List<string>(); // keep listed resolutions for future versions
-        private RegistryKey mainKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
-        private RegistryKey tweakKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true)!;
-        private RegistryKey screenKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Screen", true)!;
-        private RegistryKey battleKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true)!;
-        private RegistryKey researchKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true)!;
-        private RegistryKey optionsKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Options", true)!;
-        private RegistryKey buildListKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BuildList", true)!;
-        private RegistryKey debugKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true)!;
-        private RegistryKey soundKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound", true)!;
+        private static RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
+        private RegistryKey mainKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true);
+        private RegistryKey tweakKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true);
+        private RegistryKey screenKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Screen", true);
+        private RegistryKey battleKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true);
+        private RegistryKey researchKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true);
+        private RegistryKey optionsKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Options", true);
+        private RegistryKey buildListKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BuildList", true);
+        private RegistryKey debugKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true);
+        private RegistryKey soundKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound", true);
         [StructLayout(LayoutKind.Sequential)]
         public struct DEVMODE
         {
@@ -70,7 +71,6 @@ namespace WoWLauncher
                 if (MessageBox.Show(Program.Interface["alt_tab"], Program.Interface["alt_tab_error"], MessageBoxButtons.YesNo) == DialogResult.Yes) { launchGame(); }
                 File.Delete("_alttab_exit.txt");
             }
-            var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             // TODO : add tweak key creation below and check what happens if it doesn't exist when altering settings etc
             // TODO : or just repopulate every registry entry
             if (mainKey == null) // set default registry settings which are required for the launcher, the rest are created when the game starts.
@@ -479,6 +479,7 @@ namespace WoWLauncher
             {
                 if (File.Exists("DAT\\MWM.SPR") && !File.Exists("DAT\\NORM-MWM.SPR")) // high resolutions check
                 {
+                    File.Move("DAT\\MWM.SPR", $"DAT\\NORM-MWM.SPR"); // just for MWM - EUROPE
                     foreach (string file in resolutionFiles)
                     {
                         if (File.Exists("DAT\\TEMP-" + file))
@@ -486,7 +487,6 @@ namespace WoWLauncher
                             File.Move("DAT\\TEMP-" + file, $"DAT\\" + file);
                         }
                     }
-                    File.Move("DAT\\MWM.SPR", $"DAT\\NORM-MWM.SPR"); // just for MWM - EUROPE
                 }
             }
             else
