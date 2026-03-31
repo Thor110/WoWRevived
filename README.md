@@ -79,12 +79,12 @@ The road map for this project.
 		- 1600x2560 (16:10)	-> 1680x1050
 		- 1800x2880 (16:10)	-> 1680x1050
 		- 2400x3840 (16:10)	-> 1680x1050
-		- 1600x1200 (4:3) &nbsp;&nbsp;&nbsp;-> 1152x864
-		- 1536x2048 (4:3) &nbsp;&nbsp;&nbsp;-> 1152x864
-		- 2100x2800 (4:3) &nbsp;&nbsp;&nbsp;-> 1152x864
-		- 2400x3200 (4:3) &nbsp;&nbsp;&nbsp;-> 1152x864
+		- 1600x1200 (4:3) &nbsp;&nbsp;&nbsp;&nbsp;-> 1152x864
+		- 1536x2048 (4:3) &nbsp;&nbsp;&nbsp;&nbsp;-> 1152x864
+		- 2100x2800 (4:3) &nbsp;&nbsp;&nbsp;&nbsp;-> 1152x864
+		- 2400x3200 (4:3) &nbsp;&nbsp;&nbsp;&nbsp;-> 1152x864
 		- 1200x2000 (15:9) &nbsp;&nbsp;-> 1280x768
-		- 2048x2560 (5:4) &nbsp;&nbsp;&nbsp;-> 1600x1024
+		- 2048x2560 (5:4) &nbsp;&nbsp;&nbsp;&nbsp;-> 1600x1024
 - [✅ 2 : File Extractor](#file-extractor) ( 100% Complete )
 	- .WoW archives can be extracted.
 	- Waveform preview, play and replace sound files from .WoW archives.
