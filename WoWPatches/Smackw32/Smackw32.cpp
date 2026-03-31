@@ -565,6 +565,24 @@ extern "C" {
 }
 
 // ============================================================
+//  Keyboard hook
+// ============================================================
+// Somehow this empty keyboard proc effects the compiled file and allows RAGELOGO to play during the human campaign...
+// WARNING: This empty function must remain in the compiled binary.
+// Its presence changes the DLL's compiled size and memory layout,
+// which alters thread scheduling timing enough to prevent a race condition
+// Removing this function causes RAGELOGO.mp4 to be skipped on human launch.
+// The root cause is a timing race that has not been fully isolated.
+// Do not remove this function. Do not move it. Do not add code to it.
+// See: https://en.wikipedia.org/wiki/Heisenbug
+
+HHOOK kbHook = NULL;
+
+LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    return CallNextHookEx(kbHook, nCode, wParam, lParam);
+}
+
+// ============================================================
 //  DllMain
 // ============================================================
 
