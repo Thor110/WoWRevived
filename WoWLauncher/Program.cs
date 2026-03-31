@@ -121,6 +121,7 @@ namespace WoWLauncher
             Interface["instruction_button"] = "Instruction Manual";
             Interface["instruction_readme"] = "You should also read the original readme file as there are notes in there not in the games manual.";
             Interface["instruction_location"] = "wotw-man-english-v1.pdf";
+            Interface["overclocked"] = "Overclocked resolutions only work in fullscreen currently, please enable it or the game will launch at the resolution it is scaling from.";
 
         }
         private static void SetFrench()
@@ -201,6 +202,7 @@ namespace WoWLauncher
             Interface["instruction_button"] = "Manuel d'Instruction";
             Interface["instruction_readme"] = "Vous devriez également lire le fichier Lisez-moi d'origine, car il contient des notes ne figurant pas dans le manuel du jeu.";
             Interface["instruction_location"] = "wotw-man-french-v1.pdf";
+            Interface["overclocked"] = "Les résolutions 'Overclock' ne fonctionnent actuellement qu'en mode plein écran. Veuillez l'activer, sinon le jeu se lancera avec la résolution de base mise à l'échelle.";
         }
         private static void SetGerman()
         {
@@ -280,6 +282,7 @@ namespace WoWLauncher
             Interface["instruction_button"] = "Bedienungsanleitung";
             Interface["instruction_readme"] = "Sie sollten auch die ursprüngliche Readme-Datei lesen, da diese Hinweise enthält, die nicht im Handbuch des Spiels stehen.";
             Interface["instruction_location"] = "";
+            Interface["overclocked"] = "Übertaktete Auflösungen funktionieren derzeit nur im Vollbildmodus. Bitte aktivieren Sie diesen, da das Spiel sonst mit der skalierten Basisauflösung gestartet wird.";
         }
         private static void SetItalian()
         {
@@ -359,6 +362,7 @@ namespace WoWLauncher
             Interface["instruction_button"] = "Manuale di Istruzioni";
             Interface["instruction_readme"] = "Si consiglia di leggere anche il file readme originale, poiché contiene note non presenti nel manuale del gioco.";
             Interface["instruction_location"] = "wotw-man-italian-v1.pdf";
+            Interface["overclocked"] = "Le risoluzioni 'Overclock' funzionano attualmente solo in modalità a schermo intero. Attivala, altrimenti il gioco verrà avviato alla risoluzione di base scalata.";
         }
         private static void SetSpanish()
         {
@@ -438,6 +442,7 @@ namespace WoWLauncher
             Interface["instruction_button"] = "Manual de Instrucciones";
             Interface["instruction_readme"] = "También debería leer el archivo readme original, ya que contiene notas que no aparecen en el manual del juego.";
             Interface["instruction_location"] = "";
+            Interface["overclocked"] = "Las resoluciones 'Overclock' solo funcionan actualmente en pantalla completa. Por favor, actívala o el juego se iniciará con la resolución de base escalada.";
         }
     }
 }
