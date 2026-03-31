@@ -2,12 +2,12 @@ using IniParser;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
 
 namespace WoWLauncher
 {
     public partial class Form1 : Form
     {
+        private IniFile iniFile = new IniFile("ddraw.ini");
         // overclocked resolutions through cnc-ddraw.dll
         private Dictionary<string, string> resolutionMap = new Dictionary<string, string>
         {
@@ -307,15 +307,31 @@ namespace WoWLauncher
             checkBox5.Checked = (int)volumeKey.GetValue("CD-Focus")! == 1; //music playback when out of focus
             if (File.Exists("DAT\\cd_bd1.spr")) { checkBox6.Checked = true; } // enhanced assets enabled
             checkBox7.Checked = Convert.ToInt32(debugKey.GetValue("Enemy Visible")) == 1; // for restore default settings
+            // overclocked resolutions
+            string realRes = ((string)screenKey.GetValue("Size")!).Replace(",", "x").Split(' ')[0];
+            string width = iniFile.Read("width", "ddraw");
+            if (width != "0")
+            {
+                string height = iniFile.Read("height", "ddraw");
+                // get overclocked resolution
+                realRes = $"{width}x{height}";
+            }
             foreach (string res in comboBox2.Items)
             {
-                if (res.StartsWith(((string)screenKey.GetValue("Size")!).Replace(",", "x").Split(' ')[0])) // set combobox to the registry resolution
+                if (res.Split(' ')[0] == realRes) // set combobox to the registry resolution
                 {
                     comboBox2.SelectedItem = res;
-                    resolution = comboBox2.SelectedIndex;
-                    break;
+                    resolution = resolutionHelper(realRes, ",", "x");
                 }
             }
+
+
+
+
+
+
+
+
             // custom registry entry so it will be null once // medium by default
             if (comboBox4.Items.Count > 3) { comboBox4.Items.Remove(Program.Interface["custom"]); } // remove custom from the combo box on return
             switch ((string)mainKey.GetValue("Difficulty")!)
@@ -520,14 +536,29 @@ namespace WoWLauncher
             }
         }
         private void checkBox3_CheckedChanged(object sender, EventArgs e) { battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? "1" : "0"); }
+        private int resolutionHelper(string resolution, string from, string to)
+        {
+            string baseResMatch = resolution.Replace(from, to); // "1920x1080"
+            for (int i = 0; i < comboBox2.Items.Count; i++)
+            {
+                if (comboBox2.Items[i]!.ToString()!.StartsWith(baseResMatch))
+                {
+                    return i; // Found the asset index
+                }
+            }
+            MessageBox.Show("RESOLUTION HELPER FAIL");
+            return 0; // should never fire
+        }
         // resolution combobox
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (resolution == comboBox2.SelectedIndex) { return; }
             string overclocked = comboBox2.SelectedItem!.ToString()!;
             string screenSize = overclocked.Replace("x", ",").Split(' ')[0]; // convert to the format used in the registry
+            // overclocked resolutions........
+            bool isOverclocked = false;
+            int nextResolution = comboBox2.SelectedIndex;
             // overclocked resolutions
-            IniFile iniFile = new IniFile("ddraw.ini");
             string width = iniFile.Read("width", "ddraw");
             string height = iniFile.Read("height", "ddraw");
             string filter = iniFile.Read("d3d9_filter", "ddraw");
@@ -539,12 +570,18 @@ namespace WoWLauncher
                 iniFile.Write("height", $"{screenSize.Split(',')[1]}", "ddraw");
                 iniFile.Write("d3d9_filter", "3", "ddraw");
                 screenSize = resolutionMap[overclocked]; // set to resolution to scale from
+                isOverclocked = true;
+                // update nextResolution...
+                // Find the original base resolution's index so asset swapping uses the correct DAT-EXTRA folder
+                nextResolution = resolutionHelper(screenSize, ",", "x");
             }
             else
             {
-                // check if overclocked was set previously and isn't set now = unset etc
-                if (filter != "") // reset values to nothing if they are already set
+                if(filter != "") // overclocked was set
                 {
+                    string findPrevious = width + "x" + height; // "1920x1200"
+                    screenSize = resolutionMap.FirstOrDefault(x => x.Key.StartsWith(findPrevious)).Value;
+                    resolution = resolutionHelper(screenSize, ",", "x");
                     iniFile.Write("width", "0", "ddraw");
                     iniFile.Write("height", "0", "ddraw");
                     iniFile.Write("d3d9_filter", "", "ddraw");
@@ -568,7 +605,7 @@ namespace WoWLauncher
             foreach (string file in moveFiles)
             {
                 File.Move("DAT\\" + file, $"DAT-EXTRA\\{keptResolutions[resolution]}\\" + file); // move from DAT to storage
-                File.Move($"DAT-EXTRA\\{keptResolutions[comboBox2.SelectedIndex]}\\" + file, "DAT\\" + file); // move from storage to DAT
+                File.Move($"DAT-EXTRA\\{keptResolutions[nextResolution]}\\" + file, "DAT\\" + file); // move from storage to DAT
             }
             // larger resolution warmap files
             string[] resolutionFiles = new string[] { "HWM.SPR", "HWMHI.SPR", "MWM.SPR", "MWMHI.SPR" };
@@ -600,7 +637,11 @@ namespace WoWLauncher
                     File.Move("DAT\\NORM-MWM.SPR", $"DAT\\MWM.SPR"); // just for MWM - EUROPE
                 }
             }
-            resolution = comboBox2.SelectedIndex; // update resolution tracker
+
+
+
+
+            resolution = nextResolution;
         }
         private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
         {
