@@ -320,18 +320,10 @@ namespace WoWLauncher
             {
                 if (res.Split(' ')[0] == realRes) // set combobox to the registry resolution
                 {
-                    comboBox2.SelectedItem = res;
-                    resolution = resolutionHelper(realRes, ",", "x");
+                    comboBox2.SelectedItem = res; // set combobox to selected resolution
+                    resolution = resolutionHelper(realRes, ",", "x"); // set resolution to actual resolution
                 }
             }
-
-
-
-
-
-
-
-
             // custom registry entry so it will be null once // medium by default
             if (comboBox4.Items.Count > 3) { comboBox4.Items.Remove(Program.Interface["custom"]); } // remove custom from the combo box on return
             switch ((string)mainKey.GetValue("Difficulty")!)
