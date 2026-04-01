@@ -67,11 +67,16 @@ void Log(const char* fmt, ...)
 //
 //  Detection:
 //    Menu path:        0x4D1490 == 0x80CA  (set when Credits button clicked)
+//                      0x4D255C == 0x90    (menu idle state)
 //    Post-victory:     0x4D255C == 0x80CA  (set when entering credits state)
+//                      0x4D1490 == 0x80FE  (brief transitional - use as trigger)
+//                      0x4D1490 == 0x90    (stable post-victory credits state)
 //
 //  End detection:
-//    Credits always exit to state 0x80C9 or via sub_4048F0 which sets 0x4D255C=0.
-//    We detect the state variable changing away from what it was at credits start.
+//    Menu:             0x4D1490 changes away from 0x80CA
+//    Post-victory:     0x4D1490 changes away from settled value (0x90)
+//                      Write 0x80C9 to 0x4D255C after destroy to reset state
+//                      otherwise menu credits won't trigger after post-victory
 // ============================================================
 
 #define ADDR_STATE_255C  ((volatile DWORD*)0x4D255C)
