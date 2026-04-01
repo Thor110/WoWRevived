@@ -23,11 +23,12 @@ using namespace Gdiplus;
 // ============================================================
 
 FILE* logFile = nullptr;
-bool  debug = false;
+bool  debug = true;
 int   regWidth = 640;
 int   regHeight = 480;
 int   offsetY = 0;
 bool  videoFinished = false;
+bool victoryMovieFinished = false;
 bool  isFullscreen = false;
 HWND  overlayWindow = NULL;
 IMFPMediaPlayer* pMediaPlayer = NULL;
@@ -106,8 +107,8 @@ void InstallCreditsHook()
 
 LRESULT CALLBACK CreditsWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    if (msg == WM_DESTROY) { creditsOverlay = NULL; }
-    if (msg == WM_CLOSE_CREDITS) { DestroyWindow(hwnd); }
+    if (msg == WM_DESTROY) { Log("WM_DESTROY received"); creditsOverlay = NULL; }
+    if (msg == WM_CLOSE_CREDITS) { Log("WM_CLOSE_CREDITS received"); DestroyWindow(hwnd); }
     if (msg == WM_KEYDOWN || msg == WM_KEYUP || msg == WM_SYSKEYDOWN || msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN) {
         HWND gameWnd = FindWindowA(NULL, "The War Of The Worlds");
         if (gameWnd) PostMessage(gameWnd, msg, wParam, lParam);
@@ -218,7 +219,7 @@ void CreateCreditsOverlay()
             float dur = playerIsHuman ? 103.0f : 136.0f;  // fallback to English
             for (const auto& info : kTiming) {
                 if (info.pngSize == pngSize) {
-                    dur = (playerIsHuman ? info.humanDur : info.martianDur) + 2.0f;
+                    dur = (playerIsHuman ? info.humanDur : info.martianDur);
                     Log("Matched language by PNG size %u, dur=%.1fs", pngSize, dur);
                     break;
                 }
@@ -271,9 +272,10 @@ DWORD WINAPI CreditsWatchThread(LPVOID)
     {
         DWORD s255C = *ADDR_STATE_255C;
         DWORD s1490 = *ADDR_STATE_1490;
+        Log("State: 255C=0x%X 1490=0x%X", s255C, s1490);
 
-        bool postVictory = (s255C == 0x80CA);
-        bool fromMenu = (s1490 == 0x80CA && s255C == 0x90 && s1490 != last1490Handled);
+        bool postVictory = (s255C == 0x80CA && s1490 == 0x80FE);
+        bool fromMenu = (s1490 == 0x80CA && s255C != 0x80CA && s1490 != last1490Handled);
 
         if (!postVictory && !fromMenu) { Sleep(10); continue; }
 
@@ -281,8 +283,18 @@ DWORD WINAPI CreditsWatchThread(LPVOID)
 
         Log("Credits detected (postVictory=%d s255C=0x%X s1490=0x%X)", postVictory ? 1 : 0, s255C, s1490);
 
-        CreateCreditsOverlay();
+        if (postVictory) {
+            victoryMovieFinished = false; // reset before waiting
+            Log("Post-victory: waiting for victory movie to finish");
+            while (!creditsShutdown && !victoryMovieFinished) {
+                Sleep(100);
+            }
+            Sleep(100);
+            Log("Post-victory: movie finished, spawning credits");
+        }
 
+        CreateCreditsOverlay();
+        DWORD settled1490 = *ADDR_STATE_1490; // should be 0x90
         // Wait for end: the watched variable changes away from 0x80CA.
         // Post-victory: 4D255C changes from 0x80CA to 0x80C9 when music ends.
         // Menu:         4D1490 changes when the next menu button is clicked,
@@ -292,7 +304,9 @@ DWORD WINAPI CreditsWatchThread(LPVOID)
         {
             DWORD cur255C = *ADDR_STATE_255C;
             DWORD cur1490 = *ADDR_STATE_1490;
-            bool ended = (postVictory ? cur255C : cur1490) != 0x80CA;
+            bool ended = postVictory ? cur1490 != settled1490 : cur1490 != 0x80CA;
+
+            Log("Watching: 255C=0x%X 1490=0x%X ended=%d", cur255C, cur1490, ended ? 1 : 0);
 
             if (ended) {
                 Log("Credits ended (255C=0x%X 1490=0x%X)", cur255C, cur1490);
@@ -328,6 +342,10 @@ DWORD WINAPI CreditsWatchThread(LPVOID)
         }
 
         DestroyCreditsOverlay();
+        if (postVictory) {
+            *ADDR_STATE_255C = 0x80C9; // clear post-victory state
+        }
+        Log("Credits destroyed (postVictory=%d s255C=0x%X s1490=0x%X)", postVictory ? 1 : 0, s255C, s1490);
         for (int i = 0; i < 20 && creditsOverlay != NULL; i++) { Sleep(10); }
         last1490Handled = 0;
         creditsScrollY = 0.0f;
@@ -367,6 +385,7 @@ public:
         }
         else if (pEventHeader->eEventType == MFP_EVENT_TYPE_PLAYBACK_ENDED) {
             videoFinished = true;
+            victoryMovieFinished = true;
             Log("Video playback ended");
         }
     }
@@ -487,6 +506,7 @@ extern "C" {
             smkData[2] = 1;
             smkData[3] = 0;
         }
+        victoryMovieFinished = true; // if skipped
         Log("SmackClose");
         ShowCursor(TRUE);
         SetCursor(LoadCursor(NULL, IDC_ARROW));
