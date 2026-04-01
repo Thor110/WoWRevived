@@ -59,32 +59,44 @@ The road map for this project.
 	- Automatic Compatibility settings applied.
 	- Inner and outer, regular and ambient sound borders now updated through the launcher according to the users chosen resolution.
 	- New working resolutions added.
-		- 1280x768 &nbsp;&nbsp;(15:9)
-		- 1280x1024	(5:4)
-		- 1360x768 &nbsp;&nbsp;(16:9)
-		- 1366x768 &nbsp;&nbsp;(16:9)
-		- 1600x900 &nbsp;&nbsp;(16:9)
-		- 1600x1024	(5:4)
-		- 1680x1050	(16:10)
-		- 1920x1080	(16:9)
+		- 1280x768 &nbsp;&nbsp;&nbsp;(15:9)
+		- 1280x1024	&nbsp;&nbsp;(5:4)
+		- 1360x768 &nbsp;&nbsp;&nbsp;(16:9)
+		- 1366x768 &nbsp;&nbsp;&nbsp;(16:9)
+		- 1600x900 &nbsp;&nbsp;&nbsp;(16:9)
+		- 1600x1024	&nbsp;&nbsp;(5:4)
+		- 1680x1050	&nbsp;&nbsp;(16:10)
+		- 1920x1080	&nbsp;&nbsp;(16:9)
 	- Overclocked resolutions added. ( These resolutions are scaled from the resolutions on the right. ) [coming in the next update]
-		- 2048x1152 (16:9) &nbsp;&nbsp;-> 1920x1080
-		- 2560x1440 (16:9) &nbsp;&nbsp;-> 1920x1080
-		- 1620x2880 (16:9) &nbsp;&nbsp;-> 1920x1080
-		- 1800x3200 (16:9) &nbsp;&nbsp;-> 1920x1080
-		- 2160x3840 (16:9) &nbsp;&nbsp;-> 1920x1080
-		- 2880x5120 (16:9) &nbsp;&nbsp;-> 1920x1080
-		- 4320x7680 (16:9) &nbsp;&nbsp;-> 1920x1080
-		- 1920x1200 (16:10)	-> 1680x1050
-		- 1600x2560 (16:10)	-> 1680x1050
-		- 1800x2880 (16:10)	-> 1680x1050
-		- 2400x3840 (16:10)	-> 1680x1050
-		- 1600x1200 (4:3) &nbsp;&nbsp;&nbsp;&nbsp;-> 1152x864
-		- 1536x2048 (4:3) &nbsp;&nbsp;&nbsp;&nbsp;-> 1152x864
-		- 2100x2800 (4:3) &nbsp;&nbsp;&nbsp;&nbsp;-> 1152x864
-		- 2400x3200 (4:3) &nbsp;&nbsp;&nbsp;&nbsp;-> 1152x864
-		- 1200x2000 (15:9) &nbsp;&nbsp;-> 1280x768
-		- 2048x2560 (5:4) &nbsp;&nbsp;&nbsp;&nbsp;-> 1600x1024
+		- 2048x1152 &nbsp;&nbsp;(16:9) &nbsp;&nbsp;-> 1920x1080
+		- 2560x1440 &nbsp;&nbsp;(16:9) &nbsp;&nbsp;-> 1920x1080
+		- 1620x2880 &nbsp;&nbsp;(16:9) &nbsp;&nbsp;-> 1920x1080
+		- 1800x3200 &nbsp;&nbsp;(16:9) &nbsp;&nbsp;-> 1920x1080
+		- 2160x3840 &nbsp;&nbsp;(16:9) &nbsp;&nbsp;-> 1920x1080
+		- 2880x5120 &nbsp;&nbsp;(16:9) &nbsp;&nbsp;-> 1920x1080
+		- 4320x7680 &nbsp;&nbsp;(16:9) &nbsp;&nbsp;-> 1920x1080
+		- 1920x1200 &nbsp;&nbsp;(16:10)	-> 1680x1050
+		- 1600x2560 &nbsp;&nbsp;(16:10)	-> 1680x1050
+		- 1800x2880 &nbsp;&nbsp;(16:10)	-> 1680x1050
+		- 2400x3840 &nbsp;&nbsp;(16:10)	-> 1680x1050
+		- 1600x1200 &nbsp;&nbsp;(4:3) &nbsp;&nbsp;&nbsp;&nbsp;-> 1152x864
+		- 1536x2048 &nbsp;&nbsp;(4:3) &nbsp;&nbsp;&nbsp;&nbsp;-> 1152x864
+		- 2100x2800 &nbsp;&nbsp;(4:3) &nbsp;&nbsp;&nbsp;&nbsp;-> 1152x864
+		- 2400x3200 &nbsp;&nbsp;(4:3) &nbsp;&nbsp;&nbsp;&nbsp;-> 1152x864
+		- 1200x2000 &nbsp;&nbsp;(15:9) &nbsp;&nbsp;-> 1280x768
+		- 2048x2560 &nbsp;&nbsp;(5:4) &nbsp;&nbsp;&nbsp;&nbsp;-> 1600x1024
+	- Odd aspect ratio resolutions added. ( These resolutions are all letterboxed and scaled from the resolutions on the right. ) [coming in the next update]
+		- 1800x1200 &nbsp;&nbsp;(3:2) -> 1600,1024
+		- 2160x1440 &nbsp;&nbsp;(3:2) -> 1920,1080
+		- 2160x4096 &nbsp;&nbsp;(17:9) -> 1920,1080
+		- 1200x2400 &nbsp;&nbsp;(18:9) -> 1152x864
+		- 2048x3200 &nbsp;&nbsp;(25:16) -> 1920,1080
+		- 5120x1440 &nbsp;&nbsp;(32:9) -> 1920,1080
+		- 2160x7680 &nbsp;&nbsp;(32:9) -> 1920,1080
+		- 3440x1440 &nbsp;&nbsp;(21:9) -> 1920,1080
+		- 1600x3840 &nbsp;&nbsp;(21:9) -> 1600x1024
+		- 2160x5120 &nbsp;&nbsp;(21:9) -> 1920,1080
+		- 4320x10240 (21:9) -> 1920,1080
 - [✅ 2 : File Extractor](#file-extractor) ( 100% Complete )
 	- .WoW archives can be extracted.
 	- Waveform preview, play and replace sound files from .WoW archives.
