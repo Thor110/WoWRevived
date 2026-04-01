@@ -47,6 +47,7 @@ namespace WoWLauncher
             { "4320x10240    (21:9)",   "1920,1080" },
             { "3840x1600     (21:9)",   "1920,1080" },
             { "3840x1080     (32:9)",   "1920,1080" },
+			// NOTE : Do this dynamically eventually.
         };
         //
         private bool config; // are settings open or not
