@@ -23,7 +23,7 @@ using namespace Gdiplus;
 // ============================================================
 
 FILE* logFile = nullptr;
-bool  debug = true;
+bool  debug = false;
 int   regWidth = 640;
 int   regHeight = 480;
 int   offsetY = 0;
@@ -107,8 +107,8 @@ void InstallCreditsHook()
 
 LRESULT CALLBACK CreditsWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    if (msg == WM_DESTROY) { Log("WM_DESTROY received"); creditsOverlay = NULL; }
-    if (msg == WM_CLOSE_CREDITS) { Log("WM_CLOSE_CREDITS received"); DestroyWindow(hwnd); }
+    if (msg == WM_DESTROY) { creditsOverlay = NULL; }
+    if (msg == WM_CLOSE_CREDITS) { DestroyWindow(hwnd); }
     if (msg == WM_KEYDOWN || msg == WM_KEYUP || msg == WM_SYSKEYDOWN || msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN) {
         HWND gameWnd = FindWindowA(NULL, "The War Of The Worlds");
         if (gameWnd) PostMessage(gameWnd, msg, wParam, lParam);
