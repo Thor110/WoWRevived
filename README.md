@@ -100,6 +100,7 @@ The road map for this project.
 		- 1600x3840 &nbsp;&nbsp;(21:9) &nbsp;&nbsp;-> 1600x1024
 		- 2160x5120 &nbsp;&nbsp;(21:9) &nbsp;&nbsp;-> 1920,1080
 		- 4320x10240 (21:9) &nbsp;&nbsp;-> 1920,1080
+	- If you have a resolution which isn't in the list that you would like added, please open an issue or reach out to me on the Discord server for this project.
 - [✅ 2 : File Extractor](#file-extractor) ( 100% Complete )
 	- .WoW archives can be extracted.
 	- Waveform preview, play and replace sound files from .WoW archives.
