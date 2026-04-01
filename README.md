@@ -58,6 +58,7 @@ The road map for this project.
 	- Automatic Windows 11 DirectPlay setup.
 	- Automatic Compatibility settings applied.
 	- Inner and outer, regular and ambient sound borders now updated through the launcher according to the users chosen resolution.
+	- Resolution list is filtered to only show resolutions supported by the monitor.
 	- New working resolutions added.
 		- 1280x768 &nbsp;&nbsp;&nbsp;(15:9)
 		- 1280x1024	&nbsp;&nbsp;(5:4)
