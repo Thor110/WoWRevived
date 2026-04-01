@@ -94,6 +94,8 @@ The road map for this project.
 		- 2048x3200 &nbsp;&nbsp;(25:16) -> 1920,1080
 		- 5120x1440 &nbsp;&nbsp;(32:9) &nbsp;&nbsp;-> 1920,1080
 		- 2160x7680 &nbsp;&nbsp;(32:9) &nbsp;&nbsp;-> 1920,1080
+		- 3840x1600 &nbsp;&nbsp;(21:9) &nbsp;&nbsp;-> 1920,1080
+		- 3840x1080 &nbsp;&nbsp;(32:9) &nbsp;&nbsp;-> 1920,1080
 		- 3440x1440 &nbsp;&nbsp;(21:9) &nbsp;&nbsp;-> 1920,1080
 		- 1600x3840 &nbsp;&nbsp;(21:9) &nbsp;&nbsp;-> 1600x1024
 		- 2160x5120 &nbsp;&nbsp;(21:9) &nbsp;&nbsp;-> 1920,1080
