@@ -1,3 +1,0 @@
-LIBRARY ddraw.dll
-EXPORTS
-    DirectDrawCreate
