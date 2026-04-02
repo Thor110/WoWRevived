@@ -641,34 +641,25 @@ BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
             }
             RegCloseKey(hKey);
         }
-        // supported reslutions and notes
-        //"640x480         (4:3)",  // Classic baseline 4:3                         // Exists In-Game
-        //"800x600         (4:3)",  // Legacy 4:3 standard                          // Exists In-Game
-        //"1024x768       (4:3)",   // XGA — very common                            // Exists In-Game
-        //"1152x864       (4:3)",   // Slightly higher 4:3 (rare)                   // Exists In-Game
-        //"1280x768       (15:9)",  // WXGA – rare variant of 1280x800 (15:9)
-        //"1280x800       (16:10)", // WXGA — early widescreen laptops (16:10)      // Exists In-Game
-        //"1280x1024     (5:4)",    // SXGA — tall 5:4 monitor resolution
-        //"1360x768       (16:9)",  // 16:9 — GPU-aligned, better than 1366x768
-        //"1366x768       (16:9)",  // Common 16:9 laptop resolution
-        // These resolutions only work on the main menu - newly expanded warmap allows these resolutions to work
-        //"1600x900       (16:9)",  // 16:9 — upper-mid range laptop displays
-        //"1600x1024     (5:4)",    // Unusual 5:4 wide — seems to pass internal checks
-        //"1600x1200     (4:3)",    // UXGA — classic high-res 4:3
-        //"1680x1050     (16:10)",  // WSXGA+ — widescreen 16:10, works well
-        //"1920x1080     (16:9)"    // 1080p
-        // determine letterboxing arrangement
-        // Calculate letterbox offset
-        switch (regWidth + regHeight) {
-            case 1120: offsetY = 60; break;     // 640x480
-            case 1400: offsetY = 75; break;     // 800x600
-            case 1792: offsetY = 96; break;     // 1024x768
-            case 2016: offsetY = 108; break;    // 1152x864
-            case 2048: offsetY = 24; break;     // 1280x768
-            case 2080: offsetY = 40; break;     // 1280x800
-            case 2304: offsetY = 152; break;    // 1280x1024
-            case 2624: offsetY = 62; break;     // 1600x1024
-            case 2730: offsetY = 52; break;     // 1680x1050
+        // Read cnc-ddraw target resolution from ddraw.ini
+        if (GetFileAttributesA("ddraw.dll") != INVALID_FILE_ATTRIBUTES) // only parse if ddraw is enabled
+        {
+            char iniPath[MAX_PATH];
+            GetModuleFileNameA(NULL, iniPath, MAX_PATH);
+            char* lastSlash = strrchr(iniPath, '\\');
+            if (lastSlash) *(lastSlash + 1) = '\0';
+            strcat(iniPath, "ddraw.ini");
+            regWidth = GetPrivateProfileIntA("ddraw", "width", 0, iniPath);     // update regWidth
+            regHeight = GetPrivateProfileIntA("ddraw", "height", 0, iniPath);   // update regHeight
+        }
+
+        // Calculate the Aspect Ratio of the screen
+        double screenAspect = (double)regWidth / regHeight;
+        double videoAspect = 1920.0 / 1080.0; // 1.777...
+
+        if (screenAspect < videoAspect) {
+            double targetVideoHeight = (regWidth * 1080.0) / 1920.0;
+            offsetY = (int)((regHeight - targetVideoHeight) / 2.0);
         }
 
         GdiplusStartupInput gdiplusInput;
@@ -676,7 +667,6 @@ BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
         MFStartup(MF_VERSION);
         InstallCreditsHook();
 
-        creditsShutdown = false;
         creditsThread = CreateThread(NULL, 0, CreditsWatchThread, NULL, 0, NULL);
     }
     else if (reason == DLL_PROCESS_DETACH)

@@ -30,6 +30,7 @@ namespace WoWLauncher
         };
         private bool config; // are settings open or not
         private int resolution; // temp resolution combobox index for swapping files in future versions
+        private int resolutionStored; // for overclocked resolution checks......
         private List<string> keptResolutions = new List<string>(); // keep listed resolutions for future versions
         private RegistryKey mainKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
         private RegistryKey tweakKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true)!;
@@ -330,6 +331,7 @@ namespace WoWLauncher
                 if (res.Split(' ')[0] == realRes) // set combobox to the registry resolution
                 {
                     comboBox2.SelectedItem = res; // set combobox to selected resolution
+                    resolutionStored = comboBox2.SelectedIndex;
                     string closestMatch = supportedResolutions.OrderBy(res => Math.Abs(int.Parse(res.Split('x')[0]) - int.Parse(realRes.Split('x')[0]))).First();
                     string screenSize = closestMatch.Split(' ')[0].Replace("x", ","); // e.g., "1920x1080"
                     resolution = resolutionHelper(screenSize, ",", "x"); // set resolution to actual resolution
@@ -556,7 +558,7 @@ namespace WoWLauncher
         // resolution combobox
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (resolution == comboBox2.SelectedIndex) { return; }
+            if (resolutionStored == comboBox2.SelectedIndex) { return; }
             string screenSize = comboBox2.SelectedItem!.ToString()!.Replace("x", ",").Split(' ')[0]; // convert to the format used in the registry
             // overclocked resolutions........
             int nextResolution = comboBox2.SelectedIndex;
