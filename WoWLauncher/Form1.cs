@@ -8,48 +8,26 @@ namespace WoWLauncher
     public partial class Form1 : Form
     {
         private IniFile iniFile = new IniFile("ddraw.ini");
-        // overclocked resolutions through cnc-ddraw.dll
-        private Dictionary<string, string> resolutionMap = new Dictionary<string, string>
+        private string[] supportedResolutions = new string[]
         {
-            // 16:9 Mappings
-            { "2048x1152     (16:9)",   "1920,1080" },
-            { "2560x1440     (16:9)",   "1920,1080" },
-            { "1620x2880     (16:9)",   "1920,1080" },
-            { "1800x3200     (16:9)",   "1920,1080" },
-            { "2160x3840     (16:9)",   "1920,1080" },
-            { "2880x5120     (16:9)",   "1920,1080" },
-            { "4320x7680     (16:9)",   "1920,1080" },
-            // 16:10 Mappings
-            { "1920x1200     (16:10)",  "1680,1050" },
-            { "1600x2560     (16:10)",  "1680,1050" },
-            { "1800x2880     (16:10)",  "1680,1050" },
-            { "2400x3840     (16:10)",  "1680,1050" },
-            // 4:3 Mappings
-            { "1600x1200     (4:3)",    "1152,864" },
-            { "1536x2048     (4:3)",    "1152,864" },
-            { "2100x2800     (4:3)",    "1152,864" },
-            { "2400x3200     (4:3)",    "1152,864" },
-            // 15:9 Mappings
-            { "1200x2000     (15:9)",   "1280,768" },
-            // 5:4 Mappings
-            { "2048x2560     (5:4)",    "1600,1024" },
-            // LETTERBOXED - Irregular Aspect Ratios
-            { "1800x1200     (3:2)",    "1600,1024" },
-            { "2160x1440     (3:2)",    "1920,1080" },
-            { "2160x4096     (17:9)",   "1920,1080" },
-            { "1200x2400     (18:9)",   "1152,864" },
-            { "2048x3200     (25:16)",  "1920,1080" },
-            { "5120x1440     (32:9)",   "1920,1080" },
-            { "2160x7680     (32:9)",   "1920,1080" },
-            { "3440x1440     (21:9)",   "1920,1080" },
-            { "1600x3840     (21:9)",   "1600,1024" },
-            { "2160x5120     (21:9)",   "1920,1080" },
-            { "4320x10240    (21:9)",   "1920,1080" },
-            { "3840x1600     (21:9)",   "1920,1080" },
-            { "3840x1080     (32:9)",   "1920,1080" },
-			// NOTE : Do this dynamically eventually.
+            //"512x384         (4:3)",    // Listed in original manual, ultra-low fallback - sometimes causes DDERR_NOCOOPERATIVELEVELSET
+            "640x480         (4:3)",    // Classic baseline 4:3                         // Exists In-Game
+            "800x600         (4:3)",    // Legacy 4:3 standard                          // Exists In-Game
+            "1024x768       (4:3)",     // XGA — very common                            // Exists In-Game
+            "1152x864       (4:3)",     // Slightly higher 4:3 (rare)                   // Exists In-Game
+            //"1280x720       (16:9)",  // 720p — slight stretching/whiteness issue
+            "1280x768       (15:9)",    // WXGA – rare variant of 1280x800 (15:9)
+            "1280x800       (16:10)",   // WXGA — early widescreen laptops (16:10)      // Exists In-Game
+            "1280x1024     (5:4)",      // SXGA — tall 5:4 monitor resolution
+            "1360x768       (16:9)",    // 16:9 — GPU-aligned, better than 1366x768
+            "1366x768       (16:9)",    // Common 16:9 laptop resolution
+            // These resolutions only work on the main menu - newly expanded warmap allows these resolutions to work
+            "1600x900       (16:9)",    // 16:9 — upper-mid range laptop displays
+            "1600x1024     (5:4)",      // Unusual 5:4 wide — seems to pass internal checks
+            //"1600x1200     (4:3)",      // UXGA — classic high-res 4:3                // DDERR_NOCOOPERATIVELEVELSET
+            "1680x1050     (16:10)",    // WSXGA+ — widescreen 16:10, works well
+            "1920x1080     (16:9)"      // 1080p
         };
-        //
         private bool config; // are settings open or not
         private int resolution; // temp resolution combobox index for swapping files in future versions
         private List<string> keptResolutions = new List<string>(); // keep listed resolutions for future versions
@@ -178,39 +156,32 @@ namespace WoWLauncher
             // delete old .smk movie files
             string[] folders = { "FMV", "FMV-Human" };
             foreach (string file in folders.Where(Directory.Exists).SelectMany(f => Directory.EnumerateFiles(f, "*.smk", SearchOption.TopDirectoryOnly))) { File.Delete(file); }
-            string[] supportedResolutions = new string[]
-            {
-                //"512x384         (4:3)",    // Listed in original manual, ultra-low fallback - sometimes causes DDERR_NOCOOPERATIVELEVELSET
-                "640x480         (4:3)",    // Classic baseline 4:3                         // Exists In-Game
-                "800x600         (4:3)",    // Legacy 4:3 standard                          // Exists In-Game
-                "1024x768       (4:3)",     // XGA — very common                            // Exists In-Game
-                "1152x864       (4:3)",     // Slightly higher 4:3 (rare)                   // Exists In-Game
-                //"1280x720       (16:9)",  // 720p — slight stretching/whiteness issue
-                "1280x768       (15:9)",    // WXGA – rare variant of 1280x800 (15:9)
-                "1280x800       (16:10)",   // WXGA — early widescreen laptops (16:10)      // Exists In-Game
-                "1280x1024     (5:4)",      // SXGA — tall 5:4 monitor resolution
-                "1360x768       (16:9)",    // 16:9 — GPU-aligned, better than 1366x768
-                "1366x768       (16:9)",    // Common 16:9 laptop resolution
-                // These resolutions only work on the main menu - newly expanded warmap allows these resolutions to work
-                "1600x900       (16:9)",    // 16:9 — upper-mid range laptop displays
-                "1600x1024     (5:4)",      // Unusual 5:4 wide — seems to pass internal checks
-                //"1600x1200     (4:3)",      // UXGA — classic high-res 4:3                // DDERR_NOCOOPERATIVELEVELSET
-                "1680x1050     (16:10)",    // WSXGA+ — widescreen 16:10, works well
-                "1920x1080     (16:9)"      // 1080p
-            };
             List<string> supported = GetSupportedResolutions();
             List<string> matchedResolutions = supportedResolutions.Where(sr => supported.Any(r => sr.Contains(r))).ToList();
             foreach (string resolution in matchedResolutions) { comboBox2.Items.Add(resolution); keptResolutions.Add(resolution.Split(' ')[0]); } // list and keep only supported resolutions for later use
             // overclocked resolutions
-            foreach (var entry in resolutionMap)
+            List<string> dynamicOverclocked = supported.Where(osRes => !supportedResolutions.Any(safeRes => safeRes.StartsWith(osRes))).ToList();
+            foreach (string rawRes in dynamicOverclocked)
             {
-                string rawRes = entry.Key.Split(' ')[0];
+                // Filter to only show resolutions actually "Above 1080p" to keep the list clean
                 var dims = rawRes.Split('x');
                 if (int.TryParse(dims[0], out int w) && int.TryParse(dims[1], out int h))
                 {
-                    if (supported.Contains(rawRes) && (w > 1920 || h > 1080))
+                    if (w > 1920 || h > 1080)
                     {
-                        comboBox2.Items.Add(entry.Key);
+                        // Calculate Aspect Ratio dynamically for the label
+                        string ratio = GetAspectRatio(w, h);
+                        string space = "    ";
+                        if(rawRes.Length > 8)
+                        {
+                            int length = rawRes.Length - 8;
+                            for (int i = 0; i < length; i++)
+                            {
+                                space += " ";
+                            }
+                        }
+                        string entry = $"{rawRes}{space}({ratio})";
+                        comboBox2.Items.Add(entry);
                     }
                 }
             }
@@ -235,6 +206,29 @@ namespace WoWLauncher
             InitializeRegistry();
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(PictureBox), typeof(Label), typeof(Button) });
+        }
+        // The Euclidean Algorithm to find the Greatest Common Divisor
+        private int GetGCD(int a, int b)
+        {
+            while (b != 0)
+            {
+                int temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        private string GetAspectRatio(int width, int height)
+        {
+            int gcd = GetGCD(width, height);
+            int ratioW = width / gcd;
+            int ratioH = height / gcd;
+
+            // Special case: 8:5 is commonly referred to as 16:10 in marketing
+            if (ratioW == 8 && ratioH == 5) return "16:10";
+
+            return $"{ratioW}:{ratioH}";
         }
         // Helper to enable DirectPlay silently
         private void EnsureDirectPlay()
@@ -336,7 +330,10 @@ namespace WoWLauncher
                 if (res.Split(' ')[0] == realRes) // set combobox to the registry resolution
                 {
                     comboBox2.SelectedItem = res; // set combobox to selected resolution
-                    resolution = resolutionHelper(realRes, ",", "x"); // set resolution to actual resolution
+                    string closestMatch = supportedResolutions.OrderBy(res => Math.Abs(int.Parse(res.Split('x')[0]) - int.Parse(realRes.Split('x')[0]))).First();
+                    string screenSize = closestMatch.Split(' ')[0].Replace("x", ","); // e.g., "1920x1080"
+                    resolution = resolutionHelper(screenSize, ",", "x"); // set resolution to actual resolution
+                    break;
                 }
             }
             // custom registry entry so it will be null once // medium by default
@@ -560,48 +557,38 @@ namespace WoWLauncher
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (resolution == comboBox2.SelectedIndex) { return; }
-            string overclocked = comboBox2.SelectedItem!.ToString()!;
-            string screenSize = overclocked.Replace("x", ",").Split(' ')[0]; // convert to the format used in the registry
+            string screenSize = comboBox2.SelectedItem!.ToString()!.Replace("x", ",").Split(' ')[0]; // convert to the format used in the registry
             // overclocked resolutions........
-            bool isOverclocked = false;
             int nextResolution = comboBox2.SelectedIndex;
-            // overclocked resolutions
-            string width = iniFile.Read("width", "ddraw");
-            string height = iniFile.Read("height", "ddraw");
-            string filter = iniFile.Read("d3d9_filter", "ddraw");
-            if (resolutionMap.ContainsKey(overclocked)) // map overclocked to regular screen size here
+            // dynamic overclocked resolution
+            string[] dimensions = screenSize.Split(',');
+            int width = int.Parse(dimensions[0]);
+            int height = int.Parse(dimensions[1]);
+            if (width > 1920 || height > 1080)
             {
                 MessageBox.Show(Program.Interface["overclocked"] + " (Above 1920x1080)", Program.Interface["config"], MessageBoxButtons.OK, MessageBoxIcon.Information);
                 // set ini options
-                iniFile.Write("width", $"{screenSize.Split(',')[0]}", "ddraw");
-                iniFile.Write("height", $"{screenSize.Split(',')[1]}", "ddraw");
-                iniFile.Write("d3d9_filter", "3", "ddraw");
-                screenSize = resolutionMap[overclocked]; // set to resolution to scale from
-                isOverclocked = true;
+                iniFile.Write("width", $"{dimensions[0]}", "ddraw");
+                iniFile.Write("height", $"{dimensions[1]}", "ddraw");
                 // update nextResolution...
                 // Find the original base resolution's index so asset swapping uses the correct DAT-EXTRA folder
+                string closestMatch = supportedResolutions.OrderBy(res => Math.Abs(int.Parse(res.Split('x')[0]) - int.Parse(dimensions[0]))).First();
+                screenSize = closestMatch.Split(' ')[0].Replace("x", ","); // e.g., "1920x1080"
                 nextResolution = resolutionHelper(screenSize, ",", "x");
             }
             else
             {
-                if(filter != "") // overclocked was set
-                {
-                    string findPrevious = width + "x" + height; // "1920x1200"
-                    screenSize = resolutionMap.FirstOrDefault(x => x.Key.StartsWith(findPrevious)).Value;
-                    resolution = resolutionHelper(screenSize, ",", "x");
-                    iniFile.Write("width", "0", "ddraw");
-                    iniFile.Write("height", "0", "ddraw");
-                    iniFile.Write("d3d9_filter", "", "ddraw");
-                }
+                iniFile.Write("width", "0", "ddraw"); // used to check if resolution is overclocked on startup
             }
             // continue current code
             registryCompare(screenKey, "Size", screenSize);                 // "Size" is the in-game resolution
             registryCompare(screenKey, "Support screen size", screenSize);  // "Support screen size" is the resolution used by the main menu
-            registryCompare(buildListKey, "Top", ((Int32.Parse(screenSize.Split(',')[1]) - 340) / 2).ToString()); // build list resolution adjustment
-            string soundOne = screenSize.Split(",")[0];                 // x string
-            string soundTwo = screenSize.Split(",")[1];                 // y string
-            int soundThree = Int32.Parse(screenSize.Split(',')[0]);     // x int
-            int soundFour = Int32.Parse(screenSize.Split(',')[1]);      // y int
+            registryCompare(buildListKey, "Top", ((height - 340) / 2).ToString()); // build list resolution adjustment
+            //parse once
+            string soundOne = screenSize.Split(",")[0];                     // x string
+            string soundTwo = screenSize.Split(",")[1];                     // y string
+            int soundThree = Int32.Parse(soundOne);                         // x int
+            int soundFour = Int32.Parse(soundTwo);                          // y int
             string reusedSound = "-" + soundOne + ",-" + (soundFour - 80).ToString();
             registryCompare(soundKey, "Inner Ambient border", reusedSound);
             registryCompare(soundKey, "Inner border", "-" + (soundThree / 2).ToString() + ",-" + (soundFour / 2 - 40).ToString());
@@ -616,7 +603,7 @@ namespace WoWLauncher
             }
             // larger resolution warmap files
             string[] resolutionFiles = new string[] { "HWM.SPR", "HWMHI.SPR", "MWM.SPR", "MWMHI.SPR" };
-            if (screenSize.Split(",")[0] == "1600" || screenSize.Split(",")[0] == "1680" || screenSize.Split(",")[0] == "1920" )
+            if (dimensions[0] == "1600" || dimensions[0] == "1680" || dimensions[0] == "1920" )
             {
                 if (File.Exists("DAT\\MWM.SPR") && !File.Exists("DAT\\NORM-MWM.SPR")) // high resolutions check
                 {
@@ -644,10 +631,6 @@ namespace WoWLauncher
                     File.Move("DAT\\NORM-MWM.SPR", $"DAT\\MWM.SPR"); // just for MWM - EUROPE
                 }
             }
-
-
-
-
             resolution = nextResolution;
         }
         private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
