@@ -581,6 +581,7 @@ namespace WoWLauncher
             else
             {
                 iniFile.Write("width", "0", "ddraw"); // used to check if resolution is overclocked on startup
+                iniFile.Write("height", "0", "ddraw");
             }
             // continue current code
             registryCompare(screenKey, "Size", screenSize);                 // "Size" is the in-game resolution

@@ -53,7 +53,7 @@ namespace WoWLauncher
             Interface["game_running"] = "The game is already running, please exit before running the launcher!";
             Interface["one_drive"] = "Warning: The game is installed in a restricted location. Please move it to a root directory like C:\\Games\\Jeff Wayne's 'The War Of The Worlds' for best results.";
             Interface["one_drive_warning"] = "Installation Warning";
-            Interface["fullscreen_description"] = "Enable or disable fullscreen. Note : Alt-Tabbing crashes the game when in fullscreen mode.";
+            Interface["fullscreen_description"] = "Enable or disable fullscreen.";
             Interface["fullscreen"] = "Full Screen";
             Interface["resolution_description"] = "The resolution for the game.";
             Interface["resolution"] = "Resolution";
@@ -64,7 +64,7 @@ namespace WoWLauncher
             Interface["advanced"] = "Advanced Settings";
             Interface["tools"] = "Development Tools";
             Interface["keyboard"] = "Keyboard Shortcuts";
-            Interface["music_playback_description"] = "Enabling this will allow the music to continue playing when the window loses focus, if not in fullscreen mode.";
+            Interface["music_playback_description"] = "Enabling this will allow the music to continue playing when the window loses focus.";
             Interface["music_playback"] = "Music Playback";
             Interface["enhanced_assets_description"] = "This setting enables the enhanced user interface assets. ( This adds a little more colour depth to the interface. )";
             Interface["enhanced_assets"] = "Enhanced Assets";
@@ -134,7 +134,7 @@ namespace WoWLauncher
             Interface["game_running"] = "Le jeu est déjà en cours d'exécution, veuillez le quitter avant de lancer le lanceur!";
             Interface["one_drive"] = "Avertissement : Le jeu est installé dans un emplacement restreint. Pour un fonctionnement optimal, veuillez le déplacer vers un répertoire racine tel que C:\\Jeux\\Jeff Wayne's 'La Guerre des mondes'.";
             Interface["one_drive_warning"] = "Avertissement d'installation";
-            Interface["fullscreen_description"] = "Le passage d'une application à l'autre (Alt-Tab) fait planter le jeu en mode plein écran.";
+            Interface["fullscreen_description"] = "Activer ou désactiver le mode plein écran.";
             Interface["fullscreen"] = "Plein écran";
             Interface["resolution_description"] = "La résolution du jeu.";
             Interface["resolution"] = "Résolution";
@@ -145,7 +145,7 @@ namespace WoWLauncher
             Interface["advanced"] = "Paramètres avancés";
             Interface["tools"] = "Outils de développement";
             Interface["keyboard"] = "Raccourcis clavier";
-            Interface["music_playback_description"] = "L'activation de cette option permettra à la musique de continuer à jouer lorsque la fenêtre perd le focus, sauf en mode plein écran.";
+            Interface["music_playback_description"] = "L'activation de cette option permettra à la musique de continuer à jouer lorsque la fenêtre perd le focus.";
             Interface["music_playback"] = "Lecture de musique";
             Interface["enhanced_assets_description"] = "Ce paramètre active les ressources d'interface utilisateur améliorées. (Cela ajoute un peu plus de profondeur de couleur à l'interface.)";
             Interface["enhanced_assets"] = "Graphismes améliorés";
@@ -214,7 +214,7 @@ namespace WoWLauncher
             Interface["game_running"] = "Das Spiel läuft bereits, bitte beenden Sie es, bevor Sie den Launcher starten!";
             Interface["one_drive"] = "Warnung: Das Spiel ist in einem eingeschränkten Verzeichnis installiert. Bitte verschieben Sie es in ein Hauptverzeichnis wie C:\\Spiele\\Jeff Wayne's 'Der Krieg der Welten' um optimale Ergebnisse zu erzielen.";
             Interface["one_drive_warning"] = "Installationswarnung";
-            Interface["fullscreen_description"] = "Vollbildmodus aktivieren oder deaktivieren. Hinweis: Das Wechseln zwischen Fenstern (Alt+Tab) führt im Vollbildmodus zum Absturz des Spiels.";
+            Interface["fullscreen_description"] = "Vollbildmodus aktivieren oder deaktivieren.";
             Interface["fullscreen"] = "Vollbild";
             Interface["resolution_description"] = "Die Auflösung des Spiels.";
             Interface["resolution"] = "Auflösung";
@@ -225,7 +225,7 @@ namespace WoWLauncher
             Interface["advanced"] = "Erweiterte Einstellungen";
             Interface["tools"] = "Entwicklungstools";
             Interface["keyboard"] = "Tastaturkürzel";
-            Interface["music_playback_description"] = "Wenn Sie diese Option aktivieren, wird die Musikwiedergabe fortgesetzt, wenn das Fenster den Fokus verliert, es sei denn, Sie befinden sich im Vollbildmodus.";
+            Interface["music_playback_description"] = "Wenn dies aktiviert ist, wird die Musik weitergespielt, wenn das Fenster den Fokus verliert.";
             Interface["music_playback"] = "Musikwiedergabe";
             Interface["enhanced_assets_description"] = "Diese Einstellung aktiviert die erweiterten Benutzeroberflächenelemente. (Dadurch wird die Farbtiefe der Benutzeroberfläche etwas erhöht.)";
             Interface["enhanced_assets"] = "Verbesserte Grafik";
@@ -294,7 +294,7 @@ namespace WoWLauncher
             Interface["game_running"] = "Il gioco è già in esecuzione, esci prima di avviare il launcher!";
             Interface["one_drive"] = "Attenzione: il gioco è installato in una posizione con restrizioni. Per ottenere risultati ottimali, spostalo in una directory principale come C:\\Giochi\\Jeff Wayne's 'La guerra dei mondi'.";
             Interface["one_drive_warning"] = "Avviso di installazione";
-            Interface["fullscreen_description"] = "Attiva o disattiva la modalità a schermo intero. Nota: la combinazione di tasti Alt+Tab causa l'arresto anomalo del gioco in modalità a schermo intero.";
+            Interface["fullscreen_description"] = "Abilita o disabilita lo schermo intero.";
             Interface["fullscreen"] = "A schermo intero";
             Interface["resolution_description"] = "La risoluzione del gioco.";
             Interface["resolution"] = "Risoluzione";
@@ -305,7 +305,7 @@ namespace WoWLauncher
             Interface["advanced"] = "Impostazioni avanzate";
             Interface["tools"] = "Strumenti di sviluppo";
             Interface["keyboard"] = "Scorciatoie da tastiera";
-            Interface["music_playback_description"] = "Attivando questa opzione, la musica continuerà a essere riprodotta anche quando la finestra perde il focus, a meno che non sia in modalità a schermo intero.";
+            Interface["music_playback_description"] = "L'abilitazione di questa opzione consentirà alla musica di continuare a suonare quando la finestra perde il focus.";
             Interface["music_playback"] = "Riproduzione musicale";
             Interface["enhanced_assets_description"] = "Questa impostazione abilita gli elementi grafici avanzati dell'interfaccia utente. (Ciò aggiunge una maggiore profondità di colore all'interfaccia.)";
             Interface["enhanced_assets"] = "Risorse migliorate";
@@ -374,7 +374,7 @@ namespace WoWLauncher
             Interface["game_running"] = "El juego ya está en ejecución, ¡ciérrelo antes de ejecutar el lanzador!";
             Interface["one_drive"] = "Advertencia: El juego está instalado en una ubicación restringida. Para obtener mejores resultados, muévalo a un directorio raíz como C:\\Juegos\\Jeff Wayne's 'La Guerra de los Mundos'.";
             Interface["one_drive_warning"] = "Advertencia de instalación";
-            Interface["fullscreen_description"] = "Activa o desactiva la pantalla completa. Nota: Al usar Alt+Tab, el juego se bloquea en modo de pantalla completa.";
+            Interface["fullscreen_description"] = "Activar o desactivar la pantalla completa.";
             Interface["fullscreen"] = "Pantalla completa";
             Interface["resolution_description"] = "La resolución del juego.";
             Interface["resolution"] = "Resolución";
@@ -385,7 +385,7 @@ namespace WoWLauncher
             Interface["advanced"] = "Configuración avanzada";
             Interface["tools"] = "Herramientas de desarrollo";
             Interface["keyboard"] = "Atajos de teclado";
-            Interface["music_playback_description"] = "Al habilitar esta opción, la música podrá seguir reproduciéndose cuando la ventana pierda el foco, siempre que no esté en modo de pantalla completa.";
+            Interface["music_playback_description"] = "Activar esto permitirá que la música siga sonando cuando la ventana pierda el foco.";
             Interface["music_playback"] = "Reproducción de música";
             Interface["enhanced_assets_description"] = "Esta configuración habilita los recursos mejorados de la interfaz de usuario. ( Esto añade un poco más de profundidad de color a la interfaz. )";
             Interface["enhanced_assets"] = "Interfaz mejorada";
