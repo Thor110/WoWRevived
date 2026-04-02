@@ -121,10 +121,12 @@ The road map for this project.
 	- Terrain viewer can export .CLS geometry and their tile indexed texture map.
 	- Ability to import custom geometry.
 	- Preview the terrains tilemap.
-- [✅ 6 : Building Viewer](#building-viewer) ( 100% Complete )
+- [✅ 6 : Building Viewer](#building-viewer) ( 90% Complete )
 	- Building viewer can export .IOB BSP geometry.
 	- Ability to export building sprites.
 	- Import currently only allows for replacing existing pixels in a sprite due to run-length encoding.
+	- Known "bugs" with the Building Viewer. ( The remaining 10% )
+		- Importing has a bug that shifts some sprites.
 - [✅ 7 : Font Viewer](#font-viewer) ( 100% Complete )
 	- Font viewer can export .FNT files to .png images.
 	- Ability to import edited fonts.
