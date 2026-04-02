@@ -644,13 +644,16 @@ BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
         // Read cnc-ddraw target resolution from ddraw.ini
         if (GetFileAttributesA("ddraw.dll") != INVALID_FILE_ATTRIBUTES) // only parse if ddraw is enabled
         {
-            char iniPath[MAX_PATH];
-            GetModuleFileNameA(NULL, iniPath, MAX_PATH);
-            char* lastSlash = strrchr(iniPath, '\\');
-            if (lastSlash) *(lastSlash + 1) = '\0';
-            strcat(iniPath, "ddraw.ini");
-            regWidth = GetPrivateProfileIntA("ddraw", "width", 0, iniPath);     // update regWidth
-            regHeight = GetPrivateProfileIntA("ddraw", "height", 0, iniPath);   // update regHeight
+            if (regWidth > 1920 || regHeight > 1080) // only parse .ini if resolution is being scaled
+            {
+                char iniPath[MAX_PATH];
+                GetModuleFileNameA(NULL, iniPath, MAX_PATH);
+                char* lastSlash = strrchr(iniPath, '\\');
+                if (lastSlash) *(lastSlash + 1) = '\0';
+                strcat(iniPath, "ddraw.ini");
+                regWidth = GetPrivateProfileIntA("ddraw", "width", 0, iniPath);     // update regWidth
+                regHeight = GetPrivateProfileIntA("ddraw", "height", 0, iniPath);   // update regHeight
+            }
         }
 
         // Calculate the Aspect Ratio of the screen
