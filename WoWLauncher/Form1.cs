@@ -559,6 +559,7 @@ namespace WoWLauncher
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (resolutionStored == comboBox2.SelectedIndex) { return; }
+            resolutionStored = comboBox2.SelectedIndex;
             string screenSize = comboBox2.SelectedItem!.ToString()!.Replace("x", ",").Split(' ')[0]; // convert to the format used in the registry
             // overclocked resolutions........
             int nextResolution = comboBox2.SelectedIndex;
