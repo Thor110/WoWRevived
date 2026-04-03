@@ -313,15 +313,21 @@ All of the original menu backgrounds sat in the corner at 640x480 no matter the 
 
 Martian War Map - Europe
 
+Though this could use a little cleanup, I added the edge of Europe to the Martian view of the war map.
+
 <div align="center">
   <img src="images/custom-martian-warmap.png" alt="Martian War Map">
 </div>
+
+Similarly though I expanded the Human view of the war map, I chose not to add the edge of Europe, partially because making it look right would be difficult, but also because the style is that of a paper map of the British Isles, which in real life likely wouldn't include Europe in the games timeline and setting.
+
+Expanded Backgrounds
 
 These are a work in-progress, AI (Gemini) was used to generate portions of the extended backgrounds, but they have undergone extensive editing.
 
 There is still a lot of cleanup left to do before these images are viable for use, but I have done my best to try and ensure that they are resolution agnostic and people using different resolutions won't miss out on much.
 
-CD Player Menu - Expanded
+CD Player Menu - Expanded - Finished
 
 <div align="center">
   <img src="images/custom-cd-player.png" alt="CD Player Menu">
