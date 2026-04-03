@@ -47,6 +47,8 @@ The road map for this project.
 		- 3\. German
 		- 4\. Italian
 		- 5\. Spanish
+	- Known "bugs" which I consider non-issues for the time-being.
+		- Occasional crashes on startup or during gameplay which are caused by a bug in the windows compatibility layer. ( specifically apphelp.dll )
 - [✅ 1 : Custom Launcher](#custom-launcher) ( 100% Complete )
 	- Quick restart after alt-tab error exit of the game.
 	- Advanced registry settings options, now including the ability to adjust the turret build limit.
