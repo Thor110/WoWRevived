@@ -129,7 +129,7 @@ The road map for this project.
 	- Custom Smackw32.dll that plays upscaled videos at the games resolution.
 	- Simple 1920x1080 upscales of all the original videos which get scaled to the games resolution.
 	- Includes code for hijacking the credits sequence so that it doesn't crash and creating an overlay to display the credits sequence.
-- [❌ 13 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 90% Complete )
+- [❌ 13 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 92% Complete )
 	- Resolution agnostic custom backgrounds have been made but have yet to be finished.
 	- Extended width of the war map, this allows higher resolutions to work.
 	- Martian war map now shows Europe in the bottom right corner.
@@ -321,10 +321,16 @@ These are a work in-progress, AI (Gemini) was used to generate portions of the e
 
 There is still a lot of cleanup left to do before these images are viable for use, but I have done my best to try and ensure that they are resolution agnostic and people using different resolutions won't miss out on much.
 
-CD Player Menu
+CD Player Menu - Expanded
 
 <div align="center">
   <img src="images/custom-cd-player.png" alt="CD Player Menu">
+</div>
+
+CD Player Menu - Original
+
+<div align="center">
+  <img src="images/custom-cd-player-original.png" alt="CD Player Menu - Original">
 </div>
 
 Human Briefing Menu
