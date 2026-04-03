@@ -22,23 +22,23 @@ using namespace Gdiplus;
 //  Globals
 // ============================================================
 
-FILE* logFile = nullptr;
-bool  debug = false;
-int   regWidth = 640;
-int   regHeight = 480;
-int   offsetY = 0;
-bool  videoFinished = false;
-bool victoryMovieFinished = false;
-bool  isFullscreen = false;
-HWND  overlayWindow = NULL;
-IMFPMediaPlayer* pMediaPlayer = NULL;
-bool playerIsHuman = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES);
+FILE*               logFile = nullptr;
+bool                debug = false;
+int                 regWidth = 640;
+int                 regHeight = 480;
+int                 offsetY = 0;
+bool                videoFinished = false;
+bool                victoryMovieFinished = false;
+bool                isFullscreen = false;
+HWND                overlayWindow = NULL;
+IMFPMediaPlayer*    pMediaPlayer = NULL;
+bool                playerIsHuman = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES);
 
 // Credits scroll state
-Image* creditsImage = nullptr;
-float   creditsScrollY = 0.0f;   // current scroll position in image pixels
-float   creditsScrollPx = 0.0f;   // pixels per second, set after image loads
-ULONG_PTR gdiplusToken = 0;
+Image*              creditsImage = nullptr;
+float               creditsScrollY = 0.0f;   // current scroll position in image pixels
+float               creditsScrollPx = 0.0f;   // pixels per second, set after image loads
+ULONG_PTR           gdiplusToken = 0;
 
 // ============================================================
 //  Logging
@@ -92,7 +92,6 @@ void CloseOverlayWindow();
 void InstallCreditsHook()
 {
     DWORD old;
-
     // Patch sub_405470 to return immediately.
     // This prevents the tile renderer from being created (no crash at any resolution).
     // Audio is set up in sub_4052B0 which runs before sub_405470 is ever called.
@@ -364,7 +363,6 @@ DWORD WINAPI CreditsWatchThread(LPVOID)
             DispatchMessageA(&msg);
         }
     }
-
     Log("CreditsWatchThread exiting");
     return 0;
 }
@@ -521,7 +519,6 @@ extern "C" {
     void WINAPI SmackWait(void* smk) { Sleep(1); /*Log("SmackWait");*/ }
     void WINAPI SmackBlitOpen(void* smk) { Sleep(1); /*Log("SmackBlitOpen");*/ }
     void WINAPI SmackDDSurfaceType(void* lpDDS) { Sleep(1); /*Log("SmackDDSurfaceType");*/ }
-
     void* WINAPI SmackOpen(const char* name, DWORD flags, DWORD extra) {
         Log("SmackOpen: %s", name);
         //fix incoming name string .SMK = .mp4
@@ -555,7 +552,6 @@ extern "C" {
 
         return &dummy;
     }
-
     void WINAPI SmackUseMMX(DWORD flag) { Sleep(1); /*Log("SmackUseMMX: %d", flag);*/ }
     void WINAPI SmackSoundUseDirectSound(void* ds) { Sleep(1); /*Log("SmackSoundUseDirectSound");*/ }
     void WINAPI SmackNextFrame(void* smk) {
@@ -578,15 +574,8 @@ extern "C" {
             DispatchMessage(&msg);
         }
     }
-
-    int WINAPI SmackDoFrame(void* smk) {
-        //Log("SmackDoFrame"); // logged
-        return  0;
-    }
-
-    void WINAPI SmackToBuffer(void* smk, DWORD l, DWORD t, DWORD p, DWORD h, void* buf, DWORD f) {
-        Sleep(1); /*Log("SmackToBuffer"); */ // logged
-    }
+    int WINAPI SmackDoFrame(void* smk) { return  0; /* //Log("SmackDoFrame"); // logged */ }
+    void WINAPI SmackToBuffer(void* smk, DWORD l, DWORD t, DWORD p, DWORD h, void* buf, DWORD f) { Sleep(1); /*Log("SmackToBuffer"); // logged */ }
 }
 
 // ============================================================
@@ -615,8 +604,8 @@ BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
 {
     if (reason == DLL_PROCESS_ATTACH)
     {
-        DeleteFileA("Smackw32_log.txt");
-        // Note: We use HKEY_LOCAL_MACHINE and the path you provided. 
+        if (debug) DeleteFileA("Smackw32_log.txt");
+        // Note: We use HKEY_LOCAL_MACHINE and the path you provided.
         // Since your app is 32-bit, Windows automatically handles the WOW6432Node redirection.
         HKEY hKey;
         if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
@@ -679,7 +668,6 @@ BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
             WaitForSingleObject(creditsThread, 500);
             CloseHandle(creditsThread); creditsThread = NULL;
         }
-        if (creditsOverlay) { CloseOverlayWindow(); }
         CloseOverlayWindow();
         if (pMediaPlayer) {
             pMediaPlayer->Shutdown(); pMediaPlayer->Release(); pMediaPlayer = NULL;
