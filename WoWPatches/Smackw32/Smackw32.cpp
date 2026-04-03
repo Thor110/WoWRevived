@@ -162,6 +162,27 @@ LRESULT CALLBACK CreditsWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
     return DefWindowProcA(hwnd, msg, wParam, lParam);
 }
 
+DWORD WINAPI FocusWatchThread(LPVOID) {
+    while (overlayWindow || creditsOverlay) {
+        HWND foreground = GetForegroundWindow();
+        HWND gameWnd = FindWindowA(NULL, "The War Of The Worlds");
+        bool gameFocused = (foreground == gameWnd ||
+            foreground == overlayWindow ||
+            foreground == creditsOverlay);
+
+        if (overlayWindow) {
+            if (!gameFocused) ShowWindow(overlayWindow, SW_HIDE);
+            else ShowWindow(overlayWindow, SW_SHOWNA);
+        }
+        if (creditsOverlay) {
+            if (!gameFocused) ShowWindow(creditsOverlay, SW_HIDE);
+            else ShowWindow(creditsOverlay, SW_SHOWNA);
+        }
+        Sleep(100);
+    }
+    return 0;
+}
+
 void CreateCreditsOverlay()
 {
     WNDCLASSEXA wc = {};
@@ -186,6 +207,7 @@ void CreateCreditsOverlay()
     if (creditsOverlay) {
         SetLayeredWindowAttributes(creditsOverlay, 0, 255, LWA_ALPHA);  // fully opaque but input-transparent
         ShowWindow(creditsOverlay, SW_SHOWNA);
+        CreateThread(NULL, 0, FocusWatchThread, NULL, 0, NULL);
         // Load credits.png from the same directory as the exe
         char exePath[MAX_PATH];
         GetModuleFileNameA(NULL, exePath, MAX_PATH);
@@ -489,6 +511,7 @@ void CreateOverlayWindow() {
         GetModuleHandleA(NULL), NULL
     );
     ShowWindow(overlayWindow, SW_SHOWNA);
+    CreateThread(NULL, 0, FocusWatchThread, NULL, 0, NULL);
     if (gameWnd && !origGameProc) {
         origGameProc = (WNDPROC)SetWindowLongPtr(gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc);
     }
