@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <string>
+#include <algorithm>
 #include <mfidl.h>
 
 #include <gdiplus.h>
@@ -547,6 +548,18 @@ extern "C" {
         //fix incoming name string .SMK = .mp4
         std::string movie = name;
         movie.resize(movie.length() - 3);
+        // get file name
+        size_t slash = movie.find_last_of("\\/");
+        std::string fileName = (slash != std::string::npos) ? movie.substr(slash + 1) : movie;
+        std::transform(fileName.begin(), fileName.end(), fileName.begin(), ::toupper);
+        // TITLE and RAGELOGO remain in the standard \FMV\ folder
+        if (fileName != "TITLE." && fileName != "RAGELOGO.") {
+            std::string newFolder = playerIsHuman ? "-Human" : "-Martian";
+            size_t pos = movie.find("FMV");
+            if (pos != std::string::npos) {
+                movie.insert(pos + 3, newFolder);
+            }
+        }
         movie.append("mp4");
         Log("Updated String: %s", movie.c_str());
 

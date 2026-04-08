@@ -21,6 +21,7 @@ volatile DWORD* pMenuState1 = (volatile DWORD*)0x4D1490;
 // The Control ID for the CD Player menu
 const DWORD CD_PLAYER_MENU_ID = 0x803E;
 CRITICAL_SECTION audioLock;
+bool playerIsHuman = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES);
 
 // === Logging === //
 void Log(const char* fmt, ...)
@@ -408,7 +409,8 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 			}
 			else {
 				char path[MAX_PATH];
-				wsprintfA(path, "Music\\%02d Track%02d.wav", currentTrack, currentTrack);
+				std::string newFolder = playerIsHuman ? "-Human" : "-Martian";
+				wsprintfA(path, "Music%s\\%02d Track%02d.wav", newFolder.c_str(), currentTrack, currentTrack);
 				currentTrackLength = GetWavDuration(path);
 				dwStartTime = GetTickCount();
 				// PlayWav_Locked opens the new handle inside the lock, so WndProcHook

@@ -151,11 +151,12 @@ namespace WoWLauncher
                 "WoW.exe", "WOWStart.exe"
             };
             foreach (string deleteFile in deleteFiles) { if (File.Exists(deleteFile)) { File.Delete(deleteFile); } }
+            if (File.Exists("Human.cd") && File.Exists("MARTIAN.cd")) { File.Delete("Human.cd"); }
             // delete unnecessary directx folder and fles
             if (Directory.Exists("DIRECTX")) { Directory.Delete("DIRECTX", true); }
             if (Directory.Exists("WinSys")) { Directory.Delete("WinSys", true); }
             // delete old .smk movie files
-            string[] folders = { "FMV", "FMV-Human" };
+            string[] folders = { "FMV" };
             foreach (string file in folders.Where(Directory.Exists).SelectMany(f => Directory.EnumerateFiles(f, "*.smk", SearchOption.TopDirectoryOnly))) { File.Delete(file); }
             List<string> supported = GetSupportedResolutions();
             List<string> matchedResolutions = supportedResolutions.Where(sr => supported.Any(r => sr.Contains(r))).ToList();
@@ -396,23 +397,7 @@ namespace WoWLauncher
         /// This is the event handler for the "Start Human Game" button
         private void button1_Click(object sender, EventArgs e)
         {
-            if (File.Exists("MARTIAN.cd") && Directory.Exists("FMV-Human") && Directory.Exists("MusicHuman")) // only swap files if martian is enabled and human is disabled
-            {
-                // double check if the human game is installed // prevent exceptions if these files do not exist
-                if (!File.Exists("human.cd.bak") || !Directory.Exists("FMV"))
-                {
-                    MessageBox.Show(Program.Interface["human_game"]);
-                    return;
-                }
-                File.Move("FMV\\RAGELOGO.MP4", "FMV-Human\\RAGELOGO.MP4");
-                File.Move("FMV\\TITLE.MP4", "FMV-Human\\TITLE.MP4");
-                File.Move("MARTIAN.cd", "MARTIAN.cd.bak");
-                File.Move("human.cd.bak", "human.cd");
-                Directory.Move("FMV", "FMV-Martian");
-                Directory.Move("FMV-Human", "FMV");
-                Directory.Move("Music", "MusicMartian");
-                Directory.Move("MusicHuman", "Music");
-            }
+            if (File.Exists("MARTIAN.cd")) { File.Move("MARTIAN.cd", "Human.cd"); }
             // difficulty variance testing
             switch ((string)mainKey.GetValue("Difficulty")!)
             {
@@ -438,23 +423,7 @@ namespace WoWLauncher
         /// This is the event handler for the "Start Martian Game" button
         private void button2_Click(object sender, EventArgs e)
         {
-            if (File.Exists("human.cd") && Directory.Exists("FMV-Martian") && Directory.Exists("MusicMartian")) // only swap files if human is enabled and martian is disabled
-            {
-                // double check if the martian game is installed // prevent exceptions if these files do not exist
-                if (!File.Exists("MARTIAN.cd.bak") || !Directory.Exists("FMV"))
-                {
-                    MessageBox.Show(Program.Interface["martian_game"]);
-                    return;
-                }
-                File.Move("FMV\\RAGELOGO.MP4", "FMV-Martian\\RAGELOGO.MP4");
-                File.Move("FMV\\TITLE.MP4", "FMV-Martian\\TITLE.MP4");
-                File.Move("human.cd", "human.cd.bak");
-                File.Move("MARTIAN.cd.bak", "MARTIAN.cd");
-                Directory.Move("FMV", "FMV-Human");
-                Directory.Move("FMV-Martian", "FMV");
-                Directory.Move("Music", "MusicHuman");
-                Directory.Move("MusicMartian", "Music");
-            }
+            if (File.Exists("Human.cd")) { File.Move("Human.cd", "MARTIAN.cd"); }
             // difficulty variance testing
             switch ((string)mainKey.GetValue("Difficulty")!)
             {
