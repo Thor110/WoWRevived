@@ -402,12 +402,12 @@ namespace WoWLauncher
             {
                 launch("WoW_patched.exe");
             }
-            else if (File.Exists("WoW_network.exe") && checkBox1.Checked)
+            else if (File.Exists("DAT-Extra\\WoW_network.exe") && checkBox1.Checked)
             {
                 // kill Volume registry key to prevent the networked executable from failing to launch
                 string baseKeyString = $@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound\Volume";
                 DeleteRegistryFolder(RegistryHive.LocalMachine, baseKeyString);
-                launch(@"DAT-EXTRA\WoW_network.exe");
+                launch("DAT-Extra\\WoW_network.exe");
             }
             else { MessageBox.Show(Program.Interface["executable"]); }
             Close();
