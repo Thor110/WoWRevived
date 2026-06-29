@@ -1,0 +1,40 @@
+base version
+
+9 winmm bytes
+1 byte for CD player NO CD Inserted
+
+options version
+
+2 bytes skip 8/16 bit colour toggles
+2 bytes skip "Lights" toggle
+
+errors version
+
+1 byte assertion errors skip
+
+cd inserted
+
+1 byte skip
+
+movie file check
+
+1 byte skip
+
+resolution slider
+
+2 byte skip
+
+smk skip
+
+1 byte skip
+
+network drag select bytes - 16 bytes 80 02 == 00 08
+
+0x814D3
+0x814E1
+0x814FB
+0x81509
+0x8152F
+0x8153D
+0x81557
+0x81565
