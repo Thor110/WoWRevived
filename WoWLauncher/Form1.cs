@@ -42,6 +42,7 @@ namespace WoWLauncher
         private RegistryKey debugKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true)!;
         private RegistryKey soundKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound", true)!;
         private RegistryKey volumeKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound\Volume", true)!;
+        private RegistryKey systemKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\System", true)!;
         [StructLayout(LayoutKind.Sequential)]
         public struct DEVMODE
         {
@@ -104,6 +105,7 @@ namespace WoWLauncher
                 debugKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true)!;
                 soundKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound", true)!;
                 volumeKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound\Volume", true);
+                systemKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\System", true)!;
                 // these values are set because the launcher accesses them.
                 mainKey.SetValue("Enable Network Version", 0, RegistryValueKind.DWord);
                 mainKey.SetValue("Full Screen", "1");
@@ -138,6 +140,12 @@ namespace WoWLauncher
                 soundKey.SetValue("Inner border", "-320,-200");
                 soundKey.SetValue("Outer Ambient border", "-960,-600");
                 soundKey.SetValue("Outer border", "-640,-400");
+                // memory limits
+                systemKey.SetValue("Game Memory", "32");//
+                systemKey.SetValue("Game Memory Handles", "32767");
+                systemKey.SetValue("Renderer Memory", "32");
+                systemKey.SetValue("Renderer Memory Handles", "32767");
+                // custom cd focus registry entry
                 volumeKey.SetValue("CD-Focus", 0, RegistryValueKind.DWord);
             }
             registryCompare(mainKey, "CD Path", AppDomain.CurrentDomain.BaseDirectory); // update the cd path in the registry automatically.
@@ -382,17 +390,25 @@ namespace WoWLauncher
         private void launchGame()
         {
             // safety check for anyone who may decide to use the original executable and to check either exists
-            if (File.Exists("WoW_patched.exe"))
+            if (File.Exists("WoW_patched.exe") && !checkBox1.Checked)
+            {
+                launch("WoW_patched.exe");
+            }
+            else if (File.Exists("WoW_network.exe") && checkBox1.Checked) // currently disabled
+            {
+                launch("WoW_network.exe");
+            }
+            else { MessageBox.Show(Program.Interface["executable"]); }
+            Close();
+            void launch(string executable)
             {
                 // TODO: run as administrator for future networked version
                 Process proc = new Process();
-                proc.StartInfo.FileName = "WoW_patched.exe";
+                proc.StartInfo.FileName = executable;
                 proc.StartInfo.UseShellExecute = true;
                 proc.StartInfo.Verb = "runas";
                 proc.Start();
             }
-            else { MessageBox.Show(Program.Interface["executable"]); }
-            Close();
         }
         /// This is the event handler for the "Start Human Game" button
         private void button1_Click(object sender, EventArgs e)
