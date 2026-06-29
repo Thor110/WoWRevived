@@ -111,7 +111,6 @@
             checkBox1.TabIndex = 5;
             checkBox1.Text = "Enable Network Version";
             checkBox1.UseVisualStyleBackColor = true;
-            checkBox1.Visible = false;
             // 
             // checkBox2
             // 
