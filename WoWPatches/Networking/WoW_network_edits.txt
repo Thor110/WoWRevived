@@ -1,4 +1,4 @@
-base version
+version
 
 9 winmm bytes
 1 byte for CD player NO CD Inserted
@@ -38,3 +38,11 @@ network drag select bytes - 16 bytes 80 02 == 00 08
 0x8153D
 0x81557
 0x81565
+
+2 x 5 bytes skip
+
+call _atexit on "CD Path" and "Install Path" registry entries to prevent them being cleared on exit.
+
+3 byte skip
+
+retn 8 instead of execute No CD Inserted path
