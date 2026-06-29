@@ -156,6 +156,7 @@ DWORD audioReadPos = 0;
 // StopAudio_Locked: must be called with audioLock already held.
 // Separating the locked body lets PlayWav_Locked reuse it without re-entering.
 static void StopAudio_Locked() {
+	/* // old code
     if (hWaveOut) {
         isStopping = true;        // tell callback to stop queueing
         waveOutReset(hWaveOut);   // returns all pending buffers
@@ -174,6 +175,15 @@ static void StopAudio_Locked() {
         hWaveOut = NULL;
         isStopping = false;       // reset for next use
     }
+	*/
+	HWAVEOUT hToClose = NULL;
+
+	EnterCriticalSection(&audioLock);
+	if (hWaveOut) {
+		isStopping = true;
+		hToClose = hWaveOut; // Copy the handle pointer
+		hWaveOut = NULL;     // Instantly clear it so other threads know it's dead
+	}
 	if (pAudioData) {
 		GlobalUnlock(pAudioData); // Ensure we unlock if we used GlobalLock
 		GlobalFree(pAudioData);
@@ -181,6 +191,30 @@ static void StopAudio_Locked() {
 	}
     audioDataSize = 0;
     audioReadPos = 0;
+
+	// new code
+	LeaveCriticalSection(&audioLock);
+
+	// Now perform the blocking OS teardown completely unprotected by the lock
+	if (hToClose) {
+		waveOutReset(hToClose); // Flushes buffers safely; callback can now grab audioLock if needed
+		for (int b = 0; b < NUM_BUFFERS; b++) {
+			if (waveHdrs[b].dwFlags & WHDR_PREPARED) {
+				waveOutUnprepareHeader(hToClose, &waveHdrs[b], sizeof(WAVEHDR));
+			}
+			if (hWaveData[b]) {
+				GlobalUnlock(hWaveData[b]);
+				GlobalFree(hWaveData[b]);
+				hWaveData[b] = nullptr;
+			}
+			waveHdrs[b] = {};
+		}
+		waveOutClose(hToClose);
+
+		EnterCriticalSection(&audioLock);
+		isStopping = false; // Reset flag safely
+		LeaveCriticalSection(&audioLock);
+	}
 }
 
 void StopAudio() {
