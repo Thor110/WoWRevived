@@ -60,7 +60,7 @@ namespace WoWViewer
             listBox1.DrawMode = DrawMode.OwnerDrawFixed;
             listBox1.DrawItem += ListBox1_DrawItem!;
             ToolTip tooltip = new ToolTip();
-            ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(ListBox), typeof(Label) });
+            ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(Label) });
             InitializeHandlers();
         }
         // for the listBox draw item event to change the color of the text if an entry is edited

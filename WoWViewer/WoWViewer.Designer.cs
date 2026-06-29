@@ -68,6 +68,7 @@
             // 
             // textBox1
             // 
+            textBox1.AccessibleDescription = "Currently opened .WoW file.";
             textBox1.Enabled = false;
             textBox1.Location = new Point(93, 13);
             textBox1.Name = "textBox1";
@@ -76,6 +77,7 @@
             // 
             // listBox1
             // 
+            listBox1.AccessibleDescription = "Double-click an asset in order to open it in a specialised file viewer.";
             listBox1.FormattingEnabled = true;
             listBox1.ItemHeight = 15;
             listBox1.Location = new Point(93, 42);
@@ -119,6 +121,7 @@
             // 
             // textBox2
             // 
+            textBox2.AccessibleDescription = "The output directory for extracting files.";
             textBox2.Enabled = false;
             textBox2.Location = new Point(93, 286);
             textBox2.Name = "textBox2";
