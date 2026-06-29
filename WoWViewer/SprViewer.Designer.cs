@@ -44,6 +44,7 @@
             label3 = new Label();
             checkBox1 = new CheckBox();
             button6 = new Button();
+            label4 = new Label();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -163,6 +164,7 @@
             button5.TabIndex = 13;
             button5.Text = "Export Palette";
             button5.UseVisualStyleBackColor = true;
+            button5.Visible = false;
             button5.Click += button5_Click;
             // 
             // listBox3
@@ -195,6 +197,7 @@
             checkBox1.TabIndex = 14;
             checkBox1.Text = "Shader Tables";
             checkBox1.UseVisualStyleBackColor = true;
+            checkBox1.Visible = false;
             checkBox1.CheckedChanged += checkBox1_CheckedChanged;
             // 
             // button6
@@ -208,11 +211,22 @@
             button6.UseVisualStyleBackColor = true;
             button6.Click += button6_Click;
             // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new Point(157, 325);
+            label4.Name = "label4";
+            label4.Size = new Size(194, 15);
+            label4.TabIndex = 18;
+            label4.Text = "Reminder : Palette export is broken.";
+            label4.Visible = false;
+            // 
             // SprViewer
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1264, 777);
+            Controls.Add(label4);
             Controls.Add(button6);
             Controls.Add(label3);
             Controls.Add(listBox3);
@@ -255,5 +269,6 @@
         private Label label3;
         private CheckBox checkBox1;
         private Button button6;
+        private Label label4;
     }
 }
