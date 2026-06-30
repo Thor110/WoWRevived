@@ -12,10 +12,6 @@ errors version
 
 1 byte assertion errors skip
 
-cd inserted
-
-1 byte skip
-
 movie file check
 
 1 byte skip
@@ -42,7 +38,3 @@ network drag select bytes - 16 bytes 80 02 == 00 08
 2 x 5 bytes skip
 
 call _atexit on "CD Path" and "Install Path" registry entries to prevent them being cleared on exit.
-
-3 byte skip
-
-retn 8 instead of execute No CD Inserted path
