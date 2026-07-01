@@ -38,3 +38,11 @@ network drag select bytes - 16 bytes 80 02 == 00 08
 2 x 5 bytes skip
 
 call _atexit on "CD Path" and "Install Path" registry entries to prevent them being cleared on exit.
+
+2 x bytes skip WIP
+
+remove Single Player Campaign button
+
+2 x bytes skip EB 14
+
+0xADCD5 remove CD Player button
