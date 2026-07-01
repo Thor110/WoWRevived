@@ -18,11 +18,11 @@ namespace WoWLauncher
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             switch (new FileInfo("credits.png").Length)
             {
-                case 252640: SetEnglish(); break;
-                case 287375: SetFrench(); break;
-                case 289388: SetGerman(); break;
-                case 255818: SetItalian(); break;
-                case 270546: SetSpanish(); break;
+                case 258221: SetEnglish(); break;
+                case 292567: SetFrench(); break;
+                case 294349: SetGerman(); break;
+                case 258919: SetItalian(); break;
+                case 268939: SetSpanish(); break;
                 default: MessageBox.Show("You altered credits.png!!! The file size is used to identify which language should be set!!!"); break;
             }
             if (Process.GetProcessesByName("WoWLauncher").Length > 1)
