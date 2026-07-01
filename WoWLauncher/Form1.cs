@@ -396,9 +396,6 @@ namespace WoWLauncher
             }
             else if (File.Exists("DAT-Extra\\WoW_network.exe") && checkBox1.Checked)
             {
-                // kill Volume registry key to prevent the networked executable from failing to launch
-                string baseKeyString = $@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound\Volume";
-                DeleteRegistryFolder(RegistryHive.LocalMachine, baseKeyString);
                 launch("DAT-Extra\\WoW_network.exe");
             }
             else { MessageBox.Show(Program.Interface["executable"]); }
@@ -414,13 +411,13 @@ namespace WoWLauncher
             }
         }
         // function from Riccardo Bassilichi : https://stackoverflow.com/questions/32250244/delete-a-registry-key-using-c-sharp
-        public static void DeleteRegistryFolder(RegistryHive registryHive, string fullPathKeyToDelete)
+        /*public static void DeleteRegistryFolder(RegistryHive registryHive, string fullPathKeyToDelete)
         {
             using (var baseKey = RegistryKey.OpenBaseKey(registryHive, RegistryView.Registry32))
             {
                 baseKey.DeleteSubKeyTree(fullPathKeyToDelete);
             }
-        }
+        }*/
         /// This is the event handler for the "Start Human Game" button
         private void button1_Click(object sender, EventArgs e)
         {
