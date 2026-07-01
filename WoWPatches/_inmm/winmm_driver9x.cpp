@@ -17,7 +17,9 @@ FILE* logFile = nullptr;
 bool debug = false; // true for logging
 bool musicFocus = false; // allow music to continue playing while the window is out of focus
 // Pointers to the game's internal Menu State
-volatile DWORD* pMenuState1 = (volatile DWORD*)0x4D1490;
+volatile BYTE* pCDMusicToggle = nullptr;
+//volatile DWORD* pMenuState1 = (volatile DWORD*)0x4D1490; // 5427CC
+//volatile DWORD* pMenuState1 = (volatile DWORD*)0x5427CC;
 // The Control ID for the CD Player menu
 const DWORD CD_PLAYER_MENU_ID = 0x803E;
 CRITICAL_SECTION audioLock;
@@ -51,10 +53,10 @@ extern "C" DLLEXPORT DWORD WINAPI _imeGetTime(void) { return timeGetTime(); }
 // networking executable specific variables
 bool seekAfterOpen = false;
 DWORD lastPlayTime = 0;
-bool isNetworkVersion = false;
-//float masterVolume = 1.0f; // flt_4CA870
-//float ambientVolume = 1.0f; // flt_4CA858
-//float speechVolume = 1.0f; // unk_4CA86C
+bool isNetworkVersion = false;	// vanilla			// network
+//float masterVolume = 1.0f;	// flt_4CA870		// dword_530654
+//float ambientVolume = 1.0f;	// flt_4CA858		// flt_53063C
+//float speechVolume = 1.0f;	// unk_4CA86C		// unk_530650
 DWORD cdState = 1;
 volatile bool isStopping = false;
 
@@ -66,9 +68,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		GetModuleFileNameA(NULL, exeName, MAX_PATH);
 		isNetworkVersion = (strstr(exeName, "WoW_network") != NULL);
 		InitializeCriticalSection(&audioLock);
-		HKEY hKey;
 		cdState = 1; // Default to ON
-
+		HKEY hKey;
 		if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000\\Sound\\Volume", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
 			char buffer[256];
 			DWORD type = 0;
@@ -80,16 +81,36 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 					buffer[min(bufferSize, (DWORD)255)] = '\0';
 					*(float*)addr = (float)atof(buffer);
 				}
-			};
-
-			ReadFloat("Master", 0x004CA870);
-			ReadFloat("Ambient", 0x004CA858);
-			ReadFloat("Speech", 0x004CA86C);
+				};
+			if (isNetworkVersion)
+			{
+				pCDMusicToggle = (volatile BYTE*)0x5427CC;
+				ReadFloat("Master", 0x00530654);
+				ReadFloat("Ambient", 0x0053063C);
+				ReadFloat("Speech", 0x00530650);
+			}
+			else
+			{
+				pCDMusicToggle = (volatile BYTE*)0x4B8A88;
+				ReadFloat("Master", 0x004CA870);
+				ReadFloat("Ambient", 0x004CA858);
+				ReadFloat("Speech", 0x004CA86C);
+			}
 
 			DWORD cdSize = sizeof(DWORD);
 			DWORD cdFocus = 1;
 			if (RegQueryValueExA(hKey, "CD", NULL, &type, (LPBYTE)&cdState, &cdSize) == ERROR_SUCCESS) {
-				*(int*)0x004B8A88 = (int)cdState;
+				// is cd state the same memory address as well?
+				
+				if (isNetworkVersion)
+				{
+					// find network version memory addresses
+					*(int*)0x005427CC = (int)cdState;
+				}
+				else
+				{
+					*(int*)0x004B8A88 = (int)cdState;
+				}
 			}
 			if (RegQueryValueExA(hKey, "CD-Focus", NULL, &type, (LPBYTE)&cdFocus, &cdSize) == ERROR_SUCCESS) {
 				musicFocus = (bool)cdFocus;
@@ -103,22 +124,34 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		if (RegCreateKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000\\Sound\\Volume",
 			0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
 
-			char volBuffer[32];
-
+			char volBufferA[32];
+			char volBufferB[32];
+			char volBufferC[32];
+			DWORD cdState = (DWORD) * (int*)0x004B8A88;
+			if (isNetworkVersion)
+			{
+				// find network version memory addresses
+				//cdState = (DWORD) * (int*)0x004B8A88;
+				sprintf(volBufferA, "%f", *(float*)0x00530654);
+				sprintf(volBufferB, "%f", *(float*)0x0053063C);
+				sprintf(volBufferC, "%f", *(float*)0x00530650);
+			}
+			else
+			{
+				sprintf(volBufferA, "%f", *(float*)0x004CA870);
+				sprintf(volBufferB, "%f", *(float*)0x004CA858);
+				sprintf(volBufferC, "%f", *(float*)0x004CA86C);
+			}
 			// Master Volume
-			sprintf(volBuffer, "%f", *(float*)0x004CA870);
-			RegSetValueExA(hKey, "Master", 0, REG_SZ, (LPBYTE)volBuffer, (DWORD)(strlen(volBuffer) + 1));
+			RegSetValueExA(hKey, "Master", 0, REG_SZ, (LPBYTE)volBufferA, (DWORD)(strlen(volBufferA) + 1));
 
 			// Ambient Volume
-			sprintf(volBuffer, "%f", *(float*)0x004CA858);
-			RegSetValueExA(hKey, "Ambient", 0, REG_SZ, (LPBYTE)volBuffer, (DWORD)(strlen(volBuffer) + 1));
+			RegSetValueExA(hKey, "Ambient", 0, REG_SZ, (LPBYTE)volBufferB, (DWORD)(strlen(volBufferB) + 1));
 
 			// Speech Volume
-			sprintf(volBuffer, "%f", *(float*)0x004CA86C);
-			RegSetValueExA(hKey, "Speech", 0, REG_SZ, (LPBYTE)volBuffer, (DWORD)(strlen(volBuffer) + 1));
+			RegSetValueExA(hKey, "Speech", 0, REG_SZ, (LPBYTE)volBufferC, (DWORD)(strlen(volBufferC) + 1));
 
 			// In-Game CD Music
-			DWORD cdState = (DWORD)*(int*)0x004B8A88;
 			RegSetValueExA(hKey, "CD", 0, REG_DWORD, (const BYTE*)&cdState, sizeof(DWORD));
 
 			RegCloseKey(hKey);
@@ -235,7 +268,7 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	// --- IN-GAME MUSIC OVERRIDE ---
 	// If the user disabled music in the UI, kill any active audio and ignore all MCI spam.
 	// EXCEPTION: If the CD Player menu is currently open, allow MCI commands to pass through.
-	if ((int)cdState == 0 && *pMenuState1 != CD_PLAYER_MENU_ID) {
+	if ((int)cdState == 0 && *pCDMusicToggle != CD_PLAYER_MENU_ID) {
 		StopAudio();
 		return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
 	}
@@ -347,7 +380,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// --- IN-GAME MUSIC OVERRIDE ---
 	// If the user disabled music in the UI, kill any active audio and ignore all MCI spam.
 	// EXCEPTION: If the CD Player menu is currently open, allow MCI commands to pass through.
-	if ((int)cdState == 0 && *pMenuState1 != CD_PLAYER_MENU_ID) {
+	if ((int)cdState == 0 && *pCDMusicToggle != CD_PLAYER_MENU_ID) {
 		StopAudio();
 		return 0;
 	}
