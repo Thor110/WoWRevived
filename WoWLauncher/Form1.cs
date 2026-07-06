@@ -43,6 +43,7 @@ namespace WoWLauncher
         private RegistryKey soundKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound", true)!;
         private RegistryKey volumeKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound\Volume", true)!;
         private RegistryKey systemKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\System", true)!;
+        private RegistryKey networkKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Network", true)!;
         [StructLayout(LayoutKind.Sequential)]
         public struct DEVMODE
         {
@@ -106,6 +107,7 @@ namespace WoWLauncher
                 soundKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound", true)!;
                 volumeKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound\Volume", true);
                 systemKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\System", true)!;
+                networkKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Network", true)!;
                 // these values are set because the launcher accesses them.
                 mainKey.SetValue("Enable Network Version", 0, RegistryValueKind.DWord);
                 mainKey.SetValue("Full Screen", "1");
@@ -520,7 +522,60 @@ namespace WoWLauncher
             }
             else { Close(); }
         }
-        private void checkBox1_CheckedChanged(object sender, EventArgs e) { mainKey.SetValue("Enable Network Version", checkBox1.Checked ? 1 : 0); }
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            mainKey.SetValue("Enable Network Version", checkBox1.Checked ? 1 : 0);
+            if (checkBox1.Checked)
+            {
+                mainKey.SetValue("Thread Enable", Convert.ToInt32(mainKey.GetValue("Thread Enable") ?? 1), RegistryValueKind.DWord);
+                mainKey.SetValue("Timer Enable", Convert.ToInt32(mainKey.GetValue("Timer Enable") ?? 0), RegistryValueKind.DWord);
+                mainKey.SetValue("Sleeper Enable", Convert.ToInt32(mainKey.GetValue("Sleeper Enable") ?? 0), RegistryValueKind.DWord);
+                mainKey.SetValue("Full Screen", Convert.ToInt32(mainKey.GetValue("Full Screen") ?? 1), RegistryValueKind.DWord);
+                battleKey.SetValue("EnableFogOfWar", Convert.ToInt32(battleKey.GetValue("EnableFogOfWar") ?? 1), RegistryValueKind.DWord);
+                debugKey.SetValue("Enemy Visible", Convert.ToInt32(debugKey.GetValue("Enemy Visible") ?? 0), RegistryValueKind.DWord);
+                debugKey.SetValue("Charlie", Convert.ToInt32(debugKey.GetValue("Charlie") ?? 0), RegistryValueKind.DWord);
+                debugKey.SetValue("Dave", Convert.ToInt32(debugKey.GetValue("Dave") ?? 0), RegistryValueKind.DWord);
+                debugKey.SetValue("Mat", Convert.ToInt32(debugKey.GetValue("Mat") ?? 0), RegistryValueKind.DWord);
+                debugKey.SetValue("Edit functionality", Convert.ToInt32(debugKey.GetValue("Edit functionality") ?? 0), RegistryValueKind.DWord);
+                debugKey.SetValue("Load scenery", Convert.ToInt32(debugKey.GetValue("Load scenery") ?? 1), RegistryValueKind.DWord);
+                debugKey.SetValue("Arrow scenery load fix", Convert.ToInt32(debugKey.GetValue("Arrow scenery load fix") ?? 1), RegistryValueKind.DWord);
+                debugKey.SetValue("Show Accelerations", Convert.ToInt32(debugKey.GetValue("Show Accelerations") ?? 0), RegistryValueKind.DWord);
+                debugKey.SetValue("Show Radii", Convert.ToInt32(debugKey.GetValue("Show Radii") ?? 0), RegistryValueKind.DWord);
+                debugKey.SetValue("Show Arrival", Convert.ToInt32(debugKey.GetValue("Show Arrival") ?? 0), RegistryValueKind.DWord);
+                debugKey.SetValue("Show Orders", Convert.ToInt32(debugKey.GetValue("Show Orders") ?? 0), RegistryValueKind.DWord);
+                networkKey.SetValue("Messages Guaranteed", Convert.ToInt32(networkKey.GetValue("Messages Guaranteed") ?? 0), RegistryValueKind.DWord);
+                screenKey.SetValue("AllowResize", Convert.ToInt32(screenKey.GetValue("AllowResize") ?? 0), RegistryValueKind.DWord);
+                screenKey.SetValue("FixedAspect", Convert.ToInt32(screenKey.GetValue("FixedAspect") ?? 1), RegistryValueKind.DWord);
+                tweakKey.SetValue("AI Oracle", Convert.ToInt32(tweakKey.GetValue("AI Oracle") ?? 0), RegistryValueKind.DWord);
+            }
+            else
+            {
+                mainKey.SetValue("Thread Enable", mainKey.GetValue("Thread Enable")!?.ToString()!, RegistryValueKind.String);
+                mainKey.SetValue("Timer Enable", mainKey.GetValue("Timer Enable")!?.ToString()!, RegistryValueKind.String);
+                mainKey.SetValue("Sleeper Enable", mainKey.GetValue("Sleeper Enable")!?.ToString()!, RegistryValueKind.String);
+                mainKey.SetValue("Full Screen", mainKey.GetValue("Full Screen")!?.ToString()!, RegistryValueKind.String);
+                battleKey.SetValue("EnableFogOfWar", battleKey.GetValue("EnableFogOfWar")!?.ToString()!, RegistryValueKind.String);
+                debugKey.SetValue("Enemy Visible", debugKey.GetValue("Enemy Visible")!?.ToString()!, RegistryValueKind.String);
+                debugKey.SetValue("Charlie", debugKey.GetValue("Charlie")!?.ToString()!, RegistryValueKind.String);
+                debugKey.SetValue("Dave", debugKey.GetValue("Dave")!?.ToString()!, RegistryValueKind.String);
+                debugKey.SetValue("Mat", debugKey.GetValue("Mat")!?.ToString()!, RegistryValueKind.String);
+                debugKey.SetValue("Edit functionality", debugKey.GetValue("Edit functionality")!?.ToString()!, RegistryValueKind.String);
+                debugKey.SetValue("Load scenery", debugKey.GetValue("Load scenery")!?.ToString()!, RegistryValueKind.String);
+                debugKey.SetValue("Arrow scenery load fix", debugKey.GetValue("Arrow scenery load fix")!?.ToString()!, RegistryValueKind.String);
+                debugKey.SetValue("Show Accelerations", debugKey.GetValue("Show Accelerations")!?.ToString()!, RegistryValueKind.String);
+                debugKey.SetValue("Show Radii", debugKey.GetValue("Show Radii")!, RegistryValueKind.String);
+                debugKey.SetValue("Show Arrival", debugKey.GetValue("Show Arrival")!?.ToString()!, RegistryValueKind.String);
+                debugKey.SetValue("Show Orders", debugKey.GetValue("Show Orders")!?.ToString()!, RegistryValueKind.String);
+                networkKey.SetValue("Messages Guaranteed", networkKey.GetValue("Messages Guaranteed")!?.ToString()!, RegistryValueKind.String);
+                screenKey.SetValue("AllowResize", screenKey.GetValue("AllowResize")!?.ToString()!, RegistryValueKind.String);
+                screenKey.SetValue("FixedAspect", screenKey.GetValue("FixedAspect")!?.ToString()!, RegistryValueKind.String);
+                tweakKey.SetValue("AI Oracle", tweakKey.GetValue("AI Oracle")!?.ToString()!, RegistryValueKind.String);
+            }
+            /* // only other value that varies or is introduced, not relevant.
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug]				  
+"Log File"="wow.log"
+             */
+        }
         private void checkBox2_CheckedChanged(object sender, EventArgs e)
         {
             if(checkBox2.Checked)
