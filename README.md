@@ -75,7 +75,7 @@ The road map for this project.
 	- Inner and outer, regular and ambient sound borders now updated through the launcher according to the users chosen resolution.
 	- Resolution list is filtered to only show resolutions supported by the monitor.
 	- Optional accessibility option enhanced minimaps toggle, doubling the size of the battlemap minimaps. (3D View)
-	- New working resolutions added.
+	- New native working resolutions added.
 		- 1280x768 &nbsp;&nbsp;&nbsp;(15:9)
 		- 1280x1024	&nbsp;&nbsp;(5:4)
 		- 1360x768 &nbsp;&nbsp;&nbsp;(16:9)
