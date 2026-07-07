@@ -217,6 +217,18 @@ Screenshot taken from a video posted by Sulus in the Discord server.
   <img src="images/airship-stretching-fixed.png" alt="Violent Airship Model Stretching">
 </div>
 
+Sector 22 South Wales Terrain Geometry Hole
+
+<div align="center">
+  <img src="images/south-wales-terrain.png" alt="Sector 22 South Wales Terrain Geometry Hole">
+</div>
+
+Sector 22 South Wales Terrain Geometry Hole Fixed
+
+<div align="center">
+  <img src="images/south-wales-terrain-fixed.png" alt="Sector 22 South Wales Terrain Geometry Hole Fixed">
+</div>
+
 ## Custom Launcher
 
 A custom launcher that makes it easy to access both campaigns as well as adjust settings.
