@@ -43,6 +43,7 @@ The road map for this project.
 	- Alt-tabbing now works as cnc-ddraw is working with the latest version of the smacker wrapper.
 	- Custom networking executable included and accessible via the launcher when networking is enabled.
 	- A hole in Sector 22 South Wales terrain geometry has been patched.
+	- Pressing escape to enter or exit the menu no longer stops the music from playing.
 	- Various executable edits:
 		- 1\. 1 byte to skip the "NO CD INSERTED" message in the CD Player menu.
 		- 2\. 2 bytes to skip creation of the 8/16 bit colour toggles in the "Display Settings" menu.
