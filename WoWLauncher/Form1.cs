@@ -376,7 +376,7 @@ namespace WoWLauncher
                 screenKey.SetValue("BPP", 16, RegistryValueKind.DWord);
                 MessageBox.Show(Program.Interface["colour"]);
             }
-            if(new FileInfo("MAPS\\MAPS.WoW").Length == 117692391)
+            if(new FileInfo("MAPS\\MAPS.WoW").Length == 162426225)
             {
                 checkBox4.Checked = true;
             }
@@ -837,12 +837,12 @@ namespace WoWLauncher
         // larger maps checkbox
         private void checkBox4_CheckedChanged(object sender, EventArgs e)
         {
-            //regular 116160871 bytes
+            //regular 160890897 bytes
             //larger 117692391
             switch (new FileInfo("MAPS\\MAPS.WoW").Length)
             {
-                case 116160871: RenameRegular(); break;
-                case 117692391: RenameLarger(); break;
+                case 160890897: RenameRegular(); break;
+                case 162426225: RenameLarger(); break;
                 default: MessageBox.Show("MAPS.WoW has an unexpected file size! Restoring the original files via the launcher may be required.", "Map Swap Error", MessageBoxButtons.OK, MessageBoxIcon.Warning); break;
             }
         }
