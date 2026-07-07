@@ -1,4 +1,4 @@
-#include <stdio.h>
+ï»¿#include <stdio.h>
 #include <conio.h>
 #include <windows.h>
 #include <fstream>
@@ -16,6 +16,10 @@ HWAVEOUT hWaveOut = NULL;
 FILE* logFile = nullptr;
 bool debug = false; // true for logging
 bool musicFocus = false; // allow music to continue playing while the window is out of focus
+// Test-only latch for the force-press-Stop experiment (see ForceStopButtonPress
+// below) - stops it firing repeatedly once per elapsed-time threshold, and gets
+// reset whenever a new track starts.
+bool forceStopFired = false;
 // Pointers to the game's internal Menu State
 volatile BYTE* pCDMusicToggle = nullptr;
 //volatile DWORD* pMenuState1 = (volatile DWORD*)0x4D1490; // 5427CC
@@ -60,6 +64,122 @@ bool isNetworkVersion = false;	// vanilla			// network
 DWORD cdState = 1;
 volatile bool isStopping = false;
 
+HWND notifyWindow = NULL;
+DWORD notifyDeviceID = FAKE_CD_ID;
+bool notifyPending = false;
+
+// Tracks whether the game currently believes the CD device is open.
+// The real MCI stack would reject SEEK/PLAY/STATUS on a closed device;
+// we never did, which lets the game's post-notify MCI_SEEK through when
+// it should have failed and triggered the game's own error handling.
+bool deviceOpen = false;
+
+// === Force-press the CD Player menu's own Stop button ===
+//
+// Reverse-engineered from the retail exe (sub_407990 builds the CD Player
+// menu's 5 transport buttons; sub_4081D0 is that menu object's own internal
+// message handler). All 5 transport buttons share one "group" ID, passed as
+// the LOWORD of wParam on the object's internal WM_COMMAND (0x111) message;
+// the specific button is distinguished by the LOWORD of lParam:
+//   0 = Previous, 1 = Play, 2 = Stop, 3 = Next, 5 = Pause
+//
+// This is the same internal call the game makes to itself when the menu's
+// own hit-testing detects a real mouse click on one of these buttons - i.e.
+// calling this replicates a manual Stop click exactly, rather than trying
+// to reconstruct what a click "should" do. This deliberately does NOT go
+// through MM_MCINOTIFY (0x3B9) - testing showed the retail build's handler
+// for that case is a dead stub (fires WM_COMMAND with wParam=3, which
+// matches none of the real button/track IDs and does nothing useful).
+#define CD_TRANSPORT_BUTTON_GROUP 0x80D3
+#define CD_BUTTON_STOP 2
+
+typedef int(__thiscall* CDPlayerOnMessage_t)(void* pThis, UINT uMsg, UINT wParam, UINT lParam);
+CDPlayerOnMessage_t CDPlayerOnMessage = (CDPlayerOnMessage_t)0x4081D0;
+
+// TODO: this is NOT a fixed address yet - the CD Player menu object is
+// heap-allocated fresh each time the menu opens (see sub_407990), so there's
+// no static "this" pointer to hardcode. pCDMusicToggle (above) sits at a
+// fixed address and holds the *ID* of whichever menu is currently active;
+// a "current menu ID" field like that is often stored right next to a
+// "current menu object pointer" field in the same struct, so scanning the
+// DWORDs immediately around 0x4B8A88 (vanilla) / 0x5427CC (network) while
+// the CD Player menu is open is the most promising place to find it.
+// Once found, point this at that (possibly indirected) address.
+void* pCDPlayerMenuThis = nullptr;
+
+void ForceStopButtonPress()
+{
+	if (!pCDPlayerMenuThis) {
+		Log("ForceStopButtonPress: pCDPlayerMenuThis not set, skipping");
+		return;
+	}
+	Log("ForceStopButtonPress: invoking CDPlayerOnMessage(this=0x%p, WM_COMMAND, group=0x%X, STOP)", pCDPlayerMenuThis, CD_TRANSPORT_BUTTON_GROUP);
+	CDPlayerOnMessage(pCDPlayerMenuThis, 0x111 /* WM_COMMAND */, CD_TRANSPORT_BUTTON_GROUP, CD_BUTTON_STOP);
+}
+
+// NOTE: the memory-scan approach that used to live here targeted pCDMusicToggle
+// (0x4B8A88 / 0x5427CC) on the theory that a "current menu ID" field is often
+// stored next to a "current menu object" pointer. Disassembly disproved the
+// premise entirely: pCDMusicToggle sits in a block of registry-default seeds
+// (volume slider defaults, the CD toggle default, and the literal "Sound\Volume"
+// key-path string right after it) - nothing to do with menu tracking. Tracing
+// the real CD_PLAYER_MENU_ID (0x803E) comparisons in sub_402B80 also ruled out
+// a simple polled global: that function receives the menu ID as a parameter in
+// eax, i.e. it's a dispatcher/factory, not something reading persistent state.
+// Next approach: hook sub_407990 (the CD Player menu constructor) directly and
+// capture ecx (== "this" under __thiscall) the moment it's called, rather than
+// hunting for a static pointer that may not exist.
+//
+// Confirmed against the VANILLA exe's disassembly only. sub_407990's opening
+// SEH prologue gives a clean 7-byte window (push -1; push offset SEH_407990)
+// that never touches ECX, so we can steal "this" out of it, log it, and hand
+// control back untouched. This is a real inline hook (read original bytes,
+// build a trampoline that runs them plus a jmp back, then overwrite the live
+// function with a jmp to our stub) - same category of technique as the
+// VirtualProtect byte-patches in Smackw32.cpp, just intercepting a call
+// instead of patching static data. Gated on !isNetworkVersion below since
+// these addresses are meaningless (and dangerous to write to) in the network
+// debug build until we have its own disassembly.
+#define CD_PLAYER_MENU_CTOR_ADDR 0x407990
+const int HOOK_LEN = 7; // exact length of "push -1" (2 bytes) + "push offset SEH_407990" (5 bytes)
+
+BYTE g_originalBytes[HOOK_LEN];
+BYTE* g_trampoline = nullptr;
+
+void __declspec(naked) CDPlayerMenuCtor_HookStub()
+{
+	__asm {
+		push eax
+		mov eax, ecx        // ecx = "this" for the CD Player menu object being constructed
+		mov pCDPlayerMenuThis, eax
+		pop eax
+		jmp g_trampoline    // resume the original prologue exactly as if nothing happened
+	}
+}
+
+void InstallCDPlayerMenuHook()
+{
+	BYTE* target = (BYTE*)CD_PLAYER_MENU_CTOR_ADDR;
+
+	memcpy(g_originalBytes, target, HOOK_LEN);
+
+	// Trampoline = original bytes + a jmp back to right after them.
+	g_trampoline = (BYTE*)VirtualAlloc(NULL, HOOK_LEN + 5, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	memcpy(g_trampoline, g_originalBytes, HOOK_LEN);
+	g_trampoline[HOOK_LEN] = 0xE9; // jmp rel32
+	*(DWORD*)(g_trampoline + HOOK_LEN + 1) = (DWORD)(target + HOOK_LEN) - (DWORD)(g_trampoline + HOOK_LEN + 5);
+
+	// Patch the live function: jmp rel32 to our stub, NOP-pad the remaining bytes.
+	DWORD oldProtect;
+	VirtualProtect(target, HOOK_LEN, PAGE_EXECUTE_READWRITE, &oldProtect);
+	target[0] = 0xE9;
+	*(DWORD*)(target + 1) = (DWORD)&CDPlayerMenuCtor_HookStub - (DWORD)(target + 5);
+	for (int i = 5; i < HOOK_LEN; i++) target[i] = 0x90;
+	VirtualProtect(target, HOOK_LEN, oldProtect, &oldProtect);
+
+	Log("InstallCDPlayerMenuHook: hooked sub_407990 at 0x%p", target);
+}
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 	if (fdwReason == DLL_PROCESS_ATTACH) {
@@ -67,6 +187,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		char exeName[MAX_PATH];
 		GetModuleFileNameA(NULL, exeName, MAX_PATH);
 		isNetworkVersion = (strstr(exeName, "WoW_network") != NULL);
+		if (!isNetworkVersion) {
+			InstallCDPlayerMenuHook();
+		}
 		InitializeCriticalSection(&audioLock);
 		cdState = 1; // Default to ON
 		HKEY hKey;
@@ -101,7 +224,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			DWORD cdFocus = 1;
 			if (RegQueryValueExA(hKey, "CD", NULL, &type, (LPBYTE)&cdState, &cdSize) == ERROR_SUCCESS) {
 				// is cd state the same memory address as well?
-				
+
 				if (isNetworkVersion)
 				{
 					// find network version memory addresses
@@ -177,7 +300,7 @@ uint32_t GetWavDuration(const char* filename) {
 	return (uint32_t)((double)dataSize / byteRate * 1000);
 }
 
-#define CHUNK_SIZE 8192  // bytes per chunk — adjust for latency vs responsiveness
+#define CHUNK_SIZE 8192  // bytes per chunk ï¿½ adjust for latency vs responsiveness
 #define NUM_BUFFERS 2    // double buffering
 
 WAVEHDR waveHdrs[NUM_BUFFERS] = {};
@@ -190,24 +313,24 @@ DWORD audioReadPos = 0;
 // Separating the locked body lets PlayWav_Locked reuse it without re-entering.
 static void StopAudio_Locked() {
 	/* // old code
-    if (hWaveOut) {
-        isStopping = true;        // tell callback to stop queueing
-        waveOutReset(hWaveOut);   // returns all pending buffers
-        for (int b = 0; b < NUM_BUFFERS; b++) {
-            if (waveHdrs[b].dwFlags & WHDR_PREPARED) {
-                waveOutUnprepareHeader(hWaveOut, &waveHdrs[b], sizeof(WAVEHDR));
-            }
-            if (hWaveData[b]) { 
-                GlobalUnlock(hWaveData[b]);
-                GlobalFree(hWaveData[b]); 
-                hWaveData[b] = nullptr; 
-            }
-            waveHdrs[b] = {};
-        }
-        waveOutClose(hWaveOut);
-        hWaveOut = NULL;
-        isStopping = false;       // reset for next use
-    }
+	if (hWaveOut) {
+		isStopping = true;        // tell callback to stop queueing
+		waveOutReset(hWaveOut);   // returns all pending buffers
+		for (int b = 0; b < NUM_BUFFERS; b++) {
+			if (waveHdrs[b].dwFlags & WHDR_PREPARED) {
+				waveOutUnprepareHeader(hWaveOut, &waveHdrs[b], sizeof(WAVEHDR));
+			}
+			if (hWaveData[b]) {
+				GlobalUnlock(hWaveData[b]);
+				GlobalFree(hWaveData[b]);
+				hWaveData[b] = nullptr;
+			}
+			waveHdrs[b] = {};
+		}
+		waveOutClose(hWaveOut);
+		hWaveOut = NULL;
+		isStopping = false;       // reset for next use
+	}
 	*/
 	HWAVEOUT hToClose = NULL;
 
@@ -222,8 +345,8 @@ static void StopAudio_Locked() {
 		GlobalFree(pAudioData);
 		pAudioData = nullptr;
 	}
-    audioDataSize = 0;
-    audioReadPos = 0;
+	audioDataSize = 0;
+	audioReadPos = 0;
 
 	// new code
 	LeaveCriticalSection(&audioLock);
@@ -259,12 +382,25 @@ void StopAudio() {
 HWND gameWindow = NULL;
 WNDPROC origWndProc = NULL;
 
+// Custom message used to marshal ForceStopButtonPress() onto the game's own
+// main thread. WaveOutCallback runs on a system-created multimedia thread, not
+// the game's thread - calling CDPlayerOnMessage directly from there crashed
+// the game, almost certainly because that internal handler assumes single-
+// threaded access with no locking. PostMessage here is the safe hand-off:
+// WndProcHook only ever runs on the same thread as the game's real message
+// loop, exactly like the existing WM_ACTIVATEAPP handling below already relies on.
+#define WM_APP_FORCE_STOP_PRESS (WM_APP + 0x444)
+
 // lastFocusEventTick is written only inside audioLock (in WndProcHook) and read
 // only inside audioLock (in _ciSendCommandA MCI_STOP), so no separate guard needed.
 DWORD lastFocusEventTick = 0;
 
 LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	if (msg == WM_APP_FORCE_STOP_PRESS) {
+		ForceStopButtonPress();
+		return 0;
+	}
 	// --- IN-GAME MUSIC OVERRIDE ---
 	// If the user disabled music in the UI, kill any active audio and ignore all MCI spam.
 	// EXCEPTION: If the CD Player menu is currently open, allow MCI commands to pass through.
@@ -288,7 +424,7 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		else {
 			Log("HOOK: Focus Gained");
-			// Only restart if we still have a valid handle — PlayWav may have
+			// Only restart if we still have a valid handle ï¿½ PlayWav may have
 			// raced ahead and already opened a new one.
 			if (hWaveOut && isPaused && !musicFocus) {
 				isPaused = false;
@@ -308,8 +444,41 @@ void CALLBACK WaveOutCallback(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWO
 	WAVEHDR* hdr = (WAVEHDR*)dwParam1;
 
 	EnterCriticalSection(&audioLock);
-	if (audioReadPos >= audioDataSize || !hWaveOut) {
+
+	// Force-press Stop once elapsed playback time reaches the current track's
+	// real length, so the game's own Stop logic (which we've confirmed works
+	// cleanly, unlike the broken MM_MCINOTIFY path) runs exactly when the
+	// track would naturally finish.
+	DWORD elapsed = (dwStartTime > 0) ? GetTickCount() - dwStartTime : 0;
+	if (!forceStopFired && dwStartTime > 0 && elapsed >= currentTrackLength) {
+		forceStopFired = true;
+		Log("Track finished (%lu ms elapsed / %lu ms length), posting WM_APP_FORCE_STOP_PRESS to main thread", elapsed, currentTrackLength);
 		LeaveCriticalSection(&audioLock);
+		if (gameWindow) PostMessage(gameWindow, WM_APP_FORCE_STOP_PRESS, 0, 0);
+		return;
+	}
+
+	if (audioReadPos >= audioDataSize || !hWaveOut) {
+		// The last queued buffer has just finished playing ï¿½ this is the real
+		// "track complete" moment, not just "no more data to queue."
+		//
+		// We deliberately do NOT post MM_MCINOTIFY here anymore. Testing showed
+		// the game's own handler for a naturally-completed CD track is broken
+		// in this build (leaves a raw DirectDraw surface behind once the CD
+		// player menu tears itself down) ï¿½ manual Stop doesn't hit this path
+		// and works fine, so the dormant notify-driven logic itself is at fault,
+		// not anything we were doing with MCI return codes. Since we can't safely
+		// wake that path, we replicate just the part of a normal MCI_STOP that
+		// fixes the visible bug: zeroing the elapsed-time state so the CD
+		// player's timer stops climbing, without touching the game's own
+		// state machine or attempting track auto-advance.
+		notifyPending = false;
+		dwStartTime = 0;
+		totalElapsedBeforePause = 0;
+		isPaused = false;
+		LeaveCriticalSection(&audioLock);
+
+		Log("Track %d finished naturally; reset timer locally (no MM_MCINOTIFY)", currentTrack);
 		return;
 	}
 
@@ -377,6 +546,8 @@ static void PlayWav_Locked(const char* path) {
 
 extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR fdwCommand, DWORD_PTR dwParam)
 {
+	Log("IN: uMsg=0x%X fdwCommand=0x%llX deviceOpen=%d", uMsg, (unsigned long long)fdwCommand, deviceOpen);
+
 	// --- IN-GAME MUSIC OVERRIDE ---
 	// If the user disabled music in the UI, kill any active audio and ignore all MCI spam.
 	// EXCEPTION: If the CD Player menu is currently open, allow MCI commands to pass through.
@@ -407,6 +578,8 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		dwStartTime = 0;
 		totalElapsedBeforePause = 0;
 		isPaused = false;
+		notifyPending = false; //
+		deviceOpen = false;
 		StopAudio_Locked();
 		LeaveCriticalSection(&audioLock);
 		Log("MCI_STOP/MCI_CLOSE");
@@ -416,8 +589,8 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// 3. SEEK
 	if (uMsg == MCI_SEEK) {
 		LPMCI_SEEK_PARMS lpSeek = (LPMCI_SEEK_PARMS)dwParam;
-		// currentTrack is only written here and read in MCI_PLAY/STATUS — both on
-		// the same game thread — so no lock needed for this assignment.
+		// currentTrack is only written here and read in MCI_PLAY/STATUS ï¿½ both on
+		// the same game thread ï¿½ so no lock needed for this assignment.
 		currentTrack = (int)lpSeek->dwTo;
 		if (isNetworkVersion) seekAfterOpen = true;
 		Log("MCI_SEEK to: %d", (int)lpSeek->dwTo);
@@ -442,6 +615,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		}
 		lastOpenTime = GetTickCount();
 		if (isNetworkVersion) seekAfterOpen = false;
+		deviceOpen = true;
 		LeaveCriticalSection(&audioLock);
 
 		LPMCI_OPEN_PARMS lpOpen = (LPMCI_OPEN_PARMS)dwParam;
@@ -454,12 +628,26 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	if (uMsg == MCI_PLAY) {
 		EnterCriticalSection(&audioLock);
 
+		// Record whether the caller wants MM_MCINOTIFY when this track ends.
+		// MCI_PLAY_PARMS.dwCallback holds the window handle when MCI_NOTIFY is set.
+		if (fdwCommand & MCI_NOTIFY) {
+			LPMCI_PLAY_PARMS lpPlay = (LPMCI_PLAY_PARMS)dwParam;
+			notifyWindow = (HWND)lpPlay->dwCallback;
+			notifyDeviceID = (DWORD)IDDevice;
+			notifyPending = true;
+			Log("MCI_PLAY: notify requested, hwnd=0x%p", notifyWindow);
+		}
+		else {
+			notifyPending = false;
+		}
+
 		if (!isNetworkVersion && !seekAfterOpen && GetTickCount() - lastOpenTime < 1000) {
 			Log("Suppressed focus-triggered play");
 			LeaveCriticalSection(&audioLock);
 			return 0;
 		}
 		Log("MCI_PLAY: Initializing track %d", currentTrack);
+		forceStopFired = false; // allow the test threshold to fire again for this track
 		// only play track values within range to prevent seeking to tracks that dont exist
 
 		if (isNetworkVersion) {
