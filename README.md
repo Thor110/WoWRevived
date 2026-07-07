@@ -243,13 +243,13 @@ Advanced Settings
 Larger Minimaps Accessibility Option - Larger Minimaps
 
 <div align="center">
-  <img src="images/minimaps-larger.png.png" alt="Larger Minimaps">
+  <img src="images/minimaps-larger.png" alt="Larger Minimaps">
 </div>
 
 Larger Minimaps Accessibility Option - Regular Minimaps
 
 <div align="center">
-  <img src="images/minimaps-regular.png.png" alt="Regular Minimaps">
+  <img src="images/minimaps-regular.png" alt="Regular Minimaps">
 </div>
 
 ## File Extractor
