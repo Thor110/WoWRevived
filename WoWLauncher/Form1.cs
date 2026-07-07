@@ -396,9 +396,9 @@ namespace WoWLauncher
             {
                 launch("WoW_patched.exe");
             }
-            else if (File.Exists("DAT-Extra\\WoW_network.exe") && checkBox1.Checked)
+            else if (File.Exists("WoW_network.exe") && checkBox1.Checked)
             {
-                launch("DAT-Extra\\WoW_network.exe");
+                launch("WoW_network.exe");
             }
             else { MessageBox.Show(Program.Interface["executable"]); }
             Close();

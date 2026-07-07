@@ -94,7 +94,15 @@ bool deviceOpen = false;
 #define CD_BUTTON_STOP 2
 
 typedef int(__thiscall* CDPlayerOnMessage_t)(void* pThis, UINT uMsg, UINT wParam, UINT lParam);
-CDPlayerOnMessage_t CDPlayerOnMessage = (CDPlayerOnMessage_t)0x4081D0;
+// VANILLA: sub_4081D0, confirmed directly. NETWORK: not yet known - the ctor
+// sets the object's vtable to off_51B1E0 (mov dword ptr [edx], offset off_51B1E0
+// in sub_4AF680), and vanilla's equivalent OnMessage lives at vtable slot +0x1C
+// (call dword ptr [edx+1Ch] in sub_4081D0's own MM_MCINOTIFY handler). So the
+// network build's OnMessage address is whatever DWORD sits at off_51B1E0+0x1C
+// in its .rdata - need that looked up before this will do anything on network.
+#define CD_PLAYER_ON_MESSAGE_ADDR_VANILLA 0x4081D0
+#define CD_PLAYER_ON_MESSAGE_ADDR_NETWORK 0x4B0510
+CDPlayerOnMessage_t CDPlayerOnMessage = nullptr;
 
 // TODO: this is NOT a fixed address yet - the CD Player menu object is
 // heap-allocated fresh each time the menu opens (see sub_407990), so there's
@@ -113,6 +121,10 @@ void ForceStopButtonPress()
 		Log("ForceStopButtonPress: pCDPlayerMenuThis not set, skipping");
 		return;
 	}
+	if (!CDPlayerOnMessage) {
+		Log("ForceStopButtonPress: CDPlayerOnMessage address not set for this build, skipping");
+		return;
+	}
 	Log("ForceStopButtonPress: invoking CDPlayerOnMessage(this=0x%p, WM_COMMAND, group=0x%X, STOP)", pCDPlayerMenuThis, CD_TRANSPORT_BUTTON_GROUP);
 	CDPlayerOnMessage(pCDPlayerMenuThis, 0x111 /* WM_COMMAND */, CD_TRANSPORT_BUTTON_GROUP, CD_BUTTON_STOP);
 }
@@ -126,25 +138,35 @@ void ForceStopButtonPress()
 // the real CD_PLAYER_MENU_ID (0x803E) comparisons in sub_402B80 also ruled out
 // a simple polled global: that function receives the menu ID as a parameter in
 // eax, i.e. it's a dispatcher/factory, not something reading persistent state.
-// Next approach: hook sub_407990 (the CD Player menu constructor) directly and
-// capture ecx (== "this" under __thiscall) the moment it's called, rather than
-// hunting for a static pointer that may not exist.
+// Next approach: hook the CD Player menu constructor directly and capture ecx
+// (== "this" under __thiscall) the moment it's called, rather than hunting
+// for a static pointer that may not exist.
 //
-// Confirmed against the VANILLA exe's disassembly only. sub_407990's opening
-// SEH prologue gives a clean 7-byte window (push -1; push offset SEH_407990)
-// that never touches ECX, so we can steal "this" out of it, log it, and hand
-// control back untouched. This is a real inline hook (read original bytes,
-// build a trampoline that runs them plus a jmp back, then overwrite the live
-// function with a jmp to our stub) - same category of technique as the
-// VirtualProtect byte-patches in Smackw32.cpp, just intercepting a call
-// instead of patching static data. Gated on !isNetworkVersion below since
-// these addresses are meaningless (and dangerous to write to) in the network
-// debug build until we have its own disassembly.
-#define CD_PLAYER_MENU_CTOR_ADDR 0x407990
-const int HOOK_LEN = 7; // exact length of "push -1" (2 bytes) + "push offset SEH_407990" (5 bytes)
+// VANILLA: sub_407990 at 0x407990. Frame-omitted prologue; the opening SEH
+// setup (push -1; push offset SEH_407990) gives a clean 7-byte window that
+// never touches ECX.
+//
+// NETWORK: sub_4AF680 at 0x4AF680, confirmed via the network exe's own
+// disassembly - same role (builds the same 5 transport buttons with the same
+// 0x80D3 group ID and 0/1/2/3/5 sub-IDs as vanilla, confirming this is the
+// same WCdPlayer.cpp source compiled with different settings, not different
+// logic). Its prologue is a full debug-style frame (push ebp; mov ebp,esp;
+// push -1), which conveniently sums to exactly 5 bytes - a perfect jmp-hook
+// fit with no NOP padding needed. ECX isn't touched until the later
+// "mov [ebp+var_104], ecx", well after our overwritten region.
+//
+// Both are real inline hooks (read original bytes, build a trampoline that
+// runs them plus a jmp back, then overwrite the live function with a jmp to
+// our stub) - same category of technique as the VirtualProtect byte-patches
+// in Smackw32.cpp, just intercepting a call instead of patching static data.
+#define CD_PLAYER_MENU_CTOR_ADDR_VANILLA 0x407990
+#define CD_PLAYER_MENU_CTOR_ADDR_NETWORK 0x4AF680
+const int HOOK_LEN_VANILLA = 7; // "push -1" (2 bytes) + "push offset SEH_407990" (5 bytes)
+const int HOOK_LEN_NETWORK = 5; // "push ebp" (1) + "mov ebp,esp" (2) + "push -1" (2)
 
-BYTE g_originalBytes[HOOK_LEN];
+BYTE g_originalBytes[8]; // sized for the larger of the two hook lengths
 BYTE* g_trampoline = nullptr;
+int g_hookLen = 0;
 
 void __declspec(naked) CDPlayerMenuCtor_HookStub()
 {
@@ -159,26 +181,36 @@ void __declspec(naked) CDPlayerMenuCtor_HookStub()
 
 void InstallCDPlayerMenuHook()
 {
-	BYTE* target = (BYTE*)CD_PLAYER_MENU_CTOR_ADDR;
+	BYTE* target = isNetworkVersion ? (BYTE*)CD_PLAYER_MENU_CTOR_ADDR_NETWORK : (BYTE*)CD_PLAYER_MENU_CTOR_ADDR_VANILLA;
+	g_hookLen = isNetworkVersion ? HOOK_LEN_NETWORK : HOOK_LEN_VANILLA;
 
-	memcpy(g_originalBytes, target, HOOK_LEN);
+	if (!isNetworkVersion) {
+		CDPlayerOnMessage = (CDPlayerOnMessage_t)CD_PLAYER_ON_MESSAGE_ADDR_VANILLA;
+	}
+	else {
+		CDPlayerOnMessage = (CDPlayerOnMessage_t)CD_PLAYER_ON_MESSAGE_ADDR_NETWORK;
+	}
+	// else: left null until the network build's off_51B1E0+0x1C vtable slot is known.
+
+	memcpy(g_originalBytes, target, g_hookLen);
 
 	// Trampoline = original bytes + a jmp back to right after them.
-	g_trampoline = (BYTE*)VirtualAlloc(NULL, HOOK_LEN + 5, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-	memcpy(g_trampoline, g_originalBytes, HOOK_LEN);
-	g_trampoline[HOOK_LEN] = 0xE9; // jmp rel32
-	*(DWORD*)(g_trampoline + HOOK_LEN + 1) = (DWORD)(target + HOOK_LEN) - (DWORD)(g_trampoline + HOOK_LEN + 5);
+	g_trampoline = (BYTE*)VirtualAlloc(NULL, g_hookLen + 5, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	memcpy(g_trampoline, g_originalBytes, g_hookLen);
+	g_trampoline[g_hookLen] = 0xE9; // jmp rel32
+	*(DWORD*)(g_trampoline + g_hookLen + 1) = (DWORD)(target + g_hookLen) - (DWORD)(g_trampoline + g_hookLen + 5);
 
-	// Patch the live function: jmp rel32 to our stub, NOP-pad the remaining bytes.
+	// Patch the live function: jmp rel32 to our stub, NOP-pad any remaining bytes.
 	DWORD oldProtect;
-	VirtualProtect(target, HOOK_LEN, PAGE_EXECUTE_READWRITE, &oldProtect);
+	VirtualProtect(target, g_hookLen, PAGE_EXECUTE_READWRITE, &oldProtect);
 	target[0] = 0xE9;
 	*(DWORD*)(target + 1) = (DWORD)&CDPlayerMenuCtor_HookStub - (DWORD)(target + 5);
-	for (int i = 5; i < HOOK_LEN; i++) target[i] = 0x90;
-	VirtualProtect(target, HOOK_LEN, oldProtect, &oldProtect);
+	for (int i = 5; i < g_hookLen; i++) target[i] = 0x90;
+	VirtualProtect(target, g_hookLen, oldProtect, &oldProtect);
 
-	Log("InstallCDPlayerMenuHook: hooked sub_407990 at 0x%p", target);
+	Log("InstallCDPlayerMenuHook: hooked %s CD Player menu ctor at 0x%p", isNetworkVersion ? "network" : "vanilla", target);
 }
+
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
@@ -187,9 +219,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		char exeName[MAX_PATH];
 		GetModuleFileNameA(NULL, exeName, MAX_PATH);
 		isNetworkVersion = (strstr(exeName, "WoW_network") != NULL);
-		if (!isNetworkVersion) {
-			InstallCDPlayerMenuHook();
-		}
+		InstallCDPlayerMenuHook();
 		InitializeCriticalSection(&audioLock);
 		cdState = 1; // Default to ON
 		HKEY hKey;
@@ -211,6 +241,27 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 				ReadFloat("Master", 0x00530654);
 				ReadFloat("Ambient", 0x0053063C);
 				ReadFloat("Speech", 0x00530650);
+
+
+
+				pCDMusicToggle = (volatile BYTE*)0x5427CC;
+
+				// Direct helper to seed a integer address safely out of the registry
+				auto ReadDWORD = [&](const char* valueName, DWORD addr) {
+					bufferSize = sizeof(buffer);
+					if (RegQueryValueExA(hKey, valueName, NULL, &type, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS) {
+						if (type == REG_DWORD) {
+							*(DWORD*)addr = *(DWORD*)buffer;
+						}
+						else if (type == REG_SZ) {
+							*(DWORD*)addr = (DWORD)atoi(buffer);
+						}
+					}
+				};
+
+				ReadDWORD("Master", 0x00530654);
+				ReadDWORD("Ambient", 0x0053063C);
+				ReadDWORD("Speech", 0x00530650);
 			}
 			else
 			{
@@ -457,21 +508,8 @@ void CALLBACK WaveOutCallback(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWO
 		if (gameWindow) PostMessage(gameWindow, WM_APP_FORCE_STOP_PRESS, 0, 0);
 		return;
 	}
-
+	
 	if (audioReadPos >= audioDataSize || !hWaveOut) {
-		// The last queued buffer has just finished playing � this is the real
-		// "track complete" moment, not just "no more data to queue."
-		//
-		// We deliberately do NOT post MM_MCINOTIFY here anymore. Testing showed
-		// the game's own handler for a naturally-completed CD track is broken
-		// in this build (leaves a raw DirectDraw surface behind once the CD
-		// player menu tears itself down) � manual Stop doesn't hit this path
-		// and works fine, so the dormant notify-driven logic itself is at fault,
-		// not anything we were doing with MCI return codes. Since we can't safely
-		// wake that path, we replicate just the part of a normal MCI_STOP that
-		// fixes the visible bug: zeroing the elapsed-time state so the CD
-		// player's timer stops climbing, without touching the game's own
-		// state machine or attempting track auto-advance.
 		notifyPending = false;
 		dwStartTime = 0;
 		totalElapsedBeforePause = 0;
@@ -484,7 +522,27 @@ void CALLBACK WaveOutCallback(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWO
 
 	DWORD remaining = audioDataSize - audioReadPos;
 	DWORD toWrite = min(remaining, (DWORD)CHUNK_SIZE);
-	float vol = *(float*)0x004CA870;
+
+	// === MULTI-BUILD SAFE VOLUME EVALUATION ===
+	float vol = 1.0f;
+	if (isNetworkVersion) {
+		// Read as a float directly matching your DllMain ReadFloat setup
+		vol = *(float*)0x00530654;
+
+		// Defensive check: If IDA was right and the engine treats this as a 0-100 integer,
+		// a value greater than 1.0f means we need to scale it down to a 0.0-1.0 float.
+		if (vol > 1.0f) {
+			DWORD rawIntVol = *(DWORD*)0x00530654;
+			vol = (float)rawIntVol / 100.0f;
+		}
+	}
+	else {
+		vol = *(float*)0x004CA870;
+	}
+
+	// Safety clamping bounds
+	if (vol > 1.0f) vol = 1.0f;
+	if (vol < 0.0f) vol = 0.0f;
 
 	// Copy and scale into the buffer
 	int16_t* src = (int16_t*)(pAudioData + audioReadPos);
@@ -592,7 +650,11 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		// currentTrack is only written here and read in MCI_PLAY/STATUS � both on
 		// the same game thread � so no lock needed for this assignment.
 		currentTrack = (int)lpSeek->dwTo;
-		if (isNetworkVersion) seekAfterOpen = true;
+		if (isNetworkVersion)
+		{
+			seekAfterOpen = true;
+
+		}
 		Log("MCI_SEEK to: %d", (int)lpSeek->dwTo);
 		return 0;
 	}
@@ -680,8 +742,19 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// 6. STATUS
 	if (uMsg == MCI_STATUS) {
 		if (hWaveOut) {
-			float liveVolume = *(float*)0x004CA870;
+			float liveVolume = 1.0f;
+			if (isNetworkVersion) {
+				// Read the true integer from memory and map it to a 0.0 to 1.0 scale
+				DWORD rawIntVol = *(DWORD*)0x00530654;
+				liveVolume = (float)rawIntVol / 100.0f;
 
+				// Safety clamp to prevent accidental amplification errors
+				if (liveVolume > 1.0f) liveVolume = 1.0f;
+				if (liveVolume < 0.0f) liveVolume = 0.0f;
+			}
+			else {
+				liveVolume = *(float*)0x004CA870;
+			}
 			// FORCE a value just to see if the hardware responds at all
 			// If you hardcode this to 0.1f and the music stays loud, 
 			// then waveOutSetVolume is being ignored by the OS.
