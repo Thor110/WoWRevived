@@ -466,13 +466,13 @@ Thanks to Dan Redfield for the Credits patch to the TEXT.ojd file which I then u
 
 Thanks to the uploader of the regional releases which were useful for constructing the language patches.
 
-Italian: https://archive.org/details/cd-wow-98-it
+Italian : https://archive.org/details/cd-wow-98-it
 
-Spanish: https://archive.org/details/cd-wow-98-es
+Spanish : https://archive.org/details/cd-wow-98-es
 
-German: https://archive.org/details/cd-wow-98-de
+German : https://archive.org/details/cd-wow-98-de
 
-French: https://archive.org/details/cd-wow-98-fr
+French : https://archive.org/details/cd-wow-98-fr
 
 My language patches do not require the specific regional release and instead ship with the relevant files required to convert any language installation to any other language.
 
