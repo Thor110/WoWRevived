@@ -59,7 +59,7 @@ namespace WoWLauncher
             Interface["resolution"] = "Resolution";
             Interface["difficulty_description"] = "Difficulty settings. (Medium is the default)";
             Interface["difficulty"] = "Difficulty";
-            Interface["fog_description"] = "Enable or disable fog of war.";
+            Interface["fog_description"] = "Enable or disable fog of war. (Enabled by default)";
             Interface["fog"] = "Fog of War";
             Interface["advanced"] = "Advanced Settings";
             Interface["tools"] = "Development Tools";
@@ -140,7 +140,7 @@ namespace WoWLauncher
             Interface["resolution"] = "Résolution";
             Interface["difficulty_description"] = "Niveaux de difficulté. (Moyen est le niveau par défaut)";
             Interface["difficulty"] = "Difficulté";
-            Interface["fog_description"] = "Activer ou désactiver le brouillard de guerre.";
+            Interface["fog_description"] = "Activer ou désactiver le brouillard de guerre. (Activé par défaut)";
             Interface["fog"] = "Brouillard de guerre";
             Interface["advanced"] = "Paramètres avancés";
             Interface["tools"] = "Outils de développement";
@@ -220,7 +220,7 @@ namespace WoWLauncher
             Interface["resolution"] = "Auflösung";
             Interface["difficulty_description"] = "Schwierigkeitseinstellungen. (Mittel ist die Standardeinstellung)";
             Interface["difficulty"] = "Schwierigkeit";
-            Interface["fog_description"] = "Nebel des Krieges aktivieren oder deaktivieren.";
+            Interface["fog_description"] = "Nebel des Krieges aktivieren oder deaktivieren. (Standardmäßig aktiviert)";
             Interface["fog"] = "Nebel des Krieges";
             Interface["advanced"] = "Erweiterte Einstellungen";
             Interface["tools"] = "Entwicklungstools";
@@ -300,7 +300,7 @@ namespace WoWLauncher
             Interface["resolution"] = "Risoluzione";
             Interface["difficulty_description"] = "Impostazioni di difficoltà. (Media è l'impostazione predefinita)";
             Interface["difficulty"] = "Difficoltà";
-            Interface["fog_description"] = "Attiva o disattiva la nebbia di guerra.";
+            Interface["fog_description"] = "Attiva o disattiva la nebbia di guerra. (Abilitato per impostazione predefinita)";
             Interface["fog"] = "Nebbia di guerra";
             Interface["advanced"] = "Impostazioni avanzate";
             Interface["tools"] = "Strumenti di sviluppo";
@@ -380,7 +380,7 @@ namespace WoWLauncher
             Interface["resolution"] = "Resolución";
             Interface["difficulty_description"] = "Ajustes de dificultad. (Medio es el predeterminado)";
             Interface["difficulty"] = "Dificultad";
-            Interface["fog_description"] = "Activar o desactivar la niebla de guerra.";
+            Interface["fog_description"] = "Activar o desactivar la niebla de guerra. (Activado por defecto)";
             Interface["fog"] = "Niebla de guerra";
             Interface["advanced"] = "Configuración avanzada";
             Interface["tools"] = "Herramientas de desarrollo";
