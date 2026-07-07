@@ -184,7 +184,7 @@ namespace WoWLauncher
                         // Calculate Aspect Ratio dynamically for the label
                         string ratio = GetAspectRatio(w, h);
                         string space = "    ";
-                        if(rawRes.Length > 8)
+                        if (rawRes.Length > 8)
                         {
                             int length = rawRes.Length - 8;
                             for (int i = 0; i < length; i++)
@@ -307,13 +307,16 @@ namespace WoWLauncher
             button6.Text = Program.Interface["tools"];
             //button7.Text = Program.Interface["keyboard"];
             button8.Text = Program.Interface["instruction_button"];
-            if(Program.CurrentLanguage == "German" || Program.CurrentLanguage == "Spanish") { button8.Enabled = false; }
+            if (Program.CurrentLanguage == "German" || Program.CurrentLanguage == "Spanish") { button8.Enabled = false; }
             checkBox5.AccessibleDescription = Program.Interface["music_playback_description"];
             checkBox5.Text = Program.Interface["music_playback"];
             checkBox6.AccessibleDescription = Program.Interface["enhanced_assets_description"];
             checkBox6.Text = Program.Interface["enhanced_assets"];
             checkBox7.AccessibleDescription = Program.Interface["enemy_visible_description"];
             checkBox7.Text = Program.Interface["enemy_visible"];
+            // larger minimaps
+            checkBox4.AccessibleDescription = Program.Interface["larger_minimaps_tooltip"];
+            checkBox4.Text = Program.Interface["larger_minimaps"];
             //
             Text = Program.Interface["game_name"];
         }
@@ -373,10 +376,15 @@ namespace WoWLauncher
                 screenKey.SetValue("BPP", 16, RegistryValueKind.DWord);
                 MessageBox.Show(Program.Interface["colour"]);
             }
+            if(new FileInfo("MAPS\\MAPS.WoW").Length == 117692391)
+            {
+                checkBox4.Checked = true;
+            }
             // add event handlers here for the checkboxes and comboboxes to prevent them firing when the form is loaded
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
             checkBox3.CheckedChanged += checkBox3_CheckedChanged!;
+            checkBox4.CheckedChanged += checkBox4_CheckedChanged!;
             comboBox2.SelectedIndexChanged += comboBox2_SelectedIndexChanged!;
             comboBox4.SelectedIndexChanged += comboBox4_SelectedIndexChanged!;
             checkBox5.CheckedChanged += checkBox5_CheckedChanged!;
@@ -480,9 +488,10 @@ namespace WoWLauncher
             button3.Visible = false;
             config = true;
             button4.Text = Program.Interface["return"];
-            //checkBox1.Visible = true;     // network enabled
+            checkBox1.Visible = true;   // network enabled
             checkBox2.Visible = true;
             checkBox3.Visible = true;
+            checkBox4.Visible = true;   // larger minimaps
             checkBox5.Visible = true;
             checkBox6.Visible = true;
             checkBox7.Visible = true;
@@ -505,9 +514,10 @@ namespace WoWLauncher
                 button3.Visible = true;
                 config = false;
                 button4.Text = Program.Interface["exit"];
-                //checkBox1.Visible = false;    // network enabled
+                checkBox1.Visible = false;  // network enabled
                 checkBox2.Visible = false;
                 checkBox3.Visible = false;
+                checkBox4.Visible = false;  // larger minimaps
                 checkBox5.Visible = false;
                 checkBox6.Visible = false;
                 checkBox7.Visible = false;
@@ -578,7 +588,7 @@ namespace WoWLauncher
         }
         private void checkBox2_CheckedChanged(object sender, EventArgs e)
         {
-            if(checkBox2.Checked)
+            if (checkBox2.Checked)
             {
                 File.Move("ddraw-off.dll", "ddraw.dll");
                 mainKey.SetValue("Full Screen", "1");
@@ -655,7 +665,7 @@ namespace WoWLauncher
             }
             // larger resolution warmap files
             string[] resolutionFiles = new string[] { "HWM.SPR", "HWMHI.SPR", "MWM.SPR", "MWMHI.SPR" };
-            if (dimensions[0] == "1600" || dimensions[0] == "1680" || dimensions[0] == "1920" )
+            if (dimensions[0] == "1600" || dimensions[0] == "1680" || dimensions[0] == "1920")
             {
                 if (File.Exists("DAT\\MWM.SPR") && !File.Exists("DAT\\NORM-MWM.SPR")) // high resolutions check
                 {
@@ -776,7 +786,7 @@ namespace WoWLauncher
             checkBox1.CheckedChanged -= checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged -= checkBox2_CheckedChanged!;
             checkBox3.CheckedChanged -= checkBox3_CheckedChanged!;
-            //checkBox4.CheckedChanged -= checkBox4_CheckedChanged!;
+            checkBox4.CheckedChanged -= checkBox4_CheckedChanged!;
             checkBox5.CheckedChanged -= checkBox5_CheckedChanged!;
             checkBox6.CheckedChanged -= checkBox6_CheckedChanged!;
             checkBox7.CheckedChanged -= checkBox7_CheckedChanged!;
@@ -823,6 +833,28 @@ namespace WoWLauncher
             MessageBox.Show(Program.Interface["instruction_readme"]);
             ProcessStartInfo psi = new ProcessStartInfo { FileName = Program.Interface["instruction_location"], UseShellExecute = true };
             Process.Start(psi);
+        }
+        // larger maps checkbox
+        private void checkBox4_CheckedChanged(object sender, EventArgs e)
+        {
+            //regular 116160871 bytes
+            //larger 117692391
+            switch (new FileInfo("MAPS\\MAPS.WoW").Length)
+            {
+                case 116160871: RenameRegular(); break;
+                case 117692391: RenameLarger(); break;
+                default: MessageBox.Show("MAPS.WoW has an unexpected file size! Restoring the original files via the launcher may be required.", "Map Swap Error", MessageBoxButtons.OK, MessageBoxIcon.Warning); break;
+            }
+        }
+        private void RenameRegular()
+        {
+            File.Move("MAPS\\MAPS.WoW", "MAPS\\MAPS-Regular.WoW");
+            File.Move("MAPS\\MAPS-Larger.WoW", "MAPS\\MAPS.WoW");
+        }
+        private void RenameLarger()
+        {
+            File.Move("MAPS\\MAPS.WoW", "MAPS\\MAPS-Larger.WoW");
+            File.Move("MAPS\\MAPS-Regular.WoW", "MAPS\\MAPS.WoW");
         }
     }
 }

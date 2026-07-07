@@ -48,6 +48,7 @@
             checkBox6 = new CheckBox();
             checkBox7 = new CheckBox();
             button8 = new Button();
+            checkBox4 = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -105,18 +106,19 @@
             // 
             checkBox1.AccessibleDescription = "Enable or disable multiplayer. ( This option messes with single player resume and save campaign options, careful! )";
             checkBox1.AutoSize = true;
-            checkBox1.Location = new Point(172, 410);
+            checkBox1.Location = new Point(172, 403);
             checkBox1.Name = "checkBox1";
             checkBox1.Size = new Size(150, 19);
             checkBox1.TabIndex = 5;
             checkBox1.Text = "Enable Network Version";
             checkBox1.UseVisualStyleBackColor = true;
+            checkBox1.Visible = false;
             // 
             // checkBox2
             // 
             checkBox2.AccessibleDescription = "Enable or disable fullscreen. Note : Alt-Tabbing crashes the game when in fullscreen mode.";
             checkBox2.AutoSize = true;
-            checkBox2.Location = new Point(239, 326);
+            checkBox2.Location = new Point(239, 319);
             checkBox2.Name = "checkBox2";
             checkBox2.Size = new Size(83, 19);
             checkBox2.TabIndex = 6;
@@ -128,7 +130,7 @@
             // 
             comboBox2.AccessibleDescription = "The resolution for the game.";
             comboBox2.FormattingEnabled = true;
-            comboBox2.Location = new Point(278, 353);
+            comboBox2.Location = new Point(278, 346);
             comboBox2.Name = "comboBox2";
             comboBox2.Size = new Size(134, 23);
             comboBox2.TabIndex = 9;
@@ -136,7 +138,7 @@
             // 
             // label2
             // 
-            label2.Location = new Point(172, 356);
+            label2.Location = new Point(172, 349);
             label2.Name = "label2";
             label2.Size = new Size(100, 15);
             label2.TabIndex = 10;
@@ -147,7 +149,7 @@
             // 
             comboBox4.AccessibleDescription = "Difficulty settings. (Medium is the default)";
             comboBox4.FormattingEnabled = true;
-            comboBox4.Location = new Point(278, 381);
+            comboBox4.Location = new Point(278, 374);
             comboBox4.Name = "comboBox4";
             comboBox4.Size = new Size(134, 23);
             comboBox4.TabIndex = 13;
@@ -155,7 +157,7 @@
             // 
             // label4
             // 
-            label4.Location = new Point(172, 384);
+            label4.Location = new Point(172, 377);
             label4.Name = "label4";
             label4.Size = new Size(100, 15);
             label4.TabIndex = 14;
@@ -166,7 +168,7 @@
             // 
             checkBox3.AccessibleDescription = "Enable or disable fog of war.";
             checkBox3.AutoSize = true;
-            checkBox3.Location = new Point(12, 326);
+            checkBox3.Location = new Point(12, 319);
             checkBox3.Name = "checkBox3";
             checkBox3.Size = new Size(84, 19);
             checkBox3.TabIndex = 15;
@@ -176,7 +178,7 @@
             // 
             // button5
             // 
-            button5.Location = new Point(122, 441);
+            button5.Location = new Point(122, 440);
             button5.Name = "button5";
             button5.Size = new Size(195, 23);
             button5.TabIndex = 16;
@@ -211,7 +213,7 @@
             // 
             checkBox5.AccessibleDescription = "Enabling this will allow the music to continue playing when the window loses focus, if not in fullscreen mode.";
             checkBox5.AutoSize = true;
-            checkBox5.Location = new Point(12, 401);
+            checkBox5.Location = new Point(12, 394);
             checkBox5.Name = "checkBox5";
             checkBox5.Size = new Size(108, 19);
             checkBox5.TabIndex = 20;
@@ -223,7 +225,7 @@
             // 
             checkBox6.AccessibleDescription = "This setting enables the enhanced user interface assets. ( This adds a little more colour depth to the interface. )";
             checkBox6.AutoSize = true;
-            checkBox6.Location = new Point(12, 376);
+            checkBox6.Location = new Point(12, 369);
             checkBox6.Name = "checkBox6";
             checkBox6.Size = new Size(114, 19);
             checkBox6.TabIndex = 21;
@@ -235,7 +237,7 @@
             // 
             checkBox7.AccessibleDescription = "This toggles whether or not enemy forces are visible on the warmap.";
             checkBox7.AutoSize = true;
-            checkBox7.Location = new Point(12, 351);
+            checkBox7.Location = new Point(12, 344);
             checkBox7.Name = "checkBox7";
             checkBox7.Size = new Size(136, 19);
             checkBox7.TabIndex = 22;
@@ -253,11 +255,24 @@
             button8.UseVisualStyleBackColor = true;
             button8.Click += button8_Click;
             // 
+            // checkBox4
+            // 
+            checkBox4.AccessibleDescription = "Double the size of the minimap in the battle map. (3D View)";
+            checkBox4.AutoSize = true;
+            checkBox4.Location = new Point(12, 419);
+            checkBox4.Name = "checkBox4";
+            checkBox4.Size = new Size(115, 19);
+            checkBox4.TabIndex = 24;
+            checkBox4.Text = "Larger Minimaps";
+            checkBox4.UseVisualStyleBackColor = true;
+            checkBox4.Visible = false;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(424, 504);
+            Controls.Add(checkBox4);
             Controls.Add(button8);
             Controls.Add(checkBox1);
             Controls.Add(checkBox7);
@@ -307,5 +322,6 @@
         private CheckBox checkBox6;
         private CheckBox checkBox7;
         private Button button8;
+        private CheckBox checkBox4;
     }
 }
