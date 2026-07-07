@@ -14,7 +14,7 @@ bool isPaused = false;
 DWORD lastOpenTime = 0;
 HWAVEOUT hWaveOut = NULL;
 FILE* logFile = nullptr;
-bool debug = false; // true for logging
+bool debug = true; // true for logging
 bool musicFocus = false; // allow music to continue playing while the window is out of focus
 // Test-only latch for the force-press-Stop experiment (see ForceStopButtonPress
 // below) - stops it firing repeatedly once per elapsed-time threshold, and gets
@@ -28,6 +28,8 @@ volatile BYTE* pCDMusicToggle = nullptr;
 const DWORD CD_PLAYER_MENU_ID = 0x803E;
 CRITICAL_SECTION audioLock;
 bool playerIsHuman = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES);
+// Tracks the system uptime tick of the last physical Escape press
+DWORD lastEscapeTick = 0;
 
 // === Logging === //
 void Log(const char* fmt, ...)
@@ -452,6 +454,13 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		ForceStopButtonPress();
 		return 0;
 	}
+	// --- ESCAPE KEY MUSIC LATCH ---
+	if (msg == WM_KEYDOWN && wParam == VK_ESCAPE) {
+		EnterCriticalSection(&audioLock);
+		lastEscapeTick = GetTickCount();
+		Log("HOOK: Escape key down registered at tick %lu", lastEscapeTick);
+		LeaveCriticalSection(&audioLock);
+	}
 	// --- IN-GAME MUSIC OVERRIDE ---
 	// If the user disabled music in the UI, kill any active audio and ignore all MCI spam.
 	// EXCEPTION: If the CD Player menu is currently open, allow MCI commands to pass through.
@@ -619,7 +628,16 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// 2. STOP & CLOSE
 	if (uMsg == MCI_STOP || uMsg == MCI_CLOSE) {
 		EnterCriticalSection(&audioLock);
+		// If this stop command was triggered by an Escape menu loop, abort it cleanly
 		DWORD currentTick = GetTickCount();
+
+		// --- TIME-BASED MENU SHIELD ---
+		// Blocks ANY stop command fired within 600ms of an Escape press
+		if (currentTick - lastEscapeTick < 600) {
+			Log("MCI_STOP: Suppressed via Escape timing latch (%lu ms delta). Music plays on.", currentTick - lastEscapeTick);
+			LeaveCriticalSection(&audioLock);
+			return 0;
+		}
 
 		// lastFocusEventTick is now written inside the lock by WndProcHook,
 		// so this read is safe.
@@ -650,11 +668,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		// currentTrack is only written here and read in MCI_PLAY/STATUS � both on
 		// the same game thread � so no lock needed for this assignment.
 		currentTrack = (int)lpSeek->dwTo;
-		if (isNetworkVersion)
-		{
-			seekAfterOpen = true;
-
-		}
+		if (isNetworkVersion) seekAfterOpen = true;
 		Log("MCI_SEEK to: %d", (int)lpSeek->dwTo);
 		return 0;
 	}
@@ -689,7 +703,6 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// 5. PLAY
 	if (uMsg == MCI_PLAY) {
 		EnterCriticalSection(&audioLock);
-
 		// Record whether the caller wants MM_MCINOTIFY when this track ends.
 		// MCI_PLAY_PARMS.dwCallback holds the window handle when MCI_NOTIFY is set.
 		if (fdwCommand & MCI_NOTIFY) {
