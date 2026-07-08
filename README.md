@@ -4,9 +4,9 @@ The definitive preservation and revival project for the classic Rage Software ga
 
 The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War Of The Worlds'" but you may install it elsewhere if you prefer, for example, into a dedicated folder for modding, preservation, or portable use.
 
-**IMPORTANT : Do NOT use the installer, just follow the instructions below.**
-
 **Download and mount the disc images or insert the discs one by one.** https://archive.org/details/jeffwaynewowgame_202110
+
+**IMPORTANT : Do NOT use the installer, just follow the instructions below.**
 
 - 1 : Copy the Human disc contents to your installation folder.
 - 2 : Copy the contents of the Martian disc to your installation folder ( when prompted, choose *not* to replace files, or do, it doesn't matter anymore, but fewer writes are better for SSD longevity )
