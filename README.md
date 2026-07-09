@@ -8,6 +8,9 @@ The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War O
 
 **IMPORTANT : Do NOT use the installer, just follow the instructions below.**
 
+**IMPORTANT : Do NOT launch WoW_patched.exe or WoW_network.exe directly unless you have run the launcher successfully at least once!.**
+
+
 - 1 : Copy the Human disc contents to your installation folder.
 - 2 : Copy the contents of the Martian disc to your installation folder ( when prompted, choose *not* to replace files, or do, it doesn't matter anymore, but fewer writes are better for SSD longevity )
 - 3 : Download the latest version from the Releases page, extract the contents and place the files in your install folder.
