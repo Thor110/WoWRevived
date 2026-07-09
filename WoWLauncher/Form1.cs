@@ -380,6 +380,10 @@ namespace WoWLauncher
             {
                 checkBox4.Checked = true;
             }
+            if (new FileInfo("DAT-EXTRA\\UNITS\\hu-cnt24.spr").Length == 191846)
+            {
+                checkBox6.Checked = true;
+            }
             // add event handlers here for the checkboxes and comboboxes to prevent them firing when the form is loaded
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
@@ -845,6 +849,11 @@ namespace WoWLauncher
                 case 162426225: RenameLarger(); break;
                 default: MessageBox.Show("MAPS.WoW has an unexpected file size! Restoring the original files via the launcher may be required.", "Map Swap Error", MessageBoxButtons.OK, MessageBoxIcon.Warning); break;
             }
+            switch (new FileInfo("DAT\\hu-cnt24.spr").Length)
+            {
+                case 191846: RemoveLarger(); break; // larger
+                default: AddLarger(); break; // enhanced
+            }
         }
         private void RenameRegular()
         {
@@ -855,6 +864,27 @@ namespace WoWLauncher
         {
             File.Move("MAPS\\MAPS.WoW", "MAPS\\MAPS-Larger.WoW");
             File.Move("MAPS\\MAPS-Regular.WoW", "MAPS\\MAPS.WoW");
+        }
+        private void RemoveLarger()
+        {
+            File.Move("DAT\\hu-cnt24.spr", "DAT-EXTRA\\UNITS\\hu-cnt24.spr");
+            File.Move("DAT\\MA-CNT24.SPR", "DAT-EXTRA\\UNITS\\MA-CNT24.SPR");
+            if (checkBox6.Checked) // Enhanced Assets enabled, move them back from the HD folder.
+            {
+                // move Enhanced assets back in to the DAT folder.
+                File.Move("DAT-EXTRA\\HD\\hu-cnt24.spr", "DAT\\hu-cnt24.spr");
+                File.Move("DAT-EXTRA\\HD\\MA-CNT24.SPR", "DAT\\MA-CNT24.SPR");
+            }
+        }
+        private void AddLarger()
+        {
+            if (checkBox6.Checked) // Enhanced Assets and "Larger Minimaps" enabled, move them back to the HD folder.
+            {
+                File.Move("DAT\\hu-cnt24.spr", "DAT-EXTRA\\HD\\hu-cnt24.spr");
+                File.Move("DAT\\MA-CNT24.SPR", "DAT-EXTRA\\HD\\MA-CNT24.SPR");
+            }
+            File.Move("DAT-EXTRA\\UNITS\\hu-cnt24.spr", "DAT\\hu-cnt24.spr");
+            File.Move("DAT-EXTRA\\UNITS\\MA-CNT24.SPR", "DAT\\MA-CNT24.SPR");
         }
     }
 }
