@@ -808,8 +808,8 @@ namespace WoWLauncher
         private string[] upscaledFiles = new string[] {
             "cd_bd1.spr", "cd_bd2.spr", "cd_bd3.spr", "cd_bd4.spr", "cd_bd5.spr", "cd_bd6.spr", "cd_bd7.spr",
             "HBBdown.spr", "HBBup.spr", "HBTdown.spr", "HBTup.spr", "HBuildB1.spr", "hexitarr.spr", "Hmessage.spr",
-            "hmframe.spr", "hu-cnt24.spr", "hu-cnt32.spr", "hu-cnt48.spr", "hu_buton.spr", "hu_calen.spr",
-            "hu_event.spr", "hu_speed.spr", "hu_twirl.spr", "MA-CNT24.SPR", "MA-CNT32.SPR", "MA-CNT48.SPR", "MAN-BUT.SPR",
+            "hmframe.spr", /*"hu-cnt24.spr",*/ "hu-cnt32.spr", "hu-cnt48.spr", "hu_buton.spr", "hu_calen.spr",
+            "hu_event.spr", "hu_speed.spr", "hu_twirl.spr", /*"MA-CNT24.SPR",*/ "MA-CNT32.SPR", "MA-CNT48.SPR", "MAN-BUT.SPR",
             "MA_BUTON.SPR", "MA_CALEN.SPR", "MA_EVENT.SPR", "ma_goo.spr", "MA_SPEED.SPR", "MA_WORLD.SPR", "MBBDOWN.SPR",
             "MBBUP.SPR", "MBTDOWN.SPR", "MBTUP.SPR", "MBUILDB1.SPR", "MBUILDB2.SPR", "MCOG.SPR", "mexitarr.spr", "MFACT.SPR",
             "MMFRAME.SPR", "MRESRCHB.SPR", "mr_exit.spr", "MR_TAB.SPR", "MUNITS.SPR",
@@ -828,6 +828,12 @@ namespace WoWLauncher
         {
             if (checkBox6.Checked) { foreach (string file in upscaledFiles) { File.Move($"DAT-EXTRA\\HD\\{file}", $"DAT\\{file}"); } }
             else { foreach (string file in upscaledFiles) { File.Move($"DAT\\{file}", $"DAT-EXTRA\\HD\\{file}"); } }
+            // only move unit sprites if larger UI isn't enabled.
+            if (!checkBox4.Checked)
+            {
+                File.Move("DAT\\hu-cnt24.spr", "DAT-EXTRA\\HD\\hu-cnt24.spr");
+                File.Move("DAT\\MA-CNT24.SPR", "DAT-EXTRA\\HD\\MA-CNT24.SPR");
+            }
         }
         // Debug "Enemy Visible" value determines if enemy units are visible on the warmap
         private void checkBox7_CheckedChanged(object sender, EventArgs e) { registryCompare(debugKey, "Enemy Visible", checkBox7.Checked ? "1" : "0"); }
