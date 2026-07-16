@@ -178,14 +178,14 @@ namespace WoWViewer
             using var ofd = new OpenFileDialog { Filter = "Wavefront OBJ (*.obj)|*.obj", Title = "Import OBJ" };
             if (ofd.ShowDialog() != DialogResult.OK) return;
 
-            var model = CLSDecoder.Decode(clsData, atmData);
+            CLSModel model = CLSDecoder.Decode(clsData, atmData);
             try { CLSEncoder.ImportHeightsFromObj(model, ofd.FileName); }
             catch (Exception ex) { MessageBox.Show($"Import failed:\n{ex.Message}"); return; }
 
             byte[] updatedCls = CLSEncoder.EncodeCls(model, clsData);
 
             // Update in-memory entry so preview is live
-            var clsEntry = entries.First(e => e.Name.Equals(selectedEntry));
+            WowFileEntry clsEntry = entries.First(e => e.Name.Equals(selectedEntry));
             clsEntry.Data = updatedCls;
             clsEntry.Edited = true;
             clsData = updatedCls;
