@@ -22,14 +22,14 @@ bool musicFocus = false; // allow music to continue playing while the window is 
 bool forceStopFired = false;
 // Pointers to the game's internal Menu State
 volatile BYTE* pCDMusicToggle = nullptr;
-//volatile DWORD* pMenuState1 = (volatile DWORD*)0x4D1490; // 5427CC
-//volatile DWORD* pMenuState1 = (volatile DWORD*)0x5427CC;
 // The Control ID for the CD Player menu
 const DWORD CD_PLAYER_MENU_ID = 0x803E;
 CRITICAL_SECTION audioLock;
 bool playerIsHuman = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES);
 // Tracks the system uptime tick of the last physical Escape press
 DWORD lastEscapeTick = 0;
+// Tracks the system uptime tick of the last physical mouse click
+DWORD lastClickTick = 0;
 
 // === Logging === //
 void Log(const char* fmt, ...)
@@ -212,7 +212,6 @@ void InstallCDPlayerMenuHook()
 
 	Log("InstallCDPlayerMenuHook: hooked %s CD Player menu ctor at 0x%p", isNetworkVersion ? "network" : "vanilla", target);
 }
-
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
@@ -494,6 +493,12 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		LeaveCriticalSection(&audioLock);
 	}
+	// --- MOUSE CLICK MUSIC LATCH ---
+	if (msg == WM_LBUTTONDOWN || msg == WM_LBUTTONUP) {
+		EnterCriticalSection(&audioLock);
+		lastClickTick = GetTickCount();
+		LeaveCriticalSection(&audioLock);
+	}
 	return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
 }
 
@@ -639,6 +644,15 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 			return 0;
 		}
 
+		// Blocks stop commands fired within 250ms of a physical mouse click - when pressing resume game
+		// (Only if the CD Player menu isn't currently open and active)
+		bool isCDPlayerOpen = (pCDMusicToggle != nullptr && *pCDMusicToggle == CD_PLAYER_MENU_ID);
+		if (currentTick - lastClickTick < 250 && !isCDPlayerOpen) {
+			Log("MCI_STOP: Suppressed via Mouse Click timing latch (%lu ms delta). Music plays on.", currentTick - lastClickTick);
+			LeaveCriticalSection(&audioLock);
+			return 0;
+		}
+
 		// lastFocusEventTick is now written inside the lock by WndProcHook,
 		// so this read is safe.
 		if (musicFocus && (currentTick - lastFocusEventTick < 250)) {
@@ -715,7 +729,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		else {
 			notifyPending = false;
 		}
-
+		// TODO : Check timing and potential for race condition here ( music doesn't start unless opening the pause menu with the escape key and stops when exiting )
 		if (!isNetworkVersion && !seekAfterOpen && GetTickCount() - lastOpenTime < 1000) {
 			Log("Suppressed focus-triggered play");
 			LeaveCriticalSection(&audioLock);
