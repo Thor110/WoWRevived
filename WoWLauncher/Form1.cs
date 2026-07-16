@@ -637,7 +637,22 @@ namespace WoWLauncher
                 iniFile.Write("height", $"{dimensions[1]}", "ddraw");
                 // update nextResolution...
                 // Find the original base resolution's index so asset swapping uses the correct DAT-EXTRA folder
-                string closestMatch = supportedResolutions.OrderBy(res => Math.Abs(int.Parse(res.Split('x')[0]) - int.Parse(dimensions[0]))).First();
+                // Get the aspect ratio of the selected overclocked resolution
+                string targetRatio = GetAspectRatio(width, height); // e.g., "16:10"
+                // Find the closest match that has the same aspect ratio, OR fallback to closest width if none match
+                string closestMatch = supportedResolutions
+                    .OrderBy(res => {
+                        var parts = res.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        string resRatio = parts.Length > 1 ? parts[1].Trim('(', ')') : "";
+
+                        // Prioritize aspect ratio matches by giving them a massive distance reduction
+                        int ratioPenalty = (resRatio == targetRatio) ? 0 : 100000;
+                        int widthDiff = Math.Abs(int.Parse(parts[0].Split('x')[0]) - width);
+
+                        return widthDiff + ratioPenalty;
+                    })
+                    .First();
+                //string closestMatch = supportedResolutions.OrderBy(res => Math.Abs(int.Parse(res.Split('x')[0]) - int.Parse(dimensions[0]))).First();
                 screenSize = closestMatch.Split(' ')[0].Replace("x", ","); // e.g., "1920x1080"
                 nextResolution = resolutionHelper(screenSize, ",", "x");
             }
@@ -829,10 +844,15 @@ namespace WoWLauncher
             if (checkBox6.Checked) { foreach (string file in upscaledFiles) { File.Move($"DAT-EXTRA\\HD\\{file}", $"DAT\\{file}"); } }
             else { foreach (string file in upscaledFiles) { File.Move($"DAT\\{file}", $"DAT-EXTRA\\HD\\{file}"); } }
             // only move unit sprites if larger UI isn't enabled.
-            if (!checkBox4.Checked)
+            if (!checkBox4.Checked && !checkBox6.Checked)
             {
                 File.Move("DAT\\hu-cnt24.spr", "DAT-EXTRA\\HD\\hu-cnt24.spr");
                 File.Move("DAT\\MA-CNT24.SPR", "DAT-EXTRA\\HD\\MA-CNT24.SPR");
+            }
+            if (!checkBox4.Checked && checkBox6.Checked)
+            {
+                File.Move("DAT-EXTRA\\HD\\hu-cnt24.spr", "DAT\\hu-cnt24.spr");
+                File.Move("DAT-EXTRA\\HD\\MA-CNT24.SPR", "DAT\\MA-CNT24.SPR");
             }
         }
         // Debug "Enemy Visible" value determines if enemy units are visible on the warmap
@@ -855,10 +875,13 @@ namespace WoWLauncher
                 case 162426225: RenameLarger(); break;
                 default: MessageBox.Show("MAPS.WoW has an unexpected file size! Restoring the original files via the launcher may be required.", "Map Swap Error", MessageBoxButtons.OK, MessageBoxIcon.Warning); break;
             }
-            switch (new FileInfo("DAT\\hu-cnt24.spr").Length)
+            if(File.Exists("DAT\\hu-cnt24.spr"))
             {
-                case 191846: RemoveLarger(); break; // larger
-                default: AddLarger(); break; // enhanced
+                switch (new FileInfo("DAT\\hu-cnt24.spr").Length)
+                {
+                    case 191846: RemoveLarger(); break; // larger
+                    default: AddLarger(); break; // enhanced
+                }
             }
         }
         private void RenameRegular()
