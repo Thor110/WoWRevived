@@ -36,7 +36,35 @@ namespace WoWLauncher
                 return;
             }
             ApplicationConfiguration.Initialize();
-            if (AppDomain.CurrentDomain.BaseDirectory.Contains("OneDrive"))
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            // 1. Check for OneDrive (case-insensitive)
+            bool isOneDrive = baseDir.Contains("OneDrive", StringComparison.OrdinalIgnoreCase);
+            // 2. Dynamically fetch the exact default protected user directories
+            var protectedFolders = new[]
+            {
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),       // %userprofile%\Documents
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments),   // C:\Users\Public\Documents
+                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),        // %userprofile%\Pictures
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonPictures),    // C:\Users\Public\Pictures
+                Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),          // %userprofile%\Videos
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonVideos),      // C:\Users\Public\Videos
+                Environment.GetFolderPath(Environment.SpecialFolder.MyMusic),           // %userprofile%\Music
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonMusic),        // C:\Users\Public\Music
+                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),   // %userprofile%\Desktop
+                Environment.GetFolderPath(Environment.SpecialFolder.Favorites)          // %userprofile%\Favorites
+            };
+            // 3. Check if the launcher's current directory starts with any of these paths
+            bool isProtected = false;
+            foreach (var folder in protectedFolders)
+            {
+                if (!string.IsNullOrEmpty(folder) && baseDir.StartsWith(folder, StringComparison.OrdinalIgnoreCase))
+                {
+                    isProtected = true;
+                    break;
+                }
+            }
+            // 4. Trigger the warning if it's in OneDrive OR any protected user folder
+            if (isOneDrive || isProtected)
             {
                 MessageBox.Show(Interface["one_drive"], Interface["one_drive_warning"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
