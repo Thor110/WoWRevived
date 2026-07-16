@@ -55,7 +55,7 @@ The road map for this project.
 	- A hole in Sector 22 South Wales terrain geometry has been patched.
 	- Entering or exiting the menu no longer stops the music from playing like it did in the original game.
 	- Discord rich presence implemented with multiple states.
-	- Game executable no longer requires administrator privileges to launch.
+	- Game executables no longer requires administrator privileges to launch.
 	- Various executable edits:
 		- 1\. 1 byte to skip the "NO CD INSERTED" message in the CD Player menu.
 		- 2\. 2 bytes to skip creation of the 8/16 bit colour toggles in the "Display Settings" menu.
