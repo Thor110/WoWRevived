@@ -12,7 +12,7 @@ int currentTrack = 2;
 uint32_t currentTrackLength = 0;
 DWORD dwStartTime = 0;
 DWORD totalElapsedBeforePause = 0;
-bool isPaused = false;
+bool isPaused = false; // pause state in the cd player menu
 DWORD lastOpenTime = 0;
 HWAVEOUT hWaveOut = NULL;
 FILE* logFile = nullptr;
@@ -228,7 +228,7 @@ bool isNetworkVersion = false;	// vanilla			// network
 //float masterVolume = 1.0f;	// flt_4CA870		// dword_530654
 //float ambientVolume = 1.0f;	// flt_4CA858		// flt_53063C
 //float speechVolume = 1.0f;	// unk_4CA86C		// unk_530650
-DWORD cdState = 1;
+DWORD cdState = 1; // cd music toggle button state
 volatile bool isStopping = false;
 
 HWND notifyWindow = NULL;
