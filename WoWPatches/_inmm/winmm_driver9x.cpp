@@ -106,7 +106,7 @@ void RefreshPresence(GameState newState) {
 	}
 
 	presence.largeImageText = "Jeff Wayne's 'The War Of The Worlds'";
-	if (pfnDiscord_UpdatePresence) pfnDiscord_UpdatePresence(&presence);
+	//if (pfnDiscord_UpdatePresence) pfnDiscord_UpdatePresence(&presence);
 }
 
 typedef void(__cdecl* Discord_Initialize_t)(const char* applicationId, void* handlers, int autoRegister, const char* optionalSteamId);
@@ -813,7 +813,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		// Blocks stop commands fired within 250ms of a physical mouse click - when pressing resume game
 		// (Only if the CD Player menu isn't currently open and active)
 		bool isCDPlayerOpen = (pCDMusicToggle != nullptr && *pCDMusicToggle == CD_PLAYER_MENU_ID);
-		if (currentTick - lastClickTick < 250 && !isCDPlayerOpen) {
+		if (currentTick - lastClickTick < 250 && !isCDPlayerOpen && cdState == 1) {
 			Log("MCI_STOP: Suppressed via Mouse Click timing latch (%lu ms delta). Music plays on.", currentTick - lastClickTick);
 			LeaveCriticalSection(&audioLock);
 			return 0;
