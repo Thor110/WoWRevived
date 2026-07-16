@@ -416,12 +416,15 @@ namespace WoWLauncher
             Close();
             void launch(string executable)
             {
+                Process.Start("explorer.exe", executable);
+                /*
                 // TODO: run as administrator for future networked version
                 Process proc = new Process();
                 proc.StartInfo.FileName = executable;
                 proc.StartInfo.UseShellExecute = true;
                 proc.StartInfo.Verb = "runas";
                 proc.Start();
+                */
             }
         }
         // function from Riccardo Bassilichi : https://stackoverflow.com/questions/32250244/delete-a-registry-key-using-c-sharp

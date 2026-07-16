@@ -2,6 +2,8 @@
 #include <conio.h>
 #include <windows.h>
 #include <fstream>
+#include <tlhelp32.h>
+#include <ctime>
 
 #define DLLEXPORT			__declspec(dllexport)
 #define FAKE_CD_ID 0xBEEF 
@@ -48,6 +50,169 @@ void Log(const char* fmt, ...)
 	fprintf(logFile, "\n");
 	fflush(logFile);
 	va_end(args);
+}
+
+// --- Discord RPC Definitions ---
+struct DiscordRichPresence {
+	const char* state;
+	const char* details;
+	int64_t startTimestamp;
+	int64_t endTimestamp;
+	const char* largeImageKey;
+	const char* largeImageText;
+	const char* smallImageKey;
+	const char* smallImageText;
+	const char* partyId;
+	int partySize;
+	int partyMax;
+	const char* matchSecret;
+	const char* joinSecret;
+	const char* spectateSecret;
+	int8_t instance;
+};
+
+enum GameState { STATE_MENU, STATE_HUMAN, STATE_MARTIAN, STATE_NETWORK, STATE_CDPLAYER };
+
+void RefreshPresence(GameState newState) {
+	DiscordRichPresence presence = {};
+	presence.startTimestamp = (int64_t)std::time(nullptr);
+
+	switch (newState) {
+	case STATE_MENU:
+		presence.state = "Deciding the Fate of Earth";
+		presence.details = "Main Menu";
+		presence.largeImageKey = "menu_icon"; // Extract a clean button icon
+		break;
+	case STATE_HUMAN:
+		presence.state = "Defending Earth";
+		presence.details = "Human Campaign";
+		presence.largeImageKey = "human_logo";
+		break;
+	case STATE_MARTIAN:
+		presence.state = "Invading Earth";
+		presence.details = "Martian Campaign";
+		presence.largeImageKey = "martian_logo";
+		break;
+	case STATE_NETWORK:
+		presence.state = "Battling for Dominance";
+		presence.details = "Multiplayer Skirmish";
+		presence.largeImageKey = "network_icon";
+		break;
+	case STATE_CDPLAYER:
+		presence.state = "Listening to the Score";
+		presence.details = "CD Player Mode";
+		presence.largeImageKey = "cd_icon";
+		break;
+	}
+
+	presence.largeImageText = "Jeff Wayne's 'The War Of The Worlds'";
+	if (pfnDiscord_UpdatePresence) pfnDiscord_UpdatePresence(&presence);
+}
+
+typedef void(__cdecl* Discord_Initialize_t)(const char* applicationId, void* handlers, int autoRegister, const char* optionalSteamId);
+typedef void(__cdecl* Discord_UpdatePresence_t)(const DiscordRichPresence* presence);
+typedef void(__cdecl* Discord_Shutdown_t)(void);
+
+HMODULE hDiscordDLL = NULL;
+Discord_Initialize_t pfnDiscord_Initialize = nullptr;
+Discord_UpdatePresence_t pfnDiscord_UpdatePresence = nullptr;
+Discord_Shutdown_t pfnDiscord_Shutdown = nullptr;
+static bool g_discordInitialized = false;
+
+// --- Helper Functions ---
+bool IsDiscordRunning() {
+	bool running = false;
+	HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	if (hSnapshot != INVALID_HANDLE_VALUE) {
+		PROCESSENTRY32 pe;
+		pe.dwSize = sizeof(PROCESSENTRY32);
+		if (Process32First(hSnapshot, &pe)) {
+			do {
+				if (_stricmp(pe.szExeFile, "Discord.exe") == 0) {
+					running = true;
+					break;
+				}
+			} while (Process32Next(hSnapshot, &pe));
+		}
+		CloseHandle(hSnapshot);
+	}
+	return running;
+}
+
+void InitDiscordRPC() {
+	if (g_discordInitialized) return;
+	if (!IsDiscordRunning()) return;
+
+	hDiscordDLL = LoadLibraryA("discord-rpc.dll");
+	if (!hDiscordDLL) return;
+
+	pfnDiscord_Initialize = (Discord_Initialize_t)GetProcAddress(hDiscordDLL, "Discord_Initialize");
+	pfnDiscord_UpdatePresence = (Discord_UpdatePresence_t)GetProcAddress(hDiscordDLL, "Discord_UpdatePresence");
+	pfnDiscord_Shutdown = (Discord_Shutdown_t)GetProcAddress(hDiscordDLL, "Discord_Shutdown");
+
+	if (!pfnDiscord_Initialize || !pfnDiscord_UpdatePresence || !pfnDiscord_Shutdown) {
+		FreeLibrary(hDiscordDLL);
+		hDiscordDLL = NULL;
+		return;
+	}
+
+	// Replace with your Application ID
+	pfnDiscord_Initialize("1527400154154402022", nullptr, 1, nullptr);
+
+	DiscordRichPresence presence = {};
+	presence.startTimestamp = (int64_t)std::time(nullptr);
+
+	if (playerIsHuman) {
+		presence.state = "Defending Earth";
+		presence.details = "Human Campaign";
+		presence.largeImageKey = "human_logo";
+		presence.largeImageText = "The chances of anything coming from Mars...";
+	}
+	else {
+		presence.state = "Invading Earth";
+		presence.details = "Martian Campaign";
+		presence.largeImageKey = "martian_logo";
+		presence.largeImageText = "No one would have believed...";
+	}
+
+	pfnDiscord_UpdatePresence(&presence);
+	g_discordInitialized = true;
+}
+
+void ShutdownDiscordRPC() {
+	if (pfnDiscord_Shutdown) pfnDiscord_Shutdown();
+	if (hDiscordDLL) {
+		FreeLibrary(hDiscordDLL);
+		hDiscordDLL = NULL;
+	}
+}
+
+// TODO : implement discord features
+/*
+For the Main Menu:
+UpdateDiscordPresence("Main Menu", "Vanilla", "main_menu");
+
+For the Human Campaign:
+UpdateDiscordPresence("Defending Earth", "Human Campaign", "human_logo");
+
+For the Martian Campaign:
+UpdateDiscordPresence("Invading Earth", "Martian Campaign", "martian_logo");
+
+For the Network version:
+UpdateDiscordPresence("Multiplayer", "Network Session", "network_logo");
+*/
+
+void UpdateDiscordPresence(const char* state, const char* details, const char* imageKey) {
+	if (!pfnDiscord_UpdatePresence) return;
+
+	DiscordRichPresence presence = {};
+	presence.state = state;
+	presence.details = details;
+	presence.startTimestamp = (int64_t)std::time(nullptr);
+	presence.largeImageKey = imageKey; // Ensure this matches your Portal Asset Key exactly
+	presence.largeImageText = "Jeff Wayne's The War Of The Worlds";
+
+	pfnDiscord_UpdatePresence(&presence);
 }
 
 extern "C" DLLEXPORT MMRESULT WINAPI _imeKillEvent(UINT uTimerID) { return timeKillEvent(uTimerID); }
@@ -332,6 +497,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			RegCloseKey(hKey);
 		}
 		DeleteCriticalSection(&audioLock);
+		ShutdownDiscordRPC();
 	}
 	return TRUE;
 }
@@ -689,6 +855,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 
 	// 4. OPEN
 	if (uMsg == MCI_OPEN) {
+		InitDiscordRPC();
 		// gameWindow init: guard against double-hook from rapid MCI_OPEN calls.
 		// The check-then-act must be atomic; use the existing lock.
 		EnterCriticalSection(&audioLock);
