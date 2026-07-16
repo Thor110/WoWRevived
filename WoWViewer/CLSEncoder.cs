@@ -121,7 +121,8 @@
                 int heightByte = Math.Clamp(
                     (int)Math.Round((double)fy * 65536.0 / model.HeightScale),
                     0, 255);
-
+                // TODO : Fix width/height calculation to allow for new size maps.
+                //if (col < 0 || col >= model.GridW || row < 0 || row >= model.GridH) continue;
                 if (col < 0 || col >= model.GridW || row < 0 || row >= model.GridH) continue;
 
                 newHeights[row * model.GridW + col] = (byte)heightByte;
