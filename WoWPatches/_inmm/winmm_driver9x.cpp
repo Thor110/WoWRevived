@@ -28,7 +28,7 @@ volatile BYTE* pCDMusicToggle = nullptr;
 // The Control ID for the CD Player menu
 const DWORD CD_PLAYER_MENU_ID = 0x803E;
 CRITICAL_SECTION audioLock;
-bool playerIsHuman = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES);
+bool playerIsHuman = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES); // this in inside out, nevermind.
 // Tracks the system uptime tick of the last physical Escape press
 DWORD lastEscapeTick = 0;
 // Tracks the system uptime tick of the last physical mouse click
@@ -307,12 +307,16 @@ void UpdateDiscordState() {
 		currentState = STATE_MENU;
 		Log("Main Menu State");
 	}
+	else if (isNetworkVersion) {
+		currentState = STATE_NETWORK;
+		Log("Network State");
+	}
+	else if (*(volatile DWORD*)0x4D255C != 0) {
+		if (playerIsHuman) currentState = STATE_MARTIAN;
+		else currentState = STATE_HUMAN;
+		Log("Campaign State");
+	}
 	else {
-		// These are placeholders
-		//if (IsMartianCampaignActive()) currentState = STATE_MARTIAN;
-		//else if (IsHumanCampaignActive()) currentState = STATE_HUMAN;
-		//else if (IsNetworkGameActive()) currentState = STATE_NETWORK;
-		//else currentState = STATE_MENU;
 		currentState = STATE_MENU;
 		Log("unknown state");
 	}
