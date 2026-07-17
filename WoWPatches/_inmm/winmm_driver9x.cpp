@@ -296,8 +296,7 @@ int g_lastTrack;
 
 void UpdateDiscordState() {
 	if (pfnDiscord_RunCallbacks) pfnDiscord_RunCallbacks();
-
-	// 2. Determine Current State
+	// Determine Current State
 	GameState currentState;
 	if (pCDPlayerMenuThis != NULL) {
 		currentState = STATE_CDPLAYER;
@@ -311,17 +310,23 @@ void UpdateDiscordState() {
 		currentState = STATE_NETWORK;
 		Log("Network State");
 	}
-	else if (*(volatile DWORD*)0x4D255C != 0) {
-		if (playerIsHuman) currentState = STATE_MARTIAN;
-		else currentState = STATE_HUMAN;
-		Log("Campaign State");
+	else if (*(volatile DWORD*)0x4D25D0 != 0) {
+		BYTE isHuman = *(volatile BYTE*)0x4B84C4;
+		if (isHuman == 1) {
+			currentState = STATE_HUMAN;
+			Log("Campaign State: Human (Detected via 0x4B84C4)");
+		}
+		else {
+			currentState = STATE_MARTIAN;
+			Log("Campaign State: Martian (Detected via 0x4B84C4)");
+		}
 	}
 	else {
 		currentState = STATE_MENU;
 		Log("unknown state");
 	}
 
-	// 3. Logic: Update if State changes, Track changes, OR 16s have passed
+	// Logic: Update if State changes, Track changes, OR 16s have passed
 	bool stateChanged = (currentState != g_lastGameState);
 	bool trackChanged = (currentState == STATE_CDPLAYER && currentTrack != g_lastTrack);
 	bool rateLimitExpired = (GetTickCount() - lastPresenceUpdate > 16000);
