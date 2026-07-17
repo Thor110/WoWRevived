@@ -5,6 +5,7 @@
 #include <tlhelp32.h>
 #include <ctime>
 
+#pragma warning(disable: 28159) // suppress GetTickCount -> GetTickCount64 warning, no one is going to play War of the Worlds for over 49 days straight and if they do? More for them.
 #define DLLEXPORT			__declspec(dllexport)
 #define FAKE_CD_ID 0xBEEF 
 
@@ -16,7 +17,7 @@ bool isPaused = false; // pause state in the cd player menu
 DWORD lastOpenTime = 0;
 HWAVEOUT hWaveOut = NULL;
 FILE* logFile = nullptr;
-bool debug = false; // true for logging
+bool debug = true; // true for logging
 bool musicFocus = false; // allow music to continue playing while the window is out of focus
 // Test-only latch for the force-press-Stop experiment (see ForceStopButtonPress
 // below) - stops it firing repeatedly once per elapsed-time threshold, and gets
@@ -32,6 +33,11 @@ bool playerIsHuman = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES)
 DWORD lastEscapeTick = 0;
 // Tracks the system uptime tick of the last physical mouse click
 DWORD lastClickTick = 0;
+// netork / vanilla specific offsets
+bool isNetworkVersion = false;	// vanilla			// network
+//float masterVolume = 1.0f;	// flt_4CA870		// dword_530654
+//float ambientVolume = 1.0f;	// flt_4CA858		// flt_53063C
+//float speechVolume = 1.0f;	// unk_4CA86C		// unk_530650
 
 // === Logging === //
 void Log(const char* fmt, ...)
@@ -71,53 +77,262 @@ struct DiscordRichPresence {
 	int8_t instance;
 };
 
+typedef void(__cdecl* Discord_Initialize_t)(const char* applicationId, void* handlers, int autoRegister, const char* optionalSteamId);
+typedef void(__cdecl* Discord_UpdatePresence_t)(const DiscordRichPresence* presence);
+typedef void(__cdecl* Discord_RunCallbacks_t)(void);
+typedef void(__cdecl* Discord_Shutdown_t)(void);
+
+Discord_RunCallbacks_t pfnDiscord_RunCallbacks = nullptr;
+HMODULE hDiscordDLL = NULL;
+Discord_Initialize_t pfnDiscord_Initialize = nullptr;
+Discord_UpdatePresence_t pfnDiscord_UpdatePresence = nullptr;
+Discord_Shutdown_t pfnDiscord_Shutdown = nullptr;
+static bool g_discordInitialized = false;
+
 enum GameState { STATE_MENU, STATE_HUMAN, STATE_MARTIAN, STATE_NETWORK, STATE_CDPLAYER };
+GameState g_lastGameState = (GameState)-1;
+
+enum Language { LANG_EN, LANG_FR, LANG_DE, LANG_IT, LANG_ES };
+Language currentLanguage;
+
+Language GetLanguage(DWORD pngSize) {
+	switch (pngSize) {
+		case 292567: return LANG_FR;
+		case 294349: return LANG_DE;
+		case 258919: return LANG_IT;
+		case 268939: return LANG_ES;
+		default:     return LANG_EN;
+	}
+}
+
+const char* langName;
+
+const char* GetTrackName() {
+	switch (currentLanguage) {
+	case LANG_EN:
+		if (!playerIsHuman) { // Human
+			switch (currentTrack) {
+				case 2: return "Dead London";					// cd_bd3
+				case 3: return "The Spirit of Man";				// cd_bd7
+				case 4: return "Brave New World";				// cd_bd2
+				case 5: return "The Eve of the War (Human)";	// cd_bd5 (image used twice)
+			}
+		}
+		else { // Martian
+			switch (currentTrack) {
+				case 2: return "The Red Weed";					// cd_bd6
+				case 3: return "Horsell Common";				// cd_bd5 (image used twice)
+				case 4: return "The Eve of the War (Martian)";	// cd_bd4
+				case 5: return "The Fighting Machine";			// cd_bd1
+			}
+		}
+	case LANG_FR:
+		if (!playerIsHuman) { // Human
+			switch (currentTrack) {
+				case 2: return "Londres Mort";
+				case 3: return "L'Esprit de l'Homme";
+				case 4: return "Un Monde Nouveau";
+				case 5: return "La Veille de la Guerre (Humain)";
+			}
+		}
+		else { // Martian
+			switch (currentTrack) {
+				case 2: return "L'Herbe Rouge";
+				case 3: return "Horsell Common";
+				case 4: return "La Veille de la Guerre (Martien)";
+				case 5: return "La Machine de Combat";
+			}
+		}
+	case LANG_DE:
+		if (!playerIsHuman) { // Human
+			switch (currentTrack) {
+				case 2: return "Totes London";
+				case 3: return "Der Geist des Menschen";
+				case 4: return "Schöne Neue Welt";
+				case 5: return "Der Vorabend des Krieges (Mensch)";
+			}
+		}
+		else { // Martian
+			switch (currentTrack) {
+				case 2: return "Das Rote Unkraut";
+				case 3: return "Horsell Common";
+				case 4: return "Der Vorabend des Krieges (Marsianisch)";
+				case 5: return "Die Kampfmaschine";
+			}
+		}
+	case LANG_IT:
+		if (!playerIsHuman) { // Human
+			switch (currentTrack) {
+				case 2: return "Londra Morta";
+				case 3: return "Lo Spirito dell'Uomo";
+				case 4: return "Un Mondo Nuovo";
+				case 5: return "La Vigilia della Guerra (Umano)";
+			}
+		}
+		else { // Martian
+			switch (currentTrack) {
+				case 2: return "L'Erba Rossa";
+				case 3: return "Horsell Common";
+				case 4: return "La Vigilia della Guerra (Marziano)";
+				case 5: return "La Macchina da Combattimento";
+			}
+		}
+	case LANG_ES:
+		if (!playerIsHuman) { // Human
+			switch (currentTrack) {
+				case 2: return "Londres Muerta";
+				case 3: return "El Espíritu del Hombre";
+				case 4: return "Un Mundo Nuevo";
+				case 5: return "La Víspera de la Guerra (Humano)";
+			}
+		}
+		else { // Martian
+			switch (currentTrack) {
+				case 2: return "La Hierba Roja";
+				case 3: return "Horsell Common";
+				case 4: return "La Víspera de la Guerra (Marciano)";
+				case 5: return "La Máquina de Combate";
+			}
+		}
+	}
+	// Fallback
+	return "Unknown Track";
+}
+
+const char* GetTrackImage() {
+	if (!playerIsHuman) { // Human
+		switch (currentTrack) {
+			case 2: return "cd_bd3";
+			case 3: return "cd_bd7";
+			case 4: return "cd_bd2";
+			case 5: return "cd_bd5";
+		}
+	}
+	else { // Martian
+		switch (currentTrack) {
+			case 2: return "cd_bd6";
+			case 3: return "cd_bd5";
+			case 4: return "cd_bd4";
+			case 5: return "cd_bd1";
+		}
+	}
+	// Fallback
+	return "cd_bd1";
+}
 
 void RefreshPresence(GameState newState) {
 	DiscordRichPresence presence = {};
 	presence.startTimestamp = (int64_t)std::time(nullptr);
 
 	switch (newState) {
-	case STATE_MENU:
-		presence.state = "Deciding the Fate of Earth";
-		presence.details = "Main Menu";
-		presence.largeImageKey = "menu_icon"; // Extract a clean button icon
-		break;
-	case STATE_HUMAN:
-		presence.state = "Defending Earth";
-		presence.details = "Human Campaign";
-		presence.largeImageKey = "human_logo";
-		break;
-	case STATE_MARTIAN:
-		presence.state = "Invading Earth";
-		presence.details = "Martian Campaign";
-		presence.largeImageKey = "martian_logo";
-		break;
-	case STATE_NETWORK:
-		presence.state = "Battling for Dominance";
-		presence.details = "Multiplayer Skirmish";
-		presence.largeImageKey = "network_icon";
-		break;
-	case STATE_CDPLAYER:
-		presence.state = "Listening to the Score";
-		presence.details = "CD Player Mode";
-		presence.largeImageKey = "cd_icon";
-		break;
+		case STATE_MENU:
+			presence.state = "Deciding the Fate of Earth";
+			presence.details = "Main Menu";
+			presence.largeImageKey = "menu"; // temporary
+			presence.largeImageText = "Jeff Wayne's 'The War Of The Worlds'";
+			break;
+		case STATE_HUMAN:
+			presence.state = "Defending Earth";
+			presence.details = "Human Campaign";
+			presence.largeImageKey = "cd_bd1"; // temporary
+			presence.largeImageText = "The chances of anything coming from Mars...";
+			break;
+		case STATE_MARTIAN:
+			presence.state = "Invading Earth";
+			presence.details = "Martian Campaign";
+			presence.largeImageKey = "cd_bd1"; // temporary
+			presence.largeImageText = "No one would have believed...";
+			break;
+		case STATE_NETWORK:
+			presence.state = "Battling for Dominance";
+			presence.details = "Multiplayer Skirmish";
+			presence.largeImageKey = "cd_bd1"; // temporary
+			presence.largeImageText = "Commanding forces online...";
+			break;
+		case STATE_CDPLAYER:
+			presence.state = "Listening to the Score";
+			presence.details = "CD Player Mode";
+			presence.largeImageKey = GetTrackImage();	// get track image
+			presence.largeImageText = GetTrackName();	// get track name
+			break;
 	}
+	/* // TODO : contemplate hooking up networking one day
+	if (isNetworkVersion) {
+		presence.partyId = "session_12345";
+		presence.partySize = 1;
+		presence.partyMax = 8;
+		presence.joinSecret = "encrypted_join_code";
+	}
+	else {
+		// Leave secret fields NULL, effectively disabling invites
+		presence.partyId = NULL;
+		presence.joinSecret = NULL;
+	}
+	*/
 
-	presence.largeImageText = "Jeff Wayne's 'The War Of The Worlds'";
-	//if (pfnDiscord_UpdatePresence) pfnDiscord_UpdatePresence(&presence);
+	if (pfnDiscord_UpdatePresence) pfnDiscord_UpdatePresence(&presence);
 }
 
-typedef void(__cdecl* Discord_Initialize_t)(const char* applicationId, void* handlers, int autoRegister, const char* optionalSteamId);
-typedef void(__cdecl* Discord_UpdatePresence_t)(const DiscordRichPresence* presence);
-typedef void(__cdecl* Discord_Shutdown_t)(void);
+// TODO: this is NOT a fixed address yet - the CD Player menu object is
+// heap-allocated fresh each time the menu opens (see sub_407990), so there's
+// no static "this" pointer to hardcode. pCDMusicToggle (above) sits at a
+// fixed address and holds the *ID* of whichever menu is currently active;
+// a "current menu ID" field like that is often stored right next to a
+// "current menu object pointer" field in the same struct, so scanning the
+// DWORDs immediately around 0x4B8A88 (vanilla) / 0x5427CC (network) while
+// the CD Player menu is open is the most promising place to find it.
+// Once found, point this at that (possibly indirected) address.
+void* pCDPlayerMenuThis = nullptr;
 
-HMODULE hDiscordDLL = NULL;
-Discord_Initialize_t pfnDiscord_Initialize = nullptr;
-Discord_UpdatePresence_t pfnDiscord_UpdatePresence = nullptr;
-Discord_Shutdown_t pfnDiscord_Shutdown = nullptr;
-static bool g_discordInitialized = false;
+#define ADDR_STATE_255C  ((volatile DWORD*)0x4D255C)
+
+// discord rpc poll
+DWORD lastPoll = 0;
+
+// Static variables to persist between calls
+static DWORD lastPresenceUpdate = 0;
+
+int g_lastTrack;
+
+void UpdateDiscordState() {
+	if (pfnDiscord_RunCallbacks) pfnDiscord_RunCallbacks();
+
+	// 2. Determine Current State
+	GameState currentState;
+	if (pCDPlayerMenuThis != NULL) {
+		currentState = STATE_CDPLAYER;
+		Log("CD Player State");
+	}
+	else if (*ADDR_STATE_255C == 0x90) {
+		currentState = STATE_MENU;
+		Log("Main Menu State");
+	}
+	else {
+		// These are placeholders
+		//if (IsMartianCampaignActive()) currentState = STATE_MARTIAN;
+		//else if (IsHumanCampaignActive()) currentState = STATE_HUMAN;
+		//else if (IsNetworkGameActive()) currentState = STATE_NETWORK;
+		//else currentState = STATE_MENU;
+		currentState = STATE_MENU;
+		Log("unknown state");
+	}
+
+	// 3. Logic: Update if State changes, Track changes, OR 16s have passed
+	bool stateChanged = (currentState != g_lastGameState);
+	bool trackChanged = (currentState == STATE_CDPLAYER && currentTrack != g_lastTrack);
+	bool rateLimitExpired = (GetTickCount() - lastPresenceUpdate > 16000);
+
+	// Only attempt an update if we are initialized
+	if (g_discordInitialized && (stateChanged || trackChanged || rateLimitExpired)) {
+		RefreshPresence(currentState);
+
+		g_lastGameState = currentState;
+		g_lastTrack = currentTrack;
+		lastPresenceUpdate = GetTickCount();
+
+		Log("Discord Presence Updated. State: %d, Track: %d", currentState, currentTrack);
+	}
+}
 
 // --- Helper Functions ---
 bool IsDiscordRunning() {
@@ -149,34 +364,30 @@ void InitDiscordRPC() {
 	pfnDiscord_Initialize = (Discord_Initialize_t)GetProcAddress(hDiscordDLL, "Discord_Initialize");
 	pfnDiscord_UpdatePresence = (Discord_UpdatePresence_t)GetProcAddress(hDiscordDLL, "Discord_UpdatePresence");
 	pfnDiscord_Shutdown = (Discord_Shutdown_t)GetProcAddress(hDiscordDLL, "Discord_Shutdown");
+	pfnDiscord_RunCallbacks = (Discord_RunCallbacks_t)GetProcAddress(hDiscordDLL, "Discord_RunCallbacks");
 
-	if (!pfnDiscord_Initialize || !pfnDiscord_UpdatePresence || !pfnDiscord_Shutdown) {
+	if (!pfnDiscord_Initialize || !pfnDiscord_UpdatePresence || !pfnDiscord_Shutdown || !pfnDiscord_RunCallbacks) {
 		FreeLibrary(hDiscordDLL);
 		hDiscordDLL = NULL;
 		return;
 	}
 
-	// Replace with your Application ID
+	// Application ID
 	pfnDiscord_Initialize("1527400154154402022", nullptr, 1, nullptr);
 
 	DiscordRichPresence presence = {};
 	presence.startTimestamp = (int64_t)std::time(nullptr);
 
-	if (playerIsHuman) {
-		presence.state = "Defending Earth";
-		presence.details = "Human Campaign";
-		presence.largeImageKey = "human_logo";
-		presence.largeImageText = "The chances of anything coming from Mars...";
-	}
-	else {
-		presence.state = "Invading Earth";
-		presence.details = "Martian Campaign";
-		presence.largeImageKey = "martian_logo";
-		presence.largeImageText = "No one would have believed...";
-	}
-
 	pfnDiscord_UpdatePresence(&presence);
 	g_discordInitialized = true;
+
+	DWORD pngSize = 0;
+	HANDLE hf = CreateFileA("credits.png", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+	if (hf != INVALID_HANDLE_VALUE) {
+		pngSize = GetFileSize(hf, NULL);
+		CloseHandle(hf);
+	}
+	currentLanguage = GetLanguage(pngSize);
 }
 
 void ShutdownDiscordRPC() {
@@ -185,34 +396,6 @@ void ShutdownDiscordRPC() {
 		FreeLibrary(hDiscordDLL);
 		hDiscordDLL = NULL;
 	}
-}
-
-// TODO : implement discord features
-/*
-For the Main Menu:
-UpdateDiscordPresence("Main Menu", "Vanilla", "main_menu");
-
-For the Human Campaign:
-UpdateDiscordPresence("Defending Earth", "Human Campaign", "human_logo");
-
-For the Martian Campaign:
-UpdateDiscordPresence("Invading Earth", "Martian Campaign", "martian_logo");
-
-For the Network version:
-UpdateDiscordPresence("Multiplayer", "Network Session", "network_logo");
-*/
-
-void UpdateDiscordPresence(const char* state, const char* details, const char* imageKey) {
-	if (!pfnDiscord_UpdatePresence) return;
-
-	DiscordRichPresence presence = {};
-	presence.state = state;
-	presence.details = details;
-	presence.startTimestamp = (int64_t)std::time(nullptr);
-	presence.largeImageKey = imageKey; // Ensure this matches your Portal Asset Key exactly
-	presence.largeImageText = "Jeff Wayne's The War Of The Worlds";
-
-	pfnDiscord_UpdatePresence(&presence);
 }
 
 extern "C" DLLEXPORT MMRESULT WINAPI _imeKillEvent(UINT uTimerID) { return timeKillEvent(uTimerID); }
@@ -224,10 +407,6 @@ extern "C" DLLEXPORT DWORD WINAPI _imeGetTime(void) { return timeGetTime(); }
 // networking executable specific variables
 bool seekAfterOpen = false;
 DWORD lastPlayTime = 0;
-bool isNetworkVersion = false;	// vanilla			// network
-//float masterVolume = 1.0f;	// flt_4CA870		// dword_530654
-//float ambientVolume = 1.0f;	// flt_4CA858		// flt_53063C
-//float speechVolume = 1.0f;	// unk_4CA86C		// unk_530650
 DWORD cdState = 1; // cd music toggle button state
 volatile bool isStopping = false;
 
@@ -270,17 +449,6 @@ typedef int(__thiscall* CDPlayerOnMessage_t)(void* pThis, UINT uMsg, UINT wParam
 #define CD_PLAYER_ON_MESSAGE_ADDR_VANILLA 0x4081D0
 #define CD_PLAYER_ON_MESSAGE_ADDR_NETWORK 0x4B0510
 CDPlayerOnMessage_t CDPlayerOnMessage = nullptr;
-
-// TODO: this is NOT a fixed address yet - the CD Player menu object is
-// heap-allocated fresh each time the menu opens (see sub_407990), so there's
-// no static "this" pointer to hardcode. pCDMusicToggle (above) sits at a
-// fixed address and holds the *ID* of whichever menu is currently active;
-// a "current menu ID" field like that is often stored right next to a
-// "current menu object pointer" field in the same struct, so scanning the
-// DWORDs immediately around 0x4B8A88 (vanilla) / 0x5427CC (network) while
-// the CD Player menu is open is the most promising place to find it.
-// Once found, point this at that (possibly indirected) address.
-void* pCDPlayerMenuThis = nullptr;
 
 void ForceStopButtonPress()
 {
@@ -615,6 +783,10 @@ DWORD lastFocusEventTick = 0;
 
 LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	if (GetTickCount() - lastPoll > 2000) {
+		UpdateDiscordState();
+		lastPoll = GetTickCount();
+	}
 	if (msg == WM_APP_FORCE_STOP_PRESS) {
 		ForceStopButtonPress();
 		return 0;
