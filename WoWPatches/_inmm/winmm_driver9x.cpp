@@ -228,30 +228,30 @@ void RefreshPresence(GameState newState) {
 		case STATE_MENU:
 			presence.state = "Deciding the Fate of Earth";
 			presence.details = "Main Menu";
-			presence.largeImageKey = "menu"; // temporary
+			presence.largeImageKey = "menu"; // temporary - source cover art
 			presence.largeImageText = "Jeff Wayne's 'The War Of The Worlds'";
 			break;
 		case STATE_HUMAN:
 			presence.state = "Defending Earth";
 			presence.details = "Human Campaign";
-			presence.largeImageKey = "cd_bd1"; // temporary
+			presence.largeImageKey = "human";
 			presence.largeImageText = "The chances of anything coming from Mars...";
 			break;
 		case STATE_MARTIAN:
 			presence.state = "Invading Earth";
 			presence.details = "Martian Campaign";
-			presence.largeImageKey = "cd_bd1"; // temporary
+			presence.largeImageKey = "martian";
 			presence.largeImageText = "No one would have believed...";
 			break;
 		case STATE_NETWORK:
 			presence.state = "Battling for Dominance";
 			presence.details = "Multiplayer Skirmish";
-			presence.largeImageKey = "cd_bd1"; // temporary
+			presence.largeImageKey = "network";
 			presence.largeImageText = "Commanding forces online...";
 			break;
 		case STATE_CDPLAYER:
 			presence.state = "Listening to the Score";
-			presence.details = "CD Player Mode";
+			presence.details = "CD Player";
 			presence.largeImageKey = GetTrackImage();	// get track image
 			presence.largeImageText = GetTrackName();	// get track name
 			break;
