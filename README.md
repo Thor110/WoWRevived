@@ -54,7 +54,7 @@ The road map for this project.
 	- Custom networking executable included and accessible via the launcher when networking is enabled.
 	- A hole in Sector 22 South Wales terrain geometry has been patched.
 	- Entering or exiting the menu no longer stops the music from playing like it did in the original game.
-	- Discord rich presence implemented with multiple states.
+	- Discord rich presence features implemented with multiple states. ( Main Menu, CD Player Track Name & Image, Human Campaign, Martian Campaign & Network Campaign )
 	- Game executables no longer requires administrator privileges to launch.
 	- Various executable edits:
 		- 1\. 1 byte to skip the "NO CD INSERTED" message in the CD Player menu.
