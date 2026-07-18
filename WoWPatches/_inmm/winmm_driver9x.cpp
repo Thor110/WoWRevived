@@ -426,13 +426,18 @@ void UpdateDiscordState() {
 		g_sessionStartTime = time(NULL);
 	}
 
+	Log("DEBUG: State Check - CDPlayerPtr: 0x%p, ADDR_STATE_255C: 0x%X",
+		pCDPlayerMenuThis, *ADDR_STATE_255C);
+
 	// Determine Current State
 	GameState currentState;
 	if (pCDPlayerMenuThis != NULL) {
 		currentState = STATE_CDPLAYER;
 		Log("CD Player State");
 	}
-	else if (*ADDR_STATE_255C == 0x90) {
+	// 0x90 return from credits sequence - end game or accessed via options menu
+	// 0x0 return to main menu from in-game
+	else if (*ADDR_STATE_255C == 0x90 || *ADDR_STATE_255C == 0x0) {
 		currentState = STATE_MENU;
 		Log("Main Menu State");
 	}
@@ -996,7 +1001,6 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 	// --- ESCAPE KEY MUSIC LATCH ---
 	if (msg == WM_KEYDOWN && wParam == VK_ESCAPE && pCDPlayerMenuThis == NULL) {
-	//if (msg == WM_KEYDOWN && wParam == VK_ESCAPE) {
 		EnterCriticalSection(&audioLock);
 		lastEscapeTick = GetTickCount();
 		Log("HOOK: Escape key down registered at tick %lu", lastEscapeTick);
