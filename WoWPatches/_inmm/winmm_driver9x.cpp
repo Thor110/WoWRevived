@@ -220,40 +220,172 @@ const char* GetTrackImage() {
 	return "cd_bd1";
 }
 
+const char* GetTrackImage() {
+	switch (currentLanguage) {
+	case LANG_EN:
+
+	case LANG_FR:
+
+	case LANG_DE:
+
+	case LANG_IT:
+
+	case LANG_ES:
+
+	}
+	// Fallback
+	return "broken";
+}
+
 void RefreshPresence(GameState newState) {
 	DiscordRichPresence presence = {};
 	presence.startTimestamp = (int64_t)std::time(nullptr);
-
 	switch (newState) {
 		case STATE_MENU:
-			presence.state = "Deciding the Fate of Earth";
-			presence.details = "Main Menu";
-			presence.largeImageKey = "menu"; // temporary - source cover art
+			presence.largeImageKey = "menu";
 			presence.largeImageText = "Jeff Wayne's 'The War Of The Worlds'";
+			switch (currentLanguage) {
+				case LANG_FR:
+					presence.state = "Décision du destin de la Terre";
+					presence.details = "Menu principal";
+					break;
+				case LANG_DE:
+					presence.state = "Das Schicksal der Erde entscheiden";
+					presence.details = "Hauptmenü";
+					break;
+				case LANG_IT:
+					presence.state = "Decidere il destino della Terra";
+					presence.details = "Menu principale";
+					break;
+				case LANG_ES:
+					presence.state = "Decidiendo el destino de la Tierra";
+					presence.details = "Menú principal";
+					break;
+				case LANG_EN:
+				default:
+					presence.state = "Deciding the Fate of Earth";
+					presence.details = "Main Menu";
+					break;
+			}
 			break;
 		case STATE_HUMAN:
-			presence.state = "Defending Earth";
-			presence.details = "Human Campaign";
 			presence.largeImageKey = "human";
-			presence.largeImageText = "The chances of anything coming from Mars...";
-			break;
+			switch (currentLanguage) {
+				case LANG_FR:
+					presence.state = "Défense de la Terre";
+					presence.details = "Campagne humaine";
+					presence.largeImageText = "Les chances que quelque chose vienne de Mars...";
+					break;
+				case LANG_DE:
+					presence.state = "Verteidigung der Erde";
+					presence.details = "Menschen-Kampagne";
+					presence.largeImageText = "Die Chancen, dass etwas vom Mars kommt...";
+					break;
+				case LANG_IT:
+					presence.state = "Difesa della Terra";
+					presence.details = "Campagna umana";
+					presence.largeImageText = "Le probabilità che qualcosa arrivi da Marte...";
+					break;
+				case LANG_ES:
+					presence.state = "Defendiendo la Tierra";
+					presence.details = "Campaña humana";
+					presence.largeImageText = "Las posibilidades de que algo venga de Marte...";
+					break;
+				case LANG_EN:
+				default:
+					presence.state = "Defending Earth";
+					presence.details = "Human Campaign";
+					presence.largeImageText = "The chances of anything coming from Mars...";
+					break;
+			}
 		case STATE_MARTIAN:
-			presence.state = "Invading Earth";
-			presence.details = "Martian Campaign";
 			presence.largeImageKey = "martian";
-			presence.largeImageText = "No one would have believed...";
+			switch (currentLanguage) {
+				case LANG_FR:
+					presence.state = "Invasion de la Terre";
+					presence.details = "Campagne martienne";
+					presence.largeImageText = "Personne n'aurait cru...";
+					break;
+				case LANG_DE:
+					presence.state = "Invasion der Erde";
+					presence.details = "Marsianer-Kampagne";
+					presence.largeImageText = "Niemand hätte geglaubt...";
+					break;
+				case LANG_IT:
+					presence.state = "Invasione della Terra";
+					presence.details = "Campagna marziana";
+					presence.largeImageText = "Nessuno avrebbe mai creduto...";
+					break;
+				case LANG_ES:
+					presence.state = "Invadiendo la Tierra";
+					presence.details = "Campaña marciana";
+					presence.largeImageText = "Nadie habría creído...";
+					break;
+				case LANG_EN:
+				default:
+					presence.state = "Invading Earth";
+					presence.details = "Martian Campaign";
+					presence.largeImageText = "No one would have believed...";
+					break;
+			}
 			break;
 		case STATE_NETWORK:
-			presence.state = "Battling for Dominance";
-			presence.details = "Multiplayer Skirmish";
 			presence.largeImageKey = "network";
-			presence.largeImageText = "Commanding forces online...";
+			switch (currentLanguage) {
+				case LANG_FR:
+					presence.state = "Bataille pour la domination";
+					presence.details = "Escarmouche multijoueur";
+					presence.largeImageText = "Commandement des forces en ligne...";
+					break;
+				case LANG_DE:
+					presence.state = "Kampf um die Vorherrschaft";
+					presence.details = "Multiplayer-Gefecht";
+					presence.largeImageText = "Befehl über Truppen online...";
+					break;
+				case LANG_IT:
+					presence.state = "Battaglia per il dominio";
+					presence.details = "Schermaglia multigiocatore";
+					presence.largeImageText = "Comando delle forze online...";
+					break;
+				case LANG_ES:
+					presence.state = "Batalla por el dominio";
+					presence.details = "Escaramuza multijugador";
+					presence.largeImageText = "Comandando fuerzas en línea...";
+					break;
+				case LANG_EN:
+				default:
+					presence.state = "Battling for Dominance";
+					presence.details = "Multiplayer Skirmish";
+					presence.largeImageText = "Commanding forces online...";
+					break;
+			}
 			break;
 		case STATE_CDPLAYER:
-			presence.state = "Listening to the Score";
-			presence.details = "CD Player";
 			presence.largeImageKey = GetTrackImage();	// get track image
 			presence.largeImageText = GetTrackName();	// get track name
+			switch (currentLanguage) {
+				case LANG_FR:
+					presence.state = "Écoute de la bande originale";
+					presence.details = "Lecteur CD";
+					break;
+				case LANG_DE:
+					presence.state = "Hören des Soundtracks";
+					presence.details = "CD-Spieler";
+					break;
+				case LANG_IT:
+					presence.state = "Ascolto della colonna sonora";
+					presence.details = "Lettore CD";
+					break;
+				case LANG_ES:
+					presence.state = "Escuchando la banda sonora";
+					presence.details = "Reproductor de CD";
+					break;
+				case LANG_EN:
+				default:
+					presence.state = "Listening to the Score";
+					presence.details = "CD Player";
+					break;
+			}
 			break;
 	}
 	/* // TODO : contemplate hooking up networking one day
@@ -269,6 +401,8 @@ void RefreshPresence(GameState newState) {
 		presence.joinSecret = NULL;
 	}
 	*/
+
+
 
 	if (pfnDiscord_UpdatePresence) pfnDiscord_UpdatePresence(&presence);
 }
@@ -307,6 +441,7 @@ void UpdateDiscordState() {
 		Log("Main Menu State");
 	}
 	else if (isNetworkVersion) {
+		// 0x530518 is the network executable equivalent of 0x4B84C4
 		currentState = STATE_NETWORK;
 		Log("Network State");
 	}
@@ -801,7 +936,8 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return 0;
 	}
 	// --- ESCAPE KEY MUSIC LATCH ---
-	if (msg == WM_KEYDOWN && wParam == VK_ESCAPE) {
+	//if (msg == WM_KEYDOWN && wParam == VK_ESCAPE && *pCDMusicToggle != CD_PLAYER_MENU_ID) { // neither working currently
+	if (msg == WM_KEYDOWN && wParam == VK_ESCAPE && g_lastGameState != STATE_CDPLAYER) {
 		EnterCriticalSection(&audioLock);
 		lastEscapeTick = GetTickCount();
 		Log("HOOK: Escape key down registered at tick %lu", lastEscapeTick);
