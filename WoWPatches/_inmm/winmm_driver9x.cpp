@@ -77,6 +77,8 @@ struct DiscordRichPresence {
 	int8_t instance;
 };
 
+static int64_t g_sessionStartTime = 0;
+
 typedef void(__cdecl* Discord_Initialize_t)(const char* applicationId, void* handlers, int autoRegister, const char* optionalSteamId);
 typedef void(__cdecl* Discord_UpdatePresence_t)(const DiscordRichPresence* presence);
 typedef void(__cdecl* Discord_RunCallbacks_t)(void);
@@ -222,7 +224,8 @@ const char* GetTrackImage() {
 
 void RefreshPresence(GameState newState) {
 	DiscordRichPresence presence = {};
-	presence.startTimestamp = (int64_t)std::time(nullptr);
+	//presence.startTimestamp = (int64_t)std::time(nullptr);
+	presence.startTimestamp = g_sessionStartTime;
 	switch (newState) {
 		case STATE_MENU:
 			presence.largeImageKey = "menu";
@@ -418,6 +421,11 @@ int g_lastTrack;
 
 void UpdateDiscordState() {
 	if (pfnDiscord_RunCallbacks) pfnDiscord_RunCallbacks();
+
+	if (g_sessionStartTime == 0) {
+		g_sessionStartTime = time(NULL);
+	}
+
 	// Determine Current State
 	GameState currentState;
 	if (pCDPlayerMenuThis != NULL) {
