@@ -30,7 +30,6 @@ Main features
 - In the Spanish release, the Scout and Fighting machine voice lines are in Italian for some reason.
 - Larger Maps option checkbox is now called Larger UI and adds larger battlemap unit icons as well.
 - Edinburgh and Southampton have issues spawning Ironclad vessels when entering the battlemap due to not having enough space for a full compliment of 5 sea units.
-- Discord rich presence special features, such as the game state. ( Menu, Human Game, Martian Game, CD Player etc )
 - Scrolling "Now Playing : Track Name" message at the bottom of the screen in-game.
 
 Toolkit features
