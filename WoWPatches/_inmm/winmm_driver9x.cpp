@@ -426,8 +426,7 @@ void UpdateDiscordState() {
 		g_sessionStartTime = time(NULL);
 	}
 
-	Log("DEBUG: State Check - CDPlayerPtr: 0x%p, ADDR_STATE_255C: 0x%X",
-		pCDPlayerMenuThis, *ADDR_STATE_255C);
+	Log("DEBUG: State Check - CDPlayerPtr: 0x%p, ADDR_STATE_255C: 0x%X", pCDPlayerMenuThis, *ADDR_STATE_255C);
 
 	// Determine Current State
 	GameState currentState;
