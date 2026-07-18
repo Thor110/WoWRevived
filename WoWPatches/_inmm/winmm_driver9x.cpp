@@ -220,23 +220,6 @@ const char* GetTrackImage() {
 	return "cd_bd1";
 }
 
-const char* GetTrackImage() {
-	switch (currentLanguage) {
-	case LANG_EN:
-
-	case LANG_FR:
-
-	case LANG_DE:
-
-	case LANG_IT:
-
-	case LANG_ES:
-
-	}
-	// Fallback
-	return "broken";
-}
-
 void RefreshPresence(GameState newState) {
 	DiscordRichPresence presence = {};
 	presence.startTimestamp = (int64_t)std::time(nullptr);
@@ -298,6 +281,7 @@ void RefreshPresence(GameState newState) {
 					presence.largeImageText = "The chances of anything coming from Mars...";
 					break;
 			}
+			break;
 		case STATE_MARTIAN:
 			presence.largeImageKey = "martian";
 			switch (currentLanguage) {
