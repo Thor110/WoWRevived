@@ -30,10 +30,12 @@ Main features
 - In the Spanish release, the Scout and Fighting machine voice lines are in Italian for some reason.
 - Larger Maps option checkbox is now called Larger UI and adds larger battlemap unit icons as well.
 - Edinburgh and Southampton have issues spawning Ironclad vessels when entering the battlemap due to not having enough space for a full compliment of 5 sea units.
-- Scrolling "Now Playing : Track Name" message at the bottom of the screen in-game.
+- Add "Now Playing : Track Name" message pumped to the in-game message log.
+- In-Game UI colour picker accessibility options.
 
 Toolkit features
 
+- Revise terrain import and export pipeline in order to plan for fixing coastal maps sea unit spawn zones.
 - Find remaining shader tables for the few remaining sprites that haven't been located in the sprite viewer.
 - Correct terrain preview colouring in the terrain viewer.
 - Fix remaining bugs in the building viewer.
