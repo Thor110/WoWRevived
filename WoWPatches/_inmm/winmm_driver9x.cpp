@@ -438,6 +438,7 @@ void UpdateDiscordState() {
 	}
 	else if (isNetworkVersion) {
 		// 0x530518 is the network executable equivalent of 0x4B84C4
+		// test networking and then if it works find the network equivalent of 0x4D25D0 and maybe add human/martian networking states.
 		currentState = STATE_NETWORK;
 		Log("Network State");
 	}
