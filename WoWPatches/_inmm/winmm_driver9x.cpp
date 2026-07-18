@@ -226,28 +226,32 @@ void RefreshPresence(GameState newState) {
 	switch (newState) {
 		case STATE_MENU:
 			presence.largeImageKey = "menu";
-			presence.largeImageText = "Jeff Wayne's 'The War Of The Worlds'";
 			switch (currentLanguage) {
 				case LANG_FR:
 					presence.state = "Décision du destin de la Terre";
 					presence.details = "Menu principal";
+					presence.largeImageText = "Jeff Wayne's 'La Guerre des mondes'";
 					break;
 				case LANG_DE:
 					presence.state = "Das Schicksal der Erde entscheiden";
 					presence.details = "Hauptmenü";
+					presence.largeImageText = "Jeff Wayne's 'Der Krieg der Welten'";
 					break;
 				case LANG_IT:
 					presence.state = "Decidere il destino della Terra";
 					presence.details = "Menu principale";
+					presence.largeImageText = "Jeff Wayne's 'La guerra dei mondi'";
 					break;
 				case LANG_ES:
 					presence.state = "Decidiendo el destino de la Tierra";
 					presence.details = "Menú principal";
+					presence.largeImageText = "Jeff Wayne's 'La Guerra de los Mundos'";
 					break;
 				case LANG_EN:
 				default:
 					presence.state = "Deciding the Fate of Earth";
 					presence.details = "Main Menu";
+					presence.largeImageText = "Jeff Wayne's 'The War Of The Worlds'";
 					break;
 			}
 			break;
