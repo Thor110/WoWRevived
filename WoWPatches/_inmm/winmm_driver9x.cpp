@@ -659,17 +659,21 @@ void __declspec(naked) CDPlayerMenuCtor_HookStub()
 	}
 }
 
-// === Hook the CD Player menu's destructor (VANILLA ONLY for now) ===
-// off_4A95D0 slot 0 = 0x00408080. The symbol name (ios_base's own dtor) is
-// almost certainly an /OPT:ICF artifact - this function is shared across
-// many menu/UI classes that derive from a common ios_base-based base, not
-// unique to the CD Player. So the hook MUST check identity before clearing
-// anything; for any other object being destroyed it falls through untouched.
+// === Hook the CD Player menu's destructor (both builds) ===
+// off_4A95D0 slot 0 = 0x00408080 (vanilla). off_51B1E0 slot 0 = 0x004B1310
+// (network). The vanilla symbol name (ios_base's own dtor) is almost certainly
+// an /OPT:ICF artifact - shared across many menu/UI classes, not unique to the
+// CD Player. So the hook MUST check identity before clearing anything; for any
+// other object being destroyed it falls through untouched.
 #define CD_PLAYER_MENU_DTOR_ADDR_VANILLA 0x00408080
-const int DTOR_HOOK_LEN_VANILLA = 8; // push esi(1) + mov esi,ecx(2) + call(5)
+#define CD_PLAYER_MENU_DTOR_ADDR_NETWORK 0x004B1310
+const int DTOR_HOOK_LEN_VANILLA = 8;  // push esi(1) + mov esi,ecx(2) + call(5)
+const int DTOR_HOOK_LEN_NETWORK = 7;  // push ebp(1) + mov ebp,esp(2) + push ecx(1) + mov [ebp-4],ecx(3)
 
-BYTE g_dtorOriginalBytes[8];
+BYTE g_dtorOriginalBytesVanilla[8];
+BYTE g_dtorOriginalBytesNetwork[7];
 BYTE* g_dtorTrampoline = nullptr;
+BYTE* g_dtorTrampolineNetwork = nullptr;
 
 void __declspec(naked) CDPlayerMenuDtor_HookStub()
 {
@@ -681,43 +685,56 @@ void __declspec(naked) CDPlayerMenuDtor_HookStub()
 		jmp g_dtorTrampoline
 	}
 }
+void StopAudio(); // forward declaration
+
+void CDPlayerMenuDtor_HookStub_Network()
+{
+	StopAudio();
+	pCDPlayerMenuThis = NULL;
+}
 
 void InstallCDPlayerMenuDtorHook()
 {
-	if (isNetworkVersion) return; // network dtor address unknown - fine, this is #3, not urgent
+	BYTE* target = isNetworkVersion ? (BYTE*)CD_PLAYER_MENU_DTOR_ADDR_NETWORK : (BYTE*)CD_PLAYER_MENU_DTOR_ADDR_VANILLA;
+	int hookLen = isNetworkVersion ? DTOR_HOOK_LEN_NETWORK : DTOR_HOOK_LEN_VANILLA;
 
-	BYTE* target = (BYTE*)CD_PLAYER_MENU_DTOR_ADDR_VANILLA;
+	// Use the appropriate buffer based on the build type
+	BYTE* pBuffer = isNetworkVersion ? g_dtorOriginalBytesNetwork : g_dtorOriginalBytesVanilla;
 
-	memcpy(g_dtorOriginalBytes, target, DTOR_HOOK_LEN_VANILLA);
+	memcpy(pBuffer, target, hookLen);
 
-	g_dtorTrampoline = (BYTE*)VirtualAlloc(NULL, DTOR_HOOK_LEN_VANILLA + 5, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-	memcpy(g_dtorTrampoline, g_dtorOriginalBytes, DTOR_HOOK_LEN_VANILLA);
+	BYTE* trampoline = (BYTE*)VirtualAlloc(NULL, hookLen + 5, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	memcpy(trampoline, pBuffer, hookLen); // Copy from the correct buffer
 
-	// The copied region includes "call std::ios_base::~ios_base" (E8 + rel32) at
-	// offset +3. That's RELATIVE - its displacement was computed for the original
-	// address (target+3), so copying it verbatim into the trampoline (a different
-	// absolute address) sends it to garbage the moment it actually runs. Recompute
-	// the real destination and re-encode the call for the trampoline's own address.
-	DWORD originalCallSite = (DWORD)(target + 3);
-	DWORD originalRel32;
-	memcpy(&originalRel32, target + 3 + 1, 4); // skip the E8 opcode byte itself
-	DWORD realDestination = originalCallSite + 5 + originalRel32;
+	if (!isNetworkVersion) {
+		// Vanilla's copied region includes a relative "call std::ios_base::~ios_base"
+		// at +3 - its displacement was computed for the original address, so it must
+		// be recalculated for the trampoline's address. Network's window stops
+		// before its call entirely, so no relocation is needed there.
+		DWORD originalCallSite = (DWORD)(target + 3);
+		DWORD originalRel32;
+		memcpy(&originalRel32, target + 3 + 1, 4);
+		DWORD realDestination = originalCallSite + 5 + originalRel32;
 
-	DWORD trampolineCallSite = (DWORD)(g_dtorTrampoline + 3);
-	DWORD newRel32 = realDestination - (trampolineCallSite + 5);
-	memcpy(g_dtorTrampoline + 3 + 1, &newRel32, 4);
+		DWORD trampolineCallSite = (DWORD)(trampoline + 3);
+		DWORD newRel32 = realDestination - (trampolineCallSite + 5);
+		memcpy(trampoline + 3 + 1, &newRel32, 4);
+	}
 
-	g_dtorTrampoline[DTOR_HOOK_LEN_VANILLA] = 0xE9;
-	*(DWORD*)(g_dtorTrampoline + DTOR_HOOK_LEN_VANILLA + 1) = (DWORD)(target + DTOR_HOOK_LEN_VANILLA) - (DWORD)(g_dtorTrampoline + DTOR_HOOK_LEN_VANILLA + 5);
+	trampoline[hookLen] = 0xE9;
+	*(DWORD*)(trampoline + hookLen + 1) = (DWORD)(target + hookLen) - (DWORD)(trampoline + hookLen + 5);
+
+	if (isNetworkVersion) g_dtorTrampolineNetwork = trampoline;
+	else g_dtorTrampoline = trampoline;
 
 	DWORD oldProtect;
-	VirtualProtect(target, DTOR_HOOK_LEN_VANILLA, PAGE_EXECUTE_READWRITE, &oldProtect);
+	VirtualProtect(target, hookLen, PAGE_EXECUTE_READWRITE, &oldProtect);
 	target[0] = 0xE9;
-	*(DWORD*)(target + 1) = (DWORD)&CDPlayerMenuDtor_HookStub - (DWORD)(target + 5);
-	for (int i = 5; i < DTOR_HOOK_LEN_VANILLA; i++) target[i] = 0x90;
-	VirtualProtect(target, DTOR_HOOK_LEN_VANILLA, oldProtect, &oldProtect);
+	*(DWORD*)(target + 1) = (DWORD)(isNetworkVersion ? (void*)&CDPlayerMenuDtor_HookStub_Network : (void*)&CDPlayerMenuDtor_HookStub) - (DWORD)(target + 5);
+	for (int i = 5; i < hookLen; i++) target[i] = 0x90;
+	VirtualProtect(target, hookLen, oldProtect, &oldProtect);
 
-	Log("InstallCDPlayerMenuDtorHook: hooked vanilla CD Player menu dtor at 0x%p (relocated call to 0x%X)", target, realDestination);
+	Log("InstallCDPlayerMenuDtorHook: hooked %s CD Player menu dtor at 0x%p", isNetworkVersion ? "network" : "vanilla", target);
 }
 
 void InstallCDPlayerMenuHook()
@@ -760,7 +777,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		GetModuleFileNameA(NULL, exeName, MAX_PATH);
 		isNetworkVersion = (strstr(exeName, "WoW_network") != NULL);
 		InstallCDPlayerMenuHook();
-		InstallCDPlayerMenuDtorHook();
 		InitializeCriticalSection(&audioLock);
 		cdState = 1; // Default to ON
 		HKEY hKey;
@@ -1235,6 +1251,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// 4. OPEN
 	if (uMsg == MCI_OPEN) {
 		InitDiscordRPC();
+		InstallCDPlayerMenuDtorHook();
 		// gameWindow init: guard against double-hook from rapid MCI_OPEN calls.
 		// The check-then-act must be atomic; use the existing lock.
 		EnterCriticalSection(&audioLock);
