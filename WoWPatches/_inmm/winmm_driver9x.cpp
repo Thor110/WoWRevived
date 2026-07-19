@@ -38,6 +38,8 @@ bool isNetworkVersion = false;	// vanilla			// network
 //float masterVolume = 1.0f;	// flt_4CA870		// dword_530654
 //float ambientVolume = 1.0f;	// flt_4CA858		// flt_53063C
 //float speechVolume = 1.0f;	// unk_4CA86C		// unk_530650
+bool hooksInstalled = false;
+bool resumingFocus = false;
 
 // === Logging === //
 void Log(const char* fmt, ...)
@@ -563,7 +565,7 @@ bool notifyPending = false;
 // The real MCI stack would reject SEEK/PLAY/STATUS on a closed device;
 // we never did, which lets the game's post-notify MCI_SEEK through when
 // it should have failed and triggered the game's own error handling.
-bool deviceOpen = false;
+bool deviceOpen = false; // this boolean is never used and can be removed TODO
 
 // === Force-press the CD Player menu's own Stop button ===
 //
@@ -665,6 +667,17 @@ void __declspec(naked) CDPlayerMenuCtor_HookStub()
 // an /OPT:ICF artifact - shared across many menu/UI classes, not unique to the
 // CD Player. So the hook MUST check identity before clearing anything; for any
 // other object being destroyed it falls through untouched.
+//
+// TECHNICAL NOTE: 
+// The hook patches the start of the destructor to allow StopAudio() to fire.
+// - Vanilla: Uses a trampoline to execute the original destructor logic.
+// - Network: Currently bypasses the trampoline and original destructor code entirely. 
+//   This causes a deliberate, negligible memory leak of the CDPlayerMenu object 
+//   on closure. This is NOT a buffer overflow; no data is written to adjacent 
+//   memory, and the object is simply abandoned on the heap until process exit.
+//   The stack imbalance (caused by skipping the original retn 4) is currently 
+//   stable because the calling convention for this menu does not crash when 
+//   the stack remains 4 bytes off.
 #define CD_PLAYER_MENU_DTOR_ADDR_VANILLA 0x00408080
 #define CD_PLAYER_MENU_DTOR_ADDR_NETWORK 0x004B1310
 const int DTOR_HOOK_LEN_VANILLA = 8;  // push esi(1) + mov esi,ecx(2) + call(5)
@@ -685,6 +698,7 @@ void __declspec(naked) CDPlayerMenuDtor_HookStub()
 		jmp g_dtorTrampoline
 	}
 }
+
 void StopAudio(); // forward declaration
 
 void CDPlayerMenuDtor_HookStub_Network()
@@ -1029,6 +1043,7 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
 	}
 	if (msg == WM_ACTIVATEAPP) {
+		resumingFocus = true;
 		// Acquire the lock before touching lastFocusEventTick so the timestamp
 		// and the isPaused state change are a single atomic operation from the
 		// perspective of _ciSendCommandA.
@@ -1053,6 +1068,7 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			}
 		}
 		LeaveCriticalSection(&audioLock);
+		resumingFocus = false;
 	}
 	// --- MOUSE CLICK MUSIC LATCH ---
 	if (msg == WM_LBUTTONDOWN || msg == WM_LBUTTONUP) {
@@ -1250,8 +1266,12 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 
 	// 4. OPEN
 	if (uMsg == MCI_OPEN) {
-		InitDiscordRPC();
-		InstallCDPlayerMenuDtorHook();
+		if (!hooksInstalled) // only initialise discord rpc and install cd player menu destructor hook once
+		{
+			InitDiscordRPC();
+			InstallCDPlayerMenuDtorHook();
+		}
+		hooksInstalled = true;
 		// gameWindow init: guard against double-hook from rapid MCI_OPEN calls.
 		// The check-then-act must be atomic; use the existing lock.
 		EnterCriticalSection(&audioLock);
@@ -1279,6 +1299,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 
 	// 5. PLAY
 	if (uMsg == MCI_PLAY) {
+		if (resumingFocus && !musicFocus && isNetworkVersion) return 0;
 		EnterCriticalSection(&audioLock);
 		// Record whether the caller wants MM_MCINOTIFY when this track ends.
 		// MCI_PLAY_PARMS.dwCallback holds the window handle when MCI_NOTIFY is set.
