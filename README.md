@@ -1,6 +1,6 @@
 # WoW Revived
 
-The definitive preservation and revival project for the classic Rage Software game Jeff Wayne's 'The War Of The Worlds' released in 1998.
+The definitive preservation patch and revival project for the classic Rage Software game Jeff Wayne's 'The War Of The Worlds' released in 1998.
 
 The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War Of The Worlds'" but you may install it elsewhere if you prefer, for example, into a dedicated folder for modding, preservation, or portable use.
 
