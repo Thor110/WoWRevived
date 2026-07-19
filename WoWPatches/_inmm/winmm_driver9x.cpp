@@ -689,7 +689,7 @@ void StopAudio(); // forward declaration
 
 void CDPlayerMenuDtor_HookStub_Network()
 {
-	StopAudio();
+	StopAudio(); // music audio was persisting when returning to the menu from the cd player
 	pCDPlayerMenuThis = NULL;
 }
 
