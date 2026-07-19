@@ -156,7 +156,7 @@ The road map for this project.
 	- Custom Smackw32.dll that plays upscaled videos at the games resolution.
 	- Simple 1920x1080 upscales of all the original videos which get scaled to the games resolution.
 	- Includes code for hijacking the credits sequence so that it doesn't crash and creating an overlay to display the credits sequence.
-- [❌ 13 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 100% Complete )
+- [✅ 13 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 100% Complete )
 	- Upscaled splash screens and main menu backgrounds for resolutions above 640x480.
 	- Resolution agnostic custom backgrounds have been made but have yet to be finished.
 	- Extended the width of the war map background, this allows higher resolutions to work.
