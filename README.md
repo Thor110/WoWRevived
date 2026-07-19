@@ -27,11 +27,10 @@ WANTED : Regional Manuals : We are looking for high-quality scans of the origina
 
 Main features
 
-- In the Spanish release, the Scout and Fighting machine voice lines are in Italian for some reason.
 - Larger Maps option checkbox is now called Larger UI and adds larger battlemap unit icons as well.
+- In the Spanish release, the Scout and Fighting machine voice lines are in Italian for some reason.
 - Edinburgh and Southampton have issues spawning Ironclad vessels when entering the battlemap due to not having enough space for a full compliment of 5 sea units.
-- Add "Now Playing : Track Name" message pumped to the in-game message log.
-- In-Game UI colour picker accessibility options.
+	- In order to do this, the terrain import and export system needs revising.
 
 Toolkit features
 
@@ -40,6 +39,15 @@ Toolkit features
 - Correct terrain preview colouring in the terrain viewer.
 - Fix remaining bugs in the building viewer.
 - Finish the save editor and map editor.
+
+Potentially cancelled features
+
+- Add "Now Playing : Track Name" message pumped to the in-game message log.
+	- Potentially simple but means tracking down exactly how it is utilised because the last 10 message log entries are baked into save files, probably just string length would be a factor.
+- In-Game UI colour picker accessibility options.
+	- Requires tracking palette indexes referenced within the executable, which are then mapped to palettes through the registry colour entry value via OBJ.ojd and shader tables by the executable to arrive at a colour.
+	- Colour range would be entirely limited to all of the colours across all of the palettes as changing colours within palettes could impact sprite rendering.
+	- After tracking them all down, the launcher would have to patch the executable with the new palette index and where applicable update the registry with the new object index.
 
 # Road Map
 
