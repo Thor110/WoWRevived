@@ -108,13 +108,13 @@ The road map for this project.
 	- Overclocked resolutions added. ( These resolutions are scaled from the nearest matching aspect ratio and resolution. )
 		- Every resolution the monitor reports is supported. ( Overclocked resolutions are only available when using fullscreen mode. )
 - [✅ 2 : File Extractor](#file-extractor) ( 100% Complete )
-	- .WoW archives can be extracted.
+	- .WoW archives can be previewed and their contents extracted.
 	- Waveform preview, play and replace sound files from .WoW archives.
-	- Decompressing files optional but enabled by default.
+	- Decompressing files optional but is enabled by default.
 - [✅ 3 : Sprite Viewer](#sprite-viewer) ( 99% Complete )
 	- Sprite viewer can extract and replace game sprites.
 	- Export original palette and palette with the shader tables applied. ( this feature is currently partially broken and hidden )
-	- Preview with the original palette or with the shader tables applied.
+	- Preview with the original palette or with the shader tables applied. ( shader tables applied is how it looks in-game )
 	- Replace single frame and multi-frame sprites with custom ones.
 	- Quantisation of imported images will reduce them to the closest equivalent colour found in the palette through the associated shader table.
 	- Known "bugs" with the Sprite Viewer. ( The remaining 1% )
@@ -163,12 +163,12 @@ The road map for this project.
 - [✅ 12 : Video Playback Intercept](#video-playback-intercept) ( 100% Complete )
 	- Custom Smackw32.dll that plays upscaled videos at the games resolution.
 	- Simple 1920x1080 upscales of all the original videos which get scaled to the games resolution.
-	- Includes code for hijacking the credits sequence so that it doesn't crash and creating an overlay to display the credits sequence.
+	- Includes code for hijacking the credits sequence so that it doesn't crash and creating a custom overlay to display the credits sequence as intended.
 - [✅ 13 : Custom Extended Backgrounds](#custom-extended-backgrounds) ( 100% Complete )
 	- Upscaled splash screens and main menu backgrounds for resolutions above 640x480.
-	- Resolution agnostic custom backgrounds have been made but have yet to be finished.
-	- Extended the width of the war map background, this allows higher resolutions to work.
-	- Martian war map now shows the coast of Europe in the bottom right corner.
+	- Resolution agnostic custom backgrounds made for specific menus. ( CD Player, Human Briefing, Human Research, Martian Briefing & Martian Research )
+	- Extended the width of the war map background, this allows higher resolutions to work. ( specifically 1920x1080 )
+	- Martian warmap now shows the coast of Europe in the bottom right corner. ( The human warmap does not which I believe suits the lore with it being styled like an old paper map )
 - [✅ 14 : Enhanced Original Assets](#enhanced-original-assets) ( 100% Complete )
 	- Reworked many assets in the game to improve their appearance.
 		- Martian & Human Unit Icons are now the same for both factions, which makes it easier to tell when using the infiltration skill.
