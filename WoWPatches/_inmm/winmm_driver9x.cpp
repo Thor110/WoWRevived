@@ -17,7 +17,7 @@ bool isPaused = false; // pause state in the cd player menu
 DWORD lastOpenTime = 0;
 HWAVEOUT hWaveOut = NULL;
 FILE* logFile = nullptr;
-bool debug = true; // true for logging
+bool debug = false; // true for logging
 bool musicFocus = false; // allow music to continue playing while the window is out of focus
 // Test-only latch for the force-press-Stop experiment (see ForceStopButtonPress
 // below) - stops it firing repeatedly once per elapsed-time threshold, and gets
