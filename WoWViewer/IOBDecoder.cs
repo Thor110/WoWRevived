@@ -128,7 +128,7 @@ namespace WoWViewer
             int litTriCount = BitConverter.ToInt32(data, 0x06);
             int animatedFlag = BitConverter.ToInt32(data, 0x0A);
             int halfWidthScale = BitConverter.ToInt32(data, 0x0E);
-            int yOffsetScale = BitConverter.ToInt32(data, 0x12);
+            int yOffsetScale = BitConverter.ToInt32(data, 0x12); // wrong offset - confirmed 0x16, not 0x12 (COTTFACT smokestack layering bug, Sept 2026)
             int heightScale = BitConverter.ToInt32(data, 0x12); //??
             //int heightScale = BitConverter.ToInt32(data, 0x16); // this was wrong
             int bspSectionSize = BitConverter.ToInt32(data, 0x1A);
