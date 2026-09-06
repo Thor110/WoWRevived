@@ -31,9 +31,6 @@ Main features
 - In the Spanish release, the Scout and Fighting machine voice lines are in Italian for some reason.
 - Edinburgh and Southampton have issues spawning Ironclad vessels when entering the battlemap due to not having enough space for a full compliment of 5 sea units.
 	- In order to do this, the terrain import and export system needs revising.
-- Factory building rendering problem. ( COTTFACT.IOB vs SR_1.IOB )
-	- Simply replacing COTTFACT with SR_1 fixes the issue but changes the model, so the issue is resolvable.
-- Zoom feature implementation.
 - Registry sandboxing issues on windows can result in settings not being properly updated by the launcher.
 
 Toolkit features
@@ -52,6 +49,7 @@ Potentially cancelled features
 	- Requires tracking palette indexes referenced within the executable, which are then mapped to palettes through the registry colour entry value via OBJ.ojd and shader tables by the executable to arrive at a colour.
 	- Colour range would be entirely limited to all of the colours across all of the palettes as changing colours within palettes could impact sprite rendering.
 	- After tracking them all down, the launcher would have to patch the executable with the new palette index and where applicable update the registry with the new object index.
+- Zoom feature implementation.
 
 # Road Map
 
@@ -62,6 +60,7 @@ The road map for this project.
 	- Missing entry created for the Credits button in the options menu.
 	- Build List screen location is now dynamically set as per the resolution setting chosen in the launcher.
 	- Missing pixels have been restored for some building sprites.
+	- Cotton Factory COTTFACT.IOB rendering problem with the smokestacks has been fixed.
 	- Violent stretching of the Human Airship unit has been fixed, it seems this was fixed in the original game files but hadn't been renamed from the cancelled ZEPPLIN3.WOF to AIRSHIP3.WOF in the game files.
 	- Alt-tabbing now works as cnc-ddraw is working with the latest version of the smacker wrapper.
 	- Custom networking executable included and accessible via the launcher when networking is enabled.
