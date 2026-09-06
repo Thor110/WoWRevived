@@ -31,6 +31,9 @@ Main features
 - In the Spanish release, the Scout and Fighting machine voice lines are in Italian for some reason.
 - Edinburgh and Southampton have issues spawning Ironclad vessels when entering the battlemap due to not having enough space for a full compliment of 5 sea units.
 	- In order to do this, the terrain import and export system needs revising.
+- Factory building rendering problem.
+- Zoom feature.
+- Registry sandboxing issues on windows can result in settings not being properly updated by the launcher.
 
 Toolkit features
 
