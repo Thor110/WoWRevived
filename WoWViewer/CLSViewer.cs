@@ -175,6 +175,25 @@ namespace WoWViewer
         // import OBJ and save back to MAPS.WoW
         private void button1_Click(object sender, EventArgs e)
         {
+            // TEST TODO
+            /* // test temp code replace file in archive
+            if (MessageBox.Show($"'Yes to replace vanilla files, No to import model files.", "Overwrite", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+                using var cfd = new OpenFileDialog { Filter = "CLS or ATM files (*.)|*.", Title = "Import CLS ATM" };
+                if (cfd.ShowDialog() != DialogResult.OK) return;
+
+                byte[] updatedClsAtm = File.ReadAllBytes(cfd.FileName);
+
+                // Update in-memory entry so preview is live
+                WowFileEntry clsEntryAtm = entries.First(e => e.Name.Equals(selectedEntry));
+                clsEntryAtm.Data = updatedClsAtm;
+                clsEntryAtm.Edited = true;
+                clsData = updatedClsAtm;
+                RenderCurrent();
+                SaveToArchive(archivePath);
+                return;
+            }*/
+
             using var ofd = new OpenFileDialog { Filter = "Wavefront OBJ (*.obj)|*.obj", Title = "Import OBJ" };
             if (ofd.ShowDialog() != DialogResult.OK) return;
 
