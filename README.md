@@ -229,6 +229,12 @@ Unit Border Selection - Changed from 640x640 to 2048x2048
   <img src="images/custom-border-select.png" alt="Unit Selection Border">
 </div>
 
+The render order for the building file COTTFACT.IOB has been fixed which previously caused the frontmost smokestack to get rendered behind the main building.
+
+<div align="center">
+  <img src="images/building-factory-smokestack-ordering.png" alt="Smokestack Render Order">
+</div>
+
 Some missing pixels have been restored for building sprites, seen in the following previews.
 
 <div align="center">
