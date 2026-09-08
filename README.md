@@ -6,6 +6,8 @@ The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War O
 
 **Download and mount the disc images or insert the discs one by one.** https://archive.org/details/jeffwaynewowgame_202110
 
+**To mount the disc images, you may need Daemon Tools Lite.** https://www.daemon-tools.cc/eng/products/dtlite
+
 **IMPORTANT : Do NOT use the installer, just follow the instructions below.**
 
 **IMPORTANT : Do NOT launch WoW_patched.exe or WoW_network.exe directly!**
@@ -14,6 +16,8 @@ The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War O
 - 2 : Copy the contents of the Martian disc to your installation folder ( when prompted, choose *not* to replace files, or do, it doesn't matter anymore, but fewer writes are better for SSD longevity )
 - 3 : Download the latest version from the Releases page, extract the contents and place the files in your install folder making sure to replace existing files.
 - 4 : Right-click "WoWLauncher.exe" and choose **Send to > Desktop (create shortcut)**, then launch it and enjoy the game!
+
+**If you need a visual guide for installation, watch the YouTube video.** https://www.youtube.com/watch?v=tDKG9-QHSSY
 
 LANGUAGES : Language packs are now stand-alone releases that ship with the relevant files required to convert any language installation to any other language
 
