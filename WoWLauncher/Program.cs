@@ -38,7 +38,7 @@ namespace WoWLauncher
                 MessageBox.Show(Interface["game_running"]);
                 return;
             }
-            EnsureRegistryPermissions();
+            //EnsureRegistryPermissions();
             ApplicationConfiguration.Initialize();
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             // 1. Check for OneDrive (case-insensitive)
@@ -74,27 +74,6 @@ namespace WoWLauncher
                 return;
             }
             Application.Run(new Form1());
-        }
-        public static void EnsureRegistryPermissions()
-        {
-            WindowsPrincipal principal = new WindowsPrincipal(WindowsIdentity.GetCurrent());
-            bool hasAdmin = principal.IsInRole(WindowsBuiltInRole.Administrator);
-
-            if (hasAdmin)
-            {
-                // Path to the Registry Key
-                string keyPath = @"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000";
-                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(keyPath, RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.ChangePermissions))
-                {
-                    if (key != null)
-                    {
-                        RegistrySecurity rs = new RegistrySecurity();
-                        // Grant FullControl to the "Users" group
-                        rs.AddAccessRule(new RegistryAccessRule(new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null), RegistryRights.FullControl, AccessControlType.Allow));
-                        key.SetAccessControl(rs);
-                    }
-                }
-            }
         }
         private static void SetEnglish()
         {

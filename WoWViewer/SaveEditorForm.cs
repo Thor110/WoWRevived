@@ -73,10 +73,6 @@ namespace WoWViewer
             listBox3.SelectedIndexChanged += listBox3_SelectedIndexChanged!;
             listBox4.SelectedIndexChanged += listBox4_SelectedIndexChanged!;
             listBox5.SelectedIndexChanged += listBox5_SelectedIndexChanged!;
-            MessageBox.Show("The Save Editor isn't finished and I have stopped working on it for now." +
-                "\n\nThis is because it will take a lot of work to perfect." +
-                "\n\nThe only functionality currently there is date/time/save name/swap sides." +
-                "\n\nEverything else is unfinished.");
         }
         // initialize save loader and count saves
         private void InitializeSaveLoader() { for (int i = 1; i <= 5; i++) { SaveLoader("Human", i); } for (int i = 1; i <= 5; i++) { SaveLoader("Martian", i); } }

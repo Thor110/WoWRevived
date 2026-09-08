@@ -91,6 +91,12 @@ namespace WoWLauncher
                 MessageBox.Show(localizedMessage, Program.Interface["dir_warning_error"], MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Environment.Exit(0);
             }
+            if (File.Exists("Human.cd") && File.Exists("MARTIAN.cd"))
+            {
+                File.Delete("Human.cd");
+                DeleteRegistryFolder(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'");
+                mainKey = null!;
+            }
             // TODO : add tweak key creation below and check what happens if it doesn't exist when altering settings etc
             // TODO : or just repopulate every registry entry
             RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
@@ -427,14 +433,29 @@ namespace WoWLauncher
                 */
             }
         }
-        // function from Riccardo Bassilichi : https://stackoverflow.com/questions/32250244/delete-a-registry-key-using-c-sharp
-        /*public static void DeleteRegistryFolder(RegistryHive registryHive, string fullPathKeyToDelete)
+
+        // function referenced from Riccardo Bassilichi : https://stackoverflow.com/questions/32250244/delete-a-registry-key-using-c-sharp
+        // Deletes the real HKLM key AND its UAC-virtualized shadow copy under HKCU,
+        // if one exists. A prior non-elevated write can leave settings living only
+        // in the shadow copy (HKCU\...\VirtualStore\MACHINE\...) - deleting just the
+        // real key leaves that shadow fully intact, and a subsequent "fresh" install
+        // keeps transparently reading the old, stale values through it. Clearing
+        // both closes that gap. Safe to call even if virtualization was never
+        // active - the shadow path just won't exist, and DeleteSubKeyTree with
+        // throwOnMissingSubKey: false is a no-op in that case.
+        public static void DeleteRegistryFolder(string fullPathKeyToDelete)
         {
-            using (var baseKey = RegistryKey.OpenBaseKey(registryHive, RegistryView.Registry32))
+            using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
             {
-                baseKey.DeleteSubKeyTree(fullPathKeyToDelete);
+                baseKey.DeleteSubKeyTree(fullPathKeyToDelete, throwOnMissingSubKey: false);
             }
-        }*/
+
+            string virtualStorePath = @"Software\Classes\VirtualStore\MACHINE\" + fullPathKeyToDelete;
+            using (var userKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32))
+            {
+                userKey.DeleteSubKeyTree(virtualStorePath, throwOnMissingSubKey: false);
+            }
+        }
         /// This is the event handler for the "Start Human Game" button
         private void button1_Click(object sender, EventArgs e)
         {

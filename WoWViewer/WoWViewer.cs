@@ -379,7 +379,30 @@ namespace WoWViewer
             return samples;
         }
         // open save editor window
-        private void button7_Click(object sender, EventArgs e) { newForm(new SaveEditorForm()); }
+        private void button7_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("The Save Editor isn't finished and I have stopped working on it for now." +
+    "\n\nThis is because it will take a lot of work to perfect." +
+    "\n\nThe only functionality currently there is date/time/save name/swap sides." +
+    "\n\nEverything else is unfinished.");
+            if (!IsRunningElevated())
+            {
+                MessageBox.Show(
+                    "The Save Editor needs to be run as Administrator to access the game's registry settings." +
+                    "\n\nEither right-click WoWViewer.exe and choose \"Run as administrator\", or launch it through WoWLauncher instead, which already requests this automatically.",
+                    "Administrator Required",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return; // don't open the form - it would just throw once it hits the registry
+            }
+            newForm(new SaveEditorForm());
+        }
+        private static bool IsRunningElevated()
+        {
+            using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+            var principal = new System.Security.Principal.WindowsPrincipal(identity);
+            return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+        }
         // open map editor window
         private void button8_Click(object sender, EventArgs e) { newForm(new MapEditorForm()); }
         // open text editor window
