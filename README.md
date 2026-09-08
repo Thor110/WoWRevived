@@ -31,11 +31,9 @@ WANTED : Regional Manuals : We are looking for high-quality scans of the origina
 
 Main features
 
-- Larger Maps option checkbox is now called Larger UI and adds larger battlemap unit icons as well.
 - In the Spanish release, the Scout and Fighting machine voice lines are in Italian for some reason.
 - Edinburgh and Southampton have issues spawning Ironclad vessels when entering the battlemap due to not having enough space for a full compliment of 5 sea units.
 	- In order to do this, the terrain import and export system needs revising.
-- Registry sandboxing issues on windows can result in settings not being properly updated by the launcher.
 - Scrolling to the very edge of some maps crashes due to a fault in the BLIT routine.
 
 Toolkit features
