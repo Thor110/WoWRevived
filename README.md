@@ -29,12 +29,18 @@ WANTED : Regional Manuals : We are looking for high-quality scans of the origina
 
 # To-Do List
 
+Current progress is about as far as the project is likely to go, I spent a lot of time on this project trying to make sure the game runs perfectly on modern systems and fixing bugs in the original game where I could.
+
+However I am still going to keep track of any issues with the project here, for myself or future developers to take note of.
+
 Main features
 
 - In the Spanish release, the Scout and Fighting machine voice lines are in Italian for some reason.
 - Edinburgh and Southampton have issues spawning Ironclad vessels when entering the battlemap due to not having enough space for a full compliment of 5 sea units.
 	- In order to do this, the terrain import and export system needs revising.
 - Scrolling to the very edge of some maps crashes due to a fault in the BLIT routine.
+- In the top left of the War Map when in construction view (F2), an unused empty/template building background is displayed alongside a number, the number varies, this can be seen in both the Human and the Martian campaign.
+	- I believe this is some type of sentinel unit that represents the entire faction though I am not certain yet.
 
 Toolkit features
 
