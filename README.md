@@ -41,6 +41,8 @@ Main features
 - Scrolling to the very edge of some maps crashes due to a fault in the BLIT routine.
 - In the top left of the War Map when in construction view (F2), an unused empty/template building background is displayed alongside a number, the number varies, this can be seen in both the Human and the Martian campaign.
 	- I believe this is some type of sentinel unit that represents the entire faction though I am not certain yet.
+- Update the launcher to check file locations and update the registry entries accordingly to ensure that the installation is fully portable.
+	- Either the above solution or hooking and intercepting all registry calls and redirecting to a local .ini file would be ideal.
 
 Toolkit features
 
