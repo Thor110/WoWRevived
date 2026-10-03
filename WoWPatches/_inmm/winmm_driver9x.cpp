@@ -1337,7 +1337,7 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 			}
 			else {
 				char path[MAX_PATH];
-				std::string newFolder = playerIsHuman ? "-Human" : "-Martian";
+				std::string newFolder = playerIsHuman ? "-Martian" : "-Human";
 				wsprintfA(path, "Music%s\\%02d Track%02d.wav", newFolder.c_str(), currentTrack, currentTrack);
 				currentTrackLength = GetWavDuration(path);
 				dwStartTime = GetTickCount();

@@ -554,7 +554,7 @@ extern "C" {
         std::transform(fileName.begin(), fileName.end(), fileName.begin(), ::toupper);
         // TITLE and RAGELOGO remain in the standard \FMV\ folder
         if (fileName != "TITLE." && fileName != "RAGELOGO.") {
-            std::string newFolder = playerIsHuman ? "-Human" : "-Martian";
+            std::string newFolder = playerIsHuman ? "-Martian" : "-Human";
             size_t pos = movie.find("FMV");
             if (pos != std::string::npos) {
                 movie.insert(pos + 3, newFolder);
