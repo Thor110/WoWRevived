@@ -38,7 +38,7 @@ namespace WoWLauncher
                 MessageBox.Show(Interface["launcher_running"]);
                 return;
             }
-            if (Process.GetProcessesByName("WoW_patched").Length > 0)
+            if (Process.GetProcessesByName("WoW_patched").Length > 0 || Process.GetProcessesByName("WoW_network").Length > 0)
             {
                 MessageBox.Show(Interface["game_running"]);
                 return;

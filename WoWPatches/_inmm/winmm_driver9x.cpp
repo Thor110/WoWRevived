@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include "../Common/GameCommon.h"
+#include "../Common/RegistryRedirect.h"
 
 using namespace wow;
 
@@ -102,6 +103,37 @@ float CurrentMasterVolume()
 	float vol = *addrs->masterVol;
 	if (!(vol >= 0.0f)) return 0.0f; // also catches NaN
 	return vol > 1.0f ? 1.0f : vol;
+}
+
+// === Settings === //
+// When WoWRevived.ini exists the game's registry calls are redirected to it (see RegistryRedirect.h), and this DLL's
+// own settings use the same functions so they always land in the same place as the game's.
+wow::IniStore g_settings;
+bool g_useIni = false;
+LONG SettingsOpenKey(LPCSTR subKey, HKEY* key) {
+	return g_useIni ? wow::registry::OpenKeyExA(HKEY_LOCAL_MACHINE, subKey, 0, KEY_READ, key) : RegOpenKeyExA(HKEY_LOCAL_MACHINE, subKey, 0, KEY_READ, key);
+}
+LONG SettingsCreateKey(LPCSTR subKey, HKEY* key) {
+	return g_useIni ? wow::registry::CreateKeyExA(HKEY_LOCAL_MACHINE, subKey, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, key, NULL)
+		: RegCreateKeyExA(HKEY_LOCAL_MACHINE, subKey, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, key, NULL);
+}
+LONG SettingsQuery(HKEY key, LPCSTR name, DWORD* type, BYTE* data, DWORD* size) {
+	return g_useIni ? wow::registry::QueryValueExA(key, name, NULL, type, data, size) : RegQueryValueExA(key, name, NULL, type, data, size);
+}
+LONG SettingsSet(HKEY key, LPCSTR name, DWORD type, const BYTE* data, DWORD size) {
+	return g_useIni ? wow::registry::SetValueExA(key, name, 0, type, data, size) : RegSetValueExA(key, name, 0, type, data, size);
+}
+LONG SettingsClose(HKEY key) { return g_useIni ? wow::registry::CloseKey(key) : RegCloseKey(key); }
+// Reads a value as text whether it's stored as a string or a DWORD.
+bool SettingsReadText(HKEY key, LPCSTR name, char* text, DWORD textSize) {
+	BYTE buffer[256] = {};
+	DWORD type = 0, size = sizeof(buffer) - 1;
+	if (SettingsQuery(key, name, &type, buffer, &size) != ERROR_SUCCESS) return false;
+	if (type == REG_DWORD && size >= 4) { sprintf_s(text, textSize, "%ld", (long)*(int32_t*)buffer); return true; }
+	if (type != REG_SZ) return false;
+	buffer[min(size, (DWORD)(sizeof(buffer) - 1))] = '\0';
+	strncpy_s(text, textSize, (const char*)buffer, _TRUNCATE);
+	return true;
 }
 
 // === Logging === //
@@ -689,44 +721,37 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		addrs = gameBuild == BUILD_VANILLA ? &kVanillaAddrs : gameBuild == BUILD_NETWORK ? &kNetworkAddrs : &kNoAddrs;
 		Log("Detected %s build", GameBuildName(gameBuild));
 		InstallCDPlayerMenuHook();
+		// Portable settings: the import table of the main executable is already bound and its own startup code
+		// hasn't run yet, so redirecting it here catches every registry read the game makes.
+		char gameDir[MAX_PATH], iniPath[MAX_PATH];
+		GamePath("", gameDir, sizeof(gameDir));
+		GamePath(wow::IniStore::FileName(), iniPath, sizeof(iniPath));
+		if (g_settings.Load(iniPath)) {
+			int redirected = wow::registry::InstallRedirect(&g_settings, gameDir);
+			g_useIni = true; // our own settings use the store even if the import table couldn't be patched
+			Log("WoWRevived.ini found, %d registry imports redirected", redirected);
+		}
 		HKEY hKey;
-		if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000\\Sound\\Volume", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-			char buffer[256];
-			DWORD type = 0;
-			DWORD bufferSize;
-
+		if (SettingsOpenKey("SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000\\Sound\\Volume", &hKey) == ERROR_SUCCESS) {
+			char text[64];
 			// volumes are stored as "%f" strings by both builds
 			auto ReadVolume = [&](const char* valueName, volatile float* target) {
-				if (!target) return;
-				bufferSize = sizeof(buffer) - 1;
-				if (RegQueryValueExA(hKey, valueName, NULL, &type, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS && type == REG_SZ) {
-					buffer[min(bufferSize, (DWORD)(sizeof(buffer) - 1))] = '\0';
-					float value = (float)atof(buffer);
-					if (value >= 0.0f && value <= 1.0f) *target = value; // ignore anything out of range
-				}
+				if (!target || !SettingsReadText(hKey, valueName, text, sizeof(text))) return;
+				float value = (float)atof(text);
+				if (value >= 0.0f && value <= 1.0f) *target = value; // ignore anything out of range
 			};
 			ReadVolume("Master", addrs->masterVol);
 			ReadVolume("Ambient", addrs->ambientVol);
 			ReadVolume("Speech", addrs->speechVol);
-
-			DWORD value = 0;
-			DWORD valueSize = sizeof(DWORD);
-			if (RegQueryValueExA(hKey, "CD", NULL, &type, (LPBYTE)&value, &valueSize) == ERROR_SUCCESS && type == REG_DWORD && addrs->cdToggle) {
-				*addrs->cdToggle = value ? 1 : 0;
-			}
-			value = 0;
-			valueSize = sizeof(DWORD);
-			if (RegQueryValueExA(hKey, "CD-Focus", NULL, &type, (LPBYTE)&value, &valueSize) == ERROR_SUCCESS && type == REG_DWORD) {
-				musicFocus = (value != 0);
-			}
-			RegCloseKey(hKey);
+			if (addrs->cdToggle && SettingsReadText(hKey, "CD", text, sizeof(text))) *addrs->cdToggle = atoi(text) ? 1 : 0;
+			if (SettingsReadText(hKey, "CD-Focus", text, sizeof(text))) musicFocus = (atoi(text) != 0);
+			SettingsClose(hKey);
 		}
 	}
 	else if (fdwReason == DLL_PROCESS_DETACH) {
 		// Volume Persistence (Master, Ambient, Speech, In-Game CD Music)
 		HKEY hKey;
-		if (addrs->masterVol && RegCreateKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000\\Sound\\Volume",
-			0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+		if (addrs->masterVol && SettingsCreateKey("SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000\\Sound\\Volume", &hKey) == ERROR_SUCCESS) {
 
 			auto WriteVolume = [&](const char* valueName, volatile float* source) {
 				if (!source) return;
@@ -734,7 +759,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 				if (!(value >= 0.0f && value <= 1.0f)) return; // never persist garbage
 				char text[32];
 				sprintf_s(text, "%f", value);
-				RegSetValueExA(hKey, valueName, 0, REG_SZ, (LPBYTE)text, (DWORD)(strlen(text) + 1));
+				SettingsSet(hKey, valueName, REG_SZ, (LPBYTE)text, (DWORD)(strlen(text) + 1));
 			};
 			WriteVolume("Master", addrs->masterVol);
 			WriteVolume("Ambient", addrs->ambientVol);
@@ -742,9 +767,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 			// In-Game CD Music
 			DWORD cdState = CurrentCdState() ? 1 : 0;
-			RegSetValueExA(hKey, "CD", 0, REG_DWORD, (const BYTE*)&cdState, sizeof(DWORD));
+			SettingsSet(hKey, "CD", REG_DWORD, (const BYTE*)&cdState, sizeof(DWORD));
 
-			RegCloseKey(hKey);
+			SettingsClose(hKey); // saves WoWRevived.ini if anything changed
 		}
 		// When the process is exiting (lpvReserved != NULL) the other threads are already gone and the OS frees
 		// everything, so only tidy up Discord when the DLL is being unloaded on purpose.

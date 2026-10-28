@@ -1,16 +1,17 @@
 ﻿using Microsoft.Win32;
 using System.Globalization;
+using WoWRevived.Shared;
 
 namespace WoWLauncher
 {
     public partial class Form2 : Form
     {
         private bool config;
-        private RegistryKey mainKey = GameRegistry.Open()!;
-        private RegistryKey tweakKey = GameRegistry.Open(@"Tweak")!;
-        private RegistryKey battleKey = GameRegistry.Open(@"BattleMap")!;
-        private RegistryKey researchKey = GameRegistry.Open(@"Research")!;
-        private RegistryKey debugKey = GameRegistry.Open(@"Debug")!;
+        private SettingsKey mainKey = GameSettings.Instance.Key();
+        private SettingsKey tweakKey = GameSettings.Instance.Key(@"Tweak");
+        private SettingsKey battleKey = GameSettings.Instance.Key(@"BattleMap");
+        private SettingsKey researchKey = GameSettings.Instance.Key(@"Research");
+        private SettingsKey debugKey = GameSettings.Instance.Key(@"Debug");
         private byte value = 0x0C;
         public Form2()
         {
@@ -61,25 +62,13 @@ namespace WoWLauncher
             trackBar10.AccessibleDescription = Program.Interface["turret_description"];
             label22.Text = Program.Interface["turret_label"];
         }
-        /// This method compares the registry entry with the value and sets it if they are different.
-        /// The value keeps the type it already has (the network build stores some values as DWORDs, the vanilla build as strings).
-        private void registryCompare(RegistryKey key, string entry, string value)
-        {
-            object? current = key.GetValue(entry);
-            if (current?.ToString() == value) { return; }
-            if (current is int && int.TryParse(value, out int number)) { key.SetValue(entry, number, RegistryValueKind.DWord); }
-            else { key.SetValue(entry, value); }
-            config = true;
-        }
+        /// This method compares the setting with the value and sets it if they are different.
+        private void registryCompare(SettingsKey key, string entry, string value) { if (key.GetValue(entry) as string != value) { key.SetValue(entry, value); config = true; } }
         /// Rounds a value and clamps it into the slider's range, so unexpected registry values can never throw.
         private static int ToTrackValue(TrackBar trackBar, double value) => TrackBarValue.Clamp(value, trackBar.Minimum, trackBar.Maximum);
-        /// Registry values are strings in the vanilla build and DWORDs in the network build, missing or unreadable values use the fallback.
-        private static double ReadNumber(RegistryKey key, string name, double fallback)
-        {
-            object? raw = key.GetValue(name);
-            if (raw is int number) { return number; }
-            return double.TryParse(raw as string, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed) ? parsed : fallback;
-        }
+        /// Missing or unreadable values use the fallback.
+        private static double ReadNumber(SettingsKey key, string name, double fallback) =>
+            double.TryParse(key.GetValue(name) as string, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed) ? parsed : fallback;
         // slider positions when the form opened, only sliders the user moves are written back, so registry values that
         // don't sit exactly on a slider step (e.g. a damage divisor of 450) are left alone and don't flip difficulty to Custom
         private readonly Dictionary<TrackBar, int> loadedPositions = new Dictionary<TrackBar, int>();
@@ -138,6 +127,7 @@ namespace WoWLauncher
         // return button saves the settings and closes the form
         private void button1_Click(object sender, EventArgs e)
         {
+            using var batch = GameSettings.Instance.Batch(); // one write for all of the changes
             if (Moved(trackBar1)) { registryCompare(battleKey, "Damage reduction divisor", (trackBar1.Value * 100).ToString()); }
             if (Moved(trackBar2)) { registryCompare(tweakKey, "Max units in sector", trackBar2.Value.ToString()); }
             if (Moved(trackBar3)) { registryCompare(tweakKey, "Max boats in sector", trackBar3.Value.ToString()); }
@@ -182,6 +172,7 @@ namespace WoWLauncher
         // default
         private void button2_Click(object sender, EventArgs e)
         {
+            using var batch = GameSettings.Instance.Batch(); // one write for all of the defaults
             registryCompare(battleKey, "Damage reduction divisor", "500");
             trackBar1.Value = 5;
             registryCompare(tweakKey, "Max units in sector", "15");

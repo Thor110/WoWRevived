@@ -10,6 +10,7 @@
 #include <mfidl.h>
 #include <atomic>
 #include "../Common/GameCommon.h"
+#include "../Common/IniStore.h"
 
 #include <gdiplus.h>
 #pragma comment(lib, "gdiplus.lib")
@@ -666,30 +667,41 @@ BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
     if (reason == DLL_PROCESS_ATTACH)
     {
         if (debug) DeleteFileA("Smackw32_log.txt");
-        // Note: We use HKEY_LOCAL_MACHINE and the path you provided.
-        // Since your app is 32-bit, Windows automatically handles the WOW6432Node redirection.
-        HKEY hKey;
-        if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-            char buffer[256];
-            DWORD bufferSize = sizeof(buffer);
-            DWORD type = 0;
-            if (RegQueryValueExA(hKey, "Full Screen", NULL, &type, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS) {
-                if (type == REG_DWORD) {
-                    isFullscreen = (*(DWORD*)buffer == 1); // dword in networked executable
+        // Full Screen and Screen\Size come from WoWRevived.ini when it exists (the portable settings _inmm.dll
+        // redirects the game to), otherwise from the registry.
+        char settingsPath[MAX_PATH];
+        wow::GamePath(wow::IniStore::FileName(), settingsPath, sizeof(settingsPath));
+        wow::IniStore settings;
+        if (settings.Load(settingsPath)) {
+            std::string value;
+            if (settings.Get("Main", "Full Screen", value)) isFullscreen = (atoi(value.c_str()) == 1);
+            if (settings.Get("Screen", "Size", value)) sscanf(value.c_str(), "%d,%d", &regWidth, &regHeight);
+        }
+        else {
+            // Since this DLL is 32-bit, Windows automatically handles the WOW6432Node redirection.
+            HKEY hKey;
+            if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                char buffer[256] = {};
+                DWORD bufferSize = sizeof(buffer) - 1;
+                DWORD type = 0;
+                if (RegQueryValueExA(hKey, "Full Screen", NULL, &type, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS) {
+                    if (type == REG_DWORD) {
+                        isFullscreen = (*(DWORD*)buffer == 1); // dword in networked executable
+                    }
+                    else {
+                        isFullscreen = (strcmp(buffer, "1") == 0); // string in regular executable
+                    }
                 }
-                else {
-                    isFullscreen = (strcmp(buffer, "1") == 0); // string in regular executable
+                bufferSize = sizeof(buffer) - 1;
+                HKEY screenKey;
+                if (RegOpenKeyExA(hKey, "Screen", 0, KEY_READ, &screenKey) == ERROR_SUCCESS) {
+                    if (RegQueryValueExA(screenKey, "Size", NULL, NULL, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS) {
+                        sscanf(buffer, "%d,%d", &regWidth, &regHeight);
+                    }
+                    RegCloseKey(screenKey);
                 }
+                RegCloseKey(hKey);
             }
-            bufferSize = sizeof(buffer);
-            HKEY screenKey;
-            if (RegOpenKeyExA(hKey, "Screen", 0, KEY_READ, &screenKey) == ERROR_SUCCESS) {
-                if (RegQueryValueExA(screenKey, "Size", NULL, NULL, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS) {
-                    sscanf(buffer, "%d,%d", &regWidth, &regHeight);
-                }
-                RegCloseKey(screenKey);
-            }
-            RegCloseKey(hKey);
         }
         // Read cnc-ddraw target resolution from ddraw.ini
         if (GetFileAttributesA("ddraw.dll") != INVALID_FILE_ATTRIBUTES) // only parse if ddraw is enabled

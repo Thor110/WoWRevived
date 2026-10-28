@@ -21,7 +21,7 @@ The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War O
 
 LANGUAGES : Language packs are now stand-alone releases that ship with the relevant files required to convert any language installation to any other language
 
-ADDITIONAL : The launcher will automatically request administrator permissions to ensure registry settings are correctly applied.
+SETTINGS : The game's settings are kept in WoWRevived.ini in the install folder instead of the registry, so the installation is fully portable and the launcher no longer needs administrator permissions. Settings from an older version are imported from the registry automatically the first time the launcher runs. ( On Windows 11 the launcher only asks for administrator permission once, to enable DirectPlay. )
 
 NOTE : If you choose to make a language patch using the text editor, feel free to send the "TEXT.ojd" file my way and I will add it to the releases.
 
@@ -41,8 +41,6 @@ Main features
 - Scrolling to the very edge of some maps crashes due to a fault in the BLIT routine.
 - In the top left of the War Map when in construction view (F2), an unused empty/template building background is displayed alongside a number, the number varies, this can be seen in both the Human and the Martian campaign.
 	- I believe this is some type of sentinel unit that represents the entire faction though I am not certain yet.
-- Update the launcher to check file locations and update the registry entries accordingly to ensure that the installation is fully portable.
-	- Either the above solution or hooking and intercepting all registry calls and redirecting to a local .ini file would be ideal.
 
 Toolkit features
 
@@ -100,9 +98,9 @@ The road map for this project.
 		- Occasional crashes on startup or during gameplay which are caused by a bug in the windows compatibility layer. ( specifically apphelp.dll )
 - [✅ 1 : Custom Launcher](#custom-launcher) ( 100% Complete )
 	- Advanced registry settings options, now including the ability to adjust the turret build limit.
-	- Automated registry entry type switching between the network and vanilla versions of the game executable. ( the network executable has some entry types set to dword instead of string, this causes the vanilla executable to start up at 320x240 )
+	- Portable settings: every registry call the game makes is redirected to WoWRevived.ini in the install folder, which both the vanilla and network executables can read. ( previously the registry entry types had to be switched between the two, as the network executable stores some entries as dwords, which caused the vanilla executable to start up at 320x240 )
 	- Custom keyboard shortcut settings. (WIP - cancelled for now)
-	- Automatic regeneration of base registry settings, making the installation portable.
+	- Automatic regeneration of the base settings, and a one-time import of settings from older registry based installs.
 	- Automatic cleanup of unnecessary files and Smackw32.dll moved to main directory.
 	- Custom pre-set difficulty settings. (Easy, Medium[default], Hard, Extreme)
 	- Dynamic asset swapping pipeline with custom assets curated for each supported resolution.

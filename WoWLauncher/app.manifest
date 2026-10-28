@@ -11,7 +11,9 @@
 	<trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
 		<security>
 			<requestedPrivileges>
-				<requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
+				<!-- Settings live in WoWRevived.ini next to the game, so administrator rights are no longer needed.
+				     Enabling DirectPlay on Windows 11 asks for elevation on its own when it's needed. -->
+				<requestedExecutionLevel level="asInvoker" uiAccess="false" />
 			</requestedPrivileges>
 		</security>
 	</trustInfo>

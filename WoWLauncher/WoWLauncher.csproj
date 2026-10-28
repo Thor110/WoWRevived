@@ -14,6 +14,11 @@
     <InternalsVisibleTo Include="WoWRevived.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- WoWRevived.ini, shared by the launcher and the toolkit -->
+    <Compile Include="..\Shared\GameSettings.cs" Link="GameSettings.cs" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugType>none</DebugType>
   </PropertyGroup>

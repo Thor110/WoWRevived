@@ -2,6 +2,7 @@
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using WoWRevived.Shared;
 
 namespace WoWLauncher
 {
@@ -32,18 +33,19 @@ namespace WoWLauncher
         private int resolution; // temp resolution combobox index for swapping files in future versions
         private int resolutionStored; // for overclocked resolution checks......
         private List<string> keptResolutions = new List<string>(); // keep listed resolutions for future versions
-        private RegistryKey mainKey = GameRegistry.Open()!;
-        private RegistryKey tweakKey = GameRegistry.Open(@"Tweak")!;
-        private RegistryKey screenKey = GameRegistry.Open(@"Screen")!;
-        private RegistryKey battleKey = GameRegistry.Open(@"BattleMap")!;
-        private RegistryKey researchKey = GameRegistry.Open(@"Research")!;
-        private RegistryKey optionsKey = GameRegistry.Open(@"Options")!;
-        private RegistryKey buildListKey = GameRegistry.Open(@"BuildList")!;
-        private RegistryKey debugKey = GameRegistry.Open(@"Debug")!;
-        private RegistryKey soundKey = GameRegistry.Open(@"Sound")!;
-        private RegistryKey volumeKey = GameRegistry.Open(@"Sound\Volume")!;
-        private RegistryKey systemKey = GameRegistry.Open(@"System")!;
-        private RegistryKey networkKey = GameRegistry.Open(@"Network")!;
+        // the game's settings, kept in WoWRevived.ini next to the game (see Shared/GameSettings.cs)
+        private SettingsKey mainKey = GameSettings.Instance.Key();
+        private SettingsKey tweakKey = GameSettings.Instance.Key(@"Tweak");
+        private SettingsKey screenKey = GameSettings.Instance.Key(@"Screen");
+        private SettingsKey battleKey = GameSettings.Instance.Key(@"BattleMap");
+        private SettingsKey researchKey = GameSettings.Instance.Key(@"Research");
+        private SettingsKey optionsKey = GameSettings.Instance.Key(@"Options");
+        private SettingsKey buildListKey = GameSettings.Instance.Key(@"BuildList");
+        private SettingsKey debugKey = GameSettings.Instance.Key(@"Debug");
+        private SettingsKey soundKey = GameSettings.Instance.Key(@"Sound");
+        private SettingsKey volumeKey = GameSettings.Instance.Key(@"Sound\Volume");
+        private SettingsKey systemKey = GameSettings.Instance.Key(@"System");
+        private SettingsKey networkKey = GameSettings.Instance.Key(@"Network");
         [StructLayout(LayoutKind.Sequential)]
         public struct DEVMODE
         {
@@ -91,30 +93,22 @@ namespace WoWLauncher
                 MessageBox.Show(localizedMessage, Program.Interface["dir_warning_error"], MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Environment.Exit(0);
             }
-            if (File.Exists("Human.cd") && File.Exists("MARTIAN.cd"))
+            GameSettings settings = GameSettings.Instance;
+            IDisposable settingsBatch = settings.Batch(); // the first run writes a lot of values, save them once
+            if (File.Exists("Human.cd") && File.Exists("MARTIAN.cd")) // the game has just been copied from the discs, start from the defaults
             {
                 File.Delete("Human.cd");
-                DeleteRegistryFolder(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'");
-                mainKey = null!;
+                settings.Clear();
+                if (GameRegistry.IsElevated()) { DeleteRegistryFolder(GameRegistry.RootPath); } // tidy up the old registry settings too
             }
-            // TODO : add tweak key creation below and check what happens if it doesn't exist when altering settings etc
-            // TODO : or just repopulate every registry entry
-            if (mainKey == null) // set default registry settings which are required for the launcher, the rest are created when the game starts.
+            else if (!settings.Existed)
             {
-                mainKey = GameRegistry.Create();
-                tweakKey = GameRegistry.Create(@"Tweak");
-                screenKey = GameRegistry.Create(@"Screen");
-                battleKey = GameRegistry.Create(@"BattleMap");
-                researchKey = GameRegistry.Create(@"Research");
-                optionsKey = GameRegistry.Create(@"Options");
-                buildListKey = GameRegistry.Create(@"BuildList");
-                debugKey = GameRegistry.Create(@"Debug");
-                soundKey = GameRegistry.Create(@"Sound");
-                volumeKey = GameRegistry.Create(@"Sound\Volume");
-                systemKey = GameRegistry.Create(@"System");
-                networkKey = GameRegistry.Create(@"Network");
+                GameRegistry.ImportInto(settings); // first run with portable settings: bring the old registry values across once
+            }
+            if (!settings.HasAnySection) // set default settings which are required for the launcher, the rest are created when the game starts.
+            {
                 // these values are set because the launcher accesses them.
-                mainKey.SetValue("Enable Network Version", 0, RegistryValueKind.DWord);
+                mainKey.SetValue("Enable Network Version", 0);
                 mainKey.SetValue("Full Screen", "1");
                 mainKey.SetValue("Language", "English");
                 screenKey.SetValue("Size", "640,480");
@@ -139,8 +133,8 @@ namespace WoWLauncher
                 battleKey.SetValue("Damage reduction divisor", "500");
                 researchKey.SetValue("Human Open Rate", "20");
                 researchKey.SetValue("Martian Open Rate", "10");
-                optionsKey.SetValue("Show lights", 1, RegistryValueKind.DWord);
-                screenKey.SetValue("BPP", 16, RegistryValueKind.DWord);
+                optionsKey.SetValue("Show lights", "1");
+                screenKey.SetValue("BPP", "16");
                 buildListKey.SetValue("Top", "70");
                 debugKey.SetValue("Enemy Visible", "0");
                 soundKey.SetValue("Inner Ambient border", "-640,-400");
@@ -148,28 +142,14 @@ namespace WoWLauncher
                 soundKey.SetValue("Outer Ambient border", "-960,-600");
                 soundKey.SetValue("Outer border", "-640,-400");
                 // memory limits
-                systemKey.SetValue("Game Memory", "32");//
+                systemKey.SetValue("Game Memory", "32");
                 systemKey.SetValue("Game Memory Handles", "32767");
                 systemKey.SetValue("Renderer Memory", "32");
                 systemKey.SetValue("Renderer Memory Handles", "32767");
-                // custom cd focus registry entry
-                volumeKey.SetValue("CD-Focus", 0, RegistryValueKind.DWord);
+                // custom cd focus setting
+                volumeKey.SetValue("CD-Focus", "0");
             }
-            // the main key can exist without some of its subkeys (e.g. Sound\Volume before the game first exits), create any that are missing
-            tweakKey ??= GameRegistry.Create("Tweak");
-            screenKey ??= GameRegistry.Create("Screen");
-            battleKey ??= GameRegistry.Create("BattleMap");
-            researchKey ??= GameRegistry.Create("Research");
-            optionsKey ??= GameRegistry.Create("Options");
-            buildListKey ??= GameRegistry.Create("BuildList");
-            debugKey ??= GameRegistry.Create("Debug");
-            soundKey ??= GameRegistry.Create("Sound");
-            volumeKey ??= GameRegistry.Create(@"Sound\Volume");
-            systemKey ??= GameRegistry.Create("System");
-            networkKey ??= GameRegistry.Create("Network");
-            GameRegistry.RemoveLegacyUsersFullControl(); // undo the permissions older WoWViewer versions granted
-            registryCompare(mainKey, "CD Path", AppDomain.CurrentDomain.BaseDirectory); // update the cd path in the registry automatically.
-            registryCompare(mainKey, "Install Path", AppDomain.CurrentDomain.BaseDirectory); // update the install path in the registry automatically.
+            GameRegistry.RemoveLegacyUsersFullControl(); // undo the permissions older WoWViewer versions granted (only possible when elevated)
             // automatically clear up the unnecessary files
             string[] deleteFiles = new string[]
             {
@@ -234,6 +214,7 @@ namespace WoWLauncher
             key?.Close();
             if (IsWindows11()) { EnsureDirectPlay(); }
             InitializeRegistry();
+            settingsBatch.Dispose(); // saves WoWRevived.ini once
             RepairAssetLayout();
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(PictureBox), typeof(Label), typeof(Button) });
@@ -268,7 +249,8 @@ namespace WoWLauncher
             using (RegistryKey? dpKey = baseView.OpenSubKey(@"SOFTWARE\Microsoft\DirectPlay", false))
             {
                 object? value = dpKey?.GetValue("Installed");
-                if (value == null || Convert.ToInt32(value) != 1)
+                bool enabledBefore = GameSettings.Instance.Get("Revived", "DirectPlay Enabled") == "1"; // remembered by this launcher, no admin rights needed
+                if (!enabledBefore && (value == null || Convert.ToInt32(value) != 1))
                 {
                     // Trigger DISM
                     ProcessStartInfo psi = new ProcessStartInfo
@@ -285,9 +267,14 @@ namespace WoWLauncher
                         using (Process? proc = Process.Start(psi))
                         {
                             proc?.WaitForExit();
-                            // --- THE FIX: Manually set the registry flag so the loop breaks ---
-                            using RegistryKey newKey = baseView.CreateSubKey(@"SOFTWARE\Microsoft\DirectPlay", true);
-                            newKey.SetValue("Installed", 1, RegistryValueKind.DWord);
+                            // Remember the run so DISM isn't started on every launch. Kept in WoWRevived.ini because the
+                            // launcher no longer runs elevated, so it usually can't write the DirectPlay key itself.
+                            GameSettings.Instance.Set("Revived", "DirectPlay Enabled", "1");
+                            if (GameRegistry.IsElevated())
+                            {
+                                using RegistryKey newKey = baseView.CreateSubKey(@"SOFTWARE\Microsoft\DirectPlay", true);
+                                newKey.SetValue("Installed", 1, RegistryValueKind.DWord);
+                            }
                             // Notify the user after a successful DISM run
                             MessageBox.Show(Program.Interface["directplay_installed"],
                                             Program.Interface["directplay_title"],
@@ -338,24 +325,20 @@ namespace WoWLauncher
             //
             Text = Program.Interface["game_name"];
         }
-        /// This method compares the registry entry with the value and sets it if they are different.
-        /// The value keeps the type it already has (the network build stores some values as DWORDs, the vanilla build as strings).
-        private void registryCompare(RegistryKey key, string entry, string value)
-        {
-            object? current = key.GetValue(entry);
-            if (current?.ToString() == value) { return; }
-            if (current is int && int.TryParse(value, out int number)) { key.SetValue(entry, number, RegistryValueKind.DWord); }
-            else { key.SetValue(entry, value); }
-        }
+        /// Reads a whole number setting, missing or unreadable values count as the fallback.
+        private static int ReadInt(SettingsKey key, string name, int fallback = 0) =>
+            int.TryParse(key.GetValue(name) as string, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int value) ? value : fallback;
+        /// This method compares the setting with the value and sets it if they are different.
+        private void registryCompare(SettingsKey key, string entry, string value) { if (key.GetValue(entry) as string != value) { key.SetValue(entry, value); } }
         /// This method is called when the form is loaded to initialize the registry settings
         private void InitializeRegistry()
         {
-            if (Convert.ToInt32(mainKey.GetValue("Enable Network Version") ?? 0) == 1) { checkBox1.Checked = true; }
-            if (Convert.ToInt32(mainKey.GetValue("Full Screen")) == 1) { checkBox2.Checked = true; }
-            checkBox3.Checked = Convert.ToInt32(battleKey.GetValue("EnableFogOfWar")) == 1; // for restore default settings
-            checkBox5.Checked = Convert.ToInt32(volumeKey.GetValue("CD-Focus") ?? 0) == 1; //music playback when out of focus
+            if (ReadInt(mainKey, "Enable Network Version") == 1) { checkBox1.Checked = true; }
+            if (ReadInt(mainKey, "Full Screen") == 1) { checkBox2.Checked = true; }
+            checkBox3.Checked = ReadInt(battleKey, "EnableFogOfWar") == 1; // for restore default settings
+            checkBox5.Checked = ReadInt(volumeKey, "CD-Focus") == 1; //music playback when out of focus
             checkBox6.Checked = AssetLayout.IsEnhancedActive(File.Exists); // enhanced assets enabled
-            checkBox7.Checked = Convert.ToInt32(debugKey.GetValue("Enemy Visible")) == 1; // for restore default settings
+            checkBox7.Checked = ReadInt(debugKey, "Enemy Visible") == 1; // for restore default settings
             // overclocked resolutions
             string realRes = (screenKey.GetValue("Size") as string ?? "640,480").Replace(",", "x").Split(' ')[0];
             string width = iniFile.Read("width", "ddraw");
@@ -391,12 +374,12 @@ namespace WoWLauncher
                     break;
             }
             // force registry settings for removed options to prevent user meddling
-            if (Convert.ToInt32(optionsKey.GetValue("Show lights")) != 1)
+            if (ReadInt(optionsKey, "Show lights") != 1)
             {
                 optionsKey.SetValue("Show lights", 1, RegistryValueKind.DWord);
                 MessageBox.Show(Program.Interface["lights"]);
             }
-            if (Convert.ToInt32(screenKey.GetValue("BPP")) != 16)
+            if (ReadInt(screenKey, "BPP") != 16)
             {
                 screenKey.SetValue("BPP", 16, RegistryValueKind.DWord);
                 MessageBox.Show(Program.Interface["colour"]);
@@ -572,58 +555,14 @@ namespace WoWLauncher
             }
             else { Close(); }
         }
-        // Values the network executable reads as DWORDs and the vanilla executable reads as strings, with their defaults.
-        // The vanilla executable starts at 320x240 if it finds DWORDs here, so they are converted whenever the version changes.
-        private (Func<RegistryKey> Key, string Name, int Default)[] VersionTypedValues() => new (Func<RegistryKey>, string, int)[]
-        {
-            (() => mainKey, "Thread Enable", 1),
-            (() => mainKey, "Timer Enable", 0),
-            (() => mainKey, "Sleeper Enable", 0),
-            (() => mainKey, "Full Screen", 1),
-            (() => battleKey, "EnableFogOfWar", 1),
-            (() => debugKey, "Enemy Visible", 0),
-            (() => debugKey, "Charlie", 0),
-            (() => debugKey, "Dave", 0),
-            (() => debugKey, "Mat", 0),
-            (() => debugKey, "Edit functionality", 0),
-            (() => debugKey, "Load scenery", 1),
-            (() => debugKey, "Arrow scenery load fix", 1),
-            (() => debugKey, "Show Accelerations", 0),
-            (() => debugKey, "Show Radii", 0),
-            (() => debugKey, "Show Arrival", 0),
-            (() => debugKey, "Show Orders", 0),
-            (() => networkKey, "Messages Guaranteed", 0),
-            (() => screenKey, "AllowResize", 0),
-            (() => screenKey, "FixedAspect", 1),
-            (() => tweakKey, "AI Oracle", 0),
-        };
-        private void checkBox1_CheckedChanged(object sender, EventArgs e)
-        {
-            mainKey.SetValue("Enable Network Version", checkBox1.Checked ? 1 : 0);
-            foreach (var (key, name, fallback) in VersionTypedValues())
-            {
-                object? raw = key().GetValue(name); // missing or unreadable values get their default instead of throwing
-                if (checkBox1.Checked)
-                {
-                    int value = raw is int number ? number : int.TryParse(raw as string, out int parsed) ? parsed : fallback;
-                    key().SetValue(name, value, RegistryValueKind.DWord);
-                }
-                else
-                {
-                    string text = raw is int number ? number.ToString() : raw as string ?? fallback.ToString();
-                    key().SetValue(name, text, RegistryValueKind.String);
-                }
-            }
-            /* // only other value that varies or is introduced, not relevant.
-[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug]
-"Log File"="wow.log"
-             */
-        }
+        // Every setting is stored as text in WoWRevived.ini and both executables read text, so switching between the
+        // vanilla and network versions no longer needs the registry value types converting.
+        private void checkBox1_CheckedChanged(object sender, EventArgs e) { mainKey.SetValue("Enable Network Version", checkBox1.Checked ? "1" : "0"); }
         private void checkBox2_CheckedChanged(object sender, EventArgs e)
         {
             var move = checkBox2.Checked ? ("ddraw-off.dll", "ddraw.dll") : ("ddraw.dll", "ddraw-off.dll");
             if (!MoveFilesOrRevert(new[] { move }, checkBox2, checkBox2_CheckedChanged!)) { return; }
-            registryCompare(mainKey, "Full Screen", checkBox2.Checked ? "1" : "0"); // keeps the DWORD type while the network version is enabled
+            registryCompare(mainKey, "Full Screen", checkBox2.Checked ? "1" : "0");
         }
         private void checkBox3_CheckedChanged(object sender, EventArgs e) { registryCompare(battleKey, "EnableFogOfWar", checkBox3.Checked ? "1" : "0"); }
         private int resolutionHelper(string resolution, string from, string to)

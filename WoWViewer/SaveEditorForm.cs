@@ -46,9 +46,8 @@ namespace WoWViewer
         private HashSet<uint> usedSeloSeqs = new HashSet<uint>();
         private uint maxSeloSeq = 0;
         private SectorData? currentSector = null;
-        // the game is 32-bit, so its settings are in the 32-bit registry view (WOW6432Node on 64-bit Windows)
-        private RegistryKey tweakKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-            .OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true)!;
+        // the game's settings, kept in WoWRevived.ini next to the game (see Shared/GameSettings.cs)
+        private WoWRevived.Shared.SettingsKey tweakKey = WoWRevived.Shared.GameSettings.Instance.Key("Tweak");
         private int unitsValue;
         private int boatsValue;
         private Reusables loadText = new Reusables();
@@ -62,8 +61,8 @@ namespace WoWViewer
                 return;
             }
             // max units / boats as read from the registry
-            unitsValue = Convert.ToInt32(tweakKey.GetValue("Max units in sector"));
-            boatsValue = Convert.ToInt32(tweakKey.GetValue("Max boats in sector"));
+            unitsValue = int.TryParse(tweakKey.GetValue("Max units in sector") as string, out int units) ? units : 15; // game defaults when missing
+            boatsValue = int.TryParse(tweakKey.GetValue("Max boats in sector") as string, out int boats) ? boats : 5;
             // parse TEXT.ojd
             entries = loadText.LoadEntries(File.ReadAllBytes("TEXT.ojd"));
             entries = loadText.LoadObjLookup(entries);
