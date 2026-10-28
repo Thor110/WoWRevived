@@ -10,6 +10,10 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="WoWRevived.Tests" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugType>none</DebugType>
   </PropertyGroup>

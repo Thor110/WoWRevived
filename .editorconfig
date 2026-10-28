@@ -1,0 +1,6 @@
+root = true
+
+# Source files are UTF-8 with a BOM, so Visual Studio and the compilers never fall back to the
+# system code page (two launcher files were Windows-1252, which broke accented strings).
+[*.{cs,cpp,h}]
+charset = utf-8-bom

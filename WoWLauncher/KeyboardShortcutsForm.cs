@@ -1,5 +1,7 @@
 ﻿namespace WoWLauncher
 {
+    // UNUSED: the keyboard shortcut remapper is shelved, its button (button7) is hidden in Form1.
+    // Kept for future work, it patches WoW_patched.exe directly so review it carefully before re-enabling.
     public partial class KeyboardShortcutsForm : Form
     {
         private Dictionary<string, Keybinding> keybindings = new();

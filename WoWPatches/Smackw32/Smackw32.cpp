@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
+﻿#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <mfapi.h>
 #include <mfplay.h>
@@ -8,6 +8,8 @@
 #include <string>
 #include <algorithm>
 #include <mfidl.h>
+#include <atomic>
+#include "../Common/GameCommon.h"
 
 #include <gdiplus.h>
 #pragma comment(lib, "gdiplus.lib")
@@ -28,18 +30,35 @@ bool                debug = false;
 int                 regWidth = 640;
 int                 regHeight = 480;
 int                 offsetY = 0;
-bool                videoFinished = false;
-bool                victoryMovieFinished = false;
+// written by the Media Foundation callback thread, read by the game and credits threads
+std::atomic<bool>   videoFinished{ false };
+std::atomic<bool>   victoryMovieFinished{ false };
 bool                isFullscreen = false;
 HWND                overlayWindow = NULL;
+ULONG_PTR           gdiplusToken = 0;
 IMFPMediaPlayer*    pMediaPlayer = NULL;
-bool                playerIsHuman = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES);
+// human.cd's presence selects the Martian FMV folder (verified in-game, see commit c933737), _inmm.dll uses the same rule.
+bool                humanCdPresent = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES);
+inline bool         UseMartianAssets() { return humanCdPresent; }
+wow::GameBuild      gameBuild = wow::BUILD_UNKNOWN;
+std::atomic<bool>   focusThreadRunning{ false };
+
+// GDI+ and Media Foundation must not be started from DllMain (they load DLLs and create threads while the
+// loader lock is held), so they are started on first use instead, from whichever thread gets there first.
+INIT_ONCE           mediaInitOnce = INIT_ONCE_STATIC_INIT;
+BOOL CALLBACK InitMedia(PINIT_ONCE, PVOID, PVOID*)
+{
+    Gdiplus::GdiplusStartupInput gdiplusInput;
+    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusInput, NULL);
+    MFStartup(MF_VERSION);
+    return TRUE;
+}
+void EnsureMediaInit() { InitOnceExecuteOnce(&mediaInitOnce, InitMedia, NULL, NULL); }
 
 // Credits scroll state
 Image*              creditsImage = nullptr;
 float               creditsScrollY = 0.0f;   // current scroll position in image pixels
 float               creditsScrollPx = 0.0f;   // pixels per second, set after image loads
-ULONG_PTR           gdiplusToken = 0;
 
 // ============================================================
 //  Logging
@@ -85,23 +104,26 @@ void Log(const char* fmt, ...)
 
 HWND   creditsOverlay = NULL;
 HANDLE creditsThread = NULL;
-bool   creditsShutdown = false;
+std::atomic<bool> creditsShutdown{ false };
 
 void CreateOverlayWindow();
 void CloseOverlayWindow();
 
-void InstallCreditsHook()
+bool InstallCreditsHook()
 {
-    DWORD old;
     // Patch sub_405470 to return immediately.
     // This prevents the tile renderer from being created (no crash at any resolution).
     // Audio is set up in sub_4052B0 which runs before sub_405470 is ever called.
-    BYTE* p = (BYTE*)0x405470;
-    VirtualProtect(p, 1, PAGE_EXECUTE_READWRITE, &old);
-    *p = 0xC3;  // RET
-    VirtualProtect(p, 1, old, &old);
-    FlushInstructionCache(GetCurrentProcess(), p, 1);
+    // Vanilla only: in WoW_network.exe 0x405470 is the middle of an unrelated function, so the
+    // prologue is verified first and nothing is written if it doesn't match.
+    static const BYTE expected[] = { 0x6A, 0xFF, 0x68, 0x2B, 0x4C, 0x4A, 0x00 }; // push -1; push 0x4A4C2B
+    static const BYTE ret[] = { 0xC3 };
+    if (!wow::PatchIfMatches(0x405470, expected, sizeof(expected), ret, sizeof(ret))) {
+        Log("sub_405470 not patched: bytes don't match the vanilla build");
+        return false;
+    }
     Log("sub_405470 patched to RET (tile renderer disabled)");
+    return true;
 }
 
 // ============================================================
@@ -164,6 +186,7 @@ LRESULT CALLBACK CreditsWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 }
 
 DWORD WINAPI FocusWatchThread(LPVOID) {
+  for (;;) {
     while (overlayWindow || creditsOverlay) {
         HWND foreground = GetForegroundWindow();
         HWND gameWnd = FindWindowA(NULL, "The War Of The Worlds");
@@ -181,11 +204,26 @@ DWORD WINAPI FocusWatchThread(LPVOID) {
         }
         Sleep(100);
     }
-    return 0;
+    // stand down, unless an overlay appeared while we were leaving and nobody else has taken over
+    focusThreadRunning = false;
+    bool expected = false;
+    if (!(overlayWindow || creditsOverlay) || !focusThreadRunning.compare_exchange_strong(expected, true)) return 0;
+  }
+}
+
+// one watcher serves both overlays
+void StartFocusWatch()
+{
+    bool expected = false;
+    if (!focusThreadRunning.compare_exchange_strong(expected, true)) return;
+    HANDLE thread = CreateThread(NULL, 0, FocusWatchThread, NULL, 0, NULL);
+    if (thread) CloseHandle(thread);
+    else focusThreadRunning = false;
 }
 
 void CreateCreditsOverlay()
 {
+    EnsureMediaInit(); // GDI+ is needed to load credits.png
     WNDCLASSEXA wc = {};
     wc.cbSize = sizeof(wc);
     wc.lpfnWndProc = CreditsWndProc;
@@ -208,7 +246,7 @@ void CreateCreditsOverlay()
     if (creditsOverlay) {
         SetLayeredWindowAttributes(creditsOverlay, 0, 255, LWA_ALPHA);  // fully opaque but input-transparent
         ShowWindow(creditsOverlay, SW_SHOWNA);
-        CreateThread(NULL, 0, FocusWatchThread, NULL, 0, NULL);
+        StartFocusWatch();
         // Load credits.png from the same directory as the exe
         char exePath[MAX_PATH];
         GetModuleFileNameA(NULL, exePath, MAX_PATH);
@@ -227,30 +265,23 @@ void CreateCreditsOverlay()
             // Default: scroll full image in ~60 seconds (tune per language).
             creditsScrollY = 0.0f;
 
-            Log("Player faction: %s", playerIsHuman ? "Human" : "Martian");
+            Log("human.cd present: %s", humanCdPresent ? "yes" : "no");
 
-            // Timing table: { pngSize, humanDur (s), martianDur (s) }
-            struct CreditsInfo { DWORD pngSize; float humanDur; float martianDur; };
-            DWORD pngSize = 0;
-            HANDLE hf = CreateFileA(exePath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-            if (hf != INVALID_HANDLE_VALUE) { pngSize = GetFileSize(hf, NULL); CloseHandle(hf); }
-
+            // Timing table per language (same order as wow::Language): { humanDur (s), martianDur (s) }
+            struct CreditsInfo { float humanDur; float martianDur; };
             static const CreditsInfo kTiming[] = {
-                { 258221, 103.0f, 136.0f },  // English
-                { 292567, 106.0f, 143.0f },  // French
-                { 294349, 106.0f, 143.0f },  // German
-                { 258919, 109.0f, 145.0f },  // Italian
-                { 268939, 107.0f, 144.0f },  // Spanish
+                { 103.0f, 136.0f },  // English
+                { 106.0f, 143.0f },  // French
+                { 106.0f, 143.0f },  // German
+                { 109.0f, 145.0f },  // Italian
+                { 107.0f, 144.0f },  // Spanish
             };
-
-            float dur = playerIsHuman ? 103.0f : 136.0f;  // fallback to English
-            for (const auto& info : kTiming) {
-                if (info.pngSize == pngSize) {
-                    dur = (playerIsHuman ? info.humanDur : info.martianDur);
-                    Log("Matched language by PNG size %u, dur=%.1fs", pngSize, dur);
-                    break;
-                }
-            }
+            wow::Language language = wow::DetectLanguage(); // language.txt, then the size of credits.png
+            // TODO: check in-game. Commit c933737 found that human.cd's presence means the Martian FMV and music,
+            // but this still picks the Human duration when human.cd is present. If the credits scroll finishes
+            // at the wrong time for a faction, swap these two around.
+            float dur = humanCdPresent ? kTiming[language].humanDur : kTiming[language].martianDur;
+            Log("Language %d, dur=%.1fs", (int)language, dur);
 
             creditsScrollPx = (float)creditsImage->GetHeight() / dur;
             Log("Scroll speed: %.2f px/s over %.1fs", creditsScrollPx, dur);
@@ -512,7 +543,7 @@ void CreateOverlayWindow() {
         GetModuleHandleA(NULL), NULL
     );
     ShowWindow(overlayWindow, SW_SHOWNA);
-    CreateThread(NULL, 0, FocusWatchThread, NULL, 0, NULL);
+    StartFocusWatch();
     if (gameWnd && !origGameProc) {
         origGameProc = (WNDPROC)SetWindowLongPtr(gameWnd, GWLP_WNDPROC, (LONG_PTR)GameWndProc);
     }
@@ -544,9 +575,20 @@ extern "C" {
     void WINAPI SmackBlitOpen(void* smk) { Sleep(1); /*Log("SmackBlitOpen");*/ }
     void WINAPI SmackDDSurfaceType(void* lpDDS) { Sleep(1); /*Log("SmackDDSurfaceType");*/ }
     void* WINAPI SmackOpen(const char* name, DWORD flags, DWORD extra) {
-        Log("SmackOpen: %s", name);
+        Log("SmackOpen: %s", name ? name : "(null)");
+        EnsureMediaInit();
+        // a previous movie that was never closed must not leak its player or overlay
+        if (pMediaPlayer || overlayWindow) CloseOverlayWindow();
+        // reset before the new movie starts, a late PLAYBACK_ENDED from the previous movie must not end this one
+        videoFinished = false;
+        victoryMovieFinished = false;
         //fix incoming name string .SMK = .mp4
-        std::string movie = name;
+        std::string movie = name ? name : "";
+        if (movie.length() < 3) {
+            Log("SmackOpen: unexpected movie name");
+            dummy.Width = regWidth; dummy.Height = regHeight; dummy.OffsetY = offsetY;
+            return &dummy;
+        }
         movie.resize(movie.length() - 3);
         // get file name
         size_t slash = movie.find_last_of("\\/");
@@ -554,7 +596,7 @@ extern "C" {
         std::transform(fileName.begin(), fileName.end(), fileName.begin(), ::toupper);
         // TITLE and RAGELOGO remain in the standard \FMV\ folder
         if (fileName != "TITLE." && fileName != "RAGELOGO.") {
-            std::string newFolder = playerIsHuman ? "-Martian" : "-Human";
+            std::string newFolder = UseMartianAssets() ? "-Martian" : "-Human";
             size_t pos = movie.find("FMV");
             if (pos != std::string::npos) {
                 movie.insert(pos + 3, newFolder);
@@ -615,24 +657,6 @@ extern "C" {
 }
 
 // ============================================================
-//  Keyboard hook
-// ============================================================
-// Somehow this empty keyboard proc effects the compiled file and allows RAGELOGO to play during the human campaign...
-// WARNING: This empty function must remain in the compiled binary.
-// Its presence changes the DLL's compiled size and memory layout,
-// which alters thread scheduling timing enough to prevent a race condition
-// Removing this function causes RAGELOGO.mp4 to be skipped on human launch.
-// The root cause is a timing race that has not been fully isolated.
-// Do not remove this function. Do not move it. Do not add code to it.
-// See: https://en.wikipedia.org/wiki/Heisenbug
-
-HHOOK kbHook = NULL;
-
-LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
-    return CallNextHookEx(kbHook, nCode, wParam, lParam);
-}
-
-// ============================================================
 //  DllMain
 // ============================================================
 
@@ -681,6 +705,7 @@ BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
             }
         }
 
+        if (regWidth <= 0 || regHeight <= 0) { regWidth = 640; regHeight = 480; } // missing or broken ddraw.ini / registry values
         // Calculate the Aspect Ratio of the screen
         double screenAspect = (double)regWidth / regHeight;
         double videoAspect = 1920.0 / 1080.0; // 1.777...
@@ -690,26 +715,21 @@ BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
             offsetY = (int)((regHeight - targetVideoHeight) / 2.0);
         }
 
-        GdiplusStartupInput gdiplusInput;
-        GdiplusStartup(&gdiplusToken, &gdiplusInput, NULL);
-        MFStartup(MF_VERSION);
-        InstallCreditsHook();
-
-        creditsThread = CreateThread(NULL, 0, CreditsWatchThread, NULL, 0, NULL);
+        // GDI+ and Media Foundation are started lazily (EnsureMediaInit), never from DllMain.
+        gameBuild = wow::DetectGameBuild();
+        Log("Detected %s build", wow::GameBuildName(gameBuild));
+        // The credits fix uses vanilla addresses only. Starting a thread here is allowed: it begins
+        // running once the loader lock has been released.
+        if (gameBuild == wow::BUILD_VANILLA && InstallCreditsHook()) {
+            creditsThread = CreateThread(NULL, 0, CreditsWatchThread, NULL, 0, NULL);
+        }
     }
     else if (reason == DLL_PROCESS_DETACH)
     {
+        // Don't wait for threads or shut down Media Foundation / GDI+ here: inside DllMain the loader lock is
+        // held, so a thread can never finish exiting and those shutdowns may deadlock. The game only unloads
+        // this DLL when the process exits, at which point Windows releases everything anyway.
         creditsShutdown = true;
-        if (creditsThread) {
-            WaitForSingleObject(creditsThread, 500);
-            CloseHandle(creditsThread); creditsThread = NULL;
-        }
-        CloseOverlayWindow();
-        if (pMediaPlayer) {
-            pMediaPlayer->Shutdown(); pMediaPlayer->Release(); pMediaPlayer = NULL;
-        }
-        MFShutdown();
-        GdiplusShutdown(gdiplusToken);
     }
     return TRUE;
 }

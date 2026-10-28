@@ -33,6 +33,40 @@ namespace WoWViewer
             }
             return entries;
         }
+        // strict encoder used when saving, so characters ISO-8859-1 can't hold are reported instead of silently becoming '?'
+        private static readonly Encoding StrictLatin1 = Encoding.GetEncoding("iso-8859-1", EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+        // the game stores line breaks as a literal \n
+        public static string ToGameString(string text) => text.Replace("\r\n", "\\n").Replace("\r", "\\n").Replace("\n", "\\n");
+        /// <summary>
+        /// Rebuilds TEXT.ojd from the original file bytes and the (possibly edited) strings.
+        /// The original entry layout is walked using its own length fields, so the result is
+        /// byte-identical to the input when no strings have changed.
+        /// </summary>
+        public static byte[] SerializeEntries(byte[] original, IReadOnlyList<string> names)
+        {
+            using MemoryStream ms = new MemoryStream(original.Length + 1024);
+            int offset = 0x289; // first string starts at 0x289
+            if (original.Length < offset) { throw new InvalidDataException("TEXT.ojd is too short to contain a header."); }
+            ms.Write(original, 0, offset); // original header 0x0 - 0x289
+            for (int i = 0; i < names.Count; i++)
+            {
+                if (offset + 10 > original.Length) { throw new InvalidDataException($"TEXT.ojd ended early at entry {i:D4}."); }
+                byte[] stringBytes;
+                try { stringBytes = StrictLatin1.GetBytes(ToGameString(names[i])); }
+                catch (EncoderFallbackException ex)
+                {
+                    throw new InvalidDataException($"String {i:D4} contains the character '{ex.CharUnknown}' which cannot be stored in TEXT.ojd (ISO-8859-1).", ex);
+                }
+                if (stringBytes.Length + 1 > ushort.MaxValue) { throw new InvalidDataException($"String {i:D4} is too long."); }
+                ms.Write(original, offset, 8); // original entry header (8 bytes)
+                ms.Write(BitConverter.GetBytes((ushort)(stringBytes.Length + 1)), 0, 2); // new string length (includes the null)
+                ms.Write(stringBytes, 0, stringBytes.Length);
+                ushort originalLength = (ushort)(original[offset + 8] | (original[offset + 9] << 8));
+                offset += originalLength + 9; // same stride LoadEntries uses
+            }
+            ms.WriteByte(0x00); // final byte at the end of the file which is always 0x00
+            return ms.ToArray();
+        }
         //private string BmolName(int id) => entries.FirstOrDefault(e => e.BmolId == (ushort)id)?.Name ?? $"#{id}";
         public string BmolName(int id, List<WowTextEntry> entries)
         {

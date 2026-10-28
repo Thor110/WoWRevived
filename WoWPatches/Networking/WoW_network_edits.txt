@@ -40,3 +40,19 @@ network drag select bytes - 16 bytes 80 02 == 00 08
 call _atexit on "CD Path" and "Install Path" registry entries to prevent them being cleared on exit.
 
 1 byte 500h to 100h prevents 1280x1024 from crashing...
+
+Address notes for the patch DLLs (Smackw32.dll / _inmm.dll)
+
+None of the retail (vanilla) addresses apply to this build. For example 0x405470, which Smackw32 patches to RET in
+the retail build, is the middle of an unrelated function here, and 0x4D255C / 0x4D1490 are code, not data.
+Both DLLs now identify the build from the CD Player menu constructor prologue (WoWPatches/Common/GameCommon.h)
+and only patch addresses whose bytes match.
+
+Network equivalents confirmed so far:
+CD Player menu constructor		0x4AF680	(vanilla 0x407990)
+CD Player menu destructor		0x4B1310	(vanilla 0x408080) vtable off_51B1E0 slot 0
+CD Player menu message handler	0x4B0510	(vanilla 0x4081D0) vtable off_51B1E0 slot +0x28 (vanilla slot +0x1C)
+CD music toggle (byte)			0x5427CC	(vanilla 0x4B8A88)
+Master volume (float)			0x530654	(vanilla 0x4CA870)
+Volume array (6 floats)			0x53063C	(vanilla 0x4CA858) - Ambient is [0], Speech is [5]
+Volumes are floats in both builds (setter at 0x4180C7, getter at 0x418066), not 0-100 integers.

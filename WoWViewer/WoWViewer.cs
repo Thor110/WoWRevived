@@ -1,4 +1,4 @@
-using System.Media;
+﻿using System.Media;
 using System.Text;
 
 namespace WoWViewer
@@ -185,19 +185,8 @@ namespace WoWViewer
             else if (magic == "SfxL")
             {
                 label2.Text = "Container Type : " + "Sound Effects Library"; // update container type label
-                for (int i = 0; i < fileCount; i++)
-                {
-                    byte[] nameBytes = br.ReadBytes(8); // filename (ASCII padded) // filenames are up to 8 bytes in these file
-                    int length = br.ReadInt32();        // file size
-                    int offset = br.ReadInt32();        // file offset
-                    // setup entries and listbox
-                    string name = Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
-                    listBox1.Items.Add($"{name}.WAV");
-                    long store = br.BaseStream.Position; // store the current position
-                    br.BaseStream.Seek(offset, SeekOrigin.Begin); // seek to the offset
-                    entries.Add(new WowFileEntry { Name = name, Length = length, Offset = offset, Data = br.ReadBytes(length) });
-                    br.BaseStream.Position = store; // return to the original position
-                }
+                entries.AddRange(SfxlArchive.ReadEntries(br, fileCount)); // filenames are up to 8 bytes in these files
+                foreach (var entry in entries) { listBox1.Items.Add($"{entry.Name}.WAV"); }
                 button5.Visible = true;                 // show audio player play button
                 button6.Visible = true;                 // show audio player stop button
                 pictureBox1.Visible = true;             // show the picture box
@@ -255,9 +244,10 @@ namespace WoWViewer
         private void ExtractToFile(WowFileEntry entry, bool asWav = false)
         {
             byte[] rawData = entry.Data!;
-            using var fs = new FileStream(Path.Combine(outputPath, (asWav ? $"{entry.Name}.wav" : entry.Name)), FileMode.Create);
+            string safeName = Path.GetFileName(entry.Name); // archive names must never be able to point outside the output folder
+            using var fs = new FileStream(Path.Combine(outputPath, (asWav ? $"{safeName}.wav" : safeName)), FileMode.Create);
             if (asWav) { fs.Write(CreateWavHeader(rawData.Length, DetectSampleRate(rawData))); }
-            else if (Encoding.ASCII.GetString(rawData, 0, 4) == "FFUH" && checkBox2.Checked)
+            else if (checkBox2.Checked && rawData.Length >= 16 && FfuhDecoder.IsCompressed(rawData))
             {
                 rawData = FfuhDecoder.Decompress(rawData);
             }
@@ -266,6 +256,7 @@ namespace WoWViewer
         // listbox selection changed
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (listBox1.SelectedIndex < 0 || listBox1.SelectedIndex >= entries.Count) { return; } // fired with -1 when the list is cleared
             selected = entries[listBox1.SelectedIndex]; // update selected entry
             if (selected.Name != lastSelectedListItem) // check selection is new
             {
@@ -274,22 +265,8 @@ namespace WoWViewer
                 else { label4.Text = $"File Offset : {selected.Offset} bytes"; } // update file offset label
                 if (magic == "SfxL") // load and display the waveform image if browsing SfxL container
                 {
-                    using var br = new BinaryReader(File.OpenRead(filePath));
-                    br.BaseStream.Seek(selected.Offset, SeekOrigin.Begin);
-                    byte[] rawData = br.ReadBytes(selected.Length);
-                    int sampleRate = DetectSampleRate(rawData);
-                    byte[] wavHeader = CreateWavHeader(rawData.Length, sampleRate);
-                    byte[] fullWav; // if edited get data else read data
-                    if (entries[listBox1.SelectedIndex].Edited) { fullWav = entries[listBox1.SelectedIndex].Data!; }
-                    else
-                    {
-                        using var ms = new MemoryStream();
-                        ms.Write(wavHeader, 0, wavHeader.Length);
-                        ms.Write(rawData, 0, rawData.Length);
-                        ms.Position = 0;
-                        fullWav = ms.ToArray();
-                    }
-                    pictureBox1.Image = DrawWaveform(fullWav, 156, 137, sampleRate);
+                    byte[] rawData = selected.Data!; // entry data is always raw PCM, edited or not
+                    pictureBox1.Image = DrawWaveform(rawData, 156, 137, DetectSampleRate(rawData));
                     button5.Enabled = true; // enable play button
                     button6.Enabled = true; // enable stop button
                     button10.Enabled = true; // enable replace file button
@@ -303,14 +280,8 @@ namespace WoWViewer
         // play sound method
         private void PlayRawSound(WowFileEntry entry)
         {
-            byte[] rawData; // if edited get data else read data
-            if (entries[listBox1.SelectedIndex].Edited) { rawData = entries[listBox1.SelectedIndex].Data!; }
-            else // read data from file only if not edited
-            {
-                using var br = new BinaryReader(File.OpenRead(filePath));
-                br.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
-                rawData = br.ReadBytes(entry.Length);
-            }
+            if (entry == null || entry.Data == null) { return; }
+            byte[] rawData = entry.Data; // entry data is always raw PCM, edited or not
             byte[] wavHeader = CreateWavHeader(rawData.Length, DetectSampleRate(rawData));
             using var ms = new MemoryStream();
             ms.Write(wavHeader, 0, wavHeader.Length);
@@ -330,16 +301,21 @@ namespace WoWViewer
         private void listBox1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             if (magic == "SfxL") { PlayRawSound(selected); }
-            else if (magic == "KAT!") { handlers[listBox1.SelectedItem!.ToString()!.Split('.')[1]].Invoke(selected); }
+            else if (magic == "KAT!" && listBox1.SelectedItem != null)
+            {
+                string extension = Path.GetExtension(listBox1.SelectedItem.ToString()!).TrimStart('.');
+                if (handlers.TryGetValue(extension, out var handler)) { handler.Invoke(selected); }
+                else { MessageBox.Show($"There is no viewer for .{extension} files yet."); }
+            }
         }
         // draw waveform
-        private Bitmap DrawWaveform(byte[] wavData, int width, int height, int sampleRate)
+        private Bitmap DrawWaveform(byte[] pcmData, int width, int height, int sampleRate)
         {
             var bmp = new Bitmap(width, height);
             using var g = Graphics.FromImage(bmp);
             g.Clear(Color.Black);
-            short[] samples = Extract16BitMonoSamples(wavData, sampleRate);
-            int samplesPerPixel = samples.Length / width;
+            short[] samples = Extract16BitMonoSamples(pcmData, sampleRate);
+            int samplesPerPixel = Math.Max(1, samples.Length / width);
             Pen colour = Pens.White;
             if (filePath.Contains("sfx")) { colour = Pens.Yellow; }
             else if (filePath.Contains("human")) { colour = Pens.Red; }
@@ -359,15 +335,12 @@ namespace WoWViewer
             }
             return bmp;
         }
-        // extract 16-bit mono samples from WAV data
-        private short[] Extract16BitMonoSamples(byte[] wavData, int sampleRate)
+        // extract 16-bit mono samples from raw PCM data
+        private short[] Extract16BitMonoSamples(byte[] pcmData, int sampleRate)
         {
-            using var ms = new MemoryStream(wavData);
-            using var br = new BinaryReader(ms);
-            br.BaseStream.Seek(44, SeekOrigin.Begin); // skip WAV header
-            int sampleCount = (wavData.Length - 44) / 2; // calculate number of samples
+            int sampleCount = pcmData.Length / 2; // calculate number of samples
             short[] samples = new short[sampleCount]; // create array for samples
-            for (int i = 0; i < sampleCount; i++) { samples[i] = br.ReadInt16(); } // build samples array
+            Buffer.BlockCopy(pcmData, 0, samples, 0, sampleCount * 2); // build samples array (little-endian 16-bit)
             double duration = sampleCount / (double)sampleRate; // calculate sound length
             if (duration > 60) // update sound length label
             {
@@ -432,44 +405,74 @@ namespace WoWViewer
         // parse new wav file
         private void newWAV(string newFile)
         {
+            int selectedIndex = listBox1.SelectedIndex;
+            if (selectedIndex < 0 || selectedIndex >= entries.Count) { return; }
             using (BinaryReader br = new BinaryReader(File.OpenRead(newFile)))
             {
                 // Read the RIFF header
-                string riff = Encoding.ASCII.GetString(br.ReadBytes(4));
-                if (riff != "RIFF")
+                if (br.BaseStream.Length < 12 || Encoding.ASCII.GetString(br.ReadBytes(4)) != "RIFF")
                 {
                     MessageBox.Show("File is not a valid WAV file.");
                     return;
                 }
                 br.ReadInt32(); // Skip file size
-                string wave = Encoding.ASCII.GetString(br.ReadBytes(4));
-                if (wave != "WAVE")
+                if (Encoding.ASCII.GetString(br.ReadBytes(4)) != "WAVE")
                 {
                     MessageBox.Show("File is not a valid WAV file.");
                     return;
                 }
-                // Search for the 'data' chunk
-                while (br.BaseStream.Position < br.BaseStream.Length)
+                bool formatChecked = false;
+                int sampleRate = 0;
+                // Walk the chunks, the 'fmt ' chunk must come before 'data'
+                while (br.BaseStream.Position + 8 <= br.BaseStream.Length)
                 {
                     string chunkID = Encoding.ASCII.GetString(br.ReadBytes(4));
-                    int chunkSize = br.ReadInt32();
-                    if (chunkID == "data")
+                    uint chunkSize = br.ReadUInt32();
+                    if (chunkID == "fmt ")
                     {
-                        if (chunkSize > int.MaxValue) // limit would really be uint but int.MaxValue is sufficient for our needs
+                        long chunkStart = br.BaseStream.Position;
+                        short format = br.ReadInt16();
+                        short channels = br.ReadInt16();
+                        sampleRate = br.ReadInt32();
+                        br.ReadInt32(); // byte rate
+                        br.ReadInt16(); // block align
+                        short bitsPerSample = br.ReadInt16();
+                        // SfxL entries are raw PCM with no format information, the game expects 16-bit mono
+                        if (format != 1 || channels != 1 || bitsPerSample != 16)
                         {
-                            MessageBox.Show("Audio data chunk is too large to handle.");
+                            MessageBox.Show($"Unsupported WAV format ({(format == 1 ? "PCM" : $"format {format}")}, {channels} channel(s), {bitsPerSample}-bit).\n\n" +
+                                "Replacement sounds must be uncompressed 16-bit mono PCM.", "Unsupported WAV", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return;
                         }
-                        byte[] audioData = br.ReadBytes(chunkSize);
-                        int selectedIndex = listBox1.SelectedIndex;
+                        formatChecked = true;
+                        br.BaseStream.Position = chunkStart + chunkSize + (chunkSize % 2);
+                    }
+                    else if (chunkID == "data")
+                    {
+                        if (!formatChecked)
+                        {
+                            MessageBox.Show("WAV file has no format chunk before its audio data.");
+                            return;
+                        }
+                        if (chunkSize > int.MaxValue || chunkSize > br.BaseStream.Length - br.BaseStream.Position)
+                        {
+                            MessageBox.Show("Audio data chunk is larger than the file.");
+                            return;
+                        }
+                        if (sampleRate != 22050 && sampleRate != 44100)
+                        {
+                            MessageBox.Show($"The sample rate is {sampleRate} Hz. The game's sounds are 22050 Hz or 44100 Hz, so this sound will play at the wrong speed.",
+                                "Sample Rate Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                        byte[] audioData = br.ReadBytes((int)chunkSize); // stored as raw PCM, the same as unedited entries
                         entries[selectedIndex].Edited = true;
                         entries[selectedIndex].Length = audioData.Length;
-                        entries[selectedIndex].Offset = 0;
                         entries[selectedIndex].Data = audioData;
                         button11.Enabled = true; // enable save button
                         pictureBox1.Image = DrawWaveform(audioData, 156, 137, DetectSampleRate(audioData)); // redraw waveform and update labels
-                        label3.Text = $"File Size : {selected.Length} bytes"; // update file size label
-                        label4.Text = $"File Offset : Unknown"; // update file offset label
+                        label3.Text = $"File Size : {audioData.Length} bytes"; // update file size label
+                        label4.Text = $"File Offset : Unknown (until saved)"; // update file offset label
+                        listBox1.Invalidate(); // redraw so the entry shows as edited
                         return;
                     }
                     else { br.BaseStream.Seek(chunkSize + (chunkSize % 2), SeekOrigin.Current); } // Skip this chunk
@@ -480,66 +483,22 @@ namespace WoWViewer
         // save file
         private void button11_Click(object sender, EventArgs e)
         {
+            byte[] archive;
+            try { archive = SfxlArchive.Write(entries); } // writes from memory and updates every entry's offset and length
+            catch (InvalidDataException ex)
+            {
+                MessageBox.Show(ex.Message, "Save Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             button11.Enabled = false; // Disable save button
-            // TODO : close file and write over it instead of temporary file swapping
-            string outputPath = Path.Combine(Path.GetDirectoryName(filePath)!, Path.GetFileNameWithoutExtension(filePath) + "_updated.wow"); // temporary file location
-            using (BinaryWriter bw = new BinaryWriter(File.Create(outputPath)))
-            {
-                bw.Write(Encoding.ASCII.GetBytes(magic)); // Write archive header
-                bw.Write(entries.Count); // could just write the original header and file count bytes as they are not changed
-                // Placeholder for file entries
-                long entriesStart = bw.BaseStream.Position;
-                foreach (var entry in entries)
-                {
-                    bw.Write(Encoding.ASCII.GetBytes(entry.Name.PadRight(8, '\0')));
-                    bw.Write(0); // Placeholder for length
-                    bw.Write(0); // Placeholder for offset
-                }
-                // Write file data and update entries
-                List<long> lengths = new List<long>();
-                List<long> offsets = new List<long>();
-                foreach (var entry in entries)
-                {
-                    long offset = bw.BaseStream.Position;
-                    byte[]? data = entry.Edited ? entry.Data : ReadOriginalData(entry);
-                    entry.Edited = false; // Reset all edited flags after saving ( overkill? )
-                    bw.Write(data!);
-                    lengths.Add(data!.Length);
-                    offsets.Add(offset);
-                }
-                // Update file entries with actual lengths and offsets
-                bw.BaseStream.Seek(entriesStart, SeekOrigin.Begin);
-                for (int i = 0; i < entries.Count; i++)
-                {
-                    bw.Write(Encoding.ASCII.GetBytes(entries[i].Name.PadRight(8, '\0')));
-                    bw.Write((int)lengths[i]);
-                    bw.Write((int)offsets[i]);
-                }
-            }
-            // TODO : backup first then close then write
-            if (checkBox1.Checked) { File.Replace(outputPath, filePath, filePath + ".bak"); } // create backup file
-            else { File.Replace(outputPath, filePath, null); } // replace original file
+            string tempPath = Path.Combine(Path.GetDirectoryName(filePath)!, Path.GetFileNameWithoutExtension(filePath) + "_updated.wow"); // temporary file location
+            File.WriteAllBytes(tempPath, archive);
+            if (checkBox1.Checked) { File.Replace(tempPath, filePath, filePath + ".bak"); } // create backup file
+            else { File.Replace(tempPath, filePath, null); } // replace original file
+            foreach (var entry in entries) { entry.Edited = false; }
+            listBox1.Invalidate();
+            if (selected != null) { label4.Text = $"File Offset : {selected.Offset} bytes"; }
             MessageBox.Show("Archive updated successfully.");
-        }
-        // read original data for entries not edited
-        private byte[] ReadOriginalData(WowFileEntry entry)
-        {
-            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-            {
-                fs.Seek(entry.Offset, SeekOrigin.Begin);
-                byte[] buffer = new byte[entry.Length];
-                int bytesRead = 0;
-                while (bytesRead < entry.Length)
-                {
-                    int read = fs.Read(buffer, bytesRead, entry.Length - bytesRead);
-                    if (read == 0)
-                    {
-                        throw new EndOfStreamException($"Unexpected end of file while reading entry '{entry.Name}'.");
-                    }
-                    bytesRead += read;
-                }
-                return buffer;
-            }
         }
         // test ojd parsing
         private void button12_Click(object sender, EventArgs e) { newForm(new OJDParser()); }

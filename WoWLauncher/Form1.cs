@@ -1,4 +1,4 @@
-using IniParser;
+ï»¿using IniParser;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -13,37 +13,37 @@ namespace WoWLauncher
             //"512x384         (4:3)",    // Listed in original manual, ultra-low fallback - sometimes causes DDERR_NOCOOPERATIVELEVELSET
             "640x480         (4:3)",    // Classic baseline 4:3                         // Exists In-Game
             "800x600         (4:3)",    // Legacy 4:3 standard                          // Exists In-Game
-            "1024x768       (4:3)",     // XGA — very common                            // Exists In-Game
+            "1024x768       (4:3)",     // XGA â€” very common                            // Exists In-Game
             "1152x864       (4:3)",     // Slightly higher 4:3 (rare)                   // Exists In-Game
-            //"1280x720       (16:9)",  // 720p — slight stretching/whiteness issue
-            "1280x768       (15:9)",    // WXGA – rare variant of 1280x800 (15:9)
-            "1280x800       (16:10)",   // WXGA — early widescreen laptops (16:10)      // Exists In-Game
-            "1280x1024     (5:4)",      // SXGA — tall 5:4 monitor resolution
-            "1360x768       (16:9)",    // 16:9 — GPU-aligned, better than 1366x768
+            //"1280x720       (16:9)",  // 720p â€” slight stretching/whiteness issue
+            "1280x768       (15:9)",    // WXGA â€“ rare variant of 1280x800 (15:9)
+            "1280x800       (16:10)",   // WXGA â€” early widescreen laptops (16:10)      // Exists In-Game
+            "1280x1024     (5:4)",      // SXGA â€” tall 5:4 monitor resolution
+            "1360x768       (16:9)",    // 16:9 â€” GPU-aligned, better than 1366x768
             "1366x768       (16:9)",    // Common 16:9 laptop resolution
             // These resolutions only work on the main menu - newly expanded warmap allows these resolutions to work
-            "1600x900       (16:9)",    // 16:9 — upper-mid range laptop displays
-            "1600x1024     (5:4)",      // Unusual 5:4 wide — seems to pass internal checks
-            //"1600x1200     (4:3)",      // UXGA — classic high-res 4:3                // DDERR_NOCOOPERATIVELEVELSET
-            "1680x1050     (16:10)",    // WSXGA+ — widescreen 16:10, works well
+            "1600x900       (16:9)",    // 16:9 â€” upper-mid range laptop displays
+            "1600x1024     (5:4)",      // Unusual 5:4 wide â€” seems to pass internal checks
+            //"1600x1200     (4:3)",      // UXGA â€” classic high-res 4:3                // DDERR_NOCOOPERATIVELEVELSET
+            "1680x1050     (16:10)",    // WSXGA+ â€” widescreen 16:10, works well
             "1920x1080     (16:9)"      // 1080p
         };
         private bool config; // are settings open or not
         private int resolution; // temp resolution combobox index for swapping files in future versions
         private int resolutionStored; // for overclocked resolution checks......
         private List<string> keptResolutions = new List<string>(); // keep listed resolutions for future versions
-        private RegistryKey mainKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
-        private RegistryKey tweakKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true)!;
-        private RegistryKey screenKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Screen", true)!;
-        private RegistryKey battleKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true)!;
-        private RegistryKey researchKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true)!;
-        private RegistryKey optionsKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Options", true)!;
-        private RegistryKey buildListKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BuildList", true)!;
-        private RegistryKey debugKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true)!;
-        private RegistryKey soundKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound", true)!;
-        private RegistryKey volumeKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound\Volume", true)!;
-        private RegistryKey systemKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\System", true)!;
-        private RegistryKey networkKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Network", true)!;
+        private RegistryKey mainKey = GameRegistry.Open()!;
+        private RegistryKey tweakKey = GameRegistry.Open(@"Tweak")!;
+        private RegistryKey screenKey = GameRegistry.Open(@"Screen")!;
+        private RegistryKey battleKey = GameRegistry.Open(@"BattleMap")!;
+        private RegistryKey researchKey = GameRegistry.Open(@"Research")!;
+        private RegistryKey optionsKey = GameRegistry.Open(@"Options")!;
+        private RegistryKey buildListKey = GameRegistry.Open(@"BuildList")!;
+        private RegistryKey debugKey = GameRegistry.Open(@"Debug")!;
+        private RegistryKey soundKey = GameRegistry.Open(@"Sound")!;
+        private RegistryKey volumeKey = GameRegistry.Open(@"Sound\Volume")!;
+        private RegistryKey systemKey = GameRegistry.Open(@"System")!;
+        private RegistryKey networkKey = GameRegistry.Open(@"Network")!;
         [StructLayout(LayoutKind.Sequential)]
         public struct DEVMODE
         {
@@ -99,21 +99,20 @@ namespace WoWLauncher
             }
             // TODO : add tweak key creation below and check what happens if it doesn't exist when altering settings etc
             // TODO : or just repopulate every registry entry
-            RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             if (mainKey == null) // set default registry settings which are required for the launcher, the rest are created when the game starts.
             {
-                mainKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
-                tweakKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true)!;
-                screenKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Screen", true)!;
-                battleKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true)!;
-                researchKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true)!;
-                optionsKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Options", true)!;
-                buildListKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BuildList", true)!;
-                debugKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true)!;
-                soundKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound", true)!;
-                volumeKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Sound\Volume", true);
-                systemKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\System", true)!;
-                networkKey = baseKey.CreateSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Network", true)!;
+                mainKey = GameRegistry.Create();
+                tweakKey = GameRegistry.Create(@"Tweak");
+                screenKey = GameRegistry.Create(@"Screen");
+                battleKey = GameRegistry.Create(@"BattleMap");
+                researchKey = GameRegistry.Create(@"Research");
+                optionsKey = GameRegistry.Create(@"Options");
+                buildListKey = GameRegistry.Create(@"BuildList");
+                debugKey = GameRegistry.Create(@"Debug");
+                soundKey = GameRegistry.Create(@"Sound");
+                volumeKey = GameRegistry.Create(@"Sound\Volume");
+                systemKey = GameRegistry.Create(@"System");
+                networkKey = GameRegistry.Create(@"Network");
                 // these values are set because the launcher accesses them.
                 mainKey.SetValue("Enable Network Version", 0, RegistryValueKind.DWord);
                 mainKey.SetValue("Full Screen", "1");
@@ -156,6 +155,7 @@ namespace WoWLauncher
                 // custom cd focus registry entry
                 volumeKey.SetValue("CD-Focus", 0, RegistryValueKind.DWord);
             }
+            GameRegistry.RemoveLegacyUsersFullControl(); // undo the permissions older WoWViewer versions granted
             registryCompare(mainKey, "CD Path", AppDomain.CurrentDomain.BaseDirectory); // update the cd path in the registry automatically.
             registryCompare(mainKey, "Install Path", AppDomain.CurrentDomain.BaseDirectory); // update the install path in the registry automatically.
             // automatically clear up the unnecessary files
@@ -222,6 +222,7 @@ namespace WoWLauncher
             key?.Close();
             if (IsWindows11()) { EnsureDirectPlay(); }
             InitializeRegistry();
+            RepairAssetLayout();
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(PictureBox), typeof(Label), typeof(Button) });
         }
@@ -251,10 +252,11 @@ namespace WoWLauncher
         // Helper to enable DirectPlay silently
         private void EnsureDirectPlay()
         {
-            using (RegistryKey? dpKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\DirectPlay", false))
+            using (RegistryKey baseView = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
+            using (RegistryKey? dpKey = baseView.OpenSubKey(@"SOFTWARE\Microsoft\DirectPlay", false))
             {
                 object? value = dpKey?.GetValue("Installed");
-                if (value == null || (int)value != 1)
+                if (value == null || Convert.ToInt32(value) != 1)
                 {
                     // Trigger DISM
                     ProcessStartInfo psi = new ProcessStartInfo
@@ -272,10 +274,8 @@ namespace WoWLauncher
                         {
                             proc?.WaitForExit();
                             // --- THE FIX: Manually set the registry flag so the loop breaks ---
-                            RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
-                            RegistryKey newKey = baseKey.CreateSubKey(@"SOFTWARE\Microsoft\DirectPlay", true);
+                            using RegistryKey newKey = baseView.CreateSubKey(@"SOFTWARE\Microsoft\DirectPlay", true);
                             newKey.SetValue("Installed", 1, RegistryValueKind.DWord);
-                            newKey?.Close();
                             // Notify the user after a successful DISM run
                             MessageBox.Show(Program.Interface["directplay_installed"],
                                             Program.Interface["directplay_title"],
@@ -335,7 +335,7 @@ namespace WoWLauncher
             if (Convert.ToInt32(mainKey.GetValue("Full Screen")) == 1) { checkBox2.Checked = true; }
             checkBox3.Checked = Convert.ToInt32(battleKey.GetValue("EnableFogOfWar")) == 1; // for restore default settings
             checkBox5.Checked = (int)volumeKey.GetValue("CD-Focus")! == 1; //music playback when out of focus
-            if (File.Exists("DAT\\cd_bd1.spr")) { checkBox6.Checked = true; } // enhanced assets enabled
+            checkBox6.Checked = AssetLayout.IsEnhancedActive(File.Exists); // enhanced assets enabled
             checkBox7.Checked = Convert.ToInt32(debugKey.GetValue("Enemy Visible")) == 1; // for restore default settings
             // overclocked resolutions
             string realRes = ((string)screenKey.GetValue("Size")!).Replace(",", "x").Split(' ')[0];
@@ -382,14 +382,7 @@ namespace WoWLauncher
                 screenKey.SetValue("BPP", 16, RegistryValueKind.DWord);
                 MessageBox.Show(Program.Interface["colour"]);
             }
-            if(new FileInfo("MAPS\\MAPS.WoW").Length == 162426225)
-            {
-                checkBox4.Checked = true;
-            }
-            if (new FileInfo("DAT-EXTRA\\UNITS\\hu-cnt24.spr").Length == 191846)
-            {
-                checkBox6.Checked = true;
-            }
+            checkBox4.Checked = AssetLayout.IsLargerActive(File.Exists); // larger minimaps enabled
             // add event handlers here for the checkboxes and comboboxes to prevent them firing when the form is loaded
             checkBox1.CheckedChanged += checkBox1_CheckedChanged!;
             checkBox2.CheckedChanged += checkBox2_CheckedChanged!;
@@ -616,16 +609,9 @@ namespace WoWLauncher
         }
         private void checkBox2_CheckedChanged(object sender, EventArgs e)
         {
-            if (checkBox2.Checked)
-            {
-                File.Move("ddraw-off.dll", "ddraw.dll");
-                mainKey.SetValue("Full Screen", "1");
-            }
-            else
-            {
-                File.Move("ddraw.dll", "ddraw-off.dll");
-                mainKey.SetValue("Full Screen", "0");
-            }
+            var move = checkBox2.Checked ? ("ddraw-off.dll", "ddraw.dll") : ("ddraw.dll", "ddraw-off.dll");
+            if (!MoveFilesOrRevert(new[] { move }, checkBox2, checkBox2_CheckedChanged!)) { return; }
+            mainKey.SetValue("Full Screen", checkBox2.Checked ? "1" : "0");
         }
         private void checkBox3_CheckedChanged(object sender, EventArgs e) { battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? "1" : "0"); }
         private int resolutionHelper(string resolution, string from, string to)
@@ -645,7 +631,6 @@ namespace WoWLauncher
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (resolutionStored == comboBox2.SelectedIndex) { return; }
-            resolutionStored = comboBox2.SelectedIndex;
             string screenSize = comboBox2.SelectedItem!.ToString()!.Replace("x", ",").Split(' ')[0]; // convert to the format used in the registry
             // overclocked resolutions........
             int nextResolution = comboBox2.SelectedIndex;
@@ -653,13 +638,9 @@ namespace WoWLauncher
             string[] dimensions = screenSize.Split(',');
             int width = int.Parse(dimensions[0]);
             int height = int.Parse(dimensions[1]);
-            if (width > 1920 || height > 1080)
+            bool overclocked = width > 1920 || height > 1080;
+            if (overclocked)
             {
-                MessageBox.Show(Program.Interface["overclocked"] + " (Above 1920x1080)", Program.Interface["config"], MessageBoxButtons.OK, MessageBoxIcon.Information);
-                // set ini options
-                iniFile.Write("width", $"{dimensions[0]}", "ddraw");
-                iniFile.Write("height", $"{dimensions[1]}", "ddraw");
-                // update nextResolution...
                 // Find the original base resolution's index so asset swapping uses the correct DAT-EXTRA folder
                 // Get the aspect ratio of the selected overclocked resolution
                 string targetRatio = GetAspectRatio(width, height); // e.g., "16:10"
@@ -676,16 +657,62 @@ namespace WoWLauncher
                         return widthDiff + ratioPenalty;
                     })
                     .First();
-                //string closestMatch = supportedResolutions.OrderBy(res => Math.Abs(int.Parse(res.Split('x')[0]) - int.Parse(dimensions[0]))).First();
                 screenSize = closestMatch.Split(' ')[0].Replace("x", ","); // e.g., "1920x1080"
                 nextResolution = resolutionHelper(screenSize, ",", "x");
+            }
+            // gather every file move first and make them all at once, so a missing file can't leave assets half swapped
+            var moves = new List<(string From, string To)>();
+            if (keptResolutions[resolution] != keptResolutions[nextResolution])
+            {
+                foreach (string file in new[] { "humanbd.spr", "legal1.spr", "legal2.spr", "martbd.spr" })
+                {
+                    moves.Add(($"DAT\\{file}", $"DAT-EXTRA\\{keptResolutions[resolution]}\\{file}")); // move from DAT to storage
+                    moves.Add(($"DAT-EXTRA\\{keptResolutions[nextResolution]}\\{file}", $"DAT\\{file}")); // move from storage to DAT
+                }
+            }
+            // larger resolution warmap files
+            string baseWidth = screenSize.Split(',')[0];
+            string[] resolutionFiles = new string[] { "HWM.SPR", "HWMHI.SPR", "MWM.SPR", "MWMHI.SPR" };
+            if (baseWidth == "1600" || baseWidth == "1680" || baseWidth == "1920")
+            {
+                if (File.Exists("DAT\\MWM.SPR") && !File.Exists("DAT\\NORM-MWM.SPR")) // high resolutions check
+                {
+                    moves.Add(("DAT\\MWM.SPR", "DAT\\NORM-MWM.SPR")); // just for MWM - EUROPE
+                    foreach (string file in resolutionFiles)
+                    {
+                        if (File.Exists("DAT\\TEMP-" + file)) { moves.Add(("DAT\\TEMP-" + file, "DAT\\" + file)); }
+                    }
+                }
+            }
+            else if (File.Exists("DAT\\NORM-MWM.SPR") && !File.Exists("DAT\\TEMP-MWM.SPR")) // low resolutions check
+            {
+                foreach (string file in resolutionFiles)
+                {
+                    if (File.Exists("DAT\\" + file)) { moves.Add(("DAT\\" + file, "DAT\\TEMP-" + file)); }
+                }
+                moves.Add(("DAT\\NORM-MWM.SPR", "DAT\\MWM.SPR")); // just for MWM - EUROPE
+            }
+            if (!FileMoves.TryMoveAll(moves, out string? error))
+            {
+                ShowMoveError(error);
+                comboBox2.SelectedIndexChanged -= comboBox2_SelectedIndexChanged!;
+                comboBox2.SelectedIndex = resolutionStored; // put the selection back, nothing has changed
+                comboBox2.SelectedIndexChanged += comboBox2_SelectedIndexChanged!;
+                return;
+            }
+            resolutionStored = comboBox2.SelectedIndex;
+            resolution = nextResolution;
+            if (overclocked)
+            {
+                MessageBox.Show(Program.Interface["overclocked"] + " (Above 1920x1080)", Program.Interface["config"], MessageBoxButtons.OK, MessageBoxIcon.Information);
+                iniFile.Write("width", $"{dimensions[0]}", "ddraw");
+                iniFile.Write("height", $"{dimensions[1]}", "ddraw");
             }
             else
             {
                 iniFile.Write("width", "0", "ddraw"); // used to check if resolution is overclocked on startup
                 iniFile.Write("height", "0", "ddraw");
             }
-            // continue current code
             registryCompare(screenKey, "Size", screenSize);                 // "Size" is the in-game resolution
             registryCompare(screenKey, "Support screen size", screenSize);  // "Support screen size" is the resolution used by the main menu
             registryCompare(buildListKey, "Top", ((height - 340) / 2).ToString()); // build list resolution adjustment
@@ -699,44 +726,6 @@ namespace WoWLauncher
             registryCompare(soundKey, "Inner border", "-" + (soundThree / 2).ToString() + ",-" + (soundFour / 2 - 40).ToString());
             registryCompare(soundKey, "Outer Ambient border", "-" + (soundThree + 320).ToString() + ",-" + (soundFour + 120).ToString());
             registryCompare(soundKey, "Outer border", reusedSound);
-            // future prep for moving resolution specific assets back and forth
-            string[] moveFiles = new string[] { "humanbd.spr", "legal1.spr", "legal2.spr", "martbd.spr" };
-            foreach (string file in moveFiles)
-            {
-                File.Move("DAT\\" + file, $"DAT-EXTRA\\{keptResolutions[resolution]}\\" + file); // move from DAT to storage
-                File.Move($"DAT-EXTRA\\{keptResolutions[nextResolution]}\\" + file, "DAT\\" + file); // move from storage to DAT
-            }
-            // larger resolution warmap files
-            string[] resolutionFiles = new string[] { "HWM.SPR", "HWMHI.SPR", "MWM.SPR", "MWMHI.SPR" };
-            if (dimensions[0] == "1600" || dimensions[0] == "1680" || dimensions[0] == "1920")
-            {
-                if (File.Exists("DAT\\MWM.SPR") && !File.Exists("DAT\\NORM-MWM.SPR")) // high resolutions check
-                {
-                    File.Move("DAT\\MWM.SPR", $"DAT\\NORM-MWM.SPR"); // just for MWM - EUROPE
-                    foreach (string file in resolutionFiles)
-                    {
-                        if (File.Exists("DAT\\TEMP-" + file))
-                        {
-                            File.Move("DAT\\TEMP-" + file, $"DAT\\" + file);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                if (File.Exists("DAT\\NORM-MWM.SPR") && !File.Exists("DAT\\TEMP-MWM.SPR")) // low resolutions check
-                {
-                    foreach (string file in resolutionFiles)
-                    {
-                        if (File.Exists("DAT\\" + file))
-                        {
-                            File.Move("DAT\\" + file, $"DAT\\TEMP-" + file);
-                        }
-                    }
-                    File.Move("DAT\\NORM-MWM.SPR", $"DAT\\MWM.SPR"); // just for MWM - EUROPE
-                }
-            }
-            resolution = nextResolution;
         }
         private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -843,42 +832,8 @@ namespace WoWLauncher
         }
         // music focus checkbox
         private void checkBox5_CheckedChanged(object sender, EventArgs e) { volumeKey.SetValue("CD-Focus", checkBox5.Checked ? 1 : 0, RegistryValueKind.DWord); }
-        // enable or disable hd upscale
-        private string[] upscaledFiles = new string[] {
-            "cd_bd1.spr", "cd_bd2.spr", "cd_bd3.spr", "cd_bd4.spr", "cd_bd5.spr", "cd_bd6.spr", "cd_bd7.spr",
-            "HBBdown.spr", "HBBup.spr", "HBTdown.spr", "HBTup.spr", "HBuildB1.spr", "hexitarr.spr", "Hmessage.spr",
-            "hmframe.spr", /*"hu-cnt24.spr",*/ "hu-cnt32.spr", "hu-cnt48.spr", "hu_buton.spr", "hu_calen.spr",
-            "hu_event.spr", "hu_speed.spr", "hu_twirl.spr", /*"MA-CNT24.SPR",*/ "MA-CNT32.SPR", "MA-CNT48.SPR", "MAN-BUT.SPR",
-            "MA_BUTON.SPR", "MA_CALEN.SPR", "MA_EVENT.SPR", "ma_goo.spr", "MA_SPEED.SPR", "MA_WORLD.SPR", "MBBDOWN.SPR",
-            "MBBUP.SPR", "MBTDOWN.SPR", "MBTUP.SPR", "MBUILDB1.SPR", "MBUILDB2.SPR", "MCOG.SPR", "mexitarr.spr", "MFACT.SPR",
-            "MMFRAME.SPR", "MRESRCHB.SPR", "mr_exit.spr", "MR_TAB.SPR", "MUNITS.SPR",
-            "RBHAbndn.spr", "RBHAggro.spr", "RBHattk.spr", "RBHBsrk.spr", "RBHbuild.spr", "RBHChkn.spr", "RBHcncl.spr", "RBHcnclM.spr",
-            "RBHCtrlB.spr", "RBHFrze.spr", "RBHgo.spr", "RBHInfl.spr", "RBHinfo.spr", "RBHPulse.spr", "RBHrsrch.spr", "RBHRtlt.spr",
-            "RBHrtrt.spr", "RBHrturn.spr", "RBHScare.spr", "RBHstop.spr", "RBHsusp.spr", "RBHtnnl.spr", "RBHvwmap.spr", "RBHXplsv.spr",
-            "RBMAbndn.spr", "RBMAggro.spr", "RBMATTK.SPR", "RBMBDUST.SPR", "RBMBsrk.spr", "RBMBUILD.SPR", "RBMChkn.spr", "RBMCNCL.SPR",
-            "RBMcnclM.spr", "RBMCtrlB.spr", "RBMFrze.spr", "RBMgo.spr", "RBMHALT.SPR", "RBMinflt.spr", "RBMINFO.SPR", "RBMPulse.spr",
-            "RBMRtlt.spr", "RBMRTRT.SPR", "RBMRTURN.SPR", "RBMSBOMB.SPR", "RBMscan.spr", "RBMScare.spr", "RBMstop.spr", "RBMsusp.spr",
-            "RBMVWMAP.SPR", "RES-BUT.SPR", "rese-but.spr", "RP_Bio.spr", "RP_Blcks.spr", "RP_bm.spr", "RP_Cnstr.spr", "RP_Comms.spr",
-            "RP_cons.spr", "RP_Coppr.spr", "RP_DM.spr", "RP_DR.spr", "RP_el.spr", "RP_EWP.spr", "RP_Farm.spr", "RP_FLM.spr", "RP_fm.spr",
-            "RP_HElmn.spr", "RP_hm.spr", "RP_HRT.spr", "RP_HX.spr", "RP_mods.spr", "RP_Obs.spr", "RP_Power.spr", "RP_Proj.spr", "RP_Rapid.spr",
-            "RP_Repr.spr", "RP_scn.spr", "RP_sm.spr", "RP_Susp.spr", "RP_T.spr", "RP_TC.spr", "RP_xt.spr", "UNIT-BUT.SPR",
-        };
-        private void checkBox6_CheckedChanged(object sender, EventArgs e)
-        {
-            if (checkBox6.Checked) { foreach (string file in upscaledFiles) { File.Move($"DAT-EXTRA\\HD\\{file}", $"DAT\\{file}"); } }
-            else { foreach (string file in upscaledFiles) { File.Move($"DAT\\{file}", $"DAT-EXTRA\\HD\\{file}"); } }
-            // only move unit sprites if larger UI isn't enabled.
-            if (!checkBox4.Checked && !checkBox6.Checked)
-            {
-                File.Move("DAT\\hu-cnt24.spr", "DAT-EXTRA\\HD\\hu-cnt24.spr");
-                File.Move("DAT\\MA-CNT24.SPR", "DAT-EXTRA\\HD\\MA-CNT24.SPR");
-            }
-            if (!checkBox4.Checked && checkBox6.Checked)
-            {
-                File.Move("DAT-EXTRA\\HD\\hu-cnt24.spr", "DAT\\hu-cnt24.spr");
-                File.Move("DAT-EXTRA\\HD\\MA-CNT24.SPR", "DAT\\MA-CNT24.SPR");
-            }
-        }
+        // enable or disable the enhanced user interface assets
+        private void checkBox6_CheckedChanged(object sender, EventArgs e) { ApplyAssetLayout(checkBox6, checkBox6_CheckedChanged!); }
         // Debug "Enemy Visible" value determines if enemy units are visible on the warmap
         private void checkBox7_CheckedChanged(object sender, EventArgs e) { registryCompare(debugKey, "Enemy Visible", checkBox7.Checked ? "1" : "0"); }
         // open game manual
@@ -888,56 +843,35 @@ namespace WoWLauncher
             ProcessStartInfo psi = new ProcessStartInfo { FileName = Program.Interface["instruction_location"], UseShellExecute = true };
             Process.Start(psi);
         }
-        // larger maps checkbox
-        private void checkBox4_CheckedChanged(object sender, EventArgs e)
+        // larger minimaps checkbox
+        private void checkBox4_CheckedChanged(object sender, EventArgs e) { ApplyAssetLayout(checkBox4, checkBox4_CheckedChanged!); }
+        // move the enhanced asset and larger minimap files to match both checkboxes, see AssetLayout for the rules
+        private void ApplyAssetLayout(CheckBox changed, EventHandler handler)
         {
-            //regular 160890897 bytes
-            //larger 117692391
-            switch (new FileInfo("MAPS\\MAPS.WoW").Length)
-            {
-                case 160890897: RenameRegular(); break;
-                case 162426225: RenameLarger(); break;
-                default: MessageBox.Show("MAPS.WoW has an unexpected file size! Restoring the original files via the launcher may be required.", "Map Swap Error", MessageBoxButtons.OK, MessageBoxIcon.Warning); break;
-            }
-            if(File.Exists("DAT\\hu-cnt24.spr"))
-            {
-                switch (new FileInfo("DAT\\hu-cnt24.spr").Length)
-                {
-                    case 191846: RemoveLarger(); break; // larger
-                    default: AddLarger(); break; // enhanced
-                }
-            }
+            var moves = AssetLayout.PlanMoves(checkBox6.Checked, checkBox4.Checked, File.Exists);
+            MoveFilesOrRevert(moves, changed, handler);
         }
-        private void RenameRegular()
+        // fix installs left half swapped by older launcher versions, only if every move can be made
+        private void RepairAssetLayout()
         {
-            File.Move("MAPS\\MAPS.WoW", "MAPS\\MAPS-Regular.WoW");
-            File.Move("MAPS\\MAPS-Larger.WoW", "MAPS\\MAPS.WoW");
+            var moves = AssetLayout.PlanMoves(checkBox6.Checked, checkBox4.Checked, File.Exists);
+            if (moves.Count > 0 && FileMoves.Validate(moves, File.Exists) == null) { FileMoves.TryMoveAll(moves, out _); }
         }
-        private void RenameLarger()
+        // make every move or none, and untick/retick the checkbox if they couldn't be made
+        private bool MoveFilesOrRevert(IReadOnlyList<(string From, string To)> moves, CheckBox checkBox, EventHandler handler)
         {
-            File.Move("MAPS\\MAPS.WoW", "MAPS\\MAPS-Larger.WoW");
-            File.Move("MAPS\\MAPS-Regular.WoW", "MAPS\\MAPS.WoW");
+            if (FileMoves.TryMoveAll(moves, out string? error)) { return true; }
+            ShowMoveError(error);
+            checkBox.CheckedChanged -= handler;
+            checkBox.Checked = !checkBox.Checked;
+            checkBox.CheckedChanged += handler;
+            return false;
         }
-        private void RemoveLarger()
+        private static void ShowMoveError(string? error)
         {
-            File.Move("DAT\\hu-cnt24.spr", "DAT-EXTRA\\UNITS\\hu-cnt24.spr");
-            File.Move("DAT\\MA-CNT24.SPR", "DAT-EXTRA\\UNITS\\MA-CNT24.SPR");
-            if (checkBox6.Checked) // Enhanced Assets enabled, move them back from the HD folder.
-            {
-                // move Enhanced assets back in to the DAT folder.
-                File.Move("DAT-EXTRA\\HD\\hu-cnt24.spr", "DAT\\hu-cnt24.spr");
-                File.Move("DAT-EXTRA\\HD\\MA-CNT24.SPR", "DAT\\MA-CNT24.SPR");
-            }
-        }
-        private void AddLarger()
-        {
-            if (checkBox6.Checked) // Enhanced Assets and "Larger Minimaps" enabled, move them back to the HD folder.
-            {
-                File.Move("DAT\\hu-cnt24.spr", "DAT-EXTRA\\HD\\hu-cnt24.spr");
-                File.Move("DAT\\MA-CNT24.SPR", "DAT-EXTRA\\HD\\MA-CNT24.SPR");
-            }
-            File.Move("DAT-EXTRA\\UNITS\\hu-cnt24.spr", "DAT\\hu-cnt24.spr");
-            File.Move("DAT-EXTRA\\UNITS\\MA-CNT24.SPR", "DAT\\MA-CNT24.SPR");
+            MessageBox.Show("The game files could not be moved, so nothing has been changed.\n\n" + error +
+                "\n\nRe-extracting the latest release over your installation should restore any missing files.",
+                "File Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 }

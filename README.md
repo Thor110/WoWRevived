@@ -75,6 +75,7 @@ The road map for this project.
 	- Violent stretching of the Human Airship unit has been fixed, it seems this was fixed in the original game files but hadn't been renamed from the cancelled ZEPPLIN3.WOF to AIRSHIP3.WOF in the game files.
 	- Alt-tabbing now works as cnc-ddraw is working with the latest version of the smacker wrapper.
 	- Custom networking executable included and accessible via the launcher when networking is enabled.
+		- WoW_network.exe is not Rage's retail executable: it is a custom build with a working network stack, passed on by someone who was in contact with one of the developers. Its memory layout is completely different from the retail build, so the patch DLLs verify every address against the running build before touching it.
 	- A hole in Sector 22 South Wales terrain geometry has been patched.
 	- Entering or exiting the menu no longer stops the music from playing like it did in the original game.
 	- Discord rich presence features implemented with multiple states. ( Main Menu, CD Player Track Name & Image, Human Campaign, Martian Campaign & Network Campaign )

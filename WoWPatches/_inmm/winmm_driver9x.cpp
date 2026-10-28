@@ -1,13 +1,17 @@
 ﻿#include <stdio.h>
-#include <conio.h>
 #include <windows.h>
-#include <fstream>
 #include <tlhelp32.h>
 #include <ctime>
+#include <cstdint>
+#include <string>
+#include <vector>
+#include "../Common/GameCommon.h"
+
+using namespace wow;
 
 #pragma warning(disable: 28159) // suppress GetTickCount -> GetTickCount64 warning, no one is going to play War of the Worlds for over 49 days straight and if they do? More for them.
 #define DLLEXPORT			__declspec(dllexport)
-#define FAKE_CD_ID 0xBEEF 
+#define FAKE_CD_ID 0xBEEF
 
 int currentTrack = 2;
 uint32_t currentTrackLength = 0;
@@ -19,27 +23,84 @@ HWAVEOUT hWaveOut = NULL;
 FILE* logFile = nullptr;
 bool debug = false; // true for logging
 bool musicFocus = false; // allow music to continue playing while the window is out of focus
-// Test-only latch for the force-press-Stop experiment (see ForceStopButtonPress
-// below) - stops it firing repeatedly once per elapsed-time threshold, and gets
-// reset whenever a new track starts.
+// Latch so the end-of-track Stop press is only posted once per track, reset whenever a new track starts.
 bool forceStopFired = false;
-// Pointers to the game's internal Menu State
-volatile BYTE* pCDMusicToggle = nullptr;
-// The Control ID for the CD Player menu
-const DWORD CD_PLAYER_MENU_ID = 0x803E;
+// audioLock guards the playback state shared with the audio thread (hWaveOut, the PCM data, timers).
+// deviceLock serialises opening and closing the wave device. Lock order is always deviceLock, then audioLock,
+// and no waveOut call that waits on the device (waveOutReset/Close) is ever made while audioLock is held.
 CRITICAL_SECTION audioLock;
-bool playerIsHuman = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES); // this in inside out, nevermind.
+CRITICAL_SECTION deviceLock;
+// human.cd's presence selects the Martian music and FMV folders (verified in-game, see commit c933737),
+// Smackw32.dll uses the same rule. Everything that picks a faction's assets goes through UseMartianAssets().
+bool humanCdPresent = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES);
+inline bool UseMartianAssets() { return humanCdPresent; }
 // Tracks the system uptime tick of the last physical Escape press
 DWORD lastEscapeTick = 0;
 // Tracks the system uptime tick of the last physical mouse click
 DWORD lastClickTick = 0;
-// netork / vanilla specific offsets
-bool isNetworkVersion = false;	// vanilla			// network
-//float masterVolume = 1.0f;	// flt_4CA870		// dword_530654
-//float ambientVolume = 1.0f;	// flt_4CA858		// flt_53063C
-//float speechVolume = 1.0f;	// unk_4CA86C		// unk_530650
+GameBuild gameBuild = BUILD_UNKNOWN;
+bool isNetworkVersion = false;
 bool hooksInstalled = false;
 bool resumingFocus = false;
+
+// === Per-build game addresses === //
+// Every game address lives here so the vanilla and network executables can never be mixed up.
+// Both builds store the volumes as floats (0.0 - 1.0) in the same layout, confirmed from the
+// disassembly: the network setter at 0x4180C7 and getter at 0x418066 use fld/mov on a float array.
+struct GameAddrs {
+	volatile DWORD* cdToggle;       // in-game "CD music" toggle, seeded from Sound\Volume\CD, the game reads its low byte
+	volatile float* masterVol;
+	volatile float* ambientVol;
+	volatile float* speechVol;
+	volatile DWORD* menuState;      // vanilla only: 0x90 or 0x0 while in the main menu
+	volatile DWORD* campaignActive; // vanilla only: non zero while a campaign is loaded
+	volatile BYTE*  humanCampaign;  // vanilla only: 1 for the human campaign
+	// CD Player menu constructor (hooked to capture "this"), destructor (hooked to clear it) and message handler
+	DWORD cdCtor; const BYTE* cdCtorSig; int cdCtorSigLen; int cdCtorHookLen;
+	DWORD cdDtor; const BYTE* cdDtorSig; int cdDtorSigLen; int cdDtorHookLen; int cdDtorRelCallAt;
+	DWORD cdOnMessage; const BYTE* cdOnMessageSig; int cdOnMessageSigLen;
+};
+
+// vanilla: sub_407990 = push -1; push offset SEH_407990 (7 bytes, never touches ECX)
+static const BYTE kVanillaCtorSig[] = { 0x6A, 0xFF, 0x68, 0x27, 0x4F, 0x4A, 0x00 };
+// vanilla: off_4A95D0 slot 0 = push esi; mov esi,ecx; call 0x4080A0 (8 bytes, the call is relocated in the trampoline)
+static const BYTE kVanillaDtorSig[] = { 0x56, 0x8B, 0xF1, 0xE8, 0x18, 0x00, 0x00, 0x00 };
+// vanilla: off_4A95D0 slot 7 (+0x1C) = sub_4081D0, handles MM_MCINOTIFY (0x3B9) and WM_COMMAND (0x111)
+static const BYTE kVanillaOnMessageSig[] = { 0x64, 0xA1, 0x00, 0x00, 0x00, 0x00, 0x6A, 0xFF, 0x68, 0x89, 0x4F, 0x4A, 0x00 };
+// network: sub_4AF680 = push ebp; mov ebp,esp; push -1 (5 bytes hooked, longer signature checked)
+static const BYTE kNetworkCtorSig[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x9F, 0x17, 0x50, 0x00 };
+// network: off_51B1E0 slot 0 = push ebp; mov ebp,esp; push ecx; mov [ebp-4],ecx (7 bytes, no relative operands)
+static const BYTE kNetworkDtorSig[] = { 0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC };
+// network: off_51B1E0 slot 10 (+0x28) = sub_4B0510, handles 0x3B9 and 0x111 like vanilla's sub_4081D0
+static const BYTE kNetworkOnMessageSig[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0xED, 0x17, 0x50, 0x00 };
+
+static const GameAddrs kVanillaAddrs = {
+	(volatile DWORD*)0x4B8A88, (volatile float*)0x4CA870, (volatile float*)0x4CA858, (volatile float*)0x4CA86C,
+	(volatile DWORD*)0x4D255C, (volatile DWORD*)0x4D25D0, (volatile BYTE*)0x4B84C4,
+	0x407990, kVanillaCtorSig, sizeof(kVanillaCtorSig), 7,
+	0x408080, kVanillaDtorSig, sizeof(kVanillaDtorSig), 8, 3,
+	0x4081D0, kVanillaOnMessageSig, sizeof(kVanillaOnMessageSig),
+};
+static const GameAddrs kNetworkAddrs = {
+	(volatile DWORD*)0x5427CC, (volatile float*)0x530654, (volatile float*)0x53063C, (volatile float*)0x530650,
+	nullptr, nullptr, nullptr, // menu / campaign state not mapped for the network build yet
+	0x4AF680, kNetworkCtorSig, sizeof(kNetworkCtorSig), 5,
+	0x4B1310, kNetworkDtorSig, sizeof(kNetworkDtorSig), 7, -1,
+	0x4B0510, kNetworkOnMessageSig, sizeof(kNetworkOnMessageSig),
+};
+static const GameAddrs kNoAddrs = {}; // unknown build: every game memory access is skipped
+const GameAddrs* addrs = &kNoAddrs;
+
+// The in-game music toggle, read live so turning music off or on in the options takes effect immediately.
+bool CurrentCdState() { return addrs->cdToggle ? ((*addrs->cdToggle & 0xFF) != 0) : true; }
+
+float CurrentMasterVolume()
+{
+	if (!addrs->masterVol) return 1.0f;
+	float vol = *addrs->masterVol;
+	if (!(vol >= 0.0f)) return 0.0f; // also catches NaN
+	return vol > 1.0f ? 1.0f : vol;
+}
 
 // === Logging === //
 void Log(const char* fmt, ...)
@@ -96,132 +157,47 @@ static bool g_discordInitialized = false;
 enum GameState { STATE_MENU, STATE_HUMAN, STATE_MARTIAN, STATE_NETWORK, STATE_CDPLAYER };
 GameState g_lastGameState = (GameState)-1;
 
-enum Language { LANG_EN, LANG_FR, LANG_DE, LANG_IT, LANG_ES };
-Language currentLanguage;
+Language currentLanguage = LANG_EN;
 
-Language GetLanguage(DWORD pngSize) {
-	switch (pngSize) {
-		case 292567: return LANG_FR;
-		case 294349: return LANG_DE;
-		case 258919: return LANG_IT;
-		case 268939: return LANG_ES;
-		default:     return LANG_EN;
-	}
-}
+// Track names per language, then soundtrack (0 = Human, 1 = Martian), then CD tracks 2 - 5.
+// Discord expects UTF-8, the project is compiled with /utf-8 so these literals are stored as UTF-8.
+static const char* const kTrackNames[5][2][4] = {
+	{ // LANG_EN
+		{ "Dead London", "The Spirit of Man", "Brave New World", "The Eve of the War (Human)" },
+		{ "The Red Weed", "Horsell Common", "The Eve of the War (Martian)", "The Fighting Machine" },
+	},
+	{ // LANG_FR
+		{ "Londres Mort", "L'Esprit de l'Homme", "Un Monde Nouveau", "La Veille de la Guerre (Humain)" },
+		{ "L'Herbe Rouge", "Horsell Common", "La Veille de la Guerre (Martien)", "La Machine de Combat" },
+	},
+	{ // LANG_DE
+		{ "Totes London", "Der Geist des Menschen", "Schöne Neue Welt", "Der Vorabend des Krieges (Mensch)" },
+		{ "Das Rote Unkraut", "Horsell Common", "Der Vorabend des Krieges (Marsianisch)", "Die Kampfmaschine" },
+	},
+	{ // LANG_IT
+		{ "Londra Morta", "Lo Spirito dell'Uomo", "Un Mondo Nuovo", "La Vigilia della Guerra (Umano)" },
+		{ "L'Erba Rossa", "Horsell Common", "La Vigilia della Guerra (Marziano)", "La Macchina da Combattimento" },
+	},
+	{ // LANG_ES
+		{ "Londres Muerta", "El Espíritu del Hombre", "Un Mundo Nuevo", "La Víspera de la Guerra (Humano)" },
+		{ "La Hierba Roja", "Horsell Common", "La Víspera de la Guerra (Marciano)", "La Máquina de Combate" },
+	},
+};
 
-const char* langName;
+// Discord image keys for CD tracks 2 - 5 (cd_bd5 is used by both soundtracks)
+static const char* const kTrackImages[2][4] = {
+	{ "cd_bd3", "cd_bd7", "cd_bd2", "cd_bd5" }, // Human
+	{ "cd_bd6", "cd_bd5", "cd_bd4", "cd_bd1" }, // Martian
+};
 
 const char* GetTrackName() {
-	switch (currentLanguage) {
-	case LANG_EN:
-		if (!playerIsHuman) { // Human
-			switch (currentTrack) {
-				case 2: return "Dead London";					// cd_bd3
-				case 3: return "The Spirit of Man";				// cd_bd7
-				case 4: return "Brave New World";				// cd_bd2
-				case 5: return "The Eve of the War (Human)";	// cd_bd5 (image used twice)
-			}
-		}
-		else { // Martian
-			switch (currentTrack) {
-				case 2: return "The Red Weed";					// cd_bd6
-				case 3: return "Horsell Common";				// cd_bd5 (image used twice)
-				case 4: return "The Eve of the War (Martian)";	// cd_bd4
-				case 5: return "The Fighting Machine";			// cd_bd1
-			}
-		}
-	case LANG_FR:
-		if (!playerIsHuman) { // Human
-			switch (currentTrack) {
-				case 2: return "Londres Mort";
-				case 3: return "L'Esprit de l'Homme";
-				case 4: return "Un Monde Nouveau";
-				case 5: return "La Veille de la Guerre (Humain)";
-			}
-		}
-		else { // Martian
-			switch (currentTrack) {
-				case 2: return "L'Herbe Rouge";
-				case 3: return "Horsell Common";
-				case 4: return "La Veille de la Guerre (Martien)";
-				case 5: return "La Machine de Combat";
-			}
-		}
-	case LANG_DE:
-		if (!playerIsHuman) { // Human
-			switch (currentTrack) {
-				case 2: return "Totes London";
-				case 3: return "Der Geist des Menschen";
-				case 4: return "Schöne Neue Welt";
-				case 5: return "Der Vorabend des Krieges (Mensch)";
-			}
-		}
-		else { // Martian
-			switch (currentTrack) {
-				case 2: return "Das Rote Unkraut";
-				case 3: return "Horsell Common";
-				case 4: return "Der Vorabend des Krieges (Marsianisch)";
-				case 5: return "Die Kampfmaschine";
-			}
-		}
-	case LANG_IT:
-		if (!playerIsHuman) { // Human
-			switch (currentTrack) {
-				case 2: return "Londra Morta";
-				case 3: return "Lo Spirito dell'Uomo";
-				case 4: return "Un Mondo Nuovo";
-				case 5: return "La Vigilia della Guerra (Umano)";
-			}
-		}
-		else { // Martian
-			switch (currentTrack) {
-				case 2: return "L'Erba Rossa";
-				case 3: return "Horsell Common";
-				case 4: return "La Vigilia della Guerra (Marziano)";
-				case 5: return "La Macchina da Combattimento";
-			}
-		}
-	case LANG_ES:
-		if (!playerIsHuman) { // Human
-			switch (currentTrack) {
-				case 2: return "Londres Muerta";
-				case 3: return "El Espíritu del Hombre";
-				case 4: return "Un Mundo Nuevo";
-				case 5: return "La Víspera de la Guerra (Humano)";
-			}
-		}
-		else { // Martian
-			switch (currentTrack) {
-				case 2: return "La Hierba Roja";
-				case 3: return "Horsell Common";
-				case 4: return "La Víspera de la Guerra (Marciano)";
-				case 5: return "La Máquina de Combate";
-			}
-		}
-	}
-	// Fallback
-	return "Unknown Track";
+	if (currentTrack < 2 || currentTrack > 5 || currentLanguage < LANG_EN || currentLanguage > LANG_ES) return "Unknown Track";
+	return kTrackNames[currentLanguage][UseMartianAssets() ? 1 : 0][currentTrack - 2];
 }
 
 const char* GetTrackImage() {
-	if (!playerIsHuman) { // Human
-		switch (currentTrack) {
-			case 2: return "cd_bd3";
-			case 3: return "cd_bd7";
-			case 4: return "cd_bd2";
-			case 5: return "cd_bd5";
-		}
-	}
-	else { // Martian
-		switch (currentTrack) {
-			case 2: return "cd_bd6";
-			case 3: return "cd_bd5";
-			case 4: return "cd_bd4";
-			case 5: return "cd_bd1";
-		}
-	}
-	// Fallback
-	return "cd_bd1";
+	if (currentTrack < 2 || currentTrack > 5) return "cd_bd1";
+	return kTrackImages[UseMartianAssets() ? 1 : 0][currentTrack - 2];
 }
 
 void RefreshPresence(GameState newState) {
@@ -400,18 +376,9 @@ void RefreshPresence(GameState newState) {
 	if (pfnDiscord_UpdatePresence) pfnDiscord_UpdatePresence(&presence);
 }
 
-// TODO: this is NOT a fixed address yet - the CD Player menu object is
-// heap-allocated fresh each time the menu opens (see sub_407990), so there's
-// no static "this" pointer to hardcode. pCDMusicToggle (above) sits at a
-// fixed address and holds the *ID* of whichever menu is currently active;
-// a "current menu ID" field like that is often stored right next to a
-// "current menu object pointer" field in the same struct, so scanning the
-// DWORDs immediately around 0x4B8A88 (vanilla) / 0x5427CC (network) while
-// the CD Player menu is open is the most promising place to find it.
-// Once found, point this at that (possibly indirected) address.
-void* pCDPlayerMenuThis = nullptr;
-
-#define ADDR_STATE_255C  ((volatile DWORD*)0x4D255C)
+// Set by the CD Player menu constructor hook, cleared by the destructor hook. Non null exactly while the
+// CD Player menu is open, so it is also what decides whether the CD Player is showing.
+void* volatile pCDPlayerMenuThis = nullptr;
 
 // discord rpc poll
 DWORD lastPoll = 0;
@@ -428,8 +395,6 @@ void UpdateDiscordState() {
 		g_sessionStartTime = time(NULL);
 	}
 
-	Log("DEBUG: State Check - CDPlayerPtr: 0x%p, ADDR_STATE_255C: 0x%X", pCDPlayerMenuThis, *ADDR_STATE_255C);
-
 	// Determine Current State
 	GameState currentState;
 	if (pCDPlayerMenuThis != NULL) {
@@ -438,7 +403,7 @@ void UpdateDiscordState() {
 	}
 	// 0x90 return from credits sequence - end game or accessed via options menu
 	// 0x0 return to main menu from in-game
-	else if (*ADDR_STATE_255C == 0x90 || *ADDR_STATE_255C == 0x0) {
+	else if (addrs->menuState && (*addrs->menuState == 0x90 || *addrs->menuState == 0x0)) {
 		currentState = STATE_MENU;
 		Log("Main Menu State");
 	}
@@ -448,9 +413,8 @@ void UpdateDiscordState() {
 		currentState = STATE_NETWORK;
 		Log("Network State");
 	}
-	else if (*(volatile DWORD*)0x4D25D0 != 0) {
-		BYTE isHuman = *(volatile BYTE*)0x4B84C4;
-		if (isHuman == 1) {
+	else if (addrs->campaignActive && *addrs->campaignActive != 0 && addrs->humanCampaign) {
+		if (*addrs->humanCampaign == 1) {
 			currentState = STATE_HUMAN;
 			Log("Campaign State: Human (Detected via 0x4B84C4)");
 		}
@@ -516,6 +480,10 @@ void InitDiscordRPC() {
 	if (!pfnDiscord_Initialize || !pfnDiscord_UpdatePresence || !pfnDiscord_Shutdown || !pfnDiscord_RunCallbacks) {
 		FreeLibrary(hDiscordDLL);
 		hDiscordDLL = NULL;
+		pfnDiscord_Initialize = nullptr;
+		pfnDiscord_UpdatePresence = nullptr;
+		pfnDiscord_Shutdown = nullptr;
+		pfnDiscord_RunCallbacks = nullptr;
 		return;
 	}
 
@@ -528,13 +496,7 @@ void InitDiscordRPC() {
 	pfnDiscord_UpdatePresence(&presence);
 	g_discordInitialized = true;
 
-	DWORD pngSize = 0;
-	HANDLE hf = CreateFileA("credits.png", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-	if (hf != INVALID_HANDLE_VALUE) {
-		pngSize = GetFileSize(hf, NULL);
-		CloseHandle(hf);
-	}
-	currentLanguage = GetLanguage(pngSize);
+	currentLanguage = DetectLanguage(); // language.txt, then the size of credits.png
 }
 
 void ShutdownDiscordRPC() {
@@ -554,18 +516,10 @@ extern "C" DLLEXPORT DWORD WINAPI _imeGetTime(void) { return timeGetTime(); }
 // networking executable specific variables
 bool seekAfterOpen = false;
 DWORD lastPlayTime = 0;
-DWORD cdState = 1; // cd music toggle button state
-volatile bool isStopping = false;
 
 HWND notifyWindow = NULL;
 DWORD notifyDeviceID = FAKE_CD_ID;
 bool notifyPending = false;
-
-// Tracks whether the game currently believes the CD device is open.
-// The real MCI stack would reject SEEK/PLAY/STATUS on a closed device;
-// we never did, which lets the game's post-notify MCI_SEEK through when
-// it should have failed and triggered the game's own error handling.
-bool deviceOpen = false; // this boolean is never used and can be removed TODO
 
 // === Force-press the CD Player menu's own Stop button ===
 //
@@ -583,282 +537,176 @@ bool deviceOpen = false; // this boolean is never used and can be removed TODO
 // through MM_MCINOTIFY (0x3B9) - testing showed the retail build's handler
 // for that case is a dead stub (fires WM_COMMAND with wParam=3, which
 // matches none of the real button/track IDs and does nothing useful).
+//
+// VANILLA: sub_4081D0, vtable off_4A95D0 slot +0x1C. NETWORK: sub_4B0510, vtable off_51B1E0
+// slot +0x28 (the debug-style network build has a different vtable layout); it handles the same
+// 0x3B9 and 0x111 messages and the 0x80D3 button group, confirmed from its disassembly.
 #define CD_TRANSPORT_BUTTON_GROUP 0x80D3
 #define CD_BUTTON_STOP 2
 
 typedef int(__thiscall* CDPlayerOnMessage_t)(void* pThis, UINT uMsg, UINT wParam, UINT lParam);
-// VANILLA: sub_4081D0, confirmed directly. NETWORK: not yet known - the ctor
-// sets the object's vtable to off_51B1E0 (mov dword ptr [edx], offset off_51B1E0
-// in sub_4AF680), and vanilla's equivalent OnMessage lives at vtable slot +0x1C
-// (call dword ptr [edx+1Ch] in sub_4081D0's own MM_MCINOTIFY handler). So the
-// network build's OnMessage address is whatever DWORD sits at off_51B1E0+0x1C
-// in its .rdata - need that looked up before this will do anything on network.
-#define CD_PLAYER_ON_MESSAGE_ADDR_VANILLA 0x4081D0
-#define CD_PLAYER_ON_MESSAGE_ADDR_NETWORK 0x4B0510
-CDPlayerOnMessage_t CDPlayerOnMessage = nullptr;
+CDPlayerOnMessage_t CDPlayerOnMessage = nullptr; // only set once its signature has been verified
 
 void ForceStopButtonPress()
 {
-	if (!pCDPlayerMenuThis) {
+	void* menu = pCDPlayerMenuThis;
+	if (!menu) {
 		Log("ForceStopButtonPress: pCDPlayerMenuThis not set, skipping");
 		return;
 	}
 	if (!CDPlayerOnMessage) {
-		Log("ForceStopButtonPress: CDPlayerOnMessage address not set for this build, skipping");
+		Log("ForceStopButtonPress: CDPlayerOnMessage not verified for this build, skipping");
 		return;
 	}
-	Log("ForceStopButtonPress: invoking CDPlayerOnMessage(this=0x%p, WM_COMMAND, group=0x%X, STOP)", pCDPlayerMenuThis, CD_TRANSPORT_BUTTON_GROUP);
-	CDPlayerOnMessage(pCDPlayerMenuThis, 0x111 /* WM_COMMAND */, CD_TRANSPORT_BUTTON_GROUP, CD_BUTTON_STOP);
+	Log("ForceStopButtonPress: invoking CDPlayerOnMessage(this=0x%p, WM_COMMAND, group=0x%X, STOP)", menu, CD_TRANSPORT_BUTTON_GROUP);
+	CDPlayerOnMessage(menu, 0x111 /* WM_COMMAND */, CD_TRANSPORT_BUTTON_GROUP, CD_BUTTON_STOP);
 }
 
-// NOTE: the memory-scan approach that used to live here targeted pCDMusicToggle
-// (0x4B8A88 / 0x5427CC) on the theory that a "current menu ID" field is often
-// stored next to a "current menu object" pointer. Disassembly disproved the
-// premise entirely: pCDMusicToggle sits in a block of registry-default seeds
-// (volume slider defaults, the CD toggle default, and the literal "Sound\Volume"
-// key-path string right after it) - nothing to do with menu tracking. Tracing
-// the real CD_PLAYER_MENU_ID (0x803E) comparisons in sub_402B80 also ruled out
-// a simple polled global: that function receives the menu ID as a parameter in
-// eax, i.e. it's a dispatcher/factory, not something reading persistent state.
-// Next approach: hook the CD Player menu constructor directly and capture ecx
-// (== "this" under __thiscall) the moment it's called, rather than hunting
-// for a static pointer that may not exist.
+// === CD Player menu constructor / destructor hooks ===
 //
-// VANILLA: sub_407990 at 0x407990. Frame-omitted prologue; the opening SEH
-// setup (push -1; push offset SEH_407990) gives a clean 7-byte window that
-// never touches ECX.
+// The CD Player menu object is heap-allocated fresh each time the menu opens, so there is no static
+// pointer to it. Instead the constructor is hooked to capture ECX ("this" under __thiscall) and the
+// destructor is hooked to clear it again. Both are ordinary inline hooks: the overwritten prologue
+// bytes are copied into a trampoline followed by a jmp back, and the live function starts with a jmp
+// to our stub. Each target's bytes are verified first, so an unexpected build is left untouched.
 //
-// NETWORK: sub_4AF680 at 0x4AF680, confirmed via the network exe's own
-// disassembly - same role (builds the same 5 transport buttons with the same
-// 0x80D3 group ID and 0/1/2/3/5 sub-IDs as vanilla, confirming this is the
-// same WCdPlayer.cpp source compiled with different settings, not different
-// logic). Its prologue is a full debug-style frame (push ebp; mov ebp,esp;
-// push -1), which conveniently sums to exactly 5 bytes - a perfect jmp-hook
-// fit with no NOP padding needed. ECX isn't touched until the later
-// "mov [ebp+var_104], ecx", well after our overwritten region.
-//
-// Both are real inline hooks (read original bytes, build a trampoline that
-// runs them plus a jmp back, then overwrite the live function with a jmp to
-// our stub) - same category of technique as the VirtualProtect byte-patches
-// in Smackw32.cpp, just intercepting a call instead of patching static data.
-#define CD_PLAYER_MENU_CTOR_ADDR_VANILLA 0x407990
-#define CD_PLAYER_MENU_CTOR_ADDR_NETWORK 0x4AF680
-const int HOOK_LEN_VANILLA = 7; // "push -1" (2 bytes) + "push offset SEH_407990" (5 bytes)
-const int HOOK_LEN_NETWORK = 5; // "push ebp" (1) + "mov ebp,esp" (2) + "push -1" (2)
+// Both destructors are referenced only once in their executables (slot 0 of the CD Player vtable),
+// the identity check in the stub is kept as a safety net anyway.
 
-BYTE g_originalBytes[8]; // sized for the larger of the two hook lengths
-BYTE* g_trampoline = nullptr;
-int g_hookLen = 0;
+BYTE* g_ctorTrampoline = nullptr;
+BYTE* g_dtorTrampoline = nullptr;
+
+void StopAudio(); // forward declaration
+
+// Builds a trampoline for the first hookLen bytes of target and redirects target to stub.
+// relCallAt is the offset of a relative CALL inside the copied bytes that must be re-aimed (-1 for none).
+static BYTE* InstallJmpHook(DWORD targetAddress, const BYTE* sig, int sigLen, int hookLen, void* stub, int relCallAt, const char* name)
+{
+	if (!BytesMatch(targetAddress, sig, sigLen)) {
+		Log("%s: bytes at 0x%08X don't match the %s build, hook skipped", name, targetAddress, GameBuildName(gameBuild));
+		return nullptr;
+	}
+	BYTE* target = (BYTE*)targetAddress;
+	BYTE* trampoline = (BYTE*)VirtualAlloc(NULL, hookLen + 5, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	if (!trampoline) return nullptr;
+	memcpy(trampoline, target, hookLen);
+	if (relCallAt >= 0) {
+		// the copied CALL's displacement was computed for the original address
+		DWORD originalRel32;
+		memcpy(&originalRel32, target + relCallAt + 1, 4);
+		DWORD destination = (DWORD)(target + relCallAt + 5) + originalRel32;
+		DWORD newRel32 = destination - (DWORD)(trampoline + relCallAt + 5);
+		memcpy(trampoline + relCallAt + 1, &newRel32, 4);
+	}
+	trampoline[hookLen] = 0xE9; // jmp rel32 back to the rest of the original function
+	DWORD back = (DWORD)(target + hookLen) - (DWORD)(trampoline + hookLen + 5);
+	memcpy(trampoline + hookLen + 1, &back, 4);
+	FlushInstructionCache(GetCurrentProcess(), trampoline, hookLen + 5);
+
+	DWORD oldProtect;
+	if (!VirtualProtect(target, hookLen, PAGE_EXECUTE_READWRITE, &oldProtect)) {
+		VirtualFree(trampoline, 0, MEM_RELEASE);
+		return nullptr;
+	}
+	target[0] = 0xE9;
+	DWORD rel = (DWORD)stub - (DWORD)(target + 5);
+	memcpy(target + 1, &rel, 4);
+	for (int i = 5; i < hookLen; i++) target[i] = 0x90;
+	VirtualProtect(target, hookLen, oldProtect, &oldProtect);
+	FlushInstructionCache(GetCurrentProcess(), target, hookLen);
+	Log("%s: hooked %s build at 0x%08X", name, GameBuildName(gameBuild), targetAddress);
+	return trampoline;
+}
 
 void __declspec(naked) CDPlayerMenuCtor_HookStub()
 {
 	__asm {
-		push eax
-		mov eax, ecx        // ecx = "this" for the CD Player menu object being constructed
-		mov pCDPlayerMenuThis, eax
-		pop eax
-		jmp g_trampoline    // resume the original prologue exactly as if nothing happened
+		mov pCDPlayerMenuThis, ecx      // ecx = "this" for the CD Player menu object being constructed
+		jmp dword ptr [g_ctorTrampoline] // resume the original prologue exactly as if nothing happened
 	}
 }
 
-// === Hook the CD Player menu's destructor (both builds) ===
-// off_4A95D0 slot 0 = 0x00408080 (vanilla). off_51B1E0 slot 0 = 0x004B1310
-// (network). The vanilla symbol name (ios_base's own dtor) is almost certainly
-// an /OPT:ICF artifact - shared across many menu/UI classes, not unique to the
-// CD Player. So the hook MUST check identity before clearing anything; for any
-// other object being destroyed it falls through untouched.
-//
-// TECHNICAL NOTE: 
-// The hook patches the start of the destructor to allow StopAudio() to fire.
-// - Vanilla: Uses a trampoline to execute the original destructor logic.
-// - Network: Currently bypasses the trampoline and original destructor code entirely. 
-//   This causes a deliberate, negligible memory leak of the CDPlayerMenu object 
-//   on closure. This is NOT a buffer overflow; no data is written to adjacent 
-//   memory, and the object is simply abandoned on the heap until process exit.
-//   The stack imbalance (caused by skipping the original retn 4) is currently 
-//   stable because the calling convention for this menu does not crash when 
-//   the stack remains 4 bytes off.
-#define CD_PLAYER_MENU_DTOR_ADDR_VANILLA 0x00408080
-#define CD_PLAYER_MENU_DTOR_ADDR_NETWORK 0x004B1310
-const int DTOR_HOOK_LEN_VANILLA = 8;  // push esi(1) + mov esi,ecx(2) + call(5)
-const int DTOR_HOOK_LEN_NETWORK = 7;  // push ebp(1) + mov ebp,esp(2) + push ecx(1) + mov [ebp-4],ecx(3)
+// Called from the destructor stub with every register saved. The network build kept playing music after
+// leaving the CD Player, so its music is stopped here; vanilla stops it itself.
+void OnCDPlayerMenuDestroyed()
+{
+	pCDPlayerMenuThis = nullptr;
+	if (isNetworkVersion) StopAudio();
+}
 
-BYTE g_dtorOriginalBytesVanilla[8];
-BYTE g_dtorOriginalBytesNetwork[7];
-BYTE* g_dtorTrampoline = nullptr;
-BYTE* g_dtorTrampolineNetwork = nullptr;
-
+// Runs before the original destructor, which then runs in full (including its retn 4) via the trampoline.
 void __declspec(naked) CDPlayerMenuDtor_HookStub()
 {
 	__asm {
 		cmp ecx, pCDPlayerMenuThis
 		jne skip
-		mov pCDPlayerMenuThis, 0
-		skip:
-		jmp g_dtorTrampoline
+		pushad
+		pushfd
+		call OnCDPlayerMenuDestroyed
+		popfd
+		popad
+	skip:
+		jmp dword ptr [g_dtorTrampoline]
 	}
-}
-
-void StopAudio(); // forward declaration
-
-void CDPlayerMenuDtor_HookStub_Network()
-{
-	StopAudio(); // music audio was persisting when returning to the menu from the cd player
-	pCDPlayerMenuThis = NULL;
-}
-
-void InstallCDPlayerMenuDtorHook()
-{
-	BYTE* target = isNetworkVersion ? (BYTE*)CD_PLAYER_MENU_DTOR_ADDR_NETWORK : (BYTE*)CD_PLAYER_MENU_DTOR_ADDR_VANILLA;
-	int hookLen = isNetworkVersion ? DTOR_HOOK_LEN_NETWORK : DTOR_HOOK_LEN_VANILLA;
-
-	// Use the appropriate buffer based on the build type
-	BYTE* pBuffer = isNetworkVersion ? g_dtorOriginalBytesNetwork : g_dtorOriginalBytesVanilla;
-
-	memcpy(pBuffer, target, hookLen);
-
-	BYTE* trampoline = (BYTE*)VirtualAlloc(NULL, hookLen + 5, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-	memcpy(trampoline, pBuffer, hookLen); // Copy from the correct buffer
-
-	if (!isNetworkVersion) {
-		// Vanilla's copied region includes a relative "call std::ios_base::~ios_base"
-		// at +3 - its displacement was computed for the original address, so it must
-		// be recalculated for the trampoline's address. Network's window stops
-		// before its call entirely, so no relocation is needed there.
-		DWORD originalCallSite = (DWORD)(target + 3);
-		DWORD originalRel32;
-		memcpy(&originalRel32, target + 3 + 1, 4);
-		DWORD realDestination = originalCallSite + 5 + originalRel32;
-
-		DWORD trampolineCallSite = (DWORD)(trampoline + 3);
-		DWORD newRel32 = realDestination - (trampolineCallSite + 5);
-		memcpy(trampoline + 3 + 1, &newRel32, 4);
-	}
-
-	trampoline[hookLen] = 0xE9;
-	*(DWORD*)(trampoline + hookLen + 1) = (DWORD)(target + hookLen) - (DWORD)(trampoline + hookLen + 5);
-
-	if (isNetworkVersion) g_dtorTrampolineNetwork = trampoline;
-	else g_dtorTrampoline = trampoline;
-
-	DWORD oldProtect;
-	VirtualProtect(target, hookLen, PAGE_EXECUTE_READWRITE, &oldProtect);
-	target[0] = 0xE9;
-	*(DWORD*)(target + 1) = (DWORD)(isNetworkVersion ? (void*)&CDPlayerMenuDtor_HookStub_Network : (void*)&CDPlayerMenuDtor_HookStub) - (DWORD)(target + 5);
-	for (int i = 5; i < hookLen; i++) target[i] = 0x90;
-	VirtualProtect(target, hookLen, oldProtect, &oldProtect);
-
-	Log("InstallCDPlayerMenuDtorHook: hooked %s CD Player menu dtor at 0x%p", isNetworkVersion ? "network" : "vanilla", target);
 }
 
 void InstallCDPlayerMenuHook()
 {
-	BYTE* target = isNetworkVersion ? (BYTE*)CD_PLAYER_MENU_CTOR_ADDR_NETWORK : (BYTE*)CD_PLAYER_MENU_CTOR_ADDR_VANILLA;
-	g_hookLen = isNetworkVersion ? HOOK_LEN_NETWORK : HOOK_LEN_VANILLA;
-
-	if (!isNetworkVersion) {
-		CDPlayerOnMessage = (CDPlayerOnMessage_t)CD_PLAYER_ON_MESSAGE_ADDR_VANILLA;
+	if (!addrs->cdCtor) return;
+	g_ctorTrampoline = InstallJmpHook(addrs->cdCtor, addrs->cdCtorSig, addrs->cdCtorSigLen, addrs->cdCtorHookLen,
+		(void*)&CDPlayerMenuCtor_HookStub, -1, "CD Player menu constructor");
+	if (g_ctorTrampoline && BytesMatch(addrs->cdOnMessage, addrs->cdOnMessageSig, addrs->cdOnMessageSigLen)) {
+		CDPlayerOnMessage = (CDPlayerOnMessage_t)addrs->cdOnMessage;
 	}
-	else {
-		CDPlayerOnMessage = (CDPlayerOnMessage_t)CD_PLAYER_ON_MESSAGE_ADDR_NETWORK;
-	}
-	// else: left null until the network build's off_51B1E0+0x1C vtable slot is known.
+}
 
-	memcpy(g_originalBytes, target, g_hookLen);
-
-	// Trampoline = original bytes + a jmp back to right after them.
-	g_trampoline = (BYTE*)VirtualAlloc(NULL, g_hookLen + 5, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-	memcpy(g_trampoline, g_originalBytes, g_hookLen);
-	g_trampoline[g_hookLen] = 0xE9; // jmp rel32
-	*(DWORD*)(g_trampoline + g_hookLen + 1) = (DWORD)(target + g_hookLen) - (DWORD)(g_trampoline + g_hookLen + 5);
-
-	// Patch the live function: jmp rel32 to our stub, NOP-pad any remaining bytes.
-	DWORD oldProtect;
-	VirtualProtect(target, g_hookLen, PAGE_EXECUTE_READWRITE, &oldProtect);
-	target[0] = 0xE9;
-	*(DWORD*)(target + 1) = (DWORD)&CDPlayerMenuCtor_HookStub - (DWORD)(target + 5);
-	for (int i = 5; i < g_hookLen; i++) target[i] = 0x90;
-	VirtualProtect(target, g_hookLen, oldProtect, &oldProtect);
-
-	Log("InstallCDPlayerMenuHook: hooked %s CD Player menu ctor at 0x%p", isNetworkVersion ? "network" : "vanilla", target);
+void InstallCDPlayerMenuDtorHook()
+{
+	if (!addrs->cdDtor || !g_ctorTrampoline) return; // no point clearing a pointer that is never set
+	g_dtorTrampoline = InstallJmpHook(addrs->cdDtor, addrs->cdDtorSig, addrs->cdDtorSigLen, addrs->cdDtorHookLen,
+		(void*)&CDPlayerMenuDtor_HookStub, addrs->cdDtorRelCallAt, "CD Player menu destructor");
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 	if (fdwReason == DLL_PROCESS_ATTACH) {
 		if (debug) DeleteFileA("_inmm_log.txt");
-		char exeName[MAX_PATH];
-		GetModuleFileNameA(NULL, exeName, MAX_PATH);
-		isNetworkVersion = (strstr(exeName, "WoW_network") != NULL);
-		InstallCDPlayerMenuHook();
 		InitializeCriticalSection(&audioLock);
-		cdState = 1; // Default to ON
+		InitializeCriticalSection(&deviceLock);
+		gameBuild = DetectGameBuild();
+		isNetworkVersion = (gameBuild == BUILD_NETWORK);
+		addrs = gameBuild == BUILD_VANILLA ? &kVanillaAddrs : gameBuild == BUILD_NETWORK ? &kNetworkAddrs : &kNoAddrs;
+		Log("Detected %s build", GameBuildName(gameBuild));
+		InstallCDPlayerMenuHook();
 		HKEY hKey;
 		if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000\\Sound\\Volume", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
 			char buffer[256];
 			DWORD type = 0;
 			DWORD bufferSize;
 
-			auto ReadFloat = [&](const char* valueName, DWORD addr) {
-				bufferSize = sizeof(buffer);
-				if (RegQueryValueExA(hKey, valueName, NULL, &type, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS) {
-					buffer[min(bufferSize, (DWORD)255)] = '\0';
-					*(float*)addr = (float)atof(buffer);
+			// volumes are stored as "%f" strings by both builds
+			auto ReadVolume = [&](const char* valueName, volatile float* target) {
+				if (!target) return;
+				bufferSize = sizeof(buffer) - 1;
+				if (RegQueryValueExA(hKey, valueName, NULL, &type, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS && type == REG_SZ) {
+					buffer[min(bufferSize, (DWORD)(sizeof(buffer) - 1))] = '\0';
+					float value = (float)atof(buffer);
+					if (value >= 0.0f && value <= 1.0f) *target = value; // ignore anything out of range
 				}
-				};
-			if (isNetworkVersion)
-			{
-				pCDMusicToggle = (volatile BYTE*)0x5427CC;
-				ReadFloat("Master", 0x00530654);
-				ReadFloat("Ambient", 0x0053063C);
-				ReadFloat("Speech", 0x00530650);
+			};
+			ReadVolume("Master", addrs->masterVol);
+			ReadVolume("Ambient", addrs->ambientVol);
+			ReadVolume("Speech", addrs->speechVol);
 
-
-
-				pCDMusicToggle = (volatile BYTE*)0x5427CC;
-
-				// Direct helper to seed a integer address safely out of the registry
-				auto ReadDWORD = [&](const char* valueName, DWORD addr) {
-					bufferSize = sizeof(buffer);
-					if (RegQueryValueExA(hKey, valueName, NULL, &type, (LPBYTE)buffer, &bufferSize) == ERROR_SUCCESS) {
-						if (type == REG_DWORD) {
-							*(DWORD*)addr = *(DWORD*)buffer;
-						}
-						else if (type == REG_SZ) {
-							*(DWORD*)addr = (DWORD)atoi(buffer);
-						}
-					}
-				};
-
-				ReadDWORD("Master", 0x00530654);
-				ReadDWORD("Ambient", 0x0053063C);
-				ReadDWORD("Speech", 0x00530650);
+			DWORD value = 0;
+			DWORD valueSize = sizeof(DWORD);
+			if (RegQueryValueExA(hKey, "CD", NULL, &type, (LPBYTE)&value, &valueSize) == ERROR_SUCCESS && type == REG_DWORD && addrs->cdToggle) {
+				*addrs->cdToggle = value ? 1 : 0;
 			}
-			else
-			{
-				pCDMusicToggle = (volatile BYTE*)0x4B8A88;
-				ReadFloat("Master", 0x004CA870);
-				ReadFloat("Ambient", 0x004CA858);
-				ReadFloat("Speech", 0x004CA86C);
-			}
-
-			DWORD cdSize = sizeof(DWORD);
-			DWORD cdFocus = 1;
-			if (RegQueryValueExA(hKey, "CD", NULL, &type, (LPBYTE)&cdState, &cdSize) == ERROR_SUCCESS) {
-				// is cd state the same memory address as well?
-
-				if (isNetworkVersion)
-				{
-					// find network version memory addresses
-					*(int*)0x005427CC = (int)cdState;
-				}
-				else
-				{
-					*(int*)0x004B8A88 = (int)cdState;
-				}
-			}
-			if (RegQueryValueExA(hKey, "CD-Focus", NULL, &type, (LPBYTE)&cdFocus, &cdSize) == ERROR_SUCCESS) {
-				musicFocus = (bool)cdFocus;
+			value = 0;
+			valueSize = sizeof(DWORD);
+			if (RegQueryValueExA(hKey, "CD-Focus", NULL, &type, (LPBYTE)&value, &valueSize) == ERROR_SUCCESS && type == REG_DWORD) {
+				musicFocus = (value != 0);
 			}
 			RegCloseKey(hKey);
 		}
@@ -866,153 +714,237 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	else if (fdwReason == DLL_PROCESS_DETACH) {
 		// Volume Persistence (Master, Ambient, Speech, In-Game CD Music)
 		HKEY hKey;
-		if (RegCreateKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000\\Sound\\Volume",
+		if (addrs->masterVol && RegCreateKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000\\Sound\\Volume",
 			0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
 
-			char volBufferA[32];
-			char volBufferB[32];
-			char volBufferC[32];
-			DWORD cdState = (DWORD) * (int*)0x004B8A88;
-			if (isNetworkVersion)
-			{
-				// find network version memory addresses
-				//cdState = (DWORD) * (int*)0x004B8A88;
-				sprintf(volBufferA, "%f", *(float*)0x00530654);
-				sprintf(volBufferB, "%f", *(float*)0x0053063C);
-				sprintf(volBufferC, "%f", *(float*)0x00530650);
-			}
-			else
-			{
-				sprintf(volBufferA, "%f", *(float*)0x004CA870);
-				sprintf(volBufferB, "%f", *(float*)0x004CA858);
-				sprintf(volBufferC, "%f", *(float*)0x004CA86C);
-			}
-			// Master Volume
-			RegSetValueExA(hKey, "Master", 0, REG_SZ, (LPBYTE)volBufferA, (DWORD)(strlen(volBufferA) + 1));
-
-			// Ambient Volume
-			RegSetValueExA(hKey, "Ambient", 0, REG_SZ, (LPBYTE)volBufferB, (DWORD)(strlen(volBufferB) + 1));
-
-			// Speech Volume
-			RegSetValueExA(hKey, "Speech", 0, REG_SZ, (LPBYTE)volBufferC, (DWORD)(strlen(volBufferC) + 1));
+			auto WriteVolume = [&](const char* valueName, volatile float* source) {
+				if (!source) return;
+				float value = *source;
+				if (!(value >= 0.0f && value <= 1.0f)) return; // never persist garbage
+				char text[32];
+				sprintf_s(text, "%f", value);
+				RegSetValueExA(hKey, valueName, 0, REG_SZ, (LPBYTE)text, (DWORD)(strlen(text) + 1));
+			};
+			WriteVolume("Master", addrs->masterVol);
+			WriteVolume("Ambient", addrs->ambientVol);
+			WriteVolume("Speech", addrs->speechVol);
 
 			// In-Game CD Music
+			DWORD cdState = CurrentCdState() ? 1 : 0;
 			RegSetValueExA(hKey, "CD", 0, REG_DWORD, (const BYTE*)&cdState, sizeof(DWORD));
 
 			RegCloseKey(hKey);
 		}
-		DeleteCriticalSection(&audioLock);
-		ShutdownDiscordRPC();
+		// When the process is exiting (lpvReserved != NULL) the other threads are already gone and the OS frees
+		// everything, so only tidy up Discord when the DLL is being unloaded on purpose.
+		if (lpvReserved == NULL) ShutdownDiscordRPC();
 	}
 	return TRUE;
 }
 
-// Simple helper to get duration in milliseconds
-uint32_t GetWavDuration(const char* filename) {
-	std::ifstream file(filename, std::ios::binary);
-	if (!file.is_open()) return 0;
+// === Music playback ===
+//
+// The decoded track is held in memory and streamed to the wave device in small chunks. Refilling is done by
+// a dedicated audio thread that waits on the device's event (CALLBACK_EVENT): waveOut functions must not be
+// called from a CALLBACK_FUNCTION callback, and the device is never reset or closed while audioLock is held,
+// which is what could previously deadlock the game.
 
-	char buffer[44]; // Standard WAV header size
-	file.read(buffer, 44);
-
-	// ByteRate is at offset 28, Subchunk2Size (Data Size) is at offset 40
-	uint32_t byteRate = *reinterpret_cast<uint32_t*>(&buffer[28]);
-	uint32_t dataSize = *reinterpret_cast<uint32_t*>(&buffer[40]);
-
-	if (byteRate == 0) return 0;
-	return (uint32_t)((double)dataSize / byteRate * 1000);
-}
-
-#define CHUNK_SIZE 8192  // bytes per chunk � adjust for latency vs responsiveness
+#define CHUNK_SIZE 8192  // bytes per chunk - adjust for latency vs responsiveness
 #define NUM_BUFFERS 2    // double buffering
 
 WAVEHDR waveHdrs[NUM_BUFFERS] = {};
-HGLOBAL hWaveData[NUM_BUFFERS] = {};
-LPSTR pAudioData = nullptr;   // full decoded PCM
-DWORD audioDataSize = 0;
+static char g_chunks[NUM_BUFFERS][CHUNK_SIZE]; // only reused after the previous device has been fully closed
+std::vector<char> g_pcm;                       // the whole decoded track
 DWORD audioReadPos = 0;
 
-// StopAudio_Locked: must be called with audioLock already held.
-// Separating the locked body lets PlayWav_Locked reuse it without re-entering.
-static void StopAudio_Locked() {
-	/* // old code
-	if (hWaveOut) {
-		isStopping = true;        // tell callback to stop queueing
-		waveOutReset(hWaveOut);   // returns all pending buffers
-		for (int b = 0; b < NUM_BUFFERS; b++) {
-			if (waveHdrs[b].dwFlags & WHDR_PREPARED) {
-				waveOutUnprepareHeader(hWaveOut, &waveHdrs[b], sizeof(WAVEHDR));
-			}
-			if (hWaveData[b]) {
-				GlobalUnlock(hWaveData[b]);
-				GlobalFree(hWaveData[b]);
-				hWaveData[b] = nullptr;
-			}
-			waveHdrs[b] = {};
-		}
-		waveOutClose(hWaveOut);
-		hWaveOut = NULL;
-		isStopping = false;       // reset for next use
-	}
-	*/
-	HWAVEOUT hToClose = NULL;
-
-	EnterCriticalSection(&audioLock);
-	if (hWaveOut) {
-		isStopping = true;
-		hToClose = hWaveOut; // Copy the handle pointer
-		hWaveOut = NULL;     // Instantly clear it so other threads know it's dead
-	}
-	if (pAudioData) {
-		GlobalUnlock(pAudioData); // Ensure we unlock if we used GlobalLock
-		GlobalFree(pAudioData);
-		pAudioData = nullptr;
-	}
-	audioDataSize = 0;
-	audioReadPos = 0;
-
-	// new code
-	LeaveCriticalSection(&audioLock);
-
-	// Now perform the blocking OS teardown completely unprotected by the lock
-	if (hToClose) {
-		waveOutReset(hToClose); // Flushes buffers safely; callback can now grab audioLock if needed
-		for (int b = 0; b < NUM_BUFFERS; b++) {
-			if (waveHdrs[b].dwFlags & WHDR_PREPARED) {
-				waveOutUnprepareHeader(hToClose, &waveHdrs[b], sizeof(WAVEHDR));
-			}
-			if (hWaveData[b]) {
-				GlobalUnlock(hWaveData[b]);
-				GlobalFree(hWaveData[b]);
-				hWaveData[b] = nullptr;
-			}
-			waveHdrs[b] = {};
-		}
-		waveOutClose(hToClose);
-
-		EnterCriticalSection(&audioLock);
-		isStopping = false; // Reset flag safely
-		LeaveCriticalSection(&audioLock);
-	}
-}
-
-void StopAudio() {
-	EnterCriticalSection(&audioLock);
-	StopAudio_Locked();
-	LeaveCriticalSection(&audioLock);
-}
+HANDLE g_audioEvent = NULL;
+HANDLE g_audioThread = NULL;
+volatile bool g_audioThreadExit = false;
 
 HWND gameWindow = NULL;
 WNDPROC origWndProc = NULL;
 
 // Custom message used to marshal ForceStopButtonPress() onto the game's own
-// main thread. WaveOutCallback runs on a system-created multimedia thread, not
-// the game's thread - calling CDPlayerOnMessage directly from there crashed
-// the game, almost certainly because that internal handler assumes single-
-// threaded access with no locking. PostMessage here is the safe hand-off:
-// WndProcHook only ever runs on the same thread as the game's real message
-// loop, exactly like the existing WM_ACTIVATEAPP handling below already relies on.
+// main thread. The audio thread is not the game's thread - calling CDPlayerOnMessage
+// directly from there crashed the game, almost certainly because that internal handler
+// assumes single-threaded access with no locking. PostMessage here is the safe hand-off:
+// WndProcHook only ever runs on the same thread as the game's real message loop.
 #define WM_APP_FORCE_STOP_PRESS (WM_APP + 0x444)
+
+// Reads a 16-bit PCM WAV file into memory. Returns false (and leaves pcm empty) for anything else.
+static bool LoadWav(const char* path, WAVEFORMATEX& wfx, std::vector<char>& pcm)
+{
+	pcm.clear();
+	HMMIO hmmio = mmioOpenA((LPSTR)path, NULL, MMIO_READ | MMIO_ALLOCBUF);
+	if (!hmmio) return false;
+	bool ok = false;
+	MMCKINFO riff = {}, fmt = {}, data = {};
+	riff.fccType = mmioFOURCC('W', 'A', 'V', 'E');
+	fmt.ckid = mmioFOURCC('f', 'm', 't', ' ');
+	data.ckid = mmioFOURCC('d', 'a', 't', 'a');
+	if (mmioDescend(hmmio, &riff, NULL, MMIO_FINDRIFF) == MMSYSERR_NOERROR &&
+		mmioDescend(hmmio, &fmt, &riff, MMIO_FINDCHUNK) == MMSYSERR_NOERROR && fmt.cksize >= sizeof(PCMWAVEFORMAT)) {
+		ZeroMemory(&wfx, sizeof(wfx));
+		LONG want = (LONG)min(fmt.cksize, (DWORD)sizeof(PCMWAVEFORMAT)); // the fmt chunk of a PCM file is 16 bytes
+		if (mmioRead(hmmio, (HPSTR)&wfx, want) == want && wfx.wFormatTag == WAVE_FORMAT_PCM && wfx.wBitsPerSample == 16 &&
+			wfx.nChannels >= 1 && wfx.nBlockAlign > 0 && wfx.nAvgBytesPerSec > 0) {
+			wfx.cbSize = 0;
+			mmioAscend(hmmio, &fmt, 0);
+			if (mmioDescend(hmmio, &data, &riff, MMIO_FINDCHUNK) == MMSYSERR_NOERROR && data.cksize > 0 && data.cksize < 0x7FFFFFFF) {
+				pcm.resize(data.cksize);
+				ok = mmioRead(hmmio, pcm.data(), (LONG)data.cksize) == (LONG)data.cksize;
+			}
+		}
+	}
+	mmioClose(hmmio, 0);
+	if (!ok) pcm.clear();
+	return ok;
+}
+
+// Copies the next chunk into buffer b with the master volume applied and queues it. Call with audioLock held.
+static bool QueueBuffer_Locked(int b)
+{
+	if (!hWaveOut || audioReadPos >= g_pcm.size()) return false;
+	DWORD toWrite = min((DWORD)g_pcm.size() - audioReadPos, (DWORD)CHUNK_SIZE) & ~1u; // whole 16-bit samples
+	if (toWrite == 0) return false;
+	float vol = CurrentMasterVolume();
+	const int16_t* src = (const int16_t*)(g_pcm.data() + audioReadPos);
+	int16_t* dst = (int16_t*)waveHdrs[b].lpData;
+	DWORD samples = toWrite / sizeof(int16_t);
+	for (DWORD i = 0; i < samples; i++) {
+		int32_t s = (int32_t)(src[i] * vol);
+		if (s > 32767) s = 32767;
+		if (s < -32768) s = -32768;
+		dst[i] = (int16_t)s;
+	}
+	audioReadPos += toWrite;
+	waveHdrs[b].dwBufferLength = toWrite;
+	return waveOutWrite(hWaveOut, &waveHdrs[b], sizeof(WAVEHDR)) == MMSYSERR_NOERROR;
+}
+
+static DWORD WINAPI AudioThread(LPVOID)
+{
+	while (!g_audioThreadExit) {
+		WaitForSingleObject(g_audioEvent, 100); // signalled by the device when a buffer finishes
+		bool postStop = false;
+		EnterCriticalSection(&audioLock);
+		if (hWaveOut && !isPaused) {
+			// Force-press Stop once elapsed playback time reaches the current track's real length, so the
+			// game's own Stop logic (unlike the broken MM_MCINOTIFY path) runs when the track finishes.
+			DWORD elapsed = (dwStartTime > 0) ? GetTickCount() - dwStartTime : 0;
+			if (!forceStopFired && dwStartTime > 0 && currentTrackLength > 0 && elapsed >= currentTrackLength) {
+				forceStopFired = true;
+				postStop = true;
+				Log("Track finished (%lu ms elapsed / %lu ms length), posting WM_APP_FORCE_STOP_PRESS to main thread", elapsed, currentTrackLength);
+			}
+			bool anyQueued = false;
+			for (int b = 0; b < NUM_BUFFERS; b++) {
+				if (waveHdrs[b].dwFlags & WHDR_INQUEUE) anyQueued = true;
+				else if ((waveHdrs[b].dwFlags & WHDR_DONE) && QueueBuffer_Locked(b)) anyQueued = true;
+			}
+			if (!anyQueued && dwStartTime > 0) {
+				notifyPending = false;
+				dwStartTime = 0;
+				totalElapsedBeforePause = 0;
+				Log("Track %d finished naturally; reset timer locally (no MM_MCINOTIFY)", currentTrack);
+			}
+		}
+		HWND target = gameWindow;
+		LeaveCriticalSection(&audioLock);
+		if (postStop && target) PostMessage(target, WM_APP_FORCE_STOP_PRESS, 0, 0);
+	}
+	return 0;
+}
+
+// Started from the game thread on first playback, never from DllMain.
+static bool EnsureAudioThread()
+{
+	if (g_audioThread) return true;
+	if (!g_audioEvent) g_audioEvent = CreateEventA(NULL, FALSE, FALSE, NULL);
+	if (!g_audioEvent) return false;
+	g_audioThread = CreateThread(NULL, 0, AudioThread, NULL, 0, NULL);
+	return g_audioThread != NULL;
+}
+
+// Takes ownership of the current device and track data. Call with audioLock held, then pass the
+// result to TeardownAudio after releasing the lock.
+static HWAVEOUT DetachAudio_Locked()
+{
+	HWAVEOUT detached = hWaveOut;
+	hWaveOut = NULL; // the audio thread ignores everything once this is cleared
+	std::vector<char>().swap(g_pcm); // free the track
+	audioReadPos = 0;
+	return detached;
+}
+
+// Blocking device teardown. Must not be called with audioLock held. Call with deviceLock held.
+static void TeardownAudio(HWAVEOUT device)
+{
+	if (!device) return;
+	waveOutReset(device); // returns every queued buffer
+	for (int b = 0; b < NUM_BUFFERS; b++) {
+		if (waveHdrs[b].dwFlags & WHDR_PREPARED) waveOutUnprepareHeader(device, &waveHdrs[b], sizeof(WAVEHDR));
+		waveHdrs[b] = {};
+	}
+	waveOutClose(device);
+}
+
+void StopAudio() {
+	EnterCriticalSection(&deviceLock);
+	EnterCriticalSection(&audioLock);
+	HWAVEOUT device = DetachAudio_Locked();
+	LeaveCriticalSection(&audioLock);
+	TeardownAudio(device);
+	LeaveCriticalSection(&deviceLock);
+}
+
+static void PlayWav(const char* path) {
+	StopAudio();
+
+	WAVEFORMATEX wfx = {};
+	std::vector<char> pcm;
+	if (!LoadWav(path, wfx, pcm)) { // read the file without holding any lock
+		Log("PlayWav: %s is missing or not 16-bit PCM", path);
+		EnterCriticalSection(&audioLock);
+		dwStartTime = 0;
+		currentTrackLength = 0;
+		LeaveCriticalSection(&audioLock);
+		return;
+	}
+	if (!EnsureAudioThread()) return;
+
+	EnterCriticalSection(&deviceLock);
+	EnterCriticalSection(&audioLock);
+	HWAVEOUT stale = DetachAudio_Locked(); // in case another play started while the file was loading
+	LeaveCriticalSection(&audioLock);
+	TeardownAudio(stale);
+
+	EnterCriticalSection(&audioLock);
+	HWAVEOUT device = NULL;
+	if (waveOutOpen(&device, WAVE_MAPPER, &wfx, (DWORD_PTR)g_audioEvent, 0, CALLBACK_EVENT) == MMSYSERR_NOERROR) {
+		g_pcm.swap(pcm);
+		audioReadPos = 0;
+		currentTrackLength = (uint32_t)((double)g_pcm.size() / wfx.nAvgBytesPerSec * 1000.0);
+		hWaveOut = device;
+		for (int b = 0; b < NUM_BUFFERS; b++) {
+			waveHdrs[b] = {};
+			waveHdrs[b].lpData = g_chunks[b];
+			waveHdrs[b].dwBufferLength = CHUNK_SIZE;
+			waveOutPrepareHeader(device, &waveHdrs[b], sizeof(WAVEHDR));
+			QueueBuffer_Locked(b); // prime both buffers
+		}
+		dwStartTime = GetTickCount();
+		totalElapsedBeforePause = 0;
+		isPaused = false;
+	}
+	else {
+		Log("PlayWav: waveOutOpen failed for %s", path);
+		dwStartTime = 0;
+		currentTrackLength = 0;
+	}
+	LeaveCriticalSection(&audioLock);
+	LeaveCriticalSection(&deviceLock);
+}
 
 // lastFocusEventTick is written only inside audioLock (in WndProcHook) and read
 // only inside audioLock (in _ciSendCommandA MCI_STOP), so no separate guard needed.
@@ -1038,8 +970,8 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	// --- IN-GAME MUSIC OVERRIDE ---
 	// If the user disabled music in the UI, kill any active audio and ignore all MCI spam.
 	// EXCEPTION: If the CD Player menu is currently open, allow MCI commands to pass through.
-	if ((int)cdState == 0 && *pCDMusicToggle != CD_PLAYER_MENU_ID) {
-		StopAudio();
+	if (!CurrentCdState() && pCDPlayerMenuThis == NULL) {
+		if (hWaveOut) StopAudio(); // unlocked read is only a hint, StopAudio re-checks under the lock
 		return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
 	}
 	if (msg == WM_ACTIVATEAPP) {
@@ -1059,7 +991,7 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		else {
 			Log("HOOK: Focus Gained");
-			// Only restart if we still have a valid handle � PlayWav may have
+			// Only restart if we still have a valid handle - PlayWav may have
 			// raced ahead and already opened a new one.
 			if (hWaveOut && isPaused && !musicFocus) {
 				isPaused = false;
@@ -1079,129 +1011,15 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
 }
 
-void CALLBACK WaveOutCallback(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2)
-{
-	if (uMsg != WOM_DONE) return;
-	if (isStopping) return;  // bail out during stop/cleanup
-	WAVEHDR* hdr = (WAVEHDR*)dwParam1;
-
-	EnterCriticalSection(&audioLock);
-
-	// Force-press Stop once elapsed playback time reaches the current track's
-	// real length, so the game's own Stop logic (which we've confirmed works
-	// cleanly, unlike the broken MM_MCINOTIFY path) runs exactly when the
-	// track would naturally finish.
-	DWORD elapsed = (dwStartTime > 0) ? GetTickCount() - dwStartTime : 0;
-	if (!forceStopFired && dwStartTime > 0 && elapsed >= currentTrackLength) {
-		forceStopFired = true;
-		Log("Track finished (%lu ms elapsed / %lu ms length), posting WM_APP_FORCE_STOP_PRESS to main thread", elapsed, currentTrackLength);
-		LeaveCriticalSection(&audioLock);
-		if (gameWindow) PostMessage(gameWindow, WM_APP_FORCE_STOP_PRESS, 0, 0);
-		return;
-	}
-	
-	if (audioReadPos >= audioDataSize || !hWaveOut) {
-		notifyPending = false;
-		dwStartTime = 0;
-		totalElapsedBeforePause = 0;
-		isPaused = false;
-		LeaveCriticalSection(&audioLock);
-
-		Log("Track %d finished naturally; reset timer locally (no MM_MCINOTIFY)", currentTrack);
-		return;
-	}
-
-	DWORD remaining = audioDataSize - audioReadPos;
-	DWORD toWrite = min(remaining, (DWORD)CHUNK_SIZE);
-
-	// === MULTI-BUILD SAFE VOLUME EVALUATION ===
-	float vol = 1.0f;
-	if (isNetworkVersion) {
-		// Read as a float directly matching your DllMain ReadFloat setup
-		vol = *(float*)0x00530654;
-
-		// Defensive check: If IDA was right and the engine treats this as a 0-100 integer,
-		// a value greater than 1.0f means we need to scale it down to a 0.0-1.0 float.
-		if (vol > 1.0f) {
-			DWORD rawIntVol = *(DWORD*)0x00530654;
-			vol = (float)rawIntVol / 100.0f;
-		}
-	}
-	else {
-		vol = *(float*)0x004CA870;
-	}
-
-	// Safety clamping bounds
-	if (vol > 1.0f) vol = 1.0f;
-	if (vol < 0.0f) vol = 0.0f;
-
-	// Copy and scale into the buffer
-	int16_t* src = (int16_t*)(pAudioData + audioReadPos);
-	int16_t* dst = (int16_t*)hdr->lpData;
-	DWORD samples = toWrite / sizeof(int16_t);
-	for (DWORD i = 0; i < samples; i++) {
-		int32_t s = (int32_t)(src[i] * vol);
-		if (s > 32767) s = 32767;
-		if (s < -32768) s = -32768;
-		dst[i] = (int16_t)s;
-	}
-
-	audioReadPos += toWrite;
-	hdr->dwBufferLength = toWrite;
-	waveOutPrepareHeader(hWaveOut, hdr, sizeof(WAVEHDR));
-	waveOutWrite(hWaveOut, hdr, sizeof(WAVEHDR));
-	LeaveCriticalSection(&audioLock);
-}
-
-static void PlayWav_Locked(const char* path) {
-	StopAudio_Locked();
-
-	HMMIO hmmio = mmioOpenA((LPSTR)path, NULL, MMIO_READ);
-	if (!hmmio) return;
-
-	MMCKINFO riff = {}, fmt = {}, data = {};
-	riff.fccType = mmioFOURCC('W', 'A', 'V', 'E');
-	mmioDescend(hmmio, &riff, NULL, MMIO_FINDRIFF);
-	fmt.ckid = mmioFOURCC('f', 'm', 't', ' ');
-	mmioDescend(hmmio, &fmt, &riff, MMIO_FINDCHUNK);
-	WAVEFORMATEX wfx = {};
-	mmioRead(hmmio, (HPSTR)&wfx, sizeof(WAVEFORMATEX));
-	mmioAscend(hmmio, &fmt, 0);
-	data.ckid = mmioFOURCC('d', 'a', 't', 'a');
-	mmioDescend(hmmio, &data, &riff, MMIO_FINDCHUNK);
-
-	// Load full PCM into pAudioData
-	if (pAudioData) { GlobalFree(pAudioData); pAudioData = nullptr; }
-	HGLOBAL hRaw = GlobalAlloc(GMEM_MOVEABLE, data.cksize);
-	pAudioData = (LPSTR)GlobalLock(hRaw);
-	mmioRead(hmmio, pAudioData, data.cksize);
-	mmioClose(hmmio, 0);
-	audioDataSize = data.cksize;
-	audioReadPos = 0;
-
-	// Open with callback
-	waveOutOpen(&hWaveOut, WAVE_MAPPER, &wfx,
-		(DWORD_PTR)WaveOutCallback, 0, CALLBACK_FUNCTION);
-
-	// Allocate chunk buffers and prime both
-	for (int b = 0; b < NUM_BUFFERS; b++) {
-		hWaveData[b] = GlobalAlloc(GMEM_MOVEABLE, CHUNK_SIZE);
-		waveHdrs[b].lpData = (LPSTR)GlobalLock(hWaveData[b]);
-		waveHdrs[b].dwBufferLength = CHUNK_SIZE;
-		// Prime by calling the callback logic directly
-		WaveOutCallback(hWaveOut, WOM_DONE, 0, (DWORD_PTR)&waveHdrs[b], 0);
-	}
-}
-
 extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR fdwCommand, DWORD_PTR dwParam)
 {
-	Log("IN: uMsg=0x%X fdwCommand=0x%llX deviceOpen=%d", uMsg, (unsigned long long)fdwCommand, deviceOpen);
+	Log("IN: uMsg=0x%X fdwCommand=0x%llX", uMsg, (unsigned long long)fdwCommand);
 
 	// --- IN-GAME MUSIC OVERRIDE ---
 	// If the user disabled music in the UI, kill any active audio and ignore all MCI spam.
 	// EXCEPTION: If the CD Player menu is currently open, allow MCI commands to pass through.
-	if ((int)cdState == 0 && *pCDMusicToggle != CD_PLAYER_MENU_ID) {
-		StopAudio();
+	if (!CurrentCdState() && pCDPlayerMenuThis == NULL) {
+		if (hWaveOut) StopAudio();
 		return 0;
 	}
 
@@ -1223,8 +1041,8 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 
 		// Blocks stop commands fired within 250ms of a physical mouse click - when pressing resume game
 		// (Only if the CD Player menu isn't currently open and active)
-		bool isCDPlayerOpen = (pCDMusicToggle != nullptr && *pCDMusicToggle == CD_PLAYER_MENU_ID);
-		if (currentTick - lastClickTick < 250 && !isCDPlayerOpen && cdState == 1) {
+		bool isCDPlayerOpen = (pCDPlayerMenuThis != NULL);
+		if (currentTick - lastClickTick < 250 && !isCDPlayerOpen && CurrentCdState()) {
 			Log("MCI_STOP: Suppressed via Mouse Click timing latch (%lu ms delta). Music plays on.", currentTick - lastClickTick);
 			LeaveCriticalSection(&audioLock);
 			return 0;
@@ -1245,10 +1063,9 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		dwStartTime = 0;
 		totalElapsedBeforePause = 0;
 		isPaused = false;
-		notifyPending = false; //
-		deviceOpen = false;
-		StopAudio_Locked();
+		notifyPending = false;
 		LeaveCriticalSection(&audioLock);
+		StopAudio(); // tears the device down without holding audioLock
 		Log("MCI_STOP/MCI_CLOSE");
 		return 0;
 	}
@@ -1256,8 +1073,9 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	// 3. SEEK
 	if (uMsg == MCI_SEEK) {
 		LPMCI_SEEK_PARMS lpSeek = (LPMCI_SEEK_PARMS)dwParam;
-		// currentTrack is only written here and read in MCI_PLAY/STATUS � both on
-		// the same game thread � so no lock needed for this assignment.
+		if (!lpSeek) return 0;
+		// currentTrack is only written here and read in MCI_PLAY/STATUS - both on
+		// the same game thread - so no lock needed for this assignment.
 		currentTrack = (int)lpSeek->dwTo;
 		if (isNetworkVersion) seekAfterOpen = true;
 		Log("MCI_SEEK to: %d", (int)lpSeek->dwTo);
@@ -1288,7 +1106,6 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		}
 		lastOpenTime = GetTickCount();
 		if (isNetworkVersion) seekAfterOpen = false;
-		deviceOpen = true;
 		LeaveCriticalSection(&audioLock);
 
 		LPMCI_OPEN_PARMS lpOpen = (LPMCI_OPEN_PARMS)dwParam;
@@ -1303,8 +1120,8 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		EnterCriticalSection(&audioLock);
 		// Record whether the caller wants MM_MCINOTIFY when this track ends.
 		// MCI_PLAY_PARMS.dwCallback holds the window handle when MCI_NOTIFY is set.
-		if (fdwCommand & MCI_NOTIFY) {
-			LPMCI_PLAY_PARMS lpPlay = (LPMCI_PLAY_PARMS)dwParam;
+		LPMCI_PLAY_PARMS lpPlay = (LPMCI_PLAY_PARMS)dwParam;
+		if ((fdwCommand & MCI_NOTIFY) && lpPlay) {
 			notifyWindow = (HWND)lpPlay->dwCallback;
 			notifyDeviceID = (DWORD)IDDevice;
 			notifyPending = true;
@@ -1320,55 +1137,40 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 			return 0;
 		}
 		Log("MCI_PLAY: Initializing track %d", currentTrack);
-		forceStopFired = false; // allow the test threshold to fire again for this track
-		// only play track values within range to prevent seeking to tracks that dont exist
+		forceStopFired = false; // allow the end-of-track Stop press to fire again for this track
 
 		if (isNetworkVersion) {
 			lastPlayTime = GetTickCount();
 			Log("MCI_PLAY Tick: %d", lastPlayTime);
 		}
 
-		if (currentTrack >= 2 && currentTrack <= 5) {
-			if (isPaused) {
-				// Resume: hWaveOut is still valid (we hold the lock, nobody can close it)
-				isPaused = false;
-				dwStartTime = GetTickCount() - totalElapsedBeforePause;
-				waveOutRestart(hWaveOut);
-			}
-			else {
-				char path[MAX_PATH];
-				std::string newFolder = playerIsHuman ? "-Martian" : "-Human";
-				wsprintfA(path, "Music%s\\%02d Track%02d.wav", newFolder.c_str(), currentTrack, currentTrack);
-				currentTrackLength = GetWavDuration(path);
-				dwStartTime = GetTickCount();
-				// PlayWav_Locked opens the new handle inside the lock, so WndProcHook
-				// can never observe the window between StopAudio and waveOutWrite.
-				PlayWav_Locked(path);
-			}
+		// only play track values within range to prevent seeking to tracks that dont exist
+		if (currentTrack < 2 || currentTrack > 5) {
+			LeaveCriticalSection(&audioLock);
+			return 0;
 		}
+		if (isPaused && hWaveOut) {
+			// Resume: hWaveOut is still valid (we hold the lock, nobody can close it)
+			isPaused = false;
+			dwStartTime = GetTickCount() - totalElapsedBeforePause;
+			waveOutRestart(hWaveOut);
+			LeaveCriticalSection(&audioLock);
+			return 0;
+		}
+		isPaused = false;
+		int track = currentTrack;
 		LeaveCriticalSection(&audioLock);
+
+		char path[MAX_PATH];
+		wsprintfA(path, "Music%s\\%02d Track%02d.wav", UseMartianAssets() ? "-Martian" : "-Human", track, track);
+		PlayWav(path); // loads the file and opens the device without holding audioLock
 		return 0;
 	}
 
 	// 6. STATUS
 	if (uMsg == MCI_STATUS) {
 		if (hWaveOut) {
-			float liveVolume = 1.0f;
-			if (isNetworkVersion) {
-				// Read the true integer from memory and map it to a 0.0 to 1.0 scale
-				DWORD rawIntVol = *(DWORD*)0x00530654;
-				liveVolume = (float)rawIntVol / 100.0f;
-
-				// Safety clamp to prevent accidental amplification errors
-				if (liveVolume > 1.0f) liveVolume = 1.0f;
-				if (liveVolume < 0.0f) liveVolume = 0.0f;
-			}
-			else {
-				liveVolume = *(float*)0x004CA870;
-			}
-			// FORCE a value just to see if the hardware responds at all
-			// If you hardcode this to 0.1f and the music stays loud, 
-			// then waveOutSetVolume is being ignored by the OS.
+			float liveVolume = CurrentMasterVolume();
 			static float lastVol = -1.0f;
 			if (liveVolume != lastVol) {
 				Log("Volume Change Detected in Memory: %f", liveVolume);
@@ -1380,12 +1182,13 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 			}
 		}
 		LPMCI_STATUS_PARMS lpStatus = (LPMCI_STATUS_PARMS)dwParam;
+		if (!lpStatus) return 0;
 		if (lpStatus->dwItem == MCI_STATUS_POSITION) {
 			// Read dwStartTime and currentTrackLength inside the lock so a concurrent
 			// MCI_STOP can't zero dwStartTime mid-calculation and produce a wrapped
 			// elapsed value.
 			EnterCriticalSection(&audioLock);
-			DWORD elapsed = (dwStartTime > 0) ? GetTickCount() - dwStartTime : 0;
+			DWORD elapsed = (dwStartTime > 0) ? (isPaused ? totalElapsedBeforePause : GetTickCount() - dwStartTime) : 0;
 			DWORD trackLen = currentTrackLength;
 			LeaveCriticalSection(&audioLock);
 
@@ -1401,22 +1204,13 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 		else if (lpStatus->dwItem == MCI_STATUS_CURRENT_TRACK) {
 			lpStatus->dwReturn = currentTrack;
 		}
-		else if (lpStatus->dwItem == MCI_STATUS_LENGTH) {
-			/* // stop counter? progress? something
-			DWORD totalSeconds = currentTrackLength / 1000;
-			DWORD minutes = totalSeconds / 60;
-			DWORD seconds = totalSeconds % 60;
-			lpStatus->dwReturn = MCI_MAKE_TMSF(currentTrack, minutes, seconds, 0);
-			*/ // pause counter on focus lost / resume on regained?
-			//Log("MCI_STATUS_LENGTH %d", lpStatus->dwReturn);
-		}
 		return 0;
 	}
 
 	// 7. PAUSE
 	if (uMsg == MCI_PAUSE) {
 		EnterCriticalSection(&audioLock);
-		if (!isPaused) {
+		if (!isPaused && hWaveOut) {
 			totalElapsedBeforePause = GetTickCount() - dwStartTime;
 			isPaused = true;
 			waveOutPause(hWaveOut);

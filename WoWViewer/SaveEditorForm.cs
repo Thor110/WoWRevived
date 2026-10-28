@@ -46,7 +46,9 @@ namespace WoWViewer
         private HashSet<uint> usedSeloSeqs = new HashSet<uint>();
         private uint maxSeloSeq = 0;
         private SectorData? currentSector = null;
-        private RegistryKey tweakKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true)!;
+        // the game is 32-bit, so its settings are in the 32-bit registry view (WOW6432Node on 64-bit Windows)
+        private RegistryKey tweakKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
+            .OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true)!;
         private int unitsValue;
         private int boatsValue;
         private Reusables loadText = new Reusables();

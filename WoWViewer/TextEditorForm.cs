@@ -9,7 +9,6 @@ namespace WoWViewer
         private static readonly Encoding Latin1 = Encoding.GetEncoding("iso-8859-1");
         private static string inputPath = "TEXT.ojd";
         private bool cancelOpenNewFile;
-        private int entryCount = 1397; // there are only 0-1396 entries
         public TextEditorForm()
         {
             InitializeComponent();
@@ -95,32 +94,30 @@ namespace WoWViewer
         // save file button
         private void button1_Click(object sender, EventArgs e)
         {
-            if(!checkSaveFileExists()) { return; } // user deleted the file while editing
-            byte[] data = File.ReadAllBytes(inputPath); // read the file into a byte array
-            using (FileStream fs = new FileStream(inputPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            if (!checkSaveFileExists()) { return; } // user deleted the file while editing
+            byte[] output;
+            try { output = Reusables.SerializeEntries(File.ReadAllBytes(inputPath), entries.Select(entry => entry.Name).ToList()); }
+            catch (InvalidDataException ex)
             {
-                int offset = 0x289; // original header starts here
-                fs.Write(data, 0, offset); // write original header 0x0 - 0x289
-                for (int i = 0; i < entryCount; i++) // total entry count of 1396
+                MessageBox.Show(ex.Message + "\n\nNothing has been saved.", "Save Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            // write to a temporary file first and swap it in, so a failure can never leave a truncated TEXT.ojd behind
+            string tempPath = inputPath + ".tmp";
+            File.WriteAllBytes(tempPath, output);
+            File.Replace(tempPath, inputPath, inputPath + ".bak");
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Edited)
                 {
-                    byte[] stringBytes = Latin1.GetBytes(entries[i].Name.Replace("\r\n", "\\n").Replace("\r", "\\n").Replace("\n", "\\n")); // replace actual new line with \n so the game can read it
-                    fs.Write(data, offset, 8); // write the original data (8 bytes)
-                    fs.Write(BitConverter.GetBytes((ushort)(stringBytes.Length + 1)), 0, 2); // write the new string length (2 bytes)
-                    fs.Write(stringBytes, 0, stringBytes.Length); // write new or original string
-                    string raw = backup[i].Name.Replace("\r\n", "\\n").Replace("\r", "\\n").Replace("\n", "\\n"); // normalise the string to ensure it is the same as the original
-                    offset = offset + raw.Length + 10; // use backup name first to find correct offset in data
-                    if (entries[i].Edited)
-                    {
-                        backup[i].Name = entries[i].Name; // update backup entries
-                        entries[i].Edited = false; // reset edited flag
-                    }
+                    backup[i].Name = entries[i].Name; // update backup entries
+                    entries[i].Edited = false; // reset edited flag
                 }
-                fs.WriteByte(0x00); // write final byte at the end of the file which is always 0x00
             }
             reFilter(); // re filter to redraw the list box and remove the changes caused by the edited flag
             button1.Enabled = false;
             button4.Enabled = false;
-            MessageBox.Show("TEXT.ojd updated successfully.", "Save Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("TEXT.ojd updated successfully. The previous version was kept as TEXT.ojd.bak.", "Save Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         // filter by faction
         private void radioButton1_CheckedChanged(object sender, EventArgs e) { filterByFaction(0x00); } // Martian
@@ -154,9 +151,9 @@ namespace WoWViewer
         {
             using (StreamWriter log = new StreamWriter("TEXT.OJD.txt", false, Latin1))
             {
-                for (int i = 0; i < entryCount; i++) // there are only 1396 entries
+                for (int i = 0; i < entries.Count; i++) // 1396 entries in the original files, 1397 with the added Credits entry
                 {
-                    log.WriteLine($"{i:D4} [{getFaction(entries[i].Faction)}] : {entries[i].Name.Replace("\r\n", "\\n").Replace("\r", "\\n").Replace("\n", "\\n")}");
+                    log.WriteLine($"{i:D4} [{getFaction(entries[i].Faction)}] : {Reusables.ToGameString(entries[i].Name)}");
                 }
             }
             MessageBox.Show("TEXT.OJD.TXT file saved in the game directory.");
@@ -176,14 +173,14 @@ namespace WoWViewer
                 if (openFileDialog.ShowDialog() != DialogResult.OK) { return; }
                 else { filePath = openFileDialog.FileName; } // this is wrong?
             }
-            var lines = File.ReadLines(filePath, Latin1);
-            if (lines.Count() < entryCount) // check the line count matches before updating so there is no need to reparse the original TEXT.ojd file
+            var lines = File.ReadLines(filePath, Latin1).ToList();
+            if (lines.Count < entries.Count) // check the line count matches before updating so there is no need to reparse the original TEXT.ojd file
             {
                 MessageBox.Show("Error importing TEXT.OJD.TXT file, please check the file and try again.", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
             int count = 0;
-            foreach (var line in lines)
+            foreach (var line in lines.Take(entries.Count)) // ignore any extra lines rather than running past the entry list
             {
                 string name = string.Join(" ", line.Split(' ').Skip(3)).Replace("\\n", "\n");
                 if(name != entries[count].Name) { entries[count].Edited = true; } // mark the entry as edited

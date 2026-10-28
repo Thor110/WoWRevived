@@ -6,17 +6,16 @@ namespace WoWLauncher
     public partial class Form2 : Form
     {
         private bool config;
-        private RegistryKey mainKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000", true)!;
-        private RegistryKey tweakKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Tweak", true)!;
-        private RegistryKey battleKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\BattleMap", true)!;
-        private RegistryKey researchKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Research", true)!;
-        private RegistryKey debugKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug", true)!;
+        private RegistryKey mainKey = GameRegistry.Open()!;
+        private RegistryKey tweakKey = GameRegistry.Open(@"Tweak")!;
+        private RegistryKey battleKey = GameRegistry.Open(@"BattleMap")!;
+        private RegistryKey researchKey = GameRegistry.Open(@"Research")!;
+        private RegistryKey debugKey = GameRegistry.Open(@"Debug")!;
         private byte value = 0x0C;
         public Form2()
         {
             InitializeComponent();
             ApplyLocalization();
-            RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             InitializeRegistry();
             ToolTip tooltip = new ToolTip();
             ToolTipHelper.EnableTooltips(this.Controls, tooltip, new Type[] { typeof(Label), typeof(Button) });
@@ -64,42 +63,45 @@ namespace WoWLauncher
         }
         /// This method compares the registry entry with the value and sets it if they are different.
         private void registryCompare(RegistryKey key, string entry, string value) { if ((string)key.GetValue(entry)! != value) { key.SetValue(entry, value); config = true; } }
+        /// Rounds a value and clamps it into the slider's range, so unexpected registry values can never throw.
+        private static int ToTrackValue(TrackBar trackBar, double value) => TrackBarValue.Clamp(value, trackBar.Minimum, trackBar.Maximum);
         /// This method is called when the form is loaded to initialize the registry settings
         private void InitializeRegistry()
         {
             int actualValue = Convert.ToInt32(battleKey.GetValue("Damage reduction divisor"));
             int adjustedValue = actualValue / 100;
-            trackBar1.Value = adjustedValue;
+            trackBar1.Value = ToTrackValue(trackBar1, adjustedValue);
             label8.Text = actualValue.ToString();
             int unitsValue = Convert.ToInt32(tweakKey.GetValue("Max units in sector"));
-            trackBar2.Value = unitsValue;
+            trackBar2.Value = ToTrackValue(trackBar2, unitsValue);
             label9.Text = unitsValue.ToString();
             int boatsValue = Convert.ToInt32(tweakKey.GetValue("Max boats in sector"));
-            trackBar3.Value = boatsValue;
+            trackBar3.Value = ToTrackValue(trackBar3, boatsValue);
             label10.Text = boatsValue.ToString();
+            // trackBar5 / label11 are on the "Human Open Rate" row, trackBar4 / label12 are on the "Martian Open Rate" row
             int humanOpenRate = Convert.ToInt32(researchKey.GetValue("Human Open Rate"));
-            trackBar4.Value = humanOpenRate;
+            trackBar5.Value = ToTrackValue(trackBar5, humanOpenRate);
             label11.Text = humanOpenRate.ToString();
             int martianOpenRate = Convert.ToInt32(researchKey.GetValue("Martian Open Rate"));
-            trackBar5.Value = martianOpenRate;
+            trackBar4.Value = ToTrackValue(trackBar4, martianOpenRate);
             label12.Text = martianOpenRate.ToString();
             int podInterval = Convert.ToInt32(tweakKey.GetValue("Pod Interval (hours)"));
-            trackBar6.Value = podInterval;
+            trackBar6.Value = ToTrackValue(trackBar6, podInterval);
             label13.Text = podInterval.ToString();
             int aiHoursPerTurn = Convert.ToInt32(tweakKey.GetValue("AI Hours Per Turn"));
-            trackBar7.Value = aiHoursPerTurn;
+            trackBar7.Value = ToTrackValue(trackBar7, aiHoursPerTurn);
             label14.Text = aiHoursPerTurn.ToString();
             // new settings
             // Use this for more robust loading from Registry
             double humanMultiplier = double.Parse(tweakKey.GetValue("AI strength table Human multiplier")!.ToString()!, CultureInfo.InvariantCulture);
-            trackBar9.Value = (int)humanMultiplier * 100;
+            trackBar9.Value = ToTrackValue(trackBar9, humanMultiplier * 100); // multiply before converting, (int)1.2 * 100 would be 100
             label18.Text = humanMultiplier.ToString("F6", CultureInfo.InvariantCulture);// Use this for more robust loading from Registry
             double martianMultiplier = double.Parse(tweakKey.GetValue("AI strength table Martian multiplier")!.ToString()!, CultureInfo.InvariantCulture);
-            trackBar8.Value = (int)martianMultiplier * 100;
+            trackBar8.Value = ToTrackValue(trackBar8, martianMultiplier * 100);
             label17.Text = martianMultiplier.ToString("F6", CultureInfo.InvariantCulture);
             // turret build limit
             value = BinaryUtility.ReadByteAtOffset("OBJ.ojd", 0x1C623L);
-            trackBar10.Value = Convert.ToInt32(value);
+            trackBar10.Value = ToTrackValue(trackBar10, value);
             label21.Text = value.ToString();
             trackBar1.ValueChanged += trackBar1_ValueChanged!;
             trackBar2.ValueChanged += trackBar2_ValueChanged!;
@@ -118,8 +120,8 @@ namespace WoWLauncher
             registryCompare(battleKey, "Damage reduction divisor", (trackBar1.Value * 100).ToString());
             registryCompare(tweakKey, "Max units in sector", trackBar2.Value.ToString());
             registryCompare(tweakKey, "Max boats in sector", trackBar3.Value.ToString());
-            registryCompare(researchKey, "Human Open Rate", trackBar4.Value.ToString());
-            registryCompare(researchKey, "Martian Open Rate", trackBar5.Value.ToString());
+            registryCompare(researchKey, "Human Open Rate", trackBar5.Value.ToString());
+            registryCompare(researchKey, "Martian Open Rate", trackBar4.Value.ToString());
             registryCompare(tweakKey, "Pod Interval (hours)", trackBar6.Value.ToString());
             registryCompare(tweakKey, "AI Hours Per Turn", trackBar7.Value.ToString());
             // new settings
@@ -166,9 +168,9 @@ namespace WoWLauncher
             registryCompare(tweakKey, "Max boats in sector", "5");
             trackBar3.Value = 5;
             registryCompare(researchKey, "Human Open Rate", "20");
-            trackBar4.Value = 20;
+            trackBar5.Value = 20;
             registryCompare(researchKey, "Martian Open Rate", "10");
-            trackBar5.Value = 10;
+            trackBar4.Value = 10;
             registryCompare(tweakKey, "Pod Interval (hours)", "24");
             trackBar6.Value = 24;
             registryCompare(tweakKey, "AI Hours Per Turn", "5");
@@ -196,6 +198,7 @@ namespace WoWLauncher
                     Tuple.Create(0x1AFE8L, new byte[] { 0x0C }),
                 };
                 BinaryUtility.ReplaceBytes(replacements, "OBJ.ojd");
+                value = 0x0C;
                 trackBar10.Value = 12;
             }
             config = false;

@@ -1,4 +1,4 @@
-using Microsoft.Win32;
+Ôªøusing Microsoft.Win32;
 using System.Diagnostics;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -19,14 +19,19 @@ namespace WoWLauncher
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
-            switch (new FileInfo("credits.png").Length)
+            switch (DetectLanguage())
             {
-                case 258221: SetEnglish(); break;
-                case 292567: SetFrench(); break;
-                case 294349: SetGerman(); break;
-                case 258919: SetItalian(); break;
-                case 268939: SetSpanish(); break;
-                default: MessageBox.Show("You altered credits.png!!! The file size is used to identify which language should be set!!!"); break;
+                case "French": SetFrench(); break;
+                case "German": SetGerman(); break;
+                case "Italian": SetItalian(); break;
+                case "Spanish": SetSpanish(); break;
+                case "English": SetEnglish(); break;
+                default:
+                    SetEnglish(); // never continue with an empty Interface dictionary
+                    MessageBox.Show("The installed language could not be identified, so English will be used.\n\n" +
+                        "Language packs include a language.txt file, re-extracting the language pack should fix this.",
+                        "Language", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    break;
             }
             if (Process.GetProcessesByName("WoWLauncher").Length > 1)
             {
@@ -74,6 +79,35 @@ namespace WoWLauncher
                 return;
             }
             Application.Run(new Form1());
+        }
+        /// <summary>
+        /// language.txt (shipped with language packs, first line is English, French, German, Italian or Spanish) takes priority.
+        /// Older installs are identified by the size of credits.png, which differs per language.
+        /// The same rules are used by Smackw32.dll and _inmm.dll. Returns null if the language is unknown.
+        /// </summary>
+        public static string? DetectLanguage()
+        {
+            string[] known = { "English", "French", "German", "Italian", "Spanish" };
+            try
+            {
+                if (File.Exists("language.txt"))
+                {
+                    string first = File.ReadLines("language.txt").FirstOrDefault()?.Trim() ?? "";
+                    string? match = known.FirstOrDefault(l => l.Equals(first, StringComparison.OrdinalIgnoreCase));
+                    if (match != null) { return match; }
+                }
+                if (!File.Exists("credits.png")) { return null; }
+                return new FileInfo("credits.png").Length switch
+                {
+                    258221 => "English",
+                    292567 => "French",
+                    294349 => "German",
+                    258919 => "Italian",
+                    268939 => "Spanish",
+                    _ => null,
+                };
+            }
+            catch (IOException) { return null; }
         }
         private static void SetEnglish()
         {
@@ -163,80 +197,80 @@ namespace WoWLauncher
             CurrentLanguage = "French";
             Interface["start_human"] = "Commencer Campagne Humaine";
             Interface["start_martian"] = "Commencer Campagne Martienne";
-            Interface["config"] = "ParamËtres de configuration";
-            Interface["launcher_running"] = "Le lanceur est dÈj‡ en cours d'exÈcution!";
-            Interface["game_running"] = "Le jeu est dÈj‡ en cours d'exÈcution, veuillez le quitter avant de lancer le lanceur!";
-            Interface["one_drive"] = "Avertissement : Le jeu est installÈ dans un emplacement restreint. Pour un fonctionnement optimal, veuillez le dÈplacer vers un rÈpertoire racine tel que C:\\Jeux\\Jeff Wayne's 'La Guerre des mondes'.";
+            Interface["config"] = "Param√®tres de configuration";
+            Interface["launcher_running"] = "Le lanceur est d√©j√† en cours d'ex√©cution!";
+            Interface["game_running"] = "Le jeu est d√©j√† en cours d'ex√©cution, veuillez le quitter avant de lancer le lanceur!";
+            Interface["one_drive"] = "Avertissement : Le jeu est install√© dans un emplacement restreint. Pour un fonctionnement optimal, veuillez le d√©placer vers un r√©pertoire racine tel que C:\\Jeux\\Jeff Wayne's 'La Guerre des mondes'.";
             Interface["one_drive_warning"] = "Avertissement d'installation";
-            Interface["fullscreen_description"] = "Activer ou dÈsactiver le mode plein Ècran.";
-            Interface["fullscreen"] = "Plein Ècran";
-            Interface["resolution_description"] = "La rÈsolution du jeu.";
-            Interface["resolution"] = "RÈsolution";
-            Interface["difficulty_description"] = "Niveaux de difficultÈ. (Moyen est le niveau par dÈfaut)";
-            Interface["difficulty"] = "DifficultÈ";
-            Interface["fog_description"] = "Activer ou dÈsactiver le brouillard de guerre. (ActivÈ par dÈfaut)";
+            Interface["fullscreen_description"] = "Activer ou d√©sactiver le mode plein √©cran.";
+            Interface["fullscreen"] = "Plein √©cran";
+            Interface["resolution_description"] = "La r√©solution du jeu.";
+            Interface["resolution"] = "R√©solution";
+            Interface["difficulty_description"] = "Niveaux de difficult√©. (Moyen est le niveau par d√©faut)";
+            Interface["difficulty"] = "Difficult√©";
+            Interface["fog_description"] = "Activer ou d√©sactiver le brouillard de guerre. (Activ√© par d√©faut)";
             Interface["fog"] = "Brouillard de guerre";
-            Interface["advanced"] = "ParamËtres avancÈs";
-            Interface["tools"] = "Outils de dÈveloppement";
+            Interface["advanced"] = "Param√®tres avanc√©s";
+            Interface["tools"] = "Outils de d√©veloppement";
             Interface["keyboard"] = "Raccourcis clavier";
-            Interface["music_playback_description"] = "L'activation de cette option permettra ‡ la musique de continuer ‡ jouer lorsque la fenÍtre perd le focus.";
+            Interface["music_playback_description"] = "L'activation de cette option permettra √† la musique de continuer √† jouer lorsque la fen√™tre perd le focus.";
             Interface["music_playback"] = "Lecture de musique";
-            Interface["enhanced_assets_description"] = "Ce paramËtre active les ressources d'interface utilisateur amÈliorÈes. (Cela ajoute un peu plus de profondeur de couleur ‡ l'interface.)";
-            Interface["enhanced_assets"] = "Graphismes amÈliorÈs";
+            Interface["enhanced_assets_description"] = "Ce param√®tre active les ressources d'interface utilisateur am√©lior√©es. (Cela ajoute un peu plus de profondeur de couleur √† l'interface.)";
+            Interface["enhanced_assets"] = "Graphismes am√©lior√©s";
             Interface["enemy_visible_description"] = "Cette option permet d'afficher ou non les forces ennemies sur la carte de guerre.";
             Interface["enemy_visible"] = "Forces ennemies visibles";
             Interface["game_name"] = "Jeff Wayne's 'La Guerre des mondes'";
-            Interface["dir_warning"] = "Avertissement : Le dossier {0} est en lecture seule ou protÈgÈ.\n\n" +
-                            "Le lanceur peut ne pas enregistrer les paramËtres. Veuillez l'exÈcuter en tant qu'administrateur, " +
-                            "DÈcochez les autorisations de lecture seule sur le dossier ou dÈplacez le jeu vers un autre dossier (e.g., C:\\Jeux\\).";
+            Interface["dir_warning"] = "Avertissement : Le dossier {0} est en lecture seule ou prot√©g√©.\n\n" +
+                            "Le lanceur peut ne pas enregistrer les param√®tres. Veuillez l'ex√©cuter en tant qu'administrateur, " +
+                            "D√©cochez les autorisations de lecture seule sur le dossier ou d√©placez le jeu vers un autre dossier (e.g., C:\\Jeux\\).";
             Interface["dir_warning_error"] = "Erreur d'autorisation";
-            Interface["lights"] = "L'entrÈe de registre \"Show lights\" doit Ítre dÈfinie sur un pour Èviter les plantages lors de l'utilisation de la compÈtence Infiltration en jeu ; elle a donc ÈtÈ rÈinitialisÈe.";
-            Interface["colour"] = "L'entrÈe de registre \"BPP\" doit Ítre dÈfinie sur 16 car j'ai supprimÈ l'option de basculement 8/16 bits de l'exÈcutable du jeu ; vous ne voudriez tout de mÍme pas y jouer en mode couleur 8 bits au XXIe siËcle?";
-            Interface["executable"] = "Fichier exÈcutable introuvable, veuillez rÈinstaller le jeu et suivre les instructions.";
-            Interface["human_game"] = "Le jeu Human n'est pas installÈ, veuillez le rÈinstaller et suivre les instructions.";
-            Interface["martian_game"] = "Le jeu Martian n'est pas installÈ, veuillez le rÈinstaller et suivre les instructions.";
+            Interface["lights"] = "L'entr√©e de registre \"Show lights\" doit √™tre d√©finie sur un pour √©viter les plantages lors de l'utilisation de la comp√©tence Infiltration en jeu ; elle a donc √©t√© r√©initialis√©e.";
+            Interface["colour"] = "L'entr√©e de registre \"BPP\" doit √™tre d√©finie sur 16 car j'ai supprim√© l'option de basculement 8/16 bits de l'ex√©cutable du jeu ; vous ne voudriez tout de m√™me pas y jouer en mode couleur 8 bits au XXIe si√®cle?";
+            Interface["executable"] = "Fichier ex√©cutable introuvable, veuillez r√©installer le jeu et suivre les instructions.";
+            Interface["human_game"] = "Le jeu Human n'est pas install√©, veuillez le r√©installer et suivre les instructions.";
+            Interface["martian_game"] = "Le jeu Martian n'est pas install√©, veuillez le r√©installer et suivre les instructions.";
             Interface["exit"] = "Quitter";
-            Interface["editor"] = "…diteur introuvable, veuillez rÈinstaller le jeu et suivre les instructions.";
-            Interface["fullscreen_disable"] = "DÈsactivez le mode plein Ècran pour activer cette fonctionnalitÈ.";
-            Interface["fullscreen_detected"] = "…cran plein dÈtectÈ";
+            Interface["editor"] = "√âditeur introuvable, veuillez r√©installer le jeu et suivre les instructions.";
+            Interface["fullscreen_disable"] = "D√©sactivez le mode plein √©cran pour activer cette fonctionnalit√©.";
+            Interface["fullscreen_detected"] = "√âcran plein d√©tect√©";
             Interface["easy"] = "Facile";
             Interface["medium"] = "Moyen";
             Interface["hard"] = "Difficile";
-            Interface["extreme"] = "ExtrÍme";
-            Interface["custom"] = "PersonnalisÈ";
+            Interface["extreme"] = "Extr√™me";
+            Interface["custom"] = "Personnalis√©";
             //Form2.Designer.cs
-            Interface["damage_reduction"] = "Modifiez la valeur du registre 'Damage reduction divisor'. La valeur par dÈfaut est 500.";
-            Interface["damage"] = "Diviseur de rÈduction des dommages :";
+            Interface["damage_reduction"] = "Modifiez la valeur du registre 'Damage reduction divisor'. La valeur par d√©faut est 500.";
+            Interface["damage"] = "Diviseur de r√©duction des dommages :";
             Interface["return"] = "Retour";
-            Interface["max_units"] = "Nombre maximal d'unitÈs dans le secteur :";
-            Interface["max_units_description"] = "Modifiez la valeur du registre 'Max units in sector'. La valeur par dÈfaut est 15.";
+            Interface["max_units"] = "Nombre maximal d'unit√©s dans le secteur :";
+            Interface["max_units_description"] = "Modifiez la valeur du registre 'Max units in sector'. La valeur par d√©faut est 15.";
             Interface["max_boats"] = "Nombre maximal de bateaux dans le secteur :";
-            Interface["max_boats_description"] = "Modifiez la valeur du registre 'Max boats in sector'. La valeur par dÈfaut est 5.";
+            Interface["max_boats_description"] = "Modifiez la valeur du registre 'Max boats in sector'. La valeur par d√©faut est 5.";
             Interface["martian_open_rate"] = "Taux d'ouverture martien :";
-            Interface["martian_open_rate_description"] = "Modifiez la valeur du registre 'Martian Open Rate'. La valeur par dÈfaut est 10. (Vitesse de recherche)";
+            Interface["martian_open_rate_description"] = "Modifiez la valeur du registre 'Martian Open Rate'. La valeur par d√©faut est 10. (Vitesse de recherche)";
             Interface["human_open_rate"] = "Taux d'ouverture humain :";
-            Interface["human_open_rate_description"] = "Modifiez la valeur du registre 'Human Open Rate'. La valeur par dÈfaut est 20. (Vitesse de recherche)";
+            Interface["human_open_rate_description"] = "Modifiez la valeur du registre 'Human Open Rate'. La valeur par d√©faut est 20. (Vitesse de recherche)";
             Interface["pod_interval"] = "Intervalle entre les capsules (heures) :";
-            Interface["pod_interval_description"] = "Modifiez la valeur du registre 'Pod Interval (hours)'. La valeur par dÈfaut est de 24.";
-            Interface["ai_hours"] = "DurÈe de l'IA par tour :";
-            Interface["ai_hours_description"] = "Modifiez la valeur du registre 'AI Hours Per Turn'. La valeur par dÈfaut est 5.";
-            Interface["restore_description"] = "RÈtablir les paramËtres par dÈfaut.";
-            Interface["restore"] = "ParamËtres par dÈfaut";
-            Interface["description"] = "Ces paramËtres sont tous disponibles dans l'entrÈe de registre du jeu ; ce sont les paramËtres par dÈfaut.";
-            Interface["description_suggestion"] = "Je vous suggËre de les laisser tels quels, sauf si vous avez dÈj‡ jouÈ au jeu.";
+            Interface["pod_interval_description"] = "Modifiez la valeur du registre 'Pod Interval (hours)'. La valeur par d√©faut est de 24.";
+            Interface["ai_hours"] = "Dur√©e de l'IA par tour :";
+            Interface["ai_hours_description"] = "Modifiez la valeur du registre 'AI Hours Per Turn'. La valeur par d√©faut est 5.";
+            Interface["restore_description"] = "R√©tablir les param√®tres par d√©faut.";
+            Interface["restore"] = "Param√®tres par d√©faut";
+            Interface["description"] = "Ces param√®tres sont tous disponibles dans l'entr√©e de registre du jeu ; ce sont les param√®tres par d√©faut.";
+            Interface["description_suggestion"] = "Je vous sugg√®re de les laisser tels quels, sauf si vous avez d√©j√† jou√© au jeu.";
             Interface["martian_strength"] = "Tableau de puissance de l'IA Multiplicateur martien :";
-            Interface["martian_strength_description"] = "Modifiez la valeur du registre 'AI strength table Martian multiplier'. La valeur par dÈfaut est 2,000000.";
+            Interface["martian_strength_description"] = "Modifiez la valeur du registre 'AI strength table Martian multiplier'. La valeur par d√©faut est 2,000000.";
             Interface["human_strength"] = "Tableau de puissance de l'IA Multiplicateur humain :";
-            Interface["human_strength_description"] = "Modifiez la valeur du registre 'AI strength table Human multiplier'. La valeur par dÈfaut est 1,000000.";
+            Interface["human_strength_description"] = "Modifiez la valeur du registre 'AI strength table Human multiplier'. La valeur par d√©faut est 1,000000.";
             Interface["turret_description"] = "Ajuster la limite de construction de la tourette.";
             Interface["turret_label"] = "Limite de construction de la tourette :";
             // new values
-            Interface["directplay_installed"] = "DirectPlay a ÈtÈ activÈ pour rÈsoudre des problËmes de compatibilitÈ.";
-            Interface["directplay_title"] = "Mise ‡ jour du systËme";
+            Interface["directplay_installed"] = "DirectPlay a √©t√© activ√© pour r√©soudre des probl√®mes de compatibilit√©.";
+            Interface["directplay_title"] = "Mise √† jour du syst√®me";
             Interface["instruction_button"] = "Manuel d'Instruction";
-            Interface["instruction_readme"] = "Vous devriez Ègalement lire le fichier Lisez-moi d'origine, car il contient des notes ne figurant pas dans le manuel du jeu.";
+            Interface["instruction_readme"] = "Vous devriez √©galement lire le fichier Lisez-moi d'origine, car il contient des notes ne figurant pas dans le manuel du jeu.";
             Interface["instruction_location"] = "wotw-man-french-v1.pdf";
-            Interface["overclocked"] = "Les rÈsolutions 'Overclock' ne fonctionnent actuellement qu'en mode plein Ècran. Veuillez l'activer, sinon le jeu se lancera avec la rÈsolution de base mise ‡ l'Èchelle.";
+            Interface["overclocked"] = "Les r√©solutions 'Overclock' ne fonctionnent actuellement qu'en mode plein √©cran. Veuillez l'activer, sinon le jeu se lancera avec la r√©solution de base mise √† l'√©chelle.";
             // larger minimaps
             Interface["larger_minimaps"] = "Minicartes plus grandes";
             Interface["larger_minimaps_tooltip"] = "Double la taille de la minicarte sur la carte de combat. (Vue 3D)";
@@ -247,35 +281,35 @@ namespace WoWLauncher
             Interface["start_human"] = "Menschliche Kampagne starten";
             Interface["start_martian"] = "Marsianer-Kampagne starten";
             Interface["config"] = "Konfigurationseinstellungen";
-            Interface["launcher_running"] = "Der Launcher l‰uft bereits!";
-            Interface["game_running"] = "Das Spiel l‰uft bereits, bitte beenden Sie es, bevor Sie den Launcher starten!";
-            Interface["one_drive"] = "Warnung: Das Spiel ist in einem eingeschr‰nkten Verzeichnis installiert. Bitte verschieben Sie es in ein Hauptverzeichnis wie C:\\Spiele\\Jeff Wayne's 'Der Krieg der Welten' um optimale Ergebnisse zu erzielen.";
+            Interface["launcher_running"] = "Der Launcher l√§uft bereits!";
+            Interface["game_running"] = "Das Spiel l√§uft bereits, bitte beenden Sie es, bevor Sie den Launcher starten!";
+            Interface["one_drive"] = "Warnung: Das Spiel ist in einem eingeschr√§nkten Verzeichnis installiert. Bitte verschieben Sie es in ein Hauptverzeichnis wie C:\\Spiele\\Jeff Wayne's 'Der Krieg der Welten' um optimale Ergebnisse zu erzielen.";
             Interface["one_drive_warning"] = "Installationswarnung";
             Interface["fullscreen_description"] = "Vollbildmodus aktivieren oder deaktivieren.";
             Interface["fullscreen"] = "Vollbild";
-            Interface["resolution_description"] = "Die Auflˆsung des Spiels.";
-            Interface["resolution"] = "Auflˆsung";
+            Interface["resolution_description"] = "Die Aufl√∂sung des Spiels.";
+            Interface["resolution"] = "Aufl√∂sung";
             Interface["difficulty_description"] = "Schwierigkeitseinstellungen. (Mittel ist die Standardeinstellung)";
             Interface["difficulty"] = "Schwierigkeit";
-            Interface["fog_description"] = "Nebel des Krieges aktivieren oder deaktivieren. (Standardm‰ﬂig aktiviert)";
+            Interface["fog_description"] = "Nebel des Krieges aktivieren oder deaktivieren. (Standardm√§√üig aktiviert)";
             Interface["fog"] = "Nebel des Krieges";
             Interface["advanced"] = "Erweiterte Einstellungen";
             Interface["tools"] = "Entwicklungstools";
-            Interface["keyboard"] = "Tastaturk¸rzel";
+            Interface["keyboard"] = "Tastaturk√ºrzel";
             Interface["music_playback_description"] = "Wenn dies aktiviert ist, wird die Musik weitergespielt, wenn das Fenster den Fokus verliert.";
             Interface["music_playback"] = "Musikwiedergabe";
-            Interface["enhanced_assets_description"] = "Diese Einstellung aktiviert die erweiterten Benutzeroberfl‰chenelemente. (Dadurch wird die Farbtiefe der Benutzeroberfl‰che etwas erhˆht.)";
+            Interface["enhanced_assets_description"] = "Diese Einstellung aktiviert die erweiterten Benutzeroberfl√§chenelemente. (Dadurch wird die Farbtiefe der Benutzeroberfl√§che etwas erh√∂ht.)";
             Interface["enhanced_assets"] = "Verbesserte Grafik";
-            Interface["enemy_visible_description"] = "Hiermit wird umgeschaltet, ob feindliche Streitkr‰fte auf der Kriegskarte sichtbar sind oder nicht.";
-            Interface["enemy_visible"] = "Sichtbare feindliche Streitkr‰fte";
+            Interface["enemy_visible_description"] = "Hiermit wird umgeschaltet, ob feindliche Streitkr√§fte auf der Kriegskarte sichtbar sind oder nicht.";
+            Interface["enemy_visible"] = "Sichtbare feindliche Streitkr√§fte";
             Interface["game_name"] = "Jeff Wayne's 'Der Krieg der Welten'";
-            Interface["dir_warning"] = "Warnung: Der Ordner {0} ist schreibgesch¸tzt oder gesch¸tzt.\n\n" +
-                            "\r\nDer Launcher speichert die Einstellungen mˆglicherweise nicht. Bitte f¸hren Sie ihn als Administrator aus " +
-                            "Deaktivieren Sie die Schreibschutzberechtigungen f¸r den Ordner oder verschieben Sie das Spiel in einen anderen Ordner (e.g., C:\\Spiele\\).";
+            Interface["dir_warning"] = "Warnung: Der Ordner {0} ist schreibgesch√ºtzt oder gesch√ºtzt.\n\n" +
+                            "\r\nDer Launcher speichert die Einstellungen m√∂glicherweise nicht. Bitte f√ºhren Sie ihn als Administrator aus " +
+                            "Deaktivieren Sie die Schreibschutzberechtigungen f√ºr den Ordner oder verschieben Sie das Spiel in einen anderen Ordner (e.g., C:\\Spiele\\).";
             Interface["dir_warning_error"] = "Berechtigungsfehler";
-            Interface["lights"] = "Der Registry-Eintrag \"Show lights\" muss auf eins gesetzt werden, um Abst¸rze bei der Verwendung der Infiltrationsf‰higkeit im Spiel zu verhindern. Daher wurde er zur¸ckgesetzt.";
-            Interface["colour"] = "Der Registrierungseintrag \"BPP\" muss auf 16 gesetzt werden, da ich die 8/16-Bit-Umschaltung aus der ausf¸hrbaren Datei des Spiels entfernt habe. Sie wollen es im 21. Jahrhundert doch nicht im 8-Bit-Farbmodus spielen?";
-            Interface["executable"] = "Die ausf¸hrbare Datei wurde nicht gefunden. Bitte installieren Sie das Spiel neu und folgen Sie den Anweisungen.";
+            Interface["lights"] = "Der Registry-Eintrag \"Show lights\" muss auf eins gesetzt werden, um Abst√ºrze bei der Verwendung der Infiltrationsf√§higkeit im Spiel zu verhindern. Daher wurde er zur√ºckgesetzt.";
+            Interface["colour"] = "Der Registrierungseintrag \"BPP\" muss auf 16 gesetzt werden, da ich die 8/16-Bit-Umschaltung aus der ausf√ºhrbaren Datei des Spiels entfernt habe. Sie wollen es im 21. Jahrhundert doch nicht im 8-Bit-Farbmodus spielen?";
+            Interface["executable"] = "Die ausf√ºhrbare Datei wurde nicht gefunden. Bitte installieren Sie das Spiel neu und folgen Sie den Anweisungen.";
             Interface["human_game"] = "Das Spiel \"Human\" ist nicht installiert. Bitte installieren Sie das Spiel neu und folgen Sie den Anweisungen.";
             Interface["martian_game"] = "Das Spiel \"Martian\" ist nicht installiert. Bitte installieren Sie das Spiel neu und folgen Sie den Anweisungen.";
             Interface["exit"] = "Beenden";
@@ -288,41 +322,41 @@ namespace WoWLauncher
             Interface["extreme"] = "Extrem";
             Interface["custom"] = "Benutzerdefiniert";
             //Form2.Designer.cs
-            Interface["damage_reduction"] = "Passen Sie den Registrierungswert f¸r den 'Damage reduction divisor' an. Der Standardwert ist 500.";
+            Interface["damage_reduction"] = "Passen Sie den Registrierungswert f√ºr den 'Damage reduction divisor' an. Der Standardwert ist 500.";
             Interface["damage"] = "Schadensreduzierungsdivisor:";
-            Interface["return"] = "Zur¸ck";
+            Interface["return"] = "Zur√ºck";
             Interface["max_units"] = "Maximale Einheiten im Sektor:";
             Interface["max_units_description"] = "Passen Sie den Registrierungswert 'Max units in sector' an. Der Standardwert ist 15.";
             Interface["max_boats"] = "Maximale Anzahl Boote im Sektor:";
             Interface["max_boats_description"] = "Passen Sie den Registrierungswert'Max boats in sector' an. Der Standardwert ist 5.";
-            Interface["martian_open_rate"] = "Marsianische ÷ffnungsrate:";
+            Interface["martian_open_rate"] = "Marsianische √ñffnungsrate:";
             Interface["martian_open_rate_description"] = "Passen Sie den Registrierungswert 'Martian Open Rate' an. Der Standardwert ist 10 (Forschungsgeschwindigkeit).";
-            Interface["human_open_rate"] = "Menschliche ÷ffnungsrate:";
-            Interface["human_open_rate_description"] = "Passen Sie den Registrierungswert f¸r die 'Human Open Rate' an. Der Standardwert ist 20 (Forschungsgeschwindigkeit).";
+            Interface["human_open_rate"] = "Menschliche √ñffnungsrate:";
+            Interface["human_open_rate_description"] = "Passen Sie den Registrierungswert f√ºr die 'Human Open Rate' an. Der Standardwert ist 20 (Forschungsgeschwindigkeit).";
             Interface["pod_interval"] = "Pod-Intervall (Stunden):";
             Interface["pod_interval_description"] = "Passen Sie den Registrierungswert 'Pod Interval (hours)' an. Der Standardwert ist 24.";
             Interface["ai_hours"] = "KI-Stunden pro Runde:";
             Interface["ai_hours_description"] = "Passen Sie den Registrierungswert 'AI Hours Per Turn' an. Der Standardwert ist 5.";
-            Interface["restore_description"] = "Die Einstellungen werden auf den Standardzustand zur¸ckgesetzt.";
+            Interface["restore_description"] = "Die Einstellungen werden auf den Standardzustand zur√ºckgesetzt.";
             Interface["restore"] = "Standardwerte";
-            Interface["description"] = "Diese Einstellungen sind alle im Registrierungseintrag f¸r das Spiel verf¸gbar; dies sind die Standardeinstellungen.";
+            Interface["description"] = "Diese Einstellungen sind alle im Registrierungseintrag f√ºr das Spiel verf√ºgbar; dies sind die Standardeinstellungen.";
             Interface["description_suggestion"] = "Ich schlage vor, die Einstellungen so zu belassen, es sei denn, Sie haben das Spiel schon einmal gespielt.";
-            Interface["martian_strength"] = "KI-St‰rketabelle Mars-Multiplikator:";
+            Interface["martian_strength"] = "KI-St√§rketabelle Mars-Multiplikator:";
             Interface["martian_strength_description"] = "Passen Sie den Registrierungswert 'AI strength table Martian multiplier' an. Der Standardwert ist 2,000000.";
-            Interface["human_strength"] = "KI-St‰rketabelle Menschlicher Multiplikator:";
+            Interface["human_strength"] = "KI-St√§rketabelle Menschlicher Multiplikator:";
             Interface["human_strength_description"] = "Passen Sie den Registrierungswert 'AI strength table Human multiplier' an. Der Standardwert ist 1,000000.";
             Interface["turret_description"] = "Passe das Turmbaulimit an.";
             Interface["turret_label"] = "Turmbaulimit :";
             // new values
-            Interface["directplay_installed"] = "DirectPlay wurde aktiviert, um Kompatibilit‰tsprobleme zu beheben.";
+            Interface["directplay_installed"] = "DirectPlay wurde aktiviert, um Kompatibilit√§tsprobleme zu beheben.";
             Interface["directplay_title"] = "Systemaktualisierung";
             Interface["instruction_button"] = "Bedienungsanleitung";
-            Interface["instruction_readme"] = "Sie sollten auch die urspr¸ngliche Readme-Datei lesen, da diese Hinweise enth‰lt, die nicht im Handbuch des Spiels stehen.";
+            Interface["instruction_readme"] = "Sie sollten auch die urspr√ºngliche Readme-Datei lesen, da diese Hinweise enth√§lt, die nicht im Handbuch des Spiels stehen.";
             Interface["instruction_location"] = "";
-            Interface["overclocked"] = "‹bertaktete Auflˆsungen funktionieren derzeit nur im Vollbildmodus. Bitte aktivieren Sie diesen, da das Spiel sonst mit der skalierten Basisauflˆsung gestartet wird.";
+            Interface["overclocked"] = "√úbertaktete Aufl√∂sungen funktionieren derzeit nur im Vollbildmodus. Bitte aktivieren Sie diesen, da das Spiel sonst mit der skalierten Basisaufl√∂sung gestartet wird.";
             // larger minimaps
-            Interface["larger_minimaps"] = "Grˆﬂere Minikarten";
-            Interface["larger_minimaps_tooltip"] = "Verdoppelt die Grˆﬂe der Minikarte auf der Schlachtkarte. (3D-Ansicht)";
+            Interface["larger_minimaps"] = "Gr√∂√üere Minikarten";
+            Interface["larger_minimaps_tooltip"] = "Verdoppelt die Gr√∂√üe der Minikarte auf der Schlachtkarte. (3D-Ansicht)";
         }
         private static void SetItalian()
         {
@@ -330,40 +364,40 @@ namespace WoWLauncher
             Interface["start_human"] = "Avvia la campagna umana";
             Interface["start_martian"] = "Inizia la campagna marziana";
             Interface["config"] = "Impostazioni di configurazione";
-            Interface["launcher_running"] = "Il launcher Ë gi‡ in esecuzione!";
-            Interface["game_running"] = "Il gioco Ë gi‡ in esecuzione, esci prima di avviare il launcher!";
-            Interface["one_drive"] = "Attenzione: il gioco Ë installato in una posizione con restrizioni. Per ottenere risultati ottimali, spostalo in una directory principale come C:\\Giochi\\Jeff Wayne's 'La guerra dei mondi'.";
+            Interface["launcher_running"] = "Il launcher √® gi√† in esecuzione!";
+            Interface["game_running"] = "Il gioco √® gi√† in esecuzione, esci prima di avviare il launcher!";
+            Interface["one_drive"] = "Attenzione: il gioco √® installato in una posizione con restrizioni. Per ottenere risultati ottimali, spostalo in una directory principale come C:\\Giochi\\Jeff Wayne's 'La guerra dei mondi'.";
             Interface["one_drive_warning"] = "Avviso di installazione";
             Interface["fullscreen_description"] = "Abilita o disabilita lo schermo intero.";
             Interface["fullscreen"] = "A schermo intero";
             Interface["resolution_description"] = "La risoluzione del gioco.";
             Interface["resolution"] = "Risoluzione";
-            Interface["difficulty_description"] = "Impostazioni di difficolt‡. (Media Ë l'impostazione predefinita)";
-            Interface["difficulty"] = "Difficolt‡";
+            Interface["difficulty_description"] = "Impostazioni di difficolt√†. (Media √® l'impostazione predefinita)";
+            Interface["difficulty"] = "Difficolt√†";
             Interface["fog_description"] = "Attiva o disattiva la nebbia di guerra. (Abilitato per impostazione predefinita)";
             Interface["fog"] = "Nebbia di guerra";
             Interface["advanced"] = "Impostazioni avanzate";
             Interface["tools"] = "Strumenti di sviluppo";
             Interface["keyboard"] = "Scorciatoie da tastiera";
-            Interface["music_playback_description"] = "L'abilitazione di questa opzione consentir‡ alla musica di continuare a suonare quando la finestra perde il focus.";
+            Interface["music_playback_description"] = "L'abilitazione di questa opzione consentir√† alla musica di continuare a suonare quando la finestra perde il focus.";
             Interface["music_playback"] = "Riproduzione musicale";
-            Interface["enhanced_assets_description"] = "Questa impostazione abilita gli elementi grafici avanzati dell'interfaccia utente. (CiÚ aggiunge una maggiore profondit‡ di colore all'interfaccia.)";
+            Interface["enhanced_assets_description"] = "Questa impostazione abilita gli elementi grafici avanzati dell'interfaccia utente. (Ci√≤ aggiunge una maggiore profondit√† di colore all'interfaccia.)";
             Interface["enhanced_assets"] = "Risorse migliorate";
             Interface["enemy_visible_description"] = "Questa opzione attiva o disattiva la visualizzazione delle forze nemiche sulla mappa di guerra.";
             Interface["enemy_visible"] = "Forze nemiche visibili";
             Interface["game_name"] = "Jeff Wayne's 'La guerra dei mondi'";
-            Interface["dir_warning"] = "Attenzione: la cartella {0} Ë di sola lettura o protetta.\n\n" +
+            Interface["dir_warning"] = "Attenzione: la cartella {0} √® di sola lettura o protetta.\n\n" +
                             "Il programma di avvio potrebbe non salvare le impostazioni. Eseguilo come amministratore, " +
                             "Deseleziona le autorizzazioni di sola lettura per la cartella oppure sposta il gioco in una cartella diversa (e.g., C:\\Giochi\\).";
             Interface["dir_warning_error"] = "Errore di autorizzazioni";
-            Interface["lights"] = "La voce del registro di sistema \"Show lights\" deve essere impostata su uno per evitare arresti anomali quando si utilizza l'abilit‡ Infiltrazione nel gioco, quindi Ë stata reimpostata.";
-            Interface["colour"] = "La voce di registro \"BPP\" deve essere impostata su 16 poichÈ ho rimosso l'opzione per passare da 8 a 16 bit dall'eseguibile del gioco; sicuramente non vorrai giocarci in modalit‡ colore a 8 bit nel XXI secolo, vero?";
+            Interface["lights"] = "La voce del registro di sistema \"Show lights\" deve essere impostata su uno per evitare arresti anomali quando si utilizza l'abilit√† Infiltrazione nel gioco, quindi √® stata reimpostata.";
+            Interface["colour"] = "La voce di registro \"BPP\" deve essere impostata su 16 poich√© ho rimosso l'opzione per passare da 8 a 16 bit dall'eseguibile del gioco; sicuramente non vorrai giocarci in modalit√† colore a 8 bit nel XXI secolo, vero?";
             Interface["executable"] = "File eseguibile non trovato. Reinstallare il gioco e seguire le istruzioni.";
-            Interface["human_game"] = "Il gioco Human non Ë installato, si prega di reinstallarlo e seguire le istruzioni.";
-            Interface["martian_game"] = "Il gioco Martian non Ë installato, si prega di reinstallarlo e seguire le istruzioni.";
+            Interface["human_game"] = "Il gioco Human non √® installato, si prega di reinstallarlo e seguire le istruzioni.";
+            Interface["martian_game"] = "Il gioco Martian non √® installato, si prega di reinstallarlo e seguire le istruzioni.";
             Interface["exit"] = "Esci";
             Interface["editor"] = "Editor non trovato, reinstalla il gioco e segui le istruzioni.";
-            Interface["fullscreen_disable"] = "Disattiva la modalit‡ a schermo intero per abilitare questa funzione.";
+            Interface["fullscreen_disable"] = "Disattiva la modalit√† a schermo intero per abilitare questa funzione.";
             Interface["fullscreen_detected"] = "Schermo intero rilevato";
             Interface["easy"] = "Facile";
             Interface["medium"] = "Medio";
@@ -371,124 +405,124 @@ namespace WoWLauncher
             Interface["extreme"] = "Estremo";
             Interface["custom"] = "Personalizzata";
             //Form2.Designer.cs
-            Interface["damage_reduction"] = "Modificare il valore del registro di sistema 'Damage reduction divisor'. Il valore predefinito Ë 500.";
+            Interface["damage_reduction"] = "Modificare il valore del registro di sistema 'Damage reduction divisor'. Il valore predefinito √® 500.";
             Interface["damage"] = "Divisore di riduzione del danno :";
             Interface["return"] = "Ritorno";
-            Interface["max_units"] = "Numero massimo di unit‡ nel settore :";
-            Interface["max_units_description"] = "Modifica il valore del registro 'Max units in sector'. Il valore predefinito Ë 15.";
+            Interface["max_units"] = "Numero massimo di unit√† nel settore :";
+            Interface["max_units_description"] = "Modifica il valore del registro 'Max units in sector'. Il valore predefinito √® 15.";
             Interface["max_boats"] = "Numero massimo di imbarcazioni nel settore :";
-            Interface["max_boats_description"] = "Regola il valore di registro 'Max boats in sector'. Il valore predefinito Ë 5.";
+            Interface["max_boats_description"] = "Regola il valore di registro 'Max boats in sector'. Il valore predefinito √® 5.";
             Interface["martian_open_rate"] = "Tasso di apertura marziano :";
-            Interface["martian_open_rate_description"] = "Regola il valore del registro 'Martian Open Rate'. Il valore predefinito Ë 10. (Velocit‡ di ricerca)";
+            Interface["martian_open_rate_description"] = "Regola il valore del registro 'Martian Open Rate'. Il valore predefinito √® 10. (Velocit√† di ricerca)";
             Interface["human_open_rate"] = "Tasso di apertura umano :";
-            Interface["human_open_rate_description"] = "Regola il valore del registro di sistema 'Human Open Rate'. Il valore predefinito Ë 20. (Velocit‡ di ricerca)";
+            Interface["human_open_rate_description"] = "Regola il valore del registro di sistema 'Human Open Rate'. Il valore predefinito √® 20. (Velocit√† di ricerca)";
             Interface["pod_interval"] = "Intervallo tra i pod (ore) :";
-            Interface["pod_interval_description"] = "Modifica il valore del registro di sistema 'Pod Interval (hours)'. Il valore predefinito Ë 24.";
+            Interface["pod_interval_description"] = "Modifica il valore del registro di sistema 'Pod Interval (hours)'. Il valore predefinito √® 24.";
             Interface["ai_hours"] = "Ore di IA per turno :";
-            Interface["ai_hours_description"] = "Modifica il valore del registro di sistema 'AI Hours Per Turn'. Il valore predefinito Ë 5.";
+            Interface["ai_hours_description"] = "Modifica il valore del registro di sistema 'AI Hours Per Turn'. Il valore predefinito √® 5.";
             Interface["restore_description"] = "Ripristina le impostazioni ai valori predefiniti.";
             Interface["restore"] = "Ripristina le impostazioni predefinite";
             Interface["description"] = "Tutte queste impostazioni sono disponibili nella voce di registro relativa al gioco; queste sono le impostazioni predefinite.";
-            Interface["description_suggestion"] = "Suggerisco di lasciarli cosÏ come sono, a meno che tu non abbia gi‡ giocato a questo gioco.";
+            Interface["description_suggestion"] = "Suggerisco di lasciarli cos√¨ come sono, a meno che tu non abbia gi√† giocato a questo gioco.";
             Interface["martian_strength"] = "Tabella di forza dell'IA Moltiplicatore marziano :";
-            Interface["martian_strength_description"] = "Modifica il valore del registro 'AI strength table Martian multiplier'. Il valore predefinito Ë 2.000000.";
+            Interface["martian_strength_description"] = "Modifica il valore del registro 'AI strength table Martian multiplier'. Il valore predefinito √® 2.000000.";
             Interface["human_strength"] = "Tabella di forza dell'IA Moltiplicatore umano :";
-            Interface["human_strength_description"] = "Modifica il valore del registro di sistema 'AI strength table Human multiplier'. Il valore predefinito Ë 1,000000.";
+            Interface["human_strength_description"] = "Modifica il valore del registro di sistema 'AI strength table Human multiplier'. Il valore predefinito √® 1,000000.";
             Interface["turret_description"] = "Regola il limite di costruzione della torretta.";
             Interface["turret_label"] = "Limite di costruzione della torretta :";
             // new values
-            Interface["directplay_installed"] = "DirectPlay Ë stato abilitato per risolvere problemi di compatibilit‡.";
+            Interface["directplay_installed"] = "DirectPlay √® stato abilitato per risolvere problemi di compatibilit√†.";
             Interface["directplay_title"] = "Aggiornamento di sistema";
             Interface["instruction_button"] = "Manuale di Istruzioni";
-            Interface["instruction_readme"] = "Si consiglia di leggere anche il file readme originale, poichÈ contiene note non presenti nel manuale del gioco.";
+            Interface["instruction_readme"] = "Si consiglia di leggere anche il file readme originale, poich√© contiene note non presenti nel manuale del gioco.";
             Interface["instruction_location"] = "wotw-man-italian-v1.pdf";
-            Interface["overclocked"] = "Le risoluzioni 'Overclock' funzionano attualmente solo in modalit‡ a schermo intero. Attivala, altrimenti il gioco verr‡ avviato alla risoluzione di base scalata.";
+            Interface["overclocked"] = "Le risoluzioni 'Overclock' funzionano attualmente solo in modalit√† a schermo intero. Attivala, altrimenti il gioco verr√† avviato alla risoluzione di base scalata.";
             // larger minimaps
-            Interface["larger_minimaps"] = "Minimappe pi˘ grandi";
+            Interface["larger_minimaps"] = "Minimappe pi√π grandi";
             Interface["larger_minimaps_tooltip"] = "Raddoppia le dimensioni della minimappa nella mappa di battaglia. (Vista 3D)";
         }
         private static void SetSpanish()
         {
             CurrentLanguage = "Spanish";
-            Interface["start_human"] = "Iniciar campaÒa humana";
-            Interface["start_martian"] = "Iniciar campaÒa marciana";
-            Interface["config"] = "Ajustes de configuraciÛn";
-            Interface["launcher_running"] = "°El lanzador ya est· en funcionamiento!";
-            Interface["game_running"] = "El juego ya est· en ejecuciÛn, °ciÈrrelo antes de ejecutar el lanzador!";
-            Interface["one_drive"] = "Advertencia: El juego est· instalado en una ubicaciÛn restringida. Para obtener mejores resultados, muÈvalo a un directorio raÌz como C:\\Juegos\\Jeff Wayne's 'La Guerra de los Mundos'.";
-            Interface["one_drive_warning"] = "Advertencia de instalaciÛn";
+            Interface["start_human"] = "Iniciar campa√±a humana";
+            Interface["start_martian"] = "Iniciar campa√±a marciana";
+            Interface["config"] = "Ajustes de configuraci√≥n";
+            Interface["launcher_running"] = "¬°El lanzador ya est√° en funcionamiento!";
+            Interface["game_running"] = "El juego ya est√° en ejecuci√≥n, ¬°ci√©rrelo antes de ejecutar el lanzador!";
+            Interface["one_drive"] = "Advertencia: El juego est√° instalado en una ubicaci√≥n restringida. Para obtener mejores resultados, mu√©valo a un directorio ra√≠z como C:\\Juegos\\Jeff Wayne's 'La Guerra de los Mundos'.";
+            Interface["one_drive_warning"] = "Advertencia de instalaci√≥n";
             Interface["fullscreen_description"] = "Activar o desactivar la pantalla completa.";
             Interface["fullscreen"] = "Pantalla completa";
-            Interface["resolution_description"] = "La resoluciÛn del juego.";
-            Interface["resolution"] = "ResoluciÛn";
+            Interface["resolution_description"] = "La resoluci√≥n del juego.";
+            Interface["resolution"] = "Resoluci√≥n";
             Interface["difficulty_description"] = "Ajustes de dificultad. (Medio es el predeterminado)";
             Interface["difficulty"] = "Dificultad";
             Interface["fog_description"] = "Activar o desactivar la niebla de guerra. (Activado por defecto)";
             Interface["fog"] = "Niebla de guerra";
-            Interface["advanced"] = "ConfiguraciÛn avanzada";
+            Interface["advanced"] = "Configuraci√≥n avanzada";
             Interface["tools"] = "Herramientas de desarrollo";
             Interface["keyboard"] = "Atajos de teclado";
-            Interface["music_playback_description"] = "Activar esto permitir· que la m˙sica siga sonando cuando la ventana pierda el foco.";
-            Interface["music_playback"] = "ReproducciÛn de m˙sica";
-            Interface["enhanced_assets_description"] = "Esta configuraciÛn habilita los recursos mejorados de la interfaz de usuario. ( Esto aÒade un poco m·s de profundidad de color a la interfaz. )";
+            Interface["music_playback_description"] = "Activar esto permitir√° que la m√∫sica siga sonando cuando la ventana pierda el foco.";
+            Interface["music_playback"] = "Reproducci√≥n de m√∫sica";
+            Interface["enhanced_assets_description"] = "Esta configuraci√≥n habilita los recursos mejorados de la interfaz de usuario. ( Esto a√±ade un poco m√°s de profundidad de color a la interfaz. )";
             Interface["enhanced_assets"] = "Interfaz mejorada";
             Interface["enemy_visible_description"] = "Esto activa o desactiva la visibilidad de las fuerzas enemigas en el mapa de guerra.";
             Interface["enemy_visible"] = "Fuerzas enemigas visibles";
             Interface["game_name"] = "Jeff Wayne's 'La Guerra de los Mundos'";
-            Interface["dir_warning"] = "Advertencia: La carpeta {0} es de solo lectura o est· protegida.\n\n" +
-                            "Es posible que el lanzador no guarde la configuraciÛn. Ejec˙telo como administrador, " +
+            Interface["dir_warning"] = "Advertencia: La carpeta {0} es de solo lectura o est√° protegida.\n\n" +
+                            "Es posible que el lanzador no guarde la configuraci√≥n. Ejec√∫telo como administrador, " +
                             "Desactive los permisos de solo lectura en la carpeta o mueva el juego a una carpeta diferente (por ejemplo, C:\\Juegos\\).";
             Interface["dir_warning_error"] = "Error de permisos";
-            Interface["lights"] = "La entrada de registro \"Show lights\" debe estar configurada en uno para evitar bloqueos al usar la habilidad InfiltraciÛn en el juego, por lo que se ha restablecido.";
-            Interface["colour"] = "La entrada de registro \"BPP\" debe estar configurada en 16, ya que he eliminado la opciÛn de alternar entre 8 y 16 bits del ejecutable del juego. øSeguro que no quieres jugarlo en modo de color de 8 bits en el siglo XXI?";
-            Interface["executable"] = "No se encontrÛ el archivo ejecutable. Por favor, reinstale el juego y siga las instrucciones.";
-            Interface["human_game"] = "El juego no est· instalado. Por favor, reinst·lelo y siga las instrucciones.";
-            Interface["martian_game"] = "El juego Martian no est· instalado. Por favor, reinst·lelo y siga las instrucciones.";
+            Interface["lights"] = "La entrada de registro \"Show lights\" debe estar configurada en uno para evitar bloqueos al usar la habilidad Infiltraci√≥n en el juego, por lo que se ha restablecido.";
+            Interface["colour"] = "La entrada de registro \"BPP\" debe estar configurada en 16, ya que he eliminado la opci√≥n de alternar entre 8 y 16 bits del ejecutable del juego. ¬øSeguro que no quieres jugarlo en modo de color de 8 bits en el siglo XXI?";
+            Interface["executable"] = "No se encontr√≥ el archivo ejecutable. Por favor, reinstale el juego y siga las instrucciones.";
+            Interface["human_game"] = "El juego no est√° instalado. Por favor, reinst√°lelo y siga las instrucciones.";
+            Interface["martian_game"] = "El juego Martian no est√° instalado. Por favor, reinst√°lelo y siga las instrucciones.";
             Interface["exit"] = "Salir";
             Interface["editor"] = "Editor no encontrado. Por favor, reinstale el juego y siga las instrucciones.";
-            Interface["fullscreen_disable"] = "Desactive la pantalla completa para habilitar esta funciÛn.";
+            Interface["fullscreen_disable"] = "Desactive la pantalla completa para habilitar esta funci√≥n.";
             Interface["fullscreen_detected"] = "Pantalla completa detectada";
-            Interface["easy"] = "F·cil";
+            Interface["easy"] = "F√°cil";
             Interface["medium"] = "Medio";
-            Interface["hard"] = "DifÌcil";
+            Interface["hard"] = "Dif√≠cil";
             Interface["extreme"] = "Extremo";
             Interface["custom"] = "Personalizada";
             //Form2.Designer.cs
             Interface["damage_reduction"] = "Ajuste el valor del registro 'Damage reduction divisor'. El valor predeterminado es 500.";
-            Interface["damage"] = "Divisor de reducciÛn de daÒo :";
+            Interface["damage"] = "Divisor de reducci√≥n de da√±o :";
             Interface["return"] = "Volver";
-            Interface["max_units"] = "Unidades m·ximas en el sector :";
+            Interface["max_units"] = "Unidades m√°ximas en el sector :";
             Interface["max_units_description"] = "Ajuste el valor del registro 'Max units in sector'. El valor predeterminado es 15.";
-            Interface["max_boats"] = "M·ximo de barcos en el sector :";
+            Interface["max_boats"] = "M√°ximo de barcos en el sector :";
             Interface["max_boats_description"] = "Ajuste el valor del registro 'Max boats in sector'. El valor predeterminado es 5.";
             Interface["martian_open_rate"] = "Tasa de apertura marciana :";
-            Interface["martian_open_rate_description"] = "Ajusta el valor del registro 'Martian Open Rate'. El valor predeterminado es 10. (Velocidad de investigaciÛn)";
+            Interface["martian_open_rate_description"] = "Ajusta el valor del registro 'Martian Open Rate'. El valor predeterminado es 10. (Velocidad de investigaci√≥n)";
             Interface["human_open_rate"] = "Tasa de apertura humana :";
-            Interface["human_open_rate_description"] = "Ajusta el valor del registro 'Human Open Rate'. El valor predeterminado es 20. (Velocidad de investigaciÛn)";
-            Interface["pod_interval"] = "Intervalo entre c·psulas (horas) :";
+            Interface["human_open_rate_description"] = "Ajusta el valor del registro 'Human Open Rate'. El valor predeterminado es 20. (Velocidad de investigaci√≥n)";
+            Interface["pod_interval"] = "Intervalo entre c√°psulas (horas) :";
             Interface["pod_interval_description"] = "Ajuste el valor del registro 'Pod Interval (hours)'. El valor predeterminado es 24.";
             Interface["ai_hours"] = "Horas de IA por turno :";
             Interface["ai_hours_description"] = "Ajusta el valor del registro 'AI Hours Per Turn'. El valor predeterminado es 5.";
-            Interface["restore_description"] = "Restaura la configuraciÛn a su estado predeterminado.";
-            Interface["restore"] = "Restaurar la configuraciÛn predeterminada";
-            Interface["description"] = "Estas opciones de configuraciÛn est·n disponibles en la entrada del registro del juego; se trata de la configuraciÛn predeterminada.";
-            Interface["description_suggestion"] = "Sugiero dejarlos como est·n a menos que ya hayas jugado al juego anteriormente.";
+            Interface["restore_description"] = "Restaura la configuraci√≥n a su estado predeterminado.";
+            Interface["restore"] = "Restaurar la configuraci√≥n predeterminada";
+            Interface["description"] = "Estas opciones de configuraci√≥n est√°n disponibles en la entrada del registro del juego; se trata de la configuraci√≥n predeterminada.";
+            Interface["description_suggestion"] = "Sugiero dejarlos como est√°n a menos que ya hayas jugado al juego anteriormente.";
             Interface["martian_strength"] = "Tabla de fuerza de IA Multiplicador marciano :";
             Interface["martian_strength_description"] = "Ajusta el valor del registro 'AI strength table Martian multiplier'. El valor predeterminado es 2.000000.";
             Interface["human_strength"] = "Tabla de fuerza de la IA Multiplicador humano :";
             Interface["human_strength_description"] = "Ajuste el valor del registro 'AI strength table Human multiplier'. El valor predeterminado es 1,000000.";
-            Interface["turret_description"] = "Ajusta el lÌmite de construcciÛn de la torreta.";
-            Interface["turret_label"] = "LÌmite de construcciÛn de la torreta :";
+            Interface["turret_description"] = "Ajusta el l√≠mite de construcci√≥n de la torreta.";
+            Interface["turret_label"] = "L√≠mite de construcci√≥n de la torreta :";
             // new values
             Interface["directplay_installed"] = "DirectPlay ha sido habilitado para resolver problemas de compatibilidad.";
-            Interface["directplay_title"] = "ActualizaciÛn del sistema";
+            Interface["directplay_title"] = "Actualizaci√≥n del sistema";
             Interface["instruction_button"] = "Manual de Instrucciones";
-            Interface["instruction_readme"] = "TambiÈn deberÌa leer el archivo readme original, ya que contiene notas que no aparecen en el manual del juego.";
+            Interface["instruction_readme"] = "Tambi√©n deber√≠a leer el archivo readme original, ya que contiene notas que no aparecen en el manual del juego.";
             Interface["instruction_location"] = "";
-            Interface["overclocked"] = "Las resoluciones 'Overclock' solo funcionan actualmente en pantalla completa. Por favor, actÌvala o el juego se iniciar· con la resoluciÛn de base escalada.";
+            Interface["overclocked"] = "Las resoluciones 'Overclock' solo funcionan actualmente en pantalla completa. Por favor, act√≠vala o el juego se iniciar√° con la resoluci√≥n de base escalada.";
             // larger minimaps
-            Interface["larger_minimaps"] = "Minimapas m·s grandes";
-            Interface["larger_minimaps_tooltip"] = "Duplica el tamaÒo del minimapa en el mapa de batalla. (Vista 3D)";
+            Interface["larger_minimaps"] = "Minimapas m√°s grandes";
+            Interface["larger_minimaps_tooltip"] = "Duplica el tama√±o del minimapa en el mapa de batalla. (Vista 3D)";
         }
     }
 }
