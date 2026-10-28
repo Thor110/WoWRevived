@@ -62,47 +62,68 @@ namespace WoWLauncher
             label22.Text = Program.Interface["turret_label"];
         }
         /// This method compares the registry entry with the value and sets it if they are different.
-        private void registryCompare(RegistryKey key, string entry, string value) { if ((string)key.GetValue(entry)! != value) { key.SetValue(entry, value); config = true; } }
+        /// The value keeps the type it already has (the network build stores some values as DWORDs, the vanilla build as strings).
+        private void registryCompare(RegistryKey key, string entry, string value)
+        {
+            object? current = key.GetValue(entry);
+            if (current?.ToString() == value) { return; }
+            if (current is int && int.TryParse(value, out int number)) { key.SetValue(entry, number, RegistryValueKind.DWord); }
+            else { key.SetValue(entry, value); }
+            config = true;
+        }
         /// Rounds a value and clamps it into the slider's range, so unexpected registry values can never throw.
         private static int ToTrackValue(TrackBar trackBar, double value) => TrackBarValue.Clamp(value, trackBar.Minimum, trackBar.Maximum);
+        /// Registry values are strings in the vanilla build and DWORDs in the network build, missing or unreadable values use the fallback.
+        private static double ReadNumber(RegistryKey key, string name, double fallback)
+        {
+            object? raw = key.GetValue(name);
+            if (raw is int number) { return number; }
+            return double.TryParse(raw as string, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed) ? parsed : fallback;
+        }
+        // slider positions when the form opened, only sliders the user moves are written back, so registry values that
+        // don't sit exactly on a slider step (e.g. a damage divisor of 450) are left alone and don't flip difficulty to Custom
+        private readonly Dictionary<TrackBar, int> loadedPositions = new Dictionary<TrackBar, int>();
+        private bool Moved(TrackBar trackBar) => !loadedPositions.TryGetValue(trackBar, out int position) || position != trackBar.Value;
         /// This method is called when the form is loaded to initialize the registry settings
         private void InitializeRegistry()
         {
-            int actualValue = Convert.ToInt32(battleKey.GetValue("Damage reduction divisor"));
+            int actualValue = (int)ReadNumber(battleKey, "Damage reduction divisor", 500);
             int adjustedValue = actualValue / 100;
             trackBar1.Value = ToTrackValue(trackBar1, adjustedValue);
             label8.Text = actualValue.ToString();
-            int unitsValue = Convert.ToInt32(tweakKey.GetValue("Max units in sector"));
+            int unitsValue = (int)ReadNumber(tweakKey, "Max units in sector", 15);
             trackBar2.Value = ToTrackValue(trackBar2, unitsValue);
             label9.Text = unitsValue.ToString();
-            int boatsValue = Convert.ToInt32(tweakKey.GetValue("Max boats in sector"));
+            int boatsValue = (int)ReadNumber(tweakKey, "Max boats in sector", 5);
             trackBar3.Value = ToTrackValue(trackBar3, boatsValue);
             label10.Text = boatsValue.ToString();
             // trackBar5 / label11 are on the "Human Open Rate" row, trackBar4 / label12 are on the "Martian Open Rate" row
-            int humanOpenRate = Convert.ToInt32(researchKey.GetValue("Human Open Rate"));
+            int humanOpenRate = (int)ReadNumber(researchKey, "Human Open Rate", 20);
             trackBar5.Value = ToTrackValue(trackBar5, humanOpenRate);
             label11.Text = humanOpenRate.ToString();
-            int martianOpenRate = Convert.ToInt32(researchKey.GetValue("Martian Open Rate"));
+            int martianOpenRate = (int)ReadNumber(researchKey, "Martian Open Rate", 10);
             trackBar4.Value = ToTrackValue(trackBar4, martianOpenRate);
             label12.Text = martianOpenRate.ToString();
-            int podInterval = Convert.ToInt32(tweakKey.GetValue("Pod Interval (hours)"));
+            int podInterval = (int)ReadNumber(tweakKey, "Pod Interval (hours)", 24);
             trackBar6.Value = ToTrackValue(trackBar6, podInterval);
             label13.Text = podInterval.ToString();
-            int aiHoursPerTurn = Convert.ToInt32(tweakKey.GetValue("AI Hours Per Turn"));
+            int aiHoursPerTurn = (int)ReadNumber(tweakKey, "AI Hours Per Turn", 5);
             trackBar7.Value = ToTrackValue(trackBar7, aiHoursPerTurn);
             label14.Text = aiHoursPerTurn.ToString();
             // new settings
             // Use this for more robust loading from Registry
-            double humanMultiplier = double.Parse(tweakKey.GetValue("AI strength table Human multiplier")!.ToString()!, CultureInfo.InvariantCulture);
+            double humanMultiplier = ReadNumber(tweakKey, "AI strength table Human multiplier", 1.0);
             trackBar9.Value = ToTrackValue(trackBar9, humanMultiplier * 100); // multiply before converting, (int)1.2 * 100 would be 100
             label18.Text = humanMultiplier.ToString("F6", CultureInfo.InvariantCulture);// Use this for more robust loading from Registry
-            double martianMultiplier = double.Parse(tweakKey.GetValue("AI strength table Martian multiplier")!.ToString()!, CultureInfo.InvariantCulture);
+            double martianMultiplier = ReadNumber(tweakKey, "AI strength table Martian multiplier", 2.0);
             trackBar8.Value = ToTrackValue(trackBar8, martianMultiplier * 100);
             label17.Text = martianMultiplier.ToString("F6", CultureInfo.InvariantCulture);
             // turret build limit
             value = BinaryUtility.ReadByteAtOffset("OBJ.ojd", 0x1C623L);
             trackBar10.Value = ToTrackValue(trackBar10, value);
             label21.Text = value.ToString();
+            loadedPositions.Clear();
+            foreach (TrackBar trackBar in new[] { trackBar1, trackBar2, trackBar3, trackBar4, trackBar5, trackBar6, trackBar7, trackBar8, trackBar9 }) { loadedPositions[trackBar] = trackBar.Value; }
             trackBar1.ValueChanged += trackBar1_ValueChanged!;
             trackBar2.ValueChanged += trackBar2_ValueChanged!;
             trackBar3.ValueChanged += trackBar3_ValueChanged!;
@@ -117,16 +138,16 @@ namespace WoWLauncher
         // return button saves the settings and closes the form
         private void button1_Click(object sender, EventArgs e)
         {
-            registryCompare(battleKey, "Damage reduction divisor", (trackBar1.Value * 100).ToString());
-            registryCompare(tweakKey, "Max units in sector", trackBar2.Value.ToString());
-            registryCompare(tweakKey, "Max boats in sector", trackBar3.Value.ToString());
-            registryCompare(researchKey, "Human Open Rate", trackBar5.Value.ToString());
-            registryCompare(researchKey, "Martian Open Rate", trackBar4.Value.ToString());
-            registryCompare(tweakKey, "Pod Interval (hours)", trackBar6.Value.ToString());
-            registryCompare(tweakKey, "AI Hours Per Turn", trackBar7.Value.ToString());
+            if (Moved(trackBar1)) { registryCompare(battleKey, "Damage reduction divisor", (trackBar1.Value * 100).ToString()); }
+            if (Moved(trackBar2)) { registryCompare(tweakKey, "Max units in sector", trackBar2.Value.ToString()); }
+            if (Moved(trackBar3)) { registryCompare(tweakKey, "Max boats in sector", trackBar3.Value.ToString()); }
+            if (Moved(trackBar5)) { registryCompare(researchKey, "Human Open Rate", trackBar5.Value.ToString()); }
+            if (Moved(trackBar4)) { registryCompare(researchKey, "Martian Open Rate", trackBar4.Value.ToString()); }
+            if (Moved(trackBar6)) { registryCompare(tweakKey, "Pod Interval (hours)", trackBar6.Value.ToString()); }
+            if (Moved(trackBar7)) { registryCompare(tweakKey, "AI Hours Per Turn", trackBar7.Value.ToString()); }
             // new settings
-            registryCompare(tweakKey, "AI strength table Human multiplier", ((double)trackBar9.Value / 100).ToString("F6", CultureInfo.InvariantCulture));
-            registryCompare(tweakKey, "AI strength table Martian multiplier", ((double)trackBar8.Value / 100).ToString("F6", CultureInfo.InvariantCulture));
+            if (Moved(trackBar9)) { registryCompare(tweakKey, "AI strength table Human multiplier", ((double)trackBar9.Value / 100).ToString("F6", CultureInfo.InvariantCulture)); }
+            if (Moved(trackBar8)) { registryCompare(tweakKey, "AI strength table Martian multiplier", ((double)trackBar8.Value / 100).ToString("F6", CultureInfo.InvariantCulture)); }
             byte limit = (byte)trackBar10.Value;
             if (value != limit)
             {

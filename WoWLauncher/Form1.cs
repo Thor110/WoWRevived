@@ -155,6 +155,18 @@ namespace WoWLauncher
                 // custom cd focus registry entry
                 volumeKey.SetValue("CD-Focus", 0, RegistryValueKind.DWord);
             }
+            // the main key can exist without some of its subkeys (e.g. Sound\Volume before the game first exits), create any that are missing
+            tweakKey ??= GameRegistry.Create("Tweak");
+            screenKey ??= GameRegistry.Create("Screen");
+            battleKey ??= GameRegistry.Create("BattleMap");
+            researchKey ??= GameRegistry.Create("Research");
+            optionsKey ??= GameRegistry.Create("Options");
+            buildListKey ??= GameRegistry.Create("BuildList");
+            debugKey ??= GameRegistry.Create("Debug");
+            soundKey ??= GameRegistry.Create("Sound");
+            volumeKey ??= GameRegistry.Create(@"Sound\Volume");
+            systemKey ??= GameRegistry.Create("System");
+            networkKey ??= GameRegistry.Create("Network");
             GameRegistry.RemoveLegacyUsersFullControl(); // undo the permissions older WoWViewer versions granted
             registryCompare(mainKey, "CD Path", AppDomain.CurrentDomain.BaseDirectory); // update the cd path in the registry automatically.
             registryCompare(mainKey, "Install Path", AppDomain.CurrentDomain.BaseDirectory); // update the install path in the registry automatically.
@@ -327,18 +339,25 @@ namespace WoWLauncher
             Text = Program.Interface["game_name"];
         }
         /// This method compares the registry entry with the value and sets it if they are different.
-        private void registryCompare(RegistryKey key, string entry, string value) { if ((string)key.GetValue(entry)! != value) { key.SetValue(entry, value); } }
+        /// The value keeps the type it already has (the network build stores some values as DWORDs, the vanilla build as strings).
+        private void registryCompare(RegistryKey key, string entry, string value)
+        {
+            object? current = key.GetValue(entry);
+            if (current?.ToString() == value) { return; }
+            if (current is int && int.TryParse(value, out int number)) { key.SetValue(entry, number, RegistryValueKind.DWord); }
+            else { key.SetValue(entry, value); }
+        }
         /// This method is called when the form is loaded to initialize the registry settings
         private void InitializeRegistry()
         {
-            if ((int)mainKey.GetValue("Enable Network Version")! == 1) { checkBox1.Checked = true; }
+            if (Convert.ToInt32(mainKey.GetValue("Enable Network Version") ?? 0) == 1) { checkBox1.Checked = true; }
             if (Convert.ToInt32(mainKey.GetValue("Full Screen")) == 1) { checkBox2.Checked = true; }
             checkBox3.Checked = Convert.ToInt32(battleKey.GetValue("EnableFogOfWar")) == 1; // for restore default settings
-            checkBox5.Checked = (int)volumeKey.GetValue("CD-Focus")! == 1; //music playback when out of focus
+            checkBox5.Checked = Convert.ToInt32(volumeKey.GetValue("CD-Focus") ?? 0) == 1; //music playback when out of focus
             checkBox6.Checked = AssetLayout.IsEnhancedActive(File.Exists); // enhanced assets enabled
             checkBox7.Checked = Convert.ToInt32(debugKey.GetValue("Enemy Visible")) == 1; // for restore default settings
             // overclocked resolutions
-            string realRes = ((string)screenKey.GetValue("Size")!).Replace(",", "x").Split(' ')[0];
+            string realRes = (screenKey.GetValue("Size") as string ?? "640,480").Replace(",", "x").Split(' ')[0];
             string width = iniFile.Read("width", "ddraw");
             if (width != "0")
             {
@@ -360,7 +379,7 @@ namespace WoWLauncher
             }
             // custom registry entry so it will be null once // medium by default
             if (comboBox4.Items.Count > 3) { comboBox4.Items.Remove(Program.Interface["custom"]); } // remove custom from the combo box on return
-            switch ((string)mainKey.GetValue("Difficulty")!)
+            switch ((mainKey.GetValue("Difficulty") as string))
             {
                 case "Easy": comboBox4.SelectedIndex = 0; break;
                 case "Medium": comboBox4.SelectedIndex = 1; break;
@@ -454,7 +473,7 @@ namespace WoWLauncher
         {
             if (File.Exists("MARTIAN.cd")) { File.Move("MARTIAN.cd", "Human.cd"); }
             // difficulty variance testing
-            switch ((string)mainKey.GetValue("Difficulty")!)
+            switch ((mainKey.GetValue("Difficulty") as string))
             {
                 case "Easy":
                     registryCompare(tweakKey, "AI strength table Human multiplier", "1.200000");
@@ -480,7 +499,7 @@ namespace WoWLauncher
         {
             if (File.Exists("Human.cd")) { File.Move("Human.cd", "MARTIAN.cd"); }
             // difficulty variance testing
-            switch ((string)mainKey.GetValue("Difficulty")!)
+            switch ((mainKey.GetValue("Difficulty") as string))
             {
                 case "Easy":
                     registryCompare(tweakKey, "AI strength table Human multiplier", "0.800000");
@@ -553,57 +572,50 @@ namespace WoWLauncher
             }
             else { Close(); }
         }
+        // Values the network executable reads as DWORDs and the vanilla executable reads as strings, with their defaults.
+        // The vanilla executable starts at 320x240 if it finds DWORDs here, so they are converted whenever the version changes.
+        private (Func<RegistryKey> Key, string Name, int Default)[] VersionTypedValues() => new (Func<RegistryKey>, string, int)[]
+        {
+            (() => mainKey, "Thread Enable", 1),
+            (() => mainKey, "Timer Enable", 0),
+            (() => mainKey, "Sleeper Enable", 0),
+            (() => mainKey, "Full Screen", 1),
+            (() => battleKey, "EnableFogOfWar", 1),
+            (() => debugKey, "Enemy Visible", 0),
+            (() => debugKey, "Charlie", 0),
+            (() => debugKey, "Dave", 0),
+            (() => debugKey, "Mat", 0),
+            (() => debugKey, "Edit functionality", 0),
+            (() => debugKey, "Load scenery", 1),
+            (() => debugKey, "Arrow scenery load fix", 1),
+            (() => debugKey, "Show Accelerations", 0),
+            (() => debugKey, "Show Radii", 0),
+            (() => debugKey, "Show Arrival", 0),
+            (() => debugKey, "Show Orders", 0),
+            (() => networkKey, "Messages Guaranteed", 0),
+            (() => screenKey, "AllowResize", 0),
+            (() => screenKey, "FixedAspect", 1),
+            (() => tweakKey, "AI Oracle", 0),
+        };
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
             mainKey.SetValue("Enable Network Version", checkBox1.Checked ? 1 : 0);
-            if (checkBox1.Checked)
+            foreach (var (key, name, fallback) in VersionTypedValues())
             {
-                mainKey.SetValue("Thread Enable", Convert.ToInt32(mainKey.GetValue("Thread Enable") ?? 1), RegistryValueKind.DWord);
-                mainKey.SetValue("Timer Enable", Convert.ToInt32(mainKey.GetValue("Timer Enable") ?? 0), RegistryValueKind.DWord);
-                mainKey.SetValue("Sleeper Enable", Convert.ToInt32(mainKey.GetValue("Sleeper Enable") ?? 0), RegistryValueKind.DWord);
-                mainKey.SetValue("Full Screen", Convert.ToInt32(mainKey.GetValue("Full Screen") ?? 1), RegistryValueKind.DWord);
-                battleKey.SetValue("EnableFogOfWar", Convert.ToInt32(battleKey.GetValue("EnableFogOfWar") ?? 1), RegistryValueKind.DWord);
-                debugKey.SetValue("Enemy Visible", Convert.ToInt32(debugKey.GetValue("Enemy Visible") ?? 0), RegistryValueKind.DWord);
-                debugKey.SetValue("Charlie", Convert.ToInt32(debugKey.GetValue("Charlie") ?? 0), RegistryValueKind.DWord);
-                debugKey.SetValue("Dave", Convert.ToInt32(debugKey.GetValue("Dave") ?? 0), RegistryValueKind.DWord);
-                debugKey.SetValue("Mat", Convert.ToInt32(debugKey.GetValue("Mat") ?? 0), RegistryValueKind.DWord);
-                debugKey.SetValue("Edit functionality", Convert.ToInt32(debugKey.GetValue("Edit functionality") ?? 0), RegistryValueKind.DWord);
-                debugKey.SetValue("Load scenery", Convert.ToInt32(debugKey.GetValue("Load scenery") ?? 1), RegistryValueKind.DWord);
-                debugKey.SetValue("Arrow scenery load fix", Convert.ToInt32(debugKey.GetValue("Arrow scenery load fix") ?? 1), RegistryValueKind.DWord);
-                debugKey.SetValue("Show Accelerations", Convert.ToInt32(debugKey.GetValue("Show Accelerations") ?? 0), RegistryValueKind.DWord);
-                debugKey.SetValue("Show Radii", Convert.ToInt32(debugKey.GetValue("Show Radii") ?? 0), RegistryValueKind.DWord);
-                debugKey.SetValue("Show Arrival", Convert.ToInt32(debugKey.GetValue("Show Arrival") ?? 0), RegistryValueKind.DWord);
-                debugKey.SetValue("Show Orders", Convert.ToInt32(debugKey.GetValue("Show Orders") ?? 0), RegistryValueKind.DWord);
-                networkKey.SetValue("Messages Guaranteed", Convert.ToInt32(networkKey.GetValue("Messages Guaranteed") ?? 0), RegistryValueKind.DWord);
-                screenKey.SetValue("AllowResize", Convert.ToInt32(screenKey.GetValue("AllowResize") ?? 0), RegistryValueKind.DWord);
-                screenKey.SetValue("FixedAspect", Convert.ToInt32(screenKey.GetValue("FixedAspect") ?? 1), RegistryValueKind.DWord);
-                tweakKey.SetValue("AI Oracle", Convert.ToInt32(tweakKey.GetValue("AI Oracle") ?? 0), RegistryValueKind.DWord);
-            }
-            else
-            {
-                mainKey.SetValue("Thread Enable", mainKey.GetValue("Thread Enable")!?.ToString()!, RegistryValueKind.String);
-                mainKey.SetValue("Timer Enable", mainKey.GetValue("Timer Enable")!?.ToString()!, RegistryValueKind.String);
-                mainKey.SetValue("Sleeper Enable", mainKey.GetValue("Sleeper Enable")!?.ToString()!, RegistryValueKind.String);
-                mainKey.SetValue("Full Screen", mainKey.GetValue("Full Screen")!?.ToString()!, RegistryValueKind.String);
-                battleKey.SetValue("EnableFogOfWar", battleKey.GetValue("EnableFogOfWar")!?.ToString()!, RegistryValueKind.String);
-                debugKey.SetValue("Enemy Visible", debugKey.GetValue("Enemy Visible")!?.ToString()!, RegistryValueKind.String);
-                debugKey.SetValue("Charlie", debugKey.GetValue("Charlie")!?.ToString()!, RegistryValueKind.String);
-                debugKey.SetValue("Dave", debugKey.GetValue("Dave")!?.ToString()!, RegistryValueKind.String);
-                debugKey.SetValue("Mat", debugKey.GetValue("Mat")!?.ToString()!, RegistryValueKind.String);
-                debugKey.SetValue("Edit functionality", debugKey.GetValue("Edit functionality")!?.ToString()!, RegistryValueKind.String);
-                debugKey.SetValue("Load scenery", debugKey.GetValue("Load scenery")!?.ToString()!, RegistryValueKind.String);
-                debugKey.SetValue("Arrow scenery load fix", debugKey.GetValue("Arrow scenery load fix")!?.ToString()!, RegistryValueKind.String);
-                debugKey.SetValue("Show Accelerations", debugKey.GetValue("Show Accelerations")!?.ToString()!, RegistryValueKind.String);
-                debugKey.SetValue("Show Radii", debugKey.GetValue("Show Radii")!, RegistryValueKind.String);
-                debugKey.SetValue("Show Arrival", debugKey.GetValue("Show Arrival")!?.ToString()!, RegistryValueKind.String);
-                debugKey.SetValue("Show Orders", debugKey.GetValue("Show Orders")!?.ToString()!, RegistryValueKind.String);
-                networkKey.SetValue("Messages Guaranteed", networkKey.GetValue("Messages Guaranteed")!?.ToString()!, RegistryValueKind.String);
-                screenKey.SetValue("AllowResize", screenKey.GetValue("AllowResize")!?.ToString()!, RegistryValueKind.String);
-                screenKey.SetValue("FixedAspect", screenKey.GetValue("FixedAspect")!?.ToString()!, RegistryValueKind.String);
-                tweakKey.SetValue("AI Oracle", tweakKey.GetValue("AI Oracle")!?.ToString()!, RegistryValueKind.String);
+                object? raw = key().GetValue(name); // missing or unreadable values get their default instead of throwing
+                if (checkBox1.Checked)
+                {
+                    int value = raw is int number ? number : int.TryParse(raw as string, out int parsed) ? parsed : fallback;
+                    key().SetValue(name, value, RegistryValueKind.DWord);
+                }
+                else
+                {
+                    string text = raw is int number ? number.ToString() : raw as string ?? fallback.ToString();
+                    key().SetValue(name, text, RegistryValueKind.String);
+                }
             }
             /* // only other value that varies or is introduced, not relevant.
-[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug]				  
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Rage\Jeff Wayne's 'The War Of The Worlds'\1.00.000\Debug]
 "Log File"="wow.log"
              */
         }
@@ -611,9 +623,9 @@ namespace WoWLauncher
         {
             var move = checkBox2.Checked ? ("ddraw-off.dll", "ddraw.dll") : ("ddraw.dll", "ddraw-off.dll");
             if (!MoveFilesOrRevert(new[] { move }, checkBox2, checkBox2_CheckedChanged!)) { return; }
-            mainKey.SetValue("Full Screen", checkBox2.Checked ? "1" : "0");
+            registryCompare(mainKey, "Full Screen", checkBox2.Checked ? "1" : "0"); // keeps the DWORD type while the network version is enabled
         }
-        private void checkBox3_CheckedChanged(object sender, EventArgs e) { battleKey.SetValue("EnableFogOfWar", checkBox3.Checked ? "1" : "0"); }
+        private void checkBox3_CheckedChanged(object sender, EventArgs e) { registryCompare(battleKey, "EnableFogOfWar", checkBox3.Checked ? "1" : "0"); }
         private int resolutionHelper(string resolution, string from, string to)
         {
             string baseResMatch = resolution.Replace(from, to); // "1920x1080"
@@ -729,7 +741,7 @@ namespace WoWLauncher
         }
         private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (comboBox4.Text == (string)mainKey.GetValue("Difficulty")!) { return; }
+            if (comboBox4.Text == (mainKey.GetValue("Difficulty") as string)) { return; }
             switch (comboBox4.SelectedIndex)
             {
                 case 0:

@@ -1,4 +1,4 @@
-﻿#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <mfapi.h>
 #include <mfplay.h>
@@ -580,6 +580,7 @@ extern "C" {
         // a previous movie that was never closed must not leak its player or overlay
         if (pMediaPlayer || overlayWindow) CloseOverlayWindow();
         // reset before the new movie starts, a late PLAYBACK_ENDED from the previous movie must not end this one
+        // (this was why RAGELOGO used to be skipped on the human launch)
         videoFinished = false;
         victoryMovieFinished = false;
         //fix incoming name string .SMK = .mp4

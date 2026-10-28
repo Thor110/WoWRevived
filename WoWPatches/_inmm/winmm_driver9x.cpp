@@ -52,9 +52,9 @@ struct GameAddrs {
 	volatile float* masterVol;
 	volatile float* ambientVol;
 	volatile float* speechVol;
-	volatile DWORD* menuState;      // vanilla only: 0x90 or 0x0 while in the main menu
-	volatile DWORD* campaignActive; // vanilla only: non zero while a campaign is loaded
-	volatile BYTE*  humanCampaign;  // vanilla only: 1 for the human campaign
+	volatile DWORD* menuState;      // 0x90 or 0x0 while in the main menu (written by the movie player's menu state setter)
+	volatile DWORD* campaignActive; // vanilla only: non zero once a campaign has been loaded
+	volatile BYTE*  humanCampaign;  // the "Network\I Am Human" setting, 1 when playing the human side
 	// CD Player menu constructor (hooked to capture "this"), destructor (hooked to clear it) and message handler
 	DWORD cdCtor; const BYTE* cdCtorSig; int cdCtorSigLen; int cdCtorHookLen;
 	DWORD cdDtor; const BYTE* cdDtorSig; int cdDtorSigLen; int cdDtorHookLen; int cdDtorRelCallAt;
@@ -83,7 +83,9 @@ static const GameAddrs kVanillaAddrs = {
 };
 static const GameAddrs kNetworkAddrs = {
 	(volatile DWORD*)0x5427CC, (volatile float*)0x530654, (volatile float*)0x53063C, (volatile float*)0x530650,
-	nullptr, nullptr, nullptr, // menu / campaign state not mapped for the network build yet
+	// 0x5427A4: sub_405AD0 clears it, sub_404900 sets it (0x90 after TITLE, 0x8038 after RAGELOGO, 0x80CA after VICTORY),
+	// matching vanilla's sub_404900 / 0x4D255C exactly. 0x530518: "I Am Human", registered by sub_5024D0.
+	(volatile DWORD*)0x5427A4, nullptr, (volatile BYTE*)0x530518,
 	0x4AF680, kNetworkCtorSig, sizeof(kNetworkCtorSig), 5,
 	0x4B1310, kNetworkDtorSig, sizeof(kNetworkDtorSig), 7, -1,
 	0x4B0510, kNetworkOnMessageSig, sizeof(kNetworkOnMessageSig),
@@ -373,6 +375,16 @@ void RefreshPresence(GameState newState) {
 
 
 
+	// network games also show which side is being played
+	if (newState == STATE_NETWORK && addrs->humanCampaign) {
+		static const char* const kSides[5][2] = {
+			{ "Human", "Martian" }, { "Humain", "Martien" }, { "Mensch", "Marsianer" }, { "Umano", "Marziano" }, { "Humano", "Marciano" },
+		};
+		bool human = (*addrs->humanCampaign == 1);
+		presence.smallImageKey = human ? "human" : "martian";
+		presence.smallImageText = kSides[(currentLanguage >= LANG_EN && currentLanguage <= LANG_ES) ? currentLanguage : LANG_EN][human ? 0 : 1];
+	}
+
 	if (pfnDiscord_UpdatePresence) pfnDiscord_UpdatePresence(&presence);
 }
 
@@ -408,8 +420,7 @@ void UpdateDiscordState() {
 		Log("Main Menu State");
 	}
 	else if (isNetworkVersion) {
-		// 0x530518 is the network executable equivalent of 0x4B84C4
-		// test networking and then if it works find the network equivalent of 0x4D25D0 and maybe add human/martian networking states.
+		// anything other than the menu is a network game, the side being played is shown as the small image
 		currentState = STATE_NETWORK;
 		Log("Network State");
 	}
@@ -922,6 +933,13 @@ static void PlayWav(const char* path) {
 	EnterCriticalSection(&audioLock);
 	HWAVEOUT device = NULL;
 	if (waveOutOpen(&device, WAVE_MAPPER, &wfx, (DWORD_PTR)g_audioEvent, 0, CALLBACK_EVENT) == MMSYSERR_NOERROR) {
+		// Older versions scaled the whole process's audio session with waveOutSetVolume (see MCI_STATUS), and Windows
+		// can remember that level. Put the session back to full once, the game and the music scale themselves.
+		static bool sessionVolumeReset = false;
+		if (!sessionVolumeReset) {
+			waveOutSetVolume(device, 0xFFFFFFFF);
+			sessionVolumeReset = true;
+		}
 		g_pcm.swap(pcm);
 		audioReadPos = 0;
 		currentTrackLength = (uint32_t)((double)g_pcm.size() / wfx.nAvgBytesPerSec * 1000.0);
@@ -1168,19 +1186,10 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 	}
 
 	// 6. STATUS
+	// Master volume is applied to the music samples as they are queued (QueueBuffer_Locked). It is no longer also
+	// applied with waveOutSetVolume: on Vista and later that sets the volume of the whole process's audio session,
+	// so it applied master volume a second time to the music and to every game sound effect.
 	if (uMsg == MCI_STATUS) {
-		if (hWaveOut) {
-			float liveVolume = CurrentMasterVolume();
-			static float lastVol = -1.0f;
-			if (liveVolume != lastVol) {
-				Log("Volume Change Detected in Memory: %f", liveVolume);
-				lastVol = liveVolume;
-
-				WORD volWord = (WORD)(liveVolume * 0xFFFF);
-				DWORD dwVolume = ((DWORD)volWord << 16) | volWord;
-				waveOutSetVolume(NULL, dwVolume);
-			}
-		}
 		LPMCI_STATUS_PARMS lpStatus = (LPMCI_STATUS_PARMS)dwParam;
 		if (!lpStatus) return 0;
 		if (lpStatus->dwItem == MCI_STATUS_POSITION) {
