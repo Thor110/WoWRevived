@@ -27,7 +27,7 @@ using namespace Gdiplus;
 // ============================================================
 
 FILE*               logFile = nullptr;
-bool                debug = false;
+bool                debug = false; // also switched on by "Debug Log=1" in the [Revived] section of WoWRevived.ini
 int                 regWidth = 640;
 int                 regHeight = 480;
 int                 offsetY = 0;
@@ -683,6 +683,10 @@ BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
         wow::IniStore settings;
         if (settings.Load(settingsPath)) {
             std::string value;
+            if (settings.Get("Revived", "Debug Log", value) && atoi(value.c_str()) != 0 && !debug) {
+                debug = true; // [Revived] Debug Log=1 in WoWRevived.ini writes Smackw32_log.txt
+                DeleteFileA("Smackw32_log.txt");
+            }
             if (settings.Get("Main", "Full Screen", value)) isFullscreen = (atoi(value.c_str()) == 1);
             if (settings.Get("Screen", "Size", value)) sscanf(value.c_str(), "%d,%d", &regWidth, &regHeight);
         }

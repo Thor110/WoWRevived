@@ -22,7 +22,7 @@ bool isPaused = false; // pause state in the cd player menu
 DWORD lastOpenTime = 0;
 HWAVEOUT hWaveOut = NULL;
 FILE* logFile = nullptr;
-bool debug = false; // true for logging
+bool debug = false; // logging to _inmm_log.txt, also switched on by "Debug Log=1" in the [Revived] section of WoWRevived.ini
 bool musicFocus = false; // allow music to continue playing while the window is out of focus
 // Latch so the end-of-track Stop press is only posted once per track, reset whenever a new track starts.
 bool forceStopFired = false;
@@ -41,7 +41,6 @@ DWORD lastEscapeTick = 0;
 DWORD lastClickTick = 0;
 GameBuild gameBuild = BUILD_UNKNOWN;
 bool isNetworkVersion = false;
-bool hooksInstalled = false;
 bool resumingFocus = false;
 
 // === Per-build game addresses === //
@@ -53,14 +52,16 @@ struct GameAddrs {
 	volatile float* masterVol;
 	volatile float* ambientVol;
 	volatile float* speechVol;
-	volatile DWORD* menuState;      // 0x90 or 0x0 while in the main menu (written by the movie player's menu state setter)
-	volatile DWORD* campaignActive; // vanilla only: non zero once a campaign has been loaded
 	volatile BYTE*  humanCampaign;  // the "Network\I Am Human" setting, 1 when playing the human side
 	volatile DWORD* networkPlayer;  // network only: the local DirectPlay player id, non zero while in a multiplayer session
 	// CD Player menu constructor (hooked to capture "this"), destructor (hooked to clear it) and message handler
 	DWORD cdCtor; const BYTE* cdCtorSig; int cdCtorSigLen; int cdCtorHookLen;
 	DWORD cdDtor; const BYTE* cdDtorSig; int cdDtorSigLen; int cdDtorHookLen; int cdDtorRelCallAt;
 	DWORD cdOnMessage; const BYTE* cdOnMessageSig; int cdOnMessageSigLen;
+	// Constructor and destructor of the base class every game screen is built on (main menu, CD Player, options, and
+	// also the war map and battle map). Hooked to know when a campaign is being played, see OnMenuConstructed.
+	DWORD menuCtor; const BYTE* menuCtorSig; int menuCtorSigLen; int menuCtorHookLen;
+	DWORD menuDtor; const BYTE* menuDtorSig; int menuDtorSigLen; int menuDtorHookLen;
 };
 
 // vanilla: sub_407990 = push -1; push offset SEH_407990 (7 bytes, never touches ECX)
@@ -75,28 +76,39 @@ static const BYTE kNetworkCtorSig[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x9F
 static const BYTE kNetworkDtorSig[] = { 0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC };
 // network: off_51B1E0 slot 10 (+0x28) = sub_4B0510, handles 0x3B9 and 0x111 like vanilla's sub_4081D0
 static const BYTE kNetworkOnMessageSig[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0xED, 0x17, 0x50, 0x00 };
+// vanilla: menu base class constructor sub_40A060 (screen id, name, ...) and destructor sub_40A150,
+// both start push -1; push offset SEH (7 bytes, absolute operands only)
+static const BYTE kVanillaMenuCtorSig[] = { 0x6A, 0xFF, 0x68, 0x08, 0x51, 0x4A, 0x00 };
+static const BYTE kVanillaMenuDtorSig[] = { 0x6A, 0xFF, 0x68, 0x28, 0x51, 0x4A, 0x00 };
+// network: menu base class constructor sub_4B6C80 and destructor sub_4B6DA0, push ebp; mov ebp,esp; push -1 (5 bytes)
+static const BYTE kNetworkMenuCtorSig[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0xF8, 0x1B, 0x50, 0x00 };
+static const BYTE kNetworkMenuDtorSig[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x0A, 0x1C, 0x50, 0x00 };
 
 static const GameAddrs kVanillaAddrs = {
 	(volatile DWORD*)0x4B8A88, (volatile float*)0x4CA870, (volatile float*)0x4CA858, (volatile float*)0x4CA86C,
-	(volatile DWORD*)0x4D255C, (volatile DWORD*)0x4D25D0, (volatile BYTE*)0x4B84C4, nullptr,
+	(volatile BYTE*)0x4B84C4, nullptr,
 	0x407990, kVanillaCtorSig, sizeof(kVanillaCtorSig), 7,
 	0x408080, kVanillaDtorSig, sizeof(kVanillaDtorSig), 8, 3,
 	0x4081D0, kVanillaOnMessageSig, sizeof(kVanillaOnMessageSig),
+	0x40A060, kVanillaMenuCtorSig, sizeof(kVanillaMenuCtorSig), 7,
+	0x40A150, kVanillaMenuDtorSig, sizeof(kVanillaMenuDtorSig), 7,
 };
 static const GameAddrs kNetworkAddrs = {
 	(volatile DWORD*)0x5427CC, (volatile float*)0x530654, (volatile float*)0x53063C, (volatile float*)0x530650,
-	// 0x5427A4: sub_405AD0 clears it, sub_404900 sets it (0x90 after TITLE, 0x8038 after RAGELOGO, 0x80CA after VICTORY),
-	// matching vanilla's sub_404900 / 0x4D255C exactly. 0x530518: "I Am Human", registered by sub_5024D0.
-	(volatile DWORD*)0x5427A4, nullptr, (volatile BYTE*)0x530518,
+	// 0x530518: "I Am Human", registered by sub_5024D0 (vanilla 0x4B84C4)
+	(volatile BYTE*)0x530518,
 	// 0x5432D0: written by IDirectPlay4::CreatePlayer when hosting or joining (calls at 0x407030 / 0x407599), zeroed at
 	// 0x407926 just before IDirectPlay4::Close when leaving, otherwise only read (as the sender id for Send).
 	(volatile DWORD*)0x5432D0,
 	0x4AF680, kNetworkCtorSig, sizeof(kNetworkCtorSig), 5,
 	0x4B1310, kNetworkDtorSig, sizeof(kNetworkDtorSig), 7, -1,
 	0x4B0510, kNetworkOnMessageSig, sizeof(kNetworkOnMessageSig),
+	0x4B6C80, kNetworkMenuCtorSig, sizeof(kNetworkMenuCtorSig), 5,
+	0x4B6DA0, kNetworkMenuDtorSig, sizeof(kNetworkMenuDtorSig), 5,
 };
 static const GameAddrs kNoAddrs = {}; // unknown build: every game memory access is skipped
 const GameAddrs* addrs = &kNoAddrs;
+extern volatile LONG g_campaignScreens; // war map / battle map screens currently open, see OnMenuConstructed
 
 // The in-game music toggle, read live so turning music off or on in the options takes effect immediately.
 bool CurrentCdState() { return addrs->cdToggle ? ((*addrs->cdToggle & 0xFF) != 0) : true; }
@@ -178,9 +190,26 @@ struct DiscordRichPresence {
 	int8_t instance;
 };
 
+struct DiscordUser {
+	const char* userId;
+	const char* username;
+	const char* discriminator;
+	const char* avatar;
+};
+
+// discord-rpc calls these from Discord_RunCallbacks. Explicitly __cdecl, the release build defaults to stdcall.
+struct DiscordEventHandlers {
+	void(__cdecl* ready)(const DiscordUser* request);
+	void(__cdecl* disconnected)(int errorCode, const char* message);
+	void(__cdecl* errored)(int errorCode, const char* message);
+	void(__cdecl* joinGame)(const char* joinSecret);
+	void(__cdecl* spectateGame)(const char* spectateSecret);
+	void(__cdecl* joinRequest)(const DiscordUser* request);
+};
+
 static int64_t g_sessionStartTime = 0;
 
-typedef void(__cdecl* Discord_Initialize_t)(const char* applicationId, void* handlers, int autoRegister, const char* optionalSteamId);
+typedef void(__cdecl* Discord_Initialize_t)(const char* applicationId, DiscordEventHandlers* handlers, int autoRegister, const char* optionalSteamId);
 typedef void(__cdecl* Discord_UpdatePresence_t)(const DiscordRichPresence* presence);
 typedef void(__cdecl* Discord_RunCallbacks_t)(void);
 typedef void(__cdecl* Discord_Shutdown_t)(void);
@@ -194,6 +223,7 @@ static bool g_discordInitialized = false;
 
 enum GameState { STATE_MENU, STATE_HUMAN, STATE_MARTIAN, STATE_NETWORK, STATE_CDPLAYER };
 GameState g_lastGameState = (GameState)-1;
+volatile bool g_forcePresenceRefresh = false; // set when Discord (re)connects so the current state is sent again
 
 Language currentLanguage = LANG_EN;
 
@@ -428,9 +458,6 @@ void RefreshPresence(GameState newState) {
 // CD Player menu is open, so it is also what decides whether the CD Player is showing.
 void* volatile pCDPlayerMenuThis = nullptr;
 
-// discord rpc poll
-DWORD lastPoll = 0;
-
 // Static variables to persist between calls
 static DWORD lastPresenceUpdate = 0;
 
@@ -449,36 +476,25 @@ void UpdateDiscordState() {
 		currentState = STATE_CDPLAYER;
 		Log("CD Player State");
 	}
-	// network build: a multiplayer session is in progress (checked before the menu, so the lobby counts too)
+	// network build: a multiplayer session is in progress (checked first, so its lobby counts too)
 	else if (addrs->networkPlayer && *addrs->networkPlayer != 0) {
 		currentState = STATE_NETWORK;
 		Log("Network State (player id 0x%X)", *addrs->networkPlayer);
 	}
-	// 0x90 return from credits sequence - end game or accessed via options menu
-	// 0x0 return to main menu from in-game
-	else if (addrs->menuState && (*addrs->menuState == 0x90 || *addrs->menuState == 0x0)) {
+	// a campaign is being played: its war map or battle map screen exists (see OnMenuConstructed)
+	else if (g_campaignScreens > 0 && addrs->humanCampaign) {
+		currentState = (*addrs->humanCampaign == 1) ? STATE_HUMAN : STATE_MARTIAN;
+		Log("Campaign State: %s (%ld game screens)", currentState == STATE_HUMAN ? "Human" : "Martian", g_campaignScreens);
+	}
+	// the main menu and the other front end screens
+	else {
 		currentState = STATE_MENU;
 		Log("Main Menu State");
 	}
-	// a campaign: vanilla knows when one is loaded, the network build is in one whenever it isn't in the menu or a
-	// multiplayer session (the launcher starts it for both campaign buttons when the network version is enabled)
-	else if (addrs->humanCampaign && (isNetworkVersion || (addrs->campaignActive && *addrs->campaignActive != 0))) {
-		if (*addrs->humanCampaign == 1) {
-			currentState = STATE_HUMAN;
-			Log("Campaign State: Human");
-		}
-		else {
-			currentState = STATE_MARTIAN;
-			Log("Campaign State: Martian");
-		}
-	}
-	else {
-		currentState = STATE_MENU;
-		Log("unknown state");
-	}
 
-	// Logic: Update if State changes, Track changes, OR 16s have passed
-	bool stateChanged = (currentState != g_lastGameState);
+	// Logic: Update if State changes, Track changes, Discord (re)connected, OR 16s have passed
+	bool stateChanged = (currentState != g_lastGameState) || g_forcePresenceRefresh;
+	g_forcePresenceRefresh = false;
 	bool trackChanged = (currentState == STATE_CDPLAYER && currentTrack != g_lastTrack);
 	bool rateLimitExpired = (GetTickCount() - lastPresenceUpdate > 16000);
 
@@ -514,6 +530,18 @@ bool IsDiscordRunning() {
 	return running;
 }
 
+static void __cdecl OnDiscordReady(const DiscordUser* user) {
+	Log("Discord: connected as %s", (user && user->username) ? user->username : "?");
+	g_forcePresenceRefresh = true;
+}
+static void __cdecl OnDiscordDisconnected(int errorCode, const char* message) {
+	Log("Discord: disconnected (%d) %s", errorCode, message ? message : "");
+}
+static void __cdecl OnDiscordErrored(int errorCode, const char* message) {
+	Log("Discord: error (%d) %s", errorCode, message ? message : ""); // e.g. a rejected presence update
+}
+static DiscordEventHandlers g_discordHandlers = { OnDiscordReady, OnDiscordDisconnected, OnDiscordErrored, nullptr, nullptr, nullptr };
+
 void InitDiscordRPC() {
 	if (g_discordInitialized) return;
 	if (!IsDiscordRunning()) return;
@@ -537,7 +565,8 @@ void InitDiscordRPC() {
 	}
 
 	// Application ID
-	pfnDiscord_Initialize("1527400154154402022", nullptr, 1, nullptr);
+	pfnDiscord_Initialize("1527400154154402022", &g_discordHandlers, 1, nullptr);
+	Log("Discord: initialised");
 
 	DiscordRichPresence presence = {};
 	presence.startTimestamp = (int64_t)std::time(nullptr);
@@ -716,6 +745,91 @@ void InstallCDPlayerMenuDtorHook()
 		(void*)&CDPlayerMenuDtor_HookStub, addrs->cdDtorRelCallAt, "CD Player menu destructor");
 }
 
+// === Game screen tracking ===
+// Every screen the game shows is built on one menu base class whose constructor takes the screen's id. The war map
+// ("Warmap menu", 0x80B5) and battle map ("Battlemap menu", 0x80B8) are screens too, so a campaign is being played
+// exactly while one of them exists. Same ids in both builds. Screens are only created and destroyed on the game thread.
+#define SCREEN_ID_WARMAP 0x80B5
+#define SCREEN_ID_BATTLEMAP 0x80B8
+static void* g_campaignScreenObjects[8] = {};
+volatile LONG g_campaignScreens = 0;
+BYTE* g_menuCtorTrampoline = nullptr;
+BYTE* g_menuDtorTrampoline = nullptr;
+
+void __cdecl OnMenuConstructed(void* menu, DWORD screenId)
+{
+	if (screenId != SCREEN_ID_WARMAP && screenId != SCREEN_ID_BATTLEMAP) return;
+	for (void*& slot : g_campaignScreenObjects) {
+		if (slot == nullptr) {
+			slot = menu;
+			InterlockedIncrement(&g_campaignScreens);
+			break;
+		}
+	}
+	Log("Campaign screen 0x%X created (%ld open)", screenId, g_campaignScreens);
+}
+
+void __cdecl OnMenuDestroyed(void* menu)
+{
+	for (void*& slot : g_campaignScreenObjects) {
+		if (slot == menu) {
+			slot = nullptr;
+			InterlockedDecrement(&g_campaignScreens);
+			Log("Campaign screen destroyed (%ld open)", g_campaignScreens);
+			break;
+		}
+	}
+}
+
+// entry of the base constructor: [esp] = return address, [esp+4] = screen id, ecx = the screen being constructed
+void __declspec(naked) MenuCtor_HookStub()
+{
+	__asm {
+		pushad
+		pushfd
+		push dword ptr [esp + 40]   // the screen id, 36 bytes of saved registers above the return address
+		push ecx
+		call OnMenuConstructed
+		add esp, 8
+		popfd
+		popad
+		jmp dword ptr [g_menuCtorTrampoline]
+	}
+}
+
+void __declspec(naked) MenuDtor_HookStub()
+{
+	__asm {
+		pushad
+		pushfd
+		push ecx
+		call OnMenuDestroyed
+		add esp, 4
+		popfd
+		popad
+		jmp dword ptr [g_menuDtorTrampoline]
+	}
+}
+
+void InstallScreenHooks()
+{
+	if (!addrs->menuCtor || !addrs->menuDtor) return;
+	// both or neither: a constructor hook without the destructor hook would leave screens counted forever
+	if (!BytesMatch(addrs->menuCtor, addrs->menuCtorSig, addrs->menuCtorSigLen) || !BytesMatch(addrs->menuDtor, addrs->menuDtorSig, addrs->menuDtorSigLen)) {
+		Log("Game screen hooks skipped: bytes don't match the %s build", GameBuildName(gameBuild));
+		return;
+	}
+	g_menuDtorTrampoline = InstallJmpHook(addrs->menuDtor, addrs->menuDtorSig, addrs->menuDtorSigLen, addrs->menuDtorHookLen,
+		(void*)&MenuDtor_HookStub, -1, "Game screen destructor");
+	if (g_menuDtorTrampoline) {
+		g_menuCtorTrampoline = InstallJmpHook(addrs->menuCtor, addrs->menuCtorSig, addrs->menuCtorSigLen, addrs->menuCtorHookLen,
+			(void*)&MenuCtor_HookStub, -1, "Game screen constructor");
+	}
+}
+
+DWORD WINAPI PresenceThread(LPVOID); // defined after WndProcHook
+extern volatile bool g_presenceShutdown;
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 	if (fdwReason == DLL_PROCESS_ATTACH) {
@@ -727,6 +841,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		addrs = gameBuild == BUILD_VANILLA ? &kVanillaAddrs : gameBuild == BUILD_NETWORK ? &kNetworkAddrs : &kNoAddrs;
 		Log("Detected %s build", GameBuildName(gameBuild));
 		InstallCDPlayerMenuHook();
+		InstallCDPlayerMenuDtorHook(); // at load, so the CD Player state can never be left set
+		InstallScreenHooks();          // war map / battle map tracking for the campaign Discord states
 		// Portable settings: the import table of the main executable is already bound and its own startup code
 		// hasn't run yet, so redirecting it here catches every registry read the game makes.
 		char gameDir[MAX_PATH], iniPath[MAX_PATH];
@@ -735,6 +851,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		if (g_settings.Load(iniPath)) {
 			int redirected = wow::registry::InstallRedirect(&g_settings, gameDir);
 			g_useIni = true; // our own settings use the store even if the import table couldn't be patched
+			std::string logSetting;
+			if (g_settings.Get("Revived", "Debug Log", logSetting) && atoi(logSetting.c_str()) != 0) debug = true;
 			Log("WoWRevived.ini found, %d registry imports redirected", redirected);
 		}
 		HKEY hKey;
@@ -753,6 +871,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			if (SettingsReadText(hKey, "CD-Focus", text, sizeof(text))) musicFocus = (atoi(text) != 0);
 			SettingsClose(hKey);
 		}
+		// Starting a thread here is allowed, it only begins running once the loader lock has been released.
+		HANDLE presenceThread = CreateThread(NULL, 0, PresenceThread, NULL, 0, NULL);
+		if (presenceThread) CloseHandle(presenceThread);
 	}
 	else if (fdwReason == DLL_PROCESS_DETACH) {
 		// Volume Persistence (Master, Ambient, Speech, In-Game CD Music)
@@ -779,6 +900,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		}
 		// When the process is exiting (lpvReserved != NULL) the other threads are already gone and the OS frees
 		// everything, so only tidy up Discord when the DLL is being unloaded on purpose.
+		g_presenceShutdown = true;
 		if (lpvReserved == NULL) ShutdownDiscordRPC();
 	}
 	return TRUE;
@@ -1002,10 +1124,6 @@ DWORD lastFocusEventTick = 0;
 LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	if (HideSystemCursorInClient(hwnd, msg, lParam)) return TRUE; // stops both cursors showing after alt-tab, see GameCommon.h
-	if (GetTickCount() - lastPoll > 2000) {
-		UpdateDiscordState();
-		lastPoll = GetTickCount();
-	}
 	if (msg == WM_APP_FORCE_STOP_PRESS) {
 		ForceStopButtonPress();
 		return 0;
@@ -1059,6 +1177,62 @@ LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		LeaveCriticalSection(&audioLock);
 	}
 	return CallWindowProc(origWndProc, hwnd, msg, wParam, lParam);
+}
+
+// The game's main window: a visible, unowned top-level window of this process that isn't one of the overlays
+// Smackw32.dll creates. Found this way rather than by title, which is translated in the regional releases.
+static BOOL CALLBACK FindGameWindow(HWND hwnd, LPARAM lParam)
+{
+	DWORD processId = 0;
+	GetWindowThreadProcessId(hwnd, &processId);
+	if (processId != GetCurrentProcessId() || !IsWindowVisible(hwnd) || GetWindow(hwnd, GW_OWNER)) return TRUE;
+	if (GetWindowLongA(hwnd, GWL_EXSTYLE) & WS_EX_TOOLWINDOW) return TRUE;
+	char className[64] = {};
+	GetClassNameA(hwnd, className, sizeof(className));
+	if (strcmp(className, "SmackOverlay") == 0 || strcmp(className, "WoWCreditsOverlay") == 0) return TRUE;
+	*(HWND*)lParam = hwnd;
+	return FALSE; // stop at the first match
+}
+
+static bool HookGameWindow()
+{
+	HWND found = NULL;
+	EnumWindows(FindGameWindow, (LPARAM)&found);
+	if (!found) return false;
+	char title[256] = {};
+	GetWindowTextA(found, title, sizeof(title));
+	EnterCriticalSection(&audioLock);
+	if (!gameWindow) {
+		// WndProcHook passes messages on to origWndProc, so it has to be valid before the hook can receive anything
+		origWndProc = (WNDPROC)GetWindowLongPtr(found, GWLP_WNDPROC);
+		WNDPROC previous = (WNDPROC)SetWindowLongPtr(found, GWLP_WNDPROC, (LONG_PTR)WndProcHook);
+		if (previous) origWndProc = previous;
+		gameWindow = found;
+		Log("Hooked game window \"%s\"", title);
+	}
+	LeaveCriticalSection(&audioLock);
+	return true;
+}
+
+// Hooks the game window as soon as it exists, starts Discord rich presence (retrying while Discord isn't running,
+// so starting Discord after the game works) and keeps the presence up to date every couple of seconds. None of this
+// depends on the game opening its music device or on window messages arriving.
+volatile bool g_presenceShutdown = false;
+DWORD WINAPI PresenceThread(LPVOID)
+{
+	DWORD lastDiscordAttempt = 0;
+	bool attempted = false;
+	while (!g_presenceShutdown) {
+		if (!gameWindow) HookGameWindow();
+		if (gameWindow && !g_discordInitialized && (!attempted || GetTickCount() - lastDiscordAttempt > 15000)) {
+			attempted = true;
+			lastDiscordAttempt = GetTickCount();
+			InitDiscordRPC();
+		}
+		if (g_discordInitialized) UpdateDiscordState();
+		Sleep(gameWindow ? 2000 : 250);
+	}
+	return 0;
 }
 
 extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR fdwCommand, DWORD_PTR dwParam)
@@ -1134,26 +1308,9 @@ extern "C" DLLEXPORT MCIERROR WINAPI _ciSendCommandA(MCIDEVICEID IDDevice, UINT 
 
 	// 4. OPEN
 	if (uMsg == MCI_OPEN) {
-		if (!hooksInstalled) // only initialise discord rpc and install cd player menu destructor hook once
-		{
-			InitDiscordRPC();
-			InstallCDPlayerMenuDtorHook();
-		}
-		hooksInstalled = true;
-		// gameWindow init: guard against double-hook from rapid MCI_OPEN calls.
-		// The check-then-act must be atomic; use the existing lock.
+		// Discord and the window hook are set up by PresenceThread, which doesn't depend on the game opening the
+		// music device (it doesn't while in-game music is off, except in the CD Player).
 		EnterCriticalSection(&audioLock);
-		if (!gameWindow) {
-			HWND hw = GetForegroundWindow();
-			char title[256];
-			GetWindowTextA(hw, title, sizeof(title));
-			Log("Window title: %s", title);
-			gameWindow = FindWindow(NULL, title);
-			if (gameWindow) {
-				Log("Found window: %s", title);
-				origWndProc = (WNDPROC)SetWindowLongPtr(gameWindow, GWLP_WNDPROC, (LONG_PTR)WndProcHook);
-			}
-		}
 		lastOpenTime = GetTickCount();
 		if (isNetworkVersion) seekAfterOpen = false;
 		LeaveCriticalSection(&audioLock);
