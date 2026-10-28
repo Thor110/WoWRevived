@@ -500,6 +500,7 @@ void CloseOverlayWindow() {
 WNDPROC origGameProc = NULL;
 
 LRESULT CALLBACK GameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    if (wow::HideSystemCursorInClient(hwnd, msg, lParam)) return TRUE; // see GameCommon.h, _inmm.dll does the same
     if (msg == WM_MOVE) {
         POINT clientPos = { 0, 0 };
         ClientToScreen(hwnd, &clientPos);
@@ -557,6 +558,7 @@ void CreateOverlayWindow() {
 
 struct FakeSmack { uint32_t Width = 0, Height = 0; int OffsetY = 0; };
 FakeSmack dummy;
+bool movieHidCursor = false; // game thread only
 
 extern "C" {
     void WINAPI SmackClose(void* smk) {
@@ -567,8 +569,10 @@ extern "C" {
         }
         victoryMovieFinished = true; // if skipped
         Log("SmackClose");
-        ShowCursor(TRUE);
-        SetCursor(LoadCursor(NULL, IDC_ARROW));
+        if (movieHidCursor) {
+            ShowCursor(TRUE); // undo SmackOpen's single ShowCursor(FALSE), leaving the game's own count as it was
+            movieHidCursor = false;
+        }
         CloseOverlayWindow();
     }
     void WINAPI SmackBlitClose(void* smk) { Sleep(1); /*Log("SmackBlitClose");*/ }
@@ -580,6 +584,12 @@ extern "C" {
         EnsureMediaInit();
         // a previous movie that was never closed must not leak its player or overlay
         if (pMediaPlayer || overlayWindow) CloseOverlayWindow();
+        // Hide the cursor once per movie and show it once in SmackClose. This used to be ShowCursor(FALSE) on every frame
+        // with a single ShowCursor(TRUE) at the end, which left the count hundreds below where the game expected it.
+        if (!movieHidCursor) {
+            ShowCursor(FALSE);
+            movieHidCursor = true;
+        }
         // reset before the new movie starts, a late PLAYBACK_ENDED from the previous movie must not end this one
         // (this was why RAGELOGO used to be skipped on the human launch)
         videoFinished = false;
@@ -644,8 +654,7 @@ extern "C" {
                 videoFinished = false;
             }
         }
-        SetCursor(NULL);
-        ShowCursor(FALSE);
+        SetCursor(NULL); // no cursor shape while the movie plays (ShowCursor is only called once per movie, in SmackOpen)
         // pump messages so the overlay window stays responsive
         //Log("NEXT FRAME"); // logged
         MSG msg;

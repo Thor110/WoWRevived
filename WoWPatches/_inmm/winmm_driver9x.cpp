@@ -1001,6 +1001,7 @@ DWORD lastFocusEventTick = 0;
 
 LRESULT CALLBACK WndProcHook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	if (HideSystemCursorInClient(hwnd, msg, lParam)) return TRUE; // stops both cursors showing after alt-tab, see GameCommon.h
 	if (GetTickCount() - lastPoll > 2000) {
 		UpdateDiscordState();
 		lastPoll = GetTickCount();

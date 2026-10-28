@@ -60,6 +60,19 @@ namespace wow
         return build == BUILD_VANILLA ? "vanilla" : build == BUILD_NETWORK ? "network" : "unknown";
     }
 
+    // The game draws its own cursor and hides the Windows one with a single ShowCursor(FALSE) when the mouse moves back
+    // into the window (and a single ShowCursor(TRUE) over the window frame), so it relies on nothing else changing the
+    // ShowCursor count. cnc-ddraw shows the cursor around alt-tab, which leaves the count and the game out of step and
+    // both cursors on screen. Answering WM_SETCURSOR with no cursor over the client area while the game is the active
+    // window hides the Windows cursor there whatever the count is. Returns true if the message was handled (return TRUE).
+    inline bool HideSystemCursorInClient(HWND hwnd, UINT msg, LPARAM lParam)
+    {
+        if (msg != WM_SETCURSOR || LOWORD(lParam) != HTCLIENT) return false;
+        if (GetForegroundWindow() != hwnd) return false; // other windows and an inactive game keep the normal cursor
+        SetCursor(NULL);
+        return true;
+    }
+
     // Full path of a file next to the game executable.
     inline void GamePath(const char* fileName, char* out, size_t outSize)
     {
