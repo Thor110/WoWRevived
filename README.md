@@ -2,7 +2,7 @@
 
 The definitive preservation patch and revival project for the classic Rage Software game Jeff Wayne's 'The War Of The Worlds' released in 1998.
 
-The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War Of The Worlds'" but you may install it elsewhere if you prefer, for example, into a dedicated folder for modding, preservation, or portable use.
+The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War Of The Worlds'", but a folder you can write to without administrator rights, such as "C:\Games\Jeff Wayne's 'The War Of The Worlds'", is recommended. The game's settings are saved next to it in WoWRevived.ini, so the folder can be moved or copied for modding, preservation, or portable use.
 
 **Download and mount the disc images or insert the discs one by one.** https://archive.org/details/jeffwaynewowgame_202110
 
@@ -77,6 +77,7 @@ The road map for this project.
 	- A hole in Sector 22 South Wales terrain geometry has been patched.
 	- Entering or exiting the menu no longer stops the music from playing like it did in the original game.
 	- Discord rich presence features implemented with multiple states. ( Main Menu, CD Player Track Name & Image, Human Campaign, Martian Campaign & Network Campaign )
+		- These also work in the network executable, where multiplayer games show the side being played.
 	- Game executables no longer requires administrator privileges to launch.
 	- Various executable edits:
 		- 1\. 1 byte to skip the "NO CD INSERTED" message in the CD Player menu.
@@ -97,7 +98,7 @@ The road map for this project.
 	- Known "bugs" which I consider non-issues for the time-being.
 		- Occasional crashes on startup or during gameplay which are caused by a bug in the windows compatibility layer. ( specifically apphelp.dll )
 - [✅ 1 : Custom Launcher](#custom-launcher) ( 100% Complete )
-	- Advanced registry settings options, now including the ability to adjust the turret build limit.
+	- Advanced settings options, now including the ability to adjust the turret build limit.
 	- Portable settings: every registry call the game makes is redirected to WoWRevived.ini in the install folder, which both the vanilla and network executables can read. ( previously the registry entry types had to be switched between the two, as the network executable stores some entries as dwords, which caused the vanilla executable to start up at 320x240 )
 	- Custom keyboard shortcut settings. (WIP - cancelled for now)
 	- Automatic regeneration of the base settings, and a one-time import of settings from older registry based installs.
@@ -164,6 +165,7 @@ The road map for this project.
 	- Import & Export as .txt file.
 	- Undo changes to current string.
 	- Edited strings highlighted.
+	- Saving keeps the previous file as TEXT.ojd.bak, and strings containing characters the game can't display are reported instead of being saved.
 	- Rich text editing with newline support (\n to \r\n handling when loading and the opposite when saving )
 - [❌ 10 : Map Editor](#map-editor) ( 10% Complete )
 	- Basic parsing of .nsb levels.

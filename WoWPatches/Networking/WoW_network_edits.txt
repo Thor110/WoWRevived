@@ -56,3 +56,8 @@ CD music toggle (byte)			0x5427CC	(vanilla 0x4B8A88)
 Master volume (float)			0x530654	(vanilla 0x4CA870)
 Volume array (6 floats)			0x53063C	(vanilla 0x4CA858) - Ambient is [0], Speech is [5]
 Volumes are floats in both builds (setter at 0x4180C7, getter at 0x418066), not 0-100 integers.
+Menu state				0x5427A4	(vanilla 0x4D255C) set by sub_404900 after TITLE / RAGELOGO / VICTORY, cleared by sub_405AD0
+I Am Human (byte)			0x530518	(vanilla 0x4B84C4) the "Network\I Am Human" setting, registered by sub_5024D0
+Local DirectPlay player id		0x5432D0	network only, set by IDirectPlay4::CreatePlayer, zeroed before IDirectPlay4::Close
+DirectPlay object (IDirectPlay4)	0x5432C8	network only
+

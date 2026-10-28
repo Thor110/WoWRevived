@@ -56,6 +56,7 @@ struct GameAddrs {
 	volatile DWORD* menuState;      // 0x90 or 0x0 while in the main menu (written by the movie player's menu state setter)
 	volatile DWORD* campaignActive; // vanilla only: non zero once a campaign has been loaded
 	volatile BYTE*  humanCampaign;  // the "Network\I Am Human" setting, 1 when playing the human side
+	volatile DWORD* networkPlayer;  // network only: the local DirectPlay player id, non zero while in a multiplayer session
 	// CD Player menu constructor (hooked to capture "this"), destructor (hooked to clear it) and message handler
 	DWORD cdCtor; const BYTE* cdCtorSig; int cdCtorSigLen; int cdCtorHookLen;
 	DWORD cdDtor; const BYTE* cdDtorSig; int cdDtorSigLen; int cdDtorHookLen; int cdDtorRelCallAt;
@@ -77,7 +78,7 @@ static const BYTE kNetworkOnMessageSig[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68,
 
 static const GameAddrs kVanillaAddrs = {
 	(volatile DWORD*)0x4B8A88, (volatile float*)0x4CA870, (volatile float*)0x4CA858, (volatile float*)0x4CA86C,
-	(volatile DWORD*)0x4D255C, (volatile DWORD*)0x4D25D0, (volatile BYTE*)0x4B84C4,
+	(volatile DWORD*)0x4D255C, (volatile DWORD*)0x4D25D0, (volatile BYTE*)0x4B84C4, nullptr,
 	0x407990, kVanillaCtorSig, sizeof(kVanillaCtorSig), 7,
 	0x408080, kVanillaDtorSig, sizeof(kVanillaDtorSig), 8, 3,
 	0x4081D0, kVanillaOnMessageSig, sizeof(kVanillaOnMessageSig),
@@ -87,6 +88,9 @@ static const GameAddrs kNetworkAddrs = {
 	// 0x5427A4: sub_405AD0 clears it, sub_404900 sets it (0x90 after TITLE, 0x8038 after RAGELOGO, 0x80CA after VICTORY),
 	// matching vanilla's sub_404900 / 0x4D255C exactly. 0x530518: "I Am Human", registered by sub_5024D0.
 	(volatile DWORD*)0x5427A4, nullptr, (volatile BYTE*)0x530518,
+	// 0x5432D0: written by IDirectPlay4::CreatePlayer when hosting or joining (calls at 0x407030 / 0x407599), zeroed at
+	// 0x407926 just before IDirectPlay4::Close when leaving, otherwise only read (as the sender id for Send).
+	(volatile DWORD*)0x5432D0,
 	0x4AF680, kNetworkCtorSig, sizeof(kNetworkCtorSig), 5,
 	0x4B1310, kNetworkDtorSig, sizeof(kNetworkDtorSig), 7, -1,
 	0x4B0510, kNetworkOnMessageSig, sizeof(kNetworkOnMessageSig),
@@ -445,25 +449,27 @@ void UpdateDiscordState() {
 		currentState = STATE_CDPLAYER;
 		Log("CD Player State");
 	}
+	// network build: a multiplayer session is in progress (checked before the menu, so the lobby counts too)
+	else if (addrs->networkPlayer && *addrs->networkPlayer != 0) {
+		currentState = STATE_NETWORK;
+		Log("Network State (player id 0x%X)", *addrs->networkPlayer);
+	}
 	// 0x90 return from credits sequence - end game or accessed via options menu
 	// 0x0 return to main menu from in-game
 	else if (addrs->menuState && (*addrs->menuState == 0x90 || *addrs->menuState == 0x0)) {
 		currentState = STATE_MENU;
 		Log("Main Menu State");
 	}
-	else if (isNetworkVersion) {
-		// anything other than the menu is a network game, the side being played is shown as the small image
-		currentState = STATE_NETWORK;
-		Log("Network State");
-	}
-	else if (addrs->campaignActive && *addrs->campaignActive != 0 && addrs->humanCampaign) {
+	// a campaign: vanilla knows when one is loaded, the network build is in one whenever it isn't in the menu or a
+	// multiplayer session (the launcher starts it for both campaign buttons when the network version is enabled)
+	else if (addrs->humanCampaign && (isNetworkVersion || (addrs->campaignActive && *addrs->campaignActive != 0))) {
 		if (*addrs->humanCampaign == 1) {
 			currentState = STATE_HUMAN;
-			Log("Campaign State: Human (Detected via 0x4B84C4)");
+			Log("Campaign State: Human");
 		}
 		else {
 			currentState = STATE_MARTIAN;
-			Log("Campaign State: Martian (Detected via 0x4B84C4)");
+			Log("Campaign State: Martian");
 		}
 	}
 	else {
