@@ -417,15 +417,14 @@ namespace WoWLauncher
             Close();
             void launch(string executable)
             {
-                Process.Start("explorer.exe", executable);
-                /*
-                // TODO: run as administrator for future networked version
-                Process proc = new Process();
-                proc.StartInfo.FileName = executable;
-                proc.StartInfo.UseShellExecute = true;
-                proc.StartInfo.Verb = "runas";
-                proc.Start();
-                */
+                // Started directly now that the launcher no longer runs elevated (it used to go through explorer.exe so the
+                // game wouldn't inherit administrator rights). The compatibility settings still apply through the shell.
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = Path.Combine(AppContext.BaseDirectory, executable),
+                    WorkingDirectory = AppContext.BaseDirectory,
+                    UseShellExecute = true,
+                });
             }
         }
 
@@ -825,4 +824,4 @@ namespace WoWLauncher
                 "File Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
-}
+}

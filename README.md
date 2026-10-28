@@ -55,9 +55,9 @@ Potentially cancelled features
 - Add "Now Playing : Track Name" message pumped to the in-game message log.
 	- Potentially simple but means tracking down exactly how it is utilised because the last 10 message log entries are baked into save files, probably just string length would be a factor.
 - In-Game UI colour picker accessibility options.
-	- Requires tracking palette indexes referenced within the executable, which are then mapped to palettes through the registry colour entry value via OBJ.ojd and shader tables by the executable to arrive at a colour.
+	- Requires tracking palette indexes referenced within the executable, which are then mapped to palettes through the colour entry value in the game settings via OBJ.ojd and shader tables by the executable to arrive at a colour.
 	- Colour range would be entirely limited to all of the colours across all of the palettes as changing colours within palettes could impact sprite rendering.
-	- After tracking them all down, the launcher would have to patch the executable with the new palette index and where applicable update the registry with the new object index.
+	- After tracking them all down, the launcher would have to patch the executable with the new palette index and where applicable update the game settings ( WoWRevived.ini ) with the new object index.
 - Zoom feature implementation.
 
 # Road Map
@@ -194,7 +194,7 @@ The road map for this project.
 			- Full count 142/445 .spr files.
 			- Remaining sprite files include mouse cursors, visual effects and parts of menus where there is very little space to add any detail.
 - ❌ 15 : Decomp/Recomp ( Started - 1% Complete )
-	- Begun mapping out virtual key addresses for use in the launchers custom keyboard shortcut settings. ( "WoWRevived\WoWDecomp\ida-map.txt" )
+	- Begun mapping out virtual key addresses for use in the launchers custom keyboard shortcut settings. ( "WoWRevived\WoWDecomp\ida-notes-thor\ida-map.txt" )
 
 This might not all happen but I wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 
@@ -548,4 +548,4 @@ Thanks to Sulus for posting a video of the violent geometry tearing on the airsh
 
 Thanks to FunkyFr3sh for cnc-ddraw, which provides the DirectDraw translation layer for modern systems. See ddraw-license.txt for the full MIT license.
 
-Thanks to the Discord community for supporting the project and helping out with testing.
+Thanks to the Discord community for supporting the project and helping out with testing.

@@ -13,8 +13,18 @@ namespace WoWViewer
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+            // A .wow file opened from Explorer can be a path relative to wherever the viewer was started from,
+            // so resolve it before switching to the viewer's own folder.
+            args = args.Select(Path.GetFullPath).ToArray();
+            // TEXT.ojd, OBJ.ojd and SaveGame\ are used by relative paths, so always work from the game folder
+            // (opening a .wow file from Explorer would otherwise start the viewer in DAT\ or MAPS\).
+            Directory.SetCurrentDirectory(AppContext.BaseDirectory);
             Process[] processes = Process.GetProcessesByName("WoWViewer");
-            if (processes.Length > 1) { return; }
+            if (processes.Length > 1)
+            {
+                MessageBox.Show("WoWViewer is already running.", "WoWViewer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             ApplicationConfiguration.Initialize();
             WoWViewer mainForm = new WoWViewer();
             if (args.Length == 1)
@@ -26,4 +36,4 @@ namespace WoWViewer
             Application.Run(mainForm);
         }
     }
-}
+}

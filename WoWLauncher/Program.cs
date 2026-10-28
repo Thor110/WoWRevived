@@ -19,6 +19,9 @@ namespace WoWLauncher
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+            // Every game file is used by a relative path (DAT\..., ddraw.ini, Human.cd...), so always work from the
+            // launcher's own folder, even when started from a shortcut without "Start in" or from another folder.
+            Directory.SetCurrentDirectory(AppContext.BaseDirectory);
             switch (DetectLanguage())
             {
                 case "French": SetFrench(); break;
@@ -527,4 +530,4 @@ namespace WoWLauncher
             Interface["larger_minimaps_tooltip"] = "Duplica el tamaño del minimapa en el mapa de batalla. (Vista 3D)";
         }
     }
-}
+}

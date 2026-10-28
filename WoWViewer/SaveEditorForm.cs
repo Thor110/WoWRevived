@@ -54,6 +54,7 @@ namespace WoWViewer
         public SaveEditorForm()
         {
             InitializeComponent();
+            textBox1.MaxLength = 35; // the name field is 36 bytes including its terminating null
             if (!File.Exists("TEXT.ojd") || !File.Exists("OBJ.ojd"))
             {
                 MessageBox.Show("TEXT.ojd or OBJ.ojd not found, please reinstall.");
@@ -83,14 +84,15 @@ namespace WoWViewer
         private void button1_Click(object sender, EventArgs e)
         {
             if (!fileSafetyCheck()) { return; }
+            File.Copy(fileName, fileName + ".bak", overwrite: true); // the save is edited in place, keep the previous version
             using (var fs = new FileStream(fileName, FileMode.Open, FileAccess.Write))
             {
                 // only write values that have changed
                 if (textBox1.Text != selectedSave.Name)
                 {
                     byte[] nameBytes = new byte[36];
-                    byte[] newNameBytes = Encoding.ASCII.GetBytes(textBox1.Text);
-                    Array.Copy(newNameBytes, nameBytes, Math.Min(36, newNameBytes.Length));
+                    byte[] newNameBytes = Latin1.GetBytes(textBox1.Text); // read as Latin-1 too, so accented names survive
+                    Array.Copy(newNameBytes, nameBytes, Math.Min(35, newNameBytes.Length)); // always leave the terminating null
                     fs.Seek(NAME_OFFSET, SeekOrigin.Begin);
                     fs.Write(nameBytes, 0, 36);
                     selectedSave.Name = textBox1.Text; // update the selected save object
@@ -316,8 +318,8 @@ namespace WoWViewer
             DialogResult result = MessageBox.Show("Are you sure you want to delete this save file?", "Delete Save File", MessageBoxButtons.YesNo);
             if (result == DialogResult.Yes)
             {
-                File.Delete(fileName); // delete the file
-                reInitialize("Save Deleted!"); // reinitialize the save loader and repopulate the list box
+                File.Move(fileName, fileName + ".bak", overwrite: true); // frees the slot but keeps the save recoverable
+                reInitialize($"Save Deleted! A copy was kept as {fileName}.bak"); // reinitialize the save loader and repopulate the list box
             }
         }
         private void reInitialize(string message)
@@ -1474,4 +1476,4 @@ namespace WoWViewer
 //1005   = AIRBOMB3                                 = ED 03 = OTYPE_AIRBOMB3
 //1006   = EXPLOSION AIRBOMB1                       = EE 03 = OTYPE_EXPLOSION_AIRBOMB1
 //1007   = EXPLOSION AIRBOMB2                       = EF 03 = OTYPE_EXPLOSION_AIRBOMB2
-//1008   = EXPLOSION AIRBOMB3                       = F0 03 = OTYPE_EXPLOSION_AIRBOMB3
+//1008   = EXPLOSION AIRBOMB3                       = F0 03 = OTYPE_EXPLOSION_AIRBOMB3
