@@ -73,10 +73,12 @@ namespace WoWLauncher
                 }
             }
             // 4. Trigger the warning if it's in OneDrive OR any protected user folder
+            // A warning only: settings no longer need administrator rights, and a folder that really can't be written
+            // to is still caught by the write test in Form1. OneDrive (online-only files, sync locking WoWRevived.ini)
+            // and Windows Security's Controlled folder access on Documents, Pictures etc. can still cause problems there.
             if (isOneDrive || isProtected)
             {
                 MessageBox.Show(Interface["one_drive"], Interface["one_drive_warning"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
             }
             Application.Run(new Form1());
         }
