@@ -59,8 +59,13 @@ Volumes are floats in both builds (setter at 0x4180C7, getter at 0x418066), not 
 Movie return screen			0x5427A4	(vanilla 0x4D255C) set by sub_404900 after TITLE / RAGELOGO / VICTORY, cleared by sub_405AD0
 					(the screen to show after a movie, not a reliable "in the menu" flag, no longer used)
 Menu base class constructor		0x4B6C80	(vanilla 0x40A060) arg 1 is the screen id: 0x90 Main Menu, 0x803E CD Player,
-					0x80B5 Warmap menu, 0x80B8 Battlemap menu (same ids in both builds)
+					0x80B5 Warmap menu, 0x80B8 Battlemap menu (the in-game menu panels, not the maps themselves)
 Menu base class destructor		0x4B6DA0	(vanilla 0x40A150)
+WWarMapWorld constructor		0x489DF0	(vanilla 0x417CD0) 0x134 bytes, created when a campaign starts or loads
+WWarMapWorld destructor			0x48AAC0	(vanilla 0x418220) the battle map views belong to its sectors, so it
+					stays alive through battles
+WGame::m_warMap				0x542790	(vanilla 0x4D2548) never cleared, so it can't show whether a campaign is loaded
+WWarMapWorld::TheWarMap			0x60FAD4	also never cleared
 I Am Human (byte)			0x530518	(vanilla 0x4B84C4) the "Network\I Am Human" setting, registered by sub_5024D0
 Local DirectPlay player id		0x5432D0	network only, set by IDirectPlay4::CreatePlayer, zeroed before IDirectPlay4::Close
 DirectPlay object (IDirectPlay4)	0x5432C8	network only

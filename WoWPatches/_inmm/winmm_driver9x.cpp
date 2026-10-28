@@ -58,10 +58,10 @@ struct GameAddrs {
 	DWORD cdCtor; const BYTE* cdCtorSig; int cdCtorSigLen; int cdCtorHookLen;
 	DWORD cdDtor; const BYTE* cdDtorSig; int cdDtorSigLen; int cdDtorHookLen; int cdDtorRelCallAt;
 	DWORD cdOnMessage; const BYTE* cdOnMessageSig; int cdOnMessageSigLen;
-	// Constructor and destructor of the base class every game screen is built on (main menu, CD Player, options, and
-	// also the war map and battle map). Hooked to know when a campaign is being played, see OnMenuConstructed.
-	DWORD menuCtor; const BYTE* menuCtorSig; int menuCtorSigLen; int menuCtorHookLen;
-	DWORD menuDtor; const BYTE* menuDtorSig; int menuDtorSigLen; int menuDtorHookLen;
+	// Constructor and destructor of the war map world (WWarMapWorld), which exists exactly while a campaign is loaded,
+	// battles included (the battle map views belong to its sectors). See OnWarMapConstructed.
+	DWORD warMapCtor; const BYTE* warMapCtorSig; int warMapCtorSigLen; int warMapCtorHookLen;
+	DWORD warMapDtor; const BYTE* warMapDtorSig; int warMapDtorSigLen; int warMapDtorHookLen;
 };
 
 // vanilla: sub_407990 = push -1; push offset SEH_407990 (7 bytes, never touches ECX)
@@ -76,13 +76,15 @@ static const BYTE kNetworkCtorSig[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x9F
 static const BYTE kNetworkDtorSig[] = { 0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC };
 // network: off_51B1E0 slot 10 (+0x28) = sub_4B0510, handles 0x3B9 and 0x111 like vanilla's sub_4081D0
 static const BYTE kNetworkOnMessageSig[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0xED, 0x17, 0x50, 0x00 };
-// vanilla: menu base class constructor sub_40A060 (screen id, name, ...) and destructor sub_40A150,
-// both start push -1; push offset SEH (7 bytes, absolute operands only)
-static const BYTE kVanillaMenuCtorSig[] = { 0x6A, 0xFF, 0x68, 0x08, 0x51, 0x4A, 0x00 };
-static const BYTE kVanillaMenuDtorSig[] = { 0x6A, 0xFF, 0x68, 0x28, 0x51, 0x4A, 0x00 };
-// network: menu base class constructor sub_4B6C80 and destructor sub_4B6DA0, push ebp; mov ebp,esp; push -1 (5 bytes)
-static const BYTE kNetworkMenuCtorSig[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0xF8, 0x1B, 0x50, 0x00 };
-static const BYTE kNetworkMenuDtorSig[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x0A, 0x1C, 0x50, 0x00 };
+// vanilla: WWarMapWorld constructor sub_417CD0 (allocated as 0x134 bytes by sub_404900, stored in 0x4D2548) and its
+// destructor sub_418220 (only called by vtable off_4A9A50 slot 0), both push -1; push offset SEH (7 bytes)
+static const BYTE kVanillaWarMapCtorSig[] = { 0x6A, 0xFF, 0x68, 0x6D, 0x56, 0x4A, 0x00 };
+static const BYTE kVanillaWarMapDtorSig[] = { 0x6A, 0xFF, 0x68, 0x88, 0x56, 0x4A, 0x00 };
+// network: WWarMapWorld constructor sub_489DF0 (allocated by sub_405AD0, stored in WGame::m_warMap 0x542790, sets
+// WWarMapWorld::TheWarMap 0x60FAD4) and destructor sub_48AAC0 (only called by vtable off_518720 slot 0),
+// both push ebp; mov ebp,esp; push -1 (5 bytes hooked)
+static const BYTE kNetworkWarMapCtorSig[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x3B, 0x09, 0x50, 0x00 };
+static const BYTE kNetworkWarMapDtorSig[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x4D, 0x09, 0x50, 0x00 };
 
 static const GameAddrs kVanillaAddrs = {
 	(volatile DWORD*)0x4B8A88, (volatile float*)0x4CA870, (volatile float*)0x4CA858, (volatile float*)0x4CA86C,
@@ -90,8 +92,8 @@ static const GameAddrs kVanillaAddrs = {
 	0x407990, kVanillaCtorSig, sizeof(kVanillaCtorSig), 7,
 	0x408080, kVanillaDtorSig, sizeof(kVanillaDtorSig), 8, 3,
 	0x4081D0, kVanillaOnMessageSig, sizeof(kVanillaOnMessageSig),
-	0x40A060, kVanillaMenuCtorSig, sizeof(kVanillaMenuCtorSig), 7,
-	0x40A150, kVanillaMenuDtorSig, sizeof(kVanillaMenuDtorSig), 7,
+	0x417CD0, kVanillaWarMapCtorSig, sizeof(kVanillaWarMapCtorSig), 7,
+	0x418220, kVanillaWarMapDtorSig, sizeof(kVanillaWarMapDtorSig), 7,
 };
 static const GameAddrs kNetworkAddrs = {
 	(volatile DWORD*)0x5427CC, (volatile float*)0x530654, (volatile float*)0x53063C, (volatile float*)0x530650,
@@ -103,12 +105,12 @@ static const GameAddrs kNetworkAddrs = {
 	0x4AF680, kNetworkCtorSig, sizeof(kNetworkCtorSig), 5,
 	0x4B1310, kNetworkDtorSig, sizeof(kNetworkDtorSig), 7, -1,
 	0x4B0510, kNetworkOnMessageSig, sizeof(kNetworkOnMessageSig),
-	0x4B6C80, kNetworkMenuCtorSig, sizeof(kNetworkMenuCtorSig), 5,
-	0x4B6DA0, kNetworkMenuDtorSig, sizeof(kNetworkMenuDtorSig), 5,
+	0x489DF0, kNetworkWarMapCtorSig, sizeof(kNetworkWarMapCtorSig), 5,
+	0x48AAC0, kNetworkWarMapDtorSig, sizeof(kNetworkWarMapDtorSig), 5,
 };
 static const GameAddrs kNoAddrs = {}; // unknown build: every game memory access is skipped
 const GameAddrs* addrs = &kNoAddrs;
-extern volatile LONG g_campaignScreens; // war map / battle map screens currently open, see OnMenuConstructed
+extern volatile LONG g_warMapsAlive; // non zero while a campaign is loaded, see OnWarMapConstructed
 
 // The in-game music toggle, read live so turning music off or on in the options takes effect immediately.
 bool CurrentCdState() { return addrs->cdToggle ? ((*addrs->cdToggle & 0xFF) != 0) : true; }
@@ -481,10 +483,10 @@ void UpdateDiscordState() {
 		currentState = STATE_NETWORK;
 		Log("Network State (player id 0x%X)", *addrs->networkPlayer);
 	}
-	// a campaign is being played: its war map or battle map screen exists (see OnMenuConstructed)
-	else if (g_campaignScreens > 0 && addrs->humanCampaign) {
+	// a campaign is loaded: its war map world exists (see OnWarMapConstructed)
+	else if (g_warMapsAlive > 0 && addrs->humanCampaign) {
 		currentState = (*addrs->humanCampaign == 1) ? STATE_HUMAN : STATE_MARTIAN;
-		Log("Campaign State: %s (%ld game screens)", currentState == STATE_HUMAN ? "Human" : "Martian", g_campaignScreens);
+		Log("Campaign State: %s (I Am Human = %d)", currentState == STATE_HUMAN ? "Human" : "Martian", (int)*addrs->humanCampaign);
 	}
 	// the main menu and the other front end screens
 	else {
@@ -745,85 +747,84 @@ void InstallCDPlayerMenuDtorHook()
 		(void*)&CDPlayerMenuDtor_HookStub, addrs->cdDtorRelCallAt, "CD Player menu destructor");
 }
 
-// === Game screen tracking ===
-// Every screen the game shows is built on one menu base class whose constructor takes the screen's id. The war map
-// ("Warmap menu", 0x80B5) and battle map ("Battlemap menu", 0x80B8) are screens too, so a campaign is being played
-// exactly while one of them exists. Same ids in both builds. Screens are only created and destroyed on the game thread.
-#define SCREEN_ID_WARMAP 0x80B5
-#define SCREEN_ID_BATTLEMAP 0x80B8
-static void* g_campaignScreenObjects[8] = {};
-volatile LONG g_campaignScreens = 0;
-BYTE* g_menuCtorTrampoline = nullptr;
-BYTE* g_menuDtorTrampoline = nullptr;
+// === Campaign tracking ===
+// The war map world (WWarMapWorld) is created when a campaign starts or a game is loaded and destroyed when it ends,
+// and it stays alive through battles. Its constructor and destructor are hooked to know when a campaign is loaded.
+// The game's own m_warMap / TheWarMap pointers can't be used for this: they're never cleared.
+static void* g_warMapObjects[4] = {};
+volatile LONG g_warMapsAlive = 0;
+BYTE* g_warMapCtorTrampoline = nullptr;
+BYTE* g_warMapDtorTrampoline = nullptr;
+void StopMusicNow(); // defined with the playback code
 
-void __cdecl OnMenuConstructed(void* menu, DWORD screenId)
+void __cdecl OnWarMapConstructed(void* warMap)
 {
-	if (screenId != SCREEN_ID_WARMAP && screenId != SCREEN_ID_BATTLEMAP) return;
-	for (void*& slot : g_campaignScreenObjects) {
+	for (void*& slot : g_warMapObjects) {
 		if (slot == nullptr) {
-			slot = menu;
-			InterlockedIncrement(&g_campaignScreens);
+			slot = warMap;
+			InterlockedIncrement(&g_warMapsAlive);
 			break;
 		}
 	}
-	Log("Campaign screen 0x%X created (%ld open)", screenId, g_campaignScreens);
+	Log("War map created (%ld loaded)", g_warMapsAlive);
 }
 
-void __cdecl OnMenuDestroyed(void* menu)
+void __cdecl OnWarMapDestroyed(void* warMap)
 {
-	for (void*& slot : g_campaignScreenObjects) {
-		if (slot == menu) {
+	for (void*& slot : g_warMapObjects) {
+		if (slot == warMap) {
 			slot = nullptr;
-			InterlockedDecrement(&g_campaignScreens);
-			Log("Campaign screen destroyed (%ld open)", g_campaignScreens);
+			InterlockedDecrement(&g_warMapsAlive);
+			Log("War map destroyed (%ld loaded)", g_warMapsAlive);
+			// Leaving a campaign: stop its music. The game's own stop can be swallowed by the guard that keeps the music
+			// playing after clicking Resume Game, because quitting to the main menu is also a click.
+			if (g_warMapsAlive == 0 && pCDPlayerMenuThis == nullptr) StopMusicNow();
 			break;
 		}
 	}
 }
 
-// entry of the base constructor: [esp] = return address, [esp+4] = screen id, ecx = the screen being constructed
-void __declspec(naked) MenuCtor_HookStub()
+void __declspec(naked) WarMapCtor_HookStub()
 {
 	__asm {
 		pushad
 		pushfd
-		push dword ptr [esp + 40]   // the screen id, 36 bytes of saved registers above the return address
-		push ecx
-		call OnMenuConstructed
-		add esp, 8
-		popfd
-		popad
-		jmp dword ptr [g_menuCtorTrampoline]
-	}
-}
-
-void __declspec(naked) MenuDtor_HookStub()
-{
-	__asm {
-		pushad
-		pushfd
-		push ecx
-		call OnMenuDestroyed
+		push ecx                    // the war map world being constructed
+		call OnWarMapConstructed
 		add esp, 4
 		popfd
 		popad
-		jmp dword ptr [g_menuDtorTrampoline]
+		jmp dword ptr [g_warMapCtorTrampoline]
 	}
 }
 
-void InstallScreenHooks()
+void __declspec(naked) WarMapDtor_HookStub()
 {
-	if (!addrs->menuCtor || !addrs->menuDtor) return;
-	// both or neither: a constructor hook without the destructor hook would leave screens counted forever
-	if (!BytesMatch(addrs->menuCtor, addrs->menuCtorSig, addrs->menuCtorSigLen) || !BytesMatch(addrs->menuDtor, addrs->menuDtorSig, addrs->menuDtorSigLen)) {
-		Log("Game screen hooks skipped: bytes don't match the %s build", GameBuildName(gameBuild));
+	__asm {
+		pushad
+		pushfd
+		push ecx
+		call OnWarMapDestroyed
+		add esp, 4
+		popfd
+		popad
+		jmp dword ptr [g_warMapDtorTrampoline]
+	}
+}
+
+void InstallWarMapHooks()
+{
+	if (!addrs->warMapCtor || !addrs->warMapDtor) return;
+	// both or neither: a constructor hook without the destructor hook would leave the campaign state set forever
+	if (!BytesMatch(addrs->warMapCtor, addrs->warMapCtorSig, addrs->warMapCtorSigLen) || !BytesMatch(addrs->warMapDtor, addrs->warMapDtorSig, addrs->warMapDtorSigLen)) {
+		Log("War map hooks skipped: bytes don't match the %s build", GameBuildName(gameBuild));
 		return;
 	}
-	g_menuDtorTrampoline = InstallJmpHook(addrs->menuDtor, addrs->menuDtorSig, addrs->menuDtorSigLen, addrs->menuDtorHookLen,
-		(void*)&MenuDtor_HookStub, -1, "Game screen destructor");
-	if (g_menuDtorTrampoline) {
-		g_menuCtorTrampoline = InstallJmpHook(addrs->menuCtor, addrs->menuCtorSig, addrs->menuCtorSigLen, addrs->menuCtorHookLen,
-			(void*)&MenuCtor_HookStub, -1, "Game screen constructor");
+	g_warMapDtorTrampoline = InstallJmpHook(addrs->warMapDtor, addrs->warMapDtorSig, addrs->warMapDtorSigLen, addrs->warMapDtorHookLen,
+		(void*)&WarMapDtor_HookStub, -1, "War map destructor");
+	if (g_warMapDtorTrampoline) {
+		g_warMapCtorTrampoline = InstallJmpHook(addrs->warMapCtor, addrs->warMapCtorSig, addrs->warMapCtorSigLen, addrs->warMapCtorHookLen,
+			(void*)&WarMapCtor_HookStub, -1, "War map constructor");
 	}
 }
 
@@ -842,7 +843,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		Log("Detected %s build", GameBuildName(gameBuild));
 		InstallCDPlayerMenuHook();
 		InstallCDPlayerMenuDtorHook(); // at load, so the CD Player state can never be left set
-		InstallScreenHooks();          // war map / battle map tracking for the campaign Discord states
+		InstallWarMapHooks();          // campaign tracking for the Discord states and stopping the music on leaving a campaign
 		// Portable settings: the import table of the main executable is already bound and its own startup code
 		// hasn't run yet, so redirecting it here catches every registry read the game makes.
 		char gameDir[MAX_PATH], iniPath[MAX_PATH];
@@ -1060,6 +1061,17 @@ void StopAudio() {
 	LeaveCriticalSection(&audioLock);
 	TeardownAudio(device);
 	LeaveCriticalSection(&deviceLock);
+}
+
+// Stops the music the same way an accepted MCI_STOP does. Not used from the audio thread.
+void StopMusicNow() {
+	EnterCriticalSection(&audioLock);
+	dwStartTime = 0;
+	totalElapsedBeforePause = 0;
+	isPaused = false;
+	notifyPending = false;
+	LeaveCriticalSection(&audioLock);
+	StopAudio();
 }
 
 static void PlayWav(const char* path) {
