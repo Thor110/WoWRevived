@@ -27,6 +27,7 @@ add_library(wowcore STATIC
     src/core/Vfs.cpp
     src/core/Bmp.cpp
     src/core/ShadeTable.cpp
+    src/core/SaveGame.cpp
 )
 target_include_directories(wowcore PUBLIC src)
 

@@ -40,13 +40,15 @@ namespace
     constexpr int GameHeight = 480;
     constexpr uint64_t TickNs = 1'000'000'000ull / 30; // "Game Frequency" defaults to 30 updates a second
 
-    // Command line: [game folder] [--screenshot file.bmp [keys]]
+    // Command line: [game folder] [--open command] [--screenshot file.bmp [keys]]
+    // --open starts on the screen a menu command opens (0x8E Game Options, 0x6E Save Game...).
     // --screenshot presses the comma separated keys (up, down, enter, escape), saves the frame and exits.
     struct Options
     {
         fs::path gameFolder;
         fs::path screenshot;
         std::vector<int> keys;
+        int open = 0;
     };
 
     Options ParseOptions(int argc, char** argv)
@@ -55,7 +57,8 @@ namespace
         for (int i = 1; i < argc; i++)
         {
             std::string arg = argv[i];
-            if (arg == "--screenshot" && i + 1 < argc)
+            if (arg == "--open" && i + 1 < argc) o.open = int(std::strtol(argv[++i], nullptr, 0));
+            else if (arg == "--screenshot" && i + 1 < argc)
             {
                 o.screenshot = argv[++i];
                 if (i + 1 < argc && argv[i + 1][0] != '-')
@@ -155,6 +158,7 @@ int main(int argc, char** argv)
         if (!video.Open("Jeff Wayne's 'The War Of The Worlds'", GameWidth, GameHeight, false, error)) throw std::runtime_error(error);
         wow::Canvas canvas(video.Pixels(), video.Width(), video.Height(), resources);
 
+        if (options.open) frontEnd.Open(options.open);
         bool done = false;
         if (!options.screenshot.empty())
         {

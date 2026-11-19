@@ -34,14 +34,16 @@ namespace wow
         Stack(std::move(b));
     }
 
-    void Menu::AddButton(int command, int textId, int param)
+    void Menu::AddButton(int command, int textId, int param) { AddButtonText(command, res.String(textId), param); }
+
+    void Menu::AddButtonText(int command, std::string text, int param)
     {
         Button b;
         b.plate = style == 0 ? 0x38 : style == 1 ? 0x43 : 0x3B;
         b.glass = style == 0 ? 0x39 : style == 1 ? 0x44 : 0x3C;
         b.font = ButtonFont;
         b.level = colours.items;
-        b.text = res.String(textId);
+        b.text = std::move(text);
         b.command = { command, param };
         Stack(std::move(b));
     }

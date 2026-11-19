@@ -68,6 +68,8 @@ Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 
 | Display Settings | 0x3EF | 0x4096D0 | Style 1. Heading 0x410. Resolution slider ("%s: %d * %d", `[Screen]` Size). 8-bit and 16-bit Colour radios (`[Screen]` BPP). Checkboxes for Lights, Smoke and Particles, Gouraud Shading and Vehicle shadows (`[Options]` "Show lights", "Show Smoke & particles", "Show gouraud shading", "Show vehicle shadows", all on by default). Scroll Speed slider (`[Screen]` "Scroll Speed", default 40, shown as (speed − 10) / 10). |
 | Sound Control | 0x3ED | 0x4057F0 | Heading 0x411. Master, Ambient and Speech sliders, 0–100% in tens (`[Sound\Volume]` Master / Ambient / Speech, 0–1). In-game CD music checkbox (`[Sound\Volume]` CD). |
 | Critical event options | 0x8117 | 0x409DE0 | Style 2. Two columns of five checkboxes (0x40A480), labels 37 pixels in. `[Event]` "Construction Completed", "Unit Manufactured", "Command Centre Built" (off by default), "Constructor Idle", "Facility Idle" (on), "Unit Arrived At Destination" (off), "Travel Interrupted", "Research Completed" (on), "Resource Warning" (off), "Resource Alert" (on). |
+| Load Game | 0x6F | 0x409560 | Style 2. Heading 0x406 ("Resume Campaign"), or 0x434 when there are no saves. One button per existing save, command 0x80B3 + slot, captioned with the save's name (36 bytes of Latin-1 at 0x0C, read by 0x404CD0). |
+| Save Game | 0x6E | 0x4090A0 | Opened from the in-game menu. Style 2. Heading 0x52D. Five slot buttons, command 0x8142 + slot, captioned with the save's name or 0x408 "Empty". |
 | CD Player | 0x803E | 0x407990 | Its own screen, with backdrop 0xAF and palette group 0x2F9. The layout and commands are documented in `src/frontend/CdPlayer.h`. Music plays from `Music-Human\NN TrackNN.wav` or `Music-Martian\NN TrackNN.wav`, tracks 2 to 5. |
 
 ### Menus still to rebuild (constructors)
@@ -80,10 +82,8 @@ Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 
 | Main Menu, network variant | 0xA4 | 0x406C10 |
 | Game session | 0xA4 | 0x407110 |
 | Insert CD | 0x8133 | 0x4089D0 |
-| Save Game | 0x6E | 0x408E30 |
-| Load Game | 0x6F | 0x4052B0 |
 | Edit Campaign | 0x8139 | 0x4092D0 |
-| Credits | 0x80CA | not traced yet |
+| Credits | 0x80CA | 0x4052B0: backdrop 0x344 (CREDITS.SPR), palette group 0x2F3 (F3), sound 0x191 |
 
 ## Still to do
 
@@ -93,6 +93,7 @@ Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 
   - how a slider reacts to clicks and drags (0x431EF0);
   - the event menu's check boxes, which sit about 14 pixels left of the original's while the labels line up.
 - **Display Settings.** The engine still draws at 640 × 480 and in true colour. The resolution and colour depth are saved for the launcher, but the engine doesn't use them yet.
+- **Loading and saving.** Picking a save in the Load or Save menu needs the campaign (the war map), which isn't rebuilt yet.
 - **Tooltips.** The CD Player's transport buttons carry tooltip strings (0x4B9–0x4BD) that aren't shown yet.
 - **Sounds.** Menu sounds (0x18C on the main menu, plus button clicks) aren't played yet.
 - **Mouse cursor.** The game's own cursor (GTypes 0x22/0x23 and so on) isn't drawn yet.

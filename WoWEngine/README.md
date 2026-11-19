@@ -20,7 +20,7 @@ Targets:
 
 | Target | What it is |
 |---|---|
-| `WoWEngine` | The game. Pass the game folder as the first argument, or put the engine in the game folder. `--screenshot file.bmp [keys]` presses the listed keys (up, down, left, right, enter, escape), saves the frame and exits. |
+| `WoWEngine` | The game. Pass the game folder as the first argument, or put the engine in the game folder. `--open 0x6E` starts on the screen a menu command opens. `--screenshot file.bmp [keys]` presses the listed keys (up, down, left, right, enter, escape), saves the frame and exits. |
 | `wowdump` | Lists and extracts the KAT! and SfxL archives. `--check <folder>` reports missing game files, `--sprite` saves a sprite as a BMP, `--text` prints TEXT.ojd and `--obj` prints the OBJ.ojd graphics table. |
 | `wowcore` | The file formats and game data code, with no SDL dependency, so tools can use it on their own. |
 | `WoWInstall` | Sets up a game folder from the two discs or their images, and rips the music. See [Installing](#installing). |
@@ -75,7 +75,7 @@ Each stage is checked against the original game running side by side, address by
 
 ```
 WoWInstall --drives                                     list the optical drives and the discs in them
-WoWInstall <game folder> <disc> [<disc>] [--martian] [--no-music]
+WoWInstall <game folder> [<disc>] [<disc>] [--martian] [--no-music]
 ```
 
 A `<disc>` can be any of:
@@ -84,7 +84,13 @@ A `<disc>` can be any of:
 - an `.iso` image;
 - a `.cue` sheet, with its `.bin` files.
 
-Give it both discs. It works out which is which, copies the game files, rips the music from tracks 2 to 5, writes `language.txt` and leaves the side marker (`Human.cd`, or `MARTIAN.cd` with `--martian`). Finally it checks that every file the engine needs is there.
+Give it both discs, in either order, or no disc at all to use whatever is in the drives. It works out which is which. Where both discs have a file, the Human disc's copy is kept, so the order makes no difference. Then it copies the game files, rips the music from tracks 2 to 5, writes `language.txt` and leaves the side marker (`Human.cd`, or `MARTIAN.cd` with `--martian`). Finally it checks that every file the engine needs is there. It skips everything WoWLauncher's clean-up deletes, including the original `FMV\*.smk` movies.
+
+How it handles the different situations:
+- **Both discs in two drives:** both are found and copied without asking.
+- **The same disc in two drives, or given twice:** it's copied once.
+- **One drive:** after the first disc, it asks for the other one in the same drive. It also checks the other drives in case the disc went into one of those, and says so if the same disc is put back in.
+- **Discs from two different language releases:** the install goes ahead with a warning, and the text comes from the Human disc.
 
 Music only comes from a disc in a drive or from a `.bin/.cue` image, because `.iso` images hold only the data track. Reading the music straight from a drive works on Windows and Linux. macOS doesn't allow raw CD reads, so there it has to come from a `.bin/.cue` image.
 

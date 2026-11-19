@@ -76,6 +76,16 @@ namespace wow::install
         (info.side == Side::Human ? result.humanDisc : result.martianDisc) = true;
         if (!info.language.empty())
         {
+            // discs from two different language releases make a mixed install (the Human disc's text wins)
+            std::ifstream previous(options.target / "language.txt");
+            std::string earlier;
+            if (previous && std::getline(previous, earlier) && !earlier.empty() && earlier != info.language)
+            {
+                result.warnings.push_back("The discs are from different releases (" + earlier + " and " + info.language +
+                    "); the game's text comes from the Human disc.");
+                if (info.side != Side::Human) info.language = earlier;
+            }
+            previous.close();
             std::ofstream out(options.target / "language.txt", std::ios::trunc);
             out << info.language << "\n";
         }

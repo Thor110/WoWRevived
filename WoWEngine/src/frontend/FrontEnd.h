@@ -27,6 +27,9 @@ namespace wow
         void OnMouseMove(int x, int y);
         void OnMouseButton(int x, int y, bool down);
 
+        // Opens a screen by its command id, as if a button had sent it (the --open start option).
+        void Open(int command) { Execute({ command, 0 }); }
+
         bool QuitRequested() const { return quit; }
         int CurrentScreen() const { return screen ? screen->Id() : 0; }
 
@@ -41,6 +44,8 @@ namespace wow
         std::unique_ptr<Screen> SoundControl(int previous); // 0x3ED, 0x4057F0
         std::unique_ptr<Screen> DisplaySettings(int previous); // 0x3EF, 0x4096D0
         std::unique_ptr<Screen> CriticalEvents(int previous);  // 0x8117, 0x409DE0
+        std::unique_ptr<Screen> LoadGame(int previous);     // 0x6F, 0x409560
+        std::unique_ptr<Screen> SaveGame(int previous);     // 0x6E, 0x4090A0 (opened from the in-game menu)
         std::unique_ptr<Screen> NotRebuilt(int command, int previous);
 
         bool AnySaveGame() const;

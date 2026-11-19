@@ -34,6 +34,7 @@ namespace wow
         void AddHeading(int textId) { AddHeadingText(res.String(textId)); }
         void AddHeadingText(std::string text);
         void AddButton(int command, int textId, int param = 0);
+        void AddButtonText(int command, std::string text, int param = 0); // a caption that isn't a TEXT.ojd string
         void AddBottomButton(int command, int textId); // also centres the menu
 
         // Rows that change a value; changed is called with the control after every change.

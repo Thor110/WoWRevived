@@ -1,12 +1,13 @@
 // WoWInstall - sets up a game folder from the original Human and Martian discs, or images of them.
 //
 //   WoWInstall --drives                                  list the optical drives
-//   WoWInstall <game folder> <disc> [<disc>] [options]   install
+//   WoWInstall <game folder> [<disc>] [<disc>] [options] install (no disc: use whatever is in the drives)
 //     <disc> is a drive or mounted disc (D:\, /media/cdrom, /dev/sr0), an .iso, or a .cue (with its .bin)
 //     --martian    start on the Martian side (default: Human)
 //     --no-music   don't rip the music tracks
-// The discs can be given in either order. With a single drive, give it once: after the first disc is copied
-// WoWInstall asks for the other one to be put in the same drive.
+// The discs can be given in either order. Both discs in two drives at once: they're found and copied without
+// asking (the same disc twice is only copied once). One drive: after the first disc WoWInstall asks for the
+// other one in the same drive.
 #include "install/Installer.h"
 
 #include <cstdio>
@@ -23,7 +24,7 @@ static int Usage()
 {
     std::fprintf(stderr,
         "usage: WoWInstall --drives\n"
-        "       WoWInstall <game folder> <disc> [<disc>] [--martian] [--no-music]\n"
+        "       WoWInstall <game folder> [<disc>] [<disc>] [--martian] [--no-music]\n"
         "       <disc>: a drive or mounted disc, an .iso, or a .cue\n");
     return 2;
 }
@@ -49,7 +50,7 @@ int main(int argc, char** argv)
             }
             return 0;
         }
-        if (argc < 3) return Usage();
+        if (argc < 2) return Usage();
 
         InstallOptions options;
         options.target = argv[1];
@@ -61,7 +62,6 @@ int main(int argc, char** argv)
             else if (arg == "--no-music") options.music = false;
             else sources.push_back(arg);
         }
-        if (sources.empty()) return Usage();
 
         int lastPercent = -1;
         Progress progress = [&](const std::string& message, double fraction) {
@@ -70,37 +70,72 @@ int main(int argc, char** argv)
             lastPercent = percent;
         };
         InstallResult result;
+        // copies a disc unless that side has been copied already (the same disc in two drives, given twice...)
         auto copy = [&](const std::string& source) {
             auto disc = OpenDisc(source);
             DiscInfo info = Identify(*disc);
             std::printf("%s: %s %s disc\n", disc->Describe().c_str(), info.language.c_str(),
                 info.side == Side::Human ? "Human" : info.side == Side::Martian ? "Martian" : "unknown");
+            if ((info.side == Side::Human && result.humanDisc) || (info.side == Side::Martian && result.martianDisc))
+            {
+                std::printf("  already copied, skipping it\n");
+                return;
+            }
             lastPercent = -1;
             CopyDisc(*disc, options, progress, result);
         };
         for (const std::string& source : sources) copy(source);
 
-        // one drive and one disc so far: ask for the other one in the same drive
+        // look through the drives for whichever disc is still missing (both discs in two drives at once,
+        // or no disc given at all)
+        auto scanDrives = [&]() {
+            for (const auto& drive : FindDrives())
+            {
+                if (result.humanDisc && result.martianDisc) return;
+                try
+                {
+                    auto disc = OpenDisc(drive);
+                    Side side = Identify(*disc).side;
+                    if ((side == Side::Human && !result.humanDisc) || (side == Side::Martian && !result.martianDisc)) copy(drive.string());
+                }
+                catch (const std::exception&) {} // empty drive, or not one of the game's discs
+            }
+        };
+        bool usesDrive = sources.empty();
         std::error_code ec;
-        bool singleDrive = sources.size() == 1 && std::filesystem::is_directory(sources[0], ec) ? true
-                         : sources.size() == 1 && sources[0].rfind("/dev/", 0) == 0;
+        for (const std::string& source : sources)
+            usesDrive |= std::filesystem::is_directory(source, ec) || source.rfind("/dev/", 0) == 0;
+        if (usesDrive) scanDrives();
+        if (sources.empty() && !result.humanDisc && !result.martianDisc)
+        {
+            std::fprintf(stderr, "WoWInstall: no game disc found in the drives\n");
+            return 1;
+        }
+
+        // one drive: ask for the other disc in the same drive
+        std::string swapDrive = sources.size() == 1 ? sources[0] : std::string();
+        if (swapDrive.empty() && sources.empty())
+            for (const auto& drive : FindDrives()) { swapDrive = drive.string(); break; }
+        bool singleDrive = usesDrive && !swapDrive.empty();
         while (singleDrive && !(result.humanDisc && result.martianDisc))
         {
             std::printf("Put the %s disc in %s and press Enter (or type s and Enter to skip it): ",
-                result.humanDisc ? "Martian" : "Human", sources[0].c_str());
+                result.humanDisc ? "Martian" : "Human", swapDrive.c_str());
             std::fflush(stdout);
             std::string answer;
             if (!std::getline(std::cin, answer) || answer == "s" || answer == "S") break;
             try
             {
-                auto disc = OpenDisc(sources[0]);
+                scanDrives(); // the other disc may have gone into a different drive
+                if (result.humanDisc && result.martianDisc) break;
+                auto disc = OpenDisc(swapDrive);
                 Side side = Identify(*disc).side;
                 if ((side == Side::Human && result.humanDisc) || (side == Side::Martian && result.martianDisc))
                 {
                     std::printf("That's the disc that was just copied.\n");
                     continue;
                 }
-                copy(sources[0]);
+                copy(swapDrive);
             }
             catch (const std::exception& ex) { std::printf("Can't read the disc yet: %s\n", ex.what()); }
         }

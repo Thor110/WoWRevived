@@ -1,4 +1,5 @@
 #include "frontend/FrontEnd.h"
+#include "core/SaveGame.h"
 
 #include <SDL3/SDL.h>
 
@@ -23,6 +24,9 @@ namespace wow
         constexpr int CmdSoundControl = 0x3ED;
         constexpr int CmdDisplaySettings = 0x3EF;
         constexpr int CmdCriticalEvents = 0x8117;
+        constexpr int CmdSaveMenu = 0x6E;
+        constexpr int CmdLoadSlot = 0x80B3;  // + slot: load that save (starts the campaign)
+        constexpr int CmdSaveSlot = 0x8142;  // + slot: save the campaign there
 
         constexpr const char* SoundSection = "Sound\\Volume";
 
@@ -67,7 +71,9 @@ namespace wow
     {
         int from = screen ? screen->Id() : 0;
         screen = std::move(next);
-        if (!screen->Previous() && screen->Id() != CmdMainMenu) screen->SetPrevious(from == CmdOptions ? CmdOptions : CmdMainMenu);
+        // the "not rebuilt" placeholder returns to the menu it was opened from
+        if (!screen->Previous() && screen->Id() != CmdMainMenu)
+            screen->SetPrevious(from == CmdOptions || from == CmdLoadGame || from == CmdSaveMenu ? from : CmdMainMenu);
         if (screen->PaletteGroup() != loadedGroup)
         {
             res.LoadShadeGroup(screen->PaletteGroup());
@@ -82,14 +88,33 @@ namespace wow
 
     bool FrontEnd::AnySaveGame() const
     {
-        // SaveGame\Human.001 to .005 (or Martian.*), the same check as the main menu's constructor
-        for (int slot = 1; slot <= 5; slot++)
-        {
-            char name[64];
-            std::snprintf(name, sizeof(name), "SaveGame\\%s.%03d", res.Human() ? "Human" : "Martian", slot);
-            if (files.Resolve(name)) return true;
-        }
+        // the same check as the main menu's and load menu's constructors
+        for (int slot = SaveSlot::First; slot <= SaveSlot::Last; slot++)
+            if (SaveSlot::Exists(files, res.Human(), slot)) return true;
         return false;
+    }
+
+    std::unique_ptr<Screen> FrontEnd::LoadGame(int previous)
+    {
+        auto m = std::make_unique<Menu>(CmdLoadGame, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, 2);
+        m->AddHeading(AnySaveGame() ? 0x406 : 0x434); // "Resume Campaign" or "No Saved Campaigns"
+        for (int slot = SaveSlot::First; slot <= SaveSlot::Last; slot++)
+            if (auto name = SaveSlot::Name(files, res.Human(), slot)) m->AddButtonText(CmdLoadSlot, *name, slot);
+        m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
+        return m;
+    }
+
+    std::unique_ptr<Screen> FrontEnd::SaveGame(int previous)
+    {
+        auto m = std::make_unique<Menu>(CmdSaveMenu, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, 2);
+        m->AddHeading(0x52D);
+        for (int slot = SaveSlot::First; slot <= SaveSlot::Last; slot++)
+        {
+            auto name = SaveSlot::Name(files, res.Human(), slot);
+            m->AddButtonText(CmdSaveSlot, name ? *name : res.String(0x408), slot); // "Empty"
+        }
+        m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
+        return m;
     }
 
     std::unique_ptr<Screen> FrontEnd::MainMenu()
@@ -242,6 +267,13 @@ namespace wow
         case CmdSoundControl: Show(SoundControl(current)); break;
         case CmdDisplaySettings: Show(DisplaySettings(current)); break;
         case CmdCriticalEvents: Show(CriticalEvents(current)); break;
+        case CmdLoadGame: Show(LoadGame(current)); break;
+        case CmdSaveMenu: Show(SaveGame(current)); break;
+        case CmdLoadSlot:
+        case CmdSaveSlot:
+            // TODO: loading and saving need the campaign (war map), which isn't rebuilt yet
+            Show(NotRebuilt(command.id, current));
+            break;
         case CdPlayer::Id: Show(std::make_unique<CdPlayer>(res, settings.colours, CmdMainMenu, music, files)); break;
         case Commands::Back:
             // Escape goes back to the menu this one was opened from; the main menu itself ignores it
