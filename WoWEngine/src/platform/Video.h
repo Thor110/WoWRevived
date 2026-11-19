@@ -2,6 +2,8 @@
 // Video keeps that model: the engine draws palette indices into Pixels(), and Present() converts them through the
 // current palette and scales the result to the window with nearest-neighbour filtering and letterboxing.
 #pragma once
+#include "core/Palette.h"
+
 #include <SDL3/SDL.h>
 
 #include <array>
@@ -11,8 +13,6 @@
 
 namespace wow
 {
-    struct Rgb { uint8_t r, g, b; };
-
     class Video
     {
     public:
@@ -26,7 +26,8 @@ namespace wow
         int Width() const { return width; }
         int Height() const { return height; }
         uint8_t* Pixels() { return pixels.data(); }
-        std::array<Rgb, 256>& Palette() { return palette; }
+        std::array<Rgb, 256>& Colours() { return palette; }
+        void SetPalette(const Palette& p) { palette = p.colours; }
 
         void ToggleFullScreen();
         void Present();

@@ -1,0 +1,1373 @@
+address	label	text	used_by
+004AAF48	aStringTooLong	string too long	sub_466E30
+004AAF78	aInvalidStringP	invalid string position	sub_4672E0
+004AAFEC	aUnknownExcepti	Unknown exception	
+004AB028	aLcTime	LC_TIME	
+004AB030	aLcNumeric	LC_NUMERIC	
+004AB03C	aLcMonetary	LC_MONETARY	
+004AB048	aLcCtype	LC_CTYPE	
+004AB054	aLcCollate	LC_COLLATE	
+004AB060	aLcAll	LC_ALL	
+004AB15C	aNull	(null)	
+004AB164	aRuntimeError	runtime error 	
+004AB178	aTlossError	TLOSS error	
+004AB188	aSingError	SING error	
+004AB198	aDomainError	DOMAIN error	
+004AB1A8	aR6028UnableToI	R6028	
+004AB1D0	aR6027NotEnough	R6027	
+004AB208	aR6026NotEnough	R6026	
+004AB240	aR6025PureVirtu	R6025	
+004AB268	aR6024NotEnough	R6024	
+004AB2A0	aR6019UnableToO	R6019	
+004AB2CC	aR6018Unexpecte	R6018	
+004AB2F0	aR6017Unexpecte	R6017	
+004AB320	aR6016NotEnough	R6016	
+004AB370	aR6009NotEnough	R6009	
+004AB39C	aR6008NotEnough	R6008	
+004AB3C8	aR6002FloatingP	R6002	
+004AB3F0	aMicrosoftVisua	Microsoft Visual C++ Runtime Library	
+004AB41C	aRuntimeErrorPr	Runtime Error!	
+004AB43C	aProgramNameUnk	<program name unknown>	
+004AB460	aIsprocessorfea	IsProcessorFeaturePresent	
+004AB500	aParaguay	Paraguay	
+004AB50C	aUruguay	Uruguay	
+004AB514	aChile	Chile	
+004AB51C	aEcuador	Ecuador	
+004AB524	aArgentina	Argentina	
+004AB530	aPeru	Peru	
+004AB538	aColombia	Colombia	
+004AB544	aVenezuela	Venezuela	
+004AB550	aDominicanRepub	Dominican Republic	
+004AB564	aSouthAfrica	South Africa	
+004AB574	aPanama	Panama	
+004AB57C	aLuxembourg	Luxembourg	
+004AB588	aCostaRica	Costa Rica	
+004AB594	aSwitzerland	Switzerland	
+004AB5A0	aGuatemala	Guatemala	
+004AB5AC	aCanada	Canada	
+004AB5B4	aSpanishModernS	Spanish - Modern Sort	
+004AB5CC	aAustralia	Australia	
+004AB5D8	aAustria	Austria	
+004AB5E0	aBelgium	Belgium	
+004AB5E8	aMexico	Mexico	
+004AB5F0	aBasque	Basque	
+004AB5F8	aSweden	Sweden	
+004AB600	aSwedish	Swedish	
+004AB608	aIceland	Iceland	
+004AB610	aIcelandic	Icelandic	
+004AB61C	aFrance	France	
+004AB624	aFinland	Finland	
+004AB62C	aFinnish	Finnish	
+004AB634	aSpain	Spain	
+004AB63C	aSpanishTraditi	Spanish - Traditional Sort	
+004AB658	aUnitedStates	united-states	
+004AB668	aUnitedKingdom	united-kingdom	
+004AB678	aTrinidadTobago	trinidad & tobago	
+004AB68C	aSouthKorea	south-korea	
+004AB698	aSouthAfrica_0	south-africa	
+004AB6A8	aSouthKorea_0	south korea	
+004AB6B4	aSouthAfrica_1	south africa	
+004AB6C4	aSlovak	slovak	
+004AB6CC	aPuertoRico	puerto-rico	
+004AB6D8	aPrChina	pr-china	
+004AB6E4	aPrChina_0	pr china	
+004AB6F0	aNz	nz	
+004AB6F4	aNewZealand	new-zealand	
+004AB700	aHongKong	hong-kong	
+004AB70C	aHolland	holland	
+004AB714	aGreatBritain	great britain	
+004AB724	aEngland	england	
+004AB72C	aCzech	czech	
+004AB734	aChina	china	
+004AB73C	aBritain	britain	
+004AB744	aAmerica	america	
+004AB74C	aUsa	usa	
+004AB750	aUs	us	
+004AB754	aUk	uk	
+004AB758	aSwiss	swiss	
+004AB760	aSwedishFinland	swedish-finland	
+004AB770	aSpanishVenezue	spanish-venezuela	
+004AB784	aSpanishUruguay	spanish-uruguay	
+004AB794	aSpanishPuertoR	spanish-puerto rico	
+004AB7A8	aSpanishPeru	spanish-peru	
+004AB7B8	aSpanishParagua	spanish-paraguay	
+004AB7CC	aSpanishPanama	spanish-panama	
+004AB7DC	aSpanishNicarag	spanish-nicaragua	
+004AB7F0	aSpanishModern	spanish-modern	
+004AB800	aSpanishMexican	spanish-mexican	
+004AB810	aSpanishHondura	spanish-honduras	
+004AB824	aSpanishGuatema	spanish-guatemala	
+004AB838	aSpanishElSalva	spanish-el salvador	
+004AB84C	aSpanishEcuador	spanish-ecuador	
+004AB85C	aSpanishDominic	spanish-dominican republic	
+004AB878	aSpanishCostaRi	spanish-costa rica	
+004AB88C	aSpanishColombi	spanish-colombia	
+004AB8A0	aSpanishChile	spanish-chile	
+004AB8B0	aSpanishBolivia	spanish-bolivia	
+004AB8C0	aSpanishArgenti	spanish-argentina	
+004AB8D4	aPortugueseBraz	portuguese-brazilian	
+004AB8EC	aNorwegianNynor	norwegian-nynorsk	
+004AB900	aNorwegianBokma	norwegian-bokmal	
+004AB914	aNorwegian	norwegian	
+004AB920	aItalianSwiss	italian-swiss	
+004AB930	aIrishEnglish	irish-english	
+004AB940	aGermanSwiss	german-swiss	
+004AB950	aGermanLuxembou	german-luxembourg	
+004AB964	aGermanLichtens	german-lichtenstein	
+004AB978	aGermanAustrian	german-austrian	
+004AB988	aFrenchSwiss	french-swiss	
+004AB998	aFrenchLuxembou	french-luxembourg	
+004AB9AC	aFrenchCanadian	french-canadian	
+004AB9BC	aFrenchBelgian	french-belgian	
+004AB9CC	aEnglishUsa	english-usa	
+004AB9D8	aEnglishUs	english-us	
+004AB9E4	aEnglishUk	english-uk	
+004AB9F0	aEnglishTrinida	english-trinidad y tobago	
+004ABA0C	aEnglishSouthAf	english-south africa	
+004ABA24	aEnglishNz	english-nz	
+004ABA30	aEnglishJamaica	english-jamaica	
+004ABA40	aEnglishIre	english-ire	
+004ABA4C	aEnglishCaribbe	english-caribbean	
+004ABA60	aEnglishCan	english-can	
+004ABA6C	aEnglishBelize	english-belize	
+004ABA7C	aEnglishAus	english-aus	
+004ABA88	aEnglishAmerica	english-american	
+004ABA9C	aDutchBelgian	dutch-belgian	
+004ABAAC	aChineseTraditi	chinese-traditional	
+004ABAC0	aChineseSingapo	chinese-singapore	
+004ABAD4	aChineseSimplif	chinese-simplified	
+004ABAE8	aChineseHongkon	chinese-hongkong	
+004ABAFC	aChinese	chinese	
+004ABB04	aChi	chi	
+004ABB08	aChh	chh	
+004ABB0C	aCanadian	canadian	
+004ABB18	aBelgian	belgian	
+004ABB20	aAustralian	australian	
+004ABB2C	aAmericanEnglis	american-english	
+004ABB40	aAmericanEnglis_0	american english	
+004ABB54	aAmerican	american	
+004ABB60	aGetlastactivep	GetLastActivePopup	
+004ABB74	aGetactivewindo	GetActiveWindow	
+004ABB84	aMessageboxa	MessageBoxA	
+004ABB90	aUser32Dll_0	user32.dll	
+004ABBA0	aSunmontuewedth	SunMonTueWedThuFriSat	
+004ABBB8	aJanfebmaraprma	JanFebMarAprMayJunJulAugSepOctNovDec	
+004ABBE0	aTz	TZ	
+004ABC00	aHMmSs	H:mm:ss	
+004ABC08	aDdddMmmmDdYyyy	dddd, MMMM dd, yyyy	
+004ABC1C	aMDYy	M/d/yy	
+004ABC24	aPm	PM	
+004ABC28	aAm	AM	
+004ABC2C	aDecember	December	
+004ABC38	aNovember	November	
+004ABC44	aOctober	October	
+004ABC4C	aSeptember	September	
+004ABC58	aAugust	August	
+004ABC60	aJuly	July	
+004ABC68	aJune	June	
+004ABC70	aApril	April	
+004ABC78	aMarch	March	
+004ABC80	aFebruary	February	
+004ABC8C	aJanuary	January	
+004ABC94	aSaturday	Saturday	
+004ABCA0	aFriday	Friday	
+004ABCA8	aThursday	Thursday	
+004ABCB4	aWednesday	Wednesday	
+004ABCC0	aTuesday	Tuesday	
+004ABCC8	aMonday	Monday	
+004ABCD0	aSunday	Sunday	
+004ABCD8	aSat	Sat	
+004ABCDC	aFri	Fri	
+004ABCE0	aThu	Thu	
+004ABCE4	aWed	Wed	
+004ABCE8	aTue	Tue	
+004ABCEC	aMon	Mon	
+004ABCF0	aSun	Sun	
+004ABD20	aFrexp	frexp	
+004ABD28	aFmod	fmod	
+004ABD30	aHypot	_hypot	
+004ABD38	aCabs	_cabs	
+004ABD40	aLdexp	ldexp	
+004ABD48	aModf	modf	
+004ABD50	aFabs	fabs	
+004ABD58	aFloor	floor	
+004ABD60	aCeil	ceil	
+004ABD74	aSqrt	sqrt	
+004ABD7C	aAtan2	atan2	
+004ABD84	aAtan	atan	
+004ABD8C	aAcos	acos	
+004ABD94	aAsin_0	asin	
+004ABD9C	aTanh	tanh	
+004ABDA4	aCosh	cosh	
+004ABDAC	aSinh	sinh	
+004ABDB4	aLog10	log10	
+004B6A1E	aInmmDll	_INMM.dll	
+004B6B04	aKernel32Dll	KERNEL32.dll	
+004B6BB4	aUser32Dll	USER32.dll	
+004B6C04	aAdvapi32Dll	ADVAPI32.dll	
+004B6CEC	aSmackw32Dll	smackw32.dll	
+004B6CFA	aDsoundDll	DSOUND.dll	
+004B6D62	aDplayxDll	DPLAYX.dll	
+004B6D82	aDdrawDll	DDRAW.dll	
+004B7516	aGdi32Dll	GDI32.dll	
+004B850C	aWowIni	WOW.INI	
+004B8514	aDebug	Debug	sub_4015C0 sub_401600 sub_401640 sub_4025B0 sub_414740 sub_414DA0 sub_417BF0 sub_439440 sub_442850 sub_47CCF0 sub_490760 sub_4907A0 sub_4907E0 sub_496520
+004B851C	aCharlie	Charlie	
+004B8524	aDave	Dave	sub_4015C0
+004B852C	aMat	Mat	sub_401600
+004B8530	aEditFunctional	Edit functionality	sub_401640
+004B8544	aLanguage	Language	sub_401680
+004B8550	aEnableNetworkV	Enable Network Version	sub_4016F0
+004B8568	aNetwork	Network	sub_401730 sub_402540 sub_44A5B0
+004B8570	aIAmHuman	I Am Human	sub_401730
+004B857C	aGameFrequency	Game Frequency	sub_401770
+004B858C	aInstallPath	Install Path	sub_4017B0
+004B859C	a0wow	\0WOW\	sub_4017B0 sub_4017F0
+004B85A4	aCdPath	CD Path	sub_4017F0
+004B85AC	aThreadEnable	Thread Enable	sub_401830
+004B85BC	aTimerEnable	Timer Enable	sub_401860
+004B85CC	aSleeperEnable	Sleeper Enable	sub_401890
+004B85DC	aSystem	System	sub_4018C0 sub_401900 sub_4022C0 sub_402300 sub_402340 sub_402380 sub_414CE0 sub_4396F0
+004B85E4	aGameMaxTimeMs	Game max time (ms)	sub_4018C0
+004B85F8	aGameMinTimeMs	Game min time (ms)	sub_401900
+004B860C	aMainProcessTer	Main process terminating code %d	_WinMain@16
+004B8630	aMainShellPeekm	Main shell PeekMessage():: Quit message posted	_WinMain@16
+004B8660	aTerminatingRen	Terminating Render Thread	_WinMain@16
+004B867C	aTerminatingGam	Terminating Game Thread	_WinMain@16
+004B8694	aMainShellGetme	Main shell GetMessage():: Quit message posted	_WinMain@16
+004B86E8	aSpanish	Spanish	_WinMain@16
+004B86F0	aSpanishCd	Spanish.CD	_WinMain@16
+004B86FC	aItalian	Italian	_WinMain@16
+004B8704	aItalianCd	Italian.CD	_WinMain@16
+004B8710	aGerman	German	_WinMain@16
+004B8718	aGermanCd	German.CD	_WinMain@16
+004B8724	aFrench	French	_WinMain@16
+004B872C	aFrenchCd	French.CD	_WinMain@16
+004B8790	aTimeprocCalled	TimeProc called by wrong timer! %d	sub_4020D0
+004B87B4	aGamethreadTerm	GameThread terminating code 2	sub_402180
+004B87D4	aNoTimerEventYe	No Timer event yet!	sub_402180
+004B87E8	aRenderthreadTe	RenderThread terminating code 3	sub_402230
+004B8820	aGameMemory	Game Memory	sub_4022C0
+004B882C	aRendererMemory	Renderer Memory	sub_402300
+004B883C	aGameMemoryHand	Game Memory Handles	sub_402340
+004B8850	aRendererMemory_0	Renderer Memory Handles	sub_402380
+004B8868	aOptions	Options	sub_4023C0 sub_402400 sub_402440 sub_402480 sub_4024C0
+004B8870	aShowLights	Show lights	sub_4023C0
+004B887C	aShowSmokeParti	Show Smoke & particles	sub_402400
+004B8894	aShowGouraudSha	Show gouraud shading	sub_402440
+004B88AC	aShowVehicleSha	Show vehicle shadows	sub_402480
+004B88C4	aShowSimpleTool	Show simple tooltips	sub_4024C0
+004B88DC	aMessagesGuaran	Messages Guaranteed	sub_402540
+004B88F0	aSkip	Skip	sub_402580
+004B88F8	aSaveFileId	Save File ID	sub_4025B0
+004B8908	aTextOjd	Text.OJD	sub_402630
+004B8914	aMartianCd	Martian.cd	sub_402630 sub_408B70
+004B8920	aHumanCd	Human.cd	sub_402630 sub_408B70
+004B892C	aStats	Stats	sub_402AB0 sub_402AF0 sub_424090 sub_425B40 sub_449410 sub_480150 sub_489340 sub_4955E0
+004B8934	aIrqMemUsed	IRQ mem used	sub_402AB0
+004B8944	aNonIrqMemUsed	Non IRQ mem used	sub_402AF0
+004B8958	aVictory	VICTORY	sub_402B80
+004B8960	aDefeat	DEFEAT	sub_402B80
+004B8968	aRagelogo	RAGELOGO	sub_402B80
+004B8974	aIntro	INTRO	sub_402B80
+004B897C	aTitle	TITLE	sub_402B80
+004B8984	aWgameGameoverQ	WGame::GameOver Quit message posted	sub_402B80 sub_404E10
+004B89A8	aCorrectCdIsIns	Correct CD is inserted	sub_403FA0
+004B89C0	aSavegameS03d	SaveGame\%s.%03d	sub_4042D0 sub_4043D0 sub_404660 sub_404C60 sub_404CD0
+004B89D4	aS03d	%s.%03d	sub_4042D0 sub_4043D0 sub_404660 sub_404C60 sub_404CD0
+004B89DC	aMartian_1	Martian	sub_4042D0 sub_4043D0 sub_404660 sub_404C60 sub_404CD0 sub_4185F0
+004B89E4	aHuman_1	Human	sub_4042D0 sub_4043D0 sub_404660 sub_404C60 sub_404CD0 sub_4185F0
+004B89EC	aSavingGameToSl	Saving game to slot %d	sub_4042D0
+004B8A04	aWgamePauseCdWa	WGame::Pause CD was %s	sub_404BC0
+004B8A1C	aDisabled	Disabled	sub_404BC0 sub_404C10
+004B8A28	aEnabled	Enabled	sub_404BC0 sub_404C10
+004B8A30	aWgameResumeSCd	WGame::Resume %s CD	sub_404C10
+004B8A44	aBattlemap	BattleMap	sub_404E60 sub_4344C0 sub_434500 sub_434540 sub_434580 sub_4345C0 sub_434600 sub_434640 sub_434680 sub_484A30
+004B8A50	aDamageReductio	Damage reduction divisor	sub_404E60
+004B8A6C	aDamageLayer	Damage Layer	sub_404EA0
+004B8A8C	aSoundVolume	Sound\Volume	sub_4057B0 sub_4642C0 sub_464300 sub_464340 sub_464380 sub_4643C0 sub_464400 sub_464440
+004B8A9C	aCd	CD	sub_4057B0
+004B8AA0	aSD	%s - %d%%	sub_405A70
+004B8AAC	aMainMenu	Main Menu	sub_405ED0 sub_406C10
+004B8AB8	aFullscreenView	Fullscreen View	sub_4061B0
+004B8AC8	aSinglePlayerGa	Single Player Game	sub_4068F0
+004B8ADC	aNetworkHostMen	Network Host Menu	sub_406A10
+004B8AF0	aWaitingForPlay	Waiting for Player Menu	sub_406B30
+004B8B08	aGameSessionMen	Game session menu	sub_407110
+004B8B50	a10000	[1]<00:00>	sub_407990 sub_4088B0
+004B8B5C	aNewTrackD	New track %d	sub_407990 sub_4081D0
+004B8B6C	aCdPlayer	CD Player	sub_407990
+004B8B78	aTrackChangedFr	Track changed from %d to %d	sub_4081D0
+004B8B94	aMciNotifySuper	MCI_NOTIFY_SUPERSEDED	sub_4081D0
+004B8BAC	aMciNotifyFailu	MCI_NOTIFY_FAILURE	sub_4081D0
+004B8BC0	aMciNotifyAbort	MCI_NOTIFY_ABORTED	sub_4081D0
+004B8BD4	aMciNotifySucce	MCI_NOTIFY_SUCCESSFUL	sub_4081D0
+004B8BEC	aRepeatD	Repeat %d	sub_4081D0
+004B8BF8	aD02d02d	[%d]<%02d:%02d>	sub_4088B0
+004B8C08	aInsertCdMenu	Insert CD menu	sub_4089D0
+004B8C18	aGameOptions	Game Options	sub_408CF0
+004B8C3C	aSaveGame	Save Game	sub_4090A0
+004B8C48	aQuitGame	Quit Game	sub_4091E0 sub_409460
+004B8C54	aEditCampaign	Edit Campaign	sub_4092D0
+004B8C64	aTextChangedToS	Text changed to %s	sub_409400
+004B8C78	aLoadGame	Load Game	sub_409560
+004B8DC0	aSD_0	%s: %d	sub_4096D0 sub_409AD0
+004B8DC8	aSDD	%s: %d * %d	sub_4096D0 sub_409AD0
+004B8DD4	aDisplaySetting	Display Settings	sub_4096D0
+004B8DE8	aEventMenu	Event Menu	sub_409DE0
+004B8E0C	aEscapeFromWful	Escape from WFullScreenMenu	sub_40A1B0
+004B8E2C	aGame	Game	sub_40AFF0 sub_410E00 sub_49E2F0
+004B8E34	aTimeOfDay	Time Of Day	sub_40AFF0
+004B8E40	aLoadshtabCould	LoadShTab: Couldn	sub_40B520 sub_40B570 sub_40B6C0
+004B8E64	aC	%c	sub_40B570 sub_40B6C0
+004B8E68	aW	W	sub_40B6C0
+004B8E6C	aDatLandrDSInt	dat\LANDR%d%s.int	sub_40B570
+004B8E80	aLoadshadetable_1	LoadShadeTables: Invalid palette ID (%d)	sub_40B6C0
+004B8EAC	aDatSegiS	dat\SEGI.%s	sub_40B6C0
+004B8EB8	aDatSeSiS	dat\SE%sI.%s	sub_40B6C0
+004B8EC8	aDatSeseS	dat\SESE.%s	sub_40B6C0
+004B8ED4	aDatF7giS	dat\F7GI.%s	sub_40B6C0
+004B8EE0	aDatF7SiS	dat\F7%sI.%s	sub_40B6C0
+004B8EF0	aDatF7f7S	dat\F7F7.%s	sub_40B6C0
+004B8EFC	aDatF6giS	dat\F6GI.%s	sub_40B6C0
+004B8F08	aDatF6SiS	dat\F6%sI.%s	sub_40B6C0
+004B8F18	aDatF6f6S	dat\F6F6.%s	sub_40B6C0
+004B8F24	aDatF5giS	dat\F5GI.%s	sub_40B6C0
+004B8F30	aDatF5SiS	dat\F5%sI.%s	sub_40B6C0
+004B8F40	aDatF5f5S	dat\F5F5.%s	sub_40B6C0
+004B8F4C	aDatF4giS	dat\F4GI.%s	sub_40B6C0
+004B8F58	aDatF4SiS	dat\F4%sI.%s	sub_40B6C0
+004B8F68	aDatF4f4S	dat\F4F4.%s	sub_40B6C0
+004B8F74	aDatF3giS	dat\F3GI.%s	sub_40B6C0
+004B8F80	aDatF3SiS	dat\F3%sI.%s	sub_40B6C0
+004B8F90	aDatF3f3S	dat\F3F3.%s	sub_40B6C0
+004B8F9C	aDatF2giS	dat\F2GI.%s	sub_40B6C0
+004B8FA8	aDatF2SiS	dat\F2%sI.%s	sub_40B6C0
+004B8FB8	aDatF2f2S	dat\F2F2.%s	sub_40B6C0
+004B8FC4	aDatF1giS	dat\F1GI.%s	sub_40B6C0
+004B8FD0	aDatF1SiS	dat\F1%sI.%s	sub_40B6C0
+004B8FE0	aDatF1f1S	dat\F1F1.%s	sub_40B6C0
+004B8FEC	aDatSminibS	dat\%sMINIB.%s	sub_40B6C0
+004B8FFC	aDatLandrDSS	dat\LANDR%d%s.%s	sub_40B6C0
+004B9010	aDatBmexS	dat\BMEX.%s	sub_40B6C0
+004B901C	aDatBmgiS	dat\BMGI.%s	sub_40B6C0
+004B9028	aDatBmSiS	dat\BM%sI.%s	sub_40B6C0
+004B9038	aDatBmhvSS	dat\BMHV%s.%s	sub_40B6C0
+004B9048	aDatBmmvSS	dat\BMMV%s.%s	sub_40B6C0
+004B9058	aDatBmrDnaSS	dat\BMR%dNA%s.%s	sub_40B6C0
+004B906C	aDatBmmbSS	dat\BMMB%s.%s	sub_40B6C0
+004B907C	aDatBmhbSS	dat\BMHB%s.%s	sub_40B6C0
+004B908C	aDatSrSrS	dat\%sR%sR.%s	sub_40B6C0
+004B909C	aDatSminitS	dat\%sMINIT.%s	sub_40B6C0
+004B90AC	aDatSbgiS	dat\%sBGI.%s	sub_40B6C0
+004B90BC	aDatSbSiS	dat\%sB%sI.%s	sub_40B6C0
+004B90CC	aDatSbSbS	dat\%sB%sB.%s	sub_40B6C0
+004B90DC	aDatSwgiS	dat\%sWGI.%s	sub_40B6C0
+004B90EC	aDatSwSiS	dat\%sW%sI.%s	sub_40B6C0
+004B90FC	aDatSwSwS	dat\%sW%sW.%s	sub_40B6C0
+004B910C	aDatSrgiS	dat\%sRGI.%s	sub_40B6C0
+004B911C	aDatSrSiS	dat\%sR%sI.%s	sub_40B6C0
+004B912C	aDatCd10S	dat\cd10.%s	sub_40B6C0
+004B9138	aDatCd9S	dat\cd9.%s	sub_40B6C0
+004B9144	aDatCd8S	dat\cd8.%s	sub_40B6C0
+004B9150	aDatCd7S	dat\cd7.%s	sub_40B6C0
+004B915C	aDatCd6S	dat\cd6.%s	sub_40B6C0
+004B9168	aDatCd5S	dat\cd5.%s	sub_40B6C0
+004B9174	aDatCd4S	dat\cd4.%s	sub_40B6C0
+004B9180	aDatCd3S	dat\cd3.%s	sub_40B6C0
+004B918C	aDatCd2S	dat\cd2.%s	sub_40B6C0
+004B9198	aDatCd1S	dat\cd1.%s	sub_40B6C0
+004B91A4	aDatCdsepiaS	dat\cdsepia.%s	sub_40B6C0
+004B91C0	aLoadshadetable_0	LoadShadeTables: Invalid colour depth	sub_40B6C0
+004B91E8	aM	M	sub_40B6C0
+004B91F0	aLoadshadetable	LoadShadeTables	sub_40B6C0
+004B92E0	aScreen	Screen	sub_40CE00 sub_40CE40 sub_40CE80 sub_41DF40 sub_41DF80 sub_42C4A0 sub_42C500 sub_42C540 sub_42C5A0 sub_42C5E0 sub_42C620 sub_42C660 sub_433770 sub_4337B0 sub_4337F0 sub_433830 sub_44DC60 sub_49D430
+004B92E8	aUseDdrawSurfac	Use DDraw surfaces	sub_40CE00
+004B92FC	aBlitInsteadOfF	BLIT instead of FLIP	sub_40CE40
+004B9314	aDamageMapVram	Damage map VRAM	sub_40CE80
+004B9324	aRenderer	Renderer	sub_40CF00
+004B9330	aAllocatingMemo	Allocating memory block for 1024 RType??? objects	sub_40E700
+004B9364	aCanTLoadFileS	Can	sub_40E7A0 sub_40E980
+004B937C	aRtypebaseUnloa	RTypeBase::UnloadGTypeData	sub_40EA50
+004B9398	aRtypebase	RTypeBase	sub_40E880
+004B93A4	aWobject	WObject	sub_40E910 sub_445010 sub_445210 sub_445D60 sub_461A80 sub_461B60 sub_4648C0 sub_4655F0
+004B93AC	aRtypebaseRende	RTypeBase::Render - Attempting to Render a non render object	sub_40EAE0
+004B9444	aColours	Colours	sub_40F060 sub_40F0A0 sub_40F0E0 sub_40F120 sub_40F160 sub_40F1A0 sub_40F1E0 sub_40F220 sub_40F260 sub_40F2A0 sub_40F2E0 sub_40F320 sub_40F360 sub_40F3A0 sub_40F3E0 sub_40F420 sub_40F460 sub_40F4A0 sub_40F4E0 sub_40F520 sub_40F560 sub_40F5A0
+004B944C	aMenuHeading	Menu Heading	sub_40F060
+004B945C	aMenuItems	Menu Items	sub_40F0A0
+004B9468	aMenuGlowFirst	Menu Glow First	sub_40F0E0
+004B9478	aMenuGlowLast	Menu Glow Last	sub_40F120
+004B9488	aMenuStaticText	Menu Static Text	sub_40F160
+004B949C	aResearchCurren	Research Current	sub_40F1A0
+004B94B0	aResearchNormal	Research Normal	sub_40F1E0
+004B94C0	aResearchNew	Research New	sub_40F220
+004B94D0	aResearchHeadin	Research Heading	sub_40F260
+004B94E4	aResearchPropos	Research Proposal	sub_40F2A0
+004B94F8	aResearchDetail	Research Detail	sub_40F2E0
+004B9508	aResearchSpecif	Research Specification	sub_40F320
+004B9520	aResearchEnhanc	Research Enhancement	sub_40F360
+004B9538	aMessageText	Message Text	sub_40F3A0
+004B9548	aInfoPageText	Info Page Text	sub_40F3E0
+004B9558	aMessageboxDeta	Messagebox Detail	sub_40F420
+004B956C	aMessageboxComm	Messagebox Command	sub_40F460
+004B9580	aBriefingSector	Briefing Sector Name	sub_40F4A0
+004B9598	aBriefingHeadin	Briefing Heading	sub_40F4E0
+004B95AC	aBriefingDetail	Briefing Detail	sub_40F520
+004B95BC	aCreditsHeading	Credits Heading	sub_40F560
+004B95CC	aCreditsDetail	Credits Detail	sub_40F5A0
+004B95DC	aTweak	Tweak	sub_40F5E0 sub_41A2F0 sub_41C5A0 sub_41DFC0 sub_4200E0 sub_420120 sub_423F40 sub_426330 sub_426370 sub_428B70 sub_42AAF0 sub_42AB30 sub_42AF20 sub_42AF60 sub_4373D0 sub_437410 sub_437450 sub_437490 sub_4374D0 sub_437510 sub_437550 sub_437590 sub_4375D0 sub_437610 sub_437650 sub_437690 sub_4376D0 sub_437710 sub_439400 sub_439730 sub_43A440 sub_43C0A0 sub_43C0E0 sub_43C120 sub_441500 sub_441540 sub_4424D0 sub_442510 sub_442550 sub_442590 sub_4425D0 sub_442610 sub_442650 sub_442690 sub_4426D0 sub_442710 sub_442750 sub_442790 sub_4427D0 sub_442810 sub_442E40 sub_442E80 sub_4592C0 sub_459300 sub_459340 sub_459380 sub_4593C0 sub_459400 sub_459440 sub_459480 sub_4594C0 sub_459500 sub_45A4C0 sub_45A500 sub_45A540 sub_45A580 sub_45A5C0 sub_45A600 sub_45A640 sub_47B4A0 sub_47B4E0 sub_47D6B0 sub_495620
+004B95E4	aTextLineSpacin	Text Line Spacing	sub_40F5E0
+004B95FC	aFilename	filename	sub_40FEA0
+004B9608	aPolylibSetupCo_0	PolyLib::Setup: Couldn	sub_40FEA0
+004B9630	aDatB8Shl	dat\b8.shl	sub_40FEA0
+004B963C	aDatB15Hsm	dat\b15.hsm	sub_40FEA0
+004B9648	aDatB16Hsh	dat\b16.hsh	sub_40FEA0
+004B9654	aPolylibSetupIn	PolyLib::Setup: Invalid colour depth (%d bits pp)	sub_40FEA0
+004B9688	aPolylibSetupCo	PolyLib::Setup: Couldn	sub_40FEA0
+004B96B8	aDatDivTabDat	dat\div_tab.dat	sub_40FEA0
+004B96CC	aDamagemap	DamageMap	sub_410230
+004B96D8	aWdamageWdamage	WDamage::~WDamage	
+004B9830	aIsoBrightness	ISO Brightness	sub_410E00 sub_410F80
+004B9840	aObjlbuff	objLBuff	sub_410F80
+004B984C	aDithdat	DithDat	sub_410F80
+004B9854	aDatDithDat	dat\dith.dat	sub_410F80
+004B9864	aIsolibFreemem	ISOLib::FreeMem	sub_411170
+004B9878	aDDDD	%d,%d,%d,%d	sub_4119A0 sub_411CC0
+004B9884	aDD	%d,%d	sub_4119A0 sub_411CC0
+004B9894	aCouldnTCreates	Couldn	sub_4122F0
+004B98B0	aCouldnTSetCoop	Couldn	sub_4122F0
+004B98CC	aCouldnTQiDdraw	Couldn	sub_4122F0
+004B98E4	aCouldnTCreateD	Couldn	sub_4122F0
+004B98FC	aCouldnTLoadlib_0	Couldn	sub_4122F0
+004B991C	aDirectdrawcrea	DirectDrawCreate	sub_4122F0
+004B9930	aDdrawDll_0	DDRAW.DLL	sub_4122F0
+004B993C	aCouldnTGetproc	Couldn	sub_4122F0
+004B99AC	aGenericError	Generic Error	StartAddress sub_412690 sub_412960 sub_412B50 sub_412C00 sub_412DC0 sub_412F10 sub_412FD0 sub_413220 sub_4134B0 sub_413740 sub_413990 sub_413C70 sub_413D30 sub_413DF0 sub_413EB0 sub_413F70 sub_414010 sub_4140F0
+004B99C0	aSavingPosition	Saving position %d	sub_412690
+004B99D4	aCdNotAvailable	CD not available	StartAddress sub_412690 sub_412960 sub_412C00 sub_412DC0 sub_412F10 sub_412FD0 sub_413220 sub_4134B0 sub_413740 sub_413990 sub_413C70 sub_413D30 sub_413DF0 sub_413EB0 sub_413F70 sub_414010
+004B99E8	aResumingPositi	Resuming position at %d	sub_412690
+004B9A00	aSjeCdplayercla	SJE_CdPlayerClass	sub_412690 sub_412960
+004B9A14	aResettingCdPos	Resetting CD position	sub_412940
+004B9B30	aInvalidDataInT	INVALID DATA IN TEXTFILE	sub_414410 sub_441580
+004B9B4C	aTxt	TXT\	sub_414410
+004B9B54	aStringlib	StringLib	sub_414410
+004B9B60	aWtextWtext	WText::~WText()	sub_414680
+004B9B70	aShowMemDumpOnA	Show Mem Dump On Alloc Failure	sub_414740
+004B9B90	a2AttemptingToA	 #2 Attempting to allocate %d as %s	sub_4148A0
+004B9BB4	a1AttemptingToA	 #1 Attempting to allocate %d as %s	sub_4148A0
+004B9BD8	aMemFreeAttempt	MEM_Free: attempting to free block twice: %s	sub_414BC0
+004B9C08	aTotDDAllocsUse	tot: %d	sub_414CE0
+004B9C24	a10d8x8x10sSSS	% 10d [% 8x][% 8x] % 10s %s %s %s	sub_414CE0
+004B9C48	aUsed	Used	sub_414CE0
+004B9C50	aFree	Free	sub_414CE0
+004B9C5C	aIgnoreFresherF	Ignore fresher files	sub_414DA0
+004B9C74	aMapS	Map\%s	sub_414DE0
+004B9C7C	aMapsMapsWow	maps\maps.wow	sub_414DE0
+004B9C8C	aDatS	dat\%s	sub_414DE0
+004B9C94	aDatDatWow	dat\dat.wow	sub_414DE0
+004B9CA4	aCouldnTOpenFil	Couldn	sub_415200
+004B9CBC	aFileLoadWarnin	FILE_Load: (Warning) Compressed file size > uncompressed size.	sub_415200
+004B9CFC	aFileLoadLength	FILE_Load: length > bufferSize. this is bad.	sub_415200
+004B9D2C	aNoMemoryToLoad	No memory to load file %s	sub_415200
+004B9D48	aChange6dO8dBTo	CHANGE: % 6d o, % 8d b  TOTAL: % 6d o, % 8d b  PEAK: % 6d o, % 8d	sub_415410
+004B9D98	aWb	wb	sub_42D520 sub_44EA20
+004B9DAC	aUseIni	Use INI	sub_4166B0
+004B9DB4	aDefault	Default	sub_416770 sub_4168D0
+004B9DBC	aLogDebugOutput	Log Debug Output	sub_417BF0
+004B9DD0	aS_1	%s	sub_417C30 sub_41E960
+004B9DD4	aA	a+	sub_417C30
+004B9E38	aHumanResearch	Human Research	sub_417CD0
+004B9E48	aMartianResearc	Martian Research	sub_417CD0
+004B9E5C	aActiveroutelis	activeRouteList	sub_417CD0
+004B9E6C	aSgrouplist	SGroupList	sub_417CD0
+004B9E78	aBattlemapobjec	BattleMapObjectList	sub_417CD0
+004B9E8C	aWwarmapworld	WWarMapWorld	sub_417CD0
+004B9E9C	aWarmapobjectli	WarMapObjectList	sub_419520 sub_4217E0
+004B9EB0	aWarmaproutelis	WarMapRouteList	sub_419520
+004B9EC0	aWarmapselectio	WarMapSelection	sub_419750
+004B9ED0	aPodIntervalHou	Pod Interval (hours)	sub_41A2F0
+004B9EE8	aPlayingTrackDF	Playing track %d for %d seconds	sub_41B070 sub_4861E0
+004B9F08	aFadingUpBriefi	Fading up briefing sound over 1 second	sub_41B210 sub_4999E0
+004B9FD8	aYyy	yyy    	
+004B9FFD	aN12am	n 12am   	
+004BA008	a1234days	1234days........	sub_41BDA0
+004BA060	a1stWmrl	1st wmrl	sub_41C010
+004BA06C	aWarmap	WarMap	sub_41C010
+004BA074	aQuickCancelTim	Quick Cancel Timeout	sub_41C5A0
+004BA08C	aWarmapMenu	Warmap menu	sub_41D120 sub_49B980
+004BA098	aScrollSpeed	Scroll Speed	sub_41DF40
+004BA0A8	aScrollBorder	Scroll Border	sub_41DF80
+004BA0B8	aWarmapZoomerSp	Warmap Zoomer Speed	sub_41DFC0
+004BA208	aEndGame	End Game!!	
+004BA214	aUndefendedsect	UndefendedSectorLost	
+004BA22C	aEnteringneutra	EnteringNeutralSector	
+004BA244	aCommandcentreb	CommandCentreBuilt	
+004BA258	aResourcealert	ResourceAlert	
+004BA268	aResourcewarnin	ResourceWarning	
+004BA278	aPodlanded	PodLanded	
+004BA284	aTravelinterrup	TravelInterrupted	
+004BA298	aFacilityidle	FacilityIdle	
+004BA2A8	aConstructoridl	ConstructorIdle	
+004BA2B8	aFacilityonline	FacilityOnline	
+004BA2C8	aConstructoronl	ConstructorOnline	
+004BA2DC	aResearchalert	ResearchAlert	
+004BA2EC	aResearchavaila	ResearchAvailable	
+004BA300	aResearchcomple	ResearchCompleted	
+004BA314	aArrivedinsecto	ArrivedInSector	
+004BA324	aUnitcompleted	UnitCompleted	
+004BA334	aConstructionco	ConstructionCompleted	
+004BA34C	aBattleinsector	BattleInSector	
+004BA35C	aEvent	Event	sub_41E160 sub_41E1A0 sub_41E1E0 sub_41E220 sub_41E260 sub_41E2A0 sub_41E2E0 sub_41E320 sub_41E360 sub_41E3A0 sub_41E3E0
+004BA364	aConstructionCo	Construction Completed	sub_41E160
+004BA37C	aUnitManufactur	Unit Manufactured	sub_41E1A0
+004BA390	aCommandCentreB	Command Centre Built	sub_41E1E0
+004BA3A8	aConstructorIdl	Constructor Idle	sub_41E220
+004BA3BC	aFacilityIdle	Facility Idle	sub_41E260
+004BA3CC	aUnitArrivedAtD	Unit Arrived At Destination	sub_41E2A0
+004BA3E8	aTravelInterrup	Travel Interrupted	sub_41E2E0
+004BA3FC	aResearchComple	Research Completed	sub_41E320
+004BA410	aResourceWarnin	Resource Warning	sub_41E360
+004BA424	aResourceAlert	Resource Alert	sub_41E3A0
+004BA434	aEnteredNeutral	Entered Neutral Sector	sub_41E3E0
+004BA44C	aSS	%s %s	sub_41E850 sub_41EAE0 sub_41ECD0 sub_41EDC0 sub_487580
+004BA454	aS_0	%s; 	sub_41E960
+004BA45C	aSS_0	%s: %s	sub_41E960 sub_41EB90 sub_41EC30 sub_41F010 sub_41F280 sub_41F340
+004BA464	aSS_1	%s .. %s	sub_41EB90 sub_41EC30
+004BA4CC	aWdocument	WDocument	sub_41F550
+004BA4D8	aWmCluntingRes	WM clunting res	sub_4200E0
+004BA4E8	aWmCluntingAdj	WM clunting adj	sub_420120
+004BA508	aPopupmessageco	PopupMessageController	sub_420A30
+004BA520	aD	%d	sub_421150 sub_42B790 sub_4999E0 sub_49A820
+004BA524	aBattleReport	Battle Report	sub_421210
+004BA534	aWarmapMinimapV	WarMap miniMap view	sub_422C70
+004BA548	aWarmapMinimapF	WarMap miniMap frame	sub_423420
+004BA560	aResourceDropOf	Resource Drop Off Rate	sub_423F40
+004BA578	aRoutesLeft	Routes left	sub_424090
+004BA584	aWarmaproute	WarMapRoute	sub_4240D0 sub_424160
+004BA590	aWarmaprouteent	WarMapRouteEntryList	sub_4244E0
+004BA5B0	aRouteNode4d4d4	ROUTE NODE % 4d % 4d % 4d	sub_4244E0
+004BA5CC	aRarrow	RArrow	sub_4244E0 sub_49CAC0
+004BA5D4	aWwarmaprouteWw	WWarMapRoute::~WWarMapRoute	sub_4248B0
+004BA5F0	aWmGroups	WM Groups	sub_425B40
+004BA5FC	aRfhs	RFHS	sub_426140
+004BA604	aResStackXo	Res Stack XO	sub_426330
+004BA614	aResStackYo	Res Stack YO	sub_426370
+004BA624	aS02fSS02fSSS02	%s	sub_426430 sub_426AE0
+004BA668	aRohs	ROHS	sub_426840
+004BA678	a2	2	
+004BA680	aJ	J	
+004BA684	aS_4	S	
+004BA928	aCalendarView	Calendar View	sub_426C10 sub_427500
+004BA938	aMessageItem	Message Item	sub_4287C0 sub_428810
+004BA948	aCluntingSpeed	Clunting Speed	sub_428B70
+004BA958	aBmolist	BMOList	sub_428BB0
+004BA9AC	aS_2	%s	sub_428D70 sub_42A4B0 sub_432D70 sub_432E90 sub_462B50 sub_489FA0
+004BA9E4	aXD	 X %d	sub_42A4B0
+004BA9EC	aMaxUnitsInSect	Max units in sector	sub_42AAF0
+004BAA00	aMaxBoatsInSect	Max boats in sector	sub_42AB30
+004BAA1C	aRouteCluntingW	Route clunting width	sub_42AF20
+004BAA34	aRouteCluntingS	Route clunting spacing	sub_42AF60
+004BAA4C	aRouteentry	RouteEntry	sub_42AFA0 sub_42AFE0
+004BAA58	aUnloadingAllWu	UNLOADING ALL WUnitHotSpot OBJECT MEMORY	sub_42B5D0 sub_42C3E0
+004BAA84	aDD_0	%d/%d	sub_42B790
+004BAA8C	aAllocatingMemo_4	Allocating memory block for 128 WUnitHotSpot objects	sub_42C340
+004BAADC	aFullScreen	Full Screen	sub_42C460
+004BAAE8	aTopLeft	Top left	sub_42C4A0
+004BAAF4	aSize	Size	sub_42C500
+004BAB00	aSupportScreenS	Support screen size	sub_42C5A0
+004BAB14	aSupportScreenB	Support screen BPP	sub_42C5E0
+004BAB28	aAllowresize	AllowResize	sub_42C620
+004BAB34	aFixedaspect	FixedAspect	sub_42C660
+004BAB40	aModeChangeReEn	Mode change re-entered!	sub_42C9B0
+004BAB58	aWgameResume	WGame::Resume()	sub_42C9B0 sub_42CD40 sub_42DDB0
+004BAB68	aWgamePause	WGame::Pause()	sub_42C9B0 sub_42CD40 sub_42DDB0
+004BAB78	aIncompatibleMo	Incompatible mode	sub_42CD40
+004BAB8C	aWin95desktopOn_0	Win95DeskTop::OnActivateApp - Restoring surfaces	sub_42CD40
+004BABC0	aWin95desktopOn	Win95DeskTop::OnActivateApp %s	sub_42CD40
+004BABE0	aOff	Off	sub_42CD40
+004BABE4	aOn	On	sub_42CD40
+004BABE8	aDemo	Demo	sub_42D290
+004BABF0	aPlaybackFiles	Playback Files	sub_42D290
+004BAC00	aWin95desktopPl	Win95DeskTop::PlaybackMessage %s	sub_42D2D0
+004BAC24	aPlaybackD	playback.%-d	sub_42D2D0
+004BAC34	aPlayback1	Playback.1	sub_42D520
+004BAC40	aWgraphicpushbu	WGraphicPushButton::SendCommand( %d, %d )	sub_42FEF0
+004BAC6C	aMouseMoveOutsi	Mouse move outside window %d, %d	sub_42FEF0
+004BAC90	aScrollbar	Scrollbar	sub_431E30 sub_431EF0
+004BAC9C	aWscrollbarWmMo	WScrollbar::WM_MOUSEMOVE	sub_4321B0
+004BACB8	aInfobox	InfoBox	sub_432520
+004BACD4	aQuickToolTipDe	Quick Tool Tip Delay	sub_433770
+004BACEC	aToolTipDelay	Tool Tip Delay	sub_4337B0
+004BACFC	aSlowToolTipDel	Slow Tool Tip Delay	sub_4337F0
+004BAD10	aToolTipEnable	Tool Tip Enable	sub_433830
+004BAD20	aEscapeFromWcon	Escape from WControl	sub_433F20
+004BAD3C	aEnablefogofwar	EnableFogOfWar	sub_4344C0
+004BAD4C	aFogDarkness	Fog darkness	sub_434500
+004BAD5C	aFogReturnRate	Fog return rate	sub_434540
+004BAD6C	aFogUpdateFreq	Fog update freq	sub_434580
+004BAD7C	aFogSmoothIndex	Fog smooth index	sub_4345C0
+004BAD90	aFogVertDropoff	Fog vert dropoff	sub_434600
+004BADA4	aFogDamageDelta	Fog damage delta	sub_434640
+004BADB8	aFogVertDamageR	Fog vert damage radius	sub_434680
+004BADD0	aWfogofwarWfogo_0	WFogOfWar::WFogOfWar: no mem for old fog map	sub_4346C0
+004BAE00	aOldfog	OldFog	sub_4346C0
+004BAE08	aWfogofwarWfogo	WFogOfWar::WFogOfWar: no mem for fog map	sub_4346C0
+004BAE34	aFogmap	FogMap	sub_4346C0
+004BAE3C	aFog	fog	sub_4346C0
+004BAE40	aWfogofwarWfogo_1	WFogOfWar::~WFogOfWar	sub_434910
+004BAE58	aWorldTasks	World tasks	sub_435310
+004BD300	aVisradmul	VisRadMul	sub_4373D0
+004BD30C	aSceneryArmourM	Scenery Armour Modifier	sub_437410
+004BD324	aHumanfriendArm	HumanFriend Armour Modifier	sub_437450
+004BD340	aHumanenemyArmo	HumanEnemy Armour Modifier	sub_437490
+004BD35C	aMartianfriendA	MartianFriend Armour Modifier	sub_4374D0
+004BD37C	aMartianenemyAr	MartianEnemy Armour Modifier	sub_437510
+004BD39C	aHumanfriendRes	HumanFriend Research Modifier	sub_437550
+004BD3BC	aHumanenemyRese	HumanEnemy Research Modifier	sub_437590
+004BD3DC	aMartianfriendR	MartianFriend Research Modifier	sub_4375D0
+004BD3FC	aMartianenemyRe	MartianEnemy Research Modifier	sub_437610
+004BD41C	aHumanfriendMan	HumanFriend Manufacture Modifier	sub_437650
+004BD440	aHumanenemyManu	HumanEnemy Manufacture Modifier	sub_437690
+004BD460	aMartianfriendM	MartianFriend Manufacture Modifier	sub_4376D0
+004BD484	aMartianenemyMa	MartianEnemy Manufacture Modifier	sub_437710
+004BD4A8	aLoadsetupdata	LoadSetupData	sub_437750 sub_463D10
+004BD4B8	aEmitter	Emitter	sub_437750
+004BD4C0	aPart	Part____	sub_437750
+004BD4CC	aObjOjd	obj.ojd	sub_437750
+004BD4D4	aUnloadingAllMe	UNLOADING ALL MESSAGE OBJECT MEMORY	sub_438A00
+004BD500	aWaterTwinklesP	Water twinkles per frame	sub_439400
+004BD51C	aLoadScenery	Load scenery	sub_439440
+004BD52C	aZmapres	ZMapRes	sub_4396F0
+004BD534	aImapIterationC	IMap Iteration Count	sub_439730
+004BD54C	aDatDNsb	dat\%d.nsb	sub_439770 sub_43ADA0
+004BD558	aBattlemapZoome	Battlemap Zoomer Speed	sub_43A440
+004BD570	aBattlemapselec	BattleMapSelection	sub_43A600
+004BD584	aEnhancedmines	EnhancedMines	sub_43ADA0
+004BD594	aUndetectablemi	UndetectableMines	sub_43ADA0
+004BD5A8	aWiretriggeredm	WireTriggeredMines	sub_43ADA0
+004BD5BC	aMines	Mines	sub_43ADA0
+004BD5C4	aCopperforge	CopperForge	sub_43ADA0
+004BD5D0	aHeavyelementfa	HeavyElementFacility	sub_43ADA0
+004BD5E8	aHumanfarm	HumanFarm	sub_43ADA0
+004BD5F4	aOilrefinery	OilRefinery	sub_43ADA0
+004BD600	aCoalmine	CoalMine	sub_43ADA0
+004BD60C	aSteelrefinery	SteelRefinery	sub_43ADA0
+004BD61C	aDecidedToStayA	Decided to stay as I won, OK!	sub_43ADA0
+004BD63C	aResourceBuffer	Resource Buffer	sub_43C0A0
+004BD64C	aDistanceCrippl	Distance Crippler VX	sub_43C0E0
+004BD664	aDistanceCrippl_0	Distance Crippler VY	sub_43C120
+004BD67C	aSpecialforcesm	SpecialForcesMortarBikeMk1	sub_43D760
+004BD698	aMobilerepairve	MobileRepairVehicleMk1	sub_43D760
+004BD6B0	aConstructionwo	ConstructionWorkersMk1	sub_43D760
+004BD6C8	aObservationbal	ObservationBalloonMk1	sub_43D760
+004BD6E0	aSubmersiblemk1	SubmersibleMk1	sub_43D760
+004BD6F0	aIroncladmk1	IroncladMk1	sub_43D760
+004BD6FC	aSapperslorrymk	SappersLorryMk1	sub_43D760
+004BD70C	aMobileantiairc	MobileAntiAircraftArrayMk1	sub_43D760
+004BD728	aSelfpropelledg	SelfPropelledGunMk1	sub_43D760
+004BD73C	aTunnellingtrac	TunnellingTrackLayerMk1	sub_43D760
+004BD754	aArmouredtrackl	ArmouredTrackLayerMk1	sub_43D760
+004BD76C	aArmouredlorrym	ArmouredLorryMk1	sub_43D760
+004BD780	aSpecialforcesm_0	SpecialForcesMortarBikeMk2	sub_43D8D0
+004BD79C	aMobilerepairve_0	MobileRepairVehicleMk2	sub_43D8D0
+004BD7B4	aConstructionwo_0	ConstructionWorkersMk2	sub_43D8D0
+004BD7CC	aObservationbal_0	ObservationBalloonMk2	sub_43D8D0
+004BD7E4	aSubmersiblemk2	SubmersibleMk2	sub_43D8D0
+004BD7F4	aIroncladmk2	IroncladMk2	sub_43D8D0
+004BD800	aSapperslorrymk_0	SappersLorryMk2	sub_43D8D0
+004BD810	aMobileantiairc_0	MobileAntiAircraftArrayMk2	sub_43D8D0
+004BD82C	aSelfpropelledg_0	SelfPropelledGunMk2	sub_43D8D0
+004BD840	aTunnellingtrac_0	TunnellingTrackLayerMk2	sub_43D8D0
+004BD858	aArmouredtrackl_0	ArmouredtrackLayerMk2	sub_43D8D0
+004BD870	aArmouredlorrym_0	ArmouredLorryMk2	sub_43D8D0
+004BD884	aSpecialforcesm_1	SpecialForcesMortarBikeMk3	sub_43DA40
+004BD8A0	aObservationbal_1	ObservationBalloonMk3	sub_43DA40
+004BD8B8	aSubmersiblemk3	SubmersibleMk3	sub_43DA40
+004BD8C8	aIroncladmk3	IroncladMk3	sub_43DA40
+004BD8D4	aMobileantiairc_1	MobileAntiAircraftArrayMk3	sub_43DA40
+004BD8F0	aSelfpropelledg_1	SelfPropelledGunMk3	sub_43DA40
+004BD904	aTunnellingtrac_1	TunnellingTrackLayerMk3	sub_43DA40
+004BD91C	aArmouredtrackl_1	ArmouredtrackLayerMk3	sub_43DA40
+004BD934	aArmouredlorrym_1	ArmouredLorryMk3	sub_43DA40
+004BD948	aBridgeCity	Bridge City	sub_43DB70
+004BD954	aBridgeRailway	Bridge Railway	sub_43DB70
+004BD964	aBridgeCountry	Bridge Country	sub_43DB70
+004BD974	aBridgeMilitary	Bridge Military	sub_43DB70
+004BD984	aMinedWireWall	Mined Wire Wall	sub_43DB70
+004BD994	aWireWall	Wire Wall	sub_43DB70
+004BD9A0	aWireFence	Wire Fence	sub_43DB70
+004BD9AC	aParliament	Parliament	sub_43DB70
+004BD9B8	aRepairworkshop	RepairWorkshops	sub_43DB70
+004BD9C8	aRailwayplatfor	RailwayPlatform	sub_43DB70
+004BD9D8	aCommandpost	CommandPost	sub_43DB70
+004BD9E4	aConstructionla	ConstructionLabs	sub_43DB70
+004BD9F8	aMunitionsfacto	MunitionsFactory	sub_43DB70
+004BDA0C	aTrainingcentre	TrainingCentre	sub_43DB70
+004BDA1C	aAntiaircraftar_1	AntiAircraftArrayMk3	sub_43DB70
+004BDA34	aHeavygunpositi_1	HeavyGunPositionMk3	sub_43DB70
+004BDA48	aHangarlvl3	HangarLvl3	sub_43DB70
+004BDA54	aShipyardlvl3	ShipYardLvl3	sub_43DB70
+004BDA64	aVehiclefactory_1	VehicleFactoryLvl3	sub_43DB70
+004BDA78	aAntiaircraftar_0	AntiAircraftArrayMk2	sub_43DB70
+004BDA90	aHeavygunpositi_0	HeavyGunPositionMk2	sub_43DB70
+004BDAA4	aMediumgunempla_0	MediumGunEmplacementMk2	sub_43DB70
+004BDABC	aHangarlvl2	HangarLvl2	sub_43DB70
+004BDAC8	aShipyardlvl2	ShipYardLvl2	sub_43DB70
+004BDAD8	aVehiclefactory_0	VehicleFactoryLvl2	sub_43DB70
+004BDAEC	aAntiaircraftar	AntiAircraftArrayMk1	sub_43DB70
+004BDB04	aHeavygunpositi	HeavyGunPositionMk1	sub_43DB70
+004BDB18	aMediumgunempla	MediumGunEmplacementMk1	sub_43DB70
+004BDB30	aHangarlvl1	HangarLvl1	sub_43DB70
+004BDB3C	aShipyardlvl1	ShipYardLvl1	sub_43DB70
+004BDB4C	aVehiclefactory	VehicleFactoryLvl1	sub_43DB70
+004BDB60	aDronemk1	DroneMk1	sub_43DE80
+004BDB6C	aDiggingmechani	DiggingMechanismMk1	sub_43DE80
+004BDB80	aHandlingmachin	HandlingMachineMk1	sub_43DE80
+004BDB94	aXenotelepathmk	XenoTelepathMk1	sub_43DE80
+004BDBA4	aConstrictormk1	ConstrictorMk1	sub_43DE80
+004BDBB4	aScanningmachin	ScanningMachineMk1	sub_43DE80
+004BDBC8	aFlyingmachinem	FlyingMachineMk1	sub_43DE80
+004BDBDC	aElectricmachin	ElectricMachineMk1	sub_43DE80
+004BDBF0	aBombardingmach	BombardingMachineMk1	sub_43DE80
+004BDC08	aTempestmk1	TempestMk1	sub_43DE80
+004BDC14	aFightingmachin	FightingMachineMk1	sub_43DE80
+004BDC28	aScoutmachinemk	ScoutMachineMk1	sub_43DE80
+004BDC38	aConstructorlvl	ConstructorLvl2	sub_43DFF0 sub_43E2D0
+004BDC48	aDronemk2	DroneMk2	sub_43DFF0
+004BDC54	aDiggingmechani_0	DiggingMechanismMk2	sub_43DFF0
+004BDC68	aHandlingmachin_0	HandlingMachineMk2	sub_43DFF0
+004BDC7C	aXenotelepathmk_0	XenoTelepathMk2	sub_43DFF0
+004BDC8C	aConstrictormk2	ConstrictorMk2	sub_43DFF0
+004BDC9C	aScanningmachin_0	ScanningMachineMk2	sub_43DFF0
+004BDCB0	aFlyingmachinem_0	FlyingMachineMk2	sub_43DFF0
+004BDCC4	aElectricmachin_0	ElectricMachineMk2	sub_43DFF0
+004BDCD8	aBombardingmach_0	BombardingMachineMk2	sub_43DFF0
+004BDCF0	aTempestmk2	TempestMk2	sub_43DFF0
+004BDCFC	aFightingmachin_0	FightingMachineMk2	sub_43DFF0
+004BDD10	aScoutmachinemk_0	ScoutMachineMk2	sub_43DFF0
+004BDD20	aConstructorlvl_0	ConstructorLvl3	sub_43E170 sub_43E2D0
+004BDD30	aDronemk3	DroneMk3	sub_43E170
+004BDD3C	aXenotelepathmk_1	XenoTelepathMk3	sub_43E170
+004BDD4C	aConstrictormk3	ConstrictorMk3	sub_43E170
+004BDD5C	aScanningmachin_1	ScanningMachineMk3	sub_43E170
+004BDD70	aFlyingmachinem_1	FlyingMachineMk3	sub_43E170
+004BDD84	aElectricmachin_1	ElectricMachineMk3	sub_43E170
+004BDD98	aBombardingmach_1	BombardingMachineMk3	sub_43E170
+004BDDB0	aTempestmk3	TempestMk3	sub_43E170
+004BDDBC	aFightingmachin_1	FightingMachineMk3	sub_43E170
+004BDDD0	aScoutmachinemk_1	ScoutMachineMk3	sub_43E170
+004BDDE0	aPlasmaFencing	Plasma Fencing	sub_43E2D0
+004BDDF0	aLaserFencing	Laser Fencing	sub_43E2D0
+004BDE00	aElectricFencin	Electric Fencing	sub_43E2D0
+004BDE14	aMartianBase	Martian Base	sub_43E2D0
+004BDE24	aMattertransfer	MatterTransferStation	sub_43E2D0
+004BDE3C	aRepairfacility	RepairFacility	sub_43E2D0
+004BDE4C	aCommunications	CommunicationsCentre	sub_43E2D0
+004BDE64	aPowerplant	PowerPlant	sub_43E2D0
+004BDE70	aExplosivesplan	ExplosivesPlant	sub_43E2D0
+004BDE80	aBiochemicalpla	BiochemicalPlant	sub_43E2D0
+004BDE94	aEnergyweaponpl	EnergyWeaponPlant	sub_43E2D0
+004BDEA8	aProjectilelaun_1	ProjectileLauncherMk3	sub_43E2D0
+004BDEC0	aHeatrayturretm_1	HeatRayTurretMk3	sub_43E2D0
+004BDED4	aTelepathictrai_1	TelepathicTrainingCentreLvl3	sub_43E2D0
+004BDEF4	aSuspensionfiel_1	SuspensionFieldSiteLvl3	sub_43E2D0
+004BDF0C	aProjectilelaun_0	ProjectileLauncherMk2	sub_43E2D0
+004BDF24	aHeatrayturretm_0	HeatRayTurretMk2	sub_43E2D0
+004BDF38	aRapidheatraymk_0	RapidHeatRayMk2	sub_43E2D0
+004BDF48	aTelepathictrai_0	TelepathicTrainingCentreLvl2	sub_43E2D0
+004BDF68	aSuspensionfiel_0	SuspensionFieldSiteLvl2	sub_43E2D0
+004BDF80	aProjectilelaun	ProjectileLauncherMk1	sub_43E2D0
+004BDF98	aHeatrayturretm	HeatRayTurretMk1	sub_43E2D0
+004BDFAC	aRapidheatraymk	RapidHeatRayMk1	sub_43E2D0
+004BDFBC	aTelepathictrai	TelepathicTrainingCentreLvl1	sub_43E2D0
+004BDFDC	aSuspensionfiel	SuspensionFieldSiteLvl1	sub_43E2D0
+004BDFF4	aConstructorlvl_1	ConstructorLvl1	sub_43E2D0
+004BE004	aPod	Pod	sub_43E590
+004BE008	aRailwayBridge	Railway bridge	sub_43E590
+004BE018	aCityBridge	City bridge	sub_43E590
+004BE024	aCountryBridge	Country bridge	sub_43E590
+004BE034	aAbbey	Abbey	sub_43E590
+004BE03C	aSchoolone	SchoolOne	sub_43E590
+004BE048	aFarmhouse	FarmHouse	sub_43E590
+004BE054	aCottage	Cottage	sub_43E590
+004BE05C	aHousetwo	HouseTwo	sub_43E590
+004BE068	aBarn	Barn	sub_43E590
+004BE070	aPubtwo	PubTwo	sub_43E590
+004BE078	aPubone	PubOne	sub_43E590
+004BE080	aShopone	ShopOne	sub_43E590
+004BE088	aChapel	Chapel	sub_43E590
+004BE090	aWatermill	WaterMill	sub_43E590
+004BE09C	aVhall	VHall	sub_43E590
+004BE0A4	aOtypeLh2390f	OTYPE_LH23_90F	sub_43E770
+004BE0B4	aOtypeLh2290f	OTYPE_LH22_90F	sub_43E770
+004BE0C4	aOtypeLh1990f	OTYPE_LH19_90F	sub_43E770
+004BE0D4	aOtypeLh1790f	OTYPE_LH17_90F	sub_43E770
+004BE0E4	aOtypeLh1390f	OTYPE_LH13_90F	sub_43E770
+004BE0F4	aOtypeLh1290f	OTYPE_LH12_90F	sub_43E770
+004BE104	aOtypeLh1190f	OTYPE_LH11_90F	sub_43E770
+004BE114	aOtypeLh1090f	OTYPE_LH10_90F	sub_43E770
+004BE124	aOtypeLh890f	OTYPE_LH8_90F	sub_43E770
+004BE134	aOtypeLh790f	OTYPE_LH7_90F	sub_43E770
+004BE144	aOtypeLh490f	OTYPE_LH4_90F	sub_43E770
+004BE154	aOtypeLh390f	OTYPE_LH3_90F	sub_43E770
+004BE164	aOtypeLh190f	OTYPE_LH1_90F	sub_43E770
+004BE174	aLondnstb	Londnstb	sub_43E770
+004BE180	aTerrace2	Terrace2	sub_43E770
+004BE18C	aTerrace1	Terrace1	sub_43E770
+004BE198	aManor	Manor	sub_43E770
+004BE1A0	aLighthouse	Lighthouse	sub_43E770
+004BE1AC	aCathedral	Cathedral	sub_43E770
+004BE1B8	aHouse1	House1	sub_43E770
+004BE1C0	aDockyard	Dockyard	sub_43E770
+004BE1CC	aCorhut	Corhut	sub_43E770
+004BE1D4	aChurch	Church	sub_43E770
+004BE1DC	aCrane	Crane	sub_43E770
+004BE1E4	aCastle	Castle	sub_43E770
+004BE1EC	aOtypeLh945f	OTYPE_LH9_45F	sub_43EA10
+004BE1FC	aOtypeLh845f	OTYPE_LH8_45F	sub_43EA10
+004BE20C	aOtypeLh745f	OTYPE_LH7_45F	sub_43EA10
+004BE21C	aOtypeLh645f	OTYPE_LH6_45F	sub_43EA10
+004BE22C	aOtypeLh545f	OTYPE_LH5_45F	sub_43EA10
+004BE23C	aOtypeLh445f	OTYPE_LH4_45F	sub_43EA10
+004BE24C	aOtypeLh345f	OTYPE_LH3_45F	sub_43EA10
+004BE25C	aOtypeLh245f	OTYPE_LH2_45F	sub_43EA10
+004BE26C	aOtypeLh145f	OTYPE_LH1_45F	sub_43EA10
+004BE27C	aLondst	Londst	sub_43EA10
+004BE284	aLonnstst	Lonnstst	sub_43EA10
+004BE290	aLdnost61	Ldnost61	sub_43EA10
+004BE29C	aLdnost60	Ldnost60	sub_43EA10
+004BE2A8	aLdnost31	Ldnost31	sub_43EA10
+004BE2B4	aLdnost30	Ldnost30	sub_43EA10
+004BE2C0	aLondnst1	Londnst1	sub_43EA10
+004BE2CC	aLondnost	Londnost	sub_43EA10
+004BE2D8	aCottonchim	CottonChim	sub_43EA10
+004BE2E4	aCottonfactory	CottonFactory	sub_43EA10
+004BE2F4	aWindmill	Windmill	sub_43EA10
+004BE300	aTimberhouse	Timberhouse	sub_43EA10
+004BE30C	aOtypeLh2345f	OTYPE_LH23_45F	sub_43EC60
+004BE31C	aOtypeLh2245f	OTYPE_LH22_45F	sub_43EC60
+004BE32C	aOtypeLh2145f	OTYPE_LH21_45F	sub_43EC60
+004BE33C	aOtypeLh1945f	OTYPE_LH19_45F	sub_43EC60
+004BE34C	aOtypeLh1845f	OTYPE_LH18_45F	sub_43EC60
+004BE35C	aOtypeLh1745f	OTYPE_LH17_45F	sub_43EC60
+004BE36C	aOtypeLh1645f	OTYPE_LH16_45F	sub_43EC60
+004BE37C	aOtypeLh1345f	OTYPE_LH13_45F	sub_43EC60
+004BE38C	aOtypeLh1245f	OTYPE_LH12_45F	sub_43EC60
+004BE39C	aOtypeLh1145f	OTYPE_LH11_45F	sub_43EC60
+004BE3AC	aOtypeLh1045f	OTYPE_LH10_45F	sub_43EC60
+004BE3BC	aStonecircle	Stonecircle	sub_43EC60
+004BE3C8	aNstone4	NStone4	sub_43EC60
+004BE3D0	aNstone3	NStone3	sub_43EC60
+004BE3D8	aNstone2	NStone2	sub_43EC60
+004BE3E0	aNstone1	NStone1	sub_43EC60
+004BE3E8	aMonument	Monument	sub_43EC60
+004BE3F4	aStreetlamp	StreetLamp	sub_43EC60
+004BE400	aShop2uD	Shop2u_d	sub_43EC60
+004BE40C	aShop2rL	Shop2r_l	sub_43EC60
+004BE418	aShop1uD	Shop1u_d	sub_43EC60
+004BE424	aShop1rL	Shop1r_l	sub_43EC60
+004BE430	aLondstst	Londstst	sub_43EC60
+004BE43C	aLondst1	Londst1	sub_43EC60
+004BE444	aOtypeLh930f	OTYPE_LH9_30F	sub_43EEF0
+004BE454	aOtypeLh830f	OTYPE_LH8_30F	sub_43EEF0
+004BE464	aOtypeLh730f	OTYPE_LH7_30F	sub_43EEF0
+004BE474	aOtypeLh630f	OTYPE_LH6_30F	sub_43EEF0
+004BE484	aOtypeLh530f	OTYPE_LH5_30F	sub_43EEF0
+004BE494	aOtypeLh430f	OTYPE_LH4_30F	sub_43EEF0
+004BE4A4	aOtypeLh330f	OTYPE_LH3_30F	sub_43EEF0
+004BE4B4	aOtypeLh230f	OTYPE_LH2_30F	sub_43EEF0
+004BE4C4	aOtypeLh130f	OTYPE_LH1_30F	sub_43EEF0
+004BE4D4	aOtypeLh2300f	OTYPE_LH23_00F	sub_43EEF0
+004BE4E4	aOtypeLh2200f	OTYPE_LH22_00F	sub_43EEF0
+004BE4F4	aOtypeLh2100f	OTYPE_LH21_00F	sub_43EEF0
+004BE504	aOtypeLh1900f	OTYPE_LH19_00F	sub_43EEF0
+004BE514	aOtypeLh1800f	OTYPE_LH18_00F	sub_43EEF0
+004BE524	aOtypeLh1700f	OTYPE_LH17_00F	sub_43EEF0
+004BE534	aOtypeLh1600f	OTYPE_LH16_00F	sub_43EEF0
+004BE544	aOtypeLh1300f	OTYPE_LH13_00F	sub_43EEF0
+004BE554	aOtypeLh1200f	OTYPE_LH12_00F	sub_43EEF0
+004BE564	aOtypeLh1100f	OTYPE_LH11_00F	sub_43EEF0
+004BE574	aOtypeLh1000f	OTYPE_LH10_00F	sub_43EEF0
+004BE584	aOtypeLh900f	OTYPE_LH9_00F	sub_43EEF0
+004BE594	aOtypeLh800f	OTYPE_LH8_00F	sub_43EEF0
+004BE5A4	aOtypeLh700f	OTYPE_LH7_00F	sub_43EEF0
+004BE5B4	aOtypeLh600f	OTYPE_LH6_00F	sub_43EEF0
+004BE5C4	aOtypeLh500f	OTYPE_LH5_00F	sub_43EEF0
+004BE5D4	aOtypeLh400f	OTYPE_LH4_00F	sub_43EEF0
+004BE5E4	aOtypeLh300f	OTYPE_LH3_00F	sub_43EEF0
+004BE5F4	aOtypeLh200f	OTYPE_LH2_00F	sub_43EEF0
+004BE604	aOtypeLh100f	OTYPE_LH1_00F	sub_43EEF0
+004BE614	aOtypeLh2360f	OTYPE_LH23_60F	sub_43F1E0
+004BE624	aOtypeLh2260f	OTYPE_LH22_60F	sub_43F1E0
+004BE634	aOtypeLh2160f	OTYPE_LH21_60F	sub_43F1E0
+004BE644	aOtypeLh1960f	OTYPE_LH19_60F	sub_43F1E0
+004BE654	aOtypeLh1860f	OTYPE_LH18_60F	sub_43F1E0
+004BE664	aOtypeLh1760f	OTYPE_LH17_60F	sub_43F1E0
+004BE674	aOtypeLh1660f	OTYPE_LH16_60F	sub_43F1E0
+004BE684	aOtypeLh1360f	OTYPE_LH13_60F	sub_43F1E0
+004BE694	aOtypeLh1260f	OTYPE_LH12_60F	sub_43F1E0
+004BE6A4	aOtypeLh1160f	OTYPE_LH11_60F	sub_43F1E0
+004BE6B4	aOtypeLh1060f	OTYPE_LH10_60F	sub_43F1E0
+004BE6C4	aOtypeLh960f	OTYPE_LH9_60F	sub_43F1E0
+004BE6D4	aOtypeLh860f	OTYPE_LH8_60F	sub_43F1E0
+004BE6E4	aOtypeLh760f	OTYPE_LH7_60F	sub_43F1E0
+004BE6F4	aOtypeLh660f	OTYPE_LH6_60F	sub_43F1E0
+004BE704	aOtypeLh560f	OTYPE_LH5_60F	sub_43F1E0
+004BE714	aOtypeLh460f	OTYPE_LH4_60F	sub_43F1E0
+004BE724	aOtypeLh360f	OTYPE_LH3_60F	sub_43F1E0
+004BE734	aOtypeLh260f	OTYPE_LH2_60F	sub_43F1E0
+004BE744	aOtypeLh160f	OTYPE_LH1_60F	sub_43F1E0
+004BE754	aOtypeLh2330f	OTYPE_LH23_30F	sub_43F1E0
+004BE764	aOtypeLh2230f	OTYPE_LH22_30F	sub_43F1E0
+004BE774	aOtypeLh2130f	OTYPE_LH21_30F	sub_43F1E0
+004BE784	aOtypeLh1930f	OTYPE_LH19_30F	sub_43F1E0
+004BE794	aOtypeLh1830f	OTYPE_LH18_30F	sub_43F1E0
+004BE7A4	aOtypeLh1730f	OTYPE_LH17_30F	sub_43F1E0
+004BE7B4	aOtypeLh1630f	OTYPE_LH16_30F	sub_43F1E0
+004BE7C4	aOtypeLh1330f	OTYPE_LH13_30F	sub_43F1E0
+004BE7D4	aOtypeLh1230f	OTYPE_LH12_30F	sub_43F1E0
+004BE7E4	aOtypeLh1130f	OTYPE_LH11_30F	sub_43F1E0
+004BE7F4	aOtypeLh1030f	OTYPE_LH10_30F	sub_43F1E0
+004BE804	aCTree7	C tree 7	sub_43F500
+004BE810	aCTree6	C tree 6	sub_43F500
+004BE81C	aCTree5	C tree 5	sub_43F500
+004BE828	aCTree4	C tree 4	sub_43F500
+004BE834	aCTree3	C tree 3	sub_43F500
+004BE840	aCTree2	C tree 2	sub_43F500
+004BE84C	aCTree1	C tree 1	sub_43F500
+004BE858	aCTreeCircle3	C tree circle 3	sub_43F500
+004BE868	aCTreeCircle2	C tree circle 2	sub_43F500
+004BE878	aCTreeCircle1	C tree circle 1	sub_43F500
+004BE888	aDTree8	D tree 8	sub_43F650
+004BE894	aDTree7	D tree 7	sub_43F650
+004BE8A0	aDTree6	D tree 6	sub_43F650
+004BE8AC	aDTree5	D tree 5	sub_43F650
+004BE8B8	aDTree4	D tree 4	sub_43F650
+004BE8C4	aDTree3	D tree 3	sub_43F650
+004BE8D0	aDTree2	D tree 2	sub_43F650
+004BE8DC	aDTree1	D tree 1	sub_43F650
+004BE8E8	aDTreeCircle3	D tree circle 3	sub_43F650
+004BE8F8	aDTreeCircle2	D tree circle 2	sub_43F650
+004BE908	aDTreeCircle1	D tree circle 1	sub_43F650
+004BE918	aCpMarker	CP MARKER	sub_43F7C0
+004BE924	aBrook	Brook	sub_43F7C0
+004BE92C	aRiver	River	sub_43F7C0
+004BE934	aForest	Forest	sub_43F7C0
+004BE93C	aWind	Wind	sub_43F7C0
+004BE944	aDocks	Docks	sub_43F7C0
+004BE94C	aCity	City	sub_43F7C0
+004BE954	aFactory	Factory	sub_43F7C0
+004BE95C	aField	Field	sub_43F7C0
+004BE964	aMountain	Mountain	sub_43F7C0
+004BE970	aSea2	Sea2	sub_43F7C0
+004BE978	aSea1	Sea1	sub_43F7C0
+004BE980	aOtypeExplosion_8	OTYPE_EXPLOSION_PART_10B	sub_43F940
+004BE99C	aOtypeExplosion_7	OTYPE_EXPLOSION_PART_9B	sub_43F940
+004BE9B4	aOtypeExplosion_6	OTYPE_EXPLOSION_PART_8B	sub_43F940
+004BE9CC	aOtypeExplosion_5	OTYPE_EXPLOSION_PART_7B	sub_43F940
+004BE9E4	aOtypeExplosion_4	OTYPE_EXPLOSION_PART_6B	sub_43F940
+004BE9FC	aOtypeExplosion_3	OTYPE_EXPLOSION_PART_5B	sub_43F940
+004BEA14	aOtypeExplosion_2	OTYPE_EXPLOSION_PART_4B	sub_43F940
+004BEA2C	aOtypeExplosion_1	OTYPE_EXPLOSION_PART_3B	sub_43F940
+004BEA44	aOtypeExplosion_0	OTYPE_EXPLOSION_PART_2B	sub_43F940
+004BEA5C	aOtypeExplosion	OTYPE_EXPLOSION_PART_1B	sub_43F940
+004BEA74	aSmoke10	Smoke 10	sub_43FA90
+004BEA80	aSmoke9	Smoke 9	sub_43FA90
+004BEA88	aSmoke8	Smoke 8	sub_43FA90
+004BEA90	aSmoke7	Smoke 7	sub_43FA90
+004BEA98	aSmoke6	Smoke 6	sub_43FA90
+004BEAA0	aSmoke5	Smoke 5	sub_43FA90
+004BEAA8	aSmoke4	Smoke 4	sub_43FA90
+004BEAB0	aSmoke3	Smoke 3	sub_43FA90
+004BEAB8	aSmoke2	Smoke 2	sub_43FA90
+004BEAC0	aSmoke1	Smoke 1	sub_43FA90
+004BEAC8	aDeathExplosion_6	Death_Explosion 8	sub_43FBE0
+004BEADC	aDeathExplosion_5	Death_Explosion 7	sub_43FBE0
+004BEAF0	aDeathExplosion_4	Death_Explosion 6	sub_43FBE0
+004BEB04	aDeathExplosion_3	Death_Explosion 5	sub_43FBE0
+004BEB18	aDeathExplosion_2	Death_Explosion 4	sub_43FBE0
+004BEB2C	aDeathExplosion_1	Death_Explosion 3	sub_43FBE0
+004BEB40	aDeathExplosion_0	Death_Explosion 2	sub_43FBE0
+004BEB54	aDeathExplosion	Death_Explosion 1	sub_43FBE0
+004BECD4	aUnloadingAllSe	UNLOADING ALL SELECTABLE OBJECT MEMORY	sub_4401E0 sub_4407E0
+004BECFC	aAllocatingMemo_1	Allocating memory block for 1024 WSelectableObjects	sub_440740
+004BED30	aAiStrengthTabl	AI strength table Human multiplier	sub_441500
+004BED54	aAiStrengthTabl_0	AI strength table Martian multiplier	sub_441540
+004BED7C	aAiOjd	AI.ojd	sub_441580
+004BEDD8	aAiFrontlineAtt	AI Frontline Attractor for Defences	sub_4424D0
+004BEDFC	aAiEffThreshold	AI Eff Threshold	sub_442510
+004BEE10	aAiPanicBuildTh	AI Panic Build Threshold	sub_442550
+004BEE2C	aAiMoveThreshol	AI Move Threshold	sub_442590
+004BEE40	aAiFrontlineAtt_0	AI Frontline Attractor	sub_4425D0
+004BEE58	aAiBuildResfacE	AI Build Resfac Eagerness	sub_442610
+004BEE74	aAiAggressionVa	AI Aggression Value	sub_442650
+004BEE88	aAiInvasionThre	AI Invasion Threshold PC	sub_442690
+004BEEA4	aAiOutnumberFor	AI Outnumber Force	sub_4426D0
+004BEEB8	aAiRetainForce	AI Retain Force	sub_442710
+004BEEC8	aAiInvaderNfrie	AI Invader NFriend Mul	sub_442750
+004BEEE0	aAiSafeSectorRe	AI safe sector repeller Mul	sub_442790
+004BEEFC	aAiMinimumRr	AI Minimum Rr	sub_4427D0
+004BEF0C	aAiMovementTemp	AI Movement Temperature	sub_442810
+004BEF24	aEnemyVisible	Enemy Visible	sub_442850
+004BEF34	aAiOracle	AI Oracle	sub_442E40
+004BEF40	aAiHoursPerTurn	AI Hours Per Turn	sub_442E80
+004BEF54	aAwayresources	awayResources	sub_4460E0
+004BEF64	aHomeresources	homeResources	sub_4460E0
+004BEF74	aAwayconstructi	awayConstructions	sub_4460E0
+004BEF88	aHomeconstructi	homeConstructions	sub_4460E0
+004BEF9C	aAwayunits	awayUnits	sub_4460E0
+004BEFA8	aHomeunits	homeUnits	sub_4460E0
+004BEFB4	aZoomer	Zoomer	sub_446690
+004BEFC0	aHoldingGroups	Holding Groups	sub_449410
+004BEFD0	aWcmdtarget	WCmdTarget	sub_449450 sub_449840 sub_47AF10 sub_483DF0
+004BEFF0	aDeeplaySendthr	DeePlay::SendThread - Timed out	sub_44A160
+004BF010	aDeeplaySendPac	DeePlay::SEND packet # %d of %d bytes on cycle %d	sub_44A160
+004BF044	aDeeplayReceive_0	DeePlay::Receive - Timed out	sub_44A290
+004BF064	aDeeplayReceive	DeePlay::RECEIVED packet # %d of %d bytes on cycle %d	sub_44A290
+004BF09C	aSessionName	Session Name	sub_44A5B0
+004BF0AC	aWarOfTheWorlds	War of the Worlds - session name	sub_44A5B0
+004BF0D0	aHumanPlayer_0	Human Player	sub_44A5F0
+004BF0E0	aHumanPlayer	Human player	sub_44A5F0
+004BF0F0	aMartianPlayer_0	Martian Player	sub_44A8D0
+004BF100	aMartianPlayer	Martian player	sub_44A8D0
+004BF110	aDeedrawLocksur	DeeDraw::LockSurface: Invalid pixel depth	sub_44AE60
+004BF13C	aScreenModeDoes	Screen mode does not exist	sub_44AF40
+004BF158	aSetdisplaymode	SetDisplayMode Failed	sub_44AF40
+004BF170	aSetcooperative	SetCooperativeLevel Failed	sub_44AF40
+004BF18C	aFailedToFindAC	Failed to find a compatible default screen mode!	sub_44AF40
+004BF1C0	aDirectdraw2cre	DirectDraw2Create Failed	sub_44AF40
+004BF1DC	aDirectdrawcrea_0	DirectDrawCreate Failed	sub_44AF40
+004BF1F4	aError	Error	sub_44AF40 sub_44B2D0 sub_44B780 sub_44B800 sub_44BEA0 sub_44C3A0 sub_44D1A0 sub_44DE20 sub_44E060 sub_44E4B0
+004BF1FC	aAttachLpddsbac	Attach lpDDSBack Failed	sub_44B2D0
+004BF214	aCreateLpddclip	Create lpDDClipper Failed	sub_44B2D0
+004BF230	aCreateSurface3	Create Surface 3 Failed	sub_44B2D0 sub_44B780 sub_44B800 sub_44C3A0 sub_44E4B0
+004BF248	aCreateSurfaceF	Create surface Failed	sub_44B2D0 sub_44B780 sub_44B800 sub_44C3A0 sub_44E4B0
+004BF260	aDeedrawDrawfli_1	DeeDraw::DrawFlipCursor Clipped outside screen	sub_44C9D0
+004BF290	aDeedrawDrawfli_0	DeeDraw::DrawFlipCursor Blt -> m_cursorFlipSave failed	sub_44C9D0
+004BF2C8	aDeedrawDrawfli	DeeDraw::DrawFlipCursor Blt -> surface failed	sub_44C9D0
+004BF2F8	aUnknownError	Unknown Error	sub_44D1A0
+004BF308	aDderrNotpagelo	DDERR_NOTPAGELOCKED	sub_44D1A0
+004BF31C	aDderrCantpageu	DDERR_CANTPAGEUNLOCK	sub_44D1A0
+004BF334	aDderrCantpagel	DDERR_CANTPAGELOCK	sub_44D1A0
+004BF348	aDderrDcalready	DDERR_DCALREADYCREATED	sub_44D1A0
+004BF360	aDderrInvalidsu	DDERR_INVALIDSURFACETYPE	sub_44D1A0
+004BF37C	aDderrNomipmaph	DDERR_NOMIPMAPHW	sub_44D1A0
+004BF390	aDderrUnsupport_2	DDERR_UNSUPPORTEDMODE	sub_44D1A0
+004BF3A8	aDderrNotpalett	DDERR_NOTPALETTIZED	sub_44D1A0
+004BF3BC	aDderrImplicitl	DDERR_IMPLICITLYCREATED	sub_44D1A0
+004BF3D4	aDderrWrongmode	DDERR_WRONGMODE	sub_44D1A0
+004BF3E4	aDderrNodc	DDERR_NODC	sub_44D1A0
+004BF3F0	aDderrCantcreat	DDERR_CANTCREATEDC	sub_44D1A0
+004BF404	aDderrNotlocked	DDERR_NOTLOCKED	sub_44D1A0
+004BF414	aDderrCantdupli	DDERR_CANTDUPLICATE	sub_44D1A0
+004BF428	aDderrNotflippa	DDERR_NOTFLIPPABLE	sub_44D1A0
+004BF43C	aDderrExclusive	DDERR_EXCLUSIVEMODEALREADYSET	sub_44D1A0
+004BF45C	aDderrNotaoverl	DDERR_NOTAOVERLAYSURFACE	sub_44D1A0
+004BF478	aDderrInvalidpo	DDERR_INVALIDPOSITION	sub_44D1A0
+004BF490	aDderrNooverlay_0	DDERR_NOOVERLAYDEST	sub_44D1A0
+004BF4A4	aDderrOverlayno	DDERR_OVERLAYNOTVISIBLE	sub_44D1A0
+004BF4BC	aDderrNoddropsh	DDERR_NODDROPSHW	sub_44D1A0
+004BF4D0	aDderrNoblthw	DDERR_NOBLTHW	sub_44D1A0
+004BF4E0	aDderrBltfastca	DDERR_BLTFASTCANTCLIP	sub_44D1A0
+004BF4F8	aDderrNopalette_0	DDERR_NOPALETTEHW	sub_44D1A0
+004BF50C	aDderrNopalette	DDERR_NOPALETTEATTACHED	sub_44D1A0
+004BF524	aDderrHwndalrea	DDERR_HWNDALREADYSET	sub_44D1A0
+004BF53C	aDderrHwndsubcl	DDERR_HWNDSUBCLASSED	sub_44D1A0
+004BF554	aDderrNohwnd	DDERR_NOHWND	sub_44D1A0
+004BF564	aDderrNoclipper	DDERR_NOCLIPPERATTACHED	sub_44D1A0
+004BF57C	aDderrClipperis	DDERR_CLIPPERISUSINGHWND	sub_44D1A0
+004BF598	aDderrRegiontoo	DDERR_REGIONTOOSMALL	sub_44D1A0
+004BF5B0	aDderrNoemulati	DDERR_NOEMULATION	sub_44D1A0
+004BF5C4	aDderrPrimarysu	DDERR_PRIMARYSURFACEALREADYEXISTS	sub_44D1A0
+004BF5E8	aDderrNodirectd_0	DDERR_NODIRECTDRAWHW	sub_44D1A0
+004BF600	aDderrDirectdra	DDERR_DIRECTDRAWALREADYCREATED	sub_44D1A0
+004BF620	aDderrInvaliddi	DDERR_INVALIDDIRECTDRAWGUID	sub_44D1A0
+004BF63C	aDderrXalign	DDERR_XALIGN	sub_44D1A0
+004BF64C	aDderrWasstilld	DDERR_WASSTILLDRAWING	sub_44D1A0
+004BF664	aDderrVerticalb	DDERR_VERTICALBLANKINPROGRESS	sub_44D1A0
+004BF684	aDderrUnsupport_1	DDERR_UNSUPPORTEDMASK	sub_44D1A0
+004BF69C	aDderrUnsupport_0	DDERR_UNSUPPORTEDFORMAT	sub_44D1A0
+004BF6B4	aDderrToobigwid	DDERR_TOOBIGWIDTH	sub_44D1A0
+004BF6C8	aDderrToobigsiz	DDERR_TOOBIGSIZE	sub_44D1A0
+004BF6DC	aDderrToobighei	DDERR_TOOBIGHEIGHT	sub_44D1A0
+004BF6F0	aDderrSurfaceno	DDERR_SURFACENOTATTACHED	sub_44D1A0
+004BF70C	aDderrSurfacelo	DDERR_SURFACELOST	sub_44D1A0
+004BF720	aDderrSurfaceis	DDERR_SURFACEISOBSCURED	sub_44D1A0
+004BF738	aDderrCantlocks	DDERR_CANTLOCKSURFACE	sub_44D1A0
+004BF750	aDderrSurfacebu	DDERR_SURFACEBUSY	sub_44D1A0
+004BF764	aDderrSurfaceal_0	DDERR_SURFACEALREADYDEPENDENT	sub_44D1A0
+004BF784	aDderrSurfaceal	DDERR_SURFACEALREADYATTACHED	sub_44D1A0
+004BF7A4	aDderrColorkeyn	DDERR_COLORKEYNOTSET	sub_44D1A0
+004BF7BC	aDderrPalettebu	DDERR_PALETTEBUSY	sub_44D1A0
+004BF7D0	aDderrOverlayco	DDERR_OVERLAYCOLORKEYONLYONEACTIVE	sub_44D1A0
+004BF7F4	aDderrOverlayca	DDERR_OVERLAYCANTCLIP	sub_44D1A0
+004BF80C	aDderrOutofvide	DDERR_OUTOFVIDEOMEMORY	sub_44D1A0
+004BF824	aDderrOutofcaps	DDERR_OUTOFCAPS	sub_44D1A0
+004BF834	aDderrNozoverla	DDERR_NOZOVERLAYHW	sub_44D1A0
+004BF848	aDderrNozbuffer	DDERR_NOZBUFFERHW	sub_44D1A0
+004BF85C	aDderrNovsynchw	DDERR_NOVSYNCHW	sub_44D1A0
+004BF86C	aDderrNotexture	DDERR_NOTEXTUREHW	sub_44D1A0
+004BF880	aDderrNot4bitco_0	DDERR_NOT4BITCOLOR	sub_44D1A0
+004BF894	aDderrNot4bitco	DDERR_NOT4BITCOLORINDEX	sub_44D1A0
+004BF8AC	aDderrNot8bitco	DDERR_NOT8BITCOLOR	sub_44D1A0
+004BF8C0	aDderrNostretch	DDERR_NOSTRETCHHW	sub_44D1A0
+004BF8D4	aDderrNorotatio	DDERR_NOROTATIONHW	sub_44D1A0
+004BF8E8	aDderrNorastero	DDERR_NORASTEROPHW	sub_44D1A0
+004BF8FC	aDderrNooverlay	DDERR_NOOVERLAYHW	sub_44D1A0
+004BF910	aDderrNotfound	DDERR_NOTFOUND	sub_44D1A0
+004BF920	aDderrNomirrorh	DDERR_NOMIRRORHW	sub_44D1A0
+004BF934	aDderrNogdi	DDERR_NOGDI	sub_44D1A0
+004BF940	aDderrNofliphw	DDERR_NOFLIPHW	sub_44D1A0
+004BF950	aDderrNoexclusi	DDERR_NOEXCLUSIVEMODE	sub_44D1A0
+004BF968	aDderrNodirectd	DDERR_NODIRECTDRAWSUPPORT	sub_44D1A0
+004BF984	aDderrNocolorke_0	DDERR_NOCOLORKEYHW	sub_44D1A0
+004BF998	aDderrNocolorco	DDERR_NOCOLORCONVHW	sub_44D1A0
+004BF9AC	aDderrNocoopera	DDERR_NOCOOPERATIVELEVELSET	sub_44D1A0
+004BF9C8	aDderrNocolorke	DDERR_NOCOLORKEY	sub_44D1A0
+004BF9DC	aDderrNocliplis	DDERR_NOCLIPLIST	sub_44D1A0
+004BF9F0	aDderrNoalphahw	DDERR_NOALPHAHW	sub_44D1A0
+004BFA00	aDderrNo3d	DDERR_NO3D	sub_44D1A0
+004BFA0C	aDderrLockedsur	DDERR_LOCKEDSURFACES	sub_44D1A0
+004BFA24	aDderrInvalidre	DDERR_INVALIDRECT	sub_44D1A0
+004BFA38	aDderrInvalidpi	DDERR_INVALIDPIXELFORMAT	sub_44D1A0
+004BFA54	aDderrInvalidob	DDERR_INVALIDOBJECT	sub_44D1A0
+004BFA68	aDderrInvalidmo	DDERR_INVALIDMODE	sub_44D1A0
+004BFA7C	aDderrInvalidcl	DDERR_INVALIDCLIPLIST	sub_44D1A0
+004BFA94	aDderrInvalidca	DDERR_INVALIDCAPS	sub_44D1A0
+004BFAA8	aDderrIncompati	DDERR_INCOMPATIBLEPRIMARY	sub_44D1A0
+004BFAC4	aDderrHeightali	DDERR_HEIGHTALIGN	sub_44D1A0
+004BFAD8	aDderrException	DDERR_EXCEPTION	sub_44D1A0
+004BFAE8	aDderrCurrently	DDERR_CURRENTLYNOTAVAIL	sub_44D1A0
+004BFB00	aDderrCannotdet	DDERR_CANNOTDETACHSURFACE	sub_44D1A0
+004BFB1C	aDderrCannotatt	DDERR_CANNOTATTACHSURFACE	sub_44D1A0
+004BFB38	aDderrAlreadyin	DDERR_ALREADYINITIALIZED	sub_44D1A0
+004BFB54	aDderrInvalidpa	DDERR_INVALIDPARAMS	sub_44D1A0
+004BFB68	aDderrOutofmemo	DDERR_OUTOFMEMORY	sub_44D1A0
+004BFB7C	aDderrNotinitia	DDERR_NOTINITIALIZED	sub_44D1A0
+004BFB94	aDderrGeneric	DDERR_GENERIC	sub_44D1A0
+004BFBA4	aDderrUnsupport	DDERR_UNSUPPORTED	sub_44D1A0
+004BFBB8	aUseReaper	Use Reaper	sub_44DC60
+004BFBC4	aSmk	.smk	sub_44DE20
+004BFBCC	aFmv	FMV\	sub_44DE20 sub_44E060
+004BFBD4	aCreateSurface1	Create Surface 1 Failed	sub_44DE20 sub_44E060
+004BFBEC	aDirectdraw1Que	DirectDraw 1 Query failed Failed	sub_44DE20 sub_44E060
+004BFC10	aFmv_0	.fmv	sub_44E060
+004BFC18	aHeepheep	HeepHeep	sub_44ED50
+004BFC24	aHeapHeap	Heap::~Heap	
+004BFC30	aFindrouteNoMem	FindRoute: No memory for route list nodes	sub_44EE70
+004BFC5C	aNodelist	nodeList	sub_44EE70
+004BFC68	aStarAstar	Star::~AStar	
+004BFC78	aAstar2	AStar:2	sub_44EFA0
+004BFC80	aFindrouteNoMem_0	FindRoute: No memory for route list result	sub_44EFA0
+004BFCAC	aRoutelist	routeList	sub_44EFA0
+004BFCB8	aAstar1	AStar:1	sub_44EFA0
+004BFCC0	aGeneratesuccOu	GenerateSucc: Out of nodes	sub_44F120
+004BFCE4	aCouldNotOpenSm	Could not open smacker file %s	sub_44F2C0
+004CA118	aResearch	Research	sub_457F20 sub_457F60
+004CA124	aHumanOpenRate	Human Open Rate	sub_457F20
+004CA134	aMartianOpenRat	Martian Open Rate	sub_457F60
+004CA148	aWresearchAdvan	WResearch::AdvanceResearch - Additional research pass	sub_458BD0
+004CA1AC	aHeatresistanta	HeatResistantArmourMultiplier	sub_4592C0
+004CA1CC	aInsulatedhighe	InsulatedHighEnergyResistantArmourMultiplier	sub_459300
+004CA1FC	aHighexplosiver	HighExplosiveRoundsMultiplier	sub_459340
+004CA21C	aImprovedpowder	ImprovedPowderChargeMultiplier	sub_459380
+004CA23C	aAdvancedpowder	AdvancedPowderChargeMultiplier	sub_4593C0
+004CA25C	aFineairfilters	FineAirFiltersMultiplier	sub_459400
+004CA278	aChemicalfilter	ChemicalFiltersMultiplier	sub_459440
+004CA294	aEnhancedsighti	EnhancedSightingApparatusMultiplier	sub_459480
+004CA2B8	aTunnelreinforc	TunnelReinforcementApparatusMultiplier	sub_4594C0
+004CA2E0	aEnhanceddrillm	EnhancedDrillMultiplier	sub_459500
+004CA2F8	aStartingHumanR	Starting Human research Plan %d Item %d	sub_45A400
+004CA320	aRandomlyChoseH	Randomly chose Human research Plan %d	sub_45A400
+004CA368	aShockresistant	ShockResistantArmourMultiplier	sub_45A4C0
+004CA388	aImpactreflecti	ImpactReflectingArmourMultiplier	sub_45A500
+004CA3AC	aEnhancedrayfoc	EnhancedRayFocusMechanismMultiplier	sub_45A540
+004CA3D0	aTightbeammulti	TightBeamMultiplier	sub_45A580
+004CA3E4	aHoverbombsmult	HoverBombsMultiplier	sub_45A5C0
+004CA3FC	aSecondarybeama	SecondaryBeamAmplifiersMultiplier	sub_45A600
+004CA420	aMotiontracking	MotionTrackingDeviceMultiplier	sub_45A640
+004CA440	aStartingMartia	Starting Martian research Plan %d Item %d	sub_45B4E0
+004CA46C	aRandomlyChoseM	Randomly chose martian research Plan %d	sub_45B4E0
+004CA498	aTrigger	Trigger	
+004CA4A0	aResearchItem	Research Item	sub_45B5A0
+004CA4C0	aSMakesSObsolet	%s Makes %s Obsolete	sub_45BB90
+004CA4E0	aSfxMissingForD	SFX missing for dialog	sub_45D1A0 sub_45D3F0 sub_45DD50
+004CA74C	aResearchHotspo	Research Hotspot	sub_45EC00
+004CA760	aProposals	Proposals	sub_45F140
+004CA76C	aBluePrint	Blue print	sub_45F4B0
+004CA778	aBuildlist	buildList	sub_45F770
+004CA784	aBuildlist_0	BuildList	sub_460A80 sub_460AC0
+004CA790	aTop	Top	sub_460A80
+004CA794	aLeft	Left	sub_460AC0
+004CA79C	aScroll	Scroll	sub_460B00
+004CA7A4	aBuildList	Build List	sub_460B00 sub_460F10 sub_461500
+004CA7B0	aTtc	TTC	sub_460F10
+004CA7D4	a01f	%0.1f	sub_462770
+004CA808	aSoundfxsystem	SoundFXSystem	sub_462EF0
+004CA818	aIgnoringConsta	Ignoring CONSTANTVOL setting in SFX.def	sub_463D10
+004CA840	aVox	VOX\	sub_463D10 sub_466910
+004CA848	aSfx	SFX\	sub_463D10 sub_466910
+004CA850	aSfxOjd	sfx.ojd	sub_463D10
+004CA87C	aMaster	Master	sub_4642C0
+004CA884	aAmbient	Ambient	sub_464300
+004CA88C	aEngine	Engine	sub_464340
+004CA894	aExplosions	Explosions	sub_464380
+004CA8A0	aWeapons	Weapons	sub_4643C0
+004CA8A8	aSpecial	Special	sub_464400
+004CA8B0	aSpeech	Speech	sub_464440
+004CA8B8	aSound	Sound	sub_464580 sub_4645C0 sub_464600 sub_464640 sub_465EB0 sub_465EF0
+004CA8C0	aInnerBorder	Inner border	sub_464580
+004CA8D0	aOuterBorder	Outer border	sub_4645C0
+004CA8E0	aInnerAmbientBo	Inner Ambient border	sub_464600
+004CA8F8	aOuterAmbientBo	Outer Ambient border	sub_464640
+004CA910	aMinimumAudible	Minimum Audible Volume	sub_4646C0
+004CA928	aAllocatingMemo_0	Allocating memory block for 128 SFX objects	sub_464710
+004CA954	aUnloadingAllSf	UNLOADING ALL SFX OBJECT MEMORY	sub_4647A0 sub_464820
+004CA974	aFadingOutAllCu	Fading out all current (%d) sounds	sub_464AB0
+004CA99C	aShuttingDownQu	Shutting down quiet sound	sub_465940
+004CA9B8	aDeesoundDuplic_3	DeeSound::DuplicateSoundBuffer failed DSERR_UNINITIALIZED	sub_465DF0
+004CA9F4	aDeesoundDuplic_2	DeeSound::DuplicateSoundBuffer failed DSERR_INVALIDCALL	sub_465DF0
+004CAA2C	aDeesoundDuplic_1	DeeSound::DuplicateSoundBuffer failed DSERR_ALLOCATED	sub_465DF0
+004CAA64	aDeesoundDuplic_0	DeeSound::DuplicateSoundBuffer failed DSERR_INVALIDPARAM	sub_465DF0
+004CAAA0	aDeesoundDuplic	DeeSound::DuplicateSoundBuffer failed DSERR_OUTOFMEMORY	sub_465DF0
+004CAAD8	aSearchLibrarie	Search Libraries First	sub_465EB0
+004CAAF0	aUnloadLimit	Unload Limit	sub_465EF0
+004CAB00	aUnloadingSfxS	Unloading SFX %s	sub_4661D0 sub_466640
+004CAB14	aWow	.WoW	sub_4661D0 sub_466270 sub_466300 sub_466640
+004CAB1C	aSnd	.snd	sub_4660A0 sub_4661D0 sub_466270 sub_466300 sub_466640
+004CAB24	aCouldnTFindSfx	Couldn	sub_4660A0
+004CAB44	aLoadingSfxS	Loading SFX %s	sub_466300
+004CAB54	aVoxMartian	VOX\MARTIAN	sub_466750
+004CAB60	aVoxHuman	VOX\HUMAN	sub_466750
+004CAB6C	aSfxSfx	SFX\SFX	sub_466750
+004CAB74	aVoxMartianWow	VOX\MARTIAN.WoW	sub_466750
+004CAB84	aVoxHumanWow	VOX\HUMAN.WoW	sub_466750
+004CAB94	aSfxSfxWow	SFX\SFX.WoW	sub_466750
+004CABA0	aMartian_0	\MARTIAN\	sub_466910
+004CABAC	aHuman_0	\HUMAN\	sub_466910
+004CABB4	aMartian	MARTIAN\	sub_466910
+004CABC0	aHuman	HUMAN\	sub_466910
+004CABD0	aAvexception	.?AVexception@@	
+004CABE8	aAvlogicErrorSt	.?AVlogic_error@std@@	
+004CAC08	aAvlengthErrorS	.?AVlength_error@std@@	
+004CAC28	aAvoutOfRangeSt	.?AVout_of_range@std@@	
+004CAC80	aAsin	asin	
+004CAC98	aAvtypeInfo	.?AVtype_info@@	
+004CE744	aReaper95Versio	Reaper 	
+004CE77C	aReaperFatalErr	Reaper Fatal Error	sub_4783D0
+004CE790	aTimeseteventFa	timeSetEvent failed...	sub_478680
+004CE7A8	aTimegetdevcaps	timeGetDevCaps failed!	sub_478680
+004CE7C0	aTimekilleventF	timeKillEvent failed to kill timer...	sub_478AB0
+004CFF58	aWlandscapeDest	WLandscape::DestroyTerrain:3	
+004CFF78	aMaxSlopeForBui	Max Slope For Building On	sub_47B4A0
+004CFF94	aNoBuildBorderW	No-build border width (vertices)	sub_47B4E0
+004CFFB8	aWlandscapeCrea_0	WLandscape::CreateTerrain	sub_47B900
+004CFFD4	aWlandscapeCrea	WLandscape::CreateTerrain: couldn	sub_47B900
+004D0008	aAtm	atm	sub_47B900
+004D000C	aVertinf	vertInf	sub_47B900
+004D0014	aCls	.cls	sub_47B900
+004D001C	aIls	.ils	sub_47B900
+004D0024	aMaps	maps\	sub_47B900
+004D002C	aLightthemap	lightTheMap	sub_47BD80
+004D0038	aIsotemp	ISOTemp	sub_47BD80
+004D0040	aArrowSceneryLo	Arrow scenery load fix	sub_47CCF0
+004D0058	aIsoObjColRadMu	ISO obj col rad mul	sub_47D6B0
+004D006C	aCollisions	Collisions	sub_47FC50
+004D0078	aBmGroups	BM Groups	sub_480150
+004D0084	aGoingStraightT	GOING STRAIGHT THERE!	sub_482E60
+004D009C	aSearchingForRo	SEARCHING FOR ROUTE WITH DFT %d	sub_482E60
+004D00BC	aCanTGetToWithi	CAN	sub_482E60
+004D00E4	aAlreadyAtDesti	ALREADY AT DESTINATION	sub_482E60
+004D00FC	aRouteFound	ROUTE FOUND	sub_483270
+004D0108	aRouteNotFound	ROUTE NOT FOUND	sub_4833F0
+004D0128	aBattlemapMenu	Battlemap menu	sub_485DE0 sub_49BD50
+004D0138	aBattlemapMinim	BattleMap miniMap view	sub_4868B0
+004D0150	a2Renderers	2 renderers	sub_486E80
+004D015C	a1Renderer	1 renderer	sub_486E80
+004D0168	aAllocatingMemo_2	Allocating memory block for 512 WTransientObjects??? objects	sub_487610
+004D01A8	aUnloadingAllTr	UNLOADING ALL TRANSIENT OBJECT MEMORY	sub_4876B0 sub_487750
+004D01D0	aAllocatingMemo_3	Allocating memory block for 512 WEffectObjects??? objects	sub_487910
+004D020C	aUnloadingAllEf	UNLOADING ALL EFFECT OBJECT MEMORY	sub_4879B0 sub_487A50
+004D055C	aSceneryObjects	Scenery objects left	sub_489340
+004D0574	aDestroyingVehi	DESTROYING VEHICLES	sub_48AC50
+004D0588	aVehicles	Vehicles	sub_48FB60 sub_48FBA0 sub_48FBE0 sub_490260 sub_4902A0 sub_4902E0 sub_490320 sub_490360 sub_4903A0 sub_4903E0 sub_490420 sub_490460 sub_4904A0 sub_4904E0 sub_490520 sub_490560 sub_4905A0 sub_4905E0 sub_490620 sub_490660 sub_4906A0 sub_4906E0 sub_490720
+004D0594	aStartturnrate	startTurnRate	sub_48FB60
+004D05A4	aStopturnrate	stopTurnRate	sub_48FBA0
+004D05B4	aTurnanimrate	turnAnimRate	sub_48FBE0
+004D05C8	aMaxacc	maxAcc	sub_490260
+004D05D0	aCollisioncheck	collisionCheckDist	sub_4902A0
+004D05E4	aAttributeaccwe	attributeAccWeight	sub_4902E0
+004D05F8	aAttributeaccma	attributeAccMax	sub_490320
+004D0608	aSeparationaccw	separationAccWeight	sub_490360
+004D061C	aSeparationaccm	separationAccMax	sub_4903A0
+004D0630	aAvoidanceaccwe	avoidanceAccWeight	sub_4903E0
+004D0644	aAvoidanceaccma	avoidanceAccMax	sub_490420
+004D0654	aBrakingaccweig	brakingAccWeight	sub_490460
+004D0668	aBrakingaccmax	brakingAccMax	sub_4904A0
+004D0678	aVelmatchaccwei	velMatchAccWeight	sub_4904E0
+004D068C	aVelmatchaccmax	velMatchAccMax	sub_490520
+004D069C	aTargaccweight	targAccWeight	sub_490560
+004D06AC	aTargaccmax	targAccMax	sub_4905A0
+004D06B8	aAttractaccweig	attractAccWeight	sub_4905E0
+004D06CC	aAttractaccmax	attractAccMax	sub_490620
+004D06DC	aArrivalaccweig	arrivalAccWeight	sub_490660
+004D06F0	aArrivalaccmax	arrivalAccMax	sub_4906A0
+004D0700	aArrivalradius	arrivalRadius	sub_4906E0
+004D0710	aSpeedcostdivis	speedCostDivisor	sub_490720
+004D0724	aShowAccelerati	Show Accelerations	sub_490760
+004D0738	aShowRadii	Show Radii	sub_4907A0
+004D0744	aShowArrival	Show Arrival	sub_4907E0
+004D0754	aFun	Fun	sub_4916A0 sub_4916E0
+004D0758	aVehSpeed	Veh Speed	sub_4916A0
+004D0764	aVehRotSpeed	Veh Rot Speed	sub_4916E0
+004D0774	aWroutefinderSe_3	WRouteFinder::Setup: No memory for nodeFMem	sub_493DF0
+004D07A0	aNodefmem	nodeFMem	sub_493DF0
+004D07AC	aWroutefinderSe_2	WRouteFinder::Setup: No memory for nodeYCMem	sub_493DF0
+004D07DC	aNodeycmem	nodeYCMem	sub_493DF0
+004D07E8	aWroutefinderSe_1	WRouteFinder::Setup: No memory for nodeXCMem	sub_493DF0
+004D0818	aNodexcmem	nodeXCMem	sub_493DF0
+004D0824	aWroutefinderSe_0	WRouteFinder::Setup: No memory for connList	sub_493DF0
+004D0850	aConnlist	connList	sub_493DF0
+004D085C	aWroutefinderSe	WRouteFinder::Setup: No memory for connDat	sub_493DF0
+004D0888	aConndat	connDat	sub_493DF0
+004D0890	aWroutefinderUn_3	WRouteFinder::UnSetup:5	sub_4941A0
+004D08A8	aWroutefinderUn_2	WRouteFinder::UnSetup:4	sub_4941A0
+004D08C0	aWroutefinderUn_1	WRouteFinder::UnSetup:3	sub_4941A0
+004D08D8	aWroutefinderUn_0	WRouteFinder::UnSetup:2	sub_4941A0
+004D08F0	aWroutefinderUn	WRouteFinder::UnSetup:1	sub_4941A0
+004D0908	aInsertnodeOutO	insertNode: out of extra node space	sub_494220
+004D092C	aNewsnode	newSNode	sub_494220
+004D0938	aWroutefinderRe	WRouteFinder::RemoveNode	sub_494370
+004D0954	aPuppetsObjects	Puppets objects left	sub_4955E0
+004D096C	aAudibleRadiusM	Audible radius multiplier	sub_495620
+004D0988	aShowOrders	Show Orders	sub_496520
+004D0994	aAllocatingMemo_5	Allocating memory block for 256 WPuppetHotSpot objects	sub_496C40
+004D09CC	aUnloadingAllWp	UNLOADING ALL WPuppetHotSpot OBJECT MEMORY	sub_496CE0 sub_496E60
+004D0B64	aBatroute	BatRoute	sub_499850
+004D0B70	aBriefing	Briefing	sub_4998F0
+004D0B7C	aDelay	Delay	sub_4998F0 sub_49A770
+004D0B84	aDD_1	%d (%d)	sub_4999E0 sub_49A820
+004D0B8C	a072f	%07.2f	sub_4999E0
+004D0B94	aHhMmapDdMmmYyy	hh:mmap dd mmm yyyy0	sub_4999E0
+004D0BAC	aDebriefing	Debriefing	sub_49A770
+004D0BB8	aClose	Close	sub_49BAA0
+004D0BC0	aCreate	Create...	sub_49BAA0
+004D0BCC	aCreationmenu	CreationMenu	sub_49BAA0
+004D0FC0	aRtypearrowRtyp	RTypeArrow::~RTypeArrow	sub_49BE70 sub_49BF50 sub_49CD40
+004D0FDC	aToolTipOffset	Tool Tip Offset	sub_49D430
+004D0FEC	aRtypeisoRtypei	RTypeISO::~RTypeISO	sub_49DE20
+004D1000	aIsolight	ISOLight	sub_49E1E0
+004D100C	aRtypeisoChange	RTypeISO::Change	sub_49E1E0
+004D1020	aWofBrightness	WOF Brightness	sub_49E2F0
+004D1030	aScrnpts	ScrnPts	sub_49E330
+004D1038	aWoflibWoflibIn	WOFLib::WOFLib: Inconsistent number of vertices	sub_49E330
+004D1068	aWorldpts	WorldPts	sub_49E330
+004D1074	aWoflibWoflib	WOFLib::WOFLib	sub_49E330
+004D1084	aWoflibWoflib_0	WOFLib::~WOFLib	
+004D1094	aMapsMmin02dSpr	maps\mmin%02d.spr	sub_4A1F90
+004D10A8	aMapsHmin02dSpr	maps\hmin%02d.spr	sub_4A1F90
+004D10BC	aRtypeminibattl	RTypeMiniBattleMap::~RTypeMiniBattleMap()	sub_4A20A0
+004D10E8	aStack	Stack	sub_4A34C0
+004D10F0	aUnableToReadFi	Unable To Read File Entries	sub_4A3920
+004D110C	aUnableToReadHe	Unable To Read Header	sub_4A3920
+004D1124	aInfopage	InfoPage	sub_4A3E60

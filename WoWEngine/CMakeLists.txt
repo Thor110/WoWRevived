@@ -19,6 +19,9 @@ add_library(wowcore STATIC
     src/core/Archive.cpp
     src/core/Ffuh.cpp
     src/core/GameFiles.cpp
+    src/core/Palette.cpp
+    src/core/Sprite.cpp
+    src/core/TextOjd.cpp
 )
 target_include_directories(wowcore PUBLIC src)
 

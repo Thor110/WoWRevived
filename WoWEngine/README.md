@@ -21,7 +21,7 @@ Targets:
 | Target | What it is |
 |---|---|
 | `WoWEngine` | The game. Pass the game folder as the first argument, or put the engine in the game folder. |
-| `wowdump` | Lists and extracts the KAT! and SfxL archives, and `--check <folder>` reports missing game files. |
+| `wowdump` | Lists and extracts the KAT! and SfxL archives. `--check <folder>` reports missing game files, `--sprite` saves a sprite as a BMP, and `--text` prints TEXT.ojd. |
 | `wowcore` | The file formats and game data code, with no SDL dependency, so tools can use it on their own. |
 
 ## Layout
@@ -32,10 +32,13 @@ src/core/       file formats and game data (no SDL)
   Archive.*       KAT! and SfxL archives
   Ffuh.*          FFUH Huffman decompression
   GameFiles.*     locating the game files, case-insensitive paths for Linux and macOS
+  Palette.*       .PAL palettes and blend tables
+  Sprite.*        .SPR sprites (single and animated)
+  TextOjd.*       TEXT.ojd strings
 src/platform/   SDL3 code (window, frame buffer, later input, audio, video playback)
 src/main.cpp    start-up and the fixed-rate game loop
 tools/          command line tools
-docs/           format and engine notes as they are worked out
+docs/           ENGINE-MAP.md (the original exe mapped by subsystem) and the IDA function / string index
 ```
 
 ## How it works
@@ -48,7 +51,7 @@ docs/           format and engine notes as they are worked out
 ## Road map
 
 1. **Foundations** (started): CMake and SDL3, the archives, FFUH, game file lookup, window and frame buffer.
-2. **Formats**: port the decoders from WoWViewer to `src/core`. These are SPR, CLS, FNT, WOF/IOB, the .ojd files, the shade tables (SHH/SHL/SHM), palettes and maps.
+2. **Formats** (in progress): palettes, SPR and TEXT.ojd are done. Still to port from WoWViewer: CLS, FNT, WOF/IOB, the other .ojd files, the shade tables (SHH/SHL/SHM) and maps.
 3. **Front end**: main menu, options, CD Player, credits, Smacker movies (FMV), cursor and fonts.
 4. **Audio**: SfxL sound effects, positional ambient sound, and the music played from the ripped `Music-Human` / `Music-Martian` WAV tracks.
 5. **War map**: the strategic layer, covering sectors, construction, research, AI turns and pods.
@@ -57,7 +60,7 @@ docs/           format and engine notes as they are worked out
 8. **Network**: multiplayer, based on the custom WoW_network.exe build.
 9. **Release**: packaging for all three platforms, then the Sieve of Potentia pass.
 
-Each stage is checked against the original game running side by side, address by address, using the IDA notes in `WoWDecomp/`.
+Each stage is checked against the original game running side by side, address by address, using `docs/ENGINE-MAP.md` and the IDA notes in `WoWDecomp/`.
 
 ## Installer plan
 

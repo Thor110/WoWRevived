@@ -36,7 +36,7 @@ namespace
     // Placeholder until the front end is rebuilt: a palette ramp so scaling and colour conversion can be checked.
     void DrawTestPattern(wow::Video& video, uint32_t frame)
     {
-        for (int i = 0; i < 256; i++) video.Palette()[i] = { uint8_t(i), uint8_t((i * 3) & 255), uint8_t(255 - i) };
+        for (int i = 0; i < 256; i++) video.Colours()[i] = { uint8_t(i), uint8_t((i * 3) & 255), uint8_t(255 - i) };
         uint8_t* p = video.Pixels();
         for (int y = 0; y < video.Height(); y++)
             for (int x = 0; x < video.Width(); x++)
