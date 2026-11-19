@@ -2,6 +2,7 @@
 // 0x402B80). Commands are the ids the game's buttons send.
 #pragma once
 #include "frontend/CdPlayer.h"
+#include "frontend/Credits.h"
 #include "frontend/Menu.h"
 #include "frontend/Settings.h"
 #include "platform/Music.h"
@@ -58,5 +59,8 @@ namespace wow
         std::unique_ptr<Screen> screen;
         int loadedGroup = -1;
         bool quit = false;
+        // typed cheat codes (0x401000): "englishrose" shows the hidden end of the credits
+        size_t cheatProgress = 0;
+        bool creditsEasterEgg = false;
     };
 }

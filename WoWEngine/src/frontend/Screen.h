@@ -70,9 +70,12 @@ namespace wow
         // A screen can handle some of its own commands; returns true if it did.
         virtual bool Handle(const Command&) { return false; }
 
-        std::optional<Command> OnKey(int sdlKey);
+        virtual std::optional<Command> OnKey(int sdlKey);
         void OnMouseMove(int x, int y);
-        std::optional<Command> OnMouseButton(int x, int y, bool down);
+        virtual std::optional<Command> OnMouseButton(int x, int y, bool down);
+
+        // A command the screen sends by itself (from Update), picked up by the front end after each update.
+        std::optional<Command> TakeCommand() { auto c = sent; sent.reset(); return c; }
 
     protected:
         // Called after a checkbox, radio or slider changed its value.
@@ -91,6 +94,7 @@ namespace wow
         std::vector<Button> buttons;
         int selected = -1;
         int pressed = -1;
+        std::optional<Command> sent;
 
     private:
         bool Usable(int index) const;

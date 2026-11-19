@@ -42,6 +42,7 @@ namespace
 
     // Command line: [game folder] [--open command] [--screenshot file.bmp [keys]]
     // --open starts on the screen a menu command opens (0x8E Game Options, 0x6E Save Game...).
+    // --ticks N runs N game updates (30 a second) after the keys, before the screenshot.
     // --screenshot presses the comma separated keys (up, down, enter, escape), saves the frame and exits.
     struct Options
     {
@@ -49,6 +50,7 @@ namespace
         fs::path screenshot;
         std::vector<int> keys;
         int open = 0;
+        int ticks = 0;
     };
 
     Options ParseOptions(int argc, char** argv)
@@ -58,6 +60,7 @@ namespace
         {
             std::string arg = argv[i];
             if (arg == "--open" && i + 1 < argc) o.open = int(std::strtol(argv[++i], nullptr, 0));
+            else if (arg == "--ticks" && i + 1 < argc) o.ticks = std::atoi(argv[++i]);
             else if (arg == "--screenshot" && i + 1 < argc)
             {
                 o.screenshot = argv[++i];
@@ -75,6 +78,8 @@ namespace
                         else if (k == "escape") o.keys.push_back(SDLK_ESCAPE);
                         else if (k == "left") o.keys.push_back(SDLK_LEFT);
                         else if (k == "right") o.keys.push_back(SDLK_RIGHT);
+                        else if (k.size() > 1 && k[0] == '=') // =text types the letters
+                            for (char c : k.substr(1)) if (c >= 'a' && c <= 'z') o.keys.push_back(int(SDLK_A + (c - 'a')));
                         if (end == std::string::npos) break;
                         start = end + 1;
                     }
@@ -163,6 +168,7 @@ int main(int argc, char** argv)
         if (!options.screenshot.empty())
         {
             for (int key : options.keys) frontEnd.OnKey(key);
+            for (int t = 0; t < options.ticks; t++) frontEnd.Update();
             frontEnd.Draw(canvas);
             wow::WriteBmp(options.screenshot, video.Pixels(), video.Width(), video.Height());
             SDL_Log("Saved %s", options.screenshot.string().c_str());

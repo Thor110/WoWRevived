@@ -20,7 +20,7 @@ Targets:
 
 | Target | What it is |
 |---|---|
-| `WoWEngine` | The game. Pass the game folder as the first argument, or put the engine in the game folder. `--open 0x6E` starts on the screen a menu command opens. `--screenshot file.bmp [keys]` presses the listed keys (up, down, left, right, enter, escape), saves the frame and exits. |
+| `WoWEngine` | The game. Pass the game folder as the first argument, or put the engine in the game folder. `--open 0x6E` starts on the screen a menu command opens. `--ticks N` runs N game updates before a screenshot. `--screenshot file.bmp [keys]` presses the listed keys (up, down, left, right, enter, escape), saves the frame and exits. |
 | `wowdump` | Lists and extracts the KAT! and SfxL archives. `--check <folder>` reports missing game files, `--sprite` saves a sprite as a BMP, `--text` prints TEXT.ojd and `--obj` prints the OBJ.ojd graphics table. |
 | `wowcore` | The file formats and game data code, with no SDL dependency, so tools can use it on their own. |
 | `WoWInstall` | Sets up a game folder from the two discs or their images, and rips the music. See [Installing](#installing). |
@@ -61,7 +61,7 @@ docs/           ENGINE-MAP.md (the exe mapped by subsystem), FRONTEND.md (how th
 
 1. **Foundations** (started): CMake and SDL3, the archives, FFUH, game file lookup, window and frame buffer.
 2. **Formats** (in progress): archives, FFUH, palettes, SPR, FNT, shade tables, TEXT.ojd and the OBJ.ojd graphics table are done, and all but the first three are read the way the game reads them. All of these have been checked against the English discs. Still to do: the unit-specific shade groups, the rest of OBJ.ojd (unit data), AI.ojd, SFX.ojd and sound libraries, CLS, WOF/IOB and maps.
-3. **Front end** (started): rebuilt so far are the menu framework, Main Menu, Game Options, Display Settings, Sound Control, Critical event options, Quit, and the CD Player with music (see `docs/FRONTEND.md`). They match screenshots of the original for both sides. Still to do: Load/Save, the campaign and network menus, credits, Smacker movies (FMV), the cursor, tooltips and sound effects.
+3. **Front end** (started): rebuilt so far are the menu framework, Main Menu, Game Options, Display Settings, Sound Control, Critical event options, Load and Save Game, Credits, Quit, and the CD Player with music (see `docs/FRONTEND.md`). They match screenshots of the original for both sides. Still to do: the campaign and network menus, Smacker movies (FMV), the cursor, tooltips and sound effects.
 4. **Audio**: SfxL sound effects, positional ambient sound, and the music played from the ripped `Music-Human` / `Music-Martian` WAV tracks.
 5. **War map**: the strategic layer, covering sectors, construction, research, AI turns and pods.
 6. **Battle map**: terrain, the 3D units (WOF/IOB with the shade tables), buildings, pathfinding, combat and fog of war.

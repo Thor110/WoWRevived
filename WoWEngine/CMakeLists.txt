@@ -72,6 +72,7 @@ if(TARGET SDL3::SDL3)
         src/frontend/Screen.cpp
         src/frontend/Menu.cpp
         src/frontend/CdPlayer.cpp
+        src/frontend/Credits.cpp
         src/frontend/FrontEnd.cpp
     )
     # IniStore.h is shared with the patch DLLs so the engine reads the same WoWRevived.ini

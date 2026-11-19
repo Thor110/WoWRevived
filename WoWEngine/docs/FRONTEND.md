@@ -71,6 +71,7 @@ Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 
 | Load Game | 0x6F | 0x409560 | Style 2. Heading 0x406 ("Resume Campaign"), or 0x434 when there are no saves. One button per existing save, command 0x80B3 + slot, captioned with the save's name (36 bytes of Latin-1 at 0x0C, read by 0x404CD0). |
 | Save Game | 0x6E | 0x4090A0 | Opened from the in-game menu. Style 2. Heading 0x52D. Five slot buttons, command 0x8142 + slot, captioned with the save's name or 0x408 "Empty". |
 | CD Player | 0x803E | 0x407990 | Its own screen, with backdrop 0xAF and palette group 0x2F9. The layout and commands are documented in `src/frontend/CdPlayer.h`. Music plays from `Music-Human\NN TrackNN.wav` or `Music-Martian\NN TrackNN.wav`, tracks 2 to 5. |
+| Credits | 0x80CA | 0x4052B0 | Rebuilt in `src/frontend/Credits.h`, which documents how it works. CREDITS.SPR (0x344) scrolls up in palette group F3 at (height − 640) / 3150 pixels a tick in Human games, or / 4200 in Martian ones, to fit each side's credits music (sound 0x191). Escape or a click leaves after the first 60 ticks. Typing "englishrose" (0x401000) makes it scroll on to a hidden picture of the team at the bottom of the image. |
 
 ### Menus still to rebuild (constructors)
 
@@ -83,7 +84,6 @@ Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 
 | Game session | 0xA4 | 0x407110 |
 | Insert CD | 0x8133 | 0x4089D0 |
 | Edit Campaign | 0x8139 | 0x4092D0 |
-| Credits | 0x80CA | 0x4052B0: backdrop 0x344 (CREDITS.SPR), palette group 0x2F3 (F3), sound 0x191 |
 
 ## Still to do
 
@@ -94,6 +94,8 @@ Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 
   - the event menu's check boxes, which sit about 14 pixels left of the original's while the labels line up.
 - **Display Settings.** The engine still draws at 640 × 480 and in true colour. The resolution and colour depth are saved for the launcher, but the engine doesn't use them yet.
 - **Loading and saving.** Picking a save in the Load or Save menu needs the campaign (the war map), which isn't rebuilt yet.
+- **Sound for the credits.** The credits music (sound 0x191) isn't played yet. The game also waits for it to finish before leaving the credits.
+- **Other cheat codes.** 0x401000 recognises more typed codes than "englishrose", but they aren't decoded yet.
 - **Tooltips.** The CD Player's transport buttons carry tooltip strings (0x4B9–0x4BD) that aren't shown yet.
 - **Sounds.** Menu sounds (0x18C on the main menu, plus button clicks) aren't played yet.
 - **Mouse cursor.** The game's own cursor (GTypes 0x22/0x23 and so on) isn't drawn yet.

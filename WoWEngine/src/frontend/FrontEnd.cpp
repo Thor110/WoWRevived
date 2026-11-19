@@ -275,6 +275,7 @@ namespace wow
             Show(NotRebuilt(command.id, current));
             break;
         case CdPlayer::Id: Show(std::make_unique<CdPlayer>(res, settings.colours, CmdMainMenu, music, files)); break;
+        case Credits::Id: Show(std::make_unique<Credits>(res, current, creditsEasterEgg)); break;
         case Commands::Back:
             // Escape goes back to the menu this one was opened from; the main menu itself ignores it
             if (current != CmdMainMenu) Execute({ screen->Previous() ? screen->Previous() : CmdMainMenu, 0 });
@@ -285,19 +286,33 @@ namespace wow
 
     void FrontEnd::Update()
     {
-        if (screen) screen->Update();
+        if (!screen) return;
+        screen->Update();
+        if (auto command = screen->TakeCommand()) Execute(*command);
     }
 
     void FrontEnd::Draw(Canvas& canvas) const
     {
         canvas.Clear(0);
         if (!screen) return;
-        canvas.DrawSprite(screen->Background(), 0, 0, 0);
+        if (screen->Background()) canvas.DrawSprite(screen->Background(), 0, 0, 0);
         screen->Draw(canvas);
     }
 
     void FrontEnd::OnKey(int key)
     {
+        if (key >= int(SDLK_A) && key <= int(SDLK_Z))
+        {
+            static constexpr char Code[] = "englishrose";
+            char letter = char('a' + (key - int(SDLK_A)));
+            cheatProgress = letter == Code[cheatProgress] ? cheatProgress + 1 : (letter == Code[0] ? 1 : 0);
+            if (Code[cheatProgress] == 0)
+            {
+                creditsEasterEgg = true;
+                cheatProgress = 0;
+                SDL_Log("Cheat: englishrose");
+            }
+        }
         if (!screen) return;
         if (auto command = screen->OnKey(key)) Execute(*command);
     }
