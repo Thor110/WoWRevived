@@ -1,4 +1,4 @@
-// wowinstall-cli - the command line version of WoWInstall: sets up a game folder from the original Human and Martian discs, or images of them.
+// wowinstall-cli - the command line version of WoWLauncher's installer: sets up a game folder from the original Human and Martian discs, or images of them.
 //
 //   wowinstall-cli --drives                                  list the optical drives
 //   wowinstall-cli <game folder> [<disc>] [<disc>] [options] install (no disc: use whatever is in the drives)

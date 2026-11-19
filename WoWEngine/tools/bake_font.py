@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bakes a TrueType font into the C++ header the installer draws its text with (src/installer/UiFont.h).
+"""Bakes a TrueType font into the C++ header the installer draws its text with (src/launcher/UiFont.h).
 
     python3 bake_font.py <font.ttf> <pixel size> <out.h>
 

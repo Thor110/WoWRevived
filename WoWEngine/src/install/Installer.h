@@ -44,6 +44,7 @@ namespace wow::install
         std::vector<std::string> warnings;  // things that didn't stop the install (no music on an .iso, ...)
         std::vector<std::string> missing;   // files the engine needs that still aren't there
         bool humanDisc = false, martianDisc = false; // which discs were copied
+        bool musicMissing = false;                   // some or all of the music couldn't be ripped
     };
 
     // Throws std::runtime_error on a failure that stops the install (can't write the target folder, ...).

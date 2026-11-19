@@ -82,7 +82,7 @@ def main():
 
     files = [
         (build_dir / ('WoWEngine' + EXE), True),
-        (build_dir / ('WoWInstall' + EXE), True),
+        (build_dir / ('WoWLauncher' + EXE), True),
         (build_dir / ('wowinstall-cli' + EXE), True),
         (build_dir / ('wowdump' + EXE), True),
         (build_dir / 'launcher.bmp', True),

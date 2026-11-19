@@ -141,12 +141,12 @@ int main(int argc, char** argv)
     auto files = wow::GameFiles::Locate(CandidateFolders(options));
     if (!files)
     {
-        // offer to run WoWInstall from the same folder
+        // offer to run WoWLauncher from the same folder
         std::string installer = std::string(SDL_GetBasePath() ? SDL_GetBasePath() : "") +
 #ifdef _WIN32
-            "WoWInstall.exe";
+            "WoWLauncher.exe";
 #else
-            "WoWInstall";
+            "WoWLauncher";
 #endif
         std::error_code ec;
         bool haveInstaller = fs::exists(installer, ec);
@@ -158,7 +158,7 @@ int main(int argc, char** argv)
         box.flags = SDL_MESSAGEBOX_WARNING;
         box.title = "WoW Engine " WOWENGINE_VERSION;
         box.message = "The original game files weren't found.\n\n"
-                      "Install them from the Human and Martian discs (or their images) with WoWInstall, "
+                      "Install them from the Human and Martian discs (or their images) with WoWLauncher, "
                       "or start the engine with the game folder as its first argument.";
         box.numbuttons = haveInstaller ? 2 : 1;
         box.buttons = haveInstaller ? buttons : buttons + 1;

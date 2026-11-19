@@ -84,16 +84,16 @@ if(TARGET SDL3::SDL3)
     target_include_directories(WoWEngine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../WoWPatches/Common)
     target_link_libraries(WoWEngine PRIVATE wowcore SDL3::SDL3)
 
-    # the graphical installer, laid out like WoWLauncher
-    add_executable(WoWInstall WIN32 MACOSX_BUNDLE
-        src/installer/main.cpp
-        src/installer/Ui.cpp
+    # WoWLauncher: installs the game from the discs, then starts it as the Human or Martian side
+    add_executable(WoWLauncher WIN32 MACOSX_BUNDLE
+        src/launcher/main.cpp
+        src/launcher/Ui.cpp
         src/platform/Video.cpp
     )
-    target_link_libraries(WoWInstall PRIVATE wowinstall SDL3::SDL3)
+    target_link_libraries(WoWLauncher PRIVATE wowinstall SDL3::SDL3)
     # the launcher's picture, next to the programs
-    add_custom_command(TARGET WoWInstall POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources/launcher.bmp $<TARGET_FILE_DIR:WoWInstall>/launcher.bmp)
+    add_custom_command(TARGET WoWLauncher POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources/launcher.bmp $<TARGET_FILE_DIR:WoWLauncher>/launcher.bmp)
     if(WIN32)
         # keep SDL3.dll next to the exe
         add_custom_command(TARGET WoWEngine POST_BUILD

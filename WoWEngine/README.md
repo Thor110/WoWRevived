@@ -31,7 +31,7 @@ Targets:
 | `WoWEngine` | The game. Pass the game folder as the first argument, or put the engine in the game folder. `--open 0x6E` starts on the screen a menu command opens. `--ticks N` runs N game updates before a screenshot. `--screenshot file.bmp [keys]` presses the listed keys (up, down, left, right, enter, escape), saves the frame and exits. |
 | `wowdump` | Lists and extracts the KAT! and SfxL archives. `--check <folder>` reports missing game files, `--sprite` saves a sprite as a BMP, `--text` prints TEXT.ojd and `--obj` prints the OBJ.ojd graphics table. |
 | `wowcore` | The file formats and game data code, with no SDL dependency, so tools can use it on their own. |
-| `WoWInstall` | The installer, laid out like WoWLauncher: it finds the discs in the drives (or disc images you pick), copies the game and rips the music. See [Installing](#installing). |
+| `WoWLauncher` | The one program players start, laid out like WoWRevived's WoWLauncher. With the game installed it starts a Human or Martian game; without it, it's the installer: it finds the discs in the drives (or disc images you pick), copies the game and rips the music. See [Installing](#installing). |
 | `wowinstall-cli` | The same installer from the command line. |
 
 ## Layout
@@ -82,7 +82,11 @@ Each stage is checked against the original game running side by side, address by
 
 ## Installing
 
-Run `WoWInstall`. It looks like WoWLauncher (the same picture, buttons down the left and Exit on the right) and installs into its own folder unless you choose another with **Choose Install Folder...**. Put either disc in, or both, and it finds them within a couple of seconds; **Install The War Of The Worlds** copies the first disc and then waits for the other one, carrying on by itself as soon as it's inserted (**Skip the Other Disc** finishes with what it has). **Use Disc Images...** takes `.iso` or `.cue` files instead of drives, and **Rip the music** can be turned off. When it's done, **Start the Game** runs WoWEngine on the new folder. The engine also offers to run WoWInstall if it starts without the game files.
+Run `WoWLauncher`. It's both the launcher and the installer, laid out like WoWRevived's WoWLauncher (the same picture, with the buttons underneath).
+
+**When the game isn't installed** in its folder, it opens on the install screen, and installs into its own folder unless you choose another with **Choose Install Folder...**. Put either disc in, or both, and it finds them within a couple of seconds; **Install The War Of The Worlds** copies the first disc and rips its music, then waits for the other one, carrying on by itself as soon as it's inserted (**Skip the Other Disc** finishes with what it has). **Use Disc Images...** takes `.iso` or `.cue` files instead of drives. The music is always ripped. When a disc source has none (an `.iso` image holds only the data track, not the CD audio), the disc line says so before you start, and when the install finishes a message lists each problem, why it happened and what it means: no Human or Martian music in the game, and to use the disc or a `.bin/.cue` image to get it.
+
+**When the game is installed**, it opens on the launcher screen: **Start Human Game** and **Start Martian Game** set the side marker (`Human.cd` or `MARTIAN.cd`, as WoWRevived's launcher does) and start WoWEngine; **Install from Discs...** goes back to the install screen. If a side's music is missing it says so under the buttons. WoWEngine also offers to run WoWLauncher if it starts without the game files.
 
 The command line version:
 
@@ -107,5 +111,5 @@ How it handles the different situations:
 
 Music only comes from a disc in a drive or from a `.bin/.cue` image, because `.iso` images hold only the data track. Reading the music straight from a drive works on Windows and Linux. macOS doesn't allow raw CD reads, so there it has to come from a `.bin/.cue` image.
 
-Both installers are front ends to the `wowinstall` library (`src/install`), which has no SDL dependency. The GUI (`src/installer`) draws its own Windows-style controls so it looks the same on every platform; its font is DejaVu Sans baked into `src/installer/UiFont.h` by `tools/bake_font.py`, and its picture is `resources/launcher.bmp`, copied next to the program when it's built.
+Both installers are front ends to the `wowinstall` library (`src/install`), which has no SDL dependency. WoWLauncher (`src/launcher`) draws its own Windows-style controls so it looks the same on every platform; its font is DejaVu Sans baked into `src/launcher/UiFont.h` by `tools/bake_font.py`, and its picture is `resources/launcher.bmp`, copied next to the program when it's built.
 

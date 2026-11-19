@@ -122,7 +122,17 @@ namespace wow::install
 
         const char* folder = MusicFolder(info.side);
         if (options.music && tracks.empty())
-            result.warnings.push_back(disc.Describe() + " has no audio tracks, so its music wasn't ripped (an .iso holds only the data; use a .bin/.cue or the disc)");
+        {
+            // say what's wrong, why, and what it means for the game
+            std::string source = disc.Describe(), lower = Lower(source);
+            bool iso = lower.find("iso image") != std::string::npos || lower.find(".iso") != std::string::npos;
+            std::string side = info.side == Side::Human ? "Human" : "Martian";
+            std::string why = iso ? "an .iso image holds only the data track, not the CD audio tracks the music is on"
+                                  : "the music's audio tracks couldn't be read from it";
+            result.warnings.push_back("No music was found on the " + side + " disc (" + source + "): " + why +
+                ". The game will have no " + side + " music. Use the disc itself or a .bin/.cue image of it to get the music.");
+            result.musicMissing = true;
+        }
         for (const AudioTrack& t : tracks)
         {
             char name[32];
@@ -141,7 +151,9 @@ namespace wow::install
             if (!ok || !wav)
             {
                 fs::remove(out, ec);
-                result.warnings.push_back("Couldn't read audio track " + std::to_string(t.number) + " from " + disc.Describe());
+                result.warnings.push_back("Couldn't read audio track " + std::to_string(t.number) + " from " + disc.Describe() +
+                    ", so that piece of music will be missing from the game.");
+                result.musicMissing = true;
             }
         }
         progress("Finished " + disc.Describe(), 1.0);
@@ -152,8 +164,9 @@ namespace wow::install
         std::error_code ec;
         wow::GameFiles files(options.target);
         auto human = files.Resolve("Human.cd"), martian = files.Resolve("MARTIAN.cd");
-        if (!result.humanDisc) result.warnings.push_back("The Human disc wasn't copied.");
+        if (!result.humanDisc) result.warnings.push_back("The Human disc wasn't copied, so its music (Music-Human) is missing.");
         if (!result.martianDisc) result.warnings.push_back("The Martian disc wasn't copied, so its music (Music-Martian) is missing.");
+        if (!result.humanDisc || !result.martianDisc) result.musicMissing = true;
         // one side marker: Human.cd for a Human game, MARTIAN.cd for a Martian one (WoWLauncher renames it to switch)
         if (options.human && !human && martian) fs::rename(*martian, options.target / "Human.cd", ec);
         else if (options.human && human && martian) fs::remove(*martian, ec);
