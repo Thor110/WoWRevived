@@ -30,6 +30,17 @@ add_library(wowcore STATIC
 )
 target_include_directories(wowcore PUBLIC src)
 
+# --- installer: copies the game from the discs or their images and rips the music (no SDL) ---
+add_library(wowinstall STATIC
+    src/install/Disc.cpp
+    src/install/DriveAudio.cpp
+    src/install/Iso9660.cpp
+    src/install/Installer.cpp
+)
+target_link_libraries(wowinstall PUBLIC wowcore)
+add_executable(WoWInstall tools/WoWInstall.cpp)
+target_link_libraries(WoWInstall PRIVATE wowinstall)
+
 # --- wowdump: command line archive lister / extractor ---
 add_executable(wowdump tools/wowdump.cpp)
 target_link_libraries(wowdump PRIVATE wowcore)
@@ -56,6 +67,7 @@ if(TARGET SDL3::SDL3)
         src/platform/Music.cpp
         src/frontend/Resources.cpp
         src/frontend/Canvas.cpp
+        src/frontend/Settings.cpp
         src/frontend/Screen.cpp
         src/frontend/Menu.cpp
         src/frontend/CdPlayer.cpp

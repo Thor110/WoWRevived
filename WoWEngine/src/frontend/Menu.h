@@ -12,6 +12,9 @@
 #pragma once
 #include "frontend/Screen.h"
 
+#include <functional>
+#include <map>
+
 namespace wow
 {
     struct MenuColours
@@ -33,6 +36,21 @@ namespace wow
         void AddButton(int command, int textId, int param = 0);
         void AddBottomButton(int command, int textId); // also centres the menu
 
+        // Rows that change a value; changed is called with the control after every change.
+        using OnChange = std::function<void(Button&)>;
+        void AddCheck(int textId, bool value, OnChange changed);                 // 0x40A320
+        void AddRadio(int textId, int group, bool value, OnChange changed);      // 0x40A630
+        // label turns the value into the row's text ("Master Volume - 80%")
+        void AddSlider(int value, int max, std::function<std::string(int)> label, OnChange changed); // 0x40AC80
+
+        // The critical event menu's rows (0x40A480, style 2): two columns either side of the screen's centre,
+        // the label left-aligned 37 pixels in (0x4B8E00 + 0x4B8E04 + 0x4B8E08). NextColumn starts the second.
+        void AddEventCheck(int textId, bool value, OnChange changed);
+        void NextColumn();
+
+    protected:
+        void Changed(size_t index) override;
+
     private:
         void Stack(Button button);
         void Centre();
@@ -40,5 +58,8 @@ namespace wow
         int style;
         MenuColours colours;
         int nextY = 0;
+        int column = -1, columnTop = 0, columnBottom = 0;
+        std::map<size_t, OnChange> onChange;
+        std::map<size_t, std::function<std::string(int)>> labels;
     };
 }

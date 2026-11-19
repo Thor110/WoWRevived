@@ -32,6 +32,7 @@ namespace wow
         lengthBytes = length;
         lengthMs = uint32_t(uint64_t(length) * 1000 / bytesPerSecond);
         paused = false;
+        SDL_SetAudioStreamGain(stream, volume);
         SDL_ResumeAudioStreamDevice(stream);
         return true;
     }
@@ -50,6 +51,12 @@ namespace wow
         paused = p;
         if (paused) SDL_PauseAudioStreamDevice(stream);
         else SDL_ResumeAudioStreamDevice(stream);
+    }
+
+    void Music::SetVolume(float v)
+    {
+        volume = std::clamp(v, 0.0f, 1.0f);
+        if (stream) SDL_SetAudioStreamGain(stream, volume);
     }
 
     bool Music::Finished() const { return stream && SDL_GetAudioStreamQueued(stream) == 0; }

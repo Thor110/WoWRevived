@@ -65,6 +65,9 @@ Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 
 | Main Menu | 0x90 | 0x405ED0 | Heading 0x3FB. With the network version enabled: 0xA0 → 0x3FE, then 0xA4 → 0x3FF (Human) or 0x400 (Martian). Otherwise: 0x6F → 0x406 (only when a save exists), then 0x8138 → 0x40C. Then 0x8E → 0x401, 0x803E → 0x402, and the bottom button 0x80B6 → 0x403. Also starts sound 0x18C. |
 | Game Options | 0x8E | 0x408CF0 | Heading 0x401. 0x3EF → 0x410, 0x3ED → 0x411, 0x8117 → 0x412, 0x80CA → 0x534. Bottom button: back to the previous menu → 0x530 (from the main menu) or 0x40F. |
 | Quit Game | 0x70 | 0x409460 | Heading 0x403 or 0x404. 0x70 → 0x445 (quits). Bottom button: back to the previous menu → 0x530 or 0x446. |
+| Display Settings | 0x3EF | 0x4096D0 | Style 1. Heading 0x410. Resolution slider ("%s: %d * %d", `[Screen]` Size). 8-bit and 16-bit Colour radios (`[Screen]` BPP). Checkboxes for Lights, Smoke and Particles, Gouraud Shading and Vehicle shadows (`[Options]` "Show lights", "Show Smoke & particles", "Show gouraud shading", "Show vehicle shadows", all on by default). Scroll Speed slider (`[Screen]` "Scroll Speed", default 40, shown as (speed − 10) / 10). |
+| Sound Control | 0x3ED | 0x4057F0 | Heading 0x411. Master, Ambient and Speech sliders, 0–100% in tens (`[Sound\Volume]` Master / Ambient / Speech, 0–1). In-game CD music checkbox (`[Sound\Volume]` CD). |
+| Critical event options | 0x8117 | 0x409DE0 | Style 2. Two columns of five checkboxes (0x40A480), labels 37 pixels in. `[Event]` "Construction Completed", "Unit Manufactured", "Command Centre Built" (off by default), "Constructor Idle", "Facility Idle" (on), "Unit Arrived At Destination" (off), "Travel Interrupted", "Research Completed" (on), "Resource Warning" (off), "Resource Alert" (on). |
 | CD Player | 0x803E | 0x407990 | Its own screen, with backdrop 0xAF and palette group 0x2F9. The layout and commands are documented in `src/frontend/CdPlayer.h`. Music plays from `Music-Human\NN TrackNN.wav` or `Music-Martian\NN TrackNN.wav`, tracks 2 to 5. |
 
 ### Menus still to rebuild (constructors)
@@ -80,20 +83,16 @@ Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 
 | Save Game | 0x6E | 0x408E30 |
 | Load Game | 0x6F | 0x4052B0 |
 | Edit Campaign | 0x8139 | 0x4092D0 |
-| Display Settings | 0x3EF | 0x4096D0: checkboxes (0x40A320), spinners (0x40A630) and a slider (0x40AC80) |
-| Sound Control | 0x3ED | 0x4057F0: heading 0x411; sliders (0x40AC80, step 10) for strings 0x43E–0x440, bound to the volumes; checkbox 0x441 (command 0x8120) |
-| Critical event options ("Event Menu") | 0x8117 | 0x409DE0: event checkboxes (0x40A480) |
 | Credits | 0x80CA | not traced yet |
 
 ## Still to do
 
 - **Shade-table groups.** The hw, hb, hr and bm groups build their shade-table names from unit data. They're needed for the war map and battle map, not the menus.
 - **Button frames.** It isn't checked yet which states use which frame (WGraphicPushButton, 0x42FC20). The engine uses 0 = normal, 1 = highlighted, 2 = pressed. The glow animation ("Menu Glow First" / "Menu Glow Last") isn't done.
-- **Controls for the options menus.**
-  - The scrollbar slider (0x431EF0) uses sprites 0x345/0x346, or 0x347/0x348 in style 2.
-  - The checkbox (0x40A320) uses 0x4D/0x4E, or 0x4B/0x4C in style 2.
-  - The spinner is 0x40A630.
-  - These menus also need to save settings back to WoWRevived.ini.
+- **Option controls.** The slider uses sprites 0x345/0x346 (0x347/0x348 in style 2), with 22 frames: 11 knob positions, then the same 11 highlighted. Checkboxes and radio buttons use 0x4D/0x4E (0x4B/0x4C in style 2), with frames for cross, cross highlighted, tick highlighted and tick. Not yet checked against the game:
+  - how a slider reacts to clicks and drags (0x431EF0);
+  - the event menu's check boxes, which sit about 14 pixels left of the original's while the labels line up.
+- **Display Settings.** The engine still draws at 640 × 480 and in true colour. The resolution and colour depth are saved for the launcher, but the engine doesn't use them yet.
 - **Tooltips.** The CD Player's transport buttons carry tooltip strings (0x4B9–0x4BD) that aren't shown yet.
 - **Sounds.** Menu sounds (0x18C on the main menu, plus button clicks) aren't played yet.
 - **Mouse cursor.** The game's own cursor (GTypes 0x22/0x23 and so on) isn't drawn yet.

@@ -6,6 +6,7 @@
 #include "frontend/Canvas.h"
 #include "frontend/FrontEnd.h"
 #include "frontend/Resources.h"
+#include "frontend/Settings.h"
 #include "platform/Video.h"
 
 // IniStore.h is shared with the patch DLLs (WoWPatches/Common), so the engine reads the same WoWRevived.ini.
@@ -146,7 +147,8 @@ int main(int argc, char** argv)
         bool human = files->Resolve("Human.cd").has_value();
         wow::Vfs vfs(*files);
         wow::Resources resources(vfs, human);
-        wow::FrontEnd frontEnd(resources, ReadSettings(*files), vfs.Files());
+        wow::Settings ini(vfs.Files());
+        wow::FrontEnd frontEnd(resources, ReadSettings(*files), ini, vfs.Files());
 
         wow::Video video;
         std::string error;

@@ -22,6 +22,7 @@ namespace wow
         bool Play(const std::filesystem::path& wav);
         void Stop();
         void SetPaused(bool paused);
+        void SetVolume(float volume); // 0-1, kept across tracks
 
         bool Playing() const { return stream != nullptr; }
         bool Paused() const { return paused; }
@@ -33,5 +34,6 @@ namespace wow
         SDL_AudioStream* stream = nullptr;
         uint32_t lengthBytes = 0, lengthMs = 0, bytesPerSecond = 1;
         bool paused = false;
+        float volume = 1.0f;
     };
 }

@@ -9,7 +9,7 @@ namespace wow
     {
         constexpr int CmdTrack = 0x803F;
         constexpr int CmdTransport = 0x80D3;
-        enum Transport { Previous = 0, Play = 1, Stop = 2, Next = 3, Pause = 5 };
+        enum Transport { PrevTrack = 0, Play = 1, Stop = 2, NextTrack = 3, Pause = 5 };
         constexpr int TrackText[6] = { 0x2F9, 0x2F9, 0x4C5, 0x4C6, 0x4C7, 0x4C8 }; // vanilla 0x4B8B38
         constexpr int ButtonFont = 0x73, CreditsFont = 0x72;
     }
@@ -17,6 +17,7 @@ namespace wow
     CdPlayer::CdPlayer(Resources& r, MenuColours c, int previous, Music& m, const GameFiles& f)
         : Screen(Id, r, Backdrop, PaletteGroup), colours(c), music(m), files(f)
     {
+        SetPrevious(previous);
         int y = 35;
         Button heading;
         heading.plate = 0xA5; heading.glass = 0xA6; heading.font = ButtonFont; heading.level = colours.heading;
@@ -41,14 +42,14 @@ namespace wow
             b.kind = Button::Kind::Graphic; b.plate = sprite; b.command = { CmdTransport, param }; b.rect = { x, 291, 0, 0 };
             return Place(b);
         };
-        size_t previousButton = transport(0xA1, Previous, 54);
+        size_t previousButton = transport(0xA1, PrevTrack, 54);
         int x = buttons[previousButton].rect.w + 0x41;
         playButton = transport(0x9F, Play, x);
         stopButton = transport(0x9E, Stop, x);
         x += buttons[stopButton].rect.w + 0x0B;
         size_t pause = transport(0xA0, Pause, x);
         x += buttons[pause].rect.w + 0x0B;
-        transport(0xA2, Next, x);
+        transport(0xA2, NextTrack, x);
 
         for (int t = FirstTrack; t <= LastTrack && !anyMusic; t++) anyMusic = TrackFile(t).has_value();
         playing = music.Playing() && !music.Finished();
@@ -58,7 +59,8 @@ namespace wow
     std::optional<std::filesystem::path> CdPlayer::TrackFile(int t) const
     {
         char name[64];
-        std::snprintf(name, sizeof(name), "Music-%s\\%02d Track%02d.wav", res.Human() ? "Human" : "Martian", t, t);
+        // the same folder rule as WoWRevived's _inmm: "-Martian" whenever Human.cd is present (UseMartianAssets)
+        std::snprintf(name, sizeof(name), "Music-%s\\%02d Track%02d.wav", res.Human() ? "Martian" : "Human", t, t);
         return files.Resolve(name);
     }
 
@@ -91,8 +93,8 @@ namespace wow
         if (command.id != CmdTransport) return false;
         switch (command.param)
         {
-        case Previous: Select(track - 1, playing); break;
-        case Next: Select(track + 1, playing); break;
+        case PrevTrack: Select(track - 1, playing); break;
+        case NextTrack: Select(track + 1, playing); break;
         case Play: Select(track, true); break;
         case Stop: music.Stop(); playing = false; Refresh(); break;
         case Pause: if (playing) music.SetPaused(!music.Paused()); break;
