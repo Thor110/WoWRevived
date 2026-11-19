@@ -1,4 +1,5 @@
 #include "frontend/Resources.h"
+#include "core/ShadeGroups.h"
 
 #include <SDL3/SDL_log.h>
 
@@ -8,15 +9,6 @@ namespace wow
 {
     namespace
     {
-        // Palette slots from OBJ.ojd, in the order the PAL files are listed there (see WoWViewer/SprDecoder.cs).
-        // TODO: the game draws in 16-bit through the shade tables loaded at 0x40B6C0; check the slot to file
-        // mapping against that code once the shade tables are ported.
-        const char* const PaletteFiles[16] = {
-            "dat\\hw.pal", "dat\\mw.pal", "dat\\hb.pal", "dat\\mb.pal", "dat\\hr.pal", "dat\\mr.pal", "dat\\bm.pal",
-            "dat\\f1.pal", "dat\\f2.pal", "dat\\f3.pal", "dat\\f4.pal", "dat\\f5.pal", "dat\\f6.pal", "dat\\f7.pal",
-            "dat\\se.pal", "dat\\cd.pal",
-        };
-
         std::vector<uint8_t> Require(Vfs& vfs, const char* path)
         {
             auto data = vfs.Load(path);
@@ -90,24 +82,39 @@ namespace wow
         return (fonts[id] = std::move(font)).get();
     }
 
-    const Palette* Resources::GetPalette(int slot)
+    void Resources::LoadShadeGroup(int paletteGType)
     {
-        if (slot < 0 || slot >= 16) slot = 15; // slots 16 and up are set up at run time by the game; not known yet
-        auto it = palettes.find(slot);
-        if (it != palettes.end()) return it->second.get();
-        std::unique_ptr<Palette> palette;
-        try
+        for (const ShadeGroup& group : ShadeGroups)
         {
-            if (auto data = vfs.Load(PaletteFiles[slot])) palette = std::make_unique<Palette>(Palette::Load(*data));
-            else Missing(PaletteFiles[slot]);
+            if (group.paletteGType != paletteGType) continue;
+            for (int i = 0; i < group.count; i++)
+            {
+                std::string name(group.files[i]);
+                if (auto at = name.find("{S}"); at != std::string::npos) name.replace(at, 3, human ? "H" : "M");
+                std::string path = "dat\\" + name + ".SHH";
+                std::unique_ptr<ShadeTable> table;
+                try
+                {
+                    if (auto data = vfs.Load(path)) table = std::make_unique<ShadeTable>(ShadeTable::LoadShh(*data));
+                    else Missing(path);
+                }
+                catch (const std::exception& ex) { Missing(path + " (" + ex.what() + ")"); }
+                shades[group.slots[i]] = std::move(table);
+            }
+            return;
         }
-        catch (const std::exception& ex) { Missing(std::string(PaletteFiles[slot]) + " (" + ex.what() + ")"); }
-        return (palettes[slot] = std::move(palette)).get();
+        Missing("shade group " + std::to_string(paletteGType));
     }
 
-    const Palette* Resources::PaletteFor(int id)
+    const ShadeTable* Resources::GetShade(int slot) const
+    {
+        auto it = shades.find(slot);
+        return it == shades.end() ? nullptr : it->second.get();
+    }
+
+    const ShadeTable* Resources::ShadeFor(int id) const
     {
         const GType* g = FindGType(id);
-        return g ? GetPalette(g->paletteSlot) : nullptr;
+        return g ? GetShade(g->paletteSlot) : nullptr;
     }
 }

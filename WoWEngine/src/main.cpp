@@ -102,6 +102,8 @@ namespace
         {
             std::string value;
             if (ini.Get(wow::IniStore::RootSection(), "Enable Network Version", value)) settings.networkEnabled = std::atoi(value.c_str()) != 0;
+            if (ini.Get("Colours", "Menu Heading", value)) settings.colours.heading = std::atoi(value.c_str());
+            if (ini.Get("Colours", "Menu Items", value)) settings.colours.items = std::atoi(value.c_str());
         }
         return settings;
     }

@@ -1,10 +1,10 @@
-// Everything the front end draws with: the graphics table from OBJ.ojd, the strings from TEXT.ojd, and caches of
-// the sprites, fonts and palettes the table points at. Missing files are reported once and then drawn as nothing,
-// so one bad file doesn't stop the menus from working.
+// Everything the front end draws with: the graphics table from OBJ.ojd, the strings from TEXT.ojd, the shade
+// tables of the current palette group, and caches of the sprites and fonts the table points at.
+// Missing files are reported once and then drawn as nothing, so one bad file doesn't stop the menus from working.
 #pragma once
 #include "core/Font.h"
 #include "core/ObjOjd.h"
-#include "core/Palette.h"
+#include "core/ShadeTable.h"
 #include "core/Sprite.h"
 #include "core/TextOjd.h"
 #include "core/Vfs.h"
@@ -31,8 +31,10 @@ namespace wow
         const Sprite* GetSprite(int gtype);
         const IndexedImage* GetFrame(int gtype, int frame = 0);
         const Font* GetFont(int gtype);
-        const Palette* GetPalette(int slot);
-        const Palette* PaletteFor(int gtype);
+        // Loads a palette group's shade tables into their slots, as LoadShadeTables does (see ShadeGroups.h).
+        void LoadShadeGroup(int paletteGType);
+        const ShadeTable* GetShade(int slot) const;
+        const ShadeTable* ShadeFor(int gtype) const;
 
     private:
         void Missing(const std::string& what);
@@ -44,7 +46,7 @@ namespace wow
         std::map<int, std::unique_ptr<Sprite>> sprites;
         std::map<std::pair<int, int>, IndexedImage> frames;
         std::map<int, std::unique_ptr<Font>> fonts;
-        std::map<int, std::unique_ptr<Palette>> palettes;
+        std::map<int, std::unique_ptr<ShadeTable>> shades; // by slot
         std::set<std::string> reported;
     };
 }

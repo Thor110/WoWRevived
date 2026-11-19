@@ -19,11 +19,14 @@ namespace wow
         constexpr int CmdNetwork = 0xA0;
         constexpr int CmdSinglePlayer = 0xA4;
 
-        constexpr int BackgroundGType = 0x36F; // drawn by the "Fullscreen View" behind every menu (0x4061B0)
+        // The "Fullscreen View" behind every menu (0x4061B0) draws GType 0x36F (humanbd.spr or martbd.spr) and
+        // uses palette group 0x2F6 (F6) in Human games or 0x2F7 (F7) in Martian games.
+        constexpr int BackgroundGType = 0x36F;
     }
 
     FrontEnd::FrontEnd(Resources& r, FrontEndSettings s, const GameFiles& f) : res(r), settings(s), files(f)
     {
+        res.LoadShadeGroup(res.Human() ? 0x2F6 : 0x2F7);
         Show(MainMenu());
     }
 
@@ -43,7 +46,7 @@ namespace wow
 
     std::unique_ptr<Menu> FrontEnd::MainMenu()
     {
-        auto m = std::make_unique<Menu>(CmdMainMenu, res);
+        auto m = std::make_unique<Menu>(CmdMainMenu, res, settings.colours);
         // TODO: the game also starts the menu's ambient sound here (sound 0x18C, fading in over 60 ticks)
         m->AddHeading(0x3FB);
         if (settings.networkEnabled)
@@ -65,7 +68,7 @@ namespace wow
 
     std::unique_ptr<Menu> FrontEnd::GameOptions(int previous)
     {
-        auto m = std::make_unique<Menu>(CmdOptions, res);
+        auto m = std::make_unique<Menu>(CmdOptions, res, settings.colours);
         m->AddHeading(0x401);
         m->AddButton(0x3EF, 0x410);   // Display Settings
         m->AddButton(0x3ED, 0x411);
@@ -77,7 +80,7 @@ namespace wow
 
     std::unique_ptr<Menu> FrontEnd::QuitGame(int previous)
     {
-        auto m = std::make_unique<Menu>(CmdQuitGame, res);
+        auto m = std::make_unique<Menu>(CmdQuitGame, res, settings.colours);
         m->AddHeading(previous == CmdMainMenu ? 0x403 : 0x404);
         m->AddButton(CmdQuitGame, 0x445);
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x446);
@@ -86,7 +89,7 @@ namespace wow
 
     std::unique_ptr<Menu> FrontEnd::NotRebuilt(int command)
     {
-        auto m = std::make_unique<Menu>(command, res);
+        auto m = std::make_unique<Menu>(command, res, settings.colours);
         char text[96];
         std::snprintf(text, sizeof(text), "Not rebuilt yet\n(command 0x%X)", command);
         m->AddHeadingText(text);

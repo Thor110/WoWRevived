@@ -15,11 +15,17 @@ How the original game builds its menus, worked out from the vanilla exe. The eng
   - The game keeps only the strings for the side being played.
   - `\n` and `\t` are escapes.
   - Characters are converted to the fonts' code page 437 layout with the table at 0x4B9A30 (`core/Charset.h`).
-- **Fonts** (measuring 0x40FBF0). This is rebuilt in `core/Font`.
-  - Glyph = character − 32.
-  - Advance = the glyph's width field plus the font's spacing.
+- **Fonts** (measuring 0x40FBF0, drawing 0x40F770). This is rebuilt in `core/Font`.
+  - The glyph table starts at offset 0x0A and holds (width, atlas x) pairs. WoWViewer reads it from 0x08, which pairs each glyph's width with the previous glyph's x.
+  - The word at 0x08 is a fixed cell width, used by monospaced text objects.
+  - Glyph = character − 32. Advance = width + the font's spacing (offset 6).
   - Text objects hold up to 16 lines.
   - Flag bits: 2 centres horizontally, 4 centres vertically, 8 right-aligns.
+- **Colours** (LoadShadeTables 0x40B6C0, level lookup 0x40B500). This is rebuilt in `core/ShadeTable` and `core/ShadeGroups.h`.
+  - The "palette" number on every OBJ.ojd entry is a shade-table slot, not a PAL file.
+  - Loading a palette group (GTypes 0x2ED–0x2F9: hw hb hr bm f1–f7 se cd) fills the slots. For example, group F6 puts `F6F6.SHH` in slot 17, `F6HI.SHH` / `F6MI.SHH` in slot 5 and `F6GI.SHH` in slot 9.
+  - A `.SHH` file is a level count byte, then that many levels of 256 RGB565 colours.
+  - Objects pick a level: sprites default to 0, and menu text uses the `[Colours]` settings "Menu Heading" (7) and "Menu Items" (4).
 
 ## Which side is being played
 
@@ -27,7 +33,7 @@ The game checks for `Human.cd` in the game folder (0x402630); the launcher renam
 
 ## Menus
 
-Every full-screen menu is a WFullScreenMenu (0x40A060). Behind it, a "Fullscreen View" (0x4061B0) draws the backdrop, which is GType 0x36F. It also stores 0x2F6 (Human) or 0x2F7 (Martian), but what those are used for isn't known yet.
+Every full-screen menu is a WFullScreenMenu (0x40A060). Behind it, a "Fullscreen View" (0x4061B0) draws the backdrop, GType 0x36F (`humanbd.spr`, or `martbd.spr` in Martian games). It uses palette group 0x2F6 (F6) in Human games and 0x2F7 (F7) in Martian games.
 
 Items stack from y = 160, each taking its plate's height, in this order:
 1. The heading (0x40A7D0), with text in font 0x6D.
@@ -71,7 +77,7 @@ Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 
 
 ## Still to do
 
-- **Colours.** The game draws in 16-bit through shade tables (0x40B6C0), not the PAL files directly. The palette slot to file mapping in `Resources.cpp` follows the order the PAL files appear in OBJ.ojd and still needs checking against that code.
+- **Shade-table groups.** The hw, hb, hr and bm groups build their shade-table names from unit data. They're needed for the war map and battle map, not the menus.
 - **Plate placement.** It isn't checked yet whether the highlight plate is drawn over the normal one, or replaces it.
 - **Sounds.** Menu sounds (0x18C on the main menu, plus button clicks) aren't played yet.
 - **Mouse cursor.** The game's own cursor (GTypes 0x22/0x23 and so on) isn't drawn yet.

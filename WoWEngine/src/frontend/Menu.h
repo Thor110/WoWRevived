@@ -7,7 +7,8 @@
 //   style 0          0x3E / 0x3F   0x38 / 0x39   0x38 / 0x3A
 //   style 1          0x3E / 0x3F   0x43 / 0x44   0x38 / 0x3A
 //   style 2          0x40 / 0x41   0x3B / 0x3C   0x3B / 0x3D
-// The heading's text uses font 0x6D and buttons use font 0x73, centred both ways on the plate.
+// The heading's text uses font 0x6D and buttons use font 0x73, centred both ways on the plate, at the shade levels
+// from the [Colours] settings "Menu Heading" (default 7) and "Menu Items" (default 4).
 // Buttons send their command id when pressed; Escape sends 0x8123 (back).
 #pragma once
 #include "frontend/Canvas.h"
@@ -23,10 +24,16 @@ namespace wow
         constexpr int Back = 0x8123;
     }
 
+    struct MenuColours
+    {
+        int heading = 7; // [Colours] "Menu Heading"
+        int items = 4;   // [Colours] "Menu Items"
+    };
+
     class Menu
     {
     public:
-        Menu(int id, Resources& res, int style = 0) : id(id), style(style), res(res) {}
+        Menu(int id, Resources& res, MenuColours colours, int style = 0) : id(id), style(style), colours(colours), res(res) {}
 
         int Id() const { return id; }
 
@@ -50,7 +57,7 @@ namespace wow
             Kind kind = Kind::Button;
             int command = 0;
             std::string text;
-            int plate = 0, highlight = 0, font = 0;
+            int plate = 0, highlight = 0, font = 0, level = 0;
             Rect rect;
         };
 
@@ -60,6 +67,7 @@ namespace wow
 
         int id;
         int style;
+        MenuColours colours;
         Resources& res;
         std::vector<Item> items;
         int nextY = 0;

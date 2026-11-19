@@ -10,6 +10,7 @@ namespace wow
     struct FrontEndSettings
     {
         bool networkEnabled = false; // [Main] "Enable Network Version"
+        MenuColours colours;
     };
 
     class FrontEnd

@@ -11,13 +11,13 @@ namespace wow
         height = r.U16();
         int count = r.U16();
         spacing = int16_t(r.U16());
+        cellWidth = r.U16();
         glyphs.resize(size_t(count));
         for (Glyph& g : glyphs)
         {
+            g.width = r.U16();
             g.atlasX = r.U16();
-            g.advance = r.U16();
         }
-        r.Skip(2);
         auto pixels = r.Bytes(size_t(atlasWidth) * size_t(height));
         atlas.assign(pixels.begin(), pixels.end());
     }
@@ -33,7 +33,7 @@ namespace wow
     {
         int width = 0;
         for (char c : text)
-            if (const Glyph* g = Find(uint8_t(c))) width += g->advance + spacing;
+            if (const Glyph* g = Find(uint8_t(c))) width += g->width + spacing;
         return width;
     }
 }

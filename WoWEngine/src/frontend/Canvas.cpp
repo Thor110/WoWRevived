@@ -5,14 +5,9 @@
 
 namespace wow
 {
-    namespace
-    {
-        uint32_t ToPixel(const Rgb& c) { return (uint32_t(c.r) << 16) | (uint32_t(c.g) << 8) | c.b; }
-    }
-
     void Canvas::Clear(uint32_t colour) { std::fill(pixels, pixels + size_t(width) * height, colour); }
 
-    void Canvas::DrawImage(const IndexedImage& image, const Palette& palette, int x, int y)
+    void Canvas::DrawImage(const IndexedImage& image, const uint32_t* colours, int x, int y)
     {
         int x0 = std::max(0, -x), y0 = std::max(0, -y);
         int x1 = std::min(image.width, width - x), y1 = std::min(image.height, height - y);
@@ -21,24 +16,25 @@ namespace wow
             const uint8_t* src = image.pixels.data() + size_t(iy) * image.width;
             uint32_t* dst = pixels + size_t(y + iy) * width + x;
             for (int ix = x0; ix < x1; ix++)
-                if (src[ix]) dst[ix] = ToPixel(palette.colours[src[ix]]);
+                if (src[ix]) dst[ix] = colours[src[ix]];
         }
     }
 
-    void Canvas::DrawSprite(int gtype, int frame, int x, int y)
+    void Canvas::DrawSprite(int gtype, int frame, int x, int y, int level)
     {
         const IndexedImage* image = res.GetFrame(gtype, frame);
-        const Palette* palette = res.PaletteFor(gtype);
+        const ShadeTable* shade = res.ShadeFor(gtype);
         const GType* g = res.FindGType(gtype);
-        if (!image || !palette || !g) return;
-        DrawImage(*image, *palette, x - g->hotX, y - g->hotY);
+        if (!image || !shade || !g) return;
+        DrawImage(*image, shade->Level(level), x - g->hotX, y - g->hotY);
     }
 
-    void Canvas::DrawString(int fontGType, std::string_view text, const Rect& box, int flags, int paletteSlotOverride)
+    void Canvas::DrawString(int fontGType, std::string_view text, const Rect& box, int flags, int level)
     {
         const Font* font = res.GetFont(fontGType);
-        const Palette* palette = paletteSlotOverride >= 0 ? res.GetPalette(paletteSlotOverride) : res.PaletteFor(fontGType);
-        if (!font || !palette) return;
+        const ShadeTable* shade = res.ShadeFor(fontGType);
+        if (!font || !shade) return;
+        const uint32_t* colours = shade->Level(level);
 
         std::vector<std::string_view> lines;
         size_t start = 0;
@@ -70,15 +66,15 @@ namespace wow
                 {
                     int py = y + gy;
                     if (py < 0 || py >= height) continue;
-                    for (int gx = 0; gx < glyph->advance; gx++)
+                    for (int gx = 0; gx < glyph->width; gx++)
                     {
                         int px = x + gx, ax = glyph->atlasX + gx;
                         if (px < 0 || px >= width || ax >= font->AtlasWidth()) continue;
                         uint8_t index = font->AtlasPixel(ax, gy);
-                        if (index) pixels[size_t(py) * width + px] = ToPixel(palette->colours[index]);
+                        if (index) pixels[size_t(py) * width + px] = colours[index];
                     }
                 }
-                x += glyph->advance + font->Spacing();
+                x += glyph->width + font->Spacing();
             }
             y += lineHeight;
         }

@@ -33,6 +33,7 @@ namespace wow
         item.plate = style == 2 ? 0x40 : 0x3E;
         item.highlight = style == 2 ? 0x41 : 0x3F;
         item.font = HeadingFont;
+        item.level = colours.heading;
         Add(std::move(item));
     }
 
@@ -45,6 +46,7 @@ namespace wow
         item.plate = style == 0 ? 0x38 : style == 1 ? 0x43 : 0x3B;
         item.highlight = style == 0 ? 0x39 : style == 1 ? 0x44 : 0x3C;
         item.font = ButtonFont;
+        item.level = colours.items;
         Add(std::move(item));
     }
 
@@ -57,6 +59,7 @@ namespace wow
         item.plate = style == 2 ? 0x3B : 0x38;
         item.highlight = style == 2 ? 0x3D : 0x3A;
         item.font = ButtonFont;
+        item.level = colours.items;
         Add(std::move(item));
         Centre();
     }
@@ -86,7 +89,7 @@ namespace wow
             const Item& it = items[i];
             bool lit = int(i) == selected;
             canvas.DrawSprite(lit ? it.highlight : it.plate, 0, it.rect.x, it.rect.y);
-            canvas.DrawString(it.font, it.text, it.rect, TextCentreX | TextCentreY);
+            canvas.DrawString(it.font, it.text, it.rect, TextCentreX | TextCentreY, it.level);
         }
     }
 
