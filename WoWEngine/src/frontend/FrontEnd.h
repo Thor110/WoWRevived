@@ -1,7 +1,9 @@
-// The front end: the background and the full-screen menus, and the command handling that moves between them
-// (WGame's command handler, vanilla 0x402B80). Commands are the ids the game's buttons send.
+// The front end: the screens and the command handling that moves between them (WGame's command handler, vanilla
+// 0x402B80). Commands are the ids the game's buttons send.
 #pragma once
+#include "frontend/CdPlayer.h"
 #include "frontend/Menu.h"
+#include "platform/Music.h"
 
 #include <memory>
 
@@ -18,28 +20,33 @@ namespace wow
     public:
         FrontEnd(Resources& res, FrontEndSettings settings, const GameFiles& files);
 
+        void Update();
         void Draw(Canvas& canvas) const;
         void OnKey(int sdlKey);
         void OnMouseMove(int x, int y);
         void OnMouseButton(int x, int y, bool down);
 
         bool QuitRequested() const { return quit; }
+        int CurrentScreen() const { return screen ? screen->Id() : 0; }
 
     private:
-        void Execute(int command);
-        void Show(std::unique_ptr<Menu> menu);
+        void Execute(const Command& command);
+        void Show(std::unique_ptr<Screen> next);
 
-        std::unique_ptr<Menu> MainMenu();                 // 0x90, built at 0x405ED0
-        std::unique_ptr<Menu> GameOptions(int previous);  // 0x8E, 0x408CF0
-        std::unique_ptr<Menu> QuitGame(int previous);     // 0x70, 0x409460
-        std::unique_ptr<Menu> NotRebuilt(int command);
+        std::unique_ptr<Menu> NewMenu(int id);
+        std::unique_ptr<Screen> MainMenu();                 // 0x90, built at 0x405ED0
+        std::unique_ptr<Screen> GameOptions(int previous);  // 0x8E, 0x408CF0
+        std::unique_ptr<Screen> QuitGame(int previous);     // 0x70, 0x409460
+        std::unique_ptr<Screen> NotRebuilt(int command, int previous);
 
         bool AnySaveGame() const;
 
         Resources& res;
         FrontEndSettings settings;
         const GameFiles& files;
-        std::unique_ptr<Menu> menu;
+        Music music;
+        std::unique_ptr<Screen> screen;
+        int loadedGroup = -1;
         bool quit = false;
     };
 }

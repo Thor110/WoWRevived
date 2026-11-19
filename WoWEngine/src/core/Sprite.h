@@ -1,11 +1,11 @@
-// .SPR sprites (FFUH compressed inside the archives; Archive::Read decompresses them).
-// Ported from WoWViewer/SprDecoder.cs, which documents the format in full.
-//
-//   0x00 uint16 width, 0x02 uint16 height, 0x04 uint16 frame count, 0x06 uint16 row header size (6 + frames * 4)
-//   then row / frame offset tables and RLE rows of [palette index, run length] pairs. Index 0 is transparent.
-//
-// TODO: check the multi-frame offset rules against the game's own sprite blitter. The viewer's rules were worked
-// out from the files and a few sprites (R_FOLD.SPR) have rows that resolve out of range; those rows are left blank.
+// .SPR sprites (usually FFUH compressed; Archive and Vfs decompress them), in the layout the game's sprite drawing
+// uses (0x40EE10 picks the frame, 0x451235 walks the rows):
+//   0x00 uint16 width, 0x02 uint16 height, 0x04 uint16 frame count
+//   0x06 uint32 frame offsets[frame count], from the start of the sprite
+//   each frame: uint32 row offsets[height], from the start of the frame, then the rows
+//   each row: pairs of (colour index, run length); index 0 is a transparent run
+// (WoWViewer reads the offsets 2 bytes out of step as a "carry" byte plus 16 bits; that agrees for single frames
+// but not for every animated sprite.)
 #pragma once
 #include <cstdint>
 #include <span>
@@ -16,30 +16,28 @@ namespace wow
     struct IndexedImage
     {
         int width = 0, height = 0;
-        std::vector<uint8_t> pixels; // palette indices, 0 = transparent
+        std::vector<uint8_t> pixels; // colour indices, 0 = transparent
     };
 
     struct SpriteInfo
     {
-        uint16_t width = 0, height = 0, frames = 0, rowHeaderSize = 0;
+        uint16_t width = 0, height = 0, frames = 0;
     };
 
     class Sprite
     {
     public:
-        // Throws FormatError if the header is damaged.
+        // Throws FormatError if the header or offset tables are damaged.
         explicit Sprite(std::vector<uint8_t> data);
 
         const SpriteInfo& Info() const { return info; }
         int FrameCount() const { return info.frames; }
 
-        // Frame is clamped to the valid range. Rows whose data is out of range are left transparent.
+        // Frame is clamped to the valid range. Rows that point outside the data are left transparent.
         IndexedImage Decode(int frame = 0) const;
 
     private:
-        void DecodeRow(IndexedImage& image, int row, size_t pos) const;
-        uint16_t U16(size_t at) const;
-        int32_t I32(size_t at) const;
+        uint32_t U32(size_t at) const;
 
         std::vector<uint8_t> data;
         SpriteInfo info;

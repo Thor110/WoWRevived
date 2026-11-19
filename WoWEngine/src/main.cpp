@@ -69,6 +69,8 @@ namespace
                         else if (k == "down") o.keys.push_back(SDLK_DOWN);
                         else if (k == "enter") o.keys.push_back(SDLK_RETURN);
                         else if (k == "escape") o.keys.push_back(SDLK_ESCAPE);
+                        else if (k == "left") o.keys.push_back(SDLK_LEFT);
+                        else if (k == "right") o.keys.push_back(SDLK_RIGHT);
                         if (end == std::string::npos) break;
                         start = end + 1;
                     }
@@ -104,6 +106,8 @@ namespace
             if (ini.Get(wow::IniStore::RootSection(), "Enable Network Version", value)) settings.networkEnabled = std::atoi(value.c_str()) != 0;
             if (ini.Get("Colours", "Menu Heading", value)) settings.colours.heading = std::atoi(value.c_str());
             if (ini.Get("Colours", "Menu Items", value)) settings.colours.items = std::atoi(value.c_str());
+            if (ini.Get("Colours", "Menu Static Text", value)) settings.colours.staticText = std::atoi(value.c_str());
+            if (ini.Get("Tweak", "Text Line Spacing", value)) settings.colours.lineSpacing = std::atoi(value.c_str());
         }
         return settings;
     }
@@ -117,7 +121,7 @@ namespace
 
 int main(int argc, char** argv)
 {
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS))
     {
         SDL_Log("SDL_Init failed: %s", SDL_GetError());
         return 1;
@@ -193,7 +197,11 @@ int main(int argc, char** argv)
             lag += now - previous;
             previous = now;
             if (lag > TickNs * 5) lag = TickNs * 5; // don't try to catch up after a long stall
-            while (lag >= TickNs) lag -= TickNs;    // game updates go here
+            while (lag >= TickNs)
+            {
+                frontEnd.Update();
+                lag -= TickNs;
+            }
 
             frontEnd.Draw(canvas);
             video.Present();

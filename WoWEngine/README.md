@@ -20,7 +20,7 @@ Targets:
 
 | Target | What it is |
 |---|---|
-| `WoWEngine` | The game. Pass the game folder as the first argument, or put the engine in the game folder. `--screenshot file.bmp [keys]` presses the listed keys (up, down, enter, escape), saves the frame and exits. |
+| `WoWEngine` | The game. Pass the game folder as the first argument, or put the engine in the game folder. `--screenshot file.bmp [keys]` presses the listed keys (up, down, left, right, enter, escape), saves the frame and exits. |
 | `wowdump` | Lists and extracts the KAT! and SfxL archives. `--check <folder>` reports missing game files, `--sprite` saves a sprite as a BMP, `--text` prints TEXT.ojd and `--obj` prints the OBJ.ojd graphics table. |
 | `wowcore` | The file formats and game data code, with no SDL dependency, so tools can use it on their own. |
 
@@ -40,8 +40,8 @@ src/core/       file formats and game data (no SDL)
   ShadeTable.*    .SHH shade tables;  ShadeGroups.h  which tables each palette group loads into which slot
   Vfs.*           the game's file lookup rules: archives, loose file overrides
   Bmp.*           BMP output for screenshots and wowdump
-src/frontend/   the menus: Resources (graphics and string caches), Canvas (sprites and text), Menu, FrontEnd
-src/platform/   SDL3 code (window, true colour frame buffer; later audio and video playback)
+src/frontend/   Resources (graphics, strings, shade tables), Canvas (drawing), Screen (buttons), Menu, CdPlayer, FrontEnd
+src/platform/   SDL3 code: window and true colour frame buffer (Video), music (Music); later sound effects and movies
 src/main.cpp    start-up and the fixed-rate game loop
 tools/          command line tools
 docs/           ENGINE-MAP.md (the exe mapped by subsystem), FRONTEND.md (how the menus work), IDA index
@@ -58,7 +58,7 @@ docs/           ENGINE-MAP.md (the exe mapped by subsystem), FRONTEND.md (how th
 
 1. **Foundations** (started): CMake and SDL3, the archives, FFUH, game file lookup, window and frame buffer.
 2. **Formats** (in progress): archives, FFUH, palettes, SPR, FNT, shade tables, TEXT.ojd and the OBJ.ojd graphics table are done, and all but the first three are read the way the game reads them. All of these have been checked against the English discs. Still to do: the unit-specific shade groups, the rest of OBJ.ojd (unit data), AI.ojd, SFX.ojd and sound libraries, CLS, WOF/IOB and maps.
-3. **Front end** (started): the menu framework, Main Menu, Game Options and Quit are rebuilt (see `docs/FRONTEND.md`). They draw correctly from the original English files for both sides. Still to do: the other menus, CD Player, credits, Smacker movies (FMV), the cursor and sounds.
+3. **Front end** (started): the menu framework, Main Menu, Game Options, Quit and the CD Player (with music) are rebuilt (see `docs/FRONTEND.md`). They match screenshots of the original for both sides. Still to do: the options sub-menus (sliders, checkboxes, spinners), Load/Save, the campaign and network menus, credits, Smacker movies (FMV), the cursor, tooltips and sound effects.
 4. **Audio**: SfxL sound effects, positional ambient sound, and the music played from the ripped `Music-Human` / `Music-Martian` WAV tracks.
 5. **War map**: the strategic layer, covering sectors, construction, research, AI turns and pods.
 6. **Battle map**: terrain, the 3D units (WOF/IOB with the shade tables), buildings, pathfinding, combat and fog of war.

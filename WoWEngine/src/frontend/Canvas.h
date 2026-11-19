@@ -3,6 +3,7 @@
 #include "frontend/Resources.h"
 
 #include <cstdint>
+#include <string>
 #include <string_view>
 
 namespace wow
@@ -31,11 +32,21 @@ namespace wow
         int Height() const { return height; }
 
         void Clear(uint32_t colour);
+        // How a sprite is combined with what's already on screen. The game's blitter (0x451235) has these two for
+        // sprites: Translucent is its mode 3 in 16-bit (each channel halved and added, a 50% blend); in 8-bit it
+        // used a blend table instead, which is the checkered look of the menu panels.
+        enum class Blend { Opaque, Translucent };
+
         // Draws a frame of a graphics entry with its top-left corner at x, y (less the entry's hotspot).
-        void DrawSprite(int gtype, int frame, int x, int y, int level = 0);
-        void DrawImage(const IndexedImage& image, const uint32_t* colours, int x, int y);
-        // Draws Latin-1 text in a font from the graphics table, one line per '\n', aligned inside box.
-        void DrawString(int fontGType, std::string_view text, const Rect& box, int flags, int level = 0);
+        void DrawSprite(int gtype, int frame, int x, int y, int level = 0, Blend blend = Blend::Opaque);
+        void DrawImage(const IndexedImage& image, const uint32_t* colours, int x, int y, Blend blend = Blend::Opaque);
+        // Draws Latin-1 text in a font from the graphics table, one line per '\n', aligned inside box. Lines are
+        // the font's height plus lineSpacing apart: 2 for menu text objects (0x40F6D0), the [Tweak] setting
+        // "Text Line Spacing" (default 4) for free-standing ones (0x40F620).
+        void DrawString(int fontGType, std::string_view text, const Rect& box, int flags, int level = 0, int lineSpacing = 2);
+        // Breaks text into lines no wider than width at spaces, keeping the line breaks it already has
+        // (the game's word wrap, 0x4161E0).
+        std::string Wrap(int fontGType, std::string_view text, int width) const;
 
     private:
         uint32_t* pixels;

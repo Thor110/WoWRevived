@@ -53,9 +53,12 @@ if(TARGET SDL3::SDL3)
     add_executable(WoWEngine WIN32 MACOSX_BUNDLE
         src/main.cpp
         src/platform/Video.cpp
+        src/platform/Music.cpp
         src/frontend/Resources.cpp
         src/frontend/Canvas.cpp
+        src/frontend/Screen.cpp
         src/frontend/Menu.cpp
+        src/frontend/CdPlayer.cpp
         src/frontend/FrontEnd.cpp
     )
     # IniStore.h is shared with the patch DLLs so the engine reads the same WoWRevived.ini

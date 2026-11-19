@@ -83,7 +83,7 @@ int main(int argc, char** argv)
             wow::Palette palette = wow::Palette::Load(archive.Read(argv[4]));
             int frame = argc == 7 ? std::stoi(argv[6]) : 0;
             const auto& info = sprite.Info();
-            std::printf("%ux%u, %u frame(s), row header %u\n", info.width, info.height, info.frames, info.rowHeaderSize);
+            std::printf("%ux%u, %u frame(s)\n", info.width, info.height, info.frames);
             WriteSpriteBmp(argv[5], sprite.Decode(frame), palette);
             return 0;
         }
