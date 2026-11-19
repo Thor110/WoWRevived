@@ -1,12 +1,12 @@
-// WoWInstall - sets up a game folder from the original Human and Martian discs, or images of them.
+// wowinstall-cli - the command line version of WoWInstall: sets up a game folder from the original Human and Martian discs, or images of them.
 //
-//   WoWInstall --drives                                  list the optical drives
-//   WoWInstall <game folder> [<disc>] [<disc>] [options] install (no disc: use whatever is in the drives)
+//   wowinstall-cli --drives                                  list the optical drives
+//   wowinstall-cli <game folder> [<disc>] [<disc>] [options] install (no disc: use whatever is in the drives)
 //     <disc> is a drive or mounted disc (D:\, /media/cdrom, /dev/sr0), an .iso, or a .cue (with its .bin)
 //     --martian    start on the Martian side (default: Human)
 //     --no-music   don't rip the music tracks
 // The discs can be given in either order. Both discs in two drives at once: they're found and copied without
-// asking (the same disc twice is only copied once). One drive: after the first disc WoWInstall asks for the
+// asking (the same disc twice is only copied once). One drive: after the first disc it asks for the
 // other one in the same drive.
 #include "install/Installer.h"
 
@@ -23,8 +23,8 @@ using namespace wow::install;
 static int Usage()
 {
     std::fprintf(stderr,
-        "usage: WoWInstall --drives\n"
-        "       WoWInstall <game folder> [<disc>] [<disc>] [--martian] [--no-music]\n"
+        "usage: wowinstall-cli --drives\n"
+        "       wowinstall-cli <game folder> [<disc>] [<disc>] [--martian] [--no-music]\n"
         "       <disc>: a drive or mounted disc, an .iso, or a .cue\n");
     return 2;
 }
@@ -108,7 +108,7 @@ int main(int argc, char** argv)
         if (usesDrive) scanDrives();
         if (sources.empty() && !result.humanDisc && !result.martianDisc)
         {
-            std::fprintf(stderr, "WoWInstall: no game disc found in the drives\n");
+            std::fprintf(stderr, "wowinstall-cli: no game disc found in the drives\n");
             return 1;
         }
 
@@ -148,7 +148,7 @@ int main(int argc, char** argv)
     }
     catch (const std::exception& ex)
     {
-        std::fprintf(stderr, "WoWInstall: %s\n", ex.what());
+        std::fprintf(stderr, "wowinstall-cli: %s\n", ex.what());
         return 1;
     }
 }

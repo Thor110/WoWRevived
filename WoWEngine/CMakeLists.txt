@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
-project(WoWEngine VERSION 0.1.0 LANGUAGES C CXX)
+
+# The version, for the programs (Version.h) and the release (tools/make_release.py reads it from here).
+# Change it only here.
+project(WoWEngine VERSION 0.0.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -29,7 +32,8 @@ add_library(wowcore STATIC
     src/core/ShadeTable.cpp
     src/core/SaveGame.cpp
 )
-target_include_directories(wowcore PUBLIC src)
+target_include_directories(wowcore PUBLIC src ${CMAKE_CURRENT_BINARY_DIR}/generated)
+configure_file(src/Version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.h @ONLY)
 
 # --- installer: copies the game from the discs or their images and rips the music (no SDL) ---
 add_library(wowinstall STATIC
@@ -39,8 +43,9 @@ add_library(wowinstall STATIC
     src/install/Installer.cpp
 )
 target_link_libraries(wowinstall PUBLIC wowcore)
-add_executable(WoWInstall tools/WoWInstall.cpp)
-target_link_libraries(WoWInstall PRIVATE wowinstall)
+# command line version, for scripts and for seeing exactly what happens
+add_executable(wowinstall-cli tools/WoWInstall.cpp)
+target_link_libraries(wowinstall-cli PRIVATE wowinstall)
 
 # --- wowdump: command line archive lister / extractor ---
 add_executable(wowdump tools/wowdump.cpp)
@@ -78,6 +83,17 @@ if(TARGET SDL3::SDL3)
     # IniStore.h is shared with the patch DLLs so the engine reads the same WoWRevived.ini
     target_include_directories(WoWEngine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../WoWPatches/Common)
     target_link_libraries(WoWEngine PRIVATE wowcore SDL3::SDL3)
+
+    # the graphical installer, laid out like WoWLauncher
+    add_executable(WoWInstall WIN32 MACOSX_BUNDLE
+        src/installer/main.cpp
+        src/installer/Ui.cpp
+        src/platform/Video.cpp
+    )
+    target_link_libraries(WoWInstall PRIVATE wowinstall SDL3::SDL3)
+    # the launcher's picture, next to the programs
+    add_custom_command(TARGET WoWInstall POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources/launcher.bmp $<TARGET_FILE_DIR:WoWInstall>/launcher.bmp)
     if(WIN32)
         # keep SDL3.dll next to the exe
         add_custom_command(TARGET WoWEngine POST_BUILD

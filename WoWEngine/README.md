@@ -8,13 +8,21 @@ The engine contains no game data. It runs on the files from the original Human a
 
 Needs CMake 3.20+ and a C++20 compiler (Visual Studio 2022, Xcode 15 / Apple Clang 15, GCC 11+, Clang 14+).
 
+**Visual Studio:** open the `WoWEngine` folder (File, Open, Folder), pick `x64-Debug` or `x64-Release` from the configuration list and Build All. They build into `out\build\x64-Debug` and `out\build\x64-Release`.
+
+**Command line** (the same presets; `debug` and `release` on Linux and macOS):
+
 ```
-cmake -S WoWEngine -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --config Release
+cmake --preset x64-Release          (or x64-Debug, debug, release)
+cmake --build --preset x64-Release
 ```
 
 If SDL3 isn't installed it is downloaded and built automatically (`WOW_FETCH_SDL`, on by default).
 To use an installed copy, point `CMAKE_PREFIX_PATH` at it.
+
+**Version:** set it in one place, `project(WoWEngine VERSION 0.0.1 ...)` at the top of `CMakeLists.txt`. The build turns it into `Version.h` (`WOWENGINE_VERSION`), which the window title uses, and the release script reads it from there too.
+
+**Release:** `tools\make_release.bat` (double-click it) runs `tools/make_release.py`, which takes the version from `CMakeLists.txt` and the programs from `out\build\x64-Release`, and makes `out\WoWEngine-v<version>\` and `out\WoWEngine-v<version>.zip`. If the Release build isn't there it builds it first, which needs CMake and the compiler on the PATH (the "x64 Native Tools Command Prompt"); otherwise build `x64-Release` in Visual Studio and run it again. Options: `--build` to rebuild first, `--debug` to package the Debug build, `--seven-zip` to also make a `.7z`, `--build-dir` to package another folder.
 
 Targets:
 
@@ -23,7 +31,8 @@ Targets:
 | `WoWEngine` | The game. Pass the game folder as the first argument, or put the engine in the game folder. `--open 0x6E` starts on the screen a menu command opens. `--ticks N` runs N game updates before a screenshot. `--screenshot file.bmp [keys]` presses the listed keys (up, down, left, right, enter, escape), saves the frame and exits. |
 | `wowdump` | Lists and extracts the KAT! and SfxL archives. `--check <folder>` reports missing game files, `--sprite` saves a sprite as a BMP, `--text` prints TEXT.ojd and `--obj` prints the OBJ.ojd graphics table. |
 | `wowcore` | The file formats and game data code, with no SDL dependency, so tools can use it on their own. |
-| `WoWInstall` | Sets up a game folder from the two discs or their images, and rips the music. See [Installing](#installing). |
+| `WoWInstall` | The installer, laid out like WoWLauncher: it finds the discs in the drives (or disc images you pick), copies the game and rips the music. See [Installing](#installing). |
+| `wowinstall-cli` | The same installer from the command line. |
 
 ## Layout
 
@@ -73,9 +82,13 @@ Each stage is checked against the original game running side by side, address by
 
 ## Installing
 
+Run `WoWInstall`. It looks like WoWLauncher (the same picture, buttons down the left and Exit on the right) and installs into its own folder unless you choose another with **Choose Install Folder...**. Put either disc in, or both, and it finds them within a couple of seconds; **Install The War Of The Worlds** copies the first disc and then waits for the other one, carrying on by itself as soon as it's inserted (**Skip the Other Disc** finishes with what it has). **Use Disc Images...** takes `.iso` or `.cue` files instead of drives, and **Rip the music** can be turned off. When it's done, **Start the Game** runs WoWEngine on the new folder. The engine also offers to run WoWInstall if it starts without the game files.
+
+The command line version:
+
 ```
-WoWInstall --drives                                     list the optical drives and the discs in them
-WoWInstall <game folder> [<disc>] [<disc>] [--martian] [--no-music]
+wowinstall-cli --drives                                     list the optical drives and the discs in them
+wowinstall-cli [<game folder>] [<disc>] [<disc>] [--martian] [--no-music]
 ```
 
 A `<disc>` can be any of:
@@ -94,5 +107,5 @@ How it handles the different situations:
 
 Music only comes from a disc in a drive or from a `.bin/.cue` image, because `.iso` images hold only the data track. Reading the music straight from a drive works on Windows and Linux. macOS doesn't allow raw CD reads, so there it has to come from a `.bin/.cue` image.
 
-The installer is the `wowinstall` library (`src/install`). It has no SDL dependency, so a graphical installer or a rewritten launcher can use it directly.
+Both installers are front ends to the `wowinstall` library (`src/install`), which has no SDL dependency. The GUI (`src/installer`) draws its own Windows-style controls so it looks the same on every platform; its font is DejaVu Sans baked into `src/installer/UiFont.h` by `tools/bake_font.py`, and its picture is `resources/launcher.bmp`, copied next to the program when it's built.
 

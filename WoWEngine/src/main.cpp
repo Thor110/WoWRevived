@@ -1,5 +1,6 @@
 // WoW Engine - an SDL3 rebuild of the engine from Jeff Wayne's 'The War Of The Worlds' (Rage Software, 1998).
 // Needs the original game files, which the installer copies from the two discs.
+#include "Version.h"
 #include "core/Bmp.h"
 #include "core/GameFiles.h"
 #include "core/Vfs.h"
@@ -140,9 +141,34 @@ int main(int argc, char** argv)
     auto files = wow::GameFiles::Locate(CandidateFolders(options));
     if (!files)
     {
-        Fail("The original game files weren't found.\n\n"
-             "Run the installer to copy them from the Human and Martian discs, "
-             "or start the engine with the game folder as its first argument.");
+        // offer to run WoWInstall from the same folder
+        std::string installer = std::string(SDL_GetBasePath() ? SDL_GetBasePath() : "") +
+#ifdef _WIN32
+            "WoWInstall.exe";
+#else
+            "WoWInstall";
+#endif
+        std::error_code ec;
+        bool haveInstaller = fs::exists(installer, ec);
+        const SDL_MessageBoxButtonData buttons[] = {
+            { SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Install from the discs" },
+            { SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Quit" },
+        };
+        SDL_MessageBoxData box{};
+        box.flags = SDL_MESSAGEBOX_WARNING;
+        box.title = "WoW Engine " WOWENGINE_VERSION;
+        box.message = "The original game files weren't found.\n\n"
+                      "Install them from the Human and Martian discs (or their images) with WoWInstall, "
+                      "or start the engine with the game folder as its first argument.";
+        box.numbuttons = haveInstaller ? 2 : 1;
+        box.buttons = haveInstaller ? buttons : buttons + 1;
+        int choice = 0;
+        SDL_ShowMessageBox(&box, &choice);
+        if (choice == 1)
+        {
+            const char* args[] = { installer.c_str(), nullptr };
+            if (SDL_Process* process = SDL_CreateProcess(args, false)) SDL_DestroyProcess(process);
+        }
         SDL_Quit();
         return 1;
     }
@@ -160,7 +186,8 @@ int main(int argc, char** argv)
 
         wow::Video video;
         std::string error;
-        if (!video.Open("Jeff Wayne's 'The War Of The Worlds'", GameWidth, GameHeight, false, error)) throw std::runtime_error(error);
+        if (!video.Open("Jeff Wayne's 'The War Of The Worlds' - WoW Engine v" WOWENGINE_VERSION, GameWidth, GameHeight, false, error))
+            throw std::runtime_error(error);
         wow::Canvas canvas(video.Pixels(), video.Width(), video.Height(), resources);
 
         if (options.open) frontEnd.Open(options.open);
