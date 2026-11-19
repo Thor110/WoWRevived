@@ -20,8 +20,8 @@ Targets:
 
 | Target | What it is |
 |---|---|
-| `WoWEngine` | The game. Pass the game folder as the first argument, or put the engine in the game folder. |
-| `wowdump` | Lists and extracts the KAT! and SfxL archives. `--check <folder>` reports missing game files, `--sprite` saves a sprite as a BMP, and `--text` prints TEXT.ojd. |
+| `WoWEngine` | The game. Pass the game folder as the first argument, or put the engine in the game folder. `--screenshot file.bmp [keys]` presses the listed keys (up, down, enter, escape), saves the frame and exits. |
+| `wowdump` | Lists and extracts the KAT! and SfxL archives. `--check <folder>` reports missing game files, `--sprite` saves a sprite as a BMP, `--text` prints TEXT.ojd and `--obj` prints the OBJ.ojd graphics table. |
 | `wowcore` | The file formats and game data code, with no SDL dependency, so tools can use it on their own. |
 
 ## Layout
@@ -34,16 +34,21 @@ src/core/       file formats and game data (no SDL)
   GameFiles.*     locating the game files, case-insensitive paths for Linux and macOS
   Palette.*       .PAL palettes and blend tables
   Sprite.*        .SPR sprites (single and animated)
-  TextOjd.*       TEXT.ojd strings
-src/platform/   SDL3 code (window, frame buffer, later input, audio, video playback)
+  TextOjd.*       TEXT.ojd strings, read the way the game does (only the side being played)
+  ObjOjd.*        OBJ.ojd graphics table (GType id to file, palette slot, hotspot)
+  Font.*          .FNT fonts;  Charset.h  the game's Latin-1 to font table
+  Vfs.*           the game's file lookup rules: archives, loose file overrides
+  Bmp.*           BMP output for screenshots and wowdump
+src/frontend/   the menus: Resources (graphics and string caches), Canvas (sprites and text), Menu, FrontEnd
+src/platform/   SDL3 code (window, true colour frame buffer; later audio and video playback)
 src/main.cpp    start-up and the fixed-rate game loop
 tools/          command line tools
-docs/           ENGINE-MAP.md (the original exe mapped by subsystem) and the IDA function / string index
+docs/           ENGINE-MAP.md (the exe mapped by subsystem), FRONTEND.md (how the menus work), IDA index
 ```
 
 ## How it works
 
-- **Frame buffer.** The engine draws into an 8-bit paletted frame buffer, as the original did. `Video::Present` converts it through the palette and scales it to the window, letterboxed.
+- **Frame buffer.** The frame buffer is true colour, because each sprite is drawn through its own palette, so several palettes are on screen at once. `Video::Present` scales it to the window, letterboxed.
 - **Game loop.** Updates run at a fixed 30 per second, the game's default "Game Frequency". Drawing runs as fast as vsync allows.
 - **Settings.** Settings will come from the same `WoWRevived.ini` the launcher and patches already use. Existing installs and saves should then carry straight over.
 - **File names.** Every game path goes through `GameFiles::Resolve`, which matches names without regard to case. The discs mix cases (`DAT\Dat.wow`, `MAPS\MAPS.WoW`, `MARTIAN.cd`), and Linux and macOS file systems are case-sensitive.
@@ -51,8 +56,8 @@ docs/           ENGINE-MAP.md (the original exe mapped by subsystem) and the IDA
 ## Road map
 
 1. **Foundations** (started): CMake and SDL3, the archives, FFUH, game file lookup, window and frame buffer.
-2. **Formats** (in progress): palettes, SPR and TEXT.ojd are done. Still to port from WoWViewer: CLS, FNT, WOF/IOB, the other .ojd files, the shade tables (SHH/SHL/SHM) and maps.
-3. **Front end**: main menu, options, CD Player, credits, Smacker movies (FMV), cursor and fonts.
+2. **Formats** (in progress): archives, FFUH, palettes, SPR, FNT, TEXT.ojd and the OBJ.ojd graphics table are done, the last three read the way the game reads them. Still to do: the shade tables (SHH/SHL/SHM), the rest of OBJ.ojd (unit data), AI.ojd, SFX.ojd and sound libraries, CLS, WOF/IOB and maps.
+3. **Front end** (started): the menu framework, Main Menu, Game Options and Quit are rebuilt (see `docs/FRONTEND.md`). Still to do: the other menus, CD Player, credits, Smacker movies (FMV), the cursor and sounds.
 4. **Audio**: SfxL sound effects, positional ambient sound, and the music played from the ripped `Music-Human` / `Music-Martian` WAV tracks.
 5. **War map**: the strategic layer, covering sectors, construction, research, AI turns and pods.
 6. **Battle map**: terrain, the 3D units (WOF/IOB with the shade tables), buildings, pathfinding, combat and fog of war.

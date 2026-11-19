@@ -21,7 +21,6 @@ namespace wow
         if (!texture) { error = SDL_GetError(); return false; }
         SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
         pixels.assign(size_t(w) * size_t(h), 0);
-        converted.assign(pixels.size(), 0);
         return true;
     }
 
@@ -31,13 +30,18 @@ namespace wow
         SDL_SetWindowFullscreen(window, !isFull);
     }
 
+    bool Video::ToGame(float windowX, float windowY, int& x, int& y) const
+    {
+        float gx = 0, gy = 0;
+        if (!SDL_RenderCoordinatesFromWindow(renderer, windowX, windowY, &gx, &gy)) return false;
+        x = int(gx);
+        y = int(gy);
+        return x >= 0 && y >= 0 && x < width && y < height;
+    }
+
     void Video::Present()
     {
-        uint32_t lookup[256];
-        for (int i = 0; i < 256; i++) lookup[i] = (uint32_t(palette[i].r) << 16) | (uint32_t(palette[i].g) << 8) | palette[i].b;
-        for (size_t i = 0; i < pixels.size(); i++) converted[i] = lookup[pixels[i]];
-
-        SDL_UpdateTexture(texture, nullptr, converted.data(), width * int(sizeof(uint32_t)));
+        SDL_UpdateTexture(texture, nullptr, pixels.data(), width * int(sizeof(uint32_t)));
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         SDL_RenderTexture(renderer, texture, nullptr, nullptr);

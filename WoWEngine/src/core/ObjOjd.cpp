@@ -1,0 +1,84 @@
+#include "core/ObjOjd.h"
+#include "core/Bytes.h"
+
+namespace wow
+{
+    namespace
+    {
+        // Payload sizes of the fixed-size record types, worked out from the loader's switch (0x43785F).
+        // -1 marks the variable-size types handled in SkipPayload.
+        constexpr int FixedPayload[65] = {
+            /* 0*/ 2, 2, -1, -1, -1, 4, 12, 2, -1, -1,
+            /*10*/ 34, 6, 16, 10, 16, 2, -1, 2, 2, 4,
+            /*20*/ 2, 2, 2, 2, 2, 4, 2, 8, 12, 22,
+            /*30*/ 6, 2, 2, 2, 2, 4, 2, 6, 8, 2,
+            /*40*/ 2, 2, 2, 4, 4, 12, 4, 12, 4, 2,
+            /*50*/ 4, 6, 2, 2, 2, 2, 1, 2, 2, 2,
+            /*60*/ 2, 2, 1, 8, 8,
+        };
+
+        void SkipPayload(ByteReader& r, int type)
+        {
+            if (type < 0 || type > 64) return; // the loader ignores unknown types, there is no payload to skip
+            switch (type)
+            {
+            case 8:  // int16 index, uint16 len, name[len], 4 unused int16s, 6 int16s
+            {
+                r.Skip(2);
+                uint16_t len = r.U16();
+                r.Skip(len + 8 + 12);
+                return;
+            }
+            case 9:  // int16 index, int16 value, then three times: uint16 len, name[len], 4 floats
+                r.Skip(4);
+                for (int i = 0; i < 3; i++) { uint16_t len = r.U16(); r.Skip(len + 16); }
+                return;
+            case 16: // uint16 len, data[len]
+            {
+                uint16_t len = r.U16();
+                r.Skip(len);
+                return;
+            }
+            default:
+                r.Skip(size_t(FixedPayload[type]));
+            }
+        }
+    }
+
+    std::map<int, GType> ObjOjd::LoadGTypes(std::span<const uint8_t> data, bool human)
+    {
+        std::map<int, GType> table;
+        ByteReader r(data);
+        int id = 0;
+        uint16_t gclass = 0;
+        bool loadOnUse = true;
+        int16_t hotX = 0, hotY = 0;
+
+        while (r.Remaining() > 0)
+        {
+            if (r.Remaining() < 5) throw FormatError("OBJ.ojd: record header cut short");
+            r.Skip(3);
+            int type = int16_t(r.U16());
+            switch (type)
+            {
+            case 0: id = int16_t(r.U16()); break;
+            case 1: gclass = r.U16(); break;
+            case 2: case 3: case 4:
+            {
+                uint16_t len = r.U16();
+                std::string name = r.Name(len);
+                uint16_t slot = r.U16();
+                bool wanted = type == 2 || (type == 3 && human) || (type == 4 && !human);
+                if (wanted) table[id] = GType{ gclass, slot, std::move(name), loadOnUse, hotX, hotY };
+                loadOnUse = true;
+                hotX = hotY = 0;
+                break;
+            }
+            case 5: hotX = int16_t(r.U16()); hotY = int16_t(r.U16()); break;
+            case 7: loadOnUse = r.U16() == 0; break; // the loader stores (value == 0) in its "load later" flag
+            default: SkipPayload(r, type);
+            }
+        }
+        return table;
+    }
+}

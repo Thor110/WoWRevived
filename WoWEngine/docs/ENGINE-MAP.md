@@ -40,7 +40,7 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x40AFF0 | Time of day | |
 | 0x40B570–0x40B6C0 | Shade tables | `LoadShadeTables`: 13 brightness levels, `dat\cd*.%s`, `dat\F1..F7`, `BM*` |
 | 0x40CE00–0x40CF00 | Screen and renderer settings | `BLIT instead of FLIP` |
-| 0x40E7A0–0x40EAE0 | RTypeBase | Base class of every drawable object |
+| 0x40E7A0–0x40EAE0 | RTypeBase and the GType table | Graphics table at 0x4DAFD0, 56 bytes per id; 0x40E980 loads a GType's file on first use |
 | 0x40F060–0x40F5E0 | Text styles | Menu Heading, Research Detail, Briefing Heading, Credits Heading… |
 | 0x40FEA0 | PolyLib set-up | `dat\b8.shl`, `dat\b16.hsh` |
 | 0x410230 | Damage map | |
@@ -50,6 +50,8 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x414410–0x414680 | WText | `TXT\` |
 | 0x4148A0–0x415410 | Memory manager | `MEM_*`, allocation statistics |
 | 0x414DE0–0x415200 | File loading | `dat\%s`, `Map\%s`, `FILE_Load` |
+| 0x414410 | TEXT.ojd loader | Ported in `src/core/TextOjd.cpp` |
+| 0x415030–0x415200 | Archive lookup and FILE_Load | Ported in `src/core/Vfs.cpp` |
 | 0x415A80 | FFUH decompression | Ported in `src/core/Ffuh.cpp` |
 | 0x4166B0 | Settings (registry) | `Use INI` |
 | 0x417BF0–0x417C30 | Debug log | |
@@ -61,7 +63,7 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x4344C0–0x4346C0 | WFogOfWar | |
 | 0x435310 | World tasks | |
 | 0x437410–0x437710 | Armour, research and manufacture modifiers | |
-| 0x437750 | Emitters | Reads `obj.ojd` |
+| 0x437750 | OBJ.ojd loader | 65 record types; the graphics table part is ported in `src/core/ObjOjd.cpp` |
 | 0x439400–0x43A600 | Battle map set-up | Water, `dat\%d.nsb`, battle map selection |
 | 0x43C0A0 | Resources | |
 | 0x43D760–0x43FBE0 | Object type tables | Unit, building, scenery, tree, explosion and smoke names to object types |
@@ -104,7 +106,7 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 
 ## Order of work
 
-1. File formats. Archives, FFUH, palettes, sprites and TEXT.ojd are done. Next come fonts (FNT), shade tables, `.ojd` objects and SFX libraries.
-2. The front end, starting from 0x402630 (initialisation) and the menu code at 0x4057B0. This gives a playable main menu, options and CD Player.
+1. File formats. Archives, FFUH, palettes, sprites, fonts, TEXT.ojd and the OBJ.ojd graphics table are done. Next come the shade tables, the rest of OBJ.ojd, and the sound files.
+2. The front end. The menu framework, Main Menu, Game Options and Quit are done; the details are in `FRONTEND.md`.
 3. The war map, from WWarMapWorld at 0x417CD0.
 4. The battle map: WLandscape at 0x47B900, ISOLib, WOFLib and the vehicles.

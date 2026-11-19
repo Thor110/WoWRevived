@@ -22,6 +22,10 @@ add_library(wowcore STATIC
     src/core/Palette.cpp
     src/core/Sprite.cpp
     src/core/TextOjd.cpp
+    src/core/ObjOjd.cpp
+    src/core/Font.cpp
+    src/core/Vfs.cpp
+    src/core/Bmp.cpp
 )
 target_include_directories(wowcore PUBLIC src)
 
@@ -48,7 +52,13 @@ if(TARGET SDL3::SDL3)
     add_executable(WoWEngine WIN32 MACOSX_BUNDLE
         src/main.cpp
         src/platform/Video.cpp
+        src/frontend/Resources.cpp
+        src/frontend/Canvas.cpp
+        src/frontend/Menu.cpp
+        src/frontend/FrontEnd.cpp
     )
+    # IniStore.h is shared with the patch DLLs so the engine reads the same WoWRevived.ini
+    target_include_directories(WoWEngine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../WoWPatches/Common)
     target_link_libraries(WoWEngine PRIVATE wowcore SDL3::SDL3)
     if(WIN32)
         # keep SDL3.dll next to the exe

@@ -5,10 +5,13 @@
 //   wowdump --check <game folder>          report which required game files are missing
 //   wowdump --sprite <archive> <sprite> <palette> <out.bmp> [frame]
 //                                          render a sprite from an archive (e.g. DAT/Dat.wow CD_BD1.SPR CD.PAL)
-//   wowdump --text <TEXT.ojd>              print every string with its id
+//   wowdump --text <TEXT.ojd> [martian]    print every string with its id (Human strings unless "martian")
+//   wowdump --obj <obj.ojd> [martian]      print the graphics table (id, class, palette slot, file)
 #include "core/Archive.h"
+#include "core/Bmp.h"
 #include "core/Ffuh.h"
 #include "core/GameFiles.h"
+#include "core/ObjOjd.h"
 #include "core/Palette.h"
 #include "core/Sprite.h"
 #include "core/TextOjd.h"
@@ -30,7 +33,8 @@ static int Usage()
         "       wowdump <archive> <outdir> [--raw] extract entries\n"
         "       wowdump --check <game folder>      check for the required game files\n"
         "       wowdump --sprite <archive> <sprite> <palette> <out.bmp> [frame]\n"
-        "       wowdump --text <TEXT.ojd>          print the game's strings\n");
+        "       wowdump --text <TEXT.ojd> [martian] print the game's strings\n"
+        "       wowdump --obj <obj.ojd> [martian]   print the graphics table\n");
     return 2;
 }
 
@@ -41,34 +45,17 @@ static std::vector<uint8_t> ReadFile(const fs::path& path)
     return std::vector<uint8_t>(std::istreambuf_iterator<char>(in), {});
 }
 
-static void Put16(std::vector<uint8_t>& out, uint32_t v) { out.push_back(uint8_t(v)); out.push_back(uint8_t(v >> 8)); }
-static void Put32(std::vector<uint8_t>& out, uint32_t v) { Put16(out, v & 0xFFFF); Put16(out, v >> 16); }
-
-// 24-bit BMP, transparent pixels (index 0) shown as magenta
-static void WriteBmp(const fs::path& path, const wow::IndexedImage& image, const wow::Palette& palette)
+// transparent pixels (index 0) are shown as magenta
+static void WriteSpriteBmp(const fs::path& path, const wow::IndexedImage& image, const wow::Palette& palette)
 {
-    uint32_t stride = (uint32_t(image.width) * 3 + 3) & ~3u;
-    uint32_t pixelBytes = stride * uint32_t(image.height);
-    std::vector<uint8_t> out;
-    out.push_back('B'); out.push_back('M');
-    Put32(out, 54 + pixelBytes); Put32(out, 0); Put32(out, 54);
-    Put32(out, 40); Put32(out, uint32_t(image.width)); Put32(out, uint32_t(image.height));
-    Put16(out, 1); Put16(out, 24); Put32(out, 0); Put32(out, pixelBytes);
-    Put32(out, 2835); Put32(out, 2835); Put32(out, 0); Put32(out, 0);
-    for (int y = image.height - 1; y >= 0; y--) // bottom-up
+    std::vector<uint32_t> pixels(image.pixels.size());
+    for (size_t i = 0; i < pixels.size(); i++)
     {
-        size_t rowStart = out.size();
-        for (int x = 0; x < image.width; x++)
-        {
-            uint8_t index = image.pixels[size_t(y) * image.width + x];
-            wow::Rgb c = index == 0 ? wow::Rgb{ 255, 0, 255 } : palette.colours[index];
-            out.push_back(c.b); out.push_back(c.g); out.push_back(c.r);
-        }
-        while (out.size() - rowStart < stride) out.push_back(0);
+        uint8_t index = image.pixels[i];
+        wow::Rgb c = index == 0 ? wow::Rgb{ 255, 0, 255 } : palette.colours[index];
+        pixels[i] = (uint32_t(c.r) << 16) | (uint32_t(c.g) << 8) | c.b;
     }
-    std::ofstream file(path, std::ios::binary);
-    file.write(reinterpret_cast<const char*>(out.data()), std::streamsize(out.size()));
-    if (!file) throw std::runtime_error("can't write " + path.string());
+    wow::WriteBmp(path, pixels.data(), image.width, image.height);
 }
 
 int main(int argc, char** argv)
@@ -97,21 +84,35 @@ int main(int argc, char** argv)
             int frame = argc == 7 ? std::stoi(argv[6]) : 0;
             const auto& info = sprite.Info();
             std::printf("%ux%u, %u frame(s), row header %u\n", info.width, info.height, info.frames, info.rowHeaderSize);
-            WriteBmp(argv[5], sprite.Decode(frame), palette);
+            WriteSpriteBmp(argv[5], sprite.Decode(frame), palette);
             return 0;
         }
 
-        if (first == "--text")
+        if (first == "--text" || first == "--obj")
         {
-            if (argc != 3) return Usage();
-            auto entries = wow::TextOjd::Load(ReadFile(argv[2]));
-            for (size_t i = 0; i < entries.size(); i++)
+            if (argc != 3 && argc != 4) return Usage();
+            bool human = !(argc == 4 && std::string(argv[3]) == "martian");
+            auto data = ReadFile(argv[2]);
+            if (first == "--text")
             {
-                std::string text = entries[i].text;
-                for (char& c : text) if (c == '\n') c = '|';
-                std::printf("%4zu  id %5u  side %u  %s\n", i, entries[i].id, entries[i].faction, text.c_str());
+                auto table = wow::TextTable::Load(data, human);
+                for (int id = 0; id < int(wow::TextTable::MaxIds); id++)
+                {
+                    if (!table.Has(id)) continue;
+                    std::string text = table.Get(id);
+                    for (char& c : text) if (c == '\n') c = '|';
+                    std::printf("0x%03X  %s\n", id, text.c_str());
+                }
+                std::printf("%zu strings\n", table.Count());
             }
-            std::printf("%zu strings\n", entries.size());
+            else
+            {
+                auto table = wow::ObjOjd::LoadGTypes(data, human);
+                for (const auto& [id, g] : table)
+                    std::printf("0x%04X  class %3u  palette %2u  hotspot %4d,%-4d %s  %s\n", unsigned(id), g.gclass, g.paletteSlot,
+                        g.hotX, g.hotY, g.loadOnUse ? "     " : "early", g.file.c_str());
+                std::printf("%zu graphics entries\n", table.size());
+            }
             return 0;
         }
 

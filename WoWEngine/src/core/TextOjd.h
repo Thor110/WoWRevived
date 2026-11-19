@@ -1,9 +1,11 @@
-// TEXT.ojd: every string the game shows, in one of five languages (ISO-8859-1).
-// Ported from WoWViewer/Reusables.cs.
-//   header up to 0x289, then per entry: 4 bytes, uint8 faction (0 Martian, 1 Human, 2 UI), 1 byte,
-//   uint16 id, uint16 length (including the terminating null), the string bytes.
-//   Line breaks are stored as a literal backslash-n.
-// The retail files have 1396 entries; WoW Revived's patched files add a 1397th (the Credits button).
+// TEXT.ojd: every string the game shows, read the way the game does it (vanilla 0x414410).
+//
+// Same record stream as OBJ.ojd: 3 header bytes, int16 record type, then:
+//   types 0, 1, 2   uint16 id, uint16 len, string[len]   0 = Martian games only, 1 = Human only, 2 = both
+//   type 3          uint16 a, uint16 b                    string a is the same as string b
+//   type 4          uint16 a, uint16 b                    sets a second value on string a (use not known yet)
+// "\n" and "\t" in the text are escapes. The game also runs every character through Latin1ToFont (Charset.h)
+// at load time; here the text stays Latin-1 and the font code does that conversion when drawing.
 #pragma once
 #include <cstdint>
 #include <span>
@@ -12,20 +14,28 @@
 
 namespace wow
 {
-    struct TextEntry
-    {
-        uint16_t id = 0;
-        uint8_t faction = 0;
-        std::string text; // ISO-8859-1, line breaks turned into '\n'
-    };
-
-    class TextOjd
+    class TextTable
     {
     public:
-        static constexpr size_t FirstEntry = 0x289;
-        static constexpr size_t MaxEntries = 1397;
+        static constexpr size_t MaxIds = 0x29A8 / 8; // the game allocates room for 1333 ids
 
-        // Reads up to MaxEntries entries, stopping early if the data runs out. Throws FormatError if an entry is cut short.
-        static std::vector<TextEntry> Load(std::span<const uint8_t> data);
+        // human picks which side's strings are kept, as the game only loads the side being played.
+        // Throws FormatError if a record runs past the end of the data.
+        static TextTable Load(std::span<const uint8_t> data, bool human);
+
+        // The string for an id, or an empty string if there isn't one.
+        const std::string& Get(int id) const;
+        bool Has(int id) const { return id >= 0 && size_t(id) < entries.size() && entries[size_t(id)].present; }
+        int Extra(int id) const { return Has(id) ? entries[size_t(id)].extra : 0; }
+        size_t Count() const;
+
+    private:
+        struct Entry
+        {
+            std::string text;
+            int extra = 0;
+            bool present = false;
+        };
+        std::vector<Entry> entries = std::vector<Entry>(MaxIds);
     };
 }
