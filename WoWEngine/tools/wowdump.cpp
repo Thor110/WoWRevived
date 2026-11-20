@@ -245,13 +245,31 @@ int main(int argc, char** argv)
             return 0;
         }
 
+        // --tables OBJ.ojd: the loader's tables kept by graphics id (records 6, 10, 11) and unit type (12, 13)
+        if (first == "--tables" && argc == 3)
+        {
+            auto t = wow::ObjOjd::LoadBattleTables(ReadFile(argv[2]));
+            for (const auto& [id, e] : t.six) std::printf("6  id %4d  %g %g %d %d\n", id, double(e.a), double(e.b), e.c, e.d);
+            for (const auto& [id, e] : t.ten) { std::printf("10 id %4d ", id); for (int v : e) std::printf(" %d", v); std::printf("\n"); }
+            for (const auto& [id, e] : t.eleven) std::printf("11 id %4d  %d %g\n", id, e.first, double(e.second));
+            for (const auto& [ty, e] : t.twelve) { std::printf("12 type %4d", ty); for (int v : e) std::printf(" %d", v); std::printf("\n"); }
+            for (const auto& [ty, e] : t.thirteen) std::printf("13 type %4d  %g %d %d %d\n", ty, double(e.f), e.a, e.b, e.c);
+            return 0;
+        }
+
         if (first == "--units" && argc == 3)
         {
             for (const auto& [id, u] : wow::ObjOjd::LoadUnits(ReadFile(argv[2])))
                 if (u.warMapSpeed || u.field52 || u.field56 || u.category)
-                    std::printf("unit %3d  built by %d %d %d  build %g days  faction %d (research %d, %d days)  category %d  battle units %d  counter %3d  class %d  +52 %3d  speed %4d (%.2f map px/hour)  +56 %4d  upkeep %g %g %g  working %g %g %g\n",
-                                id, u.builders[0], u.builders[1], u.builders[2], double(u.buildDays), u.faction, u.researchFaction, u.researchDays, u.category, u.battleUnits, u.counterFrame, u.moveClass, u.field52, u.warMapSpeed, u.warMapSpeed * 0.05, u.field56,
+                {
+                    std::printf("unit %3d %-4s built by %d %d %d  build %g days  faction %d (research %d, %d days)  category %d  battle units %d  counter %3d  class %d  +52 %3d  speed %4d (%.2f map px/hour)  +56 %4d  upkeep %g %g %g  working %g %g %g\n",
+                                id, u.code.c_str(), u.builders[0], u.builders[1], u.builders[2], double(u.buildDays), u.faction, u.researchFaction, u.researchDays, u.category, u.battleUnits, u.counterFrame, u.moveClass, u.field52, u.warMapSpeed, u.warMapSpeed * 0.05, u.field56,
                                 u.upkeep[0], u.upkeep[1], u.upkeep[2], u.activity[0], u.activity[1], u.activity[2]);
+                    std::printf("          base %d  upgrade %d  max %d  needs %d  info %d  +28 %d  scale %g  parts %zu  emitters %zu  hp %d/%d  sizes %d %d  +43 %d  vision %d (%d)  armour %d (Human game %d, Martian %d)  +4C %d  +50 %d  +92 %d  +98 %d  +A0 %d  +A1 %d  +A2 %d  +A4 %d\n",
+                                u.baseType, u.upgrade, u.maxPerSector, u.prerequisite, u.infoPage, u.field28, double(u.scale), u.parts.size(), u.emitters.size(),
+                                u.hitPoints, u.currentHitPoints, u.size40, u.size41, u.field43, wow::ObjOjd::Vision(u, {}), u.visionRaw,
+                                u.armourRaw, wow::ObjOjd::Armour(u, true, {}), wow::ObjOjd::Armour(u, false, {}), u.field4C, u.field50, u.field92, u.field98, u.fieldA0, u.fieldA1, u.fieldA2, u.fieldA4);
+                }
             return 0;
         }
 

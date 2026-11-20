@@ -67,7 +67,7 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x4344C0–0x4346C0 | WFogOfWar | |
 | 0x435310 | World tasks | |
 | 0x437410–0x437710 | Armour, research and manufacture modifiers | |
-| 0x437750 | OBJ.ojd loader | 65 record types; the graphics table part is ported in `src/core/ObjOjd.cpp` |
+| 0x437750 | OBJ.ojd loader | 65 record types: the graphics table and the unit table (docs/UNITS.md) in `src/core/ObjOjd.cpp` |
 | 0x439400–0x43A600 | Battle map set-up | Water, `dat\%d.nsb`, battle map selection |
 | 0x43C0A0 | Resources | |
 | 0x43D760–0x43FBE0 | Object type tables | Unit, building, scenery, tree, explosion and smoke names to object types |

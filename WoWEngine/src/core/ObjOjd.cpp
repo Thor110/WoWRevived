@@ -111,6 +111,9 @@ namespace wow
         std::map<int, UnitData> units;
         ByteReader r(data);
         int unit = 0, category = 0;
+        float scale = 1.0f;                        // var_3C: the running scale (record 25)
+        bool haveBox = false;                      // var_49: a record 27 waiting for the next part
+        int box[4] = { -1, 0, 0, 0 };
         auto f32 = [&]() { uint32_t b = r.U32(); float f; std::memcpy(&f, &b, 4); return f; };
         while (r.Remaining() > 0)
         {
@@ -134,11 +137,69 @@ namespace wow
                 auto src = units.find(from);
                 UnitData copy = src != units.end() ? src->second : UnitData{};
                 for (int& b : copy.builders) b = 0;
+                copy.parts.clear(); // its emitters (+0x3C) stay the template's
                 units[unit] = copy;
                 break;
             }
             case 19: units[unit].upgrade = int16_t(r.U16()); r.Skip(2); break; // 0x437E4C: +0x88, +0x8C
             case 20: units[unit].upgrade = int16_t(r.U16()); break;            // 0x437E7A: +0x88, +0x8C = 0
+            case 16: // 0x437DA4: the last four bytes before the data's end (its NUL)
+            {
+                uint16_t len = r.U16();
+                std::string data(len, '\0');
+                for (uint16_t i = 0; i < len; i++) data[i] = char(r.U8());
+                units[unit].code = len >= 5 ? data.substr(size_t(len) - 5, 4) : std::string();
+                break;
+            }
+            case 22: units[unit].infoPage = int16_t(r.U16()); break;    // 0x437ED3
+            case 24: units[unit].field28 = int16_t(r.U16()); break;     // 0x437F12
+            case 25: scale = f32(); units[unit].scale = scale; break;   // 0x437F30
+            case 27: for (int& v : box) v = int16_t(r.U16()); haveBox = true; break; // 0x437F72
+            case 28: // 0x437FB8
+            {
+                UnitData::Part part;
+                part.a = int16_t(r.U16());
+                part.b = r.U16();
+                part.c = r.U16();
+                part.d = r.U16();
+                part.f = float(double(f32()) * double(scale));
+                if (haveBox) for (int i = 0; i < 4; i++) part.box[i] = box[i];
+                haveBox = false;
+                units[unit].parts.insert(units[unit].parts.begin(), part);
+                break;
+            }
+            case 29: // 0x43808F
+            {
+                UnitData::Emitter e;
+                e.a = int16_t(r.U16());
+                e.b = r.U16();
+                e.c = r.U16();
+                for (float& f : e.f) f = f32();
+                units[unit].emitters.insert(units[unit].emitters.begin(), e);
+                break;
+            }
+            case 30: // 0x43811F: hp, two sizes, each x the scale
+            {
+                const int hp = int(double(r.U16()) * double(scale));
+                units[unit].hitPoints = units[unit].currentHitPoints = int(int16_t(hp));
+                units[unit].size40 = uint8_t(int(double(r.U16()) * double(scale)));
+                units[unit].size41 = uint8_t(int(double(r.U16()) * double(scale)));
+                break;
+            }
+            case 31: units[unit].currentHitPoints = int(int16_t(int(double(r.U16()) * double(scale)))); break; // 0x4381B4
+            case 32: units[unit].visionRaw = r.U16(); break;            // 0x438208
+            case 33: units[unit].field50 = int16_t(r.U16()); break;     // 0x4381E9
+            case 34: units[unit].armourRaw = int16_t(r.U16()); units[unit].armourFaction = units[unit].faction; units[unit].armourMuls.clear(); break; // 0x43823F
+            case 35: units[unit].armourMuls.push_back(f32()); break;    // 0x4382BA
+            case 44: units[unit].buildMul *= f32(); break;              // 0x438595
+            case 53: units[unit].field92 = int16_t(r.U16()); break;     // 0x438757
+            case 56: units[unit].field43 = r.U8(); break;               // 0x4387B0
+            case 57: units[unit].field4C = int16_t(r.U16()); break;     // 0x4387C6
+            case 58: units[unit].fieldA2 = int16_t(r.U16()); break;     // 0x4382F4
+            case 59: units[unit].fieldA4 = int16_t(r.U16()); break;     // 0x438313
+            case 60: units[unit].field98 = int16_t(r.U16()); break;     // 0x4387E2
+            case 61: units[unit].fieldA0 = uint8_t(r.U16() - 1); break; // 0x4387FD
+            case 62: units[unit].fieldA1 = r.U8(); break;               // 0x43881A
             case 52: units[unit].maxPerSector = int(r.U16()); break;      // 0x438738
             case 54: units[unit].prerequisite = int16_t(r.U16()); break;  // 0x438776
             case 55: units[unit].battleUnits = int16_t(r.U16()); break; // 0x438794
@@ -222,7 +283,53 @@ namespace wow
         float factor = 1.0f;
         if (unit.buildFaction == 0) factor = playingHuman ? m.humanFriend : m.humanEnemy;
         else if (unit.buildFaction == 1) factor = playingHuman ? m.martianEnemy : m.martianFriend;
-        return unit.buildDays * factor;
+        float v = unit.buildDays * factor;
+        if (unit.buildMul != 1.0f) v *= unit.buildMul; // record 44
+        return v;
+    }
+
+    // record 34 (0x43823F): ftol(v x the modifier) as a word, then each record 35 (0x4382BA): ftol(+0x4A x f)
+    int ObjOjd::Armour(const UnitData& unit, bool playingHuman, const ArmourModifiers& m)
+    {
+        if (unit.armourFaction < 0) return 100;
+        float mod = m.scenery;
+        if (unit.armourFaction == 0) mod = playingHuman ? m.humanFriend : m.humanEnemy;
+        else if (unit.armourFaction == 1) mod = playingHuman ? m.martianEnemy : m.martianFriend;
+        int a = int(int16_t(int(double(unit.armourRaw) * double(mod))));
+        for (float f : unit.armourMuls) a = int(int16_t(int(double(a) * double(f))));
+        return a;
+    }
+
+    int ObjOjd::Vision(const UnitData& unit, const ArmourModifiers& m) // record 32 (0x438208)
+    {
+        return int(int16_t(int(double(unit.visionRaw) * double(m.visRadMul))));
+    }
+
+    ObjOjd::BattleTables ObjOjd::LoadBattleTables(std::span<const uint8_t> data)
+    {
+        BattleTables t;
+        ByteReader r(data);
+        int id = 0, unit = 0;
+        auto f32 = [&]() { uint32_t b = r.U32(); float f; std::memcpy(&f, &b, 4); return f; };
+        while (r.Remaining() > 0)
+        {
+            if (r.Remaining() < 5) throw FormatError("OBJ.ojd: record header cut short");
+            r.Skip(3);
+            int type = int16_t(r.U16());
+            switch (type)
+            {
+            case 0: id = int16_t(r.U16()); break;
+            case 15: unit = int16_t(r.U16()); break;
+            case 6: { auto& e = t.six[id]; e.a = f32(); e.b = f32(); e.c = r.U16(); e.d = r.U16(); break; } // 0x437A52
+            case 10: { auto& e = t.ten[id]; for (int& v : e) v = int16_t(r.U16()); break; }                 // 0x437BB8
+            case 11: { int a = int16_t(r.U16()); t.eleven[id] = { a, f32() }; break; }                      // 0x437BE6
+            case 12: { auto& e = t.twelve[unit]; for (int& v : e) v = r.U16(); break; }                     // 0x437C87
+            case 13: { auto& e = t.thirteen[unit]; e.f = f32(); e.a = int16_t(r.U16()); e.b = int16_t(r.U16()); e.c = int16_t(r.U16()); break; } // 0x437D19
+            case 2: case 3: case 4: { uint16_t len = r.U16(); r.Skip(size_t(len) + 2); break; }
+            default: SkipPayload(r, type);
+            }
+        }
+        return t;
     }
 
     int ObjOjd::BuildHours(const UnitData& unit, bool playingHuman, const ManufactureModifiers& m)

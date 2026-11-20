@@ -129,8 +129,9 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 - [x] **Build List window** (`warmap/BuildWindow.cpp`, WARMAP.md "The Build List window"): Build / Suspend /
       Resume in the popup, both panels, items, slots, repeat badges, promote, TTC, tool tips, both sides
       (0x460B00-0x462E50); to do: cursors, the promote button's exact place — 09, 03
-- [ ] **Unit table** (records 15's base type, 18, 19, 20, 52 and 54 in so far): all 65 OBJ.ojd record types and the `[Tweak]` armour / research / manufacture modifiers
-      (0x437750) — 06
+- [x] **Unit table** (`core/ObjOjd`, docs/UNITS.md): every record the unit loader takes (0x437750), the defaults,
+      the running scale, parts and emitters, hit points, vision and armour with their `[Tweak]` modifiers, and the
+      per-id / per-type tables (records 6, 10-13); `wowdump --units` / `--tables` — 06
 - [x] **War map AI** (`warmap/WarMapAi.cpp`, WARMAP.md "The computer player"): the 10-phase cycle every game hour,
       the 14 `[Tweak]` values and the strength weights, all ten phases (gathering, moves, the economy and
       networks, constructors, the front line and defences, invasions, factory orders), AI.ojd's build sites, its
