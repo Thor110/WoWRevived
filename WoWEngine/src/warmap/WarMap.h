@@ -9,6 +9,7 @@
 #include "core/SaveFile.h"
 #include "core/SaveGame.h"
 #include "core/ObjOjd.h"
+#include "core/Research.h"
 #include "frontend/Briefing.h"
 #include "frontend/Menu.h"
 #include "warmap/WarMapData.h"
@@ -20,6 +21,8 @@
 #include <string>
 #include <utility>
 #include <map>
+#include <memory>
+#include <set>
 #include <vector>
 
 namespace wow
@@ -79,6 +82,11 @@ namespace wow
         // the [Event] options (the Critical event options menu): the setting's name and its default
         void SetEventOptions(std::function<bool(const char*, bool)> get) { eventOption = std::move(get); }
         void SetDeposits(std::map<int, std::array<int, 6>> d, float dropOff) { deposits = std::move(d); resourceDropOff = dropOff; }
+        // Both sides' research (0x417CD0: the local player's first, dword_4E9B88, then the other side's, 4E9B8C),
+        // read from the save when there is one (HRSH, MRSH), and the war map view's trigger update (0x418D17)
+        void StartResearch(const ObjOjd::ResearchModifiers& modifiers);
+        Research* LocalResearch() { return research[0].get(); }
+        Research* OtherResearch() { return research[1].get(); }
         // [Tweak] "Distance Crippler VX" and "VY" (0.5) and "Resource Buffer" (30)
         void SetEconomy(float vx, float vy, float buffer) { crippleX = vx; crippleY = vy; resourceBuffer = buffer; }
 
@@ -275,6 +283,8 @@ namespace wow
         // none) and whether the game is over (+0x55)
         struct BattleReport { int sector = 0, winner = 2, loser = 2; bool gameOver = false; } report;
         int battleSector = 0;                // the sector the briefing is for (the world's +0x60)
+        std::array<std::unique_ptr<Research>, 2> research; // the local player's, the other side's
+        std::set<int> encountered;           // the unit table's +0xAC: types met in battle (set by the battle map)
         DebriefingInfo debriefing;
         void AnnounceBattleResult();         // 0x41AED0
         int EndCode() const;                 // 0x4212A0

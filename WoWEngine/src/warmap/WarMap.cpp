@@ -487,6 +487,8 @@ namespace wow
         // the next layout (a new view, or its sector laid out again)
         for (Counter& k : counters) k.intel = std::max(0, k.intel - hours);
         MoveRoutes(hours);
+        // both sides' research (0x419EE2 / 0x419EEE: the local player's, then the other's, 0x458BD0)
+        for (auto& r : research) if (r) r->Advance(hours);
         DropPod(hours);
         ResourceWarnings();
     }
@@ -634,6 +636,34 @@ namespace wow
         return objects;
     }
 
+    void WarMap::StartResearch(const ObjOjd::ResearchModifiers& modifiers)
+    {
+        const bool human = res.Human();
+        Research::Listener local;
+        local.event = [this](int event, const std::string& name) { RaiseEvent(event, event == ResearchAlert ? 1 : 0, name); };
+        // the other side's finished items go to its player (0xB9 to dword_4E9B78): the AI, not in yet
+        research[0] = std::make_unique<Research>(human, true, unitData, res.Text(), modifiers, human, local);
+        research[1] = std::make_unique<Research>(!human, false, unitData, res.Text(), modifiers, human, Research::Listener{});
+        if (save && !save->research.empty())
+        {
+            // 0x41AC40: HRSH then MRSH (0x45A160 reads the tag, then 0x4584C0)
+            const std::vector<uint8_t>& blob = save->research;
+            size_t pos = 0;
+            for (bool side : { true, false })
+            {
+                Research& r = *research[side == human ? 0 : 1];
+                const char* tag = Research::Tag(side);
+                if (pos + 4 > blob.size() || std::memcmp(&blob[pos], tag, 4) != 0 || !(pos += 4, r.Load(blob, pos)))
+                {
+                    SDL_Log("War map: the save's %s research can't be read", tag);
+                    break;
+                }
+            }
+        }
+        // the view's set-up (0x418D17): both sides' triggers and multipliers
+        for (auto& r : research) r->UpdateTriggers(encountered);
+    }
+
     void WarMap::UseSave(SaveFile from)
     {
         table.clear();
@@ -666,6 +696,13 @@ namespace wow
     {
         if (!save) return std::nullopt;
         SaveFile s = *save;
+        // the research, Human first whichever side is played (0x41AE0D)
+        if (research[0] && research[1])
+        {
+            s.research.clear();
+            (research[0]->Human() ? research[0] : research[1])->Save(s.research);
+            (research[0]->Human() ? research[1] : research[0])->Save(s.research);
+        }
         s.warMap[0] = uint32_t(cameraX);
         s.warMap[1] = uint32_t(cameraY);
         s.warMap[2] = uint32_t(selected);
@@ -1156,7 +1193,12 @@ namespace wow
         if (owner >= 1000 && size_t(owner - 1000) < counters.size()) return CounterTip(owner - 1000, level);
         if (owner >= 0 && owner < 3) return res.String(ButtonText[owner]);
         // the Research button (0x45BEB0): "View Research" and what's being researched, 0x461 with nothing
-        if (owner == 3) return res.String(0x47D) + "\n" + res.String(0x461);
+        if (owner == 3)
+        {
+            const Research* r = research[0].get();
+            const Research::Item* item = r ? r->Current() : nullptr;
+            return res.String(0x47D) + "\n" + (item ? r->StatusText(*item, res.Human()) : res.String(0x461));
+        }
         // the calendar (0x4278A0) answers only at the third level: "Advance time"
         if (owner == 4 && level == 3) return res.String(0x481);
         return {};
@@ -1261,6 +1303,7 @@ namespace wow
     // Debriefing; the sector's battle flag goes and it and its neighbours are seen (0x418E17).
     void WarMap::FightBattle()
     {
+        for (auto& r : research) if (r) r->UpdateTriggers(encountered); // 0x41A094, on the way to the battle map
         const int s = battleSector;
         debriefing = DebriefingInfo{};
         debriefing.sector = s;
@@ -1311,6 +1354,7 @@ namespace wow
     // the queued events come again (0x41E730).
     void WarMap::ReturnFromBattle()
     {
+        for (auto& r : research) if (r) r->UpdateTriggers(encountered); // the view's set-up, 0x418D17
         if (debriefing.fought) AnnounceBattleResult();
         battleSector = 0;
         NextEvent();
@@ -1531,8 +1575,8 @@ namespace wow
             if (int speech = res.Text().Extra(heading)) sounds.push_back(speech);
             break;
         }
-        case ResearchAlert: // 0x41F220: with no research going (the research object's +0x88, param 1), "No research
-            if (param)      // is currently in progress" and sound 0x135; otherwise nothing (and the queue waits)
+        case ResearchAlert: // 0x41F220: for the local player's research (its +0x88, param 1), "No research is
+            if (param)      // currently in progress" and sound 0x135; otherwise nothing (and the queue waits)
             {
                 OpenBox(res.String(0x421), 0, {}, 0x8122);
                 sounds.push_back(0x135);

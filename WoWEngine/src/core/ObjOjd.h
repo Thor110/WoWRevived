@@ -56,9 +56,21 @@ namespace wow
             int nameText = 0;     // +0x14, record 21: the TEXT.ojd string of its name (0x440720)
             int category = 0;     // +0x10, the class record 17 set before the type's first record 15: 1 vehicles,
                                   // 2 and up buildings (also the battle map's placement kind)
-            int battleUnits = 0;  // +0x58, record 55: the battle map units each war map object stands for
+            int battleUnits = 1;  // +0x58, record 55: the battle map units each war map object stands for (1 until set)
+            int faction = 2;      // +0x0C, record 26: 0 Human, 1 Martian, 2 neither (scenery)
+            int researchDays = 0; // record 39: its research time in days; the table keeps it in hours (+0x08,
+                                  // ResearchHours)
+            int researchFaction = 2; // the faction as it was when record 39 came, which is what the hours use
+            int researchName = 0;    // +0x1C, record 40: its name on the research screen
+            int researchingText = 0; // +0x20, record 41: "Researching ..." while it isn't done
+            int researchedText = 0;  // +0x24, record 42: what it says once done
         };
         static std::map<int, UnitData> LoadUnits(std::span<const uint8_t> data);
+        // The research time in hours (+0x08, 0x437750 case 39): days x 24 x the [Tweak] "<HumanFriend | HumanEnemy |
+        // MartianFriend | MartianEnemy> Research Modifier" (0.75 each) by the type's faction and the side being played
+        // (Friend when they're the same), 1 for scenery; truncated, kept as a 16-bit word
+        struct ResearchModifiers { float humanFriend = 0.75f, humanEnemy = 0.75f, martianFriend = 0.75f, martianEnemy = 0.75f; };
+        static int ResearchHours(const UnitData& unit, bool playingHuman, const ResearchModifiers& m);
 
         // The war map's route arrow styles (RTypeArrow, a table of 24 bytes each at 0x59EDB8), from record 14
         // (0x437C10): the index, then the sprite's GType and four more words, and a float

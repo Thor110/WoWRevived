@@ -76,8 +76,8 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 - [x] **Intel ageing and war map fog**: the other side's objects shown only with intel, ageing every hour, 50% under
       168 h, the post-battle reveal of the sector and 1-3 neighbours by research (0x421630, 0x429B80, 0x418E17;
       the reveal waits for battles, the research count for research, the network case for the network) — 03, 04
-- [~] **Research button**: waits for the research data (Milestone 4); its tool tip already says nothing is being
-      researched, as at the start
+- [x] **Research button**: its tool tip shows the current research and its time (0x45BEB0, 0x45B750); the screen
+      it opens is Milestone 4
 - [ ] **Players**: local / AI / network player objects and the command recording `{01,01,code,04}` (0x4460A0) for
       playback and the network — 03, 07
 
@@ -107,11 +107,14 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 
 ## Milestone 4: research, production and the opponent
 
-- [ ] **Research data**: the hard-coded trees (6 Human plans, 78 items and 8 triggers; 6 Martian, 84 and 6), states,
-      obsolescence, triggers, the 17 `[Tweak]` multipliers, `[Research] Open Rate` (0x457F20-0x45BCB0) — 08, 09
+- [x] **Research data** (`core/Research`, docs/RESEARCH.md): the hard-coded trees (6 Human plans, 78 items and 8
+      triggers; 6 Martian, 84 and 6) generated from the constructors, states, obsolescence, triggers, the 17 `[Tweak]`
+      multipliers, the hourly advance and its events 4 / 5 / 6, HRSH / MRSH read and written exactly (a new tree
+      matches Human.000 / Martian.000); `[Research] Open Rate` comes with the screen (0x457F20-0x45BCB0) — 08, 09
 - [ ] **Research screen**: the tree, the detail panel, scientist speech, opened by R and the Research button
       (0x45E670, 0x45D3F0) — 09
-- [ ] **Durations text**: day / days / hr / hrs (0x41BDA0) and the Human / Martian date formats (0x41B440) — 03
+- [x] **Durations text**: day / days / hr / hrs (0x41BDA0, `Research::Duration`) and the Human / Martian date
+      formats (0x41B440, the Briefing) — 03
 - [ ] **What can be built**: the command building rules (0x45F970) — 09
 - [ ] **Build list / production**: 32-item queue, time ×24 h, resource slowdown, repeats, events 1 / 2 / 9 / 10
       (0x45F770-0x462EE0) — 09

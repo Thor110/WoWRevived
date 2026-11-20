@@ -581,6 +581,12 @@ namespace wow
         map->SetQuickCancelTimeout(ini.GetInt("Tweak", "Quick Cancel Timeout", 5));
         map->SetSectorLimits(ini.GetInt("Tweak", "Max units in sector", 15), ini.GetInt("Tweak", "Max boats in sector", 5));
         if (exact) map->UseSave(std::move(*exact));
+        ObjOjd::ResearchModifiers modifiers;
+        modifiers.humanFriend = ini.GetFloat("Tweak", "HumanFriend Research Modifier", 0.75f);
+        modifiers.humanEnemy = ini.GetFloat("Tweak", "HumanEnemy Research Modifier", 0.75f);
+        modifiers.martianFriend = ini.GetFloat("Tweak", "MartianFriend Research Modifier", 0.75f);
+        modifiers.martianEnemy = ini.GetFloat("Tweak", "MartianEnemy Research Modifier", 0.75f);
+        map->StartResearch(modifiers);
         if (loaded) map->Message(res.String(0x465)); // 0x80B3: "Game Loaded"
         Show(std::move(map));
     }

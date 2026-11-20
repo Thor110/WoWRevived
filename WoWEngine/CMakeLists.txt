@@ -27,6 +27,7 @@ add_library(wowcore STATIC
     src/core/Sprite.cpp
     src/core/TextOjd.cpp
     src/core/ObjOjd.cpp
+    src/core/Research.cpp
     src/core/Font.cpp
     src/core/Vfs.cpp
     src/core/Bmp.cpp

@@ -20,6 +20,7 @@
 #include "core/GameFiles.h"
 #include "core/Models.h"
 #include "core/ObjOjd.h"
+#include "core/Research.h"
 #include "core/SaveFile.h"
 #include "core/SaveGame.h"
 #include "core/Smacker.h"
@@ -170,12 +171,51 @@ int main(int argc, char** argv)
             return 0;
         }
 
+        // --research OBJ.ojd TEXT.ojd save [human|martian]: both research trees as the save has them, and a check
+        // that writing them again gives the same bytes
+        if (first == "--research" && (argc == 5 || argc == 6))
+        {
+            const bool playingHuman = !(argc == 6 && std::string(argv[5]) == "martian");
+            auto units = wow::ObjOjd::LoadUnits(ReadFile(argv[2]));
+            auto text = wow::TextTable::Load(ReadFile(argv[3]), playingHuman);
+            auto save = ReadFile(argv[4]);
+            std::vector<uint8_t> blob;
+            for (bool human : { true, false })
+            {
+                wow::Research r(human, human == playingHuman, units, text, {}, playingHuman, {});
+                size_t at = 0;
+                const char* tag = wow::Research::Tag(human);
+                for (; at + 4 <= save.size(); at++) if (std::memcmp(&save[at], tag, 4) == 0) break;
+                size_t start = at;
+                at += 4;
+                bool ok = r.Load(save, at);
+                std::printf("%s research: %s, %zu bytes, current %d\n", tag, ok ? "loaded" : "FAILED", at - start, r.CurrentNumber());
+                std::vector<uint8_t> again;
+                r.Save(again);
+                bool same = again.size() == at - start && std::equal(again.begin(), again.end(), save.begin() + std::ptrdiff_t(start));
+                std::printf("  written again: %s\n", same ? "identical" : "DIFFERENT");
+                {
+                    wow::Research fresh(human, human == playingHuman, units, text, {}, playingHuman, {});
+                    std::vector<uint8_t> made;
+                    fresh.Save(made);
+                    bool asNew = made.size() == at - start && std::equal(made.begin(), made.end(), save.begin() + std::ptrdiff_t(start));
+                    std::printf("  a new tree writes: %s\n", asNew ? "the same" : "something else");
+                }
+                for (const auto& item : r.Items())
+                    std::printf("  %3d  %-4s 0x%03X  %-44s %5d h  state %d  page %2d  pre %d %d %d %d\n", item.number,
+                        item.kind == 0 ? "unit" : item.kind == 1 ? "bldg" : item.kind == 2 ? "enh" : "trig", item.type,
+                        item.name.c_str(), item.total, item.state, item.page, item.pre[0], item.pre[1], item.pre[2], item.pre[3]);
+                blob.insert(blob.end(), again.begin(), again.end());
+            }
+            return 0;
+        }
+
         if (first == "--units" && argc == 3)
         {
             for (const auto& [id, u] : wow::ObjOjd::LoadUnits(ReadFile(argv[2])))
                 if (u.warMapSpeed || u.field52 || u.field56 || u.category)
-                    std::printf("unit %3d  category %d  battle units %d  counter %3d  class %d  +52 %3d  speed %4d (%.2f map px/hour)  +56 %4d  upkeep %g %g %g  working %g %g %g\n",
-                                id, u.category, u.battleUnits, u.counterFrame, u.moveClass, u.field52, u.warMapSpeed, u.warMapSpeed * 0.05, u.field56,
+                    std::printf("unit %3d  faction %d (research %d, %d days)  category %d  battle units %d  counter %3d  class %d  +52 %3d  speed %4d (%.2f map px/hour)  +56 %4d  upkeep %g %g %g  working %g %g %g\n",
+                                id, u.faction, u.researchFaction, u.researchDays, u.category, u.battleUnits, u.counterFrame, u.moveClass, u.field52, u.warMapSpeed, u.warMapSpeed * 0.05, u.field56,
                                 u.upkeep[0], u.upkeep[1], u.upkeep[2], u.activity[0], u.activity[1], u.activity[2]);
             return 0;
         }

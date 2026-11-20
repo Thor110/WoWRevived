@@ -187,7 +187,7 @@ shows through the frame's window), 0x44 + 0x28 and 10 in Martian ones (the mini-
 sets the view mode (0x419810: 1 units, 2 constructions, 3 resources, the world's +0x70) and stays pressed
 (message 0x8034). The frame also holds the Research button (0x45BD70, GType 0x341 rese-but.spr, control 0x7D) at
 (0x48, 5) in Human games and (0x3A, 0xC) in Martian ones; its tooltip is 0x47D "View Research" with the current
-research. Tab hides the frame and the mini-map (0x41A450). Which of the buttons' 4 frames is which isn't confirmed; the engine uses 2 for the pressed one
+research's status (0x45BEB0, see RESEARCH.md). Tab hides the frame and the mini-map (0x41A450). Which of the buttons' 4 frames is which isn't confirmed; the engine uses 2 for the pressed one
 and 1 under the mouse.
 
 ## The calendar
@@ -357,7 +357,8 @@ selection at +0x430, filled by its recorded commands 4 clear, 5 select (Shift ad
 
 ## Martian pods
 
-Every whole game hour the world (0x802D, 0x419E9D) moves the routes, the players and both sides' research on, then
+Every whole game hour the world (0x802D, 0x419E9D) moves the routes, the players and both sides' research
+(RESEARCH.md) on, then
 the pods (0x41A330): while fewer than 8 have come, every `[Tweak] "Pod Interval (hours)"` (24) one lands in sector
 2, 4, 6, 7, 8, 9, 10 or 11 (`byte_4B9DE8[rand() & 7]`) with one of four loads (`off_4B9E28[rand() % 4]`: unit 62,
 ScoutMachineMk1, alone or with 89, HandlingMachineMk1, or 91, DiggingMechanismMk1). Each unit added works out who
@@ -507,8 +508,9 @@ box goes (0x8122 to the war map), 0x41E730 runs the next queued event's handler,
 the `[Event]` options (0x41E160-0x41E3E0, the Critical event options menu, plus "Entered Neutral Sector" which isn't
 in it), always for BattleInSector and the endings, and "unless the cheat 0x4D1261" for ResearchAlert, PodLanded and
 UndefendedSectorLost. A handler writes its line to the message list and, if its option is on, opens the box. The
-flag is set after any critical handler, box or not, so a critical event that puts nothing up (ResearchAlert while
-research is going) leaves the queue waiting until a box does go: kept as the game has it. ConstructorOnline,
+flag is set after any critical handler, box or not, so a critical event that put nothing up would leave the queue
+waiting until a box does go (ResearchAlert only puts its box up for the local player's research, and only that
+research raises it): kept as the game has it. ConstructorOnline,
 FacilityOnline and EnteringNeutralSector have empty handlers (nullsub_3), and nothing in the game raises 1, 7, 8, 9
 or 16 with a constant id (0x41E5B0's callers raise 0, 2-6, 10-15 and 17-19 that way, and one, in production at
 0x45FD91, with a computed one).
@@ -551,7 +553,7 @@ same way once those raise them; their parameter is the object's counter, or the 
 | ConstructionCompleted (0x41EDC0) | "Construction Completed": "<name> completed." (the type's name 0x440720, 0x4B4) for its sector, the Construction view for a type of class 2 (unit table +0x10, OBJ.ojd record 17 before its record 15), else the Resource view | the same | 0x12F, not for AI class 7 |
 | UnitCompleted (0x41ECD0) | "Unit Manufactured": "<name> unit completed." (0x4B3), Unit view | the same | 0x131 for a type of one battle unit (+0x58, record 55), else 0x1C0 |
 | ResearchCompleted (0x41EB90) / ResearchAvailable (0x41EC30) | "Research Completed": "Research completed: <name>" (0x46B) / "New research available: <name>" (0x46C), no sector | "<heading> .. <name>" | the heading's speech (0x414700: TEXT.ojd's record type 4 for it) |
-| ResearchAlert (0x41F220) | with no research going (the research object's +0x88): always, "No research is currently in progress" (0x421) | none | 0x135 |
+| ResearchAlert (0x41F220) | for the local player's research (its +0x88): always, "No research is currently in progress" (0x421) | none | 0x135 |
 | ConstructorIdle (0x41EEA0) / FacilityIdle (0x41EF10) | "Constructor Idle" / "Facility Idle": "Vehicle idle" (0x416) / "Facility idle" (0x417) for the object's sector, Unit / Construction view first | the same | none |
 | CommandCentreBuilt (0x41F1C0) | "Command Centre Built": "Command centre built" (0x415) for the sector, Construction view | the same | none |
 
@@ -617,5 +619,5 @@ Besides the keys, the engine scrolls at the screen edges and by clicking or drag
 ## Still to do
 
 The game's scroll rules, the event messages (top left; the engine shows only the latest), the own sectors' shading,
-the arrows' exact curve and head, a unit that can't move (refusal 0), construction (so command posts can be built), research, the AI's turns, saving, and the
+the arrows' exact curve and head, a unit that can't move (refusal 0), construction (so command posts can be built), the research screen, the AI's turns, saving, and the
 battle map.

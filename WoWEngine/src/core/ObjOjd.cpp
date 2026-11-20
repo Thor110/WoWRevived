@@ -127,6 +127,14 @@ namespace wow
                 break;
             }
             case 55: units[unit].battleUnits = int16_t(r.U16()); break; // 0x438794
+            case 40: units[unit].researchName = int16_t(r.U16()); break;    // 0x438473
+            case 41: units[unit].researchingText = int16_t(r.U16()); break; // 0x438494
+            case 42: units[unit].researchedText = int16_t(r.U16()); break;  // 0x4384B5
+            case 26: units[unit].faction = int16_t(r.U16()); break;     // 0x437F51
+            case 39: // 0x4383F2, scaled by the faction the type has so far
+                units[unit].researchDays = int16_t(r.U16());
+                units[unit].researchFaction = units[unit].faction;
+                break;
             case 23: units[unit].counterFrame = int16_t(r.U16()); break;
             case 21: units[unit].nameText = int16_t(r.U16()); break;    // 0x437EB2
             case 36: units[unit].moveClass = int16_t(r.U16()); break; // 0x438332
@@ -151,6 +159,14 @@ namespace wow
             }
         }
         return units;
+    }
+
+    int ObjOjd::ResearchHours(const UnitData& unit, bool playingHuman, const ResearchModifiers& m)
+    {
+        float factor = 1.0f; // flt_4AA518
+        if (unit.researchFaction == 0) factor = playingHuman ? m.humanFriend : m.humanEnemy;
+        else if (unit.researchFaction == 1) factor = playingHuman ? m.martianEnemy : m.martianFriend;
+        return int16_t(int(float(unit.researchDays * 24) * factor));
     }
 
     std::map<int, ObjOjd::ArrowType> ObjOjd::LoadArrowTypes(std::span<const uint8_t> data)
