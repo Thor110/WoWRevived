@@ -732,7 +732,19 @@ With mortar 706 given to the lorries for the test and Force Fire from the popup 
 click) the mortar was aimed and in range but held; set to mode 7 at update 300, it fired at 301. The lorries'
 own rockets (414, mode 0) fired from update 158 as before.
 
-*Provisional*: what the members do with 0x80E1-0x80E3, 0x80F0, 0x80EE and 0x80EF isn't traced (logged).
+**The members' specials.** 0x80E1-0x80E3 and 0x80F0 go to each member (0x4817C0's loops), which (0x495CB0) sends 0x80F8
+(with the level 1-3) or 0x80F9 round (vt+0xFC = 0x495C10: every object of the world's list within its sight, +0x48,
+by 0x43FF00 from whole positions, itself too) and sets its group's mode 0 (0x4807E0). **0x80F8** is taken only by the
+class of 0x273-0x276 (0x48C8E0 on the unit base 0x495660, handler 0x48C9B0): damage of the level x 50 (vt+0xE0) and
+smoke 0x16F a quarter of its radius + 1 about it. **0x80F9** (0x495CB0): types 7-9 and 0x16-0x18 unless byte_589134,
+and 0x273-0x276 unless byte_589130, take the status 0x80F9 for 240 updates (vt+0x88 with 0xF0, vt+0x90); it's what
+vt+0x10C (0x4898A0) tests: 0x273-0x276's update (0x48CC00) with its second renderer (+0xE8), and the bridges
+(0x498110, 0x498F20, 0x4993F0). 0x80EE / 0x80EF to the members are taken by one class only (0x498E90: unless its
+vt+0x118, vt+0x184(1)). In the test the lorries' 0x80E2 and 0x80F0 each reached the six objects in their sight
+(none of those types: nothing changed) and the group's mode went back to 0.
+
+*Provisional*: byte_589130 / byte_589134 are taken as the Martian research items 132 / 133 done; what the status
+0x80F9 does and 0x498E90's class (0x80EE / 0x80EF) aren't in.
 
 ## The battle AI (the computer player 0x442890: 0x445210, 0x4455D0, 0x4456B0, 0x445010, 0x445B90; the groups' 0x483B70; `battlemap/BattleAi.cpp`)
 

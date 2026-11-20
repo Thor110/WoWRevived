@@ -264,6 +264,8 @@ namespace wow
         void GroupOrder(int g, int command);                    // 0x4817C0's special cases: the group's mode (+0x1DC)
         static int FireMode(int gunType);                       // 0x496920: the group mode a gun fires in
         void ComputerSpecials(int g);                           // 0x482570
+        void MemberSpecial(size_t unit, int message, int level); // 0x495CB0's 0x80E1-0x80E3 / 0x80F0: 0x495C10
+        void ReceiveSpecial(size_t unit, int message, int level); // 0x80F8 (0x48C9B0) / 0x80F9 (0x495CB0)
         void StopAttacking(int group);                          // the target cleared, the guns 0x805A
         void AttackObject(int id);                              // packet 0x10 (0x4812B0 -> 0x481F70 -> 0x482880)
         void Approach(Unit& u, const Unit& target);             // vt+0xC4: 0x491100 -> 0x496300

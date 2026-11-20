@@ -217,7 +217,8 @@ namespace wow
     // mode 1; 0x80EE: halted (0x8031), the members 0x80B9, the target cleared, the guns stood down (0x805A), bit 0
     // cleared, mode 2; 0x80EF mode 3; 0x80D5-0x80DD modes 4-12; 0x80DE-0x80E0 13-15; 0x80E4-0x80EC 16-24; 0x80E1-0x80E3
     // each member 0x80E1-0x80E3 with 1-3, and 0x80F0 each member 0x80F0, at once.
-    // *Provisional*: what the members do with 0x80E1-0x80E3, 0x80F0, 0x80EE and 0x80EF isn't traced.
+    // 0x80EE / 0x80EF to the members are taken by one class only (0x498E90: unless vt+0x118, vt+0x184(1)).
+    // *Provisional*: 0x80EE / 0x80EF to the members (that class) aren't in.
     void BattleMap::GroupOrder(int g, int command)
     {
         if (g < 0 || size_t(g) >= groupMode.size()) return;
@@ -228,7 +229,61 @@ namespace wow
         else if (command >= 0x80D5 && command <= 0x80DD) mode = command - 0x80D5 + 4;
         else if (command >= 0x80DE && command <= 0x80E0) mode = command - 0x80DE + 13;
         else if (command >= 0x80E4 && command <= 0x80EC) mode = command - 0x80E4 + 16;
-        else SDL_Log("group %d: special 0x%X to its members (not in yet)", g, command);
+        else if ((command >= 0x80E1 && command <= 0x80E3) || command == 0x80F0)
+        {
+            // each member (0x4817C0's loop): 0x80E1-0x80E3 with 1-3, 0x80F0; each sends its message round (below)
+            std::vector<int> ids;
+            for (const Unit& u : units) if (u.group == g) ids.push_back(u.id);
+            for (int id : ids)
+                for (size_t i = 0; i < units.size(); i++)
+                    if (units[i].id == id) { MemberSpecial(i, command == 0x80F0 ? 0x80F9 : 0x80F8, command == 0x80F0 ? 0 : command - 0x80E0); break; }
+        }
+    }
+
+    // A member's 0x80E1-0x80E3 (0x80F8 with the level) or 0x80F0 (0x80F9) (0x495CB0): vt+0xFC (0x495C10) sends it to
+    // every object (the world's list) within its sight (+0x48; 0x43FF00 from whole positions, under it), itself too;
+    // then its group's mode is 0 (0x4807E0)
+    void BattleMap::MemberSpecial(size_t index, int message, int level)
+    {
+        const Unit u = units[index];
+        auto t = setup.units->find(u.type);
+        if (t == setup.units->end()) return;
+        const int sight = ObjOjd::Vision(t->second, setup.armour);
+        std::vector<int> ids;
+        for (const Unit& o : units)
+            if (Octagonal(int(u.x), int(u.y), int(o.x), int(o.y)) < sight) ids.push_back(o.id);
+        for (int id : ids)
+            for (size_t i = 0; i < units.size(); i++)
+                if (units[i].id == id) { ReceiveSpecial(i, message, level); break; }
+        if (u.group >= 0 && size_t(u.group) < groupMode.size()) groupMode[size_t(u.group)] = 0;
+    }
+
+    // 0x80F8 is taken only by the class of 0x273-0x276 (0x48C8E0, its handler 0x48C9B0): damage of the level x 50
+    // (vt+0xE0) and smoke 0x16F made a quarter of its radius + 1 about it. 0x80F9 (0x495CB0): types 7-9 and 0x16-0x18
+    // unless byte_589134 is set, and 0x273-0x276 unless byte_589130, get the status 0x80F9 for 240 updates (vt+0x88
+    // 0xF0, vt+0x90); whatever else, nothing.
+    // *Provisional*: byte_589130 / byte_589134 are taken as the Martian research items 132 / 133 done; what the
+    // status 0x80F9 does (vt+0x10C: 0x48CC00's renderer +0xE8 for 0x273-0x276, the bridges' 0x498110) isn't in; the
+    // smoke is made at the unit's point by Puff.
+    void BattleMap::ReceiveSpecial(size_t index, int message, int level)
+    {
+        Unit& u = units[index];
+        const bool special = u.type >= 0x273 && u.type <= 0x276;
+        auto done = [&](int item) { return setup.researchDone && setup.researchDone(false, item); };
+        if (message == 0x80F8)
+        {
+            if (!special) return;
+            Damage(index, level * 50);
+            Puff(0x16F, u.type, u.x, u.y, u.drive.lift, u.drive.radius * 3 / 4);
+            return;
+        }
+        if (message != 0x80F9) return;
+        const bool machine = (u.type >= 7 && u.type <= 9) || (u.type >= 0x16 && u.type <= 0x18);
+        if ((machine && !done(133)) || (special && !done(132)))
+        {
+            u.statusTime = 240;
+            ChangeStatus(u, 0x80F9);
+        }
     }
 
     // 0x482570, from the group's target chase (0x4826D0, so only while it has a target) for a computer's group
