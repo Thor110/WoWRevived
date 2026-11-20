@@ -27,12 +27,13 @@ namespace wow
     }
 
     WarMap::WarMap(Resources& r, MenuColours c, const SaveInfo& start, std::vector<SaveInfo::WarMapObject> objects,
-                   std::map<int, ObjOjd::UnitData> units, std::vector<int> owners, int scrollSpeed, float clunting)
+                   std::map<int, ObjOjd::UnitData> units, std::map<int, int> objectClasses, std::vector<int> owners, int scrollSpeed, float clunting)
         : Screen(Id, r, 0, warmap::PaletteGroup), colours(c), game(start), cluntingSpeed(clunting)
     {
-        // One counter for each kind of object in a sector's list, with how many there are. The first object of a
-        // kind carries the counter's position (cells of 36 pixels); the game places the rest itself. Kinds with no
-        // position (all resources) go in the sector's first free cell, in the game's spiral order (SectorCells).
+        // A counter for each object (0x42B2F0, made by 0x4205F0), except that objects of class 7 (AI.ojd's class,
+        // 0x518B14: wire fences, mines) share one a type and sector (0x4282A0 / 0x428270), with how many there are
+        // in the counter font (GType 0x6E, right-aligned). An object saved at 0, 0 goes in the sector's next free
+        // cell, in the game's spiral order (SectorCells).
         // a construction counts once it's finished: 0x42AA70 wants its +0x7C at least its +0x78, taken here as the
         // save's second float against its first (provisional: which float is which isn't traced; at the start
         // both are 1)
@@ -45,8 +46,10 @@ namespace wow
         {
             if (o.sector < 1 || o.sector > warmap::SectorCount) continue;
             Group* g = nullptr;
-            for (Group& existing : groups)
-                if (existing.sector == o.sector && existing.list == o.list && existing.type == o.unitType) { g = &existing; break; }
+            auto cls = objectClasses.find(o.unitType);
+            if (cls != objectClasses.end() && cls->second == 7)
+                for (Group& existing : groups)
+                    if (existing.sector == o.sector && existing.list == o.list && existing.type == o.unitType) { g = &existing; break; }
             if (!g) { groups.push_back({ o.sector, o.list, o.unitType, 0, 0, 0 }); g = &groups.back(); }
             g->count++;
             if (!g->x && !g->y) { g->x = o.x; g->y = o.y; }
@@ -282,8 +285,8 @@ namespace wow
             canvas.DrawSprite(0x77, k.frame, x, y);
             if (&k - counters.data() == chosen) canvas.DrawSprite(0x54, 0, x, y); // cselecth.spr
             // the count, in the counter font (GType 0x6E, hcntfnt.fnt; where the game puts it isn't traced yet)
-            if (k.count > 1)
-                canvas.DrawString(0x6E, std::to_string(k.count), { x, y + 26, 32, 10 }, TextCentreX);
+            if (k.count > 1) // where the game's text object sits on the counter isn't traced
+                canvas.DrawString(0x6E, std::to_string(k.count), { x, y + 22, 30, 10 }, TextRight);
         }
 
         // the panel: its frame, the three view buttons (frame 2 for the one that's on, 1 under the mouse; the
@@ -545,19 +548,36 @@ namespace wow
         Canvas::TexVertex left{ hx - dy * c, hy + dx * c, 64, 63 }, right{ hx + dy * c, hy - dx * c, 191, 63 },
             tip{ hx + dx * d, hy + dy * d, 128, 0 };
         canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, left, right, tip);
+
+        // the arrival label (a text object, font 0x71, at the route's end, 0x49D260), the hours still to go being
+        // what's left of the way over the counter's pixels an hour
+        float left_ = 0, px = float(k.x), py = float(k.y);
+        for (const auto& p : k.route)
+        {
+            left_ += std::hypot(float(p.first) - px, float(p.second) - py);
+            px = float(p.first); py = float(p.second);
+        }
+        float perHour = PixelsPerHour(k);
+        if (perHour > 0)
+        {
+            std::string label = warmap::ArrivalText(game.dateTime, left_ / perHour, human);
+            auto [ex, ey] = points.back();
+            canvas.DrawString(0x71, label, Rect{ int(ex) - 60, int(ey) - 10, 120, 20 }, TextCentreX | TextCentreY);
+        }
     }
 
     bool WarMap::HasCommandPost(int sector) const
     {
         // 0x43C990: the sector's owner has its command building there, finished. A Human sector needs a Command
-        // Post (type 314; in London, sector 30, the war room, 278), a Martian one a Communications Centre (120;
-        // in sector 3, where the Martians land, 830). "No further advance or construction can be co-ordinated in
+        // Post (OTYPE_CommandPost, 58; in London, sector 30, 278), a Martian one a Communications Centre (120; in
+        // sector 3, where the Martians land, 830). The Human type is worked out as 0x116 + (sector == 30 ? 0 :
+        // 0xFFFFFF24, from "and al, 24h" on -1), which wraps to 0x3A. "No further advance or construction can be co-ordinated in
         // the vicinity until a command post has been built." A sector no one holds never has one.
         if (sector < 1 || sector > warmap::SectorCount) return false;
         int who = owner[size_t(sector)];
         if (who == 2) return false;
         bool human = (who == 0) == res.Human();
-        int type = human ? (sector == 30 ? 278 : 314) : (sector == 3 ? 830 : 120);
+        int type = human ? (sector == 30 ? 278 : 58) : (sector == 3 ? 830 : 120);
         const auto& here = finished[size_t(sector)];
         return std::find(here.begin(), here.end(), type) != here.end();
     }

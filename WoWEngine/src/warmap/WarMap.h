@@ -27,7 +27,7 @@ namespace wow
         // start: the save it begins from (its WMAP block gives the view and sector)
         // units: each unit type's counter frame (OBJ.ojd record 23) and war map speed (records 37/38)
         WarMap(Resources& res, MenuColours colours, const SaveInfo& start, std::vector<SaveInfo::WarMapObject> objects,
-               std::map<int, ObjOjd::UnitData> units, std::vector<int> owners, int scrollSpeed, float cluntingSpeed = 7.0f);
+               std::map<int, ObjOjd::UnitData> units, std::map<int, int> objectClasses, std::vector<int> owners, int scrollSpeed, float cluntingSpeed = 7.0f);
 
         void Update() override;
         void Draw(Canvas& canvas) const override;

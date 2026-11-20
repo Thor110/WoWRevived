@@ -96,9 +96,10 @@ The world's constructor makes 30 sector objects (0x420160 -> 0x428110), each lay
 corner. Saved positions are cell corners (468 = 13 x 36). Each view mode shows one kind: Unit View the units, 
 Construction View the buildings, Resource View the resources; a unit and a building can share a cell.
 
-The engine draws one counter (GType 0x77) per kind of object in a sector's list, at its first object's position,
-with the count in the counter font when there's more than one. Kinds without a position (all resources) go in the
-sector's first free cell. Each sector has a grid of 36 pixel cells over its bounds, rounded out (0x428110), a cell
+Every object has a counter of its own (GType 0x77; WWarMapObject 0x42B2F0, made by 0x4205F0), except objects of
+class 7 (each type's class is AI.ojd's, 0x441580 -> 0x518B14: gun emplacements, heat ray turrets, wire fences,
+mines), which share one counter a type and sector (0x4282A0 / 0x428270) with a count in the counter font (GType
+0x6E, right-aligned; updated by 0x8145). Objects saved at 0, 0 go in the sector's next free cell. Each sector has a grid of 36 pixel cells over its bounds, rounded out (0x428110), a cell
 being the sector's when CHI.SPR (GType 0x84) has its number at the cell's corner; the war map takes cells in a
 square spiral from the grid's middle cell (0x4283F0 modes 2 and 3; 0 and 1 go row by row): the middle, then rings
 1-15 built by 0x4282C0, each clockwise from the cell above the middle. Where the count goes isn't traced.
@@ -160,8 +161,11 @@ sector sends it there.
   The textures are raw 8-bit images (graphics class 6) 256 x 64: the body strip in the first 64 columns (across
   its width), the head's triangle in the next 128 (apex at 128, 0). The body is textured quads (0x410090) out to
   a third of a stretch from the end, its half width going from the first number to the second along the way
-  (offsets at right angles from 0x43FE90); the head is textured triangles (0x410190) from there, with a "--:--"
-  label at the end (not drawn yet). The engine draws all of this with the game's textures and numbers, but:
+  (offsets at right angles from 0x43FE90); the head is textured triangles (0x410190) from there. A text object (0x49D260, font 0x71) at the end shows the
+  arrival, set when the route starts (0x424160) and every game hour after (0x425080) from the hours still to go
+  by 0x41B9A0: for the Humans the hour, "03pm" (hour mod 12, am/pm from 0x4B9FC0), then " 4 Sep" unless it's within
+  24 hours on the same day, then the year if it's another year's; for the Martians the days since the start at the
+  arrival with hundredths, "12.50". The engine draws all of this with the game's textures and numbers, but:
   the curve is a Catmull-Rom spline (*provisional*: 0x424A40 bends it by headings), the head is one triangle the
   fourth number long (the game uses three), the body texture runs a pixel a row along the curve, the float isn't
   used, and every route takes style 0 / 2.
@@ -184,14 +188,15 @@ sector sends it there.
   - 1 / 2: the link isn't one of the unit's: the unit type's +0x4E (OBJ.ojd record 36) is 0-2 for land units
     (link bits 1, 2 or 4), 3 for boats (0x10), 4 for fliers (any)
   - 3: neither end has its owner's command building, finished (0x43C990: a Human sector needs a Command Post, type
-    314, or in London (30) the war room, 278; a Martian one a Communications Centre, 120, or in sector 3 the
+    58, or in London (30) type 278 (the code adds 0x116 and the low byte 0x24 of -1, which wraps to 0x3A); a Martian one a Communications Centre, 120, or in sector 3 the
     landing site, 830. Finished is the construction's +0x7C at least its +0x78 (0x42AA70); the engine compares
     the save's two floats, *provisional* as to which is which)
   - 4 / 5: a sector passed through (not the goal) has no command building, or isn't the player's
   - 6: the start has no command building and the step goes into a sector that isn't the player's
   - 7 / 8: the goal would hold more than `[Tweak] "Max units in sector"` (default 15) units, or `"Max boats in
     sector"` (5) boats, counting what's there already
-  So at the start of a campaign, with only the war room, moves go from or to London or through it. The text for
+  The Human campaign starts with command posts in 15 sectors, so most moves through the player's own sectors
+  are allowed. The text for
   a refusal is the engine's own. Boats cross at a link's sea points, fliers at its land points if it has them.
 - Going into a sector the other side holds stops the counter at the border with a message (a battle, which needs
   the battle map), and arriving in a sector no one holds takes it (*provisional*).

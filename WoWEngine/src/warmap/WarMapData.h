@@ -12,6 +12,7 @@
 #pragma once
 #include <array>
 #include <cstdint>
+#include <string>
 
 namespace wow::warmap
 {
@@ -310,6 +311,41 @@ namespace wow::warmap
     inline constexpr float Speeds[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }; // 0x4BA470
 
     // Moves a date (the DtTm words: hours elapsed, minute, hour, day and month from 0, year) on by some hours.
+    inline void AdvanceDate(uint16_t (&d)[6], int hours);
+
+    // A route's arrival label (0x41B9A0, called by 0x424160 and every game hour by 0x425080 with the hours still
+    // to go): for the Humans the arrival's hour, "03pm" (the hour mod 12, so noon is "00pm"), with " 4 Sep" after
+    // it unless it's within 24 hours on the same day, and the year when it isn't this year's; for the Martians
+    // the days since the start at the arrival, with hundredths: "12.50".
+    inline std::string ArrivalText(const uint16_t (&now)[6], float hours, bool human)
+    {
+        static constexpr const char* Months[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+        uint16_t at[6];
+        for (int i = 0; i < 6; i++) at[i] = now[i];
+        int whole = int(hours), minutes = now[1] + int((hours - float(whole)) * 60.0f);
+        if (minutes >= 60) { minutes -= 60; whole++; }
+        at[1] = uint16_t(minutes);
+        AdvanceDate(at, whole);
+        std::string text;
+        if (human)
+        {
+            int h = at[2] % 12;
+            text = { char('0' + h / 10), char('0' + h % 10) };
+            text += at[2] >= 12 ? "pm" : "am";
+            if (!(hours < 24.0f && at[3] == now[3]))
+            {
+                text += " " + std::to_string(at[3] + 1) + " " + Months[at[4] % 12];
+                if (at[5] != now[5]) text += " " + std::to_string(at[5]);
+            }
+        }
+        else
+        {
+            int days = at[0] / 24, hundredths = (at[0] % 24) * 100 / 24;
+            text = std::to_string(days) + "." + char('0' + hundredths / 10) + char('0' + hundredths % 10);
+        }
+        return text;
+    }
+
     inline void AdvanceDate(uint16_t (&d)[6], int hours)
     {
         static constexpr int Days[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };

@@ -1,4 +1,6 @@
 #include "frontend/FrontEnd.h"
+
+#include "core/AiTable.h"
 #include "core/SaveGame.h"
 #include "warmap/WarMap.h"
 #include "core/ObjOjd.h"
@@ -424,7 +426,16 @@ namespace wow
             try { arrows = ObjOjd::LoadArrowTypes(objData); }
             catch (const std::exception& e) { SDL_Log("OBJ.ojd arrow types: %s", e.what()); }
         }
-        auto map = std::make_unique<WarMap>(res, settings.colours, info, SaveInfo::WarMapObjects(data), std::move(units),
+        // each object type's class (AI.ojd, 0x441580 -> 0x518B14)
+        std::map<int, int> classes;
+        if (auto ai = files.Resolve("AI.ojd"))
+        {
+            std::ifstream in(*ai, std::ios::binary);
+            std::vector<uint8_t> aiData((std::istreambuf_iterator<char>(in)), {});
+            try { for (const auto& [id, e] : AiTable::Load(aiData).entries) classes[id] = e.value; }
+            catch (const std::exception& e) { SDL_Log("AI.ojd: %s", e.what()); }
+        }
+        auto map = std::make_unique<WarMap>(res, settings.colours, info, SaveInfo::WarMapObjects(data), std::move(units), std::move(classes),
             SaveInfo::SectorOwners(data), ini.GetInt("Screen", "Scroll Speed", 40), ini.GetFloat("Tweak", "Clunting Speed", 7.0f));
         map->SetArrowTypes(std::move(arrows));
         map->SetSectorLimits(ini.GetInt("Tweak", "Max units in sector", 15), ini.GetInt("Tweak", "Max boats in sector", 5));
