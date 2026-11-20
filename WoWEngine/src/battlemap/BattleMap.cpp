@@ -65,6 +65,8 @@ namespace wow
         {
             Unit& u = units[i];
             // a vehicle (category 1) drives: 0x490820 / 0x490E70 (the turn limit by move class, the phase from rand())
+            // every object's +0xAC is its type's +0x44 word (the neighbours keep apart by it)
+            if (auto d = setup.units->find(u.type); d != setup.units->end()) u.drive.radius = int16_t(d->second.hitPoints);
             if (auto d = setup.units->find(u.type); d != setup.units->end() && d->second.category == 1)
             {
                 u.vehicle = true;

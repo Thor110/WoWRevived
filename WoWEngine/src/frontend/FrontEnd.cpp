@@ -1055,6 +1055,12 @@ namespace wow
         s.vehicles.targAccMax = ini.GetFloat("Vehicles", "targAccMax", 0.15f);
         s.vehicles.arrivalRadius = ini.GetFloat("Vehicles", "arrivalRadius", 1.5f);
         s.vehicles.speedCostDivisor = ini.GetFloat("Vehicles", "speedCostDivisor", 25.0f);
+        s.vehicles.separationAccWeight = ini.GetFloat("Vehicles", "separationAccWeight", 0.2f);
+        s.vehicles.separationAccMax = ini.GetFloat("Vehicles", "separationAccMax", 0.1f);
+        s.vehicles.velMatchAccWeight = ini.GetFloat("Vehicles", "velMatchAccWeight", 0.08f);
+        s.vehicles.velMatchAccMax = ini.GetFloat("Vehicles", "velMatchAccMax", 0.03f);
+        s.zMapRes = ini.GetInt("System", "ZMapRes", 400);
+        if (s.zMapRes < 1) s.zMapRes = 400;
         try
         {
             auto battle = std::make_unique<BattleMap>(res, s);

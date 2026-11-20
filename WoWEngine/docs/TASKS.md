@@ -176,8 +176,9 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       fliers, boats, buildings, fences, mines, pods (0x446B30, 0x48A4C0-, 0x4956D0-) — 07, 12, 13
 - [~] **Vehicles driving** (`battlemap/Driving.cpp`): the move order straight to a point (0x482E60, 0x80C2), the
       stopped / arrived flags, the target behaviour and the acceleration budget, speed control, the turn limit and
-      reversing, arrival and the delayed stop, Backspace's halt (docs/BATTLEMAP.md "Driving"). Still to do: the
-      collision lookahead and neighbour behaviours (0x492350, 0x492C00), the route finder (0x493DF0-0x494960),
+      reversing, arrival and the delayed stop, Backspace's halt, the neighbours (0x492C00 on the ZMapRes bucket
+      grid) with separation and velocity matching (docs/BATTLEMAP.md "Driving"). Still to do: the collision
+      lookahead with braking and avoidance (0x492350, 0x491EA0, 0x491D90), arrival and attraction, the route finder (0x493DF0-0x494960),
       the ground's cost, bridges, the destination flag, speech and engine sounds
 - [ ] **Unit groups, orders, stances, specials** (Black Dust ... Scan) and the order panel (0x480190, 0x47CCF0-;
       the 0x80A0 stagger 0x47CEE0) — 07, 10, 11

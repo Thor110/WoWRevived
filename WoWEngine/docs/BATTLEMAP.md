@@ -440,6 +440,24 @@ Backspace (packet 0x11) sends the members 0x8031: stopped.
   (0x491FA0: only on a route inside the radius, -velocity), separation, the target (0x491BB0: the target less the
   position, `targAccWeight` / `targAccMax`), avoidance, braking (0x491C70: with bit 3, -velocity unit, halved
   without bit 4), velocity matching and attraction to the route, gated as the survey lists;
+- the order and gates (0x492F40, the slots of vtable 0x4AE6B0): vt+0x158 (0x491EA0) when the lookahead 0x492350
+  finds something; the neighbours gathered (0x492C00); vt+0x168 (0x491FA0, arrival) when neither arrived (bit 1)
+  nor bit 5; vt+0x154 (0x4920A0, separation) with no bridge link (+0x18C) and not bit 5; vt+0x150 (0x491BB0, the
+  target) always; vt+0x15C (0x491D90, avoidance: with bit 3, away along the +0x110 vector, `avoidanceAcc*`) with no
+  link; vt+0x160 (0x491C70) without bit 5; vt+0x16C (0x492160, velocity matching) with no link and not bit 5;
+  vt+0x164 (0x492240) the same and +0xEC set;
+- **neighbours** (0x492C00): +0x120..+0x144 cleared, then every object in four cells of the bucket grid (WBucketGrid
+  at the battle map's +0x118, cells `[System] ZMapRes` square, default 400, over the world's width and the rows'
+  extent): the unit's own cell and, for q 1 to 3 (0x449920), the cell beside it across, up or down, and diagonally,
+  on the sides it's nearer (the remainder against half a cell). A neighbour clamped back onto the unit's own cell
+  gives nothing for q 1 and 2, but q 3 then returns the other one again, so at a map edge one neighbour cell is
+  counted twice. Each object (0x492A90) that isn't the unit, isn't category 4, passes vt+0xBC, is within 64 in
+  height and isn't type 0x273-0x276 adds the difference over gap³ to the push (+0x120 / +0x124; the gap is the
+  distance less both radii, +0xAC, at least 0.001) and is counted (+0x144); one of the same group (0x47EB00) that's a
+  vehicle (+0xB8 bit 0) and going (vt+0x144) also adds its step (+0x88 / +0x8C) to +0x128 / +0x12C and its position
+  to +0x130 / +0x134, counted in +0x138;
+- **separation** (0x4920A0): with any counted, the push x the count, `separationAccWeight` / `separationAccMax`;
+  **velocity matching** (0x492160): with any matched, their average step, `velMatchAccWeight` / `velMatchAccMax`;
 - added in that order until their lengths come to maxAcc (the one that crosses it cut to what's left); the sum goes
   on the steering velocity;
 - within (1 + 0.625 x sqrt(group size)) x the arrival radius of the target, the radius grows by +0x11C.
@@ -455,7 +473,10 @@ than 0x400 away turning toward the opposite and driving backwards; the step the 
 (+ +0x13A). Once (bit 1): the group counts it (0x482450) and 0x808B(1) stops it 9 x (members not arrived) + 60
 updates on, so it runs on a little before slowing to a stop.
 
-*Provisional*: only the target behaviour is in (no collision lookahead 0x492350, no neighbours 0x492C00, so
-separation, avoidance and velocity matching are missing and a group bunches up); no route finder (every order goes
+*Provisional*: the target, separation and velocity matching are in; the collision lookahead (0x492350), so braking
+and avoidance, isn't, nor arrival and attraction (they need a route), so units still close up when they stop (in a
+test the five of a group travelled 36-54 apart and ended 9-33 apart). Only units are in the neighbour search (the
+game's grid holds every battle map object that places itself) and the cells are worked out from where they are
+each time rather than where they were put in; no route finder (every order goes
 straight, through buildings); the snap, the stagger's distances, the ground's cost (taken as no slowing) and the
 bridges' links are approximations; no destination flag, speech or engine sounds yet.

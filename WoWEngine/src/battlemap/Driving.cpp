@@ -142,9 +142,13 @@ namespace wow
     // the speed long, the turn at most min(8 + 120 x maxAcc x speed, +0x140 x speed) toward its heading (a type of base
     // 0x13 turned more than 0x400 away drives backwards), and the step the speed long along the heading (0x43FE90),
     // taken by vt+0x54 (0x47F770).
-    // *Provisional*: only the target behaviour; the collision lookahead (0x492350) and the neighbours (0x492C00:
-    // separation, avoidance, velocity matching), braking (bit 3), arrival and attraction (both need a route) aren't
-    // in, nor the bridge links.
+    // The behaviours in the game's order: the lookahead's braking (vt+0x158, when 0x492350 finds something ahead), the
+    // neighbours gathered (0x492C00), arrival (vt+0x168, not arrived and not bit 5), separation (vt+0x154, no link and
+    // not bit 5), the target (vt+0x150), avoidance (vt+0x15C, no link), attraction (vt+0x160, not bit 5), velocity
+    // matching (vt+0x16C, no link and not bit 5) and the attribute (vt+0x164, also needing +0xEC).
+    // *Provisional*: only separation, the target and velocity matching are in. The collision lookahead (0x492350,
+    // which sets bit 3 and the +0x110 vector that braking and avoidance (0x491D90: away from it) use) isn't, nor
+    // arrival and attraction (both need a route), the attribute, bit 5 or the bridge links.
     void BattleMap::Steer(Unit& u)
     {
         auto& d = u.drive;
@@ -160,11 +164,20 @@ namespace wow
                 if (len > max) { ax = float(ax * double(max) / len); ay = float(ay * double(max) / len); }
                 acc.push_back({ ax, ay });
             };
-            // the target (0x491BB0)
+            const Neighbours n = Gather(u);
+            // separation (vt+0x154, 0x4920A0): the neighbours' push x how many there are
+            if (n.count > 0)
+                add(float(double(v.separationAccWeight) * v.maxAcc), float(double(v.separationAccMax) * v.maxAcc),
+                    float(double(n.sepX) * n.count), float(double(n.sepY) * n.count));
+            // the target (vt+0x150, 0x491BB0)
             {
                 const float fx = float(double(d.tx) - u.x), fy = float(double(d.ty) - u.y);
                 add(float(double(v.targAccWeight) * v.maxAcc), float(double(v.targAccMax) * v.maxAcc), fx, fy);
             }
+            // velocity matching (vt+0x16C, 0x492160): the moving group members' average step
+            if (n.matched > 0)
+                add(float(double(v.velMatchAccWeight) * v.maxAcc), float(double(v.velMatchAccMax) * v.maxAcc),
+                    float(double(n.stepX) / n.matched), float(double(n.stepY) / n.matched));
             double used = 0, sx = 0, sy = 0;
             for (auto [ax, ay] : acc)
             {
@@ -215,6 +228,56 @@ namespace wow
         Polar(int(float(d.heading) + back), d.speed, d.dx, d.dy);
         u.x = float(double(d.dx) + u.x);
         u.y = float(double(d.dy) + u.y);
+    }
+
+    // 0x492C00: the objects in the unit's bucket grid cell (ZMapRes square, built by 0x439770 over the map) and the
+    // three cells beside it on the sides it's nearer (0x449920 q 1 to 3; one off the map's edge gives none for 1 and
+    // 2, and 3 then gives the other side's neighbour again, so it's counted twice). Each one (0x492A90) that isn't
+    // itself, is within 64 in height and isn't a type 0x273 to 0x276 adds to the push away from it, the difference over
+    // the cube of the gap between their radii (at least 0.001), and is counted; a moving vehicle of the same group
+    // also adds its step and position to the averages.
+    // *Provisional*: only the units are in the grid (the game's holds every battle map object that places itself,
+    // less category 4 and what vt+0xBC turns down), and the cells are worked out from where they are now.
+    BattleMap::Neighbours BattleMap::Gather(const Unit& u) const
+    {
+        Neighbours n;
+        const int size = setup.zMapRes;
+        const int cols = (land.WorldWidth() + size - 1) / size;
+        const int rows = (int((int64_t(land.Cell()) * land.Height()) >> 16) + size - 1) / size;
+        auto clampTo = [](int v, int count) { return v < 0 ? 0 : v >= count ? count - 1 : v; };
+        const int px = int(u.x), py = int(u.y);
+        const int cx = clampTo(px / size, cols), cy = clampTo(py / size, rows);
+        const int nx = clampTo(cx + ((px % size) >= size / 2 ? 1 : -1), cols);
+        const int ny = clampTo(cy + ((py % size) >= size / 2 ? 1 : -1), rows);
+        std::vector<std::pair<int, int>> cells{ { cx, cy } };
+        if (nx != cx) cells.push_back({ nx, cy });
+        if (ny != cy) cells.push_back({ cx, ny });
+        if (nx != cx || ny != cy) cells.push_back({ nx, ny });
+        const int z = land.HeightAt(px, py);
+        for (auto [gx, gy] : cells)
+            for (const Unit& o : units)
+            {
+                if (&o == &u) continue;
+                const int ox = int(o.x), oy = int(o.y);
+                if (clampTo(ox / size, cols) != gx || clampTo(oy / size, rows) != gy) continue;
+                if (std::abs(land.HeightAt(ox, oy) - z) > 64) continue;
+                if (o.type >= 0x273 && o.type <= 0x276) continue;
+                const float ddx = float(double(u.x) - o.x), ddy = float(double(u.y) - o.y);
+                double gap = std::sqrt(double(ddx) * ddx + double(ddy) * ddy) - u.drive.radius - o.drive.radius;
+                if (!(gap > 0.001)) gap = double(0.001f);
+                n.sepX = float(double(ddx) / gap / (gap * gap) + n.sepX);
+                n.sepY = float(double(ddy) / gap / (gap * gap) + n.sepY);
+                if (o.group == u.group && o.players == u.players && o.vehicle && !(o.drive.flags & 1))
+                {
+                    n.stepX += o.drive.dx;
+                    n.stepY += o.drive.dy;
+                    n.posX += o.x;
+                    n.posY += o.y;
+                    n.matched++;
+                }
+                n.count++;
+            }
+        return n;
     }
 
     // 0x492DE0: the speed it may go is the type's +0x54 word x 0.02 (vt+0x12C, 0x492DB0), over the ground's cost there

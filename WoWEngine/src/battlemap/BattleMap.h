@@ -54,7 +54,12 @@ namespace wow
                 float targAccMax = 0.15f;           // flt_59E234
                 float arrivalRadius = 1.5f;         // flt_59E294
                 float speedCostDivisor = 25.0f;     // flt_59E2DC
+                float separationAccWeight = 0.2f;   // flt_59E3B4
+                float separationAccMax = 0.1f;      // flt_59E324
+                float velMatchAccWeight = 0.08f;    // flt_59E24C
+                float velMatchAccMax = 0.03f;       // flt_59E204
             } vehicles;
+            int zMapRes = 400;          // [System] "ZMapRes" (dword_4F7424): the bucket grid's cell size
         };
 
         // Throws when the map's files can't be read.
@@ -133,6 +138,9 @@ namespace wow
         void Steer(Unit& u);
         void SpeedControl(Unit& u, float wanted);
         void Advance(Unit& u);
+        // 0x492C00 / 0x492A90: what a unit's neighbours add up to (+0x120..+0x144)
+        struct Neighbours { float sepX = 0, sepY = 0, stepX = 0, stepY = 0, posX = 0, posY = 0; int matched = 0, count = 0; };
+        Neighbours Gather(const Unit& u) const;
         void Post808B(Unit& u, int value, int delay);
         double Radius(int type);
         std::map<int, std::vector<uint8_t>> wofFiles;        // each WOF GType's file, loaded once
