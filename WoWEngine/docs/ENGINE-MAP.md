@@ -97,6 +97,8 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x489340–0x4916E0 | Vehicles | Steering values (`Vehicles` section), shown on `Fun` / `Debug` toggles |
 | 0x490820–0x4935C0 | Ground vehicle | Move order, steering and speed (0x492F40, 0x492DE0, 0x491870), neighbours (0x492C00 / 0x492A90) with separation (0x4920A0) and velocity matching (0x492160), the lookahead (0x492350, objects by 0x47FE10 / 0x47FD40) with avoidance (0x491D90) and braking (0x491C70); `src/battlemap/Driving.cpp` |
 | 0x449710–0x449BD0 | WBucketGrid | The battle map's object grid, `[System] ZMapRes` cells; 0x449920 gives a point's cell and its nearer neighbours; `BattleMap::Gather` |
+| 0x4802E0–0x480740 | WBMGroup ground | The group's terrain and slope costs from OBJ.ojd records 10 / 11 and a vertex's cost; `BattleMap::SetUpGrounds` / `CellCost` |
+| 0x482B00 | Nearest passable node | `BattleMap::NearestPassable` |
 | 0x493DF0–0x494370 | WRouteFinder | |
 | 0x495620–0x496D60 | Puppets | Units' sub-objects |
 | 0x496D60–0x497890 | Hotspots | An object's click window, its selection brackets and power bar; `BattleMap::ReleaseLeft` / `DrawSelection` |

@@ -69,6 +69,7 @@ namespace wow
         int Width() const { return width; }
         int Height() const { return height; }
         int32_t Cell() const { return cell; }
+        int32_t HalfCell() const { return halfCell; }   // +0x34
         const Vertex& At(int x, int y) const { return vertices[size_t(y) * size_t(width) + size_t(x)]; }
         Vertex& At(int x, int y) { return vertices[size_t(y) * size_t(width) + size_t(x)]; }
         const std::vector<Vertex>& Vertices() const { return vertices; }

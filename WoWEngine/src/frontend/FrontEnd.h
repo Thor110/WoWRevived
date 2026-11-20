@@ -147,6 +147,8 @@ namespace wow
         std::map<int, ObjOjd::BattleTables::DayTime> dayTimes;   // OBJ.ojd record 9
         std::map<int, ObjOjd::BattleTables::Six> wofTypes;       // OBJ.ojd record 6
         std::map<int, ObjOjd::BattleTables::Thirteen> lightTypes; // OBJ.ojd record 13
+        std::map<int, std::array<int, 17>> moveCosts;             // OBJ.ojd record 10
+        std::map<int, std::pair<int, float>> moveSlopes;          // OBJ.ojd record 11
         int lastEnemyCount = 0;                                 // dword_4F7430 from the battle before
         bool StartBattleMap();
         bool inBattle = false;

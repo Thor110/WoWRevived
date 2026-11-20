@@ -435,6 +435,21 @@ x 0.5; then 0x808B(0) is posted (0x4355A0's last argument is the delay): at once
 0.01), else after ftol(5 x members x (+0xD4 - the group's +0x68) / (+0x6C - +0x68 + 1) + rand() % 8) updates.
 Backspace (packet 0x11) sends the members 0x8031: stopped.
 
+**The ground** (WBMGroup 0x4802E0, 0x480680): each group works out from its members, by move class (the type's +0x52
+word) and OBJ.ojd records 10 (17 costs a class, 0x4F6E38) and 11 (max slope and slope base, 0x4F04C0 / 0x4F0510):
+airborne (+0x1D8 bit 5) when every member is of class 7; bit 6 when their side holds the sector; for each of the 16
+terrain types the largest cost (compared unsigned, so -1, can't cross, wins); the max slope (+0x4C) the smallest; the
+class (+0x52) the one with the largest slope base (over -1000); and the slope costs (+0xB4) ftol(pow(base, s)), s 1
+to 8, for all 8 classes. A vertex's cost (0x480680, strict or not) reads its ATM byte (terrain the low nibble, slope
+the high + 1): 0 for a terrain cost of -1 or a slope over the max, and, unless airborne, for flags bit 1, bit 2 when
+strict, or bit 3 in its own sector; else the slope cost x the terrain cost. In sector 30 the group of five came to max
+slope 6, class 2, terrains 0-3 closed and 4-7 costing 3, 4, 9 and 5; the ground under them cost 1 to 8.
+
+**The point** (0x482B00, both ends of a move): the point's vertex goes to the route finder's node at or before it
+(((v - 4) / 4) x 4 + 4, nodes 4 apart) and squares 0, 4, 8 ... under 200 out are tried at 8 points each (right,
+right-down, down, left-down, left, left-up, up, right-up), kept on the map, until the group can stand there (0x480680
+strict). An order onto the Thames stops on the embankment.
+
 **Steering** (0x492F40), every vt+0x148 (3) updates on the phase:
 - the accelerations, each its force x weight x maxAcc with its length at most max x maxAcc (0x491B20): arrival
   (0x491FA0: only on a route inside the radius, -velocity), separation, the target (0x491BB0: the target less the
@@ -458,8 +473,9 @@ Backspace (packet 0x11) sends the members 0x8031: stopped.
   to +0x130 / +0x134, counted in +0x138;
 - **lookahead** (0x492350), first: bit 3 cleared; four points looked at, the unit's position and then each a step on
   along the heading (max(speed x 0.5, 1) x `collisionCheckDist` x the radius; dword_4D05C4 = 4 of them). At each,
-  with a ground group (+0x34) and not bit 7, the vertices a radius ahead, left and right are checked for ground it
-  can't cross (0x480680 giving 0, off a bridge link): +0x110 / +0x114 toward that vertex, bit 3 set and 4 cleared,
+  with a ground group (+0x34) and not bit 7, the vertices (kept on the map, 0x492950) a radius ahead, left and right
+  are checked in turn for ground it can't cross (0x480680 giving 0, off a bridge link): +0x110 / +0x114 toward that
+  vertex ((v x cell - half) >> 16 less the point), bit 3 set and 4 cleared,
   and at the first point a type of move class 5 or 6 returns true (then vt+0x158, 0x491EA0, steers away from it with
   `attributeAccWeight` / `attributeAccMax`). Then the object there (0x47FE10: the cells of 0x449920 in turn until
   one has one; in a cell (0x47FD40) the nearest, by the larger difference plus half the smaller, under its radius +
@@ -487,10 +503,11 @@ than 0x400 away turning toward the opposite and driving backwards; the step the 
 (+ +0x13A). Once (bit 1): the group counts it (0x482450) and 0x808B(1) stops it 9 x (members not arrived) + 60
 updates on, so it runs on a little before slowing to a stop.
 
-*Provisional*: the lookahead (without its ground check and crushing, so it never returns true), separation, the
-target, avoidance, braking and velocity matching are in; arrival and attraction (they need a route) aren't (in a test
+*Provisional*: the lookahead (without crushing, bit 7 or the bridge links), vt+0x158, separation, the target,
+avoidance, braking and velocity matching are in, and the speed is slowed by the ground's cost; each group's ground is
+set up once at the start, counting every member as +0xB8 bit 0; arrival and attraction (they need a route) aren't (in a test
 the five of a group travelled 34-54 apart and stopped 20-39 apart, their radii 14). Only units are in the grid (the
 game's holds every battle map object that places itself), vt+0xBC lets all through, and the cells are worked out
 from where they are each time rather than where they were put in; no route finder (every order goes
-straight, through buildings); the snap, the stagger's distances, the ground's cost (taken as no slowing) and the
-bridges' links are approximations; no destination flag, speech or engine sounds yet.
+straight, through buildings, though onto ground it can stand on); the start isn't snapped, and the stagger's
+distances and the bridges' links are approximations; no destination flag, speech or engine sounds yet.

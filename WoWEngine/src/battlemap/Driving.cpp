@@ -31,28 +31,62 @@ namespace wow
         }
     }
 
-    // 0x0E from the player (0x481CA0 -> 0x482510 -> 0x804F, 0x482E60): the point snapped to a vertex, and with no
+    // 0x0E from the player (0x481CA0 -> 0x482510 -> 0x804F, 0x482E60): the point snapped (below), and with no
     // route needed, "GOING STRAIGHT THERE!": each member is sent 0x80C2 with it. 0x80C2 (0x490A70): the route goes, the
     // target is the point, the arrival radius the unit's radius x arrivalRadius + 20 and its growth (+0x11C) the
     // group's average war map speed (+0x1D0) x 0.01 x members / 2; a unit standing still (speed 0.01 or less) waits
     // ftol(5 x members x (its distance - the nearest's) / (the farthest's - the nearest's + 1) + rand() % 8) updates,
     // one already moving none, before 0x808B(0) sets it going.
-    // *Provisional*: the route finder (0x494440) isn't in, so every order goes straight; the snap (+0x30 / +0x34) and
-    // the distances the stagger uses (+0xD4, the group's +0x68 / +0x6C) are taken as the vertex nearest the point and
-    // each member's distance to it; "ALREADY AT DESTINATION" (within 3 cells), the destination flag (type 0x17C) and
-    // the speech (0x10A) aren't.
+    // The point goes to its vertex and then the nearest node the group can stand on (0x482B00).
+    // *Provisional*: the route finder (0x494440) isn't in, so every order goes straight; the start isn't snapped (it
+    // only feeds the route search and the attack range check), and the distances the stagger uses (+0xD4, the
+    // group's +0x68 / +0x6C) are taken as each member's distance to the point; "ALREADY AT DESTINATION" (within 3
+    // cells), the destination flag (type 0x17C) and the speech (0x10A) aren't.
     void BattleMap::OrderMove(int x, int y)
     {
-        std::vector<size_t> members;
-        for (size_t i = 0; i < units.size(); i++)
-            if (units[i].players && units[i].vehicle && selected[size_t(units[i].group)]) members.push_back(i);
+        // each selected group gets the order (0x804F to the group)
+        for (size_t g = 0; g < selected.size(); g++)
+        {
+            if (!selected[g]) continue;
+            std::vector<size_t> members;
+            for (size_t i = 0; i < units.size(); i++)
+                if (units[i].players && units[i].vehicle && units[i].group == int(g)) members.push_back(i);
+            OrderGroupMove(int(g), members, x, y);
+        }
+    }
+
+    // 0x482B00 (vertex x, y): from the route finder's node at or before it (every 4 vertices from 4: ((v - 4) / 4)
+    // x 4 + 4), squares 0, 4, 8 ... under 200 out, each tried at 8 points (right, right-down, down, left-down, left,
+    // left-up, up, right-up), kept on the map, until one the group can cross, strictly (0x480680), is found; the
+    // distance out is returned (0 when none is, leaving the last point tried)
+    int BattleMap::NearestPassable(int group, int vx, int vy, int& ox, int& oy) const
+    {
+        const int bx = (vx - 4) / 4 * 4 + 4, by = (vy - 4) / 4 * 4 + 4;
+        for (int d = 0; d < 200; d += 4)
+        {
+            const int pts[8][2] = { { bx + d, by }, { bx + d, by + d }, { bx, by + d }, { bx - d, by + d },
+                                    { bx - d, by }, { bx - d, by - d }, { bx, by - d }, { bx + d, by - d } };
+            for (auto& p : pts)
+            {
+                ox = std::clamp(p[0], 0, land.Width() - 1);
+                oy = std::clamp(p[1], 0, land.Height() - 1);
+                if (CellCost(group, ox, oy, true) != 0) return d;
+            }
+        }
+        return 0;
+    }
+
+    void BattleMap::OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y)
+    {
         if (members.empty()) return;
-        const int32_t cell = land.Cell(), half = cell / 2;
-        auto snap = [&](int v) {
-            const int32_t n = int32_t((int64_t(int32_t(uint32_t(v) << 16)) + half) / cell);
-            return int(int32_t(int64_t(n) * cell - half) >> 16);
+        // the point to its vertex, kept on the map, then to the nearest node the group can stand on; back to the world
+        const int32_t cell = land.Cell(), half = land.HalfCell();
+        auto toVertex = [&](int v, int count) {
+            return std::clamp(int(int32_t((int64_t(int32_t(uint32_t(v) << 16)) + half) / cell)), 0, count - 1);
         };
-        const int dx = snap(x), dy = snap(y);
+        int nx = 0, ny = 0;
+        NearestPassable(group, toVertex(x, land.Width()), toVertex(y, land.Height()), nx, ny);
+        const int dx = int(int32_t(int64_t(nx) * cell - half) >> 16), dy = int(int32_t(int64_t(ny) * cell - half) >> 16);
         const int n = int(members.size());
         int nearest = INT32_MAX, farthest = INT32_MIN;
         double speeds = 0;
@@ -163,7 +197,14 @@ namespace wow
                 if (len > max) { ax = float(ax * double(max) / len); ay = float(ay * double(max) / len); }
                 acc.push_back({ ax, ay });
             };
-            LookAhead(u);   // true only from the ground check, which isn't in (vt+0x158)
+            // vt+0x158 (0x491EA0): when the lookahead says so, away along +0x110, attributeAcc*
+            if (LookAhead(u))
+            {
+                const double len = std::sqrt(double(d.ax) * d.ax + double(d.ay) * d.ay);
+                if (len > 0.0)
+                    add(float(double(v.attributeAccWeight) * v.maxAcc), float(double(v.attributeAccMax) * v.maxAcc),
+                        float(-(d.ax / len)), float(-(d.ay / len)));
+            }
             const Neighbours n = Gather(u);
             // separation (vt+0x154, 0x4920A0): the neighbours' push x how many there are
             if (n.count > 0)
@@ -356,7 +397,7 @@ namespace wow
     // set, and the look ends. Found at the unit's own position, an object that can't be crushed (vt+0xD8) pushes the
     // unit away: by (the octagonal distance less both radii) / 8 along the way to it, set straight onto the position
     // (vt+0x40); one that can be crushed is, 1 in 4 (rand() < 0x2000), with its type's effect (0x488070).
-    // *Provisional*: the ground check (it needs the ground's cost) and the crushing aren't in, so it's always false.
+    // *Provisional*: bit 7 and the bridge links aren't in (the ground check always runs), nor the crushing.
     bool BattleMap::LookAhead(Unit& u)
     {
         auto& d = u.drive;
@@ -366,11 +407,34 @@ namespace wow
         const float along = float(double(float(double(s) * v.collisionCheckDist)) * d.radius);
         float sx = 0, sy = 0;
         Polar(d.heading, along, sx, sy);
+        float fx = 0, fy = 0;
+        Polar(d.heading, float(d.radius), fx, fy);
         float px = u.x, py = u.y;
         d.flags &= ~8u;
         const int z = land.HeightAt(int(u.x), int(u.y));
+        auto t = setup.units->find(u.type);
+        const int moveClass = t == setup.units->end() ? 0 : t->second.field52;
+        // a probe point onto the nearest vertex, kept on the map (0x492950); ground it can't cross sets +0x110
+        auto blocked = [&](float x, float y) {
+            int vx = (int(uint32_t(int(x)) << 16) + land.HalfCell()) / land.Cell();
+            int vy = (int(uint32_t(int(y)) << 16) + land.HalfCell()) / land.Cell();
+            if (vx >= land.Width()) vx = land.Width() - 1;
+            if (vy >= land.Height()) vy = land.Height() - 1;
+            if (vx < 0) vx = 0;
+            if (vy < 0) vy = 0;
+            if (CellCost(u.group, vx, vy, false) != 0) return false;
+            d.ax = float(double((int32_t(int64_t(land.Cell()) * vx) - land.HalfCell()) >> 16) - px);
+            d.ay = float(double((int32_t(int64_t(land.Cell()) * vy) - land.HalfCell()) >> 16) - py);
+            return true;    // and not on a bridge link (+0x18C), which isn't in
+        };
         for (int i = 0; i < 4; i++)
         {
+            // ahead, then left, then right, a radius out
+            if (blocked(px + fx, py + fy) || blocked(px - fy, py + fx) || blocked(px + fy, py - fx))
+            {
+                d.flags = (d.flags & ~0x10u) | 8u;
+                if (i == 0 && (moveClass == 5 || moveClass == 6)) return true;
+            }
             const Unit* o = ObjectAt(u, int(px), int(py), d.radius);
             if (o && std::abs(land.HeightAt(int(o->x), int(o->y)) - z) > 64) o = nullptr;
             if (o)
@@ -397,15 +461,96 @@ namespace wow
         return false;
     }
 
+    // 0x4802E0 (0x800F, when a group's members change): airborne (bit 5) unless a member isn't of move class 7; bit 6
+    // when the members' side (0x4406E0) holds the sector (0x43CA30); over the members (+0xB8 bit 0) of move class c,
+    // the terrain costs each the largest (as unsigned, so -1, can't cross, wins) of record 10's for c, the max slope
+    // the smallest of record 11's (from 1000), and +0x52 the class whose record 11 slope base is the largest (over
+    // -1000). The slope costs (+0xB4) are ftol(pow(base, s)) for s 1 to 8 for each of the 8 classes.
+    // *Provisional*: every member counts as +0xB8 bit 0; the groups are set up once, at the start.
+    void BattleMap::SetUpGrounds()
+    {
+        grounds.assign(setup.groups.size(), GroundGroup{});
+        std::vector<float> best(setup.groups.size(), -1000.0f);
+        std::vector<bool> any(setup.groups.size(), false);
+        for (const Unit& u : units)
+        {
+            if (u.group < 0 || size_t(u.group) >= grounds.size()) continue;
+            GroundGroup& g = grounds[size_t(u.group)];
+            auto t = setup.units->find(u.type);
+            if (t == setup.units->end()) continue;
+            any[size_t(u.group)] = true;
+            const int c = t->second.field52;
+            if (c != 7) g.airborne = false;
+            const int side = u.players == setup.human ? 0 : 1;
+            g.ownSector = side == setup.ownerFaction;
+            if (setup.moveCosts)
+                if (auto m = setup.moveCosts->find(c); m != setup.moveCosts->end())
+                    for (int k = 0; k < 16; k++)
+                        if (uint32_t(m->second[size_t(k)]) > g.terrain[k]) g.terrain[k] = uint32_t(m->second[size_t(k)]);
+            if (setup.moveSlopes)
+                if (auto m = setup.moveSlopes->find(c); m != setup.moveSlopes->end())
+                {
+                    if (m->second.first < g.maxSlope) g.maxSlope = m->second.first;
+                    if (m->second.second > best[size_t(u.group)])
+                    {
+                        best[size_t(u.group)] = m->second.second;
+                        g.cls = c;
+                    }
+                }
+        }
+        for (size_t i = 0; i < grounds.size(); i++)
+        {
+            if (!any[i]) grounds[i].airborne = true;    // set first, only cleared by a member
+            for (int c = 0; c < 8; c++)
+            {
+                float base = 0;
+                if (setup.moveSlopes)
+                    if (auto m = setup.moveSlopes->find(c); m != setup.moveSlopes->end()) base = m->second.second;
+                for (int k = 1; k <= 8; k++) grounds[i].slopeCost[c * 8 + k - 1] = int(std::pow(double(base), double(k)));
+            }
+        }
+    }
+
+    // 0x480680 (vertex x, y, strict): the vertex's ATM byte gives the terrain (low nibble) and the slope (high, + 1).
+    // 0 (can't cross) for a terrain cost of -1 or a slope over the max; and, unless airborne, for flags bit 1, bit 2
+    // when strict, or bit 3 in the group's own sector. Otherwise the slope cost of the group's class x the terrain's.
+    int BattleMap::CellCost(int group, int vx, int vy, bool strict) const
+    {
+        if (group < 0 || size_t(group) >= grounds.size()) return 0;
+        if (vx < 0 || vy < 0 || vx >= land.Width() || vy >= land.Height()) return 0;
+        const GroundGroup& g = grounds[size_t(group)];
+        const auto& v = land.At(vx, vy);
+        const int slope = (v.atm >> 4) + 1;
+        const uint32_t terrain = g.terrain[v.atm & 15];
+        if (terrain == 0xFFFFFFFFu) return 0;
+        if (slope > g.maxSlope) return 0;
+        if (v.flags && !g.airborne)
+        {
+            if (v.flags & 2) return 0;
+            if (strict && (v.flags & 4)) return 0;
+            if (g.ownSector && (v.flags & 8)) return 0;
+        }
+        const int index = g.cls * 8 + slope - 1;
+        const int scale = index >= 0 && index < 64 ? g.slopeCost[index] : 0;
+        return int(uint32_t(scale) * terrain);
+    }
+
     // 0x492DE0: the speed it may go is the type's +0x54 word x 0.02 (vt+0x12C, 0x492DB0), over the ground's cost there
     // / speedCostDivisor when that's more than 1, and no more than the velocity's length. Going, it's at least 0.2,
     // and the speed rises by 0.05 x it toward it or falls by 0.1 x it above it; stopped, it falls by 0.1 x it to 0.
-    // *Provisional*: the ground's cost (the group's 0x480680) is taken as speedCostDivisor (no slowing).
+    // The ground's cost is its group's (0x480680, not strict) at the vertex nearest the unit.
     void BattleMap::SpeedControl(Unit& u, float wanted)
     {
         auto& d = u.drive;
         auto t = setup.units->find(u.type);
         float top = t == setup.units->end() ? 0.0f : float(double(int16_t(t->second.warMapSpeed)) * 0.02);
+        {
+            const int vx = (int(uint32_t(int(u.x)) << 16) + land.HalfCell()) / land.Cell();
+            const int vy = (int(uint32_t(int(u.y)) << 16) + land.HalfCell()) / land.Cell();
+            float over = float(double(CellCost(u.group, vx, vy, false)) / setup.vehicles.speedCostDivisor);
+            if (over < 1.0f) over = 1.0f;
+            top = float(double(top) / over);
+        }
         if (!(top <= wanted)) top = wanted;
         if (!(d.flags & 1))
         {

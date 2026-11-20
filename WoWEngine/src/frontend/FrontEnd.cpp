@@ -563,6 +563,8 @@ namespace wow
                 dayTimes = tables.dayTimes;
                 wofTypes = tables.six;
                 lightTypes = tables.thirteen;
+                moveCosts = tables.ten;
+                moveSlopes = tables.eleven;
             }
             catch (const std::exception& e) { SDL_Log("OBJ.ojd day times: %s", e.what()); }
         }
@@ -1044,6 +1046,8 @@ namespace wow
         s.units = &map->Units();
         s.six = &wofTypes;
         s.lights = &lightTypes;
+        s.moveCosts = &moveCosts;
+        s.moveSlopes = &moveSlopes;
         s.showLights = ini.GetBool("Options", "Show lights", true);
         s.groups = map->BattleGroups(b.sector);
         // the owner as a faction (0x43CA30): the side being played, the other, or no one
@@ -1064,6 +1068,8 @@ namespace wow
         s.vehicles.brakingAccWeight = ini.GetFloat("Vehicles", "brakingAccWeight", 0.1f);
         s.vehicles.brakingAccMax = ini.GetFloat("Vehicles", "brakingAccMax", 0.2f);
         s.vehicles.collisionCheckDist = ini.GetFloat("Vehicles", "collisionCheckDist", 0.5f);
+        s.vehicles.attributeAccWeight = ini.GetFloat("Vehicles", "attributeAccWeight", 0.3f);
+        s.vehicles.attributeAccMax = ini.GetFloat("Vehicles", "attributeAccMax", 0.2f);
         s.zMapRes = ini.GetInt("System", "ZMapRes", 400);
         if (s.zMapRes < 1) s.zMapRes = 400;
         try

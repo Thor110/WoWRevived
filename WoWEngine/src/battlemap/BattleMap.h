@@ -4,6 +4,7 @@
 // Escape opens the battle map menu (0x80B8); the right button held opens the popup with Return to Warmap (0x76).
 // See docs/BATTLEMAP.md.
 #pragma once
+#include <array>
 #include "core/Landscape.h"
 #include "core/ObjOjd.h"
 #include "core/TerrainView.h"
@@ -63,7 +64,11 @@ namespace wow
                 float brakingAccWeight = 0.1f;      // flt_59E39C
                 float brakingAccMax = 0.2f;         // flt_59E264
                 float collisionCheckDist = 0.5f;    // flt_59E1D4
+                float attributeAccWeight = 0.3f;    // flt_59E2C4
+                float attributeAccMax = 0.2f;       // flt_59E27C
             } vehicles;
+            const std::map<int, std::array<int, 17>>* moveCosts = nullptr;      // OBJ.ojd record 10 (0x4F6E38)
+            const std::map<int, std::pair<int, float>>* moveSlopes = nullptr;   // record 11 (0x4F04C0 / 0x4F0510)
             int zMapRes = 400;          // [System] "ZMapRes" (dword_4F7424): the bucket grid's cell size
         };
 
@@ -140,6 +145,8 @@ namespace wow
         struct MoveOrder { int members = 0, arrived = 0; };
         std::vector<MoveOrder> orders;
         void OrderMove(int x, int y);
+        void OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y);
+        int NearestPassable(int group, int vx, int vy, int& ox, int& oy) const;   // 0x482B00
         void Halt();
         void Drive(size_t index);
         void Steer(Unit& u);
@@ -151,6 +158,20 @@ namespace wow
         std::vector<std::pair<int, int>> BucketCells(int px, int py) const;  // 0x449920 q 0 to 3
         const Unit* ObjectAt(const Unit& u, int px, int py, int reach) const; // 0x47FE10
         bool LookAhead(Unit& u);                                              // 0x492350
+        // A group's ground (WBMGroup 0x4802E0): the flags, the max slope (+0x4C), the move class whose slope base is
+        // largest (+0x52), the terrain costs (+0x70) and the slope costs (+0xB4)
+        struct GroundGroup
+        {
+            bool airborne = true;       // +0x1D8 bit 5: every member of move class 7
+            bool ownSector = false;     // bit 6: the members' side holds the sector
+            int maxSlope = 1000;
+            int cls = 0;
+            uint32_t terrain[16] = {};
+            int slopeCost[64] = {};
+        };
+        std::vector<GroundGroup> grounds;
+        void SetUpGrounds();
+        int CellCost(int group, int vx, int vy, bool strict) const;          // 0x480680
         void Post808B(Unit& u, int value, int delay);
         double Radius(int type);
         std::map<int, std::vector<uint8_t>> wofFiles;        // each WOF GType's file, loaded once
