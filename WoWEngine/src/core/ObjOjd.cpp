@@ -98,6 +98,7 @@ namespace wow
             {
             case 15: unit = int16_t(r.U16()); break;            // starts unit type (the table at 0x51A0F0, 0xB0 bytes each)
             case 23: counters[unit] = int16_t(r.U16()); break; // its war map counter frame (+0x2C, 0x437EF4)
+            case 18: { int from = int16_t(r.U16()); if (counters.count(from)) counters[unit] = counters[from]; break; } // a template's
             case 2: case 3: case 4: { uint16_t len = r.U16(); r.Skip(size_t(len) + 2); break; } // file registrations
             default: SkipPayload(r, type);
             }
@@ -126,6 +127,17 @@ namespace wow
                 if (fresh) units[unit].category = category;
                 break;
             }
+            case 18: // 0x437DEE: the whole entry copied from a template type, then its parts, emitters and
+            {        // builders (+0x38, +0x3C / +0x42, +0x78-0x80) cleared
+                int from = int16_t(r.U16());
+                auto src = units.find(from);
+                UnitData copy = src != units.end() ? src->second : UnitData{};
+                for (int& b : copy.builders) b = 0;
+                units[unit] = copy;
+                break;
+            }
+            case 52: units[unit].maxPerSector = int(r.U16()); break;      // 0x438738
+            case 54: units[unit].prerequisite = int16_t(r.U16()); break;  // 0x438776
             case 55: units[unit].battleUnits = int16_t(r.U16()); break; // 0x438794
             case 40: units[unit].researchName = int16_t(r.U16()); break;    // 0x438473
             case 41: units[unit].researchingText = int16_t(r.U16()); break; // 0x438494

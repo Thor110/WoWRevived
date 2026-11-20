@@ -42,6 +42,7 @@ namespace wow
         int Sector() const;
         float Value(int i) const;      // constructions and resources: the two floats after the type
         void SetPosition(int x, int y);
+        void SetValue(int i, float v);  // constructions and resources: the two floats after the type
         void SetSector(int sector);
         bool Kind2() const { return list >= 2; } // a construction or resource (two floats before SELO)
         // every SELO id in it (its own first, then its battle map units')

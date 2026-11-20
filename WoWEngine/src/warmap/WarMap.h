@@ -68,6 +68,7 @@ namespace wow
         void SetSectorLimits(int units, int boats) { maxUnits = units; maxBoats = boats; }
         // [Tweak] "HumanFriend / HumanEnemy / MartianFriend / MartianEnemy Manufacture Modifier" (0x437664-0x437724)
         void SetManufacture(const ObjOjd::ManufactureModifiers& m) { manufacture = m; }
+        void SetBuildListPlace(int left, int top) { buildLeft = left; buildTop = top; }
         void SetPodInterval(int hours) { podInterval = hours; }
         void SetClunting(int res, int adj) { clunRes = std::max(1, res); clunAdj = adj; for (auto& g : grids) g.size = 0; LayoutAll(); }
         // [Tweak] "Route clunting width" and "Route clunting spacing" (0x42AF20 / 0x42AF60, both 4)
@@ -144,7 +145,8 @@ namespace wow
         std::array<bool, warmap::SectorCount + 1> podFlag{}; // a sector's +0x64: a pod landed among the Humans
         std::array<bool, warmap::SectorCount + 1> battle{};  // a sector's +0x124: a battle there
         int AddUnit(int type, int sector, bool players); // the new counter, or -1
-        int AddCounter(int type, int sector, bool players, int ref);
+        int AddCounter(int type, int sector, bool players, int ref, int kind = 0); // kind 0 units, 1 constructions, 2 resources
+        int AddObject(int type, int sector, bool players, int kind); // kind as a save list: 0, 2 or 4
         // the save it came from, and its objects (counters hold indices into it)
         std::optional<SaveFile> save;
         std::vector<SaveObject> table;
@@ -159,6 +161,38 @@ namespace wow
         bool PopEntry(int ref, ObjectTail& f);    // 0x45FF00
         bool HasRoomFor(int type, int sector) const; // 0x43AC10 / 0x43AC40
         int CounterOf(int ref) const;
+        void StartConstruction(int ref, float hours);   // 0x80AE
+        void ConstructionProgress(int ref, float hours);// 0x80AD
+        void FinishConstruction(int ref);               // 0x80AC (0x42A980)
+        bool AddType(int ref, int type);                // 0x4603B0
+        bool OrderConstruction(int ref, int type);      // 0x460240, war map mode
+        void SetBusy(int ref, bool on);                 // 0x45FE60
+        void RemoveEntry(int ref, int index);           // 0x460080
+        void PromoteEntry(int ref, int index);          // 0x4605A0
+        void SlotClicked(int ref, int index);           // 0x4625B0
+        bool ItemEnabled(int ref, int type, bool* battleMapOnly = nullptr) const; // 0x462DC0
+        void SaveFactory(int ref);
+        void RemoveObject(int counter, int ref);        // one object taken off the map
+        // The Build List window (warmap/BuildWindow.cpp): the object it's for, the list's and queue's scroll
+        // positions (+0x234, +0xA4), what the mouse is on and what it went down on
+        struct BuildWindowState { int ref = -1; int scroll = 0, queueScroll = 0, hover = -1, pressed = -1; };
+        std::optional<BuildWindowState> buildWindow;
+        int popupObject = -1;                           // the object whose items the popup has
+        int buildLeft = 0, buildTop = 70;               // [BuildList] "Left" (0) and "Top" (70) (0x460A80 / 0x460AC0)
+        struct BuildLayout
+        {
+            Rect list, listUp, listDown, queue, queueUp, queueDown;
+            std::vector<std::pair<int, Rect>> items;    // type, place
+            std::vector<std::pair<int, Rect>> slots;    // queue index (-1 empty), place
+            std::pair<int, int> ttc{};
+        };
+        BuildLayout BuildWindowLayout() const;
+        void OpenBuildWindow(int ref);
+        void DrawBuildWindow(Canvas& canvas) const;
+        Rect PromoteRect(const Rect& slot) const;
+        int BuildWindowHit(int x, int y) const;
+        bool BuildWindowClick(int x, int y, bool down);
+        std::string BuildWindowTip(int hit) const;
         bool Working(int ref) const;              // 0x42A410: its factory has something queued
         std::vector<int> BuildOptions(int ref) const; // 0x45F970
         int RefOfId(uint32_t id) const;

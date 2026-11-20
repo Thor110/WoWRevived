@@ -120,13 +120,16 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       formats (0x41B440, the Briefing) — 03
 - [x] **What can be built** (`WarMap::BuildOptions`, WARMAP.md "Production"): builders, research, the command
       building rules, type 39 and byte_4BD2E0 (0x45F970, 0x442460, 0x42A410) — 09
-- [~] **Build list / production** (`core/BuildList`, `warmap/Production.cpp`, WARMAP.md "Production"): each
-      object's factory read from and written back into its save bytes exactly (every object of the three saves),
-      the hourly progress with the resource slowdown, repeats, vehicles made, events 1 / 2 / 9 / 10, the room
-      check, and route refusal 0 for a constructor at work (0x45FC90, 0x461D60, 0x45FF00, 0x43AC40); to do: the
-      construction's side of 0x80AC / 0x80AD / 0x80AE, adding and removing entries (0x460240, 0x4603B0, 0x8131),
-      the Build List window (0x460B00, panels 0x2FA-0x300), where among the objects' 0x802D it comes — 09
-- [ ] **Unit table**: all 65 OBJ.ojd record types and the `[Tweak]` armour / research / manufacture modifiers
+- [x] **Build list / production** (`core/BuildList`, `warmap/Production.cpp`, WARMAP.md "Production"): each
+      object's factory read from and written back into its save bytes exactly, the hourly progress with the
+      resource slowdown, repeats, vehicles made, constructions started / advanced / finished (0x80AE / 0x80AD /
+      0x80AC, event 15), events 1 / 2 / 9 / 10, the room check, ordering, suspend / resume, slot clicks and
+      promote, the "can it be ordered" rules, route refusal 0 (0x45FC90, 0x461D60, 0x45FF00, 0x4603B0, 0x460240,
+      0x462DC0); left for the battle map: placement modes, 0x80A0, 0x8131 — 09
+- [x] **Build List window** (`warmap/BuildWindow.cpp`, WARMAP.md "The Build List window"): Build / Suspend /
+      Resume in the popup, both panels, items, slots, repeat badges, promote, TTC, tool tips, both sides
+      (0x460B00-0x462E50); to do: cursors, the promote button's exact place — 09, 03
+- [ ] **Unit table** (records 18, 52 and 54 in so far): all 65 OBJ.ojd record types and the `[Tweak]` armour / research / manufacture modifiers
       (0x437750) — 06
 - [ ] **War map AI**: the 10-state machine every game hour, its 14 `[Tweak]` values, AI.ojd's sites (0x442890,
       0x443340-) — 06, 07

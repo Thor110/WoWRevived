@@ -568,17 +568,21 @@ namespace wow
     // A unit put in a sector (0x43CEB0): its own counter in the sector's next free cell. With a save behind the map
     // it also gets a saved record: a copy of one of the same type (its battle map units with it), with new ids
     // (the lowest free ones, as the game hands them out).
-    int WarMap::AddUnit(int type, int sector, bool players)
+    int WarMap::AddUnit(int type, int sector, bool players) { return AddObject(type, sector, players, 0); }
+
+    // An object made in a sector (0x43CD10 / 0x43CEB0), copied from a saved one of the type in the same kind of
+    // list (0 units, 2 constructions, 4 resources) so it can be saved, with ids of its own
+    int WarMap::AddObject(int type, int sector, bool players, int kind)
     {
         int ref = -1;
         if (save)
         {
             const SaveObject* model = nullptr;
-            for (const SaveObject& o : table) if (o.list < 2 && o.Type() == type) { model = &o; break; }
+            for (const SaveObject& o : table) if (o.list / 2 == kind / 2 && o.Type() == type) { model = &o; break; }
             if (model)
             {
                 SaveObject o = *model;
-                o.list = players ? 0 : 1;
+                o.list = kind + (players ? 0 : 1);
                 // the ids in use: the sectors' own data as saved, and every object the map has now
                 std::vector<bool> used = save->UsedIds();
                 for (const SaveObject& t : table) SaveFile::MarkIds(t.bytes, used);
@@ -600,14 +604,14 @@ namespace wow
                 ref = int(table.size()) - 1;
                 if (tail && tail->hasFactory) factories[ref] = *tail;
             }
-            else SDL_Log("War map: no saved unit of type %d to copy, so the new one won't be saved", type);
+            else SDL_Log("War map: no saved object of type %d to copy, so the new one won't be saved", type);
         }
-        int k = AddCounter(type, sector, players, ref);
+        int k = AddCounter(type, sector, players, ref, kind / 2);
         RecomputeOwner(sector); // 0x43CEB0 -> 0x43CA40
         return k;
     }
 
-    int WarMap::AddCounter(int type, int sector, bool players, int ref)
+    int WarMap::AddCounter(int type, int sector, bool players, int ref, int kind)
     {
         auto unit = unitData.find(type);
         Counter k;
@@ -617,13 +621,14 @@ namespace wow
         k.count = 1;
         k.type = type;
         k.players = players;
-        k.kind = 0;
+        k.kind = kind;
         k.sector = sector;
+        if (kind != 0) k.speed = 0;
         if (ref >= 0) k.refs.push_back(ref);
         counters.push_back(k);
         int index = int(counters.size()) - 1;
-        // added to the sector (0x43CEB0 -> 0x43CD88): placed when the view shows units
-        if (viewMode == 1 && Visible(index)) PlaceCounter(index);
+        // added to the sector (0x43CEB0 -> 0x43CD88): placed when the view shows its kind
+        if (viewMode == kind + 1 && Visible(index)) PlaceCounter(index);
         return index;
     }
 
@@ -1099,6 +1104,7 @@ namespace wow
                 }
         }
         if (!status.empty()) canvas.DrawString(0x72, status, { 8, ScreenH - 18, 300, 14 }, 0, colours.items);
+        DrawBuildWindow(canvas);
         // the popup menu over everything (z 0x61B2): each item's icon, the next frame while the mouse is on it
         // (*provisional*: the hot button's frames aren't traced)
         for (size_t i = 0; i < popup.size(); i++)
@@ -1129,6 +1135,7 @@ namespace wow
     {
         if (infoBox) return BoxButtonRect().Contains(x, y) ? 99 : -1;
         for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) return 100 + int(i);
+        if (int hit = BuildWindowHit(x, y); hit >= 0) return hit >= 200 && hit < 400 ? 10000 + hit : -1;
         PanelLayout panel = Panel();
         for (int i = 0; i < 3; i++) if (panel.buttons[i].Contains(x, y)) return i;
         if (panel.research.Contains(x, y)) return 3;
@@ -1205,6 +1212,7 @@ namespace wow
             const PopupItem& item = popup[size_t(owner - 100)];
             return item.label.empty() ? res.String(item.text) : item.label;
         }
+        if (owner >= 10000) return BuildWindowTip(owner - 10000);
         if (owner >= 1000 && size_t(owner - 1000) < counters.size()) return CounterTip(owner - 1000, level);
         if (owner >= 0 && owner < 3) return res.String(ButtonText[owner]);
         // the Research button (0x45BEB0): "View Research" and what's being researched, 0x461 with nothing
@@ -1482,6 +1490,23 @@ namespace wow
 
     // 0x43A250: every unit, construction and resource of the side in the sector goes (out of the placement,
     // 0x420930, and out of the sector, 0x43C7C0); then the sector's holder is worked out again and it's laid out.
+    void WarMap::RemoveObject(int counter, int ref)
+    {
+        if (counter < 0 || size_t(counter) >= counters.size()) return;
+        Counter& k = counters[size_t(counter)];
+        auto at = std::find(k.refs.begin(), k.refs.end(), ref);
+        if (at != k.refs.end()) k.refs.erase(at);
+        if (ref >= 0) { destroyed.push_back(ref); factories.erase(ref); }
+        if (buildWindow && buildWindow->ref == ref) buildWindow.reset();
+        const int sector = k.sector;
+        if (--k.count > 0) { RefreshSector(sector); return; }
+        FreeCounter(counter);
+        k.sector = 0; k.refs.clear(); k.count = 0;
+        selection.erase(std::remove(selection.begin(), selection.end(), counter), selection.end());
+        RecomputeOwner(sector);
+        RefreshSector(sector);
+    }
+
     void WarMap::ClearSide(int sector, bool players)
     {
         std::vector<int> gone;
@@ -1855,8 +1880,8 @@ namespace wow
 
     // The Warmap menu (0x41D120): Cancel (command 0x73, icon GType 0x1C RBHcncl, text 0x476), then the items the
     // active tool, the player's selection or the sector under the mouse (if it's the player's: it's selected
-    // and the selection cancelled first) adds through 0x805C (Build, Resume building tasks, Cancel Move,
-    // Information: not in yet, they come with construction and the information screen). Shown at the mouse
+    // and the selection cancelled first) adds through 0x805C (Build and Suspend / Resume building tasks; Cancel
+    // Move and Information aren't in yet). Shown at the mouse
     // (0x432FB0): the first item centred on it (a quarter of its height above), kept 3 pixels inside the screen,
     // sound 0x193. Items with the same command would share a row (0x4331C0), only the hovered one's opened out
     // (0x433330); the rows go down the column (0x433220).
@@ -1875,10 +1900,31 @@ namespace wow
             popup.push_back(std::move(item));
         };
         add(0x73, 0, 0x1C, 0x476);
-        // then the items of whoever answers 0x805C: the current object (not yet), else the own sector under the
-        // mouse, selected, else the world's selected sector (+0x60). A sector adds "View map", 0x8133 with 0x8019
-        // (0x43B9F0), while its battle map isn't open (+0x18)
-        if (selected >= 1 && selected <= warmap::SectorCount) add(0x8133, 0x8019, 0x2E, 0x475);
+        // then the items of whoever answers 0x805C: the current object, else the own sector under the mouse,
+        // selected, else the world's selected sector (+0x60). A sector adds "View map", 0x8133 with 0x8019
+        // (0x43B9F0), while its battle map isn't open (+0x18). An object (0x429A70) with a factory, not on its
+        // way anywhere, and a vehicle or a finished construction (0x42AA70), adds "Build" (0x813E with 0x8065,
+        // icon 0x20, 0x470) and, with something queued, "Suspend building tasks" (0x813F, icon 0x22, 0x495) while
+        // busy or "Resume building tasks" (icon 0x23, 0x496). The current object here is the first selected
+        // counter's first object (*provisional*: the war map's own idea of it isn't traced).
+        popupObject = -1;
+        if (!selection.empty())
+        {
+            const Counter& c = counters[size_t(selection.front())];
+            const int ref = c.refs.empty() ? -1 : c.refs.front();
+            auto f = factories.find(ref);
+            if (f != factories.end() && !c.Travelling() && c.players && (c.kind == 0 || !c.unfinished))
+            {
+                popupObject = ref;
+                add(0x813E, 0x8065, 0x20, 0x470);
+                if (!f->second.queue.entries.empty())
+                {
+                    if (f->second.queue.busy) add(0x813E, 0x813F, 0x22, 0x495);
+                    else add(0x813E, 0x813F, 0x23, 0x496);
+                }
+            }
+        }
+        else if (selected >= 1 && selected <= warmap::SectorCount) add(0x8133, 0x8019, 0x2E, 0x475);
         int w = 0, h = 0;
         for (const PopupItem& item : popup) { w = std::max(w, item.rect.w); h += item.rect.h; }
         int left = x - popup[0].rect.w / 2, top = y - popup[0].rect.h / 4;
@@ -1902,6 +1948,13 @@ namespace wow
     void WarMap::PopupCommand(int command, int param)
     {
         if (command == 0x73) ClearSelection();
+        // an object's (0x428DFD): Build opens its window, the other its building tasks suspended or resumed
+        if (command == 0x813E && param == 0x8065) OpenBuildWindow(popupObject);
+        if (command == 0x813E && param == 0x813F)
+        {
+            auto f = factories.find(popupObject);
+            if (f != factories.end()) SetBusy(popupObject, !f->second.queue.busy);
+        }
         if (command == BattleCommand && selected >= 1 && selected <= warmap::SectorCount)
         {
             battleSector = selected;
@@ -1919,6 +1972,7 @@ namespace wow
             for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) popupHover = int(i);
             return;
         }
+        if (buildWindow) buildWindow->hover = BuildWindowHit(x, y);
         if (draggingSpeed) SetSpeedFromX(x);
         if (dragging)
         {
@@ -2024,6 +2078,7 @@ namespace wow
             ClosePopup(false);
             return std::nullopt;
         }
+        if (BuildWindowClick(x, y, down)) return std::nullopt;
         Rect mini = MiniMapRect();
         PanelLayout panel = Panel();
         for (int i = 0; i < 3; i++)

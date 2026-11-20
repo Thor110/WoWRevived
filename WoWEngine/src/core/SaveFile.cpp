@@ -96,6 +96,13 @@ namespace wow
         return f;
     }
     void SaveObject::SetPosition(int x, int y) { Put32(bytes, SeloAt() + 8, uint32_t(x)); Put32(bytes, SeloAt() + 12, uint32_t(y)); }
+    void SaveObject::SetValue(int i, float v)
+    {
+        if (!Kind2()) return;
+        uint32_t b;
+        std::memcpy(&b, &v, 4);
+        Put32(bytes, 4 + size_t(i) * 4, b);
+    }
     void SaveObject::SetSector(int sector) { Put32(bytes, SeloAt() + 20, uint32_t(sector)); }
     std::vector<size_t> SaveObject::IdOffsets() const
     {

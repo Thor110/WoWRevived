@@ -589,6 +589,7 @@ namespace wow
         manufacture.martianFriend = ini.GetFloat("Tweak", "MartianFriend Manufacture Modifier", 1.0f);
         manufacture.martianEnemy = ini.GetFloat("Tweak", "MartianEnemy Manufacture Modifier", 0.85f);
         map->SetManufacture(manufacture);
+        map->SetBuildListPlace(ini.GetInt("BuildList", "Left", 0), ini.GetInt("BuildList", "Top", 70));
         if (exact) map->UseSave(std::move(*exact));
         ObjOjd::ResearchModifiers modifiers;
         modifiers.humanFriend = ini.GetFloat("Tweak", "HumanFriend Research Modifier", 0.75f);

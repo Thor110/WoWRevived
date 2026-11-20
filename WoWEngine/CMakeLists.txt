@@ -94,6 +94,7 @@ if(TARGET SDL3::SDL3)
         src/platform/Movie.cpp
         src/warmap/WarMap.cpp
         src/warmap/Production.cpp
+        src/warmap/BuildWindow.cpp
     )
     if(WIN32)
         # WoWRevived's .mp4 movies through Media Foundation

@@ -262,9 +262,12 @@ selection at +0x430, filled by its recorded commands 4 clear, 5 select (Shift ad
   sector under the mouse (selected first); and when neither a tool nor that sector filled it, the world's selected
   sector (+0x60). A sector adds **View map** (0x43B9F0: command 0x8133 with 0x8019, icon 0x2E `RBHview`, text
   0x475, which 0x432D70 / 0x432E90 replace with the hovered sector's name) while its battle map isn't open (+0x18):
-  the briefing transition and the Briefing for that sector, VIEWING it (see Battles). The engine has these two so
-  far: the sector's Build / Resume building tasks / Cancel Move (0x429A70) and an object's Information (0x440300)
-  come with construction and the information screen.
+  the briefing transition and the Briefing for that sector, VIEWING it (see Battles). An object (0x429A70) with
+  a factory that isn't on its way anywhere, a vehicle or a finished construction (0x42AA70), adds **Build**
+  (0x813E with 0x8065, icon 0x20 `RBHbuild`, 0x470) and, with something queued, **Suspend building tasks**
+  (0x813E with 0x813F, icon 0x22, 0x495) while it's busy or **Resume building tasks** (icon 0x23, 0x496); see
+  Production. The engine takes the first selected counter's first object as the current object (*provisional*).
+  Still to come: Cancel Move (0x80A9, for a unit on its way) and an object's Information (0x440300).
 
 - **Routes** (WWarMapRoute 0x4240D0) move on every game hour: the calendar sends 0x802D with the hours gone by and
   the route's handler (0x424F00) moves its entries on (0x425080). A route keeps its sectors, the start first
@@ -468,10 +471,65 @@ a unit, else FacilityIdle (event 10).
 Tested with one entry injected into a Human factory (type 35 in sector 13): type 1, 4 days and 5 battle units, so
 480 hours, with 2 repeats. It made the two units 480 and 998 hours in, then raised FacilityIdle.
 
-Still to do (provisional now): what the construction does with 0x80AD / 0x80AC / 0x80AE (it's shown as the share
-done and finished outright at the end), adding and removing entries (0x8026 -> 0x460240 / 0x4603B0; 0x8131 when
-the object it's working on goes), the Build List window (0x460B00, panels 0x2FA-0x300), and where among the
-world's objects their 0x802D comes (after the research here).
+**The construction's side** (WMOB 0x42A4B0): 0x80AE, started, sets +0x78 to its whole time and +0x7C to 0;
+0x80AD adds the hours to +0x7C (the counter shows +0x7C / +0x78 done); 0x80AC (0x42A980) sets both to 1.0. A
+command building finished has the world think about the sectors again (0x418890; the engine builds the paths
+again) and, if it's the local player's, raises CommandCentreBuilt (event 15) for the sector; anything else is laid
+out again (0x4297C0, 0x8145). (The survey has 0x80AC and 0x80AD the other way round; 0x461D60 sends 0x80AD with
+the time while it's short of the entry's hours, and the handler adds it.)
+
+**Ordering** (the window's commands, recorded for playback as 0x17 and 0x16, 0x4601C0 / 0x460200, and handled by
+the factory's 0x8026, 0x45FB20):
+  - a unit (0x17 -> 0x4603B0): refused when the sector hasn't room (a boat for the other side's factories, any
+    vehicle for the local player's); the same type as the last entry just counts its repeats up (0x461EE0: 1, 2,
+    3, then 4 for ever); otherwise a new entry at the end (0x4604B0 / 0x461B60: one repeat, its whole time,
+    working on nothing), not past 32, and the factory made busy if it wasn't (0x4192F0)
+  - a construction (0x16 -> 0x460240, its place all 0 from the war map): added as above, then the entry set up
+    from the order (0x461C80) and the construction made in the sector at once (0x4620B0 -> 0x43CD10), hearing
+    0x80AE. With no place the game finds one for a command building on the battle map (0x4411B0, not in); then
+    0x440EA0 for the sector (not traced)
+  - Suspend / Resume (0x45FE60): on, with something queued and room for a vehicle at the head, makes it busy;
+    off stops it
+  - a queue slot clicked, either button (0x4625B0): a repeat less (0x461EB0: for ever goes to 3); at none, an
+    entry working on a construction is cancelled (0x462120: from the war map the construction goes from the
+    sector, and the entry with it; on the battle map the object hears 0x80A0), any other just goes (0x460080,
+    the factory not busy any more once it's empty)
+  - a slot's promote button (0x2FC -> 0x4605A0): the entry to the front, the factory made busy
+
+**Can it be ordered** (0x462DC0, an item drawn greyed when not): the sector allows another (0x43C7F0: the type's
+faction, record 26, is the sector owner's side, and the side's objects of its kind and type there, plus for a
+vehicle those queued in the sector's factories, 0x421C60, are fewer than record 52, "max per sector", 20 by
+default); it isn't a constructor vehicle's on the war map (+0x99: the factory in war map mode and its object a
+unit; "This item can only be constructed on the BattleMap", 0x494); its prerequisite building (record 54) stands
+finished in the sector (0x442420); and the queue has room.
+
+## The Build List window
+
+The window (0x460B00: "Build List", class 0x804A, id 0x5DCA; `warmap/BuildWindow.cpp`) opens from Build. It has
+two panels at `[BuildList] Left` (0) and `Top` (70) (0x460A80 / 0x460AC0):
+  - **the list** (0x461500): backdrop 0x2FA (`hbuildb1` / `mbuildb1`), scroll buttons 0x2FD at (0x1B, 9) Human /
+    (0x1F, 0x15) Martian and 0x2FE at (0x1A, 0x12C) / (0x1F, 0x12B), each one place at a time while there are more
+    than five past it (0x4618E0); five items from the scroll position (0x4619A0, the list from 0x45F970), at x 32
+    and y from 46, each the last's bottom + 2: the type's counter picture from GType 0x78 (`HU-CNT48` /
+    `MA-CNT48`), lit under the mouse, with its time in days ("%0.1f": record 43's days x its battle units, slowed by
+    the sector's supply as production is) in font 0x6E at its bottom right (0x462A40). One that can't be ordered
+    shows frame + 0x96 and no time. A click orders it (0x460D70)
+  - **the queue** (0x460F10) at Left + 0x58, Top + 0x71: backdrop 0x2FB, the head's slot at (8, 6) Human / (8,
+    0xD) Martian and four more from (0xA, 0x45) / (8, 0x44), each the last's bottom + 1, showing the entries after
+    the head from the queue's scroll position (0x461490); scroll buttons 0x2FF at (6, 0x34) / (6, 0x38) and 0x300 at
+    (5, 0xAC) / (6, 0xAA). A slot (0x4621C0 / 0x4624A0) shows the entry's picture from GType 0x76 (`HU-CNT24`),
+    lit under the mouse, and with more than one to make the repeat badge (GType 0x6B, `HREPEAT`; frame 1, 2 or 5
+    for 2, 3 or for ever, word_4CA7B8) at its bottom right; every slot but the head's has a promote button (0x2FC;
+    the engine puts it at the slot's top right, *provisional*: 0x42F020(9) places it). "TTC" (0x461340): when
+    the head will be done, its hours left slowed by the supply, as a route's arrival is written (0x41B9A0), centred
+    at (0x14, 0x29) in font 0x70.
+The tool tips (0x807C): an item's name, "Requires <building>" (0x51E) with a prerequisite, and 0x494 for a
+battle-map-only one (0x462B50); a slot's, the name. A click on the window's own background closes it (0x201 /
+0x204 in war map mode); elsewhere the map has the mouse.
+
+Still to do: the battle map's side (placement modes 4 / 5 / 6, 0x42E790; 0x80A0); the cursors (0xE / 0xC over
+items, 0xF over slots); 0x8131 (an entry's object gone); 0x440EA0; the counts from 0x4F86B8 / 0x4F76F0 in the
+room check; where among the world's objects the factories' 0x802D comes (after the research here, *provisional*).
 
 ## Battles
 

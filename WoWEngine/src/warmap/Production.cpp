@@ -160,13 +160,10 @@ namespace wow
                 e.hours = u == unitData.end() ? 0.0f : float(ObjOjd::BuildHours(u->second, res.Human(), manufacture));
             const int target = vehicle ? -1 : RefOfId(e.target);
             const bool done = dt >= e.hours;
-            if (target >= 0)
+            if (target >= 0) // 0x80AD with the time, or 0x80AC once it's done
             {
-                // 0x80AD / 0x80AC to the construction: how it takes them is still to be traced, so for now its
-                // counter shows the share done and it's finished outright at the end (provisional)
-                const int tk = CounterOf(target);
-                const float whole = u == unitData.end() ? 0.0f : float(ObjOjd::BuildHours(u->second, res.Human(), manufacture));
-                if (tk >= 0 && whole > 0) counters[size_t(tk)].progress = done ? 1.0f : 1.0f - (e.hours - dt) / whole;
+                if (done) FinishConstruction(target);
+                else ConstructionProgress(target, dt);
             }
             if (done)
             {
@@ -188,18 +185,7 @@ namespace wow
             }
             else
             {
-                if (target >= 0)
-                {
-                    const int tk = CounterOf(target);
-                    if (tk >= 0)
-                    {
-                        Counter& c = counters[size_t(tk)];
-                        if (c.unfinished) { c.unfinished = false; c.finishedCount++; }
-                        finished[size_t(c.sector)].push_back(c.type);
-                    }
-                    if (players) RaiseEvent(ConstructionCompleted, tk);
-                }
-                else if (players) RaiseEvent(ConstructionCompleted, -1);
+                if (players) RaiseEvent(ConstructionCompleted, target >= 0 ? CounterOf(target) : -1);
             }
             at = CounterOf(ref); // AddUnit may have moved the counters about
             if (!PopEntry(ref, f))
@@ -217,5 +203,239 @@ namespace wow
             WriteTail(table[size_t(ref)], f);
             if (auto t = ReadTail(table[size_t(ref)])) f = *t;
         }
+    }
+
+    // The construction's side (WMOB 0x42A4B0): 0x80AE, started, sets +0x78 to the whole time and +0x7C to 0; 0x80AD
+    // adds the hours to +0x7C; the counter shows +0x7C / +0x78 done.
+    void WarMap::StartConstruction(int ref, float hours)
+    {
+        if (ref < 0 || size_t(ref) >= table.size()) return;
+        table[size_t(ref)].SetValue(0, hours);
+        table[size_t(ref)].SetValue(1, 0.0f);
+        if (int k = CounterOf(ref); k >= 0) { counters[size_t(k)].unfinished = true; counters[size_t(k)].progress = 0.0f; }
+    }
+
+    void WarMap::ConstructionProgress(int ref, float hours)
+    {
+        if (ref < 0 || size_t(ref) >= table.size()) return;
+        SaveObject& o = table[size_t(ref)];
+        o.SetValue(1, o.Value(1) + hours);
+        if (int k = CounterOf(ref); k >= 0 && o.Value(0) != 0.0f) counters[size_t(k)].progress = o.Value(1) / o.Value(0);
+    }
+
+    // 0x80AC (0x42A980): finished, +0x78 and +0x7C both 1.0. A command building (58, 278 in sector 30; 120, 830 in
+    // sector 3) has the world think again about the sectors (0x418890: here the paths are built again) and, if
+    // it's the local player's, raises CommandCentreBuilt (event 15) for the sector; anything else is laid out
+    // again in its sector (0x4297C0, and 0x8145 to the view when it shows its kind).
+    void WarMap::FinishConstruction(int ref)
+    {
+        if (ref < 0 || size_t(ref) >= table.size()) return;
+        SaveObject& o = table[size_t(ref)];
+        o.SetValue(0, 1.0f);
+        o.SetValue(1, 1.0f);
+        const int k = CounterOf(ref);
+        const int sector = k >= 0 ? counters[size_t(k)].sector : o.Sector();
+        const bool players = k >= 0 ? counters[size_t(k)].players : o.list % 2 == 0;
+        if (k >= 0)
+        {
+            Counter& c = counters[size_t(k)];
+            if (c.unfinished) { c.unfinished = false; c.finishedCount = std::min(c.count, c.finishedCount + 1); }
+            c.progress = 1.0f;
+        }
+        if (sector >= 1 && sector <= warmap::SectorCount) finished[size_t(sector)].push_back(o.Type());
+        const int type = o.Type();
+        const bool post = type == (sector == 3 ? 830 : 120) || type == (sector == 30 ? 278 : 58);
+        if (post)
+        {
+            pathsBuilt = false;
+            if (players) RaiseEvent(CommandCentreBuilt, sector);
+        }
+        else if (sector >= 1 && sector <= warmap::SectorCount) RefreshSector(sector);
+    }
+
+    // 0x4603B0, a type added (the Build List window's units, command 0x17): one a sector hasn't room for isn't (a
+    // boat for the other side's factories, any vehicle for the local player's); a vehicle the same as the last
+    // queued just has its repeats counted up (0x461EE0: 1, 2, 3, then 4 for ever); otherwise a new entry at the
+    // end (0x4604B0, 0x461B60: one repeat, its whole time, nothing it's working on), not past 32, and the factory
+    // made busy if it wasn't (the world's 0x4192F0).
+    bool WarMap::AddType(int ref, int type)
+    {
+        auto it = factories.find(ref);
+        if (it == factories.end()) return false;
+        ObjectTail& f = it->second;
+        const int at = CounterOf(ref);
+        const int sector = at >= 0 ? counters[size_t(at)].sector : table[size_t(ref)].Sector();
+        const bool players = at >= 0 ? counters[size_t(at)].players : table[size_t(ref)].list % 2 == 0;
+        auto u = unitData.find(type);
+        if (u == unitData.end()) return false;
+        if (!players && u->second.moveClass == 3 && !HasRoomFor(type, sector)) return false;
+        auto& q = f.queue.entries;
+        if (u->second.category == 1)
+        {
+            if (players && !HasRoomFor(type, sector)) return false;
+            if (!q.empty() && q.back().type == type)
+            {
+                BuildEntry& e = q.back();
+                if (e.repeat < 3) e.repeat++;
+                else if (e.repeat == 3) e.repeat = 4;
+                SaveFactory(ref);
+                return true;
+            }
+        }
+        if (q.size() >= 32) return false;
+        BuildEntry e;
+        e.type = type;
+        e.repeat = 1;
+        e.hours = float(ObjOjd::BuildHours(u->second, res.Human(), manufacture));
+        q.push_back(e);
+        if (!f.queue.busy) { f.queue.busy = true; ShadeSectors(); }
+        SaveFactory(ref);
+        return true;
+    }
+
+    // 0x460240, a construction ordered from the war map (command 0x16, its placement all 0: the war map has no
+    // battle map to place it on): added as above, then (0x461C80) the entry is set up again from the order and,
+    // for anything but a vehicle, the construction made in the sector at once (0x4620B0 -> 0x43CD10) and told
+    // 0x80AE with its whole time. Where its command building is to go and the order has no place, the game finds
+    // one on the battle map (0x4411B0, not in); then 0x440EA0 for the sector (not traced).
+    bool WarMap::OrderConstruction(int ref, int type)
+    {
+        if (!AddType(ref, type)) return false;
+        auto u = unitData.find(type);
+        if (u == unitData.end() || u->second.category == 1) return true;
+        ObjectTail& f = factories[ref];
+        BuildEntry& e = f.queue.entries.back();
+        const int at = CounterOf(ref);
+        const int sector = at >= 0 ? counters[size_t(at)].sector : table[size_t(ref)].Sector();
+        const bool players = at >= 0 ? counters[size_t(at)].players : table[size_t(ref)].list % 2 == 0;
+        const int k = AddObject(type, sector, players, u->second.category == 3 ? 4 : 2);
+        const int target = k >= 0 && !counters[size_t(k)].refs.empty() ? counters[size_t(k)].refs.front() : -1;
+        if (target >= 0)
+        {
+            e.target = uint32_t(table[size_t(target)].Id());
+            StartConstruction(target, e.hours);
+        }
+        else if (k >= 0) { counters[size_t(k)].unfinished = true; counters[size_t(k)].progress = 0.0f; }
+        SaveFactory(ref);
+        return true;
+    }
+
+    // 0x45FE60: on (with something queued, and room for a vehicle at the head) makes it busy; off stops it
+    void WarMap::SetBusy(int ref, bool on)
+    {
+        auto it = factories.find(ref);
+        if (it == factories.end()) return;
+        ObjectTail& f = it->second;
+        if (!on)
+        {
+            if (f.queue.busy) { f.queue.busy = false; ShadeSectors(); }
+        }
+        else if (!f.queue.entries.empty() && !f.queue.busy)
+        {
+            const int type = f.queue.entries.front().type;
+            auto u = unitData.find(type);
+            const int at = CounterOf(ref);
+            const int sector = at >= 0 ? counters[size_t(at)].sector : table[size_t(ref)].Sector();
+            if (u != unitData.end() && u->second.category == 1 && !HasRoomFor(type, sector)) return;
+            f.queue.busy = true;
+            ShadeSectors();
+        }
+        SaveFactory(ref);
+    }
+
+    // 0x460080: an entry taken out; with nothing left, the factory isn't busy any more
+    void WarMap::RemoveEntry(int ref, int index)
+    {
+        auto it = factories.find(ref);
+        if (it == factories.end()) return;
+        auto& q = it->second.queue.entries;
+        if (index < 0 || size_t(index) >= q.size()) return;
+        q.erase(q.begin() + index);
+        if (q.empty() && it->second.queue.busy) { it->second.queue.busy = false; ShadeSectors(); }
+        SaveFactory(ref);
+    }
+
+    // 0x4605A0, "promote" (a queue slot's 0x2FC button): the entry to the front, the factory made busy
+    void WarMap::PromoteEntry(int ref, int index)
+    {
+        auto it = factories.find(ref);
+        if (it == factories.end()) return;
+        auto& q = it->second.queue.entries;
+        if (index <= 0 || size_t(index) >= q.size()) return;
+        BuildEntry e = q[size_t(index)];
+        q.erase(q.begin() + index);
+        q.insert(q.begin(), e);
+        if (!it->second.queue.busy) { it->second.queue.busy = true; ShadeSectors(); }
+        SaveFactory(ref);
+    }
+
+    // A queue slot clicked (0x4625B0, either button): a repeat less (0x461EB0: for ever goes to 3); at none, an
+    // entry working on a construction is cancelled (0x462120: on the war map the construction goes from the sector
+    // and the entry with it; on the battle map the object hears 0x80A0), any other just goes.
+    void WarMap::SlotClicked(int ref, int index)
+    {
+        auto it = factories.find(ref);
+        if (it == factories.end()) return;
+        auto& q = it->second.queue.entries;
+        if (index < 0 || size_t(index) >= q.size()) return;
+        BuildEntry& e = q[size_t(index)];
+        if (e.repeat == 4) e.repeat = 3;
+        else if (e.repeat >= 1) e.repeat--;
+        if (e.repeat != 0) { SaveFactory(ref); return; }
+        if (e.target != 0xDEADDEAD)
+        {
+            const int target = RefOfId(e.target);
+            if (target >= 0)
+                if (int k = CounterOf(target); k >= 0) RemoveObject(k, target);
+        }
+        RemoveEntry(ref, index);
+    }
+
+    // 0x462DC0: an item in the window can be ordered when the sector allows another of it (0x43C7F0), it isn't
+    // one only the battle map can make (a constructor vehicle's, on the war map), its prerequisite building is
+    // there finished (0x442420) and the queue isn't full. 0x43C7F0: the type's faction (+0x0C) must be the
+    // sector's owner's, and the side's objects of its kind there (for a vehicle, those there and those queued
+    // in the sector's factories, 0x421C60) fewer than its "max per sector" (record 52, default 20).
+    bool WarMap::ItemEnabled(int ref, int type, bool* battleMapOnly) const
+    {
+        auto it = factories.find(ref);
+        auto u = unitData.find(type);
+        if (it == factories.end() || u == unitData.end()) return false;
+        const int at = CounterOf(ref);
+        const int sector = at >= 0 ? counters[size_t(at)].sector : table[size_t(ref)].Sector();
+        const bool mapOnly = at >= 0 && counters[size_t(at)].kind == 0;
+        if (battleMapOnly) *battleMapOnly = mapOnly;
+        if (mapOnly) return false;
+        const int who = owner[size_t(sector)];
+        if (who == 2) return false;
+        const int side = (who == 0) == res.Human() ? 0 : 1;
+        if (u->second.faction != side) return false;
+        const int kind = u->second.category - 1;
+        int n = 0;
+        if (kind >= 0 && kind <= 2)
+            for (const Counter& c : counters)
+                if (c.players && !c.Travelling() && c.sector == sector && c.kind == kind && c.type == type) n += c.count;
+        if (kind == 0)
+            for (const auto& [r, f] : factories)
+            {
+                const int fk = CounterOf(r);
+                if (fk < 0 || counters[size_t(fk)].sector != sector || !counters[size_t(fk)].players) continue;
+                for (const BuildEntry& e : f.queue.entries) if (e.type == type) n++;
+            }
+        if (n >= u->second.maxPerSector) return false;
+        if (u->second.prerequisite)
+        {
+            const auto& here = finished[size_t(sector)];
+            if (std::find(here.begin(), here.end(), u->second.prerequisite) == here.end()) return false;
+        }
+        return it->second.queue.entries.size() < 32;
+    }
+
+    void WarMap::SaveFactory(int ref)
+    {
+        auto it = factories.find(ref);
+        if (it == factories.end()) return;
+        WriteTail(table[size_t(ref)], it->second);
+        if (auto t = ReadTail(table[size_t(ref)])) it->second = *t;
     }
 }
