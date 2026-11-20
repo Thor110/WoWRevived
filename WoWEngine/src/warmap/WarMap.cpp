@@ -482,6 +482,9 @@ namespace wow
     // pods, each sector, then the resource warnings. (The routes, the pods and the warnings are in so far.)
     void WarMap::Hourly(int hours)
     {
+        // each object's intel goes down by the hours, to 0 (0x429B80); one that runs out stays on the map until
+        // the next layout (a new view, or its sector laid out again)
+        for (Counter& k : counters) k.intel = std::max(0, k.intel - hours);
         MoveRoutes(hours);
         DropPod(hours);
         ResourceWarnings();
@@ -611,7 +614,7 @@ namespace wow
         counters.push_back(k);
         int index = int(counters.size()) - 1;
         // added to the sector (0x43CEB0 -> 0x43CD88): placed when the view shows units
-        if (viewMode == 1) PlaceCounter(index);
+        if (viewMode == 1 && Visible(index)) PlaceCounter(index);
         return index;
     }
 
@@ -973,7 +976,8 @@ namespace wow
         auto drawCounter = [&](const Counter& k) {
             int x = k.x - cameraX, y = k.y - cameraY;
             if (x < -40 || y < -40 || x > canvas.Width() || y > canvas.Height()) return;
-            const bool dim = k.players && k.kind == 1 && k.unfinished;
+            if (!k.shown && !(k.players && k.Travelling())) return;
+            const bool dim = (k.players && k.kind == 1 && k.unfinished) || (!k.players && k.intel < 0xA8);
             canvas.DrawSprite(0x77, k.frame, x, y, 0, dim ? Canvas::Blend::Translucent : Canvas::Blend::Opaque);
             if (Selected(int(&k - counters.data())) || k.inBand) canvas.DrawSprite(0x54, 0, x, y); // cselecth.spr
             if (k.shared)
@@ -1701,7 +1705,7 @@ namespace wow
         for (size_t i = counters.size(); i-- > 0;)
         {
             const Counter& k = counters[i];
-            if (k.kind != viewMode - 1) continue;
+            if (k.kind != viewMode - 1 || (!k.shown && !(k.players && k.Travelling()))) continue;
             int cx = k.x - cameraX, cy = k.y - cameraY;
             if (x >= cx && y >= cy && x < cx + 32 && y < cy + 32) return int(i);
         }
@@ -2067,6 +2071,7 @@ namespace wow
             FindCell(s, x, y, cell);
         }
         placed.push_back(index);
+        k.shown = true;
         k.cell = cell;
         k.x = x; k.y = y;
         k.targetX = x; k.targetY = y;
@@ -2104,8 +2109,10 @@ namespace wow
             for (size_t i = 0; i < counters.size(); i++)
             {
                 const Counter& k = counters[i];
-                if (k.sector == sector && k.players == players && k.kind == viewMode - 1 && !k.Travelling()) here.push_back(int(i));
+                if (k.sector == sector && k.players == players && k.kind == viewMode - 1 && !k.Travelling() && Visible(int(i))) here.push_back(int(i));
             }
+        for (size_t i = 0; i < counters.size(); i++)
+            if (counters[i].sector == sector && !counters[i].Travelling()) counters[i].shown = false;
         for (int i : here) { counters[size_t(i)].cell = -1; placed.erase(std::remove(placed.begin(), placed.end(), i), placed.end()); }
         for (int i : here) PlaceCounter(i);
     }
@@ -2123,14 +2130,36 @@ namespace wow
             g.index = 0;
         }
         placed.clear();
-        for (Counter& k : counters) { k.cell = -1; k.slideLeft = 0; }
+        for (Counter& k : counters) { k.cell = -1; k.slideLeft = 0; k.shown = k.players && k.Travelling(); }
         for (int s = 1; s <= warmap::SectorCount; s++)
             for (bool players : { true, false })
                 for (size_t i = 0; i < counters.size(); i++)
                 {
                     const Counter& k = counters[i];
-                    if (k.sector == s && k.players == players && k.kind == viewMode - 1 && !k.Travelling()) PlaceCounter(int(i));
+                    if (k.sector == s && k.players == players && k.kind == viewMode - 1 && !k.Travelling() && Visible(int(i))) PlaceCounter(int(i));
                 }
+    }
+
+    // The war map's set-up after a battle (0x418E17, for each sector with +0x128 set): every object in the sector,
+    // both sides', gets 336 hours of intel (0x422BA0), and so do those in up to `research` of its neighbours
+    // (0x441AD0) that the other side holds, research being 3, 2 or 1 by which of three research items is
+    // done (Human 0x588D94 / 0x588D90 / 0x588D8C, Martian 0x58906C / 0x589068 / 0x589064), 0 otherwise.
+    // (Battles aren't in yet, so nothing calls it: the other side's counters stay hidden, as at the start of
+    // the original's campaigns.)
+    void WarMap::RevealAfterBattle(int sector, int research)
+    {
+        auto reveal = [&](int s) { for (Counter& k : counters) if (k.sector == s) k.intel = 0x150; };
+        reveal(sector);
+        for (const int* n = warmap::Neighbours(sector); *n >= 0 && research > 0; n++)
+            if (owner[size_t(*n)] == 1) { reveal(*n); research--; }
+        LayoutAll();
+    }
+
+    // An object is shown when it's the player's, or there's intel on it (+0x3C), or in a network game (0x421630).
+    bool WarMap::Visible(int counter) const
+    {
+        const Counter& k = counters[size_t(counter)];
+        return k.players || k.intel > 0;
     }
 
     void WarMap::SetView(int mode)

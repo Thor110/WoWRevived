@@ -137,6 +137,15 @@ mouse stays:
   (0x4B5, +0x7C / +0x78) and no more (nothing for a class 7 one); finished, from level 2, "Resource use (...)" and
   "Working:" when it has work figures.
 
+**Intel and the fog** (WMOB +0x3C, hours, not saved): an object is shown (activated and placed, 0x421630) only if
+it's the player's, there's intel on it, or it's a network game. Intel goes down by the hours every hour, to 0
+(0x429B80); one that runs out stays until the next layout. It comes from the war map's set-up after a battle
+(0x418E17): for each sector with a battle just fought (+0x128) every object there gets 336 hours (0x422BA0), and so
+do those in up to 1-3 of its neighbours (0x441AD0) held by the other side, the number by which of three research
+items is done (the highest of Human 0x588D94 / 0x588D90 / 0x588D8C, Martian 0x58906C / 0x589068 / 0x589064 gives
+3 / 2 / 1; none, 0). The other side's counters are drawn at 50% once under 168 hours. Until battles come in nothing
+gives intel, so the other side's counters stay hidden, as at the start of the original's campaigns.
+
 A counter's draw (0x42B850): depth 4, or 7 for the picked one (drawn over the rest), the pick ring at depth + 2,
 the count at + 1. The player's unfinished constructions are drawn at 50% (the sprite's +0x14 bit 0); the other
 side's counters are too while the intel on them is old (+0x3C under 168, not in yet). Still to come with the

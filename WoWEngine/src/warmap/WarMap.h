@@ -240,6 +240,8 @@ namespace wow
         void RefreshSector(int sector);  // 0x43CB60
         void LayoutAll();                // a view change: 0x4204A0, then 0x43CB20 for every sector
         void SetView(int mode);
+        bool Visible(int counter) const; // 0x421630
+        void RevealAfterBattle(int sector, int research);                          // 0x418E17
         void SlideCounters();            // 0x4209E0
         void SendTo(int counter, int sector);
 
@@ -253,6 +255,8 @@ namespace wow
             int finishedCount = 0;       // of those, the finished ones (0x42AA70)
             bool unfinished = false;     // a construction not finished yet (drawn at 50% when it's ours)
             float progress = 1.0f;       // a construction's +0x7C / +0x78
+            int intel = 0;               // +0x3C: hours of intel left on the other side's (not saved)
+            bool shown = false;          // activated by the last layout (0x421630)
             int sector = 0;
             int speed = 0;               // the unit type's war map speed (unit +0x54), 0 for constructions and resources
             int moveClass = 0;           // the unit type's +0x4E: 0-2 land, 3 boats, 4 fliers

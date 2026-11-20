@@ -70,13 +70,14 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       a speed change (0x41AEA0 → 0x43D010) — 03, 04
 - [~] **Tool tips**: done: units (0x428D70) and constructions (0x42A4B0) with their levels; to do: the task lines
       (with construction), resource facilities (0x426430 / 0x426AE0), the owner position query 0x80D0 — 04, 05
-- [~] **Research button**: its tooltip's current research, and the flash (60 ticks on 0x20 / 0x800A / 0x80A3)
-      (0x45BEB0) — 04, 09
 - [ ] **Repair** (MRV / workshops) and **construction** progress and completion, CommandCentreBuilt (0x4297C0,
       0x42A4B0) — 04
 - [ ] **Context buttons**: factory panel, Suspend / Resume, Retreat (0x429A70) — 04
-- [ ] **Intel ageing and war map fog**: enemy counters shown for 336 h after contact, 1-3 neighbours by research
-      level; everything shows in a network game (0x421630, 0x429B80, 0x418E17) — 03, 04
+- [x] **Intel ageing and war map fog**: the other side's objects shown only with intel, ageing every hour, 50% under
+      168 h, the post-battle reveal of the sector and 1-3 neighbours by research (0x421630, 0x429B80, 0x418E17;
+      the reveal waits for battles, the research count for research, the network case for the network) — 03, 04
+- [~] **Research button**: waits for the research data (Milestone 4); its tool tip already says nothing is being
+      researched, as at the start
 - [ ] **Players**: local / AI / network player objects and the command recording `{01,01,code,04}` (0x4460A0) for
       playback and the network — 03, 07
 
