@@ -161,6 +161,29 @@ namespace wow
         return units;
     }
 
+    std::map<int, ObjOjd::ResearchPageInfo> ObjOjd::LoadResearchPages(std::span<const uint8_t> data)
+    {
+        std::map<int, ResearchPageInfo> pages;
+        ByteReader r(data);
+        while (r.Remaining() > 0)
+        {
+            if (r.Remaining() < 5) throw FormatError("OBJ.ojd: record header cut short");
+            r.Skip(3);
+            int type = int16_t(r.U16());
+            if (type == 63 || type == 64) // 0x4384D6
+            {
+                int page = int16_t(r.U16());
+                ResearchPageInfo& p = pages[page];
+                p.name = int16_t(r.U16());
+                p.picture = int16_t(r.U16());
+                p.speech = int16_t(r.U16());
+            }
+            else if (type >= 2 && type <= 4) { uint16_t len = r.U16(); r.Skip(size_t(len) + 2); }
+            else SkipPayload(r, type);
+        }
+        return pages;
+    }
+
     int ObjOjd::ResearchHours(const UnitData& unit, bool playingHuman, const ResearchModifiers& m)
     {
         float factor = 1.0f; // flt_4AA518

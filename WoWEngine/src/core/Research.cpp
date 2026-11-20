@@ -101,9 +101,9 @@ namespace wow
         {
             switch (s.op)
             {
-            case Op::Plan: plans.push_back({ s.value, {} }); break;
+            case Op::Plan: plans.push_back({ s.value, {}, 0, human ? 0x16 : 0x26 }); break;
             case Op::Page:
-                pages.push_back({ s.value, int(plans.size()) - 1, 1, {} });
+                pages.push_back({ s.value, int(plans.size()) - 1, 1, {}, 0, human ? 0x18 : 0x14 });
                 plans.back().pages.push_back(int(pages.size()) - 1);
                 break;
             case Op::Trigger: add(TriggerItem, 0, nullptr); break;
@@ -114,6 +114,109 @@ namespace wow
         }
         UnlockPass();
         notifications = true;
+    }
+
+    bool Research::PageVisible(int page) const
+    {
+        for (int i : pages[size_t(page)].items)
+            if (items[size_t(i)].state == Available || items[size_t(i)].state == Done) return true;
+        return false;
+    }
+
+    bool Research::PageHasNew(int page) const
+    {
+        for (int i : pages[size_t(page)].items)
+            if (items[size_t(i)].fresh == 0 || items[size_t(i)].fresh == 1) return true;
+        return false;
+    }
+
+    bool Research::PlanActive(int plan) const
+    {
+        for (int p : plans[size_t(plan)].pages) if (PageVisible(p)) return true;
+        return false;
+    }
+
+    int Research::OpenPlan() const
+    {
+        if (human) return int(plans.size()) - 1;
+        for (int p = int(plans.size()) - 1; p >= 0; p--) if (PlanActive(p)) return p;
+        return -1;
+    }
+
+    int Research::LastVisiblePage(int plan) const
+    {
+        const auto& list = plans[size_t(plan)].pages;
+        for (int i = int(list.size()) - 1; i >= 0; i--) if (PageVisible(list[size_t(i)])) return list[size_t(i)];
+        return -1;
+    }
+
+    int Research::CurrentPage() const { return current >= 0 ? items[size_t(current)].page : -1; }
+    int Research::CurrentPlan() const { int p = CurrentPage(); return p >= 0 ? pages[size_t(p)].plan : -1; }
+
+    int Research::StepOpen(Plan& plan, int delta)
+    {
+        // 0x45C840: opening, the folder first, then what's left unrolls the visible pages from the last up (each to
+        // its full height, 0x45D330); closing, the pages roll up from the first, then the folder. Returns what's left.
+        if (plan.pages.empty()) return delta;
+        auto page = [&](int p, int d) {
+            Page& g = pages[size_t(p)];
+            if (!d) return 0;
+            g.height += d;
+            if (d > 0 && g.height > g.full) { int left = g.height - g.full; g.height = g.full; return left; }
+            if (d < 0 && g.height < 0) { int left = g.height; g.height = 0; return left; }
+            return 0;
+        };
+        int left = 0;
+        if (delta > 0)
+        {
+            plan.open += delta;
+            if (plan.open > plan.full) { left = plan.open - plan.full; plan.open = plan.full; }
+            for (int i = int(plan.pages.size()) - 1; i >= 0 && left; i--)
+                if (PageVisible(plan.pages[size_t(i)])) left = page(plan.pages[size_t(i)], left);
+            return left;
+        }
+        left = delta;
+        for (size_t i = 0; i < plan.pages.size() && left; i++)
+            if (PageVisible(plan.pages[i])) left = page(plan.pages[i], left);
+        if (!left) return 0;
+        plan.open += left;
+        if (left > 0 && plan.open > plan.full) { int l = plan.open - plan.full; plan.open = plan.full; return l; }
+        if (plan.open < 0) { int l = plan.open; plan.open = 0; return l; }
+        return 0;
+    }
+
+    bool Research::AnimatePlans(int rate)
+    {
+        bool moving = false;
+        for (int p = 0; p < int(plans.size()); p++)
+        {
+            if (!PlanShown(p)) continue;
+            const int delta = p == selectedPlan ? rate : -rate;
+            if (StepOpen(plans[size_t(p)], delta) != delta) moving = true;
+        }
+        return moving;
+    }
+
+    bool Research::ClickPlan(int plan)
+    {
+        if (plan != selectedPlan) { selectedPlan = plan; return true; }
+        selectedPlan = -1;
+        return false;
+    }
+
+    void Research::ShowPage(int page)
+    {
+        currentPage = page;
+        if (page < 0 || size_t(page) >= pages.size()) return;
+        for (int i : pages[size_t(page)].items) items[size_t(i)].fresh = 2; // 0x45BCB0
+    }
+
+    bool Research::Choose(int number)
+    {
+        if (number == selectedItem) return false;
+        selectedItem = number;
+        if (number >= 0 && size_t(number) < items.size()) SetCurrent(number);
+        return true;
     }
 
     std::string Research::Duration(int hours, bool playingHuman, const TextTable& text)

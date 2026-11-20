@@ -1,7 +1,7 @@
 // Which shade table file fills which slot for each palette group, from LoadShadeTables (vanilla 0x40B6C0).
 // In the names, {S} is the side letter (H for Human games, M for Martian) and the extension is added by the
-// caller (SHH for 16-bit). The slots are the game's table at 0x4DA780 (4 bytes a slot). Group hr and the unit
-// tables of bm build their names from unit data and aren't listed yet.
+// caller (SHH for 16-bit). The slots are the game's table at 0x4DA780 (4 bytes a slot). The unit tables of bm
+// build their names from unit data and aren't listed yet.
 #pragma once
 #include <string_view>
 
@@ -21,6 +21,8 @@ namespace wow
         // hb, the Briefing and Debriefing (0x40BE05): the backdrop in slot 8, the interface in 5, fonts in 9 and the
         // mini battle maps' table (MINIT) in 21
         { 0x2EE, { "{S}B{S}B", "{S}B{S}I", "{S}BGI", "{S}MINIT" }, { 8, 5, 9, 21 }, 4 },
+        // hr, the research screen (0x40BF79): backdrop in slot 7, interface in 5, fonts in 9
+        { 0x2EF, { "{S}R{S}R", "{S}R{S}I", "{S}RGI" }, { 7, 5, 9 }, 3 },
         { 0x2F1, { "F1F1", "F1{S}I", "F1GI" }, { 12, 5, 9 }, 3 },
         { 0x2F2, { "F2F2", "F2{S}I" }, { 13, 5 }, 2 },
         { 0x2F3, { "F3F3", "F3{S}I" }, { 14, 5 }, 2 },

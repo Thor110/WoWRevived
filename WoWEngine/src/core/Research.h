@@ -60,8 +60,12 @@ namespace wow
             std::string name;          // +0x0C: "Trigger" or the type's name
             int researchName = 0, researchingText = 0, researchedText = 0; // the type's records 40-42
         };
-        struct Page { int number = 0; int plan = 0; uint8_t fresh = 1; std::vector<int> items; };
-        struct Plan { int text = 0; std::vector<int> pages; };
+        // A page (0x45CB70): its number in the category table, its plan, +0x60, its items; on the screen how far
+        // it's unrolled (+0x44, up to +0x48: 0x18 Human, 0x14 Martian)
+        struct Page { int number = 0; int plan = 0; uint8_t fresh = 1; std::vector<int> items; int height = 0, full = 0; };
+        // A plan (0x45BFA0): its name, its pages; on the screen how far its folder is open (+0x3C, up to +0x40:
+        // 0x16 Human, 0x26 Martian)
+        struct Plan { int text = 0; std::vector<int> pages; int open = 0, full = 0; };
 
         // What the research tells the rest of the game: war map events 4 / 5 / 6 (0x41E5B0, with the item's name),
         // and for the other side a finished item's type to that side's player (0xB9 to dword_4E9B78)
@@ -86,6 +90,28 @@ namespace wow
         // the item for a unit type (the unit table's +0x04, dword_51A0F4), or nothing
         const Item* ItemFor(int type) const;
         bool AnyAvailable() const;
+
+        // The research screen's side of it:
+        bool PageVisible(int page) const;  // 0x45CCF0: any of its items available or done
+        bool PageHasNew(int page) const;   // 0x45CD30: any item not yet looked at (fresh 0 or 1)
+        bool PlanActive(int plan) const;   // 0x45C140: any page visible
+        int OpenPlan() const;              // 0x458100: Human, the last plan; Martian, the last active one (-1)
+        bool PlanShown(int plan) const { return PlanActive(plan) || plan == OpenPlan(); }
+        int LastVisiblePage(int plan) const; // 0x45C110
+        int CurrentPlan() const;           // the plan the current research is in, -1 for none
+        int CurrentPage() const;           // the page the current research is on, -1 for none
+        int SelectedPlan() const { return selectedPlan; }
+        int ShownPage() const { return currentPage; }
+        // 0x458D90: a step of the folders' opening and closing: the selected plan opens by rate, every other shown
+        // one closes by it; true while anything still moves
+        bool AnimatePlans(int rate);
+        void SettlePlans(int rate) { while (AnimatePlans(rate)) {} }
+        // 0xBE, a plan's folder clicked: it's selected, or unselected if it was (true if it opened)
+        bool ClickPlan(int plan);
+        // 0xBF / 0x458D10: the page shown (-1 for none); its items marked as looked at (0x45D380 -> 0x45CD70)
+        void ShowPage(int page);
+        // 0x84: the item chosen to research (false if it was already the selected one)
+        bool Choose(int number);
 
         // 0x41BDA0: a time in hours as the game shows it: "<n>day(s)" (Martian "cycle(s)", 0x45D / 0x45E) from two
         // days up, "<n>hr(s)" (0x45F / 0x460) below that in Human games; Martian games always count days, so less
@@ -125,6 +151,7 @@ namespace wow
         static bool notifications;
 
     private:
+        int StepOpen(Plan& plan, int delta); // 0x45C840
         bool TryMakeAvailable(Item& item); // 0x45B920
         void Complete(Item& item);         // 0x45BB90
         void CompleteTrigger(Item& item);  // 0x45BC70

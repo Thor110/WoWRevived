@@ -98,8 +98,64 @@ HRSH then MRSH, whichever side is played (0x41AD80 / 0x41AC40; the tag, then 0x4
 Triggers aren't in any page, so they aren't saved; UpdateTriggers works them out again. Loading reads as many plans,
 pages and items as the tree has, whatever the counts say, then checks every item again with notifications off.
 
+## The screen
+
+`src/frontend/ResearchScreen` (0x45E670, opened by WResearch::Open 0x458150 from the war map's 0x7D: R or the
+Research button, with time stopped). A full-screen view: backdrop 0x85 (HU_RSCH / MR_RSCH) in palette group 0x2EF
+(hr: {S}R{S}R in slot 7, {S}R{S}I in 5, {S}RGI in 9, 0x40BF79), and in Human games the overlays 0x86 HU_RSCHT,
+0x87 RES_LAMP and 0x88 RES_WIRE over the tree. The exit button (GType 0x7C RES_EXIT / MR_EXIT, command 0xBD) is at
+(0x1AF, 0x1A4) Human, (0x1B7, 0x1BD) Martian; Esc too. Opening plays 0x19C (the cabinet) and settles the folders
+first; closing (0x458380) plays 0x19D and the war map comes back (0x41A10F).
+
+**Plans and pages.** A plan is shown (0x458100 / 0x45C140) if any of its pages is, or it's the "open plan": Human,
+always the last plan (the empty one, the wire divider r_divide); Martian, the last plan with a visible page. A page is
+visible (0x45CCF0) if any of its items is available or done. From (32, 30) Human or (4, 10) Martian (0x459200):
+
+- each shown plan's folder at (x, y): sprite 0x89 for the open plan, else 0x8A (tab_top / mr_tab), frame 1 under the
+  mouse (Human) or, Martian, (frames - 1) x open / full; its name font 0x72 centred at (x + 0x6F, y + 0xB) Human or
+  (x + 0x9B, y + 0x10) Martian, as "<<name>>" when the current research is in it; click area (x + 0xE, y) 0xC3 x 0x16
+  (none for the open plan) or (x + 0x23, y) 0xF0 x 0x20, command 0xBE. y goes on by 0x16 / 0x20 (and on a Martian
+  folder open past 0x20, by the rest).
+- each visible page unrolled at all at (x + 3, y) Human or (x + 0x28, y) Martian (0x45E550): sprite 0x8B for the
+  open plan's last visible page, else 0x8D (r_fold / pge_top / mr_page), frame 1 under the mouse; its name font 0x72
+  at (+6, +6) Human or (+0x1C, +8) Martian, "(name)" when it has the current research, drawn in Martian games only
+  once fully unrolled; click area 0x1D6 x 0x14 / 0xF8 x 0x18, command 0xBF. y goes on by its height and, Human, x by
+  a tenth of it.
+- after the pages y goes on from where the last one started by how far the folder is open (Martian at most 0x20), and
+  Human x by 2.
+
+Names are coloured `[Colours] "Research Current"` (25) for the current research's plan / page, `"Research New"` (27)
+for one with an item not yet looked at (fresh 0 or 1), else `"Research Normal"` (26). Martian pages are drawn only
+when their folder is fully open and every visible page fully unrolled.
+
+**The folders move** (0xBC, a step a tick until nothing moves, 0x458D90): the selected plan opens by `[Research]
+"Human Open Rate"` (20) or `"Martian Open Rate"` (10) and every other shown plan closes by it. Opening (0x45C840),
+the folder (+0x3C up to 0x16 Human, 0x26 Martian) first, then what's left unrolls the visible pages from the last up
+(+0x44 up to 0x18 / 0x14, 0x45D330); closing, the pages roll up from the first, then the folder.
+
+**Clicks.** A folder (0xBE): it's selected (sound 0x199), or unselected if it was (0x19A); the page goes (0x458D10,
+sound 0x19B) and the folders move. A page (0xBF): if it isn't the one shown, 0x19B, its items are marked looked at
+(fresh 2, 0x45CD70) and its detail shows (0x45D380); its scientist's speech plays (the page's speech text's TEXT.ojd
+sound, 0x414700; *provisional*: at once, where the game starts it 30 ticks on and fades the last one out over 30
+when the page goes). An item in the detail (0x84): if it isn't the one picked already, sound 0x132 and it becomes
+the current research (0x458A00).
+
+**The detail** (0x45D3F0 Human, 0x45DD50 Martian): the blueprint window (0x45F4B0) at (0x118, 0x16) with res_det
+(0x8C, Human) and the page's picture (OBJ.ojd records 63 / 64: the page table 0x5888C0, a name, a picture GType and
+a speech text for each page) over it, then its children, placed inside it: the page's name ("(name)" with the
+current research) font 0x72 in "Research Heading" (17), at y 0x12 and centred in (picture width - 0x4A) from 0x36;
+the speech text wrapped to (picture width - 0x4A) in "Research Detail" (26), 0x18 below the title's height; then
+"Specifications:" (0x462) with what's done there (record 42's text, "Research Specification"), "Enhancements:"
+(0x463, "Research Enhancement") and "Proposals For research:" (0x464) with each available item's name and time
+("Research Proposal"), which can be clicked. *Provisional*: the three lists' places, widths and the proposals
+list widget (0x45F140) aren't traced yet, nor the Martian layout (the Human one is used with 4 and 8 for 0x36 and
+0x4A). A click on the blueprint elsewhere plays the speech again (0x45F710).
+
+Not yet: the keyboard (the hotspots' Up / Down / Enter, 0x45ECB0), the tool tips' "Makes Available:" lists
+(0x8114), the speech's delay and fade.
+
 ## Still to do
 
-The research screen (0x45E670, 0x45D3F0) and choosing what to research; the AI's choice (0x45A400 / 0x45B4E0, its
+The rest of the screen (above); the AI's choice (0x45A400 / 0x45B4E0, its
 plan lists) with the war map AI; the battle map setting +0xAC; the cheat that finishes everything (0x458460, keys
 2 14 12 4 1 0 2 10 at 0x4013A0; `Research::CompleteAll` is ready for it).

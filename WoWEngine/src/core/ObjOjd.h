@@ -66,6 +66,10 @@ namespace wow
             int researchedText = 0;  // +0x24, record 42: what it says once done
         };
         static std::map<int, UnitData> LoadUnits(std::span<const uint8_t> data);
+        // The research pages' table (0x5888C0, 12 bytes a page, records 63 and 64: the page, then three words): the
+        // page's name, the GType of its picture (the blueprint, 0x45F4B0) and the text its scientist speaks
+        struct ResearchPageInfo { int name = 0, picture = 0, speech = 0; };
+        static std::map<int, ResearchPageInfo> LoadResearchPages(std::span<const uint8_t> data);
         // The research time in hours (+0x08, 0x437750 case 39): days x 24 x the [Tweak] "<HumanFriend | HumanEnemy |
         // MartianFriend | MartianEnemy> Research Modifier" (0.75 each) by the type's faction and the side being played
         // (Friend when they're the same), 1 for scenery; truncated, kept as a 16-bit word

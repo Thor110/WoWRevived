@@ -5,6 +5,7 @@
 #include "frontend/MovieScreen.h"
 #include "frontend/Splash.h"
 #include "core/SaveGame.h"
+#include "frontend/ResearchScreen.h"
 #include "warmap/WarMap.h"
 #include "core/ObjOjd.h"
 
@@ -549,6 +550,8 @@ namespace wow
             catch (const std::exception& e) { SDL_Log("OBJ.ojd units: %s", e.what()); }
             try { arrows = ObjOjd::LoadArrowTypes(objData); }
             catch (const std::exception& e) { SDL_Log("OBJ.ojd arrow types: %s", e.what()); }
+            try { researchPages = ObjOjd::LoadResearchPages(objData); }
+            catch (const std::exception& e) { SDL_Log("OBJ.ojd research pages: %s", e.what()); }
             try { deposits = ObjOjd::LoadSectorDeposits(objData); }
             catch (const std::exception& e) { SDL_Log("OBJ.ojd sector deposits: %s", e.what()); }
         }
@@ -700,9 +703,31 @@ namespace wow
             break;
         case CmdWarMapMenu: Show(WarMapMenu()); break;
         case WarMap::ResearchCommand:
-            // the research screen (0x41A450 'R', the Research button) isn't rebuilt yet; Back returns to the map
+            // 0x7D (0x419A4D): time stops, the war map steps back and the local player's research opens (0x458150)
             if (screen && screen->Id() == WarMap::Id) warMap.reset(screen.release());
-            Show(NotRebuilt(command.id, Commands::Back));
+            if (WarMap* map = ActiveWarMap(); map && map->LocalResearch())
+            {
+                ResearchScreen::Colours c;
+                c.current = ini.GetInt("Colours", "Research Current", c.current);
+                c.normal = ini.GetInt("Colours", "Research Normal", c.normal);
+                c.fresh = ini.GetInt("Colours", "Research New", c.fresh);
+                c.heading = ini.GetInt("Colours", "Research Heading", c.heading);
+                c.proposal = ini.GetInt("Colours", "Research Proposal", c.proposal);
+                c.detail = ini.GetInt("Colours", "Research Detail", c.detail);
+                c.specification = ini.GetInt("Colours", "Research Specification", c.specification);
+                c.enhancement = ini.GetInt("Colours", "Research Enhancement", c.enhancement);
+                const int rate = res.Human() ? ini.GetInt("Research", "Human Open Rate", 20) : ini.GetInt("Research", "Martian Open Rate", 10);
+                Show(std::make_unique<ResearchScreen>(res, *map->LocalResearch(), researchPages, c, rate));
+            }
+            break;
+        case ResearchScreen::CloseCommand:
+            // 0xBD: the research closes (0x458380, the cabinet 0x19D) and the war map comes back (0x41A10F)
+            if (current == ResearchScreen::Id && warMap)
+            {
+                if (WarMap* map = ActiveWarMap(); map && map->LocalResearch()) map->LocalResearch()->ShowPage(-1);
+                sound.Play(0x19D);
+                Show(std::move(warMap));
+            }
             break;
         case CmdStartNetworkGame:
         case 0xAB:

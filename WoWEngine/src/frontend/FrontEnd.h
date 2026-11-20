@@ -85,6 +85,7 @@ namespace wow
         std::filesystem::path SlotFile(int slot) const;
         static bool WriteSaveFile(const std::filesystem::path& path, const std::vector<uint8_t>& data);
         int playingSlot = 0;       // the slot the war map's campaign is saved in (world +0x128)
+        std::map<int, ObjOjd::ResearchPageInfo> researchPages; // OBJ.ojd records 63 / 64
 
         bool AnySaveGame() const;
         void DrawCursor(Canvas& canvas) const;
