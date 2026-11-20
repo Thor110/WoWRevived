@@ -397,8 +397,8 @@ sends 0x8088 to an object's group (+0x48), which selects all its units.
 
 - **Cursor mode** (dword_4EA43C, set by 0x42E790): every change of the selection (0x800F to the world and the
   view, 0x43B682 / 0x4853A0) makes it 1 (orders) when something is selected, else 0. In mode 1 a hotspot of the
-  player's selects its group (with Ctrl: force fire at the ground under it, packet 0x13) and one of the other
-  side's is attacked (packet 0x10).
+  player's selects its group, one of the other side's is attacked (packet 0x10, "Attacking an object" below), and
+  with Ctrl either is force fire at the ground under the mouse (packet 0x13).
 - **Cursors** (WM_SETCURSOR, numbers into the cursor table: 1 `hselcurs`, 4 `h-move`, 5 `h-attack`): over the
   minimap 0; over a hotspot (0x497110) in mode 0 1 for the player's, in mode 1 5 for the other side's or with Ctrl,
   else 1; elsewhere (0x485F60) mode 0 4 with something selected else 0, mode 1 5 with Ctrl else 4.
@@ -532,12 +532,39 @@ Approach 0x496300). **Force fire**: Ctrl with the left button on the ground (pac
 (0x80ED: mode 1) then a click: speech 0x10C and the target the point at its ground height. A move order clears the
 target and disarms the guns.
 
-In sector 30, Force Fire from the popup on a point west of the start: the group drove into range (a 4-node route) and
-the five lorries' rockets landed round their jittered aims, a few units out, each an effect 382 with a scorch.
+**Attacking an object** (a click on the other side's hotspot in mode 1, packet 0x10 -> 0x4812B0 -> 0x481F70), for each
+selected group: type 0x3DB is a case of its own (0x481170, else speech 0x121); any other: each member 0x80B9, then
+0x482880 (the target +0x2C, its id +0x30, the last aim -1), +0x1D8 bit 0 set (0x480EB0), vt+0x38, and speech 0x10C
+for a player's group (bit 4) whose first member is a vehicle; then bit 3. Each update the group's target follows the
+object (+0x78..+0x80, 0x4826D0); one under the ground (+0x84 below 0.0) has its guns stood down (0x805A) and bit 0
+cleared. **Approach** (vt+0xC4, 0x496300): d = ftol(the distance - -1.0) and r the object's radius (+0xAC) / 3 for a
+category 0, 2 or 3 object (+0xB8 bit 1), else 0; the aim is the object's point less (it - the unit) x r / d, its
+height plus its +0x41 byte x 1.414 (dbl_4B0AA8 is -1.414, subtracted): the near side of a building, a vehicle's middle.
 
-*Provisional*: the mortars' cluster shells, object targets (Approach, AttackObject 0x481F70, AutoTarget 0x496570 by
-stance), the turrets' turning and arcs, the guns' place on their unit, the research multipliers and the "CAN'T GET TO
-WITHIN ATTACK DISTANCE!" check aren't in; WProjectile and 0x48DBE0 fly no visible missile.
+**Looking round** (the unit's update 0x4967E0): +0xDA counts the updates; past its type's +0x92 word (record 53) it
+calls vt+0x104 (0x48F8A0: with +0xE4 bit 1 and further than its sight x flt_59E44C from its post, the group's guns are
+stood down; then 0x496890: on stance 2 or 3 with its group not attacking (+0x1D8 bit 0 clear or bit 2 set) it picks a
+target, 0x496570), and +0xDA goes back to 0. **0x496570**: within its sight (+0x48) x flt_59E44C (octagonal, whole
+positions), not under the ground itself, of the other side's objects that can be targeted (vt+0x6C, +0xC0 bit 0) the
+first armed one (+0x3C) is taken at once; else the battle's key building (0x33E / 0x78, 0x116 / 0x13A) if seen, else
+the last seen. The group gets 0x80B1 (0x4807F0's case: a player's group and a vehicle target, rand() under 5000 says
+0x10F; then 0x482960, as 0x482880 with bit 0 set). (0x482570, every 8th update of a group with +0x1D8 bit 7, tries
+one of 27 special orders at random through CanDo and 0x4817C0: the computer's, for the battle AI.)
+
+**flt_59E44C is never written**: it sits in uninitialised data and nothing in the listing stores to it (two reads,
+0x48F8CC and 0x4965A3, no other reference), so it stays 0.0, the sight is 0 and the scan finds nothing: units don't
+pick their own targets. It's kept as `kLookScale` in `Weapons.cpp`. *Provisional*: if something unseen sets it, the
+scan works (checked with 1.0: the lorries on Attack took the tower as their target unasked).
+
+In sector 30, Force Fire from the popup on a point west of the start: the group drove into range (a 4-node route) and
+the five lorries' rockets landed round their jittered aims, a few units out, each an effect 382 with a scorch. With
+the tower (278) made the other side's for the test, a click on it set it as the target: the lorries' rockets landed on
+its east side, the side they were on, a few units in from its middle, and took its 18000 health down 16-22 a hit.
+
+*Provisional*: the mortars' cluster shells, type 0x3DB's case, 0x80B9 and vt+0x38, the posts (+0xE4), the battle
+told of an unarmed object seen, the turrets' turning and arcs, the guns' place on their unit, the research
+multipliers and the "CAN'T GET TO WITHIN ATTACK DISTANCE!" check aren't in; a target that's gone clears the group's
+target (the game's tidy-up of 0x8057 isn't traced); WProjectile and 0x48DBE0 fly no visible missile.
 
 ## Driving (the ground vehicle 0x490820-0x4935C0; the group's move 0x482E60; `battlemap/Driving.cpp`)
 

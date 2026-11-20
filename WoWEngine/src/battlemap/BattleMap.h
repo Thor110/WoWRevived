@@ -175,10 +175,15 @@ namespace wow
                       int health = 0;       // +0xC4: the type's +0x4A (0x47DA20) to start with
                       std::vector<Gun> guns;         // its weapon children (and its turrets')
                       int dieAt = -1;       // a 0x80A0 posted to itself (the update it arrives on)
+                      int id = 0;           // +0x08, the object's id (kept by a group's target, +0x30)
+                      int scanCount = 0;    // +0xDA, updates since its last look round (0x4967E0)
                     };
+        int nextId = 1;
+        Unit* UnitById(int id);
         void EngineSound(Unit& u);                              // 0x491450
         // Each group's target (+0x2C, -1 a point: +0x40..+0x48) and where it was last aimed (+0x34..+0x3C), its mode
         // (+0x1DC) and engagement range (+0x4E)
+        // (target: 0 none, -1 a point, else the object's id)
         struct GroupTarget { int target = 0; int x = 0, y = 0, z = 0, lastX = -1, lastY = -1, lastZ = -1; };
         std::vector<GroupTarget> groupTargets;
         bool forceFireNext = false;                             // the popup's Force Fire waiting for the click
@@ -187,6 +192,10 @@ namespace wow
         void SetUpGuns(Unit& u);
         void ForceFire(int x, int y);                           // packet 0x13 / mode 1 (0x4812B0, 0x481CA0)
         void StopAttacking(int group);                          // the target cleared, the guns 0x805A
+        void AttackObject(int id);                              // packet 0x10 (0x4812B0 -> 0x481F70 -> 0x482880)
+        void Approach(Unit& u, const Unit& target);             // vt+0xC4: 0x491100 -> 0x496300
+        void LookRound(size_t unit);                            // 0x4967E0's count -> vt+0x104 (0x48F8A0, 0x496890)
+        void AutoTarget(const Unit& u);                         // 0x496570 -> the group's 0x80B1 (0x482960)
         void ChaseTargets();                                    // 0x483B70 -> 0x4826D0
         void Aim(Unit& u, int x, int y, int z);                 // vt+0xC8: 0x491110 -> 0x496200 -> guns 0x494D20
         void GunTick(size_t unit, Gun& g);                      // 0x494DB0 and the class's update

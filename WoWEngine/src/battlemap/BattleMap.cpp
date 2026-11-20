@@ -281,13 +281,21 @@ namespace wow
             selected[size_t(best->group)] = true;
             return;
         }
-        // mode 1 (0x497794): the player's selects its group (with Ctrl it would be force fire at the ground under it,
-        // packet 0x13); the other side's would be attacked (packet 0x10): *not yet*
-        if (best->players && !ctrl)
+        // mode 1 (0x497794): with Ctrl force fire at the ground under it (packet 0x13); else the player's selects
+        // its group and the other side's is attacked (packet 0x10)
+        if (ctrl)
+        {
+            const int wx = x + scrollX;
+            const int wy = land.ScreenYToWorldY(wx, y + scrollY);
+            forceFireNext = false;
+            if (wy) ForceFire(wx, wy);
+        }
+        else if (best->players)
         {
             ClearSelection();
             selected[size_t(best->group)] = true;
         }
+        else AttackObject(best->id);
     }
 
     // The hotspot under a point: the frontmost (lowest on screen) of those whose square holds it
@@ -420,6 +428,7 @@ namespace wow
                 u.heading = 0;
                 u.players = g.Players();
                 u.group = int(&g - &setup.groups[0]);
+                u.id = nextId++;
                 units.push_back(u);
             }
         selected.assign(setup.groups.size(), false);
@@ -1029,6 +1038,7 @@ namespace wow
         {
             const float x = units[i].x, y = units[i].y;
             Drive(i);
+            LookRound(i);
             moved |= units[i].x != x || units[i].y != y;
         }
         // the guns (their own updates, each a child of its unit or its turret)

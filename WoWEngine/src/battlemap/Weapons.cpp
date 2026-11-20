@@ -115,6 +115,116 @@ namespace wow
         }
     }
 
+    BattleMap::Unit* BattleMap::UnitById(int id)
+    {
+        for (Unit& u : units)
+            if (u.id == id) return &u;
+        return nullptr;
+    }
+
+    // Packet 0x10, an object attacked (0x4812B0 -> 0x481F70), for each selected group: an object of type 0x3DB is
+    // its own case (0x481170, or speech 0x121); any other: each member told 0x80B9, then 0x482880 with it (each
+    // member 0x80B9 again, the target +0x2C and its id +0x30, where it was last aimed (+0x34..+0x3C) -1), +0x1D8
+    // bit 0 set (0x480EB0(1)), vt+0x38, and for a player's group (bit 4) whose first member is a vehicle speech
+    // 0x10C; then bit 3. The move into range and the aim follow from the group's update (0x4826D0).
+    // *Provisional*: type 0x3DB's case, 0x80B9 and vt+0x38 aren't in.
+    void BattleMap::AttackObject(int id)
+    {
+        const Unit* target = UnitById(id);
+        if (!target || target->type == 0x3DB) return;
+        bool any = false;
+        for (size_t g = 0; g < selected.size() && g < groupTargets.size(); g++)
+        {
+            if (!selected[g] || int(g) == target->group) continue;
+            const Unit* first = nullptr;
+            for (const Unit& u : units)
+                if (u.group == int(g)) { first = &u; break; }
+            if (!first || !first->players) continue;
+            GroupTarget& t = groupTargets[g];
+            t = GroupTarget{};
+            t.target = id;
+            groupMode[g] = 0;
+            auto ft = setup.units->find(first->type);
+            if (!any && ft != setup.units->end() && ft->second.category == 1) Speak(0x10C, int(g));
+            any = true;
+        }
+    }
+
+    // vt+0xC4 (0x491100 -> 0x496300): unless it says not (vt+0xF8), at another object: d = ftol(the distance - -1.0),
+    // r its radius (+0xAC) / 3 for a category 0, 2 or 3 object (+0xB8 bit 1), else 0; the point aimed at is the
+    // object's less (it - this) x r / d across and down, its height plus its +0x41 byte x 1.414 (vt+0xC8)
+    void BattleMap::Approach(Unit& u, const Unit& target)
+    {
+        if (&u == &target) return;
+        auto t = setup.units->find(target.type);
+        if (t == setup.units->end()) return;
+        const float dx = target.x - u.x, dy = target.y - u.y;
+        const int d = int(double(std::sqrt(dy * dy + dx * dx)) - -1.0);
+        const int cat = t->second.category;
+        const int r = (cat == 0 || cat == 2 || cat == 3) ? target.drive.radius / 3 : 0;
+        const float fr = float(r), fd = float(d);
+        const int x = int(target.x - dx * fr / fd);
+        const int y = int(target.y - dy * fr / fd);
+        const float tz = float(land.HeightAt(int(target.x), int(target.y))) + target.drive.lift;
+        const int z = int(double(tz) - double(t->second.size41) * -1.414);
+        Aim(u, x, y, z);
+    }
+
+    // flt_59E44C, the sight's scale for looking round (0x48F8A0, 0x496570): nothing in the program writes it, so it
+    // keeps the 0.0 it starts with. *Provisional*: if something unseen sets it, the scans below find targets.
+    static constexpr float kLookScale = 0.0f;
+
+    // The unit's update (0x4967E0): +0xDA counts up; past its type's +0x92 word it looks round (vt+0x104, 0x48F8A0:
+    // with +0xE4 bit 1 and further than its sight x the scale from its post (+0xC8 / +0xCC), its group's guns are
+    // stood down (0x805A); then 0x496890: on stance 2 or 3 (+0xD8) with its group not attacking (+0x1D8 bit 0
+    // clear, or bit 2 set) it picks a target (0x496570), and the count goes back to 0).
+    // *Provisional*: +0xE4 (posts) and 0x496890's vt+0xAC aren't in.
+    void BattleMap::LookRound(size_t index)
+    {
+        Unit& u = units[index];
+        auto t = setup.units->find(u.type);
+        if (t == setup.units->end()) return;
+        const int count = u.scanCount++;
+        if (count <= int16_t(t->second.field92)) return;
+        const int stance = u.group >= 0 && size_t(u.group) < groupStance.size() ? groupStance[size_t(u.group)] : 1;
+        if (stance >= 2 && stance <= 3 && size_t(u.group) < groupTargets.size() && groupTargets[size_t(u.group)].target == 0)
+            AutoTarget(u);
+        u.scanCount = 0;
+    }
+
+    // 0x496570: within its sight (+0x48) x the scale (octagonal, whole positions), with it not under the ground,
+    // every other side's object that can be targeted (vt+0x6C, +0xC0 bit 0): an armed one (+0x3C) is the target
+    // at once; else the battle's key building (0x33E / 0x78, 0x116 / 0x13A by the kind) if seen, else the last seen.
+    // The group gets 0x80B1 with it: for a player's group (+0x1D8 bit 4) and a vehicle target (+0xB8 bit 0), if
+    // rand() is under 5000 speech 0x10F; then 0x482960: as 0x482880, the target set and bit 0 set.
+    // *Provisional*: a player's unit seeing an unarmed one also tells the battle (0x80B1 to dword_4E9B78), not in.
+    void BattleMap::AutoTarget(const Unit& u)
+    {
+        auto t = setup.units->find(u.type);
+        if (t == setup.units->end() || u.drive.lift < 0.0f) return;
+        const int sight = int(float(ObjOjd::Vision(t->second, setup.armour)) * kLookScale);
+        const Unit* key = nullptr;
+        const Unit* last = nullptr;
+        const Unit* pick = nullptr;
+        for (const Unit& o : units)
+        {
+            if (Octagonal(int(u.x), int(u.y), int(o.x), int(o.y)) >= sight) continue;
+            if (o.health <= 0 || o.players == u.players) continue;
+            if (!o.guns.empty()) { pick = &o; break; }
+            last = &o;
+            if (o.type == (setup.sector == 3 ? 0x33E : 0x78) || o.type == (setup.sector == 30 ? 0x116 : 0x13A)) key = &o;
+        }
+        if (!pick) pick = key ? key : last;
+        if (!pick) return;
+        const int g = u.group;
+        if (u.players)
+            if (auto pt = setup.units->find(pick->type); pt != setup.units->end() && pt->second.category == 1 && random::Rand() < 5000)
+                Speak(0x10F, g);
+        GroupTarget& gt = groupTargets[size_t(g)];
+        gt = GroupTarget{};
+        gt.target = pick->id;
+    }
+
     // 0x482880(0) / the guns' 0x805A (0x494D80): not armed; a cycle under way goes to its reload; aimed set
     void BattleMap::StopAttacking(int group)
     {
@@ -132,15 +242,39 @@ namespace wow
 
     // 0x483B70 -> 0x4826D0, each update for a group with a target: a point target that's moved more than 80 (0x43FF00)
     // from where it was last aimed is aimed at again: the group moves (0x804F) to within its range (+0x4E, in
-    // vertices, as the route's radius) and each member is aimed there (vt+0xC8)
-    // *Provisional*: object targets (vt+0xC4, Approach 0x496300) aren't in; the route's radius is the range snapped
+    // vertices, as the route's radius) and each member is aimed there (vt+0xC8, a point) or at it (vt+0xC4, an
+    // object). An object's target follows it (+0x78..+0x80 each update); under the ground its guns are stood down.
+    // *Provisional*: a target that's gone (0x8057's tidy-up) clears the group's target; the route's radius is the range snapped
     // to vertices whatever the goal's snap (the "CAN'T GET TO WITHIN ATTACK DISTANCE!" check isn't in).
     void BattleMap::ChaseTargets()
     {
         for (size_t g = 0; g < groupTargets.size(); g++)
         {
             GroupTarget& t = groupTargets[g];
-            if (t.target != -1) continue;
+            if (t.target == 0) continue;
+            const Unit* object = nullptr;
+            if (t.target > 0)
+            {
+                // an object: gone, the target's cleared; under the ground (+0x84 under 0), the guns are told 0x805A
+                // and +0x1D8 bit 0 cleared; else the point is where it is (+0x78..+0x80)
+                object = UnitById(t.target);
+                if (!object) { StopAttacking(int(g)); continue; }
+                if (object->drive.lift < 0.0f)
+                {
+                    for (Unit& u : units)
+                        if (u.group == int(g))
+                            for (Gun& gun : u.guns)
+                            {
+                                gun.armed = false;
+                                if (gun.state != 0) gun.state = 4;
+                                gun.flags |= 1;
+                            }
+                    continue;
+                }
+                t.x = int(object->x);
+                t.y = int(object->y);
+                t.z = int(float(land.HeightAt(t.x, t.y)) + object->drive.lift);
+            }
             if (Octagonal(t.x, t.y, t.lastX, t.lastY) <= 80) continue;
             t.lastX = t.x;
             t.lastY = t.y;
@@ -150,8 +284,13 @@ namespace wow
                 if (units[i].group == int(g) && units[i].vehicle) members.push_back(i);
             const int radius = int((int64_t(int32_t(uint32_t(groupRange[g]) << 16)) + land.HalfCell()) / land.Cell());
             OrderGroupMove(int(g), members, t.x, t.y, radius);
+            const int id = t.target;
             for (Unit& u : units)
-                if (u.group == int(g)) Aim(u, t.x, t.y, t.z);
+                if (u.group == int(g))
+                {
+                    if (id == -1) Aim(u, t.x, t.y, t.z);
+                    else if (const Unit* o = UnitById(id)) Approach(u, *o);
+                }
         }
     }
 
