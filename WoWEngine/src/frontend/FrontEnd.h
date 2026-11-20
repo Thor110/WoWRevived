@@ -8,6 +8,7 @@
 #include "platform/Music.h"
 #include "platform/Sound.h"
 
+#include <map>
 #include <memory>
 
 namespace wow
@@ -51,6 +52,9 @@ namespace wow
         void Show(std::unique_ptr<Screen> next);
 
         std::unique_ptr<Menu> NewMenu(int id);
+        int BackTo(int menu, int current);
+        void ShowMenu(std::unique_ptr<Screen> menu, int back);
+        std::map<int, int> menuParents; // each menu's way back, as BackTo keeps it
         std::unique_ptr<Screen> MainMenu();                 // 0x90, built at 0x405ED0
         std::unique_ptr<Screen> GameOptions(int previous);  // 0x8E, 0x408CF0
         std::unique_ptr<Screen> QuitGame(int previous);     // 0x70, 0x409460

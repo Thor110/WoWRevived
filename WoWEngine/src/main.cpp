@@ -42,14 +42,15 @@ namespace
 {
     constexpr int GameWidth = 640;
     constexpr int GameHeight = 480;
-    constexpr uint64_t TickNs = 1'000'000'000ull / 30; // "Game Frequency" defaults to 30 updates a second
+    constexpr uint64_t TickNs = 1'000'000'000ull / 30;
+    constexpr int WaitKey = -100'000'000; // a "wait:n" in the screenshot keys, less n // "Game Frequency" defaults to 30 updates a second
 
     // Command line: [game folder] [--human | --martian] [--open command] [--screenshot file.bmp [keys]]
     // --human / --martian pick the side (WoWLauncher passes one); without either it's Human.
     // --open starts on the screen a menu command opens (0x8E Game Options, 0x6E Save Game...).
     // --ticks N runs N game updates (30 a second) after the keys, before the screenshot.
     // --mouse x,y moves the mouse there first (game coordinates), for screenshots of the cursor and highlights.
-    // --screenshot presses the comma separated keys (up, down, enter, escape, f1-f9), saves the frame and exits.
+    // --screenshot presses the comma separated keys (up, down, enter, escape, f1-f9, click:x:y, wait:n updates), saves the frame and exits.
     struct Options
     {
         fs::path gameFolder;
@@ -101,6 +102,8 @@ namespace
                         else if (k == "backspace") o.keys.push_back(SDLK_BACKSPACE);
                         else if (k.size() == 2 && k[0] == 'f' && k[1] >= '1' && k[1] <= '9') o.keys.push_back(int(SDLK_F1) + (k[1] - '1'));
                         else if (k == "click") o.keys.push_back(-1); // a left click where --mouse put the mouse
+                        else if (k.rfind("wait:", 0) == 0)   // wait:n runs n updates
+                            o.keys.push_back(WaitKey - std::max(0, std::atoi(k.c_str() + 5)));
                         else if (k.rfind("click:", 0) == 0)   // click:x:y clicks there
                         {
                             int cx = std::atoi(k.c_str() + 6), cy = 0;
@@ -258,6 +261,7 @@ int main(int argc, char** argv)
             if (options.mouseX >= 0) frontEnd.OnMouseMove(options.mouseX, options.mouseY);
             for (int key : options.keys)
             {
+                if (key <= WaitKey) { for (int t = 0; t < WaitKey - key; t++) frontEnd.Update(); continue; }
                 if (key == -1) { frontEnd.OnMouseButton(options.mouseX, options.mouseY, true); frontEnd.OnMouseButton(options.mouseX, options.mouseY, false); continue; }
                 if (key <= -2)
                 {

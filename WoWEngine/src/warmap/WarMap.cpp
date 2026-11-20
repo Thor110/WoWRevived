@@ -40,8 +40,8 @@ namespace wow
         unitData = units;
         // A counter for each object (0x42B2F0, made by 0x4205F0), except that objects of class 7 (AI.ojd's class,
         // 0x518B14: wire fences, mines) share one a type and sector (0x4282A0 / 0x428270), with how many there are
-        // in the counter font (GType 0x6E, right-aligned). An object saved at 0, 0 goes in the sector's next free
-        // cell, in the game's spiral order (SectorCells).
+        // in the counter font (GType 0x6E, right-aligned). Where they go is the counter placement's (LayoutAll):
+        // the war map doesn't use the places objects are saved with.
         // a construction counts once it's finished: 0x42AA70 wants its +0x7C at least its +0x78, taken here as the
         // save's second float against its first (provisional: which float is which isn't traced; at the start
         // both are 1)
@@ -63,10 +63,6 @@ namespace wow
             if (o.ref >= 0) g->refs.push_back(o.ref);
             if (!g->x && !g->y) { g->x = o.x; g->y = o.y; }
         }
-        auto taken = [&](int x, int y, int kind) {
-            for (const Counter& c : counters) if (c.kind == kind && c.x == x && c.y == y) return true;
-            return false;
-        };
         for (const Group& g : groups)
         {
             auto unit = units.find(g.type);
@@ -81,13 +77,6 @@ namespace wow
             k.players = g.list % 2 == 0;
             k.kind = g.list / 2;
             k.sector = g.sector;
-            if ((!k.x && !k.y) || taken(k.x, k.y, k.kind))
-            {
-                bool placed = false;
-                for (const auto& [x, y] : SectorCells(g.sector))
-                    if (!taken(x, y, k.kind)) { k.x = x; k.y = y; placed = true; break; }
-                if (!placed) continue;
-            }
             counters.push_back(k);
     }
         levels.fill(warmap::NormalLevel);
@@ -107,6 +96,7 @@ namespace wow
         // (0x418980 subtracts it from the centre): Martian.000's 159, 298 centres on sector 3's units at 468, 540,
         // Human.000's 803, 1805 on London's at 1116, 2016. So the centre is that plus 320, 240.
         CentreOn(int(game.warMap[0]) + 320, int(game.warMap[1]) + 240);
+        LayoutAll();
     }
 
     int WarMap::ViewW() const { return ScreenW; }
@@ -546,7 +536,7 @@ namespace wow
         // who holds it, as Human 0 / Martian 1 / no one 2
         int who = owner[size_t(sector)] == 2 ? 2 : (owner[size_t(sector)] == 0) == human ? 0 : 1;
         if (who == 0) { podFlag[size_t(sector)] = true; return; }
-        if (!human) viewMode = 1;
+        if (!human) SetView(1);
         std::string name = res.String(warmap::NameText(sector));
         if (who == 1)
         {
@@ -603,16 +593,11 @@ namespace wow
         k.kind = 0;
         k.sector = sector;
         if (ref >= 0) k.refs.push_back(ref);
-        for (const auto& [x, y] : SectorCells(sector))
-        {
-            bool taken = false;
-            for (const Counter& c : counters) if (c.kind == 0 && c.x == x && c.y == y) { taken = true; break; }
-            if (taken) continue;
-            k.x = x; k.y = y;
-            counters.push_back(k);
-            return int(counters.size()) - 1;
-        }
-        return -1;
+        counters.push_back(k);
+        int index = int(counters.size()) - 1;
+        // added to the sector (0x43CEB0 -> 0x43CD88): placed when the view shows units
+        if (viewMode == 1) PlaceCounter(index);
+        return index;
     }
 
     std::vector<SaveInfo::WarMapObject> WarMap::ObjectsOf(const SaveFile& save)
@@ -769,6 +754,7 @@ namespace wow
             const int origin = k.path.front(), last = int(k.path.size()) - 1;
             if (++k.hoursOn == 1)
             {
+                FreeCounter(int(i)); // 0x4208B0: its cell given back as it sets off
                 k.x = int(k.arrow[0].x) + k.offsetX - 16;
                 k.y = int(k.arrow[0].y) + k.offsetY - 16;
             }
@@ -839,9 +825,8 @@ namespace wow
         k.path.clear();
         k.arrow.clear();
         k.sector = at;
-        auto cell = FreeCell(at, k.kind, index);
-        k.x = cell.first;
-        k.y = cell.second;
+        // the sector laid out again (0x43CB60), this one with the rest
+        RefreshSector(at);
         // ArrivedInSector (event 3, 0x41EAE0): "Vehicle/s arrived in" and the sector, sound 0x120
         if (!attack && at == sector)
         {
@@ -879,6 +864,7 @@ namespace wow
             for (int phase = 0; phase < 5; phase++) EconomyPhase(phase);
         }
         animation++;
+        SlideCounters();
         ClockTick();
         if (hoursPassed > 0) Hourly(hoursPassed);
         EconomyPhase(animation % 5);
@@ -1065,9 +1051,9 @@ namespace wow
         switch (key)
         {
         // the view (0x41C5E0): F1 Unit view, F2 Construction view, F3-F5 Resource view with each kind
-        case SDLK_F1: viewMode = 1; break;
-        case SDLK_F2: viewMode = 2; break;
-        case SDLK_F3: case SDLK_F4: case SDLK_F5: viewMode = 3; resourceKind = int(key - SDLK_F3); break;
+        case SDLK_F1: SetView(1); break;
+        case SDLK_F2: SetView(2); break;
+        case SDLK_F3: case SDLK_F4: case SDLK_F5: SetView(3); resourceKind = int(key - SDLK_F3); break;
         // 0x41D640
         case SDLK_ESCAPE: return Command{ Commands::Back, 0 };  // 0x80B5, the war map menu
         case SDLK_HOME:                                         // centre on the selected sector (0x41E000, not animated)
@@ -1088,10 +1074,10 @@ namespace wow
         // the world (0x41A450)
         case SDLK_TAB: panelShown = !panelShown; break;         // the mini-map and its frame (0x42F310)
         case SDLK_SPACE:                                        // Unit -> Construction -> Resource 0, 1, 2 -> Unit
-            if (viewMode == 1) viewMode = 2;
-            else if (viewMode == 2) { viewMode = 3; resourceKind = 0; }
+            if (viewMode == 1) SetView(2);
+            else if (viewMode == 2) { SetView(3); resourceKind = 0; }
             else if (resourceKind < 2) resourceKind++;
-            else viewMode = 1;
+            else SetView(1);
             break;
         default:
             // '0'-'9' set the clock's speed, '0' being 10 (0x41F640)
@@ -1120,7 +1106,7 @@ namespace wow
         Rect mini = MiniMapRect();
         PanelLayout panel = Panel();
         for (int i = 0; i < 3; i++)
-            if (down && panel.buttons[i].Contains(x, y)) { viewMode = i + 1; return std::nullopt; } // 0x811F -> 0x419810
+            if (down && panel.buttons[i].Contains(x, y)) { SetView(i + 1); return std::nullopt; } // 0x811F -> 0x419810
         // the Research button acts when the button comes up over it
         if (down && panel.research.Contains(x, y)) { researchHeld = true; return std::nullopt; }
         if (!down && researchHeld)
@@ -1547,52 +1533,213 @@ namespace wow
         return path;
     }
 
-    std::vector<std::pair<int, int>> WarMap::SectorCells(int sector) const
+    namespace
     {
-        // Each sector has a grid of 36 pixel cells over its bounds (0x428110, rounded out to whole cells); a cell
-        // is the sector's when CHI.SPR (GType 0x84) has the sector's number at its corner (0x49BF50). Counters
-        // take cells in a square spiral from the grid's middle cell (0x4283F0 modes 2 and 3, which the war map
-        // uses): the middle, then rings 1-15 (0x4282C0), each clockwise from the cell above the middle.
-        std::vector<std::pair<int, int>> cells;
-        if (sector < 1 || sector > warmap::SectorCount) return cells;
-        const IndexedImage* map = res.GetFrame(0x84);
-        const auto& b = warmap::Sectors[sector];
-        constexpr int Cell = 36;
-        int left = b.left / Cell * Cell, top = b.top / Cell * Cell;
-        int w = ((b.right + Cell - 1) / Cell * Cell - left) / Cell, h = ((b.bottom + Cell - 1) / Cell * Cell - top) / Cell;
-        int cx = w / 2, cy = h / 2;
-        auto consider = [&](int dx, int dy) {
-            int gx = cx + dx, gy = cy + dy;
-            if (gx < 0 || gy < 0 || gx >= w || gy >= h) return;
-            int x = left + gx * Cell, y = top + gy * Cell;
-            if (map && x >= 0 && y >= 0 && x < map->width && y < map->height &&
-                map->pixels[size_t(y) * size_t(map->width) + size_t(x)] == sector)
-                cells.push_back({ x, y });
-        };
-        consider(0, 0);
-        for (int r = 1; r < 16; r++)
+        // The spiral the searches follow (0x4282C0, built by 0x428110 into 0x800 bytes): the middle, then rings
+        // 1-15, each clockwise from the cell above the middle; 961 steps of the 1024 room (the rest is never set).
+        const std::vector<std::pair<int, int>>& Spiral()
         {
-            int dx = 0, dy = -r;
-            for (int i = 0; i < r; i++) consider(dx++, dy);
-            for (int i = 0; i < 2 * r; i++) consider(dx, dy++);
-            for (int i = 0; i < 2 * r; i++) consider(dx--, dy);
-            for (int i = 0; i < 2 * r; i++) consider(dx, dy--);
-            for (int i = 0; i < r; i++) consider(dx++, dy);
+            static const std::vector<std::pair<int, int>> spiral = [] {
+                std::vector<std::pair<int, int>> v{ { 0, 0 } };
+                for (int r = 1; r < 16; r++)
+                {
+                    int dx = 0, dy = -r;
+                    for (int i = 0; i < r; i++) v.push_back({ dx++, dy });
+                    for (int i = 0; i < 2 * r; i++) v.push_back({ dx, dy++ });
+                    for (int i = 0; i < 2 * r; i++) v.push_back({ dx--, dy });
+                    for (int i = 0; i < 2 * r; i++) v.push_back({ dx, dy-- });
+                    for (int i = 0; i < r; i++) v.push_back({ dx++, dy });
+                }
+                return v;
+            }();
+            return spiral;
         }
-        return cells;
+        constexpr int SpiralRoom = 0x400;
     }
 
-    std::pair<int, int> WarMap::FreeCell(int sector, int kind, int except) const
+    // A sector's grid (0x428110): `size` pixel cells over its bounds (0x4BAE78), the left and top rounded down and
+    // the right and bottom up to whole cells; a cell is usable when CHI.SPR has the sector's number at its corner.
+    void WarMap::BuildGrid(int sector, int size)
     {
-        for (const auto& [x, y] : SectorCells(sector))
-        {
-            bool taken = false;
-            for (size_t i = 0; i < counters.size(); i++)
-                if (int(i) != except && counters[i].kind == kind && counters[i].x == x && counters[i].y == y) taken = true;
-            if (!taken) return { x, y };
-        }
+        CellGrid& g = grids[size_t(sector)];
+        size = std::max(1, size);
         const auto& b = warmap::Sectors[sector];
-        return { (b.left + b.right) / 2, (b.top + b.bottom) / 2 };
+        g.size = size;
+        g.left = b.left / size * size;
+        g.top = b.top / size * size;
+        int right = (b.right + size - 1) / size * size, bottom = (b.bottom + size - 1) / size * size;
+        g.w = (right - g.left) / size;
+        g.h = (bottom - g.top) / size;
+        g.cells.assign(size_t(std::max(0, g.w * g.h)), 0);
+        g.index = 0;
+        const IndexedImage* chi = res.GetFrame(0x84);
+        size_t n = 0;
+        for (int y = g.top; y < bottom; y += size)
+            for (int x = g.left; x < right; x += size, n++)
+                if (chi && x >= 0 && y >= 0 && x < chi->width && y < chi->height && chi->pixels[size_t(y) * size_t(chi->width) + size_t(x)] == sector)
+                    g.cells[n] = 1;
+    }
+
+    // The search for a free cell (0x4283F0): mode 3 (the Unit and Construction views) and mode 2 (the Resource
+    // view) both go round the spiral from the grid's middle cell (w / 2, h / 2), from where the last search
+    // stopped: the place moves on past every step that's off the grid or not free, and is kept at the one taken,
+    // so a cell given back behind it isn't used again until the grid is laid out afresh. Mode 2 tests the step's
+    // own row offset against the height instead of the row (so the rows above the middle are never used, and rows
+    // below the grid would be read past it; those count as not free here). The cell taken is marked 0x81. Gives
+    // false (the game's 0, 0) when the spiral runs out.
+    bool WarMap::FindCell(int sector, int& x, int& y, int& cell)
+    {
+        CellGrid& g = grids[size_t(sector)];
+        const bool resources = viewMode == 3;
+        const auto& spiral = Spiral();
+        const int cx = g.w / 2, cy = g.h / 2;
+        for (; g.index < SpiralRoom; g.index++)
+        {
+            auto [dx, dy] = size_t(g.index) < spiral.size() ? spiral[size_t(g.index)] : std::pair<int, int>{ 0, 0 };
+            int col = cx + dx, row = cy + dy;
+            if (unsigned(col) >= unsigned(g.w)) continue;
+            if (resources ? (unsigned(dy) >= unsigned(g.h) || row >= g.h) : unsigned(row) >= unsigned(g.h)) continue;
+            int n = row * g.w + col;
+            if (g.cells[size_t(n)] != 1) continue;
+            g.cells[size_t(n)] |= 0x80;
+            x = col * g.size + g.left;
+            y = row * g.size + g.top;
+            cell = n;
+            return true;
+        }
+        x = y = 0;
+        cell = -1;
+        return false;
+    }
+
+    // Placing a counter (0x4205F0): the next free cell. When there's none the sector's grid is made again with
+    // cells [Tweak] "WM clunting adj" (4) smaller, every counter already in the sector takes a new cell and slides
+    // there at 5 pixels a tick (0x4286C0), and then this one is placed. (Class 7 objects sharing a counter are
+    // grouped when the counters are made.)
+    void WarMap::PlaceCounter(int index)
+    {
+        Counter& k = counters[size_t(index)];
+        const int s = k.sector;
+        if (s < 1 || s > warmap::SectorCount) return;
+        int x, y, cell;
+        if (!FindCell(s, x, y, cell))
+        {
+            SDL_Log("War map: sector %d is full, its cells go from %d to %d pixels", s, grids[size_t(s)].size, grids[size_t(s)].size - clunAdj);
+            BuildGrid(s, grids[size_t(s)].size - clunAdj);
+            for (int p : placed)
+            {
+                Counter& o = counters[size_t(p)];
+                if (o.sector != s || o.Travelling()) continue;
+                int ox, oy, ocell;
+                FindCell(s, ox, oy, ocell);
+                o.cell = ocell;
+                o.targetX = ox; o.targetY = oy;
+                o.slideX = float(o.x); o.slideY = float(o.y);
+                float dx = float(ox - o.x), dy = float(oy - o.y), d = std::sqrt(dx * dx + dy * dy);
+                o.slideLeft = d;
+                o.slideStep = 5.0f;
+                o.stepX = d > 0 ? dx / d * 5.0f : 0;
+                o.stepY = d > 0 ? dy / d * 5.0f : 0;
+            }
+            FindCell(s, x, y, cell);
+        }
+        placed.push_back(index);
+        k.cell = cell;
+        k.x = x; k.y = y;
+        k.targetX = x; k.targetY = y;
+        k.slideLeft = 0;
+    }
+
+    // A counter leaving its cell: the cell is usable again (&= 0x7F) and it's out of the placement.
+    void WarMap::FreeCounter(int index)
+    {
+        Counter& k = counters[size_t(index)];
+        if (k.cell >= 0 && k.sector >= 1 && k.sector <= warmap::SectorCount)
+        {
+            CellGrid& g = grids[size_t(k.sector)];
+            if (size_t(k.cell) < g.cells.size()) g.cells[size_t(k.cell)] &= 0x7F;
+        }
+        k.cell = -1;
+        k.slideLeft = 0;
+        placed.erase(std::remove(placed.begin(), placed.end(), index), placed.end());
+    }
+
+    // A sector laid out again (0x43CB60, when units arrive): its grid cleared, back to the full cell size if it
+    // had shrunk (0x4203C0), then the counters of the view in it taken out and placed again, the player's first.
+    void WarMap::RefreshSector(int sector)
+    {
+        if (sector < 1 || sector > warmap::SectorCount) return;
+        CellGrid& g = grids[size_t(sector)];
+        if (g.size != clunRes) BuildGrid(sector, clunRes);
+        else
+        {
+            for (uint8_t& c : g.cells) c &= 0x7F;
+            g.index = 0;
+        }
+        std::vector<int> here;
+        for (bool players : { true, false })
+            for (size_t i = 0; i < counters.size(); i++)
+            {
+                const Counter& k = counters[i];
+                if (k.sector == sector && k.players == players && k.kind == viewMode - 1 && !k.Travelling()) here.push_back(int(i));
+            }
+        for (int i : here) { counters[size_t(i)].cell = -1; placed.erase(std::remove(placed.begin(), placed.end(), i), placed.end()); }
+        for (int i : here) PlaceCounter(i);
+    }
+
+    // A new view (0x419810): every grid cleared (0x4204A0, keeping a shrunk grid's size), then each sector's
+    // counters of the view placed (0x41C2E0 -> 0x43CB20), the player's first. Counters on their way stay where
+    // they are.
+    void WarMap::LayoutAll()
+    {
+        for (int s = 1; s <= warmap::SectorCount; s++)
+        {
+            CellGrid& g = grids[size_t(s)];
+            if (g.size == 0) BuildGrid(s, clunRes);
+            for (uint8_t& c : g.cells) c &= 0x7F;
+            g.index = 0;
+        }
+        placed.clear();
+        for (Counter& k : counters) { k.cell = -1; k.slideLeft = 0; }
+        for (int s = 1; s <= warmap::SectorCount; s++)
+            for (bool players : { true, false })
+                for (size_t i = 0; i < counters.size(); i++)
+                {
+                    const Counter& k = counters[i];
+                    if (k.sector == s && k.players == players && k.kind == viewMode - 1 && !k.Travelling()) PlaceCounter(int(i));
+                }
+    }
+
+    void WarMap::SetView(int mode)
+    {
+        if (mode == viewMode) return;
+        viewMode = mode;
+        LayoutAll();
+    }
+
+    // Each tick (0x4209E0): a sliding counter steps on (0x428730) until what's left is less than a step, then
+    // takes its cell; it's done when under 0.0005 is left (0x4287A0).
+    void WarMap::SlideCounters()
+    {
+        for (int i : placed)
+        {
+            Counter& k = counters[size_t(i)];
+            if (k.slideLeft < 0.0005f) continue;
+            if (k.slideStep < k.slideLeft)
+            {
+                k.slideX += k.stepX;
+                k.slideY += k.stepY;
+                k.slideLeft -= k.slideStep;
+            }
+            else
+            {
+                k.slideX = float(k.targetX);
+                k.slideY = float(k.targetY);
+                k.slideLeft = 0;
+            }
+            k.x = int(k.slideX);
+            k.y = int(k.slideY);
+        }
     }
 
     void WarMap::SendTo(int index, int sector)

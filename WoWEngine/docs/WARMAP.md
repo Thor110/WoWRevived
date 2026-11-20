@@ -118,18 +118,34 @@ them out. A save that can't be read exactly is still played, but not saved.
 
 ## Counters
 
-The world's constructor makes 30 sector objects (0x420160 -> 0x428110), each laying a grid of 36 pixel cells
-(dword_4EA0D4) over the sector's bounds, a cell counting as the sector's when CHI.SPR has the sector's number at its
-corner. Saved positions are cell corners (468 = 13 x 36). Each view mode shows one kind: Unit View the units, 
-Construction View the buildings, Resource View the resources; a unit and a building can share a cell.
+Every object has a counter of its own (GType 0x77; WWarMapObject 0x42B2F0), except objects of class 7 (each type's
+class is AI.ojd's, 0x441580 -> 0x518B14: gun emplacements, heat ray turrets, wire fences, mines), which share one
+counter a type and sector (0x4282A0 / 0x428270) with a count in the counter font (GType 0x6E, right-aligned;
+updated by 0x8145; where the count goes isn't traced). Each view mode shows one kind: Unit View the units,
+Construction View the buildings, Resource View the resources.
 
-Every object has a counter of its own (GType 0x77; WWarMapObject 0x42B2F0, made by 0x4205F0), except objects of
-class 7 (each type's class is AI.ojd's, 0x441580 -> 0x518B14: gun emplacements, heat ray turrets, wire fences,
-mines), which share one counter a type and sector (0x4282A0 / 0x428270) with a count in the counter font (GType
-0x6E, right-aligned; updated by 0x8145). Objects saved at 0, 0 go in the sector's next free cell. Each sector has a grid of 36 pixel cells over its bounds, rounded out (0x428110), a cell
-being the sector's when CHI.SPR (GType 0x84) has its number at the cell's corner; the war map takes cells in a
-square spiral from the grid's middle cell (0x4283F0 modes 2 and 3; 0 and 1 go row by row): the middle, then rings
-1-15 built by 0x4282C0, each clockwise from the cell above the middle. Where the count goes isn't traced.
+Where they go is the counter placement's ("clunting", 0x420160, world +0x74), not the positions objects are saved
+with:
+
+- **Grids** (0x428110): each sector has a grid of `[Tweak] "WM clunting res"` (36) pixel cells over its bounds
+  (0x4BAE78), the left and top rounded down and the right and bottom up to whole cells; a cell is usable when
+  CHI.SPR (GType 0x84) has the sector's number at its corner. 1 is usable, 0x81 taken.
+- **The search** (0x4283F0): modes 0 and 1 go row by row; the war map uses mode 3 in the Unit and Construction
+  views and mode 2 in the Resource view, both round a spiral from the middle cell (w / 2, h / 2): the middle,
+  then rings 1-15 (0x4282C0), each clockwise from the cell above the middle; 961 steps in room for 1024. The
+  search keeps its place in the spiral: it moves on past every step off the grid or not free and stays at the
+  one it takes, so a cell given back behind it isn't used again until the grid is cleared. Mode 2 tests the
+  step's row offset against the grid's height rather than the row, so the rows above the middle are never used
+  for resources (and rows below the grid would be read past its end; the engine counts them as not free).
+- **Placing** (0x4205F0): the next free cell. When there's none, the sector's grid is made again with cells
+  `"WM clunting adj"` (4) pixels smaller, every counter already placed in the sector takes a new cell and slides
+  to it at 5 pixels a tick (0x4286C0; each tick 0x4209E0 -> 0x428730, done under 0.0005 left), and then the new
+  one is placed (in the game's 0, 0 if there's still no room; the next one shrinks the grid again).
+- **A new view** (0x419810): every grid cleared (0x4204A0; a shrunk grid keeps its size), then each sector's
+  counters of the view placed, the player's first (0x41C2E0 -> 0x43CB20).
+- **A sector laid out again** (0x43CB60, when units arrive): its grid cleared and back to the full size
+  (0x4203C0), its counters of the view taken out and placed again, the player's first.
+- **Setting off**: a travelling unit gives its cell back (0x4208B0) and is placed by its route (0x420540) instead.
 
 ## The mini-map panel
 

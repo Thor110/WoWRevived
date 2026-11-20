@@ -153,6 +153,25 @@ namespace wow
         }
     }
 
+    // The menu a menu's "Previous Menu" goes back to: the one it was opened from, kept when it's opened again on
+    // the way back from one of its own (Options from Sound Control, say), so going back never loops between them.
+    int FrontEnd::BackTo(int menu, int current)
+    {
+        if (screen && screen->Previous() == menu)
+        {
+            auto kept = menuParents.find(menu);
+            if (kept != menuParents.end()) return kept->second;
+        }
+        menuParents[menu] = current;
+        return current;
+    }
+
+    void FrontEnd::ShowMenu(std::unique_ptr<Screen> menu, int back)
+    {
+        menu->SetPrevious(back);
+        Show(std::move(menu));
+    }
+
     std::unique_ptr<Menu> FrontEnd::NewMenu(int id)
     {
         return std::make_unique<Menu>(id, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7);
@@ -552,6 +571,7 @@ namespace wow
         map->SetArrowTypes(std::move(arrows));
         map->SetDeposits(std::move(deposits), ini.GetFloat("Tweak", "Resource Drop Off Rate", 3.0f));
         map->SetPodInterval(ini.GetInt("Tweak", "Pod Interval (hours)", 24));
+        map->SetClunting(ini.GetInt("Tweak", "WM clunting res", 36), ini.GetInt("Tweak", "WM clunting adj", 4));
         map->SetRouteFormation(ini.GetInt("Tweak", "Route clunting width", 4), ini.GetInt("Tweak", "Route clunting spacing", 4));
         map->SetEconomy(ini.GetFloat("Tweak", "Distance Crippler VX", 0.5f), ini.GetFloat("Tweak", "Distance Crippler VY", 0.5f),
                         ini.GetFloat("Tweak", "Resource Buffer", 30.0f));
@@ -615,15 +635,15 @@ namespace wow
             // leaving the war map saves the campaign in its slot first (0x41CD50: 0x90 -> 0x80B4)
             SaveCampaign();
             topMenu = CmdMainMenu; warMap.reset(); playingSlot = 0; Show(MainMenu()); break;
-        case CmdOptions: Show(GameOptions(current)); break;
-        case CmdQuitMenu: Show(QuitGame(current)); break;
+        case CmdOptions: { int back = BackTo(command.id, current); ShowMenu(GameOptions(back), back); } break;
+        case CmdQuitMenu: { int back = BackTo(command.id, current); ShowMenu(QuitGame(back), back); } break;
         case CmdQuitGame: SaveCampaign(); quit = true; break; // 0x70 -> 0x80B4 as well
-        case CmdSoundControl: Show(SoundControl(current)); break;
-        case CmdDisplaySettings: Show(DisplaySettings(current)); break;
-        case CmdCriticalEvents: Show(CriticalEvents(current)); break;
-        case CmdLoadGame: networkLoad = false; Show(LoadGame(current)); break;
-        case CmdLoadNetworkGame: networkLoad = true; Show(LoadGame(current)); break;
-        case CmdSaveMenu: Show(SaveGame(current)); break;
+        case CmdSoundControl: { int back = BackTo(command.id, current); ShowMenu(SoundControl(back), back); } break;
+        case CmdDisplaySettings: { int back = BackTo(command.id, current); ShowMenu(DisplaySettings(back), back); } break;
+        case CmdCriticalEvents: { int back = BackTo(command.id, current); ShowMenu(CriticalEvents(back), back); } break;
+        case CmdLoadGame: networkLoad = false; { int back = BackTo(command.id, current); ShowMenu(LoadGame(back), back); } break;
+        case CmdLoadNetworkGame: networkLoad = true; { int back = BackTo(command.id, current); ShowMenu(LoadGame(back), back); } break;
+        case CmdSaveMenu: { int back = BackTo(command.id, current); ShowMenu(SaveGame(back), back); } break;
         case CmdSinglePlayer: topMenu = CmdSinglePlayer; Show(SinglePlayer(CmdMainMenu)); break;
         case CmdNetwork: Show(ServiceProvider(CmdMainMenu, res.Human() ? CmdNetworkHost : CmdJoinNetwork)); break;
         case CmdNetworkHost: topMenu = CmdNetworkHost; Show(NetworkHost(CmdNetwork)); break;

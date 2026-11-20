@@ -50,6 +50,7 @@ namespace wow
         int Speed() const { return speed; }  // the clock's speed, 0-10
         void SetSectorLimits(int units, int boats) { maxUnits = units; maxBoats = boats; }
         void SetPodInterval(int hours) { podInterval = hours; }
+        void SetClunting(int res, int adj) { clunRes = std::max(1, res); clunAdj = adj; for (auto& g : grids) g.size = 0; LayoutAll(); }
         // [Tweak] "Route clunting width" and "Route clunting spacing" (0x42AF20 / 0x42AF60, both 4)
         void SetRouteFormation(int width, int spacing) { clunWidth = std::max(1, width); clunSpacing = spacing; }
         // The war map's objects from a save read exactly (each with its ref into that save's objects, in order).
@@ -191,8 +192,21 @@ namespace wow
         void PulseBattles();
         // the types of the finished constructions in each sector (both sides')
         std::array<std::vector<int>, warmap::SectorCount + 1> finished;
-        std::pair<int, int> FreeCell(int sector, int kind, int except) const;
-        std::vector<std::pair<int, int>> SectorCells(int sector) const;
+        // The counter placement ("clunting", 0x420160 at world +0x74): each sector's grid of cells (0x428110), cells
+        // `size` pixels square over the sector's bounds rounded out, a cell usable when CHI.SPR (GType 0x84) has the
+        // sector's number at its corner; 1 usable, 0x81 taken. A search keeps its place in the spiral (`index`).
+        struct CellGrid { int size = 0, left = 0, top = 0, w = 0, h = 0, index = 0; std::vector<uint8_t> cells; };
+        std::array<CellGrid, warmap::SectorCount + 1> grids;
+        int clunRes = 36, clunAdj = 4;   // [Tweak] "WM clunting res" (0x4EA0D4) / "WM clunting adj" (0x4EA0EC)
+        std::vector<int> placed;         // the counters placed, in order (+0x8)
+        void BuildGrid(int sector, int size);
+        bool FindCell(int sector, int& x, int& y, int& cell);
+        void PlaceCounter(int index);    // 0x4205F0
+        void FreeCounter(int index);     // its cell given back (0x4208B0 / 0x420930)
+        void RefreshSector(int sector);  // 0x43CB60
+        void LayoutAll();                // a view change: 0x4204A0, then 0x43CB20 for every sector
+        void SetView(int mode);
+        void SlideCounters();            // 0x4209E0
         void SendTo(int counter, int sector);
 
         struct Counter
@@ -228,6 +242,11 @@ namespace wow
             bool attack = false;
             std::vector<int> refs;       // its objects in the save's table
             bool moved = false;          // sent somewhere since it was read (its objects then take its place)
+            // its place in the counter placement (0x428620): the cell (-1 for none), and a slide to a new cell
+            // (0x4286C0: the target, the step a tick and the distance still to go)
+            int cell = -1;
+            float slideX = 0, slideY = 0, stepX = 0, stepY = 0, slideStep = 0, slideLeft = 0;
+            int targetX = 0, targetY = 0;
         };
         float PixelsPerHour(const Counter& k) const; // how far a counter goes in a game hour
         int CrewOf(const Counter& k) const;          // the men its objects carry
