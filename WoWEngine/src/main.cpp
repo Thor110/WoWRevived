@@ -28,6 +28,7 @@
 #include <SDL3/SDL_main.h>
 
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
@@ -153,8 +154,31 @@ namespace
     }
 }
 
+namespace
+{
+    // Everything SDL_Log says also goes to WoWEngine.log next to the engine (a Windows build has no console to see
+    // it in), started afresh each run.
+    std::FILE* logFile = nullptr;
+    SDL_LogOutputFunction defaultLog = nullptr;
+    void* defaultLogData = nullptr;
+    void LogToFile(void* userdata, int category, SDL_LogPriority priority, const char* message)
+    {
+        if (logFile) { std::fprintf(logFile, "%8.3f %s\n", double(SDL_GetTicks()) / 1000.0, message); std::fflush(logFile); }
+        if (defaultLog) defaultLog(defaultLogData, category, priority, message);
+        (void)userdata;
+    }
+    void StartLogFile()
+    {
+        std::string path = std::string(SDL_GetBasePath() ? SDL_GetBasePath() : "") + "WoWEngine.log";
+        logFile = std::fopen(path.c_str(), "w");
+        SDL_GetLogOutputFunction(&defaultLog, &defaultLogData);
+        SDL_SetLogOutputFunction(LogToFile, nullptr);
+    }
+}
+
 int main(int argc, char** argv)
 {
+    StartLogFile();
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS))
     {
         SDL_Log("SDL_Init failed: %s", SDL_GetError());

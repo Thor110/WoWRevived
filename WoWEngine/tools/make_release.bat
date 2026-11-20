@@ -22,4 +22,11 @@ echo Python 3 was not found. Install it from python.org (it adds the py launcher
 echo the "python.exe" App execution alias in Settings, Apps, Advanced app settings.
 :done
 echo.
+
+start "" /wait "C:\Users\Edward\Documents\GitHub\WoWRevived\WoWEngine\out\WoWEngine-v0.0.1\WoWLauncher.exe"
+
+echo future users you may have to adjust this so that it pulls the wowrevived files locally
+
+call "%~dp0install-wowrevived.bat"
+
 pause

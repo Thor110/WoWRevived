@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_log.h>
+#include <SDL3/SDL_timer.h>
 
 #include <algorithm>
 
@@ -22,6 +23,9 @@ namespace wow
     {
         if (finished) return;
         finished = true;
+        if (movie && movie->SeparateAudio())
+            SDL_Log("Movie: finished at %.2f s; %d frames decoded, %d shown, slowest %.1f ms; the sound ran dry on %d updates",
+                clock, decoded, shownCount, slowestDecode * 1000.0, underruns);
         audio.reset();
         sent = next;
     }
@@ -63,6 +67,7 @@ namespace wow
     // it never runs dry while a big frame decodes; the pictures follow the clock, skipping any whose time has gone.
     void MovieScreen::UpdateSeparate()
     {
+        if (audio && audio->Available() && !audioEnded && clock > 0.1 && audio->Queued() <= 0.0) underruns++;
         while (audio && audio->Available() && !audioEnded && audio->Queued() < SoundAhead)
         {
             sound.clear();
@@ -75,9 +80,12 @@ namespace wow
         for (int n = 0; n < MostFramesAnUpdate && !ended && (queue.empty() || queue.back().time <= clock); n++)
         {
             bool more = false;
+            uint64_t start = SDL_GetTicksNS();
             try { more = movie->Next(sound); }
             catch (const std::exception& e) { SDL_Log("Movie: %s", e.what()); }
+            slowestDecode = std::max(slowestDecode, double(SDL_GetTicksNS() - start) / 1e9);
             if (!more) { ended = true; break; }
+            decoded++;
             // a frame already behind the clock is only worth keeping as the latest
             if (!queue.empty() && queue.back().time <= clock) queue.pop_back();
             queue.push_back({ movie->Time(), movie->Frame() });
@@ -86,6 +94,7 @@ namespace wow
         {
             shown = std::move(queue.front().pixels);
             queue.pop_front();
+            shownCount++;
         }
         // done when the pictures are, and the sound has played out (or there's none)
         bool soundDone = !audio || !audio->Available() || (audioEnded && audio->Queued() <= 0.0);

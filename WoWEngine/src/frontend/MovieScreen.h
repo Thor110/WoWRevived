@@ -50,5 +50,8 @@ namespace wow
         static constexpr double SoundAhead = 1.0;
         static constexpr int MostFramesAnUpdate = 2;
         void UpdateSeparate();
+        // for the log: updates the sound ran dry on, frames decoded and shown, the slowest decode
+        int underruns = 0, decoded = 0, shownCount = 0;
+        double slowestDecode = 0;
     };
 }
