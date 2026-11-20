@@ -3,6 +3,10 @@
 #include "platform/Movie.h"
 #include "platform/Nv12.h"
 
+// windows.h's min and max macros would swallow std::min and std::max
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 #include <mfapi.h>
 #include <mferror.h>
@@ -86,9 +90,9 @@ namespace wow
                 sourceWidth = width;
                 sourceHeight = height;
                 // shown at most 640 x 480 (the game's screen), keeping its shape
-                double scale = std::min({ 1.0, 640.0 / width, 480.0 / height });
-                width = std::max(1, int(width * scale));
-                height = std::max(1, int(height * scale));
+                double scale = (std::min)({ 1.0, 640.0 / width, 480.0 / height });
+                width = (std::max)(1, int(width * scale));
+                height = (std::max)(1, int(height * scale));
                 frame.assign(size_t(width) * size_t(height), 0);
 
                 // the sound as 16-bit PCM, if there is any
