@@ -7,6 +7,7 @@
 // units, the clock running, and everything the war map does.
 #pragma once
 #include "core/SaveGame.h"
+#include "core/ObjOjd.h"
 #include "frontend/Menu.h"
 #include "warmap/WarMapData.h"
 
@@ -24,9 +25,9 @@ namespace wow
         static constexpr int Id = 0x8A; // the command that starts it
 
         // start: the save it begins from (its WMAP block gives the view and sector)
-        // counters: each unit type's frame in the counter sprites (OBJ.ojd record 23)
+        // units: each unit type's counter frame (OBJ.ojd record 23) and war map speed (records 37/38)
         WarMap(Resources& res, MenuColours colours, const SaveInfo& start, std::vector<SaveInfo::WarMapObject> objects,
-               std::map<int, int> counters, std::vector<int> owners, int scrollSpeed, float cluntingSpeed = 7.0f);
+               std::map<int, ObjOjd::UnitData> units, std::vector<int> owners, int scrollSpeed, float cluntingSpeed = 7.0f);
 
         void Update() override;
         void Draw(Canvas& canvas) const override;
@@ -67,7 +68,7 @@ namespace wow
         PanelLayout Panel() const;
 
         int chosen = -1;                 // the counter picked to move (drawn with cselecth.spr, GType 0x54)
-        float cluntingSpeed = 7.0f;      // [Tweak] "Clunting Speed" (0x428B70, default 7)
+        float cluntingSpeed = 7.0f;      // [Tweak] "Clunting Speed" (0x428B70, default 7): only for units with no speed
         std::string message;             // the latest war map message
         int animation = 0;               // ticks, for the calendar's pendulum / goo and spinning digits
         Rect CalendarRect() const;
@@ -84,11 +85,13 @@ namespace wow
             bool players = false;
             int kind = 0;                // 0 units, 1 constructions, 2 resources
             int sector = 0;
+            int speed = 0;               // the unit type's war map speed (unit +0x54), 0 for constructions and resources
             // travelling: where it's heading, through these points (sector by sector)
             std::vector<std::pair<int, int>> route;
             std::vector<int> routeSectors;
             float fx = 0, fy = 0;        // exact position while travelling
         };
+        float PixelsPerHour(const Counter& k) const; // how far a counter goes in a game hour
         std::vector<Counter> counters;   // what's drawn: one per kind of object, with how many there are
     };
 }

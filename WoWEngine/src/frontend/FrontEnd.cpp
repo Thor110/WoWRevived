@@ -413,15 +413,15 @@ namespace wow
         sound.FadeOutAll(30);
         ambient = 0;
         warMap.reset();
-        std::map<int, int> counterFrames;
+        std::map<int, ObjOjd::UnitData> units;
         if (auto obj = files.Resolve("OBJ.ojd"))
         {
             std::ifstream in(*obj, std::ios::binary);
             std::vector<uint8_t> objData((std::istreambuf_iterator<char>(in)), {});
-            try { counterFrames = ObjOjd::LoadUnitCounters(objData); }
-            catch (const std::exception& e) { SDL_Log("OBJ.ojd unit counters: %s", e.what()); }
+            try { units = ObjOjd::LoadUnits(objData); }
+            catch (const std::exception& e) { SDL_Log("OBJ.ojd units: %s", e.what()); }
         }
-        Show(std::make_unique<WarMap>(res, settings.colours, info, SaveInfo::WarMapObjects(data), std::move(counterFrames),
+        Show(std::make_unique<WarMap>(res, settings.colours, info, SaveInfo::WarMapObjects(data), std::move(units),
             SaveInfo::SectorOwners(data), ini.GetInt("Screen", "Scroll Speed", 40), ini.GetFloat("Tweak", "Clunting Speed", 7.0f)));
     }
 

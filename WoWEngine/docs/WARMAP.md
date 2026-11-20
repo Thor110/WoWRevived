@@ -143,8 +143,14 @@ sector sends it there.
   the points from 0x437380 and the link table).
 - **Arrows**: RArrow (0x4244E0) makes a curve through the route's points, 2^5 steps a stretch, which RTypeArrow
   draws. The engine draws a dotted line through the points instead (*provisional*).
-- **Speed**: each unit's speed is in the unit data, which isn't read yet; every counter goes at
-  `[Tweak] "Clunting Speed"` (0x428B70, default 7) map pixels a game hour (*provisional*).
+- **Speed**: each unit type's war map speed is the word at +0x54 in the unit table (0x51A0F0, 0xB0 bytes a type),
+  set by OBJ.ojd record 37 (three words: +0x52, +0x54, +0x56) and scaled by record 38 (two floats, multiplying +0x54
+  and +0x56); record 15 starts a type. A new route's arrival time (0x424160) is its length in map pixels (+0x68) over
+  the slowest unit's speed x 0.05, in game hours, kept at +0x6C and shown as a date (0x41B9A0). A counter is one unit
+  type, so it goes speed x 0.05 map pixels a game hour: 100 is 5. Reloading a route (0x4257C0) works it out again
+  with x 0.01 between its first two points (not yet understood). `[Tweak] "Clunting Speed"` (0x428B70, default 7,
+  the same as the fastest Human unit's 140 x 0.05) is only used for a counter with no speed. `wowdump --units`
+  prints the table.
 - **The way**: the shortest over land through the links (*provisional*: the game's FindRoute, 0x44EFA0, isn't
   traced).
 - Going into a sector the other side holds stops the counter at the border with a message (a battle, which needs
@@ -171,5 +177,5 @@ The engine scrolls with the arrow keys, at the screen edges, and by clicking or 
 ## Still to do
 
 The game's scroll rules, the event messages (top left; the engine shows only the latest), the own sectors' shading,
-the counters' fill order, unit speeds, the route finder and the arrows' drawing, sea routes, construction, research, the AI's turns, saving, and the
+the counters' fill order, the route finder and the arrows' drawing, sea routes, construction, research, the AI's turns, saving, and the
 battle map.

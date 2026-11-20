@@ -48,6 +48,7 @@ static int Usage()
         "       wowdump --obj <obj.ojd> [martian]   print the graphics table\n"
         "       wowdump --sfx <SFX.ojd> [martian]   print the sound table\n"
         "       wowdump --ai <AI.ojd>              print the AI table\n"
+        "       wowdump --units <OBJ.ojd>          print each unit type's counter frame and war map speed\n"
         "       wowdump --save <save file>         print a save's name, date and sections\n"
         "       wowdump --models <archive>         check and summarise every WOF, IOB and CLS\n"
         "       wowdump --iob <archive> <name> <palette> <out.bmp>\n");
@@ -101,6 +102,15 @@ int main(int argc, char** argv)
             const auto& info = sprite.Info();
             std::printf("%ux%u, %u frame(s)\n", info.width, info.height, info.frames);
             WriteSpriteBmp(argv[5], sprite.Decode(frame), palette);
+            return 0;
+        }
+
+        if (first == "--units" && argc == 3)
+        {
+            for (const auto& [id, u] : wow::ObjOjd::LoadUnits(ReadFile(argv[2])))
+                if (u.warMapSpeed || u.field52 || u.field56)
+                    std::printf("unit %3d  counter %3d  +52 %3d  speed %4d (%.2f map px/hour)  +56 %4d\n", id, u.counterFrame,
+                                u.field52, u.warMapSpeed, u.warMapSpeed * 0.05, u.field56);
             return 0;
         }
 

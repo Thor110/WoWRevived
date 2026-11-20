@@ -36,5 +36,16 @@ namespace wow
         // Each unit type's frame in the war map counter sprites (HU-CNT24/32/48, GTypes 0x76-0x78): record type 15
         // starts a unit type, type 23 gives the frame.
         static std::map<int, int> LoadUnitCounters(std::span<const uint8_t> data);
+
+        // The unit table (0x51A0F0, 0xB0 bytes a unit type) as far as it's used so far.
+        struct UnitData
+        {
+            int counterFrame = 0; // +0x2C, record 23
+            int field52 = 0;      // +0x52, record 37
+            int warMapSpeed = 0;  // +0x54, record 37 (scaled by record 38): a route covers speed x 0.01 map pixels
+                                  // a game hour (0x4257C0: hours = distance / (speed x 0.01), the slowest unit's)
+            int field56 = 0;      // +0x56, record 37 (scaled by record 38)
+        };
+        static std::map<int, UnitData> LoadUnits(std::span<const uint8_t> data);
     };
 }

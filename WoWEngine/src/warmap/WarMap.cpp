@@ -25,7 +25,7 @@ namespace wow
     }
 
     WarMap::WarMap(Resources& r, MenuColours c, const SaveInfo& start, std::vector<SaveInfo::WarMapObject> objects,
-                   std::map<int, int> frames, std::vector<int> owners, int scrollSpeed, float clunting)
+                   std::map<int, ObjOjd::UnitData> units, std::vector<int> owners, int scrollSpeed, float clunting)
         : Screen(Id, r, 0, warmap::PaletteGroup), colours(c), game(start), cluntingSpeed(clunting)
     {
         // One counter for each kind of object in a sector's list, with how many there are. The first object of a
@@ -54,10 +54,11 @@ namespace wow
         };
         for (const Group& g : groups)
         {
-            auto frame = frames.find(g.type);
+            auto unit = units.find(g.type);
             Counter k;
             k.x = g.x; k.y = g.y;
-            k.frame = frame == frames.end() ? 0 : frame->second;
+            k.frame = unit == units.end() ? 0 : unit->second.counterFrame;
+            k.speed = unit == units.end() || g.list / 2 != 0 ? 0 : unit->second.warMapSpeed;
             k.count = g.count;
             k.players = g.list % 2 == 0;
             k.kind = g.list / 2;
@@ -144,6 +145,14 @@ namespace wow
         return warmap::SectorOfValue(sectorMap->pixels[size_t(my) * size_t(sectorMap->width) + size_t(mx)]);
     }
 
+    float WarMap::PixelsPerHour(const Counter& k) const
+    {
+        // 0x424160 gives a new route its arrival time: the route's length in map pixels (+0x68) over the slowest
+        // unit's war map speed (unit +0x54, OBJ.ojd records 37/38) x 0.05, in game hours. A counter is one unit
+        // type, so it's that type's speed: 100 goes 5 map pixels an hour.
+        return k.speed > 0 ? float(k.speed) * 0.05f : cluntingSpeed;
+    }
+
     void WarMap::Update()
     {
         if (!map) map = res.GetFrame(warmap::MapGType);
@@ -159,14 +168,14 @@ namespace wow
         }
 
         // Counters on their way: routes (WWarMapRoute 0x4240D0) move on every game hour (message 0x802D, 0x425080)
-        // from sector waypoint to sector waypoint. Each unit's own speed comes from the unit data, which isn't
-        // read yet, so they all go at "Clunting Speed" map pixels a game hour (provisional), sector by sector. Going into a sector the other side holds stops them at its border: that's a battle, which
-        // needs the battle map. Arriving in a sector no one holds takes it (provisional).
-        float step = cluntingSpeed * warmap::Speeds[speed] / 30.0f;
+        // from sector waypoint to sector waypoint, at the unit's own speed (see PixelsPerHour). Going into a sector
+        // the other side holds stops them at its border: that's a battle, which needs the battle map. Arriving in a
+        // sector no one holds takes it (provisional).
         for (size_t i = 0; i < counters.size(); i++)
         {
             Counter& k = counters[i];
             if (k.route.empty()) continue;
+            float step = PixelsPerHour(k) * warmap::Speeds[speed] / 30.0f;
             float tx = float(k.route.front().first), ty = float(k.route.front().second);
             float dx = tx - k.fx, dy = ty - k.fy, dist = std::sqrt(dx * dx + dy * dy);
             if (dist > step) { k.fx += dx / dist * step; k.fy += dy / dist * step; }

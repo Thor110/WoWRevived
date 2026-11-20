@@ -1,6 +1,8 @@
 #include "core/ObjOjd.h"
 #include "core/Bytes.h"
 
+#include <cstring>
+
 namespace wow
 {
     namespace
@@ -101,5 +103,39 @@ namespace wow
             }
         }
         return counters;
+    }
+
+    std::map<int, ObjOjd::UnitData> ObjOjd::LoadUnits(std::span<const uint8_t> data)
+    {
+        std::map<int, UnitData> units;
+        ByteReader r(data);
+        int unit = 0;
+        auto f32 = [&]() { uint32_t b = r.U32(); float f; std::memcpy(&f, &b, 4); return f; };
+        while (r.Remaining() > 0)
+        {
+            if (r.Remaining() < 5) throw FormatError("OBJ.ojd: record header cut short");
+            r.Skip(3);
+            int type = int16_t(r.U16());
+            switch (type)
+            {
+            case 15: unit = int16_t(r.U16()); units[unit]; break;
+            case 23: units[unit].counterFrame = int16_t(r.U16()); break;
+            case 37: // 0x438351
+                units[unit].field52 = int16_t(r.U16());
+                units[unit].warMapSpeed = int16_t(r.U16());
+                units[unit].field56 = int16_t(r.U16());
+                break;
+            case 38: // 0x438392: scales the speed and +0x56
+            {
+                float a = f32(), b = f32();
+                units[unit].warMapSpeed = int(float(units[unit].warMapSpeed) * a);
+                units[unit].field56 = int(float(units[unit].field56) * b);
+                break;
+            }
+            case 2: case 3: case 4: { uint16_t len = r.U16(); r.Skip(size_t(len) + 2); break; }
+            default: SkipPayload(r, type);
+            }
+        }
+        return units;
     }
 }
