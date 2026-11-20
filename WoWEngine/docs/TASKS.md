@@ -1,104 +1,169 @@
 # WoWEngine task list
 
 Built from a survey of the whole game executable (0x401000-0x4A8A92) in 14 pieces; the detailed reports, with every
-function, structure, message and setting, are in [`docs/survey/`](survey/) (`partNN.md`, section 6 of each lists the
+function, structure, message and setting, are in [`docs/survey/`](survey/) (`partNN.md`; section 6 of each lists the
 tasks for that piece with the addresses needed). The aim is a 1:1 match with the original first.
 
-`[x]` done, `[~]` partly done, `[ ]` to do. The part number after each task points to the report.
+Everything still to do is below, grouped into milestones in the order they depend on each other: each milestone
+needs the ones before it, and within one the tasks are roughly in the order to do them. `[~]` marks a task that is
+partly done (what's left is said). The part number after each task points to the survey report. What's finished is
+listed at the end.
 
-## 1. Front end
+## Milestone 1: a campaign you can save, load and carry on (war map, no battles yet)
 
-- [x] Legal splash screens at start-up: legal1, legal2 at tick 180, skippable from tick 90, on at 300 (0x405BF0) — 01
-- [x] Fade to black between views and the 5-tick command delay (0x4065E0, 0x811B/0x811C/0x811D) — 01
-- [x] Focused menu item glow, 4..9 every 2 ticks (0x40ADC0) — 01
-- [x] Button frames: 0 normal, 1 highlighted, 2 pressed and highlighted, 3 pressed (0x433DB0) — 05
-- [x] Movies: RAGELOGO, TITLE, INTRO; Smacker and WoWRevived .mp4 (0x44DE20, 0x44F2C0) — 01, 07, 08
-- [x] CD player: Pause shows Play, Play resumes (0x4081D0) — 01
-- [ ] "Skip" setting (straight to Start New Campaign, 0x402A30) — 01
-- [x] Options sliders: (max+1)·(x − 21)/(length − 42), no rounding (0x431EF0) — 05
-- [x] Text field: caret, click to place, Home/End/Delete, Ctrl+arrows, the accepted characters, reject sound 0x192 (0x430FC0) — 05
-- [x] Shift+Tab back a control; the right mouse button presses push buttons too — 05
-- [~] Tooltips (the manager, the tip, the front end's and the war map panel's done; counters and facilities to do): delays 15/70/150, `[Screen] Tool Tip Offset` 16, boxed text, CD player button tips 0x4B9-0x4BD, options tips 0x453-0x456 (0x433700, 0x49D470) — 05, 13
-- [ ] InfoBox dialog (critical events) (0x432520) — 05, 03
-- [ ] Right-click popup menu, sounds 0x193-0x196 (0x432C60) — 05
-- [ ] Animated mouse cursors (wait cursor) and the busy icon while loading (0x40CDC0, 0x44E4B0) — 01, 08
-- [x] Sound Control live preview: Master at once, the others (Ambient = type 0, Speech = type 5) on leaving (0x405A70, 0x4059A0) — 01
-- [ ] Display Settings: resolution list and colour depth as the original (0x409AD0) — 01
-- [ ] New campaign in its save slot: copy Human.000 / Martian.000 with the name (0x404660) — 01
-- [ ] Saving (0x80B4 → 0x4042D0) and loading through the war map's serialiser; Huffman encoder for saves — 01, 02, 03, 08
-- [ ] Game over: VICTORY / DEFEAT movie by code 0x80FA-0x80FD, then credits, then the main menu (0x402B80 0x80FE) — 01, 03
-- [ ] Commands one queue pass later (0x95) where the order matters — 01
-- [ ] Cheats: youlikeit, shym, datsun, curtains, icomeback, punyhumans, atchooo (englishrose is in) (0x401000) — 01
-- [x] Pause on focus loss, Pause key, Alt+Enter (0x404BC0, 0x42CD40) — 01, 04
-- [ ] CD player seek ±5 s (transport 4 / 6) (0x4081D0, 0x412660-) — 01, 02
-- [ ] Briefing and Debriefing screens (0x499930, 0x49A7B0; `[Briefing]` / `[Debriefing] Delay` 30 / 300) — 13
+The war map runs from a save but nothing is kept: these make it a real game state.
 
-## 2. Sound
+- [ ] **WMOB object model**: one object per war map object (units, constructions, resources) with its own fields
+      (type, side, sector, position, hit points, orders, construction progress), loaded from the save, in place of
+      the counters-only model (0x428BB0, 0x42A190, 0x421B80) — 04
+- [ ] **Object ids**: 32768, lowest free first then LIFO; the `VEHU` tag — 14
+- [ ] **Save the war map**: WMAP, CALN/DtTm, research ×2, MPAD (the message list), route lists, WMOB lists, the 31
+      sectors, in 0x41AD80's order (0x41AC40, 0x421B80, 0x420FD0, 0x41FEC0) — 03, 04, 07
+- [ ] **Huffman encoder** for the save files, the reverse of the decoder already in `core` — 08
+- [ ] **New campaign in its save slot**: copy Human.000 / Martian.000 with the campaign's name (0x404660) — 01
+- [ ] **Saving and loading from the menus**: 0x80B4 → 0x4042D0, Load Game from the war map menu (0x6F), "Game
+      Loaded" (0x465) after a load (0x80B3), routes rebuilt from units' orders (0x4217E0) — 01, 02, 03
+- [ ] **War map menu items**: Load, Sound Control, Event Menu (0x3EF / 0x8117), Quit (0x80B6), Return to Main Menu
+      (0x90 / 0x70), with the pause (`+0x44`) and the 0.25 time scale while it's open (0x41CD50) — 03
+- [ ] **"Skip" setting**: straight to Start New Campaign (0x402A30) — 01
+- [ ] **Commands one queue pass later** (0x95) where the order matters — 01
 
-- [x] Stereo samples (SFX.ojd record 15) — 09
-- [x] Volume curve (128-step dB table, 0x465B20), 8 voices with per-type limits and stealing (0x463640), ducking 0.5 / 0.25 / 0.7, variations in turn (0x466BC0) — 09, 10
-- [ ] Speech queue: opcode-6 sounds one at a time, no duplicates (0x4652B0) — 09
-- [ ] Positional sound: listener at the view centre, inner/outer rects, pan 4·dx (0x464FF0) — needs the battle map — 09
-- [ ] Virtual voices that resume at the right place when they get a voice back (0x4654E0) — 09
-- [ ] `[Sound]` Minimum Audible Volume, Search Libraries First, Unload Limit; library-before-loose-file order — 09, 10
-- [ ] Speech attached to text ids (0x414700) — 02
-- [~] War map and battle map music (war map done; battle map to come): CD tracks 2/3 (war map) and 4/5 (battle), ambient 0xFD-0xFF without CD music (0x41B070, timer 0x813C) — 02, 03, 11
+## Milestone 2: the war map plays like the original
 
-## 3. War map
+- [ ] **Hourly step**: 0x802D's whole fan-out (routes, players, both sides' research, pods), and the economy's five
+      phases, one an update (0x41A760, 0x423B00, 0x423F80; the formulas of phases 1, 3 and 4 still to be re-derived)
+      — 03, 04
+- [~] **View shading**: the Construction view's production efficiency (table 1, levels 67-77), which needs the
+      economy (0x4192F0) — 03
+- [ ] **Resource warnings / alerts**: thresholds 0.3 / 0.8, counters 336 / 504, events 13 / 14 with their sounds
+      (0x4198C0 at 0x419EFB) — 03
+- [ ] **Travel as the game does it**: formation offsets, per-hour movement along segment lengths, arrival together
+      (0x41FCF0), the arrow trimmed behind the leading units, TravelInterrupted, sea waypoints, 0x802C when no
+      routes are left (0x425080, 0x42AFE0, 0x4373A0) — 03, 04
+- [ ] **A\* details**: newest-first ties, no re-sort on improvement, the 1000-step limit (0x44EFA0) — 08
+- [ ] **Sector paths cache** (WM_COMMAND 0xB7) for resources and the AI — 14
+- [ ] **Counter cells**: shrink by "WM clunting adj" (4) from "WM clunting res" (36) when a sector is full, sliding
+      over 5 ticks; spiral mode 3 for units and constructions, 2 for resources (0x4205F0, 0x4208B0, 0x4209E0) — 03
+- [ ] **Counter decorations**: power bar, production blink, idle and repair icons, counts placed as the game does
+      (0x42B850) — 04
+- [~] **Mouse**: rubber-band selection (sectors 0x8010 / 0x8011), the sector selection rules (own sectors only,
+      cheats aside), the right-hold "Warmap menu" popup with Cancel and the object's or sector's items (0x41D120,
+      0x805C), the hover route preview with cursor 2 (0x41D300-0x41D590); the quick cancel is done — 03
+- [ ] **Selection**: Shift-click, box select, the cursors; a click on a counter stops time (0x42BEB0) — 04
+- [ ] **Right-click popup menu** widget, sounds 0x193-0x196 (0x432C60) — 05
+- [~] **Keyboard**: Backspace and the time-running flag (world `+0x64`, recorded as actions 0xA / 0xB and passed to
+      the opponent) (0x41A6C0) — 03
+- [~] **Calendar**: flashing while paused (calendar `+0x38`, during dialogs), the modal counter 0x8050-0x8055; and a
+      sector that refuses a speed change (0x41AEA0 → 0x43D010) — 03, 04
+- [~] **Tool tips**: the counters (WMOB 0x428D70), constructions (0x42A4B0), resource facilities (0x426430 /
+      0x426AE0) with the detail levels, and the owner position query 0x80D0 — 04, 05
+- [~] **Research button**: its tooltip's current research, and the flash (60 ticks on 0x20 / 0x800A / 0x80A3)
+      (0x45BEB0) — 04, 09
+- [ ] **Repair** (MRV / workshops) and **construction** progress and completion, CommandCentreBuilt (0x4297C0,
+      0x42A4B0) — 04
+- [ ] **Context buttons**: factory panel, Suspend / Resume, Retreat (0x429A70) — 04
+- [ ] **Intel ageing and war map fog**: enemy counters shown for 336 h after contact, 1-3 neighbours by research
+      level; everything shows in a network game (0x421630, 0x429B80, 0x418E17) — 03, 04
+- [ ] **Players**: local / AI / network player objects and the command recording `{01,01,code,04}` (0x4460A0) for
+      playback and the network — 03, 07
 
-- [x] Map, borders, ownership, panel, calendar, slider drag, routes with the game's A* rules, arrows (decoded curve, head, styles), arrival labels, message list, arrival / battle events — 03, 04, 13
-- [ ] WMOB object model: one object per war map object, loaded from the save (0x428BB0, 0x42A190) — 04
-- [ ] Hourly step: 0x802D fan-out and the economy phases (0x41A760, 0x423B00, `[Tweak] Resource Drop Off Rate` 3.0) — 03, 04
-- [ ] Battle detection (0x41AB00): BattleInSector, UndefendedSectorLost, PodLanded; then the briefing hand-off — 03
-- [ ] Critical-event dialogs and the one-at-a-time queue; all 20 event handlers; the `[Event]` toggles (0x41E4E0-0x41F4B0) — 03
-- [x] Martian pods: every 24 h, at most 8, sectors {2,4,6,7,8,9,10,11} (0x41A330) — 03 (PodLanded's dialog and battle wait on those)
-- [ ] Resource warnings / alerts (0x4198C0) — 03
-- [ ] End of game: events 18/19, codes 0x80FA-0x80FD (0x41AED0) — 03
-- [ ] Save and load the war map: WMAP, CALN/DtTm, MPAD, routes, WMOB, sectors (0x41AC40) — 03, 04, 07
-- [~] Original keyboard (all but Backspace, which waits on the time-running flag): digits for speed, F1-F5 views, Space, Tab, Home, PgUp/PgDn, arrow steps, M, R, Esc, Backspace (0x41A450, 0x41C5E0) — 03
-- [~] Original mouse: quick right-click cancel (done); rubber band, sector selection rules, right-hold menu, hover route preview to do (0x41D300-0x41D590) — 03
-- [~] View shading (0x4192F0, 0x41D9B0): Unit view by objects in our sectors, enemy sectors dark, Resource view by what another facility would give (done); pulsing battle sectors (0x41DE70) done; Construction view efficiency (needs the economy) to do — 03
-- [x] Message list: scroll-up on expiry, history (M, sounds 0x193 / 0x196), re-show last 2 (0x420CD0) — 03 (saving it, MPAD, comes with the war map save)
-- [~] Calendar: month names from TEXT 0x521+, odometer wheels, a click moves time on an hour (done); the flashing while paused and the time-running flag for the opponent (to do) (0x427500, 0x427710, 0x4278A0) — 03, 04
-- [x] Clock sounds 0x1A1-0x1A2 (0x41F860) — 03
-- [ ] War map menu items: Load, Sound Control, Event Menu, Quit, Return to Main Menu, with pause and time scale (0x41CD50) — 03
-- [ ] Counter decorations: power bar, production blink, idle and repair icons, counts (0x42B850) — 04
-- [ ] Selection: Shift-click, box select, cursors; a counter click stops time (0x42BEB0) — 04
-- [ ] Repair (MRV / workshops) and construction progress / completion, CommandCentreBuilt (0x4297C0, 0x42A4B0) — 04
-- [ ] Context buttons: factory panel, Suspend/Resume, Retreat (0x429A70) — 04
-- [~] Research button on the mini-map frame (GType 0x341) (0x423420): in, opening a placeholder until the research screen is rebuilt; its tooltip and flash to do — 04
-- [ ] Intel ageing and war map fog: enemy counters for 336 h after contact (0x421630, 0x429B80) — 03, 04
-- [ ] Travel: formation offsets, per-hour movement on segment lengths, arrow trim behind the leading units, TravelInterrupted, sea waypoints (0x425080, 0x42AFE0, 0x4373A0) — 04
-- [ ] Counter cells shrink when a sector is full (WM clunting res 36 / adj 4) and slide over 5 ticks (0x4205F0) — 03
-- [ ] A* details: newest-first ties, no re-sort on improvement, 1000-step limit (0x44EFA0) — 08
-- [ ] Sector paths cache (WM_COMMAND 0xB7) for resources and the AI — 14
-- [x] Sector-map border pixels pick the lowest-numbered sector they touch (0x49BF50) — 13
+## Milestone 3: events, battles announced, the game won and lost
 
-## 4. Research, production, AI
+- [ ] **InfoBox dialog** (0x432520): the critical-event box with its buttons — 05, 03
+- [ ] **Critical events**: the one-at-a-time queue (0x41E5B0 / 0x41E730, command 0x8122), all 20 handlers
+      (0x41E4E0-0x41F4B0), the `[Event]` toggles and the Event Menu; PodLanded's own dialog and sounds — 03
+- [ ] **Battle detection** (0x41AB00): both sides in a sector → BattleInSector, UndefendedSectorLost (0x43C8D0,
+      0x43A250) or PodLanded (the pods' `+0x64` flag), the pending battle (`dword_4E9B98`) — 03
+- [ ] **Briefing**: the transition (0x41B210: sound 0x18E, the Insert CD check) and the screen (0x499930 /
+      0x4999E0): VIEWING / ATTACKING / DEFENDING, the date, Forces Present, the mini battle map (`maps\hmin%02d.spr`),
+      key or click → 0x98, `[Briefing] Delay` 30 → 0x71 — 03, 13
+- [ ] **Auto-resolve** of a battle (a stand-in until the battle map exists), the battle report's counters
+      (0x421210, 0x4212F0) — 03
+- [ ] **Debriefing** (0x49A7B0 / 0x49A820): VICTORY / DEFEAT / RETURNING TO WAR ROOMS, sounds 0x18F / 0x190 /
+      0x18E, Forces lost and Enemy forces destroyed, `[Debriefing] Delay` 300 → 0x8017 — 13
+- [ ] **End of game**: events 18 / 19, codes 0x80FA-0x80FD sent as 0x80FE (0x41AED0, 0x4212A0) — 03
+- [ ] **Game over flow**: the VICTORY / DEFEAT movie for the code, then the credits, then the main menu (0x402B80)
+      — 01
 
-- [ ] Research data: the hard-coded trees (6 Human plans, 78 items + 8 triggers; 6 Martian, 84 + 6), states, obsolescence, triggers, the 17 `[Tweak]` multipliers, `[Research] Open Rate` (0x457F20-0x45BCB0) — 08, 09
-- [ ] Research screen with its tree, detail panel and scientist speech (0x45E670, 0x45D3F0) — 09
-- [ ] Build list / production: 32-item queue, time ×24 h, resource slowdown, repeats, events 1/2/9/10 (0x45F770-0x462EE0) — 09
-- [ ] What can be built (command building rules) (0x45F970) — 09
-- [ ] War map AI: the 10-state machine per game hour, 14 `[Tweak]` values, AI.ojd sites (0x442890, 0x443340-) — 06, 07
-- [ ] Player command queue / order packets (lockstep) (0x438C90, 0x4460A0) — 06, 07
+## Milestone 4: research, production and the opponent
 
-## 5. Battle map
+- [ ] **Research data**: the hard-coded trees (6 Human plans, 78 items and 8 triggers; 6 Martian, 84 and 6), states,
+      obsolescence, triggers, the 17 `[Tweak]` multipliers, `[Research] Open Rate` (0x457F20-0x45BCB0) — 08, 09
+- [ ] **Research screen**: the tree, the detail panel, scientist speech, opened by R and the Research button
+      (0x45E670, 0x45D3F0) — 09
+- [ ] **Durations text**: day / days / hr / hrs (0x41BDA0) and the Human / Martian date formats (0x41B440) — 03
+- [ ] **What can be built**: the command building rules (0x45F970) — 09
+- [ ] **Build list / production**: 32-item queue, time ×24 h, resource slowdown, repeats, events 1 / 2 / 9 / 10
+      (0x45F770-0x462EE0) — 09
+- [ ] **Unit table**: all 65 OBJ.ojd record types and the `[Tweak]` armour / research / manufacture modifiers
+      (0x437750) — 06
+- [ ] **War map AI**: the 10-state machine every game hour, its 14 `[Tweak]` values, AI.ojd's sites (0x442890,
+      0x443340-) — 06, 07
 
-- [ ] Fix `core/Models` terrain: height scale from CLS 0x2C, heights × √2 — 10
-- [ ] Landscape: lighting, shadows, placement rules, scorch marks (0x47AF10-) — 10
-- [ ] Renderers: the asm blitter modes, triangle spans, WOFLib, RTypeISO, terrain view (0x44F890-0x457F14, 0x49DA50) — 08, 13
-- [ ] Objects: factory map, units (WPuppet), vehicles with steering (`[Vehicles]` 23 settings), tripods, fliers, boats, buildings, bridges, fences, mines, pods (0x446B30, 0x48A4C0-, 0x4956D0-) — 07, 12, 13
-- [ ] Unit groups, orders, stances, specials (Black Dust ... Scan), order panel (0x480190, 0x47CCF0-) — 07, 10, 11
-- [ ] Weapons and effects: shots, explosions, gas, area effects (0x4949A0, part 11) — 11, 12
-- [ ] Battle map screen: keys, mouse, menus 0x80B8, minimap, fog of war (0x484A30, 0x4346C0) — 05, 11, 14
-- [ ] Battle AI (0x445010) and deployment (0x421FE0) — 03, 07
-- [ ] Enter / leave a sector, battle-end dialogs (0x439770, 0x439ED0) — 06
+## Milestone 5: the battle map
 
-## 6. Data and platform
+- [ ] **Terrain**: fix `core/Models` (height scale from CLS +0x2C, heights × √2) — 10
+- [ ] **Landscape**: lighting, shadows, placement rules, scorch marks (0x47AF10-); shade groups hb / hr / bm and the
+      time-of-day lighting (0x40B6C0, 0x40B030; fix the ShadeGroups.h comment) — 01, 10
+- [ ] **Renderers**: the blitter modes, triangle spans, WOFLib, RTypeISO, the terrain view (0x44F890-0x457F14,
+      0x49DA50) — 08, 13
+- [ ] **Battle map screen**: keys, mouse, the minimap, fog of war, the battle map menu 0x80B8 (0x49BD50: heading
+      0x3FD, Resume, Sound Control) (0x484A30, 0x4346C0) — 05, 11, 13, 14
+- [ ] **Enter / leave a sector**, the battle-end dialogs, the briefing sound stopped (0x439770, 0x439ED0, 0x41B360)
+      — 03, 06
+- [ ] **Deployment**: ring placement, HQ and entry-edge centres, random headings, the 0x80C3 rally (0x421FE0,
+      0x4222C0) — 03
+- [ ] **Objects**: the factory map, units (WPuppet), vehicles with steering (`[Vehicles]`, 23 settings), tripods,
+      fliers, boats, buildings, bridges, fences, mines, pods (0x446B30, 0x48A4C0-, 0x4956D0-) — 07, 12, 13
+- [ ] **Unit groups, orders, stances, specials** (Black Dust ... Scan) and the order panel (0x480190, 0x47CCF0-;
+      the 0x80A0 stagger 0x47CEE0) — 07, 10, 11
+- [ ] **Weapons and effects**: shots, explosions, gas, area effects; smoke and particle emitters (0x4949A0,
+      0x47F050) — 10, 11, 12
+- [ ] **Battle AI** (0x445010) — 07
+- [~] **Battle map music**: CD tracks 4 / 5 (the war map's is done) — 11
+- [ ] **Positional sound**: listener at the view centre, inner / outer rects, pan 4·dx (0x464FF0) — 09
 
-- [x] The game's random table: 1024 `rand()` values, MSVC formula, `srand(1)`, inclusive `% (n+1)` (0x4025F0) — 01, 10, 14 (core/Random.h)
-- [ ] The ~229 registry/INI settings with their defaults (list in part 14) — 14
-- [ ] Unit table: all 65 OBJ.ojd record types and the `[Tweak]` armour / research / manufacture modifiers (0x437750) — 06
-- [ ] Object ids: 32768, lowest first then LIFO; the `VEHU` tag (0x4A....) — 14
-- [ ] Shade groups hb / hr / bm and time-of-day lighting (fix the ShadeGroups.h comment) (0x40B6C0, 0x40B030) — 01
+## Milestone 6: the rest of the original
+
+- [ ] **Cheats**: youlikeit, shym, datsun, curtains, icomeback, punyhumans, atchooo (englishrose is in) and their
+      flags (0x401000, 0x401320; `byte_4D1249` / `4D1261` / `4D1279`, `byte_58913C`) — 01, 03
+- [ ] **Speech queue**: opcode-6 sounds one at a time, no duplicates (0x4652B0) — 09
+- [ ] **Virtual voices** that resume at the right place when they get a voice back (0x4654E0) — 09
+- [ ] **Speech attached to text ids** (0x414700) — 02
+- [ ] **`[Sound]` settings**: Minimum Audible Volume, Search Libraries First, Unload Limit; the library-before-loose-
+      file order — 09, 10
+- [ ] **CD player seek** ±5 s (transport 4 / 6) (0x4081D0, 0x412660-) — 01, 02
+- [ ] **Animated cursors** (the wait cursor) and the busy icon while loading (0x40CDC0, 0x44E4B0) — 01, 08
+- [ ] **Display Settings** as the original: the resolution list (512×384 to 1280×1024, only available modes) and the
+      colour depth (0x409AD0); the engine still draws at 640 × 480 — 01
+- [ ] **The settings**: the ~229 registry / INI settings with their defaults, all read (list in part 14) — 14
+- [ ] **Network game**: the network menus (0xA0 / 0xA4), the lockstep order packets and player command queue
+      (0x438C90, 0x4460A0), "Messages Guaranteed" — 01, 06, 07
+- [ ] **Playback recordings** (`playback.%d`, 0x42D290) — 04, 10
+- [ ] **Debug log** (`[Debug] "Log Debug Output"`, 0x417C30); optional, WoWEngine.log covers it for now — 03
+
+## Engine and tooling
+
+- [ ] **Tests**: unit tests for the decoders (save, SMK, NV12, OBJ.ojd records), the war map rules (routes, pods with
+      srand(1), shading) and the menus' input, run in CI
+- [ ] **Release scripts**: `make_release.bat` and `install-wowrevived.bat` tested from a clean checkout; the
+      WoWRevived version in the default movie path taken from the folder instead of fixed at v1.1.2
+- [ ] **.mp4 movies**: scale large movies in the decoder (Media Foundation's advanced video processing) if a slow
+      machine can't keep up; drop the per-piece sound logging once it has been confirmed on more files
+- [ ] **Docs**: keep FRONTEND.md, WARMAP.md and this list up to date with each update
+
+## Done
+
+- Front end: legal splash screens; fades and the 5-tick command delay; menu glow; button frames; movies (Smacker and
+  WoWRevived's .mp4, with the sound on its own reader, NV12 decoding and the formats taken after the first sample);
+  CD player pause / play; options sliders' formula; the text field; Shift+Tab and right-button push buttons; tool
+  tips (manager, BoxedText tip, front end, war map panel and calendar); Sound Control's live preview; pause on focus
+  loss and the Pause key; WoWEngine.log.
+- Sound: stereo samples; the volume curve, voice limits and stealing, ducking, variations in turn; the war map's
+  music and clock sounds.
+- War map: map, borders, ownership, panel, calendar (month names, odometer, "Advance time"), slider; routes with the
+  game's A\* rules; arrows (curve, head, styles) and arrival labels; the message list and history; the original keys
+  (but Backspace); quick right-click cancel; view shading (Unit and Resource views) and pulsing battle sectors;
+  Martian pods; border pixels; the Research button (placeholder screen).
+- Data and platform: the game's random numbers (MSVC rand(), srand(1), the 1024-value table); sector deposits from
+  OBJ.ojd.
