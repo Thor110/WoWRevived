@@ -1045,6 +1045,11 @@ namespace wow
         s.six = &wofTypes;
         s.lights = &lightTypes;
         s.showLights = ini.GetBool("Options", "Show lights", true);
+        s.groups = map->BattleGroups(b.sector);
+        // the owner as a faction (0x43CA30): the side being played, the other, or no one
+        const int owner = map->SectorOwner(b.sector), played = res.Human() ? 0 : 1;
+        s.ownerFaction = owner == 2 ? 2 : owner == 0 ? played : 1 - played;
+        s.noBuildBorder = ini.GetInt("Tweak", "No-build border width (vertices)", 16);
         try
         {
             auto battle = std::make_unique<BattleMap>(res, s);

@@ -6,6 +6,7 @@
 // with a shade level for every sector map value. Not yet: the exact scroll rules, the HUD's own controls, the
 // units, the clock running, and everything the war map does.
 #pragma once
+#include "core/Deployment.h"
 #include "core/SaveFile.h"
 #include "core/SaveGame.h"
 #include "core/ObjOjd.h"
@@ -41,6 +42,11 @@ namespace wow
         void FightBattle();                        // 0x71 / 0x98: the battle (*provisional*: settled here)
         // The other side's units and constructions in a sector (0x43983E: the lists' counts, dword_4F7430)
         int EnemyObjects(int sector) const;
+        // The sector's war map objects as the battle map takes them (EnterBattleMap 0x439770): each list in turn
+        // (HUNI, AUNI, HCON, ACON, HRES, ARES), each object with its battle units' saved places
+        std::vector<BattleGroup> BattleGroups(int sector) const;
+        // who holds the sector: 0 the side being played, 1 the other side, 2 no one
+        int SectorOwner(int sector) const { return sector >= 0 && sector <= warmap::SectorCount ? owner[size_t(sector)] : 2; }
         const std::map<int, ObjOjd::UnitData>& Units() const { return unitData; }
         const DebriefingInfo& Debriefing() const { return debriefing; }
         void ReturnFromBattle();                   // 0x99 / 0x8017, then the view's 0x418980: 0x808D and 0x41E730
@@ -457,6 +463,7 @@ namespace wow
             int intel = 0;               // +0x3C: hours of intel left on the other side's (not saved)
             bool shown = false;          // activated by the last layout (0x421630)
             int sector = 0;
+            int previous = 0;            // its objects' +0x58: the sector they last came from (0 for none; not saved)
             int speed = 0;               // the unit type's war map speed (unit +0x54), 0 for constructions and resources
             int moveClass = 0;           // the unit type's +0x4E: 0-2 land, 3 boats, 4 fliers
             // Travelling (WWarMapRoute 0x4240D0 and its RouteEntry 0x42AFE0; a counter is a route of one entry):

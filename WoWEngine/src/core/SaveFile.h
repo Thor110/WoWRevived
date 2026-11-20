@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace wow
@@ -46,6 +47,8 @@ namespace wow
         // A construction's or resource's place on the battle map (its battle object's +0x78 / +0x7C, read by the
         // AI's site matching 0x440F80): the two floats 16 and 12 bytes before its last BATP tag. False if it has none.
         bool BattlePosition(float& x, float& y) const;
+        // Every battle object's place (+0x78 / +0x7C: the second and third floats after each BAMO tag), in order
+        std::vector<std::pair<float, float>> BattlePositions() const;
         // The type changed where it's written: at the start, and before each of its battle objects' SELO tags
         // (the rest, its hit points among them, stay the copied object's)
         void SetType(int type);

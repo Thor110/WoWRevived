@@ -56,6 +56,29 @@ namespace wow
         return out;
     }
 
+    std::vector<BattleGroup> WarMap::BattleGroups(int sector) const
+    {
+        std::vector<BattleGroup> out;
+        for (int list = 0; list < 6; list++)
+            for (int c : SectorObjects(sector, (list & 1) == 0, list / 2))
+            {
+                const Counter& k = counters[size_t(c)];
+                for (int ref : k.refs)
+                {
+                    if (ref < 0 || size_t(ref) >= table.size()) continue;
+                    if (std::find(destroyed.begin(), destroyed.end(), ref) != destroyed.end()) continue;
+                    const SaveObject& o = table[size_t(ref)];
+                    BattleGroup g;
+                    g.type = o.Type();
+                    g.list = list;
+                    g.previous = k.previous;
+                    g.places = o.BattlePositions();
+                    out.push_back(std::move(g));
+                }
+            }
+        return out;
+    }
+
     int WarMap::EnemyObjects(int sector) const
     {
         int n = 0;
@@ -134,6 +157,7 @@ namespace wow
         if (from == sector) return;
         SDL_Log("War map AI: type %d from sector %d to %d", k.type, from, sector);
         FreeCounter(counter);
+        k.previous = from;  // 0x4219DC
         k.sector = sector;
         k.moved = true;
         RecomputeOwner(from);

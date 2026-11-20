@@ -10,6 +10,7 @@
 #include "core/IsoObject.h"
 #include "core/Scenery.h"
 #include "core/WofView.h"
+#include "core/Deployment.h"
 #include <map>
 #include "frontend/Screen.h"
 #include <memory>
@@ -41,6 +42,9 @@ namespace wow
             const std::map<int, ObjOjd::BattleTables::Six>* six = nullptr;  // OBJ.ojd record 6 (the WOF GTypes)
             const std::map<int, ObjOjd::BattleTables::Thirteen>* lights = nullptr; // record 13 (the light parts)
             bool showLights = true;     // [Options] "Show lights" (byte_4B8808)
+            std::vector<BattleGroup> groups; // the sector's war map objects (WarMap::BattleGroups)
+            int ownerFaction = 2;       // who holds the sector (0x43CA30): 0 Human, 1 Martian, 2 no one
+            int noBuildBorder = 16;     // [Tweak] "No-build border width (vertices)" (dword_59D93C)
         };
 
         // Throws when the map's files can't be read.
@@ -82,6 +86,15 @@ namespace wow
         Landscape::Sun sun;
         void LoadScenery(const Landscape::Sun& sun, char letter);
         void PlaceBridge(const PlacedObject& o);
+        // The battle units (each war map object's +0x4C list): type, place, heading (4096 a turn), whose
+        struct Unit { int type; float x, y; int heading; bool players; };
+        std::vector<Unit> units;
+        int startX = 0, startY = 0;                          // dword_4F742C / 4F7434: the player's deployment centre
+        void Deploy();
+        void Place(std::vector<size_t> members, int cx, int cy);
+        void AddRenderer(int type, float x, float y, int heading);
+        double Radius(int type);
+        std::map<int, std::vector<uint8_t>> wofFiles;        // each WOF GType's file, loaded once
         int scrollX = 0, scrollY = 0;
         int mouseX = -1, mouseY = -1;
         int ticks = 0;

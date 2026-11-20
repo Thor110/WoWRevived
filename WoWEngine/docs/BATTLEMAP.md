@@ -299,3 +299,49 @@ The engine builds the joints once, as the battle map loads; the game redoes them
 when the ground does). *Provisional*: the segments' place among the view's objects (each by its own y plus the
 GType's +0x26), not checked against the game.
 
+## Deployment (0x421FE0 / 0x4222C0; `core/Deployment`, `BattleMap::Deploy`)
+
+EnterBattleMap (0x439770) gives each war map object of the sector its battle units (0x4216E0: the object's +0x4C
+list, also put in the battle world's list), then deploys the six lists in the order HCON, HRES, ACON, ARES, HUNI,
+AUNI (sector +0x54, +0x5C, +0x58, +0x60, +0x4C, +0x50). The save keeps each object's battle units after its BMOL:
+each one's type, SELO and id, two dwords, then BAMO with five values, its place (+0x78 / +0x7C) being the second
+and third, and BATP and its class's own tags (VEHI / VEHU for a vehicle). A fresh unit's place is 0, 0.
+
+**The centre** (0x421FE0), for each object in the list:
+- the command building's place, if one stands among the battle world's objects: the last found of type 830 in
+  sector 3 or 120 elsewhere (Martian), or 278 in sector 30 or 314 elsewhere (Human), either side's;
+- a Martian pod's place (type 179 in the scenery list, made when a pod landed among the Humans, sector +0x64);
+- if the list's faction (its first object's +0x0C) isn't the sector's owner (0x43CA30): the pod for Martians,
+  else the entry point from the sector the object came from (+0x58); if it is: the command building, else the
+  pod for Martians, else the entry point if it came from somewhere, else the map's middle.
+- the entry point (0x436050): a hard-coded pair of points for each pair of neighbouring sectors (a switch on
+  previous x 100 + sector, only for previous's neighbours in 0x4BD260), boats (+0x52 5 or 6) at the second;
+  (0, 0) when there's none (some pairs have one only for boats). The 158 pairs are in `core/Deployment.cpp`.
+- the player's objects (+0x24 0) leave their centre in dword_4F742C / 4F7434, which the start view uses.
+
+The war map object's +0x58 is the sector a route last brought it from (0x4254A7) or the one an AI move took it out
+of (0x4219DC); the engine keeps it on the counter (not saved, so 0 after loading).
+
+**Placing** (0x4222C0): n units, size the first's type's +0x46 word, k = ftol(sqrt(n) + 0.5), the block k x size
+either way of its centre. They keep their saved places unless the first stands at (0, 0), or it's a vehicle
+(+0xB8 bit 0: category 1) that's the computer's, or the player's within `[Tweak] "No-build border width
+(vertices)"` of an edge (or with +0x188 bit 13, a fixed place at +0xF4 / +0xF8; or +0x18C). Then rings round the
+centre, 0.7075 x k x size apart (an int), radius r from 0, each with ftol(r / step) + 1 spots from angle 0 at
+2pi / ftol(r / step) apart (floats): a spot is good when the area e vertices round it (e = (k x size << 16 + half a
+cell) / cell) is passable and each unit's place in the block clear of the battle world's objects (0x47FE10) for a
+vehicle, or a building could go there (0x47B610) for anything else. Past the map's width and height the middle is
+used. The units then stand in the block row by row from (spot + size - k x size), 2 x size apart, each with a
+heading of `rand() & 0xFFF`, and are told to gather at the spot (0x80C3).
+
+**Start view** (0x439B7E): the player's command building in HCON (Human 278 / 314, Martian 830 / 120 by sector),
+the middle of its units' extent ((max - min) / 2 + min, 0x42A2A0 / 0x42A340); else 4F742C / 4F7434 unless their
+sum is 0; else the map's middle.
+
+The units are drawn by their GType's class like the scenery: a WOF model (2) posed at its place and heading, an IOB
+model (1) or a sprite (0).
+
+*Provisional*: the vehicles' ground check (each vertex through the unit's mover, 0x480740) is taken as the
+landscape's IsAreaPassable; the object check as circles (the unit size against each unit already placed, at its
+IOB collision radius or its own size), without the scenery; +0x188 / +0x18C aren't read; there are no pods yet;
+the order of the objects in a list is the counters' order; and where these `rand()` calls fall against the
+scenery's isn't checked. The units don't move, fight or hide in the fog yet.

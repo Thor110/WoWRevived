@@ -86,6 +86,8 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x466E30–0x4783C0 | C runtime and STL | Not rebuilt; replaced by the C++ standard library |
 | 0x4783D0 | Reaper | Fatal error handler |
 | 0x47AF10–0x47FC50 | WLandscape | Terrain from `maps\` (`.ils`, `.cls`, `vertInf`, `atm`), lighting, collisions; 0x47AF10-0x47CCF0 in `src/core/Landscape.cpp` (docs/BATTLEMAP.md) |
+| 0x421FE0–0x422850 | Deployment | Centres and ring placement; `src/core/Deployment.cpp`, `BattleMap::Deploy` (docs/BATTLEMAP.md) |
+| 0x436050 | Entry points | A pair of points for each pair of neighbouring sectors; `src/core/Deployment.cpp` |
 | 0x480150–0x484A30 | Battle map | Unit groups, routing (`ROUTE FOUND`) |
 | 0x485DE0–0x4862C0 | Battle map menu, music, mini-map | |
 | 0x4862C0–0x4868B0 | Bridge base | The ends (0x80A5 / 0x80A6), grid snap, heading and length; `src/core/Bridge.cpp` |

@@ -42,6 +42,7 @@ add_library(wowcore STATIC
     src/core/Scenery.cpp
     src/core/IsoObject.cpp
     src/core/Bridge.cpp
+    src/core/Deployment.cpp
     src/core/WofView.cpp
     src/core/AiTable.cpp
 )

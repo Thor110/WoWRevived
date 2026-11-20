@@ -59,14 +59,288 @@ namespace wow
             if (auto data = res.LoadFile("dat\\" + name + ".SHH")) slotTables[slot] = ShadeTable::LoadShh(*data);
         if (s.loadScenery) LoadScenery(sun, letter);
 
-        // The start view (0x439B7E): on the player's HQ (the Human constructions list is searched for type 278 in
-        // London or 314 elsewhere in a Human game, 830 in sector 3 or 120 elsewhere in a Martian one, and centred
-        // on its units, 0x42A2A0 / 0x42A340), else on the deployment's centre (dword_4F742C / 4F7434), else on the
-        // map's middle; projected (with the height there), less half the screen. *Not yet*: the battle map has no
-        // objects or deployment, so it's always the middle.
-        int cx = land.WorldWidth() / 2;
-        int cy = (land.Height() * land.Cell() >> 16) / 2;
+        Deploy();
+        for (const Unit& u : units) AddRenderer(u.type, u.x, u.y, u.heading);
+        std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+
+        // The start view (0x439B7E): on the player's HQ (the player's constructions list, HCON, searched for type
+        // 278 in London or 314 elsewhere in a Human game, 830 in sector 3 or 120 elsewhere in a Martian one), the
+        // middle of its units' extent (0x42A2A0 / 0x42A340: (max - min) / 2 + min each way); else on the player's
+        // deployment centre (dword_4F742C / 4F7434) unless both are 0; else on the map's middle; projected (with the
+        // height there), less half the screen
+        int cx = 0, cy = 0;
+        const int hq = s.human ? deploy::HumanHq(s.sector) : deploy::MartianHq(s.sector);
+        bool found = false;
+        size_t at = 0;
+        for (const BattleGroup& g : s.groups)
+        {
+            const size_t n = g.places.size();
+            if (!found && g.list == 2 && g.type == hq && n)
+            {
+                int minX = 1000000, maxX = -1000000, minY = 1000000, maxY = -1000000;
+                for (size_t i = at; i < at + n && i < units.size(); i++)
+                {
+                    if (float(minX) > units[i].x) minX = int(units[i].x);
+                    if (units[i].x > float(maxX)) maxX = int(units[i].x);
+                    if (float(minY) > units[i].y) minY = int(units[i].y);
+                    if (units[i].y > float(maxY)) maxY = int(units[i].y);
+                }
+                cx = (maxX - minX) / 2 + minX;
+                cy = (maxY - minY) / 2 + minY;
+                found = true;
+            }
+            at += n;
+        }
+        if (!found)
+        {
+            cx = startX;
+            cy = startY;
+            if (cx + cy == 0)
+            {
+                cx = land.WorldWidth() / 2;
+                cy = int((int64_t(land.Height()) * land.Cell()) >> 16) / 2;
+            }
+        }
         ScrollTo(cx - 320, land.ProjectY(cy, land.HeightAt(cx, cy)) - 240);
+    }
+
+    // The deployment (0x421FE0 for each list, in EnterBattleMap's order: HCON, HRES, ACON, ARES, HUNI, AUNI). Every
+    // battle unit starts at its saved place; each war map object then gets a centre:
+    //  - the other side's (its faction isn't the sector's owner): a Martian pod's place (type 179 in the scenery
+    //    list) for Martians, else the entry point from the sector it came from (0x436050)
+    //  - the owner's: a command building's place (the last of 830 / 120 or 278 / 314 among all the battle units,
+    //    either side's), else a pod's for Martians, else the entry point if it came from somewhere, else the middle
+    // and the player's last centre is where the view starts. Its units are placed round it (Place).
+    // *Not yet*: the pods (no pod object is made yet), so a Martian never starts at one.
+    void BattleMap::Deploy()
+    {
+        units.clear();
+        for (const BattleGroup& g : setup.groups)
+            for (const auto& [x, y] : g.places) units.push_back({ g.type, x, y, 0, g.Players() });
+        if (!setup.units) return;
+        auto unit = [&](int type) -> const ObjOjd::UnitData* {
+            auto u = setup.units->find(type);
+            return u == setup.units->end() ? nullptr : &u->second;
+        };
+        const int midX = land.WorldWidth() / 2;
+        const int midY = int((int64_t(land.Height()) * land.Cell()) >> 16) / 2;
+        // each group's first unit in units
+        std::vector<size_t> first;
+        size_t at = 0;
+        for (const BattleGroup& g : setup.groups) { first.push_back(at); at += g.places.size(); }
+        static const int Order[6] = { 2, 4, 3, 5, 0, 1 };
+        for (int list : Order)
+        {
+            // the command building, as the units stand now
+            int hqX = -1, hqY = -1;
+            for (const Unit& u : units)
+                if (u.type == deploy::MartianHq(setup.sector) || u.type == deploy::HumanHq(setup.sector))
+                {
+                    hqX = int(u.x);
+                    hqY = int(u.y);
+                }
+            // the list's faction: its first object's
+            int faction = -1;
+            for (size_t gi = 0; gi < setup.groups.size(); gi++)
+                if (setup.groups[gi].list == list)
+                {
+                    if (const ObjOjd::UnitData* d = unit(setup.groups[gi].type)) faction = d->faction;
+                    break;
+                }
+            for (size_t gi = 0; gi < setup.groups.size(); gi++)
+            {
+                const BattleGroup& g = setup.groups[gi];
+                if (g.list != list || g.places.empty()) continue;
+                const ObjOjd::UnitData* d = unit(g.type);
+                const int moveClass = d ? d->field52 : 0;
+                int cx = midX, cy = midY;
+                if (setup.ownerFaction != faction)
+                    deploy::EntryPoint(g.previous, setup.sector, moveClass, cx, cy);
+                else if (hqX != -1 || hqY != -1) { cx = hqX; cy = hqY; }
+                else if (g.previous) deploy::EntryPoint(g.previous, setup.sector, moveClass, cx, cy);
+                if (g.Players()) { startX = cx; startY = cy; }
+                std::vector<size_t> members;
+                for (size_t i = 0; i < g.places.size(); i++) members.push_back(first[gi] + i);
+                Place(members, cx, cy);
+            }
+        }
+    }
+
+    // 0x4222C0: a war map object's units. They keep their saved places unless the first stands at (0, 0), or is a
+    // vehicle (category 1) and either the computer's or within the no-build border of the map's edge. Otherwise a
+    // spot is looked for round the centre, ring by ring: the k x k block they stand in (k = ftol(sqrt(n) + 0.5),
+    // each 2 x size apart, size the type's +0x46 word) must fit, e vertices round the spot (e = k x size in
+    // vertices, rounded), on passable ground for vehicles with no unit already in the block's places, on ground a
+    // building could go for the rest (0x47B610). The rings are 0.7075 x k x size apart, each with ftol(radius / step)
+    // + 1 spots from angle 0; past the map's width and height the middle is used. Each unit then takes its place in
+    // the block, row by row, and a heading of rand() & 0xFFF.
+    // *Provisional*: the vehicles' ground check (0x47EB00 -> 0x480740, each vertex through the unit's own mover) is
+    // taken as IsAreaPassable, and the other objects' (0x47FE10, the battle world's grid, 0x47FD40 for each of its
+    // four layers) as circles: the size against each unit placed so far at its collision radius (Radius); the
+    // scenery isn't counted; +0x188 bit 13 (a fixed place) and +0x18C aren't read.
+    void BattleMap::Place(std::vector<size_t> members, int cx, int cy)
+    {
+        if (members.empty()) return;
+        Unit& head = units[members[0]];
+        auto u = setup.units->find(head.type);
+        if (u == setup.units->end()) return;
+        const int n = int(members.size());
+        const int size = int(int16_t(u->second.currentHitPoints));
+        const int k = int(std::sqrt(double(n)) - -0.5);
+        const int span = k * size;
+        const int32_t cell = land.Cell();
+        const int e = int((int64_t(int32_t(uint32_t(span) << 16)) + cell / 2) / cell);
+        const int step = int(double(span) * 0.7075);
+        const bool vehicle = u->second.category == 1;
+        bool needs = head.x == 0.0f && head.y == 0.0f;
+        if (vehicle)
+        {
+            if (head.players)
+            {
+                const int vx = int((int64_t(int32_t(uint32_t(int(head.x)) << 16)) + cell / 2) / cell);
+                const int vy = int((int64_t(int32_t(uint32_t(int(head.y)) << 16)) + cell / 2) / cell);
+                const int b = setup.noBuildBorder;
+                if (vx < b || vy < b || vx > land.Width() - b || vy > land.Height() - b) needs = true;
+            }
+            else needs = true;
+        }
+        if (!needs) return;
+        const int W = land.WorldWidth(), H = int((int64_t(land.Height()) * cell) >> 16);
+        auto toVertex = [&](int v) { return int(int32_t(uint32_t(v) << 16) / cell); };
+        int px = W / 2, py = H / 2;
+        bool found = false, giveUp = false;
+        float r = 0.0f;
+        while (!found && !giveUp)
+        {
+            const float stepF = float(step);
+            const int m = stepF != 0.0f ? int(r / stepF) : 0;
+            const float angleStep = float(6.283185307 / double(m));
+            float a = 0.0f;
+            for (int i = 0; i <= m && !found; i++)
+            {
+                const int tx = int(std::cos(double(a)) * r + cx), ty = int(std::sin(double(a)) * r + cy);
+                const int vx = toVertex(tx), vy = toVertex(ty);
+                bool ok;
+                if (vehicle)
+                {
+                    ok = land.IsAreaPassable(vx - e, vy - e, vx + e + 1, vy + e + 1);
+                    // each member's place in the block, against the units placed so far
+                    int bx = size + tx - span, by = size + ty - span, col = 0;
+                    for (int j = 0; j < n && ok; j++)
+                    {
+                        for (size_t oi = 0; oi < units.size(); oi++)
+                        {
+                            if (std::find(members.begin(), members.end(), oi) != members.end()) continue;
+                            const Unit& other = units[oi];
+                            const double dx = double(other.x) - bx, dy = double(other.y) - by, reach = double(size) + Radius(other.type);
+                            if (dx * dx + dy * dy < reach * reach) { ok = false; break; }
+                        }
+                        bx += 2 * size;
+                        if (++col == k) { col = 0; by += 2 * size; bx = size + tx - span; }
+                    }
+                }
+                else ok = land.CanBuildAt(vx - e, vy - e, vx + e + 1, vy + e + 1, false);
+                if (ok) { found = true; px = tx; py = ty; }
+                a = float(double(angleStep) + a);
+            }
+            r = float(double(r) + stepF);
+            if (!(r <= float(W)) && float(H) < r) giveUp = true;
+            if (step <= 0) giveUp = true;
+        }
+        if (!found) { px = W / 2; py = H / 2; }
+        const int x0 = px + size - span;
+        int x = x0, y = py + size - span, col = 0;
+        for (size_t idx : members)
+        {
+            Unit& m = units[idx];
+            m.x = float(x);
+            m.y = float(y);
+            m.heading = random::Rand() & 0xFFF;
+            x += 2 * size;
+            if (++col == k) { col = 0; y += 2 * size; x = x0; }
+        }
+    }
+
+    // A unit's collision radius: an IOB model's max(2 x half width, depth) x 0.66 (0x47EB10), else its type's +0x46
+    double BattleMap::Radius(int type)
+    {
+        auto u = setup.units->find(type);
+        if (u == setup.units->end()) return 0;
+        if (const GType* g = res.FindGType(u->second.field28); g && g->gclass == 1)
+        {
+            auto m = models.find(u->second.field28);
+            if (m == models.end())
+            {
+                IsoModel im;
+                if (auto file = res.LoadFile(g->file))
+                {
+                    try { im.model = IobModel::Load(*file); } catch (const std::exception&) {}
+                    if (!im.model.patches.empty()) im.lights = IsoObject::BaseLights(im.model, sun, levels);
+                }
+                im.slot = g->paletteSlot;
+                m = models.emplace(u->second.field28, std::move(im)).first;
+            }
+            if (!m->second.model.patches.empty())
+                return double(int(float(std::max(2 * IsoObject::HalfWidth(m->second.model), IsoObject::Depth(m->second.model))) * 0.66f));
+        }
+        return double(int16_t(u->second.currentHitPoints));
+    }
+
+    // A battle unit's renderer by its GType's class (0x47EB10): a WOF model (2) posed at its place and heading, an
+    // IOB model (1) or a sprite (0). Drawn with the ground like the scenery.
+    void BattleMap::AddRenderer(int type, float x, float y, int heading)
+    {
+        if (!setup.units) return;
+        auto u = setup.units->find(type);
+        if (u == setup.units->end()) return;
+        const int gtype = u->second.field28;
+        const GType* g = res.FindGType(gtype);
+        if (!g) return;
+        const int ix = int(x), iy = int(y);
+        if (g->gclass == 2)
+        {
+            auto f = wofFiles.find(gtype);
+            if (f == wofFiles.end())
+            {
+                auto data = res.LoadFile(g->file);
+                f = wofFiles.emplace(gtype, data ? std::move(*data) : std::vector<uint8_t>{}).first;
+            }
+            if (f->second.empty()) return;
+            float scale = 65536.0f;
+            int follow = 0, depth = 0;
+            if (setup.six)
+                if (auto six = setup.six->find(gtype); six != setup.six->end())
+                {
+                    scale = six->second.a;
+                    follow = six->second.c;
+                    depth = 2 * int16_t(six->second.d);
+                }
+            std::unique_ptr<WofInstance> w;
+            try { w = std::make_unique<WofInstance>(f->second, scale, follow); }
+            catch (const std::exception&) { return; }
+            w->Transform(land, heading, ix, iy, land.HeightAt(ix, iy));
+            objects.push_back({ iy + depth, 0, 0, nullptr, w.get(), g->paletteSlot });
+            wofs.push_back(std::move(w));
+        }
+        else if (g->gclass == 1)
+        {
+            auto m = models.find(gtype);
+            if (m == models.end())
+            {
+                IsoModel im;
+                auto file = res.LoadFile(g->file);
+                if (!file) { models[gtype]; return; }
+                try { im.model = IobModel::Load(*file); }
+                catch (const std::exception&) { models[gtype]; return; }
+                im.lights = IsoObject::BaseLights(im.model, sun, levels);
+                im.slot = g->paletteSlot;
+                m = models.emplace(gtype, std::move(im)).first;
+            }
+            if (m->second.model.patches.empty()) return;
+            objects.push_back({ iy + IsoObject::Depth(m->second.model), ix, land.ProjectY(iy, land.HeightAt(ix, iy)), &m->second });
+        }
+        else if (g->gclass == 0 && res.GetFrame(gtype, 0))
+            objects.push_back({ iy + 1, ix, land.ProjectY(iy, land.HeightAt(ix, iy)), nullptr, nullptr, g->paletteSlot, gtype });
     }
 
     // EnterBattleMap's scenery (0x439770 with [Debug] "Load scenery"): dat\<sector>.nsb, placed as the game does

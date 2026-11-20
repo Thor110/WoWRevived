@@ -160,8 +160,10 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       05, 11, 13, 14
 - [~] **Enter / leave a sector**: the landscape, shade tables, briefing sound and enemy count of 0x439770 are in;
       the rest of it (fog, zoomer, objects, battle info), 0x439ED0 and the battle-end dialogs aren't — 03, 06
-- [ ] **Deployment**: ring placement, HQ and entry-edge centres, random headings, the 0x80C3 rally (0x421FE0,
-      0x4222C0) — 03
+- [~] **Deployment**: each sector object's battle units from the save, the centres (HQ, entry points from the
+      sector they came from, middle), ring placement and headings, the start view (0x421FE0, 0x4222C0, 0x436050,
+      0x439B7E; docs/BATTLEMAP.md); the units are drawn standing. Still to do: pods, the exact ground and object
+      checks, the 0x80C3 rally — 03
 - [~] **Objects**: the scenery (`dat\<sector>.nsb`: the tree circles, burnt trees, buildings) is placed and its
       IOB models drawn with the ground (RTypeISO 0x49DDA0, ISOLib 0x4113F0 / 0x457C60; docs/BATTLEMAP.md); the
       bridges are built from their joints and drawn as WOF segments (`core/Bridge`, WBridge 0x497890); the street

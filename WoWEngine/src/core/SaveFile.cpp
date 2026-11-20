@@ -113,6 +113,21 @@ namespace wow
         std::memcpy(&y, &b, 4);
         return true;
     }
+    std::vector<std::pair<float, float>> SaveObject::BattlePositions() const
+    {
+        std::vector<std::pair<float, float>> out;
+        for (size_t i = 0; i + 16 <= bytes.size(); i++)
+            if (std::memcmp(&bytes[i], "BAMO", 4) == 0)
+            {
+                uint32_t a = Get32(bytes, i + 8), b = Get32(bytes, i + 12);
+                float x, y;
+                std::memcpy(&x, &a, 4);
+                std::memcpy(&y, &b, 4);
+                out.push_back({ x, y });
+            }
+        return out;
+    }
+
     void SaveObject::SetBattlePosition(float x, float y)
     {
         const size_t at = LastBatp(bytes);

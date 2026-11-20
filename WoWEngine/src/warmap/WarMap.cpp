@@ -909,8 +909,8 @@ namespace wow
     // and the route ending with it (0x4253F9), ArrivedInSector unless it was an attack.
     void WarMap::Arrive(int index, int sector, int previous)
     {
-        (void)previous;
         Counter& k = counters[size_t(index)];
+        k.previous = previous;
         const bool attack = k.attack;
         k.path.clear();
         k.arrow.clear();
