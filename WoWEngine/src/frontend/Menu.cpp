@@ -120,6 +120,27 @@ namespace wow
         if (handler != onChange.end() && handler->second) handler->second(buttons[index]);
     }
 
+    void Menu::AddTextEntry(std::string text, int maxLength, int command, std::function<void(const std::string&)> changed)
+    {
+        Button b;
+        b.kind = Button::Kind::Edit;
+        b.plate = style == 0 ? 0x38 : style == 1 ? 0x43 : 0x3B;
+        b.glass = style == 0 ? 0x39 : style == 1 ? 0x44 : 0x3C;
+        b.font = ButtonFont;
+        b.level = colours.items;
+        b.maxLength = maxLength;
+        b.text = text.substr(0, size_t(std::max(maxLength, 0)));
+        b.command = { command, 0 };
+        Stack(std::move(b));
+        onText[buttons.size() - 1] = std::move(changed);
+    }
+
+    void Menu::TextChanged(size_t index)
+    {
+        auto handler = onText.find(index);
+        if (handler != onText.end() && handler->second) handler->second(buttons[index].text);
+    }
+
     void Menu::AddBottomButton(int command, int textId)
     {
         Button b;

@@ -36,6 +36,13 @@ namespace wow
         void AddButton(int command, int textId, int param = 0);
         void AddButtonText(int command, std::string text, int param = 0); // a caption that isn't a TEXT.ojd string
         void AddBottomButton(int command, int textId); // also centres the menu
+        // A text field (0x40A8C0) holding up to maxLength characters; Enter in it sends command. changed is
+        // called with the text after every change.
+        void AddTextEntry(std::string text, int maxLength, int command, std::function<void(const std::string&)> changed);
+        // Space before the next row.
+        void AddGap(int pixels) { nextY += pixels; }
+        // Gives the last row added the keyboard focus (0x42EBE0 on the control just made).
+        void FocusLast() { if (!buttons.empty()) Focus(buttons.size() - 1); }
 
         // Rows that change a value; changed is called with the control after every change.
         using OnChange = std::function<void(Button&)>;
@@ -51,6 +58,7 @@ namespace wow
 
     protected:
         void Changed(size_t index) override;
+        void TextChanged(size_t index) override;
 
     private:
         void Stack(Button button);
@@ -62,5 +70,6 @@ namespace wow
         int column = -1, columnTop = 0, columnBottom = 0;
         std::map<size_t, OnChange> onChange;
         std::map<size_t, std::function<std::string(int)>> labels;
+        std::map<size_t, std::function<void(const std::string&)>> onText;
     };
 }

@@ -62,7 +62,7 @@ Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 
 
 | Menu | Id | Built at | Contents (command → string id) |
 |---|---|---|---|
-| Main Menu | 0x90 | 0x405ED0 | Heading 0x3FB. With the network version enabled: 0xA0 → 0x3FE, then 0xA4 → 0x3FF (Human) or 0x400 (Martian). Otherwise: 0x6F → 0x406 (only when a save exists), then 0x8138 → 0x40C. Then 0x8E → 0x401, 0x803E → 0x402, and the bottom button 0x80B6 → 0x403. Also starts sound 0x18C. |
+| Main Menu | 0x90 | 0x405ED0 | Heading 0x3FB. With the network version enabled: 0xA0 → 0x3FE (Single Player Campaign), then 0xA4 → 0x3FF (Network Campaign, Human) or 0x400 (Join Network Campaign, Martian). Otherwise: 0x6F → 0x406 (only when a save exists), then 0x8138 → 0x40C. Then 0x8E → 0x401, 0x803E → 0x402, and the bottom button 0x80B6 → 0x403. Also starts sound 0x18C. |
 | Game Options | 0x8E | 0x408CF0 | Heading 0x401. 0x3EF → 0x410, 0x3ED → 0x411, 0x8117 → 0x412, 0x80CA → 0x534. Bottom button: back to the previous menu → 0x530 (from the main menu) or 0x40F. |
 | Quit Game | 0x70 | 0x409460 | Heading 0x403 or 0x404. 0x70 → 0x445 (quits). Bottom button: back to the previous menu → 0x530 or 0x446. |
 | Display Settings | 0x3EF | 0x4096D0 | Style 1. Heading 0x410. Resolution slider ("%s: %d * %d", `[Screen]` Size). 8-bit and 16-bit Colour radios (`[Screen]` BPP). Checkboxes for Lights, Smoke and Particles, Gouraud Shading and Vehicle shadows (`[Options]` "Show lights", "Show Smoke & particles", "Show gouraud shading", "Show vehicle shadows", all on by default). Scroll Speed slider (`[Screen]` "Scroll Speed", default 40, shown as (speed − 10) / 10). |
@@ -73,17 +73,35 @@ Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 
 | CD Player | 0x803E | 0x407990 | Its own screen, with backdrop 0xAF and palette group 0x2F9. The layout and commands are documented in `src/frontend/CdPlayer.h`. Music plays from `Music-Human\NN TrackNN.wav` or `Music-Martian\NN TrackNN.wav`, tracks 2 to 5. |
 | Credits | 0x80CA | 0x4052B0 | Rebuilt in `src/frontend/Credits.h`, which documents how it works. CREDITS.SPR (0x344) scrolls up in palette group F3 at (height − 640) / 3150 pixels a tick in Human games, or / 4200 in Martian ones, to fit each side's credits music (sound 0x191). Escape or a click leaves after the first 60 ticks. Typing "englishrose" (0x401000) makes it scroll on to a hidden picture of the team at the bottom of the image. |
 
-### Menus still to rebuild (constructors)
+| Single Player Options | 0xA0 | 0x4068F0 | The network version's single player menu. Heading 0x40B. 0x8133 → 0x40C "Start New Campaign" with parameter 0x8037 (focused): straight to the disc check and the intro, without picking a slot. 0x6F → 0x406, 0x8E → 0x401. Bottom button: previous menu. |
+| Select Campaign to Replace | 0x6E | 0x4090A0 | The save menu above, opened by 0x8138 "Start New Campaign" with the menu it came from (dword_4D2574: the main menu, 0xA0 or 0x9F) as its previous menu. |
+| Replace Existing Campaign? | 0x70 | 0x4091E0 | Built with the Quit Game class. Heading 0x532. 0x8140 → 0x469 "Proceed". Bottom button (focused): back to 0x8138 → 0x446 "Cancel". |
+| Edit Campaign | 0x8139 | 0x4092D0 | Style 2. Heading 0x52E. A text field (0x40A8C0, focused) holding the campaign's name, up to 36 characters; every change is copied out (message 0x813A, 0x409400). 0x8139 → 0x52F "Begin Campaign". Bottom button: back to 0x8138 → 0x40F. |
+| Insert CD | 0x8133 | 0x4089D0 | Heading 0x531. 0x8024 → 0x469 "Proceed". Bottom button (focused): 0x90 → 0x530. Proceed checks the disc again and sends the menu's parameter; while the disc is missing it rechecks every 15 ticks (timer 0x8134). Escape is ignored (0x408AB0). |
+| Select Service Provider | 0xA4 | 0x406C10 | Style 2. Heading 0x430. A button per DirectPlay service provider (DirectPlayEnumerateA, up to 10), the first and the last one used focused; picking one goes on to 0x9F (Human) or 0xA6 (Martian). Then a 16 pixel gap (0x4B8DFC − 0x4B8DF8) and the bottom button. |
+| Network Host | 0x9F | 0x406A10 | Heading 0x3FF. 0xA1 → 0x40D "Start New Network Game" (focused), 0xA2 → 0x40E "Load Network Campaign" (the load menu with byte_4D256C set), 0x8E → 0x401. Bottom button: back to 0xA4. |
+| Waiting for Player | 0xAC | 0x406B30 | Opened by 0xA1. Heading 0x433. Bottom button (focused): back to 0x9F. |
+| Game session | 0xA4 | 0x407110 | Opened by 0xA6 (Martian games join). Style 2. Rebuilt every 30 ticks (timer 0x812A, 0x4073D0 / 0x407260): heading 0x431 "Select Network Campaign" over a button per session found (up to 10), or 0x432 "Waiting for Network Campaign..." while there are none, then the gap and the bottom button. Picking a session sends 0xA5. |
 
-| Menu | Id | Constructor |
-|---|---|---|
-| Single Player Game | 0xA0 | 0x4068F0 |
-| Network Host | 0x9F | 0x406A10 |
-| Waiting for Player | 0xAC | 0x406B30 |
-| Main Menu, network variant | 0xA4 | 0x406C10 |
-| Game session | 0xA4 | 0x407110 |
-| Insert CD | 0x8133 | 0x4089D0 |
-| Edit Campaign | 0x8139 | 0x4092D0 |
+### Starting a new campaign
+
+WGame's handler (0x402B80) doesn't act on a command straight away: it stores it and posts 0x95, which runs it. The new campaign goes:
+
+1. 0x8138 (0x404230): Select Campaign to Replace, the save menu with five slot buttons.
+2. 0x8142 + slot (0x4043D0): the slot is kept (dword_4D2578). If it holds a save, its name is copied to the name buffer (byte_4D1448) and Replace Existing Campaign? asks first; otherwise the name is cleared and 0x8140 is sent.
+3. 0x8140 (0x4045C0): Edit Campaign, with the name buffer in the text field.
+4. 0x8139 (0x404660): the new campaign is set up in the slot, then 0x8133 with parameter 0x8037.
+5. 0x8133 (0x403FA0): if the right disc is in (0x408B70 looks for Human.cd or Martian.cd in the CD drive's root) the parameter is sent at once; otherwise the Insert CD menu waits for it.
+6. 0x8037: the INTRO movie, then 0x8A, which starts the war map.
+
+The other movies go the same way: 0x8036 plays RAGELOGO then 0x8038, which plays TITLE then opens the main menu. Victory and defeat play VICTORY or DEFEAT, then the credits.
+
+### In the engine
+
+- The disc check always passes, because the engine runs from the copy WoWLauncher made of both discs, music included. So the Insert CD menu goes straight on; `--open 0x8133` still shows it.
+- Typing in the Edit Campaign field comes from SDL's text input, converted to Latin-1 like the save files.
+- The movies, setting up the campaign (0x404660), loading a save (0x80B3) and starting the war map (0x8A, 0xA5, 0xAB) wait for the campaign to be rebuilt, and show a "not rebuilt yet" placeholder.
+- There's no network play yet, so Select Service Provider lists no providers and the session menu always says it's waiting. The Network Host and Waiting for Player menus can be opened with `--open 0x9F` and `--open 0xA1`.
 
 ## Still to do
 

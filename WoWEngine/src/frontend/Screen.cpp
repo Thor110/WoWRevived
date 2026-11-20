@@ -43,6 +43,7 @@ namespace wow
         {
         case Button::Kind::Push:
         case Button::Kind::Graphic:
+        case Button::Kind::Edit:
             plateFrame = glassFrame = down ? 2 : lit ? 1 : 0;
             break;
         case Button::Kind::Check:
@@ -59,6 +60,12 @@ namespace wow
         }
         if (b.glass) canvas.DrawSprite(b.glass, glassFrame, b.rect.x, b.rect.y, 0, Canvas::Blend::Translucent);
         canvas.DrawSprite(b.plate, plateFrame, b.rect.x, b.rect.y);
+        if (b.kind == Button::Kind::Edit)
+        {
+            // the text being typed, with a caret while the field has the focus
+            canvas.DrawString(b.font, lit ? b.text + "_" : b.text, b.rect, TextCentreX | TextCentreY, b.level);
+            return;
+        }
         if (b.text.empty()) return;
         if (b.textOffset < 0) canvas.DrawString(b.font, b.text, b.rect, TextCentreX | TextCentreY, b.level);
         else
@@ -132,6 +139,7 @@ namespace wow
         case Button::Kind::Check: SetValue(index, b.value ? 0 : 1); return std::nullopt;
         case Button::Kind::Radio: SetValue(index, 1); return std::nullopt;
         case Button::Kind::Slider: return std::nullopt;
+        case Button::Kind::Edit: return b.command.id ? std::optional<Command>(b.command) : std::nullopt;
         default: return b.command;
         }
     }
@@ -142,6 +150,17 @@ namespace wow
         if (buttons.empty()) return std::nullopt;
         if (!Usable(selected)) selected = NextUsable(-1, 1);
         bool slider = Usable(selected) && buttons[size_t(selected)].kind == Button::Kind::Slider;
+        if (Usable(selected) && buttons[size_t(selected)].kind == Button::Kind::Edit)
+        {
+            // a text field takes the typing (OnText); keys that would press a button only edit it
+            Button& b = buttons[size_t(selected)];
+            if (key == SDLK_BACKSPACE)
+            {
+                if (!b.text.empty()) { b.text.pop_back(); TextChanged(size_t(selected)); }
+                return std::nullopt;
+            }
+            if (key == SDLK_SPACE || key == SDLK_LEFT || key == SDLK_RIGHT) return std::nullopt;
+        }
         if (slider && (key == SDLK_LEFT || key == SDLK_RIGHT))
             SetValue(selected, buttons[size_t(selected)].value + (key == SDLK_RIGHT ? 1 : -1));
         else if (key == SDLK_UP || key == SDLK_LEFT) selected = NextUsable(std::max(selected, 0), -1);
@@ -171,7 +190,34 @@ namespace wow
         // like a Windows button: it acts when released over the control that was pressed
         int was = pressed;
         pressed = -1;
-        if (hit >= 0 && hit == was) return Activate(hit);
+        if (hit >= 0 && hit == was && buttons[size_t(hit)].kind != Button::Kind::Edit) return Activate(hit);
         return std::nullopt;
+    }
+
+    void Screen::OnText(std::string_view utf8)
+    {
+        if (!Usable(selected) || buttons[size_t(selected)].kind != Button::Kind::Edit) return;
+        Button& b = buttons[size_t(selected)];
+        bool changed = false;
+        for (size_t i = 0; i < utf8.size(); i++)
+        {
+            // UTF-8 to Latin-1, which is what the fonts and the save files hold; anything else is dropped
+            unsigned c = static_cast<unsigned char>(utf8[i]);
+            if ((c & 0xE0) == 0xC0 && i + 1 < utf8.size())
+            {
+                c = ((c & 0x1Fu) << 6) | (static_cast<unsigned char>(utf8[i + 1]) & 0x3Fu);
+                i++;
+            }
+            else if (c >= 0x80)
+            {
+                while (i + 1 < utf8.size() && (static_cast<unsigned char>(utf8[i + 1]) & 0xC0) == 0x80) i++;
+                continue;
+            }
+            if (c < 0x20 || c > 0xFF || (c >= 0x7F && c < 0xA0)) continue;
+            if (int(b.text.size()) >= b.maxLength) break;
+            b.text += char(c);
+            changed = true;
+        }
+        if (changed) TextChanged(size_t(selected));
     }
 }

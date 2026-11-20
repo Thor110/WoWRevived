@@ -79,6 +79,7 @@ namespace
                         else if (k == "escape") o.keys.push_back(SDLK_ESCAPE);
                         else if (k == "left") o.keys.push_back(SDLK_LEFT);
                         else if (k == "right") o.keys.push_back(SDLK_RIGHT);
+                        else if (k == "backspace") o.keys.push_back(SDLK_BACKSPACE);
                         else if (k.size() > 1 && k[0] == '=') // =text types the letters
                             for (char c : k.substr(1)) if (c >= 'a' && c <= 'z') o.keys.push_back(int(SDLK_A + (c - 'a')));
                         if (end == std::string::npos) break;
@@ -190,11 +191,18 @@ int main(int argc, char** argv)
             throw std::runtime_error(error);
         wow::Canvas canvas(video.Pixels(), video.Width(), video.Height(), resources);
 
+        // typed text for the campaign name field (Edit Campaign)
+        SDL_StartTextInput(video.Window());
         if (options.open) frontEnd.Open(options.open);
         bool done = false;
         if (!options.screenshot.empty())
         {
-            for (int key : options.keys) frontEnd.OnKey(key);
+            for (int key : options.keys)
+            {
+                frontEnd.OnKey(key);
+                // letters are typed too, as SDL's text input would send them
+                if (key >= int(SDLK_A) && key <= int(SDLK_Z)) { char text[2] = { char('a' + (key - int(SDLK_A))), 0 }; frontEnd.OnText(text); }
+            }
             for (int t = 0; t < options.ticks; t++) frontEnd.Update();
             frontEnd.Draw(canvas);
             wow::WriteBmp(options.screenshot, video.Pixels(), video.Width(), video.Height());
@@ -219,6 +227,7 @@ int main(int argc, char** argv)
                     if (event.key.key == SDLK_RETURN && (event.key.mod & SDL_KMOD_ALT)) { if (!event.key.repeat) video.ToggleFullScreen(); }
                     else frontEnd.OnKey(int(event.key.key));
                     break;
+                case SDL_EVENT_TEXT_INPUT: frontEnd.OnText(event.text.text); break;
                 case SDL_EVENT_MOUSE_MOTION:
                     if (video.ToGame(event.motion.x, event.motion.y, x, y)) frontEnd.OnMouseMove(x, y);
                     break;
