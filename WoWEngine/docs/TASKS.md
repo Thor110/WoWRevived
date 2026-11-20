@@ -186,8 +186,12 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       speech 0x10A / 0x10B in the group's voice and the engine sounds on the start / stop edges (0x4913B0, 0x491450).
       Still to do: the search spread over updates, footprints taken off (vt+0xE8) and node removal, broken bridges,
       crushing, the selection voice 0x109 (0x439000)
-- [ ] **Unit groups, orders, stances, specials** (Black Dust ... Scan) and the order panel (0x480190, 0x47CCF0-;
-      the 0x80A0 stagger 0x47CEE0) — 07, 10, 11
+- [~] **Unit groups, orders, stances, specials** (Black Dust ... Scan) and the order panel (0x480190, 0x47CCF0-;
+      the 0x80A0 stagger 0x47CEE0): the popup's order items as the first selected member gives them (0x47E1E0,
+      armed / moving, the special orders' types and research 0x47DA80) and the stances (0x80B2); the digits do
+      nothing in the game (packet 0x12 has no handler). Still to do: Abandon (0x80A0), Retreat and the
+      reinforcement points (0x480EF0, 0x43D150), Force Fire and the specials' modes, the combined panel (0x448500)
+      — 07, 10, 11
 - [ ] **Weapons and effects**: shots, explosions, gas, area effects; smoke and particle emitters (0x4949A0,
       0x47F050) — 10, 11, 12
 - [ ] **Battle AI** (0x445010) — 07

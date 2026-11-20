@@ -82,6 +82,7 @@ namespace wow
         }
         for (const Unit& u : units) Occupy(u.type, u.x, u.y);
         SetUpGrounds();
+        groupStance.assign(setup.groups.size(), 1);
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
 
         // The start view (0x439B7E): on the player's HQ (the player's constructions list, HCON, searched for type
@@ -895,7 +896,8 @@ namespace wow
             break;
         case SDLK_HOME: CentreOnSelection(); break;
         case SDLK_BACKSPACE: Halt(); break;
-        // *Not yet*: the digits (select group n, packet 0x12)
+        // The digits build packet 0x12 (select group n, 0 as 10), but the selection that runs the packets (0x4812B0)
+        // has no case for it: in the game they do nothing, and so here.
         default: break;
         }
         return std::nullopt;
@@ -1031,12 +1033,113 @@ namespace wow
         bool ours = false, theirs = false;
         for (const Unit& u : units) (u.players ? ours : theirs) = true;
         if (Mode() == 0 && (!ours || !theirs)) add(ReturnCommand, 0x2C, 0x47A);
+        // then the selection's: its first member's orders
+        for (const Unit& u : units)
+            if (u.players && selected[size_t(u.group)]) { AddOrders(u); break; }
         int w = 0, h = 0;
         for (const PopupItem& item : popup) { w = std::max(w, item.rect.w); h += item.rect.h; }
         int left = std::clamp(x - popup[0].rect.w / 2, 3, 640 - 3 - w);
         int top = std::clamp(y - popup[0].rect.h / 4, 3, 480 - 3 - h);
         for (PopupItem& item : popup) { item.rect.x = left; item.rect.y = top; top += item.rect.h; }
         sounds.push_back(0x193);
+    }
+
+    // +0x3C (0x47EF30): how many of its children are weapons (+0xB8 bit 11): the turrets (0x489820, types
+    // 0x2E6-0x313 and 0x389-0x38C) and the shot classes on 0x4949A0 (0x488930: 0x197-0x199, 0x2BF-0x2C4, 0x3AA,
+    // 0x3EB-0x3ED; 0x4887E0: 0x2B9-0x2BB, 0x320-0x322, 0x3B5-0x3B7; 0x488460: 0x3AB; 0x48DBE0: 0x19A-0x19C)
+    bool BattleMap::Armed(const ObjOjd::UnitData& unit)
+    {
+        auto weapon = [](int t) {
+            return (t >= 0x2E6 && t <= 0x313) || (t >= 0x389 && t <= 0x38C) || (t >= 0x197 && t <= 0x19C) ||
+                   (t >= 0x2B9 && t <= 0x2BB) || (t >= 0x2BF && t <= 0x2C4) || (t >= 0x320 && t <= 0x322) ||
+                   t == 0x3AA || t == 0x3AB || (t >= 0x3B5 && t <= 0x3B7) || (t >= 0x3EB && t <= 0x3ED);
+        };
+        for (const auto& part : unit.parts)
+            if (weapon(part.a)) return true;
+        return false;
+    }
+
+    // 0x47DA80: which types may give a special order, some only once a research item is done (Martian items by
+    // their place in the tree: 2 and 3 triggers, 32 / 37 / 44-47 / 54-56 units; Human 39, an enhancement)
+    bool BattleMap::CanDo(int t, int command) const
+    {
+        auto m = [&](int index) { return setup.researchDone && setup.researchDone(false, index); };
+        auto h = [&](int index) { return setup.researchDone && setup.researchDone(true, index); };
+        auto in = [&](std::initializer_list<int> types) { return std::find(types.begin(), types.end(), t) != types.end(); };
+        switch (command)
+        {
+        case 0x80EF: return in({ 0x16, 0x17, 0x18 });                       // Submerge
+        case 0x80EE: return in({ 7, 8, 9 });                                // Tunnel
+        case 0x80D5: return in({ 0x42, 0x43, 0x47, 0x44, 0x45 });           // Black Dust
+        case 0x80D6: return in({ 0x48, 0x46 });
+        case 0x80D7: return t == 0x49;
+        case 0x80D8: return m(32) && in({ 0x47, 0x45 });                    // Shock Bomb
+        case 0x80D9: return m(32) && in({ 0x48, 0x46 });
+        case 0x80DA: return m(32) && t == 0x49;
+        case 0x80DB: return t == 0x20;                                      // Explosives
+        case 0x80DC: return in({ 0x11, 0x21 });
+        case 0x80DD: return in({ 0x12, 0x22 });
+        case 0x80DE: return in({ 0x11, 0x12, 0x20, 0x56, 0x50 });           // Infiltrate
+        case 0x80DF: return in({ 0x21, 0x57, 0x51 });
+        case 0x80E0: return in({ 0x22, 0x58, 0x52 });
+        case 0x80E1: return (m(37) && t == 0x4A) || (m(46) && t == 0x50);  // Pulse
+        case 0x80E2: return (m(37) && t == 0x4B) || (m(46) && t == 0x51);
+        case 0x80E3: return m(37) && t == 0x4C;
+        case 0x80E4: return (m(47) && in({ 0x50, 0x51, 0x52 })) || (m(54) && t == 0x56) || (h(39) && in({ 0xB, 0xC })); // Freeze
+        case 0x80E5: return m(54) && t == 0x57;
+        case 0x80E6: return m(54) && t == 0x58;
+        case 0x80E7: return m(55) && t == 0x56;                             // Scare
+        case 0x80E8: return m(55) && t == 0x57;
+        case 0x80E9: return m(55) && t == 0x58;
+        case 0x80EA: return m(56) && t == 0x56;                             // Control
+        case 0x80EB: return m(56) && t == 0x57;
+        case 0x80EC: return m(56) && t == 0x58;
+        case 0x80F0:                                                        // Scan
+            if ((m(44) || m(45)) && in({ 0x50, 0x51, 0x52 })) return true;
+            // the command building of the battle's kind: the Martian Base (0x33E) where it's 3, else the
+            // Communications Centre (0x78)
+            return (m(2) || m(3)) && t == (setup.sector == 3 ? 0x33E : 0x78);
+        default: return false;
+        }
+    }
+
+    // 0x47E1E0, an object's orders: Build and Suspend / Resume (only while its sector is quiet, 0x43D010: not on a
+    // battle's map); the stances Roam and Attack (armed and moving: the type's +0x52 not 0), Attack and Retaliate
+    // (armed), Avoid (moving) and Retreat (moving, a battle on, its sector not quiet, reinforcement points,
+    // dword_4F76E8); Abandon; Force Fire (armed); then each special order 0x47DA80 allows, in order.
+    void BattleMap::AddOrders(const Unit& first)
+    {
+        auto t = setup.units->find(first.type);
+        if (t == setup.units->end()) return;
+        const bool armed = Armed(t->second), still = t->second.field52 == 0;
+        auto add = [&](int command, int param, int icon, int text) {
+            Rect r = SpriteRect(icon, 0, 0);
+            if (r.w <= 0) r.w = r.h = 32;
+            popup.push_back({ command, icon, text, r, param });
+        };
+        if (armed && !still) add(0x80CE, 3, 0x34F, 0x474);
+        if (armed)
+        {
+            add(0x80CE, 2, 0x34E, 0x473);
+            add(0x80CE, 1, 0x34D, 0x472);
+        }
+        if (!still) add(0x80CE, 0, 0x34C, 0x471);   // Retreat would follow: no reinforcement points yet
+        add(0x80CE, 0x8067, 0x34B, 0x46F);
+        if (armed) add(0x80F3, 0x80ED, 0x1E, 0x48A);
+        struct Special { int command, icon, text; };
+        static constexpr Special specials[] = {
+            { 0x80EF, 0x349, 0x48C }, { 0x80EE, 0x34A, 0x48B },
+            { 0x80D5, 0x25, 0x482 }, { 0x80D6, 0x25, 0x482 }, { 0x80D7, 0x25, 0x482 },
+            { 0x80D8, 0x26, 0x483 }, { 0x80D9, 0x26, 0x483 }, { 0x80DA, 0x26, 0x483 },
+            { 0x80DB, 0x351, 0x484 }, { 0x80DC, 0x351, 0x484 }, { 0x80DD, 0x351, 0x484 },
+            { 0x80DE, 0x352, 0x485 }, { 0x80DF, 0x352, 0x485 }, { 0x80E0, 0x352, 0x485 },
+            { 0x80E1, 0x353, 0x486 }, { 0x80E2, 0x353, 0x486 }, { 0x80E3, 0x353, 0x486 },
+            { 0x80E4, 0x354, 0x487 }, { 0x80E5, 0x354, 0x487 }, { 0x80E6, 0x354, 0x487 },
+            { 0x80E7, 0x355, 0x488 }, { 0x80E8, 0x355, 0x488 }, { 0x80E9, 0x355, 0x488 },
+            { 0x80EA, 0x356, 0x489 }, { 0x80EB, 0x356, 0x489 }, { 0x80EC, 0x356, 0x489 },
+            { 0x80F0, 0x358, 0x48D } };
+        for (const Special& sp : specials)
+            if (CanDo(first.type, sp.command)) add(0x80F3, sp.command, sp.icon, sp.text);
     }
 
     void BattleMap::ClosePopup(bool escape)
@@ -1075,8 +1178,22 @@ namespace wow
             if (item.rect.Contains(x, y))
             {
                 int command = item.command;
+                const int param = item.param;
                 ClosePopup(false);
                 if (command == ReturnCommand) return Command{ ReturnCommand, setup.sector };
+                if (command == 0x80CE && param >= 0 && param <= 3)
+                {
+                    // packet 0x15 -> 0x4817C0: the stance (0x80B2) to the group and each member (+0xD8); the group
+                    // keeps it at +0x54 and, for Roam and Attack, its centre as home (0x483AE0)
+                    for (size_t g = 0; g < selected.size() && g < groupStance.size(); g++)
+                        if (selected[g]) groupStance[g] = param;
+                    return std::nullopt;
+                }
+                if (command == 0x80CE || command == 0x80F3)
+                {
+                    SDL_Log("order 0x%X 0x%X: not in yet", command, param);
+                    return std::nullopt;
+                }
                 ClearSelection(); // 0x73, Cancel
                 return std::nullopt;
             }

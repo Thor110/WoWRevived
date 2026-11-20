@@ -1076,6 +1076,13 @@ namespace wow
         s.vehicles.attractAccMax = ini.GetFloat("Vehicles", "attractAccMax", 0.1f);
         s.zMapRes = ini.GetInt("System", "ZMapRes", 400);
         s.sound = &sound;
+        s.researchDone = [this, human = res.Human()](bool side, int index) {
+            WarMap* wm = ActiveWarMap();
+            if (!wm) return false;
+            Research* r = side == human ? wm->LocalResearch() : wm->OtherResearch();
+            if (!r || index < 0 || size_t(index) >= r->Items().size()) return false;
+            return r->Items()[size_t(index)].state == 2;
+        };
         if (s.zMapRes < 1) s.zMapRes = 400;
         try
         {

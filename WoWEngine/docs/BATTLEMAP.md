@@ -413,6 +413,48 @@ sends 0x8088 to an object's group (+0x48), which selects all its units.
 bar is full. The orders themselves (move, attack, force fire), Shift adding to the selection (packet 5) and the
 group keys aren't in.
 
+## Orders (the popup's selection items 0x47E1E0, special orders 0x47DA80, stances 0x4817C0 / 0x80B2)
+
+The popup (0x485DE0) asks whoever answers 0x805C after its own Cancel and Return to Warmap: the selection, a WBMGroup
+("BattleMapSelection"), whose 0x4482D0 asks its first member (unless the members are in different sectors, when
+0x448500 builds a combined panel); the member's 0x47DF20 calls **0x47E1E0**, which adds (0x432E90: command, param,
+icon GType, tool tip text):
+- Build (0x813E 0x8065, 0x20, 0x470) and Suspend / Resume (0x813F, 0x22 / 0x23, 0x495 / 0x496) for a builder, only
+  while its sector is quiet (0x43D010), so never on a battle's map;
+- the stances (0x80CE): Roam and Attack (3, 0x34F, 0x474) when armed and moving, Attack (2, 0x34E, 0x473) and
+  Retaliate (1, 0x34D, 0x472) when armed, Avoid (0, 0x34C, 0x471) when moving, then Retreat (0x80B7, 0x2D, 0x479)
+  when moving, a battle is on, the sector isn't quiet and there are reinforcement points (dword_4F76E8);
+- Abandon (0x8067, 0x34B, 0x46F);
+- Force Fire (0x80F3 0x80ED, 0x1E, 0x48A) when armed;
+- each special order 0x47DA80 allows, in order: Submerge 0x80EF (0x349, 0x48C), Tunnel 0x80EE (0x34A, 0x48B), Black
+  Dust 0x80D5-D7 (0x25, 0x482), Shock Bomb D8-DA (0x26, 0x483), Explosives DB-DD (0x351, 0x484), Infiltrate DE-E0
+  (0x352, 0x485), Pulse E1-E3 (0x353, 0x486), Freeze E4-E6 (0x354, 0x487), Scare E7-E9 (0x355, 0x488), Control EA-EC
+  (0x356, 0x489), Scan 0x80F0 (0x358, 0x48D).
+
+*Moving* is the type's +0x52 word (the move class) not 0; *armed* is +0x3C, the children with +0xB8 bit 11 counted
+as the object starts (0x47EF30): the turrets (0x489820: types 0x2E6-0x313, 0x389-0x38C) and the shot classes on
+0x4949A0 (0x488930: 0x197-0x199, 0x2BF-0x2C4, 0x3AA, 0x3EB-0x3ED; 0x4887E0: 0x2B9-0x2BB, 0x320-0x322, 0x3B5-0x3B7;
+0x488460: 0x3AB; 0x48DBE0: 0x19A-0x19C). The Armoured Lorry's turret 0x2E6 makes it armed.
+
+**0x47DA80** by type, some needing a research item done (0x45B890: state exactly 2; the items are the side's tree's
+in order, the globals at 0x588C40 Human and 0x588F20 Martian, four bytes each): Submerge 0x16-0x18; Tunnel 7-9;
+Black Dust 0x42/0x43/0x47/0x44/0x45, 0x48/0x46, 0x49; Shock Bomb the same with Martian item 32 (minus the first
+three types); Explosives 0x20, 0x11/0x21, 0x12/0x22; Infiltrate 0x11/0x12/0x20/0x56/0x50, 0x21/0x57/0x51,
+0x22/0x58/0x52; Pulse 0x4A (M37) or 0x50 (M46), 0x4B (M37) or 0x51 (M46), 0x4C (M37); Freeze 0x50-0x52 (M47), 0x56
+(M54) or 0xB/0xC (Human 39), 0x57 (M54), 0x58 (M54); Scare 0x56-0x58 (M55); Control 0x56-0x58 (M56); Scan 0x50-0x52
+(M44 or M45) or the battle's command building (0x33E where its kind is 3, else 0x78) with M2 or M3 (triggers).
+
+**Stances** (packet 0x15 -> 0x4817C0 -> 0x80B2): each member gets the stance (+0xD8) and the group keeps it at +0x54
+(1 as a group is made; 0x4802E0 averages the members'); Roam and Attack also takes the group's centre as its home
+(0x483AE0). Abandon (0x8067) sends each member 0x80A0, its end; Retreat runs 0x480EF0; Force Fire and the specials
+set the group's mode (+0x1DC) for the next click.
+
+**The digits** build packet 0x12 (select group n, 0 as 10) but the selection's 0x4812B0 has no case for it: they do
+nothing in the game.
+
+*Provisional*: only the stances act (they're kept per group, for the AI and weapons to come); Abandon, Force Fire and
+the specials are listed but not acted on, and Retreat isn't listed (no reinforcement points, 0x43D150, yet).
+
 ## Driving (the ground vehicle 0x490820-0x4935C0; the group's move 0x482E60; `battlemap/Driving.cpp`)
 
 A vehicle (category 1) keeps its driving state at +0x88..+0x18C: the step (+0x88 / +0x8C), the target (+0xF4 / +0xF8)

@@ -5,6 +5,7 @@
 // See docs/BATTLEMAP.md.
 #pragma once
 #include <array>
+#include <functional>
 #include "core/Bridge.h"
 #include "core/Landscape.h"
 #include "core/ObjOjd.h"
@@ -77,7 +78,10 @@ namespace wow
             const std::map<int, std::array<int, 17>>* moveCosts = nullptr;      // OBJ.ojd record 10 (0x4F6E38)
             const std::map<int, std::pair<int, float>>* moveSlopes = nullptr;   // record 11 (0x4F04C0 / 0x4F0510)
             int zMapRes = 400;
-            Sound* sound = nullptr;   // the front end's mixer: the battle's speech and engine sounds          // [System] "ZMapRes" (dword_4F7424): the bucket grid's cell size
+            Sound* sound = nullptr;
+            // a research item's state is 2 (0x45B890), by side and its place in that side's tree (the globals from
+            // 0x588C40 Human, 0x588F20 Martian, four bytes each)
+            std::function<bool(bool human, int index)> researchDone;   // the front end's mixer: the battle's speech and engine sounds          // [System] "ZMapRes" (dword_4F7424): the bucket grid's cell size
         };
 
         // Throws when the map's files can't be read.
@@ -258,11 +262,16 @@ namespace wow
         int mouseX = -1, mouseY = -1;
         int ticks = 0;
         int rightDownAt = -1;
-        struct PopupItem { int command, icon, text; Rect rect; };
+        struct PopupItem { int command, icon, text; Rect rect; int param = 0; };
         std::vector<PopupItem> popup;       // "Battlemap menu" (WPopupMenu 0x432C60, 0x485DE0)
         int popupHover = -1;
         void OpenPopup(int x, int y);
         void ClosePopup(bool escape);
+        // The selection's items (0x805C: the selection 0x4482D0 asks its first member, 0x47DF20 -> 0x47E1E0)
+        void AddOrders(const Unit& first);
+        bool CanDo(int type, int command) const;     // 0x47DA80
+        static bool Armed(const ObjOjd::UnitData& unit); // +0x3C: children with +0xB8 bit 11
+        std::vector<int> groupStance;                // each group's +0x54 (WBMGroup 0x480190: 1)
         void EdgeScroll();
     };
 }
