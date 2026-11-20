@@ -146,9 +146,8 @@ namespace wow
     // neighbours gathered (0x492C00), arrival (vt+0x168, not arrived and not bit 5), separation (vt+0x154, no link and
     // not bit 5), the target (vt+0x150), avoidance (vt+0x15C, no link), attraction (vt+0x160, not bit 5), velocity
     // matching (vt+0x16C, no link and not bit 5) and the attribute (vt+0x164, also needing +0xEC).
-    // *Provisional*: only separation, the target and velocity matching are in. The collision lookahead (0x492350,
-    // which sets bit 3 and the +0x110 vector that braking and avoidance (0x491D90: away from it) use) isn't, nor
-    // arrival and attraction (both need a route), the attribute, bit 5 or the bridge links.
+    // *Provisional*: the lookahead without its ground check, separation, the target, avoidance, braking and velocity
+    // matching are in; arrival and attraction (both need a route), the attribute, bit 5 and the bridge links aren't.
     void BattleMap::Steer(Unit& u)
     {
         auto& d = u.drive;
@@ -164,6 +163,7 @@ namespace wow
                 if (len > max) { ax = float(ax * double(max) / len); ay = float(ay * double(max) / len); }
                 acc.push_back({ ax, ay });
             };
+            LookAhead(u);   // true only from the ground check, which isn't in (vt+0x158)
             const Neighbours n = Gather(u);
             // separation (vt+0x154, 0x4920A0): the neighbours' push x how many there are
             if (n.count > 0)
@@ -173,6 +173,27 @@ namespace wow
             {
                 const float fx = float(double(d.tx) - u.x), fy = float(double(d.ty) - u.y);
                 add(float(double(v.targAccWeight) * v.maxAcc), float(double(v.targAccMax) * v.maxAcc), fx, fy);
+            }
+            // avoidance (vt+0x15C, 0x491D90): with something ahead, away along the way to it
+            if (d.flags & 8)
+            {
+                const double len = std::sqrt(double(d.ax) * d.ax + double(d.ay) * d.ay);
+                if (len > 0.0)
+                    add(float(double(v.avoidanceAccWeight) * v.maxAcc), float(double(v.avoidanceAccMax) * v.maxAcc),
+                        float(-(d.ax / len)), float(-(d.ay / len)));
+            }
+            // braking (vt+0x160, 0x491C70): with something ahead, against the step, halved unless it's one of the
+            // group's standing
+            if (d.flags & 8)
+            {
+                const double sq = double(d.dx) * d.dx + double(d.dy) * d.dy;
+                if (sq > 0.0)
+                {
+                    const double len = std::sqrt(sq);
+                    float bx = float(-(d.dx / len)), by = float(-(d.dy / len));
+                    if (!(d.flags & 0x10)) { bx = float(bx * 0.5); by = float(by * 0.5); }
+                    add(float(double(v.brakingAccWeight) * v.maxAcc), float(double(v.brakingAccMax) * v.maxAcc), bx, by);
+                }
             }
             // velocity matching (vt+0x16C, 0x492160): the moving group members' average step
             if (n.matched > 0)
@@ -238,6 +259,24 @@ namespace wow
     // also adds its step and position to the averages.
     // *Provisional*: only the units are in the grid (the game's holds every battle map object that places itself,
     // less category 4 and what vt+0xBC turns down), and the cells are worked out from where they are now.
+    // 0x449920 for q 0 to 3: the point's cell, then those beside it on the sides it's nearer (none for q 1 or 2 when
+    // that's clamped back onto its own cell; q 3 then gives the other one again)
+    std::vector<std::pair<int, int>> BattleMap::BucketCells(int px, int py) const
+    {
+        const int size = setup.zMapRes;
+        const int cols = (land.WorldWidth() + size - 1) / size;
+        const int rows = (int((int64_t(land.Cell()) * land.Height()) >> 16) + size - 1) / size;
+        auto clampTo = [](int v, int count) { return v < 0 ? 0 : v >= count ? count - 1 : v; };
+        const int cx = clampTo(px / size, cols), cy = clampTo(py / size, rows);
+        const int nx = clampTo(cx + ((px % size) >= size / 2 ? 1 : -1), cols);
+        const int ny = clampTo(cy + ((py % size) >= size / 2 ? 1 : -1), rows);
+        std::vector<std::pair<int, int>> cells{ { cx, cy } };
+        if (nx != cx) cells.push_back({ nx, cy });
+        if (ny != cy) cells.push_back({ cx, ny });
+        if (nx != cx || ny != cy) cells.push_back({ nx, ny });
+        return cells;
+    }
+
     BattleMap::Neighbours BattleMap::Gather(const Unit& u) const
     {
         Neighbours n;
@@ -246,13 +285,7 @@ namespace wow
         const int rows = (int((int64_t(land.Cell()) * land.Height()) >> 16) + size - 1) / size;
         auto clampTo = [](int v, int count) { return v < 0 ? 0 : v >= count ? count - 1 : v; };
         const int px = int(u.x), py = int(u.y);
-        const int cx = clampTo(px / size, cols), cy = clampTo(py / size, rows);
-        const int nx = clampTo(cx + ((px % size) >= size / 2 ? 1 : -1), cols);
-        const int ny = clampTo(cy + ((py % size) >= size / 2 ? 1 : -1), rows);
-        std::vector<std::pair<int, int>> cells{ { cx, cy } };
-        if (nx != cx) cells.push_back({ nx, cy });
-        if (ny != cy) cells.push_back({ cx, ny });
-        if (nx != cx || ny != cy) cells.push_back({ nx, ny });
+        const auto cells = BucketCells(px, py);
         const int z = land.HeightAt(px, py);
         for (auto [gx, gy] : cells)
             for (const Unit& o : units)
@@ -278,6 +311,90 @@ namespace wow
                 n.count++;
             }
         return n;
+    }
+
+    // 0x47FE10 (x, y, reach): the cells as 0x449920 gives them, in turn, until one has a hit (0x47FD40): of the objects
+    // in it that aren't the unit and pass its vt+0xBC, the nearest by the octagonal distance (the larger difference
+    // and half the smaller, from the object's position as whole numbers) that's under the object's radius + reach,
+    // starting from 10000.
+    // *Provisional*: only units are in the grid, placed by where they are now; vt+0xBC isn't known (all pass).
+    const BattleMap::Unit* BattleMap::ObjectAt(const Unit& u, int px, int py, int reach) const
+    {
+        const int size = setup.zMapRes;
+        const int cols = (land.WorldWidth() + size - 1) / size;
+        const int rows = (int((int64_t(land.Cell()) * land.Height()) >> 16) + size - 1) / size;
+        auto clampTo = [](int v, int count) { return v < 0 ? 0 : v >= count ? count - 1 : v; };
+        for (auto [gx, gy] : BucketCells(px, py))
+        {
+            const Unit* found = nullptr;
+            int best = 10000;
+            for (const Unit& o : units)
+            {
+                if (&o == &u) continue;
+                const int ox = int(o.x), oy = int(o.y);
+                if (clampTo(ox / size, cols) != gx || clampTo(oy / size, rows) != gy) continue;
+                const int a = std::abs(px - ox), b = std::abs(py - oy);
+                const int d = b - (std::min(a, b) >> 1) + a;
+                if (d < o.drive.radius + reach && d < best)
+                {
+                    best = d;
+                    found = &o;
+                }
+            }
+            if (found) return found;
+        }
+        return nullptr;
+    }
+
+    // 0x492350, before the behaviours: bit 3 cleared, then four points looked at, the first the unit's position and
+    // each next a step on along the heading (the step: max(speed x 0.5, 1) x collisionCheckDist x the radius). At
+    // each, with a ground group (+0x34) and not bit 7, three points a radius out (ahead, left and right) are checked
+    // on the vertex grid for ground it can't cross (0x480680 giving 0, not on a bridge link): +0x110 is set toward
+    // the vertex, bits 3 set and 4 cleared, and at the first point a type of move class 5 or 6 returns true (vt+0x158
+    // then steers it away, `attributeAcc*`). Then the nearest object within the radius (0x47FE10) that's within 64
+    // in height: +0x110 the way to it, bit 4 whether it's of the same group but not a vehicle going (vt+0x144), bit 3
+    // set, and the look ends. Found at the unit's own position, an object that can't be crushed (vt+0xD8) pushes the
+    // unit away: by (the octagonal distance less both radii) / 8 along the way to it, set straight onto the position
+    // (vt+0x40); one that can be crushed is, 1 in 4 (rand() < 0x2000), with its type's effect (0x488070).
+    // *Provisional*: the ground check (it needs the ground's cost) and the crushing aren't in, so it's always false.
+    bool BattleMap::LookAhead(Unit& u)
+    {
+        auto& d = u.drive;
+        const auto& v = setup.vehicles;
+        float s = float(double(d.speed) * 0.5);
+        if (s < 1.0f) s = 1.0f;
+        const float along = float(double(float(double(s) * v.collisionCheckDist)) * d.radius);
+        float sx = 0, sy = 0;
+        Polar(d.heading, along, sx, sy);
+        float px = u.x, py = u.y;
+        d.flags &= ~8u;
+        const int z = land.HeightAt(int(u.x), int(u.y));
+        for (int i = 0; i < 4; i++)
+        {
+            const Unit* o = ObjectAt(u, int(px), int(py), d.radius);
+            if (o && std::abs(land.HeightAt(int(o->x), int(o->y)) - z) > 64) o = nullptr;
+            if (o)
+            {
+                d.ax = float(double(o->x) - px);
+                d.ay = float(double(o->y) - py);
+                d.flags &= ~0x10u;
+                if (o->group == u.group && o->players == u.players && !(o->vehicle && !(o->drive.flags & 1))) d.flags |= 0x10;
+                d.flags |= 8;
+                if (i != 0) return false;
+                const int dist = (std::abs(int(d.ay)) - (std::min(std::abs(int(d.ax)), std::abs(int(d.ay))) >> 1)) + std::abs(int(d.ax));
+                const float fd = float(dist);
+                const float gap = float(double(fd) - o->drive.radius - u.drive.radius);
+                if (!(fd > 0.0f)) return false;
+                const float pushY = float(double(d.ay) / fd * gap);
+                const float pushX = float(double(d.ax) / fd * gap);
+                u.x = float(double(pushX) / 8.0 + u.x);
+                u.y = float(double(pushY) / 8.0 + u.y);
+                return false;
+            }
+            px = float(double(sx) + px);
+            py = float(double(sy) + py);
+        }
+        return false;
     }
 
     // 0x492DE0: the speed it may go is the type's +0x54 word x 0.02 (vt+0x12C, 0x492DB0), over the ground's cost there

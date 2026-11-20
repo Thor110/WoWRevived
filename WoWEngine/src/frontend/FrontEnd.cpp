@@ -1059,6 +1059,11 @@ namespace wow
         s.vehicles.separationAccMax = ini.GetFloat("Vehicles", "separationAccMax", 0.1f);
         s.vehicles.velMatchAccWeight = ini.GetFloat("Vehicles", "velMatchAccWeight", 0.08f);
         s.vehicles.velMatchAccMax = ini.GetFloat("Vehicles", "velMatchAccMax", 0.03f);
+        s.vehicles.avoidanceAccWeight = ini.GetFloat("Vehicles", "avoidanceAccWeight", 0.15f);
+        s.vehicles.avoidanceAccMax = ini.GetFloat("Vehicles", "avoidanceAccMax", 0.1f);
+        s.vehicles.brakingAccWeight = ini.GetFloat("Vehicles", "brakingAccWeight", 0.1f);
+        s.vehicles.brakingAccMax = ini.GetFloat("Vehicles", "brakingAccMax", 0.2f);
+        s.vehicles.collisionCheckDist = ini.GetFloat("Vehicles", "collisionCheckDist", 0.5f);
         s.zMapRes = ini.GetInt("System", "ZMapRes", 400);
         if (s.zMapRes < 1) s.zMapRes = 400;
         try

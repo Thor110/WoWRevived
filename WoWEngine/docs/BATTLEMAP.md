@@ -456,6 +456,20 @@ Backspace (packet 0x11) sends the members 0x8031: stopped.
   distance less both radii, +0xAC, at least 0.001) and is counted (+0x144); one of the same group (0x47EB00) that's a
   vehicle (+0xB8 bit 0) and going (vt+0x144) also adds its step (+0x88 / +0x8C) to +0x128 / +0x12C and its position
   to +0x130 / +0x134, counted in +0x138;
+- **lookahead** (0x492350), first: bit 3 cleared; four points looked at, the unit's position and then each a step on
+  along the heading (max(speed x 0.5, 1) x `collisionCheckDist` x the radius; dword_4D05C4 = 4 of them). At each,
+  with a ground group (+0x34) and not bit 7, the vertices a radius ahead, left and right are checked for ground it
+  can't cross (0x480680 giving 0, off a bridge link): +0x110 / +0x114 toward that vertex, bit 3 set and 4 cleared,
+  and at the first point a type of move class 5 or 6 returns true (then vt+0x158, 0x491EA0, steers away from it with
+  `attributeAccWeight` / `attributeAccMax`). Then the object there (0x47FE10: the cells of 0x449920 in turn until
+  one has one; in a cell (0x47FD40) the nearest, by the larger difference plus half the smaller, under its radius +
+  the unit's, passing vt+0xBC) within 64 in height: +0x110 the way to it, bit 4 set when it's of the same group and
+  not a vehicle going, bit 3 set, and the look ends. When that's at the unit's own position, an object that can't
+  be crushed (vt+0xD8) has the unit put (vt+0x40) (distance less both radii) / 8 along the way to it, so out of it
+  by an eighth each time; one that can is crushed 1 in 4 (rand() < 0x2000) with its type's effect (0x488070);
+- **avoidance** (0x491D90): with bit 3, away along +0x110 (its unit vector negated), `avoidanceAccWeight` /
+  `avoidanceAccMax`; **braking** (0x491C70): with bit 3, against the step (its unit vector negated), halved unless
+  bit 4, `brakingAccWeight` / `brakingAccMax`;
 - **separation** (0x4920A0): with any counted, the push x the count, `separationAccWeight` / `separationAccMax`;
   **velocity matching** (0x492160): with any matched, their average step, `velMatchAccWeight` / `velMatchAccMax`;
 - added in that order until their lengths come to maxAcc (the one that crosses it cut to what's left); the sum goes
@@ -473,10 +487,10 @@ than 0x400 away turning toward the opposite and driving backwards; the step the 
 (+ +0x13A). Once (bit 1): the group counts it (0x482450) and 0x808B(1) stops it 9 x (members not arrived) + 60
 updates on, so it runs on a little before slowing to a stop.
 
-*Provisional*: the target, separation and velocity matching are in; the collision lookahead (0x492350), so braking
-and avoidance, isn't, nor arrival and attraction (they need a route), so units still close up when they stop (in a
-test the five of a group travelled 36-54 apart and ended 9-33 apart). Only units are in the neighbour search (the
-game's grid holds every battle map object that places itself) and the cells are worked out from where they are
-each time rather than where they were put in; no route finder (every order goes
+*Provisional*: the lookahead (without its ground check and crushing, so it never returns true), separation, the
+target, avoidance, braking and velocity matching are in; arrival and attraction (they need a route) aren't (in a test
+the five of a group travelled 34-54 apart and stopped 20-39 apart, their radii 14). Only units are in the grid (the
+game's holds every battle map object that places itself), vt+0xBC lets all through, and the cells are worked out
+from where they are each time rather than where they were put in; no route finder (every order goes
 straight, through buildings); the snap, the stagger's distances, the ground's cost (taken as no slowing) and the
 bridges' links are approximations; no destination flag, speech or engine sounds yet.

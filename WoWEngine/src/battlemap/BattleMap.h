@@ -58,6 +58,11 @@ namespace wow
                 float separationAccMax = 0.1f;      // flt_59E324
                 float velMatchAccWeight = 0.08f;    // flt_59E24C
                 float velMatchAccMax = 0.03f;       // flt_59E204
+                float avoidanceAccWeight = 0.15f;   // flt_59E2AC
+                float avoidanceAccMax = 0.1f;       // flt_59E1EC
+                float brakingAccWeight = 0.1f;      // flt_59E39C
+                float brakingAccMax = 0.2f;         // flt_59E264
+                float collisionCheckDist = 0.5f;    // flt_59E1D4
             } vehicles;
             int zMapRes = 400;          // [System] "ZMapRes" (dword_4F7424): the bucket grid's cell size
         };
@@ -107,7 +112,8 @@ namespace wow
         // "Driving")
         struct Drive
         {
-            uint32_t flags = 0x801;     // +0x188 (0x490E70): bit 0 stopped, 1 arrived, 2 arriving, 13 set when it starts
+            uint32_t flags = 0x801;     // +0x188 (0x490E70): bit 0 stopped, 1 arrived, 2 arriving, 3 something ahead,
+                                        // 4 it's of the same group and not a vehicle going, 13 set when it starts
             int heading = 0;            // +0x100, 4096 a turn (0 when it's added to the world)
             float speed = 0;            // +0x104
             float vx = 0, vy = 0;       // +0x108 / +0x10C, the steering velocity
@@ -115,6 +121,7 @@ namespace wow
             int tx = 0, ty = 0;         // +0xF4 / +0xF8, the target
             int dist = 0;               // +0xFC, to the target
             float arrival = 0, grow = 0;// +0x118 / +0x11C
+            float ax = 0, ay = 0;       // +0x110 / +0x114, from the lookahead to what it found
             int phase = 0;              // +0x146 (rand() at first)
             int turnRate = 64;          // +0x140 by move class: 64, 8 for 5 / 6, 16 for 7
             int radius = 0;             // +0xAC, the type's +0x44 word
@@ -141,6 +148,9 @@ namespace wow
         // 0x492C00 / 0x492A90: what a unit's neighbours add up to (+0x120..+0x144)
         struct Neighbours { float sepX = 0, sepY = 0, stepX = 0, stepY = 0, posX = 0, posY = 0; int matched = 0, count = 0; };
         Neighbours Gather(const Unit& u) const;
+        std::vector<std::pair<int, int>> BucketCells(int px, int py) const;  // 0x449920 q 0 to 3
+        const Unit* ObjectAt(const Unit& u, int px, int py, int reach) const; // 0x47FE10
+        bool LookAhead(Unit& u);                                              // 0x492350
         void Post808B(Unit& u, int value, int delay);
         double Radius(int type);
         std::map<int, std::vector<uint8_t>> wofFiles;        // each WOF GType's file, loaded once
