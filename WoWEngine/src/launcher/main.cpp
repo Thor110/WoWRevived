@@ -16,6 +16,7 @@
 #include "core/GameFiles.h"
 #include "install/Installer.h"
 #include "launcher/Ui.h"
+#include "platform/Launch.h"
 #include "platform/Video.h"
 
 #include <SDL3/SDL.h>
@@ -396,9 +397,12 @@ int main(int argc, char** argv)
                 auto startGame = [&](bool human) {
                     SetSide(target, human);
                     std::string engine = EnginePath().string(), folder = target.string();
-                    const char* args[] = { engine.c_str(), folder.c_str(), nullptr };
-                    if (SDL_Process* p = SDL_CreateProcess(args, false)) { SDL_DestroyProcess(p); running = false; }
-                    else SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "WoWLauncher", SDL_GetError(), video.Window());
+                    if (LaunchDetached({ engine, folder })) running = false;
+                    else
+                    {
+                        std::string text = "WoWEngine couldn't be started:\n" + engine + "\n\n" + SDL_GetError();
+                        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "WoWLauncher", text.c_str(), video.Window());
+                    }
                 };
                 auto activate = [&](int index) {
                     if (launcher)

@@ -1,6 +1,7 @@
 // WoW Engine - an SDL3 rebuild of the engine from Jeff Wayne's 'The War Of The Worlds' (Rage Software, 1998).
 // Needs the original game files, which the installer copies from the two discs.
 #include "Version.h"
+#include "platform/Launch.h"
 #include "core/Bmp.h"
 #include "core/GameFiles.h"
 #include "core/Vfs.h"
@@ -167,8 +168,8 @@ int main(int argc, char** argv)
         SDL_ShowMessageBox(&box, &choice);
         if (choice == 1)
         {
-            const char* args[] = { installer.c_str(), nullptr };
-            if (SDL_Process* process = SDL_CreateProcess(args, false)) SDL_DestroyProcess(process);
+            if (!wow::LaunchDetached({ installer }))
+                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "WoW Engine " WOWENGINE_VERSION, SDL_GetError(), nullptr);
         }
         SDL_Quit();
         return 1;
