@@ -5,6 +5,7 @@
 #include "core/Random.h"
 #include <SDL3/SDL.h>
 #include <algorithm>
+#include <cmath>
 #include <stdexcept>
 
 namespace wow
@@ -116,6 +117,36 @@ namespace wow
             const int ix = int(x), iy = int(y);
             const int h = int(float(land.HeightAt(ix, iy)) + o.z);
             objects.push_back({ iy + IsoObject::Depth(model), ix, land.ProjectY(iy, h), &m->second });
+            // its parts (0x47EE10); so far the shadows (types 0x14B-0x14D, 0x48E2A0): as one starts (0x48E460) it
+            // lays its 32 x 32 mask (the GType's .raw) on the ground beside the object, away from the sun: 2 x the
+            // half width plus 10 x |cos| x its scale wide, the depth / sqrt 2 either side of y, mirrored when the
+            // sun's cos is 0 or less (0x47C900, the moving light the ground view takes off)
+            for (const auto& part : u->second.parts)
+            {
+                if (part.a < 0x14B || part.a > 0x14D) continue;
+                auto pu = setup.units->find(part.a);
+                if (pu == setup.units->end()) continue;
+                const GType* pg = res.FindGType(pu->second.field28);
+                if (!pg) continue;
+                auto mask = masks.find(pg->file);
+                if (mask == masks.end())
+                {
+                    auto data = res.LoadFile(pg->file);
+                    mask = masks.emplace(pg->file, data && data->size() >= 1024 ? *data : std::vector<uint8_t>{}).first;
+                }
+                if (mask->second.empty()) continue;
+                const float px = x + float(int16_t(part.b)), py = y + float(int16_t(part.c));
+                const float scale = part.f * pu->second.scale; // the part's, then its type's (0x47EE10)
+                const int hw = (IsoObject::HalfWidth(model) - -IsoObject::HalfWidth(model)) / 2;
+                const int across = int(double(2 * hw) - double(std::fabs(sun.across)) * double(scale) * -10.0);
+                const int dy = (IsoObject::Depth(model) * 362) >> 9;
+                const int y0 = int(py - float(dy)), y1 = int(py + float(dy));
+                int x0, x1;
+                const bool flip = !(sun.across > 0.0f);
+                if (!flip) { x1 = int(px + float(hw)); x0 = x1 - across; }
+                else { x0 = int(px - float(hw)); x1 = x0 + across; }
+                land.ProjectLight(mask->second.data(), x0 - 8, y0 - 8, x1, y1, flip, sun);
+            }
         }
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
     }

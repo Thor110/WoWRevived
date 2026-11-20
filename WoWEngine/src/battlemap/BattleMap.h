@@ -71,6 +71,7 @@ namespace wow
         struct ViewObject { int key; int x, y; const IsoModel* model; };
         std::vector<ViewObject> objects;    // sorted by key
         std::map<int, ShadeTable> slotTables;
+        std::map<std::string, std::vector<uint8_t>> masks;   // the shadows' .raw masks
         void LoadScenery(const Landscape::Sun& sun, char letter);
         int scrollX = 0, scrollY = 0;
         int mouseX = -1, mouseY = -1;

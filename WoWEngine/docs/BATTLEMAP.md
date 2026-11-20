@@ -171,8 +171,16 @@ on their own may differ from the game's.
 
 Each object's GType (the unit table's +0x28) has a class that picks its renderer (0x47EB10): 0 a sprite, **1
 RTypeISO** (an IOB model), 2 a WOF model, 6 an atlas sprite, 14 a sprite at scale 1. The scenery's trees and
-buildings are IOB models; the engine draws those. *Not yet*: the sprites (street lamps, the buildings' shadows,
-part 331 `b-shad01.raw`), the WOF bridges of the walls, the ambient sound scenery (940, 994-996), and child parts.
+buildings are IOB models; the engine draws those. *Not yet*: the sprites (street lamps), the WOF bridges of the
+walls, the ambient sound scenery (940, 994-996), and the other child parts.
+
+**Shadows** (the buildings' part 331, types 0x14B-0x14D, 0x48E2A0, a class 14 GType whose `.raw` is a 32 x 32 mask
+of 0-63): when one starts (0x48E460) it reads its parent's renderer and lays the mask on the ground's moving light
+(0x47C900), which the ground view takes off the lit level, so it darkens. The rectangle: y from the object's y less
+its depth x 362 / 512 to y plus it; across, 2 x the half width + 10 x |cos of the sun| x the part's scale (the part
+record's, times its type's), from x + half width leftwards when the cos is over 0, else from x - half width
+rightwards and the mask mirrored; the corner it starts from moved 8 up and left. Each mask texel m gives
+(255 - 4m) x the point light level / 255 (at most about 11 levels at noon).
 
 **Placing an object** (0x47F960 / 0x47F480): its position is kept a collision radius inside the map (for RTypeISO
 max(2 x half width, depth) x `[Tweak] "ISO obj col rad mul"` 0.66); +0x80 is the ground's height there (0x47B170)
