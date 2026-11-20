@@ -148,7 +148,8 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       maps with `wowdump --landscape`. The LANDR digit is `Landscape::ShadeClass` (the enemy count from the battle
       before). Still to do: the rest of the bm shade group's slots in `ShadeGroups.h` (0x40C08D) and hooking it
       to the battle map screen — 01, 10
-- [~] **Renderers**: the terrain view is done (`core/TerrainView`: the CLS patches, the 16-bit terrain spans
+- [~] **Renderers**: WOF models (`core/WofView`: WOFLib's posing, piece order and face light exactly, the triangle
+      filler provisional; `wowdump --wof`). The terrain view is done (`core/TerrainView`: the CLS patches, the 16-bit terrain spans
       0x4579A4 / 0x45702D, the ISOLib dither 0x410F80, the per-frame vertex levels 0x49FDA0; docs/BATTLEMAP.md).
       Still to do: the blitter modes, WOFLib, RTypeISO, objects between the terrain rows (0x44F890-0x457F14,
       0x49DA50) — 08, 13

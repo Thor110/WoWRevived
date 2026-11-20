@@ -23,6 +23,7 @@
 #include "core/Landscape.h"
 #include "core/TerrainView.h"
 #include "core/Scenery.h"
+#include "core/WofView.h"
 #include "core/Random.h"
 #include "core/ObjOjd.h"
 #include "core/Research.h"
@@ -486,6 +487,46 @@ int main(int argc, char** argv)
                                     cgt != gtypes.end() ? int(cgt->second.gclass) : -1, cgt != gtypes.end() ? cgt->second.file.c_str() : "");
                     }
             }
+            return 0;
+        }
+        if (first == "--wof" && (argc == 8 || argc == 9))
+        {
+            // --wof <OBJ.ojd> <gtype> <dat folder> <map.CLS> <map.ATM> <out.bmp> [heading]: the model at the map's
+            // middle at noon, through the noon table of its slot
+            auto obj = ReadFile(argv[2]);
+            int gtype = int(std::strtol(argv[3], nullptr, 0));
+            fs::path dat = argv[4];
+            auto gtypes = wow::ObjOjd::LoadGTypes(obj, true);
+            auto tables = wow::ObjOjd::LoadBattleTables(obj);
+            auto g = gtypes.find(gtype);
+            if (g == gtypes.end() || g->second.gclass != 2) throw std::runtime_error("not a WOF GType");
+            auto six = tables.six.find(gtype);
+            float scale = six != tables.six.end() ? six->second.a : 65536.0f;
+            int follow = six != tables.six.end() ? six->second.c : 0;
+            std::string file = g->second.file;
+            if (auto slash = file.rfind('\\'); slash != std::string::npos) file = file.substr(slash + 1);
+            for (char& c : file) c = char(std::toupper(static_cast<unsigned char>(c)));
+            wow::WofInstance model(ReadFile(dat / file), scale, follow);
+            wow::Terrain t = wow::Terrain::Load(ReadFile(argv[5]), ReadFile(argv[6]));
+            wow::Landscape land = wow::Landscape::Create(t);
+            static const char* const SlotFiles[] = { "", "BMHBM", "BMHVM", "BMMVM", "BMMBM", "", "", "", "", "", "BMR0NAM" };
+            int slot = g->second.paletteSlot;
+            std::string shade = slot >= 1 && slot <= 10 && SlotFiles[slot][0] ? SlotFiles[slot] : "BMHVM";
+            auto table = wow::ShadeTable::LoadShh(ReadFile(dat / (shade + ".SHH")));
+            auto day = tables.dayTimes.find(12);
+            const float noon[4] = { 0.9f, 0.1f, 0.75f, 0.0f };
+            auto sun = wow::Landscape::SunFor(90, day != tables.dayTimes.end() ? day->second.sets[0].f : noon);
+            int heading = argc == 9 ? std::atoi(argv[8]) : 512;
+            int x = land.WorldWidth() / 2, y = land.Height() * (land.Cell() >> 16) / 2;
+            model.Transform(land, heading, x, y, land.HeightAt(x, y), true);
+            const int W = 320, H = 240;
+            std::vector<uint32_t> px(size_t(W) * H, 0x404040);
+            wow::TerrainView::Target target{ px.data(), W, 0, 0, W, H };
+            int ox = W / 2 - x, oy = H / 2 - land.ProjectY(y, land.HeightAt(x, y));
+            model.Draw(sun, table, target, ox, oy);
+            wow::WriteBmp(argv[7], px.data(), W, H);
+            std::printf("%s: scale %g, ground follow %d, slot %d (%s), bounds x %d..%d\n", file.c_str(), double(scale), follow, slot,
+                        shade.c_str(), model.MinX(), model.MaxX());
             return 0;
         }
         if (first == "--iob" && argc == 6)

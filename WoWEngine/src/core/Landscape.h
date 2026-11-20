@@ -49,6 +49,7 @@ namespace wow
             float sin16 = 0;        // sin x 65536 (flt_4DAEC0)
             float pointLight = 0;   // 64 x the third float x (0.2 + 0.5 sin) (flt_4DA76C), SetPointLight's level
             float shade = 0;        // flt_4DA764: the shade table's level / 256 (0x40B570)
+            float third = 0;        // the set's third float (dword_4DA774), which the WOF faces' light is times
         };
         static Sun SunFor(int angleDegrees, const float set[4]);
         // 0x40CA90: the light a surface gets from the sun, for a normal (across, any, up): sqrt of the sun's part

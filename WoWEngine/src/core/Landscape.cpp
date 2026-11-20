@@ -57,6 +57,7 @@ namespace wow
         double sn = std::sin(a), cs = std::cos(a);
         s.strength = set[0];
         s.ambient = set[1];
+        s.third = set[2];
         s.cos16 = float(cs * 65536.0);
         s.sin16 = float(sn * 65536.0);
         s.across = float(double(s.cos16) * 0.000015258789);   // flt_4A98DC is a float, 1/65536 to its precision

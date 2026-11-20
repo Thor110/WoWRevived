@@ -41,6 +41,7 @@ add_library(wowcore STATIC
     src/core/TerrainView.cpp
     src/core/Scenery.cpp
     src/core/IsoObject.cpp
+    src/core/WofView.cpp
     src/core/AiTable.cpp
 )
 target_include_directories(wowcore PUBLIC src ${CMAKE_CURRENT_BINARY_DIR}/generated)

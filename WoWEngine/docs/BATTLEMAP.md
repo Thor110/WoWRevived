@@ -199,3 +199,40 @@ add to the lights (0x4111B0); *not yet*.
 **With the ground** (0x49F610): the view's objects are kept in depth order; after each row of ground every object
 whose depth + its +0x26 is under the next row's world y is drawn, and the rest after the last row.
 
+## 3D models (WOF; RTypeWOF 0x49DA50, WOFLib 0x49E330-0x49F230; `core/WofView`)
+
+`wowdump --wof <OBJ.ojd> <gtype> <dat folder> <map.CLS> <map.ATM> <out.bmp> [heading]` poses a model at a map's
+middle at noon and draws it.
+
+**Set-up** (0x49DCA0 / 0x49E330): the scales start at 1 and are multiplied by the GType's OBJ.ojd record 6 float
+(an ironclad's is 750, so a point is (p x 750) >> 16); the record's first word (+0x60) says whether the model tilts
+to the ground. From the file: piece count (header 0), the root piece (0x10), the vertex section (0x0C), the
+material table (0x24, a u32 each: the texture offset, its top bit marking a masked material), the texture (0x28)
+and the smooth-shading groups (0x2C, a u32 offset for each piece). A piece record (0x61 bytes from 0x30): flags
+(+0x10: low two bits the damage variant, 8 drawn first, 0x10 last, 0x20 smooth), vertex and face counts, its pivot
+(+0x13), vertex offset (+0x19), face offset (+0x1D), up to 16 children (+0x21). A piece whose variant is neither 0
+nor the current one (+0x5E, 1 at first) is hidden.
+
+**Posing** (0x49E690), with 4.12 fixed-point 3 x 3 matrices (column major, 0x4A2FA0 applies one, 0x4A2C50 joins
+two, 0x4A2E00 builds one from three angles of 4096 a turn): the camera's turn from angles (-110, 0x400 - heading,
+0x800); the root's pivot (x, -y, z) through it is the translation; then 0x4A3020's turn is put after it: from the
+model's axes (y up) to the world's (z up), swapping y and z, or for a ground-following GType a frame built from the
+ground's normal there (0x47B240). The root's pivot's y and z, scaled, are taken off the anchor's y and z. Each
+piece (0x49E900) takes every point through the matrix plus the translation, scales it ((v x scale) >> 16) and adds
+the anchor: its world point; its screen point is (x, the iso projection of y with z as height, y as depth); the
+nearest depth is the piece's. Each child adds its pivot (as it is, not negated) through the matrix to the
+translation, and the walk goes on down.
+
+**Drawing** (0x49EC00): the pieces in depth order (qsort), flag 8 first, 0x10 last. For each piece (0x49EEF0) each
+face's light (0x49ED90) comes from the normal of its three world points (cross product), lit as the ground
+(0x40CA90) times the brightness (1), the day set's third float and 256, at most 255 (point lights would add here,
+times `[Game] "WOF Brightness"`); a smooth piece averages its faces into each group's points, the others give
+each face's light to its first point (the table, byte_59F768, is shared and kept between pieces, as in the game).
+A face is drawn when its screen winding is negative, with its material (255 none), its corners in the order
+first, third, second, and flat when its three lights agree or the piece isn't smooth.
+
+*Provisional*: the triangle filler. The game's (0x456DD0, 48 span routines: textured with gouraud through
+`shade[level x 256 + texel]`, the level the light's top six bits) isn't traced; the engine fills an affine
+textured triangle shaded the same way, refusing ones taller than 250 rows as the game does. The rotation is
+computed in doubles; the game keeps a few of its values as floats.
+
