@@ -23,6 +23,7 @@
 #include <SDL3/SDL_log.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 
 namespace wow
@@ -37,6 +38,9 @@ namespace wow
             ~Mp4Movie() override
             {
                 SDL_Log("Movie: %d frames read, %d with no picture", framesRead, framesFailed);
+                if (rate > 0)
+                    SDL_Log("Movie: %llu sound frames read (%.2f s at %d Hz); the last piece started at %.2f s; peak %d",
+                        static_cast<unsigned long long>(soundFrames), double(soundFrames) / rate, rate, lastSoundTime, soundPeak);
                 Release(pending);
                 Release(reader);
                 Release(audioReader);
@@ -334,6 +338,33 @@ namespace wow
                             audio.resize(at2 + count);
                             std::memcpy(audio.data() + at2, data, count * sizeof(int16_t));
                             pcm->Unlock();
+                            // what the piece really holds: its sample frames over the length it says it lasts
+                            LONGLONG duration = 0;
+                            sound->GetSampleDuration(&duration);
+                            size_t frames = count / size_t(channels);
+                            double measured = duration > 0 ? double(frames) / (double(duration) / 1e7) : 0.0;
+                            int peak = 0;
+                            for (size_t i = at2; i < audio.size(); i++) peak = (std::max)(peak, std::abs(int(audio[i])));
+                            soundPeak = (std::max)(soundPeak, peak);
+                            if (piecesLogged < 4)
+                            {
+                                piecesLogged++;
+                                SDL_Log("Movie: sound piece at %.3f s: %lu bytes, %lu frames, lasting %.4f s (%.0f Hz), peak %d, first %d %d %d %d",
+                                    double(at) / 1e7, static_cast<unsigned long>(length), static_cast<unsigned long>(frames), double(duration) / 1e7, measured, peak,
+                                    count > 0 ? audio[at2] : 0, count > 1 ? audio[at2 + 1] : 0, count > 2 ? audio[at2 + 2] : 0, count > 3 ? audio[at2 + 3] : 0);
+                            }
+                            // the decoder's word on the rate is checked against the first piece: a decoder that says
+                            // 22050 but gives 44100 (or the other way round) would play at the wrong speed
+                            if (firstAudio && measured > 0 && std::abs(measured - rate) > rate * 0.1)
+                            {
+                                static constexpr int Rates[] = { 8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000 };
+                                int best = rate;
+                                for (int r : Rates) if (std::abs(r - measured) < std::abs(best - measured)) best = r;
+                                SDL_Log("Movie: the sound says %d Hz but holds %.0f Hz; playing it at %d Hz", rate, measured, best);
+                                rate = best;
+                            }
+                            soundFrames += frames;
+                            lastSoundTime = double(at) / 1e7;
                         }
                         Release(pcm);
                     }
@@ -359,6 +390,9 @@ namespace wow
             std::vector<int16_t> pendingAudio;       // the first sound, likewise
             std::vector<uint32_t> frame;
             int framesRead = 0, framesFailed = 0;
+            uint64_t soundFrames = 0;
+            double lastSoundTime = 0;
+            int soundPeak = 0, piecesLogged = 0;
         };
     }
 

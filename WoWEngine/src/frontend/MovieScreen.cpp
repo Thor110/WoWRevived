@@ -86,8 +86,9 @@ namespace wow
             slowestDecode = std::max(slowestDecode, double(SDL_GetTicksNS() - start) / 1e9);
             if (!more) { ended = true; break; }
             decoded++;
-            // a frame already behind the clock is only worth keeping as the latest
-            if (!queue.empty() && queue.back().time <= clock) queue.pop_back();
+            // a due frame is only dropped for a newer one that's due as well (it would never be seen); one that
+            // isn't due yet waits behind it
+            if (!queue.empty() && queue.back().time <= clock && movie->Time() <= clock) queue.pop_back();
             queue.push_back({ movie->Time(), movie->Frame() });
         }
         while (!queue.empty() && queue.front().time <= clock)
