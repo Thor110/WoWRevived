@@ -114,14 +114,12 @@ namespace wow
         }
     }
 
-    std::string Canvas::Wrap(int fontGType, std::string_view text, int width) const
+    std::string WrapText(const Font& font, std::string_view text, int width)
     {
-        const Font* font = res.GetFont(fontGType);
-        if (!font) return std::string(text);
         std::string out, line;
         auto flushWord = [&](std::string_view word) {
             std::string candidate = line.empty() ? std::string(word) : line + " " + std::string(word);
-            if (!line.empty() && font->Measure(candidate) > width) { out += line + "\n"; line = std::string(word); }
+            if (!line.empty() && font.Measure(candidate) > width) { out += line + "\n"; line = std::string(word); }
             else line = candidate;
         };
         size_t start = 0;
@@ -134,5 +132,12 @@ namespace wow
             start = end + 1;
         }
         return out + line;
+    }
+
+    std::string Canvas::Wrap(int fontGType, std::string_view text, int width) const
+    {
+        const Font* font = res.GetFont(fontGType);
+        if (!font) return std::string(text);
+        return WrapText(*font, text, width);
     }
 }

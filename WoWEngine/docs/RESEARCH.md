@@ -140,19 +140,31 @@ sound, 0x414700; *provisional*: at once, where the game starts it 30 ticks on an
 when the page goes). An item in the detail (0x84): if it isn't the one picked already, sound 0x132 and it becomes
 the current research (0x458A00).
 
-**The detail** (0x45D3F0 Human, 0x45DD50 Martian): the blueprint window (0x45F4B0) at (0x118, 0x16) with res_det
-(0x8C, Human) and the page's picture (OBJ.ojd records 63 / 64: the page table 0x5888C0, a name, a picture GType and
-a speech text for each page) over it, then its children, placed inside it: the page's name ("(name)" with the
-current research) font 0x72 in "Research Heading" (17), at y 0x12 and centred in (picture width - 0x4A) from 0x36;
-the speech text wrapped to (picture width - 0x4A) in "Research Detail" (26), 0x18 below the title's height; then
-"Specifications:" (0x462) with what's done there (record 42's text, "Research Specification"), "Enhancements:"
-(0x463, "Research Enhancement") and "Proposals For research:" (0x464) with each available item's name and time
-("Research Proposal"), which can be clicked. *Provisional*: the three lists' places, widths and the proposals
-list widget (0x45F140) aren't traced yet, nor the Martian layout (the Human one is used with 4 and 8 for 0x36 and
-0x4A). A click on the blueprint elsewhere plays the speech again (0x45F710).
+**The detail** (0x45D3F0 Human, 0x45DD50 Martian). The blueprint window (0x45F4B0) at (0x118, 0x16) Human or
+(0x143, 0x2F) Martian, the size of the page's picture (OBJ.ojd records 63 / 64: the page table 0x5888C0 gives each
+page a name, a picture GType and a speech text): res_det (0x8C, Human) and the picture, then its texts, font 0x72,
+each a window of its own placed inside it (w is the picture's width):
+
+| | Human | Martian |
+|---|---|---|
+| Texts placed | centred in w - 0x4A from 0x36 | centred in the picture (flag 0x10) |
+| Title ("(name)" with the current research), "Research Heading" | y 0x12 | y 6 |
+| The scientist's text, wrapped, "Research Detail" | to w - 0x4A, at the title's height + 0x18 | to w - 8, at the title's height + 9 |
+| After it | its height + 0x12 | its height + 6 |
+| "Specifications:" (0x462), if a unit or building there is done (state 2) | then its height + 6 | + 3 |
+| each, its record 42 text wrapped, "Research Specification" | its height | its height |
+| after the section | 0x12 | 6 |
+| "Enhancements:" (0x463) for done enhancements, "Research Enhancement" | the same | the same |
+
+With anything available there, the proposals list (0x45F140): res_prop / mr_prop (0x90) at (0x12A, 0x114) Human or
+(0x144, 0x123) Martian, "Proposals For research:" (0x464, "Research Heading") centred at y 0xA, then from 0x10
+(Martian 0xD) below that each available item (0x45EEA0) as its name and time (0x45B6D0) centred, one under another,
+coloured "Research Current" for the one being researched, "Research New" for one not yet looked at, else "Research
+Proposal" (0x45F070). A click on one researches it (0x84); a click elsewhere on the blueprint plays the speech
+again (0x45F710). The overlays are drawn over all of it (0x45E930).
 
 Not yet: the keyboard (the hotspots' Up / Down / Enter, 0x45ECB0), the tool tips' "Makes Available:" lists
-(0x8114), the speech's delay and fade.
+(0x8114), the speech's delay and fade, the list's own scrolling and colour cycling (0x45F320 / 0x45F3D0).
 
 ## Still to do
 

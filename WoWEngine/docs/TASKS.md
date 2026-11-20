@@ -113,9 +113,9 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       matches Human.000 / Martian.000); `[Research] Open Rate` comes with the screen (0x457F20-0x45BCB0) — 08, 09
 - [~] **Research screen** (`frontend/ResearchScreen`, RESEARCH.md "The screen"): the backdrop and overlays, the
       folders and pages laid out, coloured and animated as the game does them, opened by R and the Research button,
-      pages turned, research chosen, the exit button; to do: the detail panel's lists traced (0x45D3F0 past the
-      title and text, the proposals list 0x45F140, the Martian layout 0x45DD50), the keyboard, "Makes Available:"
-      tool tips, the speech's delay and fade (0x45E670, 0x45D3F0) — 09
+      pages turned, research chosen, the exit button, the detail panel and proposals list of both sides (0x45D3F0,
+      0x45DD50, 0x45F140); to do: the keyboard, "Makes Available:" tool tips, the speech's delay and fade, the
+      list's scrolling (0x45E670, 0x45F320) — 09
 - [x] **Durations text**: day / days / hr / hrs (0x41BDA0, `Research::Duration`) and the Human / Martian date
       formats (0x41B440, the Briefing) — 03
 - [ ] **What can be built**: the command building rules (0x45F970) — 09

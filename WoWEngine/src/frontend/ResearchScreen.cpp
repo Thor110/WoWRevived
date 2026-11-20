@@ -13,7 +13,6 @@ namespace wow
         constexpr int ExitSprite = 0x7C;
         constexpr int TextFont = 0x72;
         constexpr int PlanCommand = 0xBE, PageCommand = 0xBF;
-        constexpr int BlueprintX = 0x118, BlueprintY = 0x16; // the blueprint window (0x45F4B0); the detail's texts are its children
     }
 
     ResearchScreen::ResearchScreen(Resources& res, Research& research, std::map<int, ObjOjd::ResearchPageInfo> pageInfo,
@@ -84,59 +83,93 @@ namespace wow
         }
     }
 
-    // The page's detail (0x45D3F0; *provisional* past the title and the scientist's text: the three lists'
-    // places aren't traced yet, nor the Martian layout 0x45DD50). The blueprint (0x45F4B0) at (0x118, 0x16): res_det
-    // (0x8C, Human games) and the page's picture over it; the texts are its children, placed inside it. The title, "(name)" for the page being researched,
-    // font 0x72 in "Research Heading", at y 0x12, centred in the space left of the picture ((w - title - 0x4A) / 2 +
-    // 0x36, the picture's width w); the scientist's text (the page's speech text) wrapped to w - 0x4A in "Research
-    // Detail", 0x18 below the title's height. Then "Specifications:" (0x462) with what's done there (record 42's
-    // text, "Research Specification"), "Enhancements:" (0x463, "Research Enhancement") and "Proposals For research:"
-    // (0x464) with what can be researched ("Research Proposal"), each clickable (0x84).
+    // The page's detail (0x45D3F0 Human, 0x45DD50 Martian). The blueprint window (0x45F4B0) at (0x118, 0x16) Human or
+    // (0x143, 0x2F) Martian, as big as the page's picture: res_det (0x8C, Human) and the picture, then its texts
+    // (font 0x72), each a window of its own inside it, w being the picture's width:
+    //   Human: each text centred in w - 0x4A from 0x36 ((w - its width - 0x4A) / 2 + 0x36); the title at y 0x12; the
+    //          scientist's text wrapped to w - 0x4A at y = the title's height + 0x18; then y = that text's y and height
+    //          + 0x12; "Specifications:" (0x462) if anything on the page of kind 0 or 1 is done (state 2), y on by its
+    //          height + 6, then each such item's record 42 text, wrapped, y on by its height, and 0x12 after the
+    //          section; "Enhancements:" (0x463) the same for done enhancements
+    //   Martian: each text centred in the picture (flag 0x10); the title at y 6; the scientist's text wrapped to
+    //          w - 8 at y = the title's height + 9; then gaps of 6 after it, 3 after a heading and 6 after a section
+    // Colours: the title "Research Heading", the scientist "Research Detail", the headings "Research Heading", the
+    // items "Research Specification" / "Research Enhancement". With anything available, the proposals list
+    // (0x45F140): res_prop / mr_prop (0x90) at (0x12A, 0x114) Human or (0x144, 0x123) Martian, its "Proposals For
+    // research:" (0x464) centred at y 0xA, then from 0x10 (Martian 0xD) below that each available item (0x45EEA0:
+    // its name and time, 0x45B6D0) centred, one under another; coloured "Research Current" for the research being
+    // done, "Research New" for one not looked at, else "Research Proposal"; a click on one researches it (0x84).
     void ResearchScreen::BuildDetail()
     {
         detail.clear();
+        proposals = {};
         const int g = research.ShownPage();
         if (g < 0 || size_t(g) >= research.Pages().size()) return;
+        const Font* font = res.GetFont(TextFont);
+        if (!font) return;
+        const bool human = res.Human();
         const Research::Page& page = research.Pages()[size_t(g)];
         auto info = pageInfo.find(page.number);
         const int picture = info != pageInfo.end() ? info->second.picture : 0;
-        const int w = picture ? SpriteWidth(picture) : 0x118;
-        const Font* font = res.GetFont(TextFont);
-        const int lineH = (font ? font->Height() : 10) + 2;
-        auto width = [&](const std::string& t) { return font ? font->Measure(t) : 0; };
+        const int w = picture ? SpriteWidth(picture) : 0;
+        blueprint = { human ? 0x118 : 0x143, human ? 0x16 : 0x2F, w, picture ? SpriteHeight(picture) : 0 };
+        // a text window: its lines, size and place (centred as the side does it)
+        auto add = [&](const std::string& text, int wrap, int y, int level, int item, Rect area) {
+            Line l;
+            l.text = wrap > 0 ? WrapText(*font, text, wrap) : text;
+            int lines = 1, widest = 0;
+            size_t at = 0;
+            for (;;)
+            {
+                size_t nl = l.text.find('\n', at);
+                widest = std::max(widest, font->Measure(std::string_view(l.text).substr(at, nl == std::string::npos ? std::string::npos : nl - at)));
+                if (nl == std::string::npos) break;
+                lines++;
+                at = nl + 1;
+            }
+            l.w = widest;
+            l.h = lines * font->Height() + (lines - 1) * 2; // RTypeText's height (0x40FBF0)
+            l.x = area.x + (human && area.w == blueprint.w ? (area.w - widest - 0x4A) / 2 + 0x36 : (area.w - widest) / 2);
+            l.y = area.y + y;
+            l.level = level;
+            l.item = item;
+            detail.push_back(l);
+            return l.h;
+        };
         std::string name = info != pageInfo.end() ? res.String(info->second.name) : std::string();
         if (research.CurrentPage() == g) name = "(" + name + ")";
-        const bool human = res.Human();
-        const int left = human ? 0x36 : 4;
-        const int span = human ? 0x4A : 8;
-        detail.push_back({ name, (w - width(name) - span) / 2 + left, 0x12, 0, colours.heading, TextFont, false, -1 });
-        int y = lineH + 0x18;
+        const int wrap = human ? w - 0x4A : w - 8;
+        int y = human ? 0x12 : 6;
+        const int titleH = add(name, 0, y, colours.heading, -1, blueprint);
+        y = titleH + (human ? 0x18 : 9);
         if (info != pageInfo.end() && info->second.speech)
-        {
-            detail.push_back({ res.String(info->second.speech), left, y, w - span, colours.detail, TextFont, true, -1 });
-            y += lineH * 4 + 0x12; // *provisional*: the wrapped text's own height
-        }
+            y += add(res.String(info->second.speech), wrap, y, colours.detail, -1, blueprint) + (human ? 0x12 : 6);
         const auto& items = research.Items();
-        auto section = [&](int heading, auto pick, auto text, int level, bool clickable) {
-            std::vector<int> list;
-            for (int i : page.items) if (pick(items[size_t(i)])) list.push_back(i);
-            if (list.empty()) return;
-            detail.push_back({ res.String(heading), left, y, 0, colours.heading, TextFont, false, -1 });
-            y += lineH;
-            for (int i : list)
-            {
-                detail.push_back({ text(items[size_t(i)]), left, y, w - span, level, TextFont, false, clickable ? i : -1 });
-                y += lineH;
-            }
-            y += 0x12;
+        auto section = [&](int heading, auto pick, int level) {
+            bool any = false;
+            for (int i : page.items) if (pick(items[size_t(i)])) any = true;
+            if (!any) return;
+            y += add(res.String(heading), 0, y, colours.heading, -1, blueprint) + (human ? 6 : 3);
+            for (int i : page.items)
+                if (pick(items[size_t(i)])) y += add(res.String(items[size_t(i)].researchedText), wrap, y, level, -1, blueprint);
+            y += human ? 0x12 : 6;
         };
-        const bool playingHuman = human;
-        section(0x462, [](const Research::Item& it) { return (it.state == Research::Done || it.state == Research::Obsolete) && it.kind != Research::EnhancementItem; },
-                [&](const Research::Item& it) { return res.String(it.researchedText); }, colours.specification, false);
-        section(0x463, [](const Research::Item& it) { return (it.state == Research::Done || it.state == Research::Obsolete) && it.kind == Research::EnhancementItem; },
-                [&](const Research::Item& it) { return res.String(it.researchedText); }, colours.enhancement, false);
-        section(0x464, [](const Research::Item& it) { return it.state == Research::Available; },
-                [&](const Research::Item& it) { return research.NameWithTime(it, playingHuman); }, colours.proposal, true);
+        section(0x462, [](const Research::Item& it) { return it.state == Research::Done && (it.kind == Research::UnitItem || it.kind == Research::BuildingItem); }, colours.specification);
+        section(0x463, [](const Research::Item& it) { return it.state == Research::Done && it.kind == Research::EnhancementItem; }, colours.enhancement);
+        bool available = false;
+        for (int i : page.items) if (items[size_t(i)].state == Research::Available) available = true;
+        if (!available) return;
+        proposals = { human ? 0x12A : 0x144, human ? 0x114 : 0x123, SpriteWidth(0x90), SpriteHeight(0x90) };
+        int py = 0xA;
+        add(res.String(0x464), 0, py, colours.heading, -1, proposals);
+        py += human ? 0x10 : 0xD;
+        for (int i : page.items)
+        {
+            const Research::Item& it = items[size_t(i)];
+            if (it.state != Research::Available) continue;
+            const int level = research.CurrentNumber() == i ? colours.current : (it.fresh == 0 || it.fresh == 1) ? colours.fresh : colours.proposal;
+            py += add(research.NameWithTime(it, human), 0, py, level, i, proposals);
+        }
     }
 
     void ResearchScreen::Update()
@@ -213,14 +246,11 @@ namespace wow
         if (g >= 0 && size_t(g) < pages.size())
         {
             auto info = pageInfo.find(pages[size_t(g)].number);
-            // 0x45F690: res_det, the picture, then its children (the texts, placed inside it)
-            if (human) canvas.DrawSprite(0x8C, 0, BlueprintX, BlueprintY);
-            if (info != pageInfo.end() && info->second.picture) canvas.DrawSprite(info->second.picture, 0, BlueprintX, BlueprintY);
-            for (const Line& l : detail)
-            {
-                std::string text = l.wrap && l.w > 0 ? canvas.Wrap(l.font, l.text, l.w) : l.text;
-                canvas.DrawString(l.font, text, { BlueprintX + l.x, BlueprintY + l.y, 0, 0 }, 0, l.level);
-            }
+            // 0x45F690: res_det, the picture, then its children (the texts); the proposals list's sprite
+            if (human) canvas.DrawSprite(0x8C, 0, blueprint.x, blueprint.y);
+            if (info != pageInfo.end() && info->second.picture) canvas.DrawSprite(info->second.picture, 0, blueprint.x, blueprint.y);
+            if (proposals.w) canvas.DrawSprite(0x90, 0, proposals.x, proposals.y);
+            for (const Line& l : detail) canvas.DrawString(TextFont, l.text, { l.x, l.y, 0, 0 }, 0, l.level);
         }
         // the Human overlays over the tree, then the exit button
         if (human)
@@ -250,27 +280,21 @@ namespace wow
         }
         exitHeld = false;
         if (!down) return std::nullopt;
-        // the blueprint window is over the tabs: a click on it is its own (a proposal, 0x84; anywhere else 0x808F,
-        // the speech again, 0x45F710)
-        const int g = research.ShownPage();
-        if (g >= 0 && size_t(g) < research.Pages().size())
+        // the proposals list and the blueprint window are over the tabs: a proposal clicked is researched (0x84,
+        // sound 0x132); the blueprint clicked plays the speech again (0x808F, 0x45F710)
+        if (research.ShownPage() >= 0)
         {
-            auto info = pageInfo.find(research.Pages()[size_t(g)].number);
-            const int picture = info != pageInfo.end() ? info->second.picture : 0;
-            const int bw = std::max(SpriteWidth(0x8C), picture ? SpriteWidth(picture) : 0);
-            const int bh = std::max(SpriteHeight(0x8C), picture ? SpriteHeight(picture) : 0);
-            if (Rect{ BlueprintX, BlueprintY, res.Human() ? bw : (picture ? SpriteWidth(picture) : 0), res.Human() ? bh : (picture ? SpriteHeight(picture) : 0) }.Contains(x, y))
+            for (const Line& l : detail)
+                if (l.item >= 0 && Rect{ l.x, l.y, l.w, l.h }.Contains(x, y))
+                {
+                    if (research.Choose(l.item)) sounds.push_back(0x132);
+                    BuildDetail();
+                    return std::nullopt;
+                }
+            if (proposals.Contains(x, y)) return std::nullopt;
+            if (blueprint.Contains(x, y))
             {
-                // a proposal clicked (0x84): it's researched (speech 0x132)
-                const Font* font = res.GetFont(TextFont);
-                const int lineH = (font ? font->Height() : 10) + 2;
-                for (const Line& l : detail)
-                    if (l.item >= 0 && Rect{ BlueprintX + l.x, BlueprintY + l.y, l.w, lineH }.Contains(x, y))
-                    {
-                        if (research.Choose(l.item)) sounds.push_back(0x132);
-                        BuildDetail();
-                        return std::nullopt;
-                    }
+                auto info = pageInfo.find(research.Pages()[size_t(research.ShownPage())].number);
                 if (info != pageInfo.end())
                     if (int speech = res.Text().Extra(info->second.speech)) sounds.push_back(speech);
                 return std::nullopt;

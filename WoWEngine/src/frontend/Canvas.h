@@ -22,6 +22,9 @@ namespace wow
         TextRight = 8,
     };
 
+    // The game's word wrap (0x4161E0): text broken into lines no wider than width at spaces, keeping its own breaks
+    std::string WrapText(const Font& font, std::string_view text, int width);
+
     class Canvas
     {
     public:

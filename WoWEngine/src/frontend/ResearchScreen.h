@@ -69,8 +69,9 @@ namespace wow
         Rect exitRect;
         bool exitHeld = false;
         // the page's detail: its lines and the proposals (available items) that can be clicked
-        struct Line { std::string text; int x, y, w, level, font; bool wrap; int item; };
-        std::vector<Line> detail;
+        struct Line { std::string text; int x = 0, y = 0, w = 0, h = 0, level = 0, item = -1; };
+        std::vector<Line> detail;          // on the screen, wrapped and placed
+        Rect blueprint, proposals;         // the blueprint window and the proposals list (empty without one)
         int speechSound = 0;
     };
 }
