@@ -1073,6 +1073,7 @@ namespace wow
 
     int WarMap::TipOwner(int x, int y) const
     {
+        if (infoBox) return BoxButtonRect().Contains(x, y) ? 99 : -1;
         for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) return 100 + int(i);
         PanelLayout panel = Panel();
         for (int i = 0; i < 3; i++) if (panel.buttons[i].Contains(x, y)) return i;
@@ -1144,6 +1145,7 @@ namespace wow
     {
         static constexpr int ButtonText[3] = { 0x47B, 0x47C, 0x47E }; // the view buttons' labels (0x433480)
         // a popup item's text (its +0x0C; 0x475 "View map" would be the hovered sector's name)
+        if (owner == 99 && infoBox) return res.String(infoBox->cancellable ? 0x480 : 0x47F);
         if (owner >= 100 && size_t(owner - 100) < popup.size()) return res.String(popup[size_t(owner - 100)].text);
         if (owner >= 1000 && size_t(owner - 1000) < counters.size()) return CounterTip(owner - 1000, level);
         if (owner >= 0 && owner < 3) return res.String(ButtonText[owner]);
@@ -1560,7 +1562,9 @@ namespace wow
     // Martian games ma_scrn (0x69) at +0x0B, -0x5E drawn at 50%; the text (font 0x73, wrapped to 320 pixels,
     // centred, level 21) 0x2B below the backdrop's top (Human) or 0x17 below ma_scrn's (Martian), the second line (level 22) 16
     // below it; the button (GType 0x6A, hu_buton / ma_buton) at +0x52, +0x76 (Human) or +0x87, +0x28 (Martian)
-    // with "Press button to continue" (0x47F), or with "... ESC to cancel" (0x480) when it can be cancelled.
+    // whose text, "Press button to continue" (0x47F) or "... ESC to cancel" (0x480) when it can be cancelled, is its
+    // tool tip (the same button as the popup menu's items, 0x42FB40), not drawn on it. Both lines are centred, as
+    // the original shows them.
     Rect WarMap::BoxRect() const
     {
         Rect b = SpriteRect(0x68, 0, 0);
@@ -1614,11 +1618,10 @@ namespace wow
             y += lineH;
         }
         if (!infoBox->text2.empty())
-            canvas.DrawString(0x73, infoBox->text2, { ox + b.w / 2, y + 16, b.w / 2, lineH }, 0, 22);
+            canvas.DrawString(0x73, infoBox->text2, { ox, y + 16, b.w, lineH }, TextCentreX, 22);
         Rect bt = BoxButtonRect();
         bool over = bt.Contains(mouseX, mouseY);
         canvas.DrawSprite(0x6A, over && res.GetFrame(0x6A, 1) ? 1 : 0, bt.x, bt.y);
-        canvas.DrawString(0x73, res.String(infoBox->cancellable ? 0x480 : 0x47F), bt, TextCentreX | TextCentreY);
     }
 
     // 0x41A6C0: a change of the time-running flag goes to both players' command streams (actions 0xA / 0xB for the

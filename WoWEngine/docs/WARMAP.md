@@ -459,10 +459,11 @@ UndefendedSectorLost. A handler writes its line to the message list and, if its 
 view goes to the sector (0x41E000, which glides; the engine jumps), sound 0x198. The backdrop (GType 0x68, hu_event
 / ma_event) is centred 4 pixels above the bottom; in Martian games ma_scrn (0x69) is drawn at 50% at +0x0B, -0x5E and
 the text goes from its corner. The text (font 0x73, wrapped to 320 pixels by 0x4161E0, centred, shade 21) sits
-0x2B (Human) or 0x17 (Martian) down, a second line (shade 22, from the centre) 16 pixels below it. The button
-(WGraphicPushButton, GType 0x6A hu_buton / ma_buton, font 0x73) at +0x52, +0x76 (Human) or +0x87, +0x28 (Martian;
-the offsets come from `and al, 0CBh` / `and eax, 4Eh` on -1 or 0) says "Press button to continue" (0x47F), or
-"... ESC to cancel" (0x480) for a box that can be cancelled. Its button (or Enter / Space) sends the box's command
+0x2B (Human) or 0x17 (Martian) down, a second line (shade 22, centred too, as the original shows it) 16 pixels
+below it. The button (GType 0x6A hu_buton / ma_buton, made by 0x42FB40 like the popup menu's items) is at +0x52,
++0x76 (Human) or +0x87, +0x28 (Martian; the offsets come from `and al, 0CBh` / `and eax, 4Eh` on -1 or 0); its text,
+"Press button to continue" (0x47F) or "... ESC to cancel" (0x480) for a box that can be cancelled, is its tool tip,
+not drawn on it. Its button (or Enter / Space) sends the box's command
 (0x432B30): 0x8122 closes it and tells the war map; any other command (0x8072, a battle) goes to the war map and the
 box closes without 0x8122, the queue waiting until the war map comes back (0x418980 -> 0x41E730). Esc on a box that
 can be cancelled is 0x8123, closing it too.
