@@ -198,8 +198,9 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       (0x494DB0, 0x494FD0, 0x4886A0, 0x488830, 0x487F50, record 12) and force fire at a point through the group's
       target (0x4826D0, 0x496200); attacking an object (packet 0x10, 0x481F70, Approach 0x496300) and looking round
       by stance (0x4967E0, 0x496570; its scale flt_59E44C is never written, so it finds nothing); the mortars and
-      their shells in flight (0x4889D0, 0x488F00, 0x47F770). Still to do: the emitters (smoke trails),
-      turret turning and arcs, area blasts (0x487B00), emitters, lights, the scenery's damage — 10, 11, 12
+      their shells in flight (0x4889D0, 0x488F00, 0x47F770); the flying objects' update, emitters (debris, smoke
+      trails) and damage smoke (0x487890, 0x47F050, 0x48AEF0, 0x48ADD0). Still to do: turret turning and arcs, area
+      blasts (0x487B00), lights, the scenery's damage — 10, 11, 12
 - [ ] **Battle AI** (0x445010) — 07
 - [~] **Battle map music**: CD tracks 4 / 5 (the war map's is done) — 11
 - [x] **Positional sound**: listener at the view centre, inner / outer rects, pan 4·dx (0x464FF0), opcode 18's cull,

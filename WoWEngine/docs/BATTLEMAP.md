@@ -489,7 +489,7 @@ the Parliament 4.
 
 *Provisional*: an object goes at once rather than on the next update, and only units are hit (the scenery's damage
 and the damaged list aren't in); the kind is taken as the sector; the explosions' light parts (334-346, the fading
-light 0x48E100), their emitters (smoke) and the status bars aren't in.
+light 0x48E100) and the status bars aren't in. (Their emitters are in: "Flying objects and emitters".)
 
 ## Weapons (WProjectile base 0x4949A0 and its classes, 0x494DB0 / 0x494FD0, 0x4886A0 / 0x488830 -> 0x487F50; the group's target 0x4826D0; `battlemap/Weapons.cpp`)
 
@@ -584,11 +584,48 @@ the five lorries' rockets landed round their jittered aims, a few units out, eac
 the tower (278) made the other side's for the test, a click on it set it as the target: the lorries' rockets landed on
 its east side, the side they were on, a few units in from its middle, and took its 18000 health down 16-22 a hit.
 
-*Provisional*: the shells' emitters (the smoke trail, 367) and their frame (0 is drawn), the mortar's place on its
+*Provisional*: the shells' frame (0 is drawn), the mortar's place on its
 unit (the shells start at the unit's point), type 0x3DB's case, 0x80B9 and vt+0x38, the posts (+0xE4), the battle
 told of an unarmed object seen, the turrets' turning and arcs, the guns' place on their unit, the research
 multipliers and the "CAN'T GET TO WITHIN ATTACK DISTANCE!" check aren't in; a target that's gone clears the group's
 target (the game's tidy-up of 0x8057 isn't traced); WProjectile and 0x48DBE0 fly no visible missile.
+
+## Flying objects and emitters (0x487730, 0x487890, 0x47F050, 0x47F770; 0x48AEF0, 0x48ADD0; `battlemap/Effects.cpp`)
+
+**The classes** on the flying object 0x487730 (its update 0x487890): WAnimEffect (0x488FB0, update 0x489050: the
+factory's 0x15B-0x16E, 0x174-0x17A, 918-920, 952-972, 988-993, 1000 and 0x17C) with WExplosion on it (0x488180); the
+smoke (0x48DCB0: 0x16F-0x173, update 0x48DD30: +0x84 less -1.5, rising, then 0x489050); the mortars' shells (0x488E80,
+0x488F00); 0x17B the plain object. An animated one with a renderer moves its frame on by +0xC0 (0x80, 8.8) an update
+(0x40EF20) and goes past its last frame (vt+0x78); otherwise, each update, 0x487890 runs its emitters (0x47F050) and
+its step (vt+0x54 = 0x47F770: unless +0xB8 bit 10, the point moved by the velocity (+0x88 / +0x8C) and the height
+(+0x84) kept level over the ground's change: ftol(+0x80 - +0x84) less the ground at the new point (0x47B170), plus the
+height and the upward speed (+0x90); then +0x90 plus the gravity (+0x94)), and under 0.0 high it's gone (0x8057).
+
+**Emitters** (0x47F050; the list +0xB4 is the type's emitters, record 29, put in 12-byte entries by 0x47EF30): only
+with [Options] "Show Smoke & particles" (byte_4B880C, 1 to start with). For each entry (+4 the type, +8 the spread,
++0xA the limit, +0xC / +0x10 the slowest and fastest, +0x14 the gravity, +0x18 the rate): the entry's fraction (+8)
+goes up by the rate and its whole part n comes off; n are made: rand() % spread as the angle up, the speed rand() x
+0.000030601626 x (fastest - slowest) + slowest, split by 0x43FE90 into across and up, across along rand() & 0xFFF
+(three rand() calls a particle); each at the emitter's point and height, with that velocity and the gravity (vt+0x80,
+vt+0x40, +0x94, vt+0x24). Then the entry's count (+4) goes up, and past a limit that isn't 0 the list is freed. Shell
+396 trails smoke 367 (spread 1, still, rate 0.2: one every 5 updates); explosions 484-500 throw debris 350 / 352 (the
+whole circle, speed 1-3, gravity -0.02, 5 an update for 4 updates); 915 throws 918.
+
+**Damage smoke** (0x48AEF0, from the object's update 0x4967E0 after its look round): every 15th update (dword_4D2558
+% 15), with the option on, the level ftol(5 - the health fraction (vt+0xF4 = 0x48ADA0: +0xC4 / 0x47DA20) x 5.0), at
+most 4; above 0 (under 80% health): rand() under 0xCCC (one in ten) puffs 1000, then a vehicle (+0xB8 bit 0) puffs
+0x16F + level - 1 (367-370) and anything else each of 0x16F up to it. A puff (0x48ADD0): r = +0xAC / 3 + 1, at the
+point rand() % 2r - r each way (added as floats, ftol'd) and rand() % r over the height plus its +0x41 byte x 1.414,
+still. (Called with +0xC0 bit 3 set first: that's cleared and 0x80C1 goes to the parent's +0x48's +0x6C.)
+
+With the lorries at 40% health (level 3) and armed with a mortar for the test, each lorry gave off a 369 every 15
+updates (about 12 alive at a time), the shells trailed 367 in flight, and 1000 came now and then; over 600 updates
+the list held 57 slots, 35-50 alive. A rocket's hit (382) is a light (338) and 350, neither with a sprite: until the
+lights are in, it shows only as the scorch.
+
+*Provisional*: an object with no sprite is made only if its type has emitters, and goes once they're spent; a dead
+one's slot is taken again; one made in an update first moves in the next; frames under 3 never end; the parent's
+vt+0x9C check, bit 3's 0x80C1 and the option's setting on the options screen aren't in.
 
 ## Driving (the ground vehicle 0x490820-0x4935C0; the group's move 0x482E60; `battlemap/Driving.cpp`)
 

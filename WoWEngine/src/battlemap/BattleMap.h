@@ -118,12 +118,34 @@ namespace wow
         std::map<int, IsoModel> models;
         struct ViewObject { int key; int x, y; const IsoModel* model; const WofInstance* wof = nullptr; int slot = 0; int sprite = 0; int light = -1;
                             int unit = -1, depth = 0, effect = -1; };
-        // The animated effects (WAnimEffect 0x488FB0, the factory's cases 918-920, 952-972, 988-993, 1000 and 0x17C):
-        // a sprite whose frame counter (8.8, the renderer's +0x38) goes on by +0xC0 (0x80) an update (0x40EF20), gone
-        // past the last frame (vt+0x78)
-        struct Effect { int gtype = 0, counter = 0, frames = 0; bool alive = false; };
+        // The flying objects (0x487730 and its classes): WAnimEffect (0x488FB0: the factory's 0x15B-0x16E, 0x174-0x17A,
+        // 918-920, 952-972, 988-993, 1000, 0x17C) and WExplosion on it (0x488180) animate, the frame counter (8.8, the
+        // renderer's +0x38) going on by +0xC0 (0x80) an update (0x40EF20), gone past the last frame (vt+0x78); the
+        // smoke (0x48DCB0: 0x16F-0x173) rises 1.5 an update as it does; a mortar's shell (0x488E80: 0x18B-0x196, 713,
+        // 714, 1002) lands (0x488F00); 0x17B is just the flying object. All of them, not done animating, run their
+        // emitters and take their step (0x487890: 0x47F050, vt+0x54 0x47F770), gone under the ground.
+        enum class EffectKind { Animated, Smoke, Shell, Plain };
+        struct Effect
+        {
+            int type = 0, gtype = 0, counter = 0, frames = 0; bool alive = false;
+            EffectKind kind = EffectKind::Animated;
+            float x = 0, y = 0, lift = 0;           // +0x78 / +0x7C, +0x84 (its height over the ground)
+            float vx = 0, vy = 0, vz = 0, g = 0;    // +0x88..+0x90, +0x94
+            std::vector<float> acc;                 // its emitter list (+0xB4): each entry's fraction (+8) and count (+4)
+            std::vector<int> emitted;
+            bool emitDone = false;                  // the list freed
+            int count = 0, size = 0, group = -1;    // a shell's updates left (+0xC2), impact size (+0xC0), firer (+0xC4)
+            int depth = 0;                          // its view object's key over its y
+            int born = -1;                          // the update it was made on
+        };
         std::vector<Effect> effects;
-        void SpawnEffect(int type, int x, int y);
+        int SpawnEffect(int type, float x, float y, float lift = 0, float vx = 0, float vy = 0, float vz = 0, float g = 0);
+        static EffectKind KindOf(int type);
+        void UpdateEffects();                                   // each flying object's update
+        void Emit(size_t effect);                               // 0x47F050
+        void Smoulder(size_t unit);                             // 0x48AEF0 (from the unit's update 0x4967E0)
+        void Puff(size_t unit, int type);                       // 0x48ADD0
+        bool showSmoke = true;                                  // byte_4B880C, [Options] "Show Smoke & particles" (1)
         void Speak(int id, int group);                          // 0x481770 with the group's voice (0x449120)
         std::vector<ViewObject> objects;    // sorted by key
         std::map<int, ShadeTable> slotTables;
@@ -204,14 +226,10 @@ namespace wow
         void GunTick(size_t unit, Gun& g);                      // 0x494DB0 and the class's update
         void Impact(size_t unit, const Gun& g);                 // 0x4886A0's landing: 0x487F50
         void ImpactAt(int size, int x, int y, int z, int group); // 0x487F50: the effect by size and terrain
-        // A mortar's shell in flight (0x488E80 on 0x487730: the factory's 0x18B-0x196, 713, 714, 1002): its point
-        // (+0x78 / +0x7C), height over the ground (+0x84), velocity (+0x88..+0x90), gravity (+0x94), the updates
-        // left (+0xC2), the impact's size (+0xC0) and the firer (+0xC4, here its group); drawn as an effect
-        struct Shell { int type = 0, effect = -1, count = 0, size = 0, group = -1; float x = 0, y = 0, lift = 0, vx = 0, vy = 0, vz = 0, g = 0;
-                       bool gone = false; };
-        std::vector<Shell> shells;
         void Launch(size_t unit, Gun& g);                       // 0x4889D0
-        void ShellTick(Shell& s);                               // 0x488F00 -> 0x487890 -> 0x47F770
+        bool ShellLands(size_t effect);                         // 0x488F00 after the step: gone?
+        struct Landing { int size, x, y, z, group; };
+        std::vector<Landing> landings;                          // made after the flying objects' updates
         // Damage and death (0x48A5A0, 0x48AB20, 0x80A0 in 0x489FA0) and the explosions (WExplosion 0x488180)
         int MaxHealth(int type) const;                          // 0x47DA20: +0x4A with the armour modifiers
         void Damage(size_t unit, int amount);                   // vt+0xE0, 0x48AB20

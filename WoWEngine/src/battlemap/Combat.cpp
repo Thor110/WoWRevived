@@ -98,8 +98,7 @@ namespace wow
         {
             const int px = x + int16_t(part.b), py = y + int16_t(part.c), pz = z + int16_t(part.d);
             if (IsExplosion(part.a)) Explode(part.a, px, py, pz, firer);
-            else if (auto pt = setup.units->find(part.a); pt != setup.units->end() && pt->second.field28 && !(part.a >= 334 && part.a <= 346))
-                SpawnEffect(part.a, px, py);
+            else if (!(part.a >= 334 && part.a <= 346)) SpawnEffect(part.a, float(px), float(py), float(pz));
         }
         // Detonate
         for (size_t i = 0; i < units.size(); i++)
@@ -122,6 +121,6 @@ namespace wow
             const int terrain = land.At(vx, vy).atm & 15;
             if (terrain < 1 || terrain > 3) land.Scorch(x, y, radius, power);
         }
-        if (t->second.field28) SpawnEffect(type, x, y);
+        SpawnEffect(type, float(x), float(y), float(std::max(z, 0)));
     }
 }

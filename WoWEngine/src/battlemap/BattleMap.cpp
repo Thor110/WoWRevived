@@ -970,28 +970,6 @@ namespace wow
                 if (u.engineSound) setup.sound->Stop(u.engineSound);
     }
 
-    // 0x488FB0's object as it's made: its type's sprite (GType +0x28) at the point, its depth half the sprite's
-    // width + 64 (0x489000)
-    void BattleMap::SpawnEffect(int type, int x, int y)
-    {
-        auto u = setup.units->find(type);
-        if (u == setup.units->end()) return;
-        const int gtype = u->second.field28;
-        const GType* g = res.FindGType(gtype);
-        const Sprite* sprite = res.GetSprite(gtype);
-        const IndexedImage* image = res.GetFrame(gtype, 0);
-        if (!g || !sprite || !image) return;
-        Effect e;
-        e.gtype = gtype;
-        e.frames = sprite->FrameCount();
-        e.alive = true;
-        effects.push_back(e);
-        const int depth = image->width / 2 + 64;
-        objects.push_back({ y + depth, x, land.ProjectY(y, land.HeightAt(x, y)), nullptr, nullptr, g->paletteSlot, gtype, -1, -1, 0,
-                            int(effects.size()) - 1 });
-        std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
-    }
-
     // 0x481770: speech at the listener, the group's voice (0x449120: its first member's type's +0xA0) choosing the
     // samples
     void BattleMap::Speak(int id, int group)
@@ -1016,18 +994,6 @@ namespace wow
         for (size_t i = 0; i < units.size();)
             if (units[i].dieAt >= 0 && ticks >= units[i].dieAt) Die(i);
             else i++;
-        // the effects' animation (0x489050)
-        for (size_t i = 0; i < effects.size(); i++)
-        {
-            Effect& e = effects[i];
-            if (!e.alive || e.frames < 3) continue;
-            e.counter += 0x80;
-            if (e.counter > (e.frames - 1) << 8)
-            {
-                e.alive = false;
-                objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) { return o.effect == int(i); }), objects.end());
-            }
-        }
         // the right button held for [Tweak] "Quick Cancel Timeout" updates opens the popup (0x805B -> 0x485DE0)
         if (rightDownAt >= 0 && popup.empty() && ticks - rightDownAt == setup.quickCancelTimeout && mouseX >= 0)
             OpenPopup(mouseX, mouseY);
@@ -1039,32 +1005,14 @@ namespace wow
             const float x = units[i].x, y = units[i].y;
             Drive(i);
             LookRound(i);
+            Smoulder(i);
             moved |= units[i].x != x || units[i].y != y;
         }
         // the guns (their own updates, each a child of its unit or its turret)
         for (size_t i = 0; i < units.size(); i++)
             for (Gun& g : units[i].guns) GunTick(i, g);
-        // the mortars' shells in flight: moved, landed, their effects kept at their points (gone ones dropped)
-        for (size_t i = 0; i < shells.size(); i++) ShellTick(shells[i]);
-        for (const Shell& sh : shells)
-        {
-            if (sh.effect < 0) continue;
-            if (sh.gone)
-            {
-                effects[size_t(sh.effect)].alive = false;
-                objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) { return o.effect == sh.effect; }), objects.end());
-                continue;
-            }
-            for (ViewObject& o : objects)
-                if (o.effect == sh.effect)
-                {
-                    o.x = int(sh.x);
-                    o.y = land.ProjectY(int(sh.y), land.HeightAt(int(sh.x), int(sh.y)) + int(sh.lift));
-                    o.key = int(sh.y);
-                }
-            moved = true;
-        }
-        shells.erase(std::remove_if(shells.begin(), shells.end(), [](const Shell& sh) { return sh.gone; }), shells.end());
+        // the flying objects (effects, smoke, shells)
+        UpdateEffects();
         if (moved)
         {
             for (ViewObject& o : objects)

@@ -462,60 +462,34 @@ namespace wow
             float across = 0, upward = 0;
             Polar(up, speed, across, upward);
             const int count = int(double(length / across) - -1.0);
-            Shell sh;
-            sh.type = e.a;
-            sh.x = u.x;
-            sh.y = u.y;
-            Polar(dir, across, sh.vx, sh.vy);
-            sh.vz = upward;
-            sh.lift = float(h);
-            sh.g = e.f[2];
-            sh.size = size;
-            sh.count = int16_t(count);
-            sh.group = u.group;
-            // drawn as an effect that doesn't animate (frames 0), moved each update
-            if (auto st = setup.units->find(e.a); st != setup.units->end() && st->second.field28)
-                if (const GType* gt = res.FindGType(st->second.field28))
-                {
-                    Effect ef;
-                    ef.gtype = st->second.field28;
-                    ef.alive = true;
-                    effects.push_back(ef);
-                    sh.effect = int(effects.size()) - 1;
-                    objects.push_back({ int(sh.y), int(sh.x), land.ProjectY(int(sh.y), ground + h), nullptr, nullptr, gt->paletteSlot,
-                                        ef.gtype, -1, -1, 0, sh.effect });
-                }
-            shells.push_back(sh);
+            float vx = 0, vy = 0;
+            Polar(dir, across, vx, vy);
+            const int k = SpawnEffect(e.a, u.x, u.y, float(h), vx, vy, upward, e.f[2]);
+            if (k >= 0)
+            {
+                Effect& sh = effects[size_t(k)];
+                sh.size = size;
+                sh.count = int16_t(count);
+                sh.group = u.group;
+            }
             g.fired[i]++;
             if (e.c != 0 && g.fired[i] > int16_t(e.c)) { g.spent = true; break; }
         }
     }
 
-    // A shell's update (0x488F00): first 0x487890, the flying object's (its emitters, 0x47F050; the step, vt+0x54
-    // 0x47F770: the point moved by the velocity, the height kept over the ground's change (ftol(+0x80 - +0x84) less
-    // the ground's height at the new point, plus the height and the upward speed), then the upward speed plus the
-    // gravity; under 0 high it's gone, 0x8057). Then at or under 0 high, or with its updates (+0xC2) run out, it
-    // lands: 0x487F50 with its size, its point, ftol(the height - -8.0) up, the firer and its type; with the
-    // updates below 0 it's gone.
-    // *Provisional*: its emitters (the smoke trail, 367) aren't in; it's drawn with frame 0.
-    void BattleMap::ShellTick(Shell& s)
+    // The rest of a shell's update (0x488F00), after the flying object's (0x487890, UpdateEffects): at or under 0.0
+    // high, or with its updates (+0xC2) counted out (taken down only while above the ground), it lands: 0x487F50
+    // with its size (+0xC0), its point, ftol(the height - -8.0) up, the firer (+0xC4) and its type; with the updates
+    // below 0 it's gone.
+    bool BattleMap::ShellLands(size_t index)
     {
-        const int before = land.HeightAt(int(s.x), int(s.y));
-        s.x += s.vx;
-        s.y += s.vy;
-        const int after = land.HeightAt(int(s.x), int(s.y));
-        s.lift = float(before - after) + s.lift + s.vz;
-        s.vz += s.g;
-        bool gone = s.lift < 0.0f;
+        Effect& s = effects[index];
         bool lands = false;
         if (s.lift <= 0.0f) lands = true;
         else lands = s.count-- <= 0;
-        if (lands)
-        {
-            ImpactAt(s.size, int(s.x), int(s.y), int(s.lift - -8.0f), s.group);
-            if (s.count < 0) gone = true;
-        }
-        s.gone = gone;
+        if (!lands) return false;
+        landings.push_back({ s.size, int(s.x), int(s.y), int(s.lift - -8.0f), s.group });
+        return s.count < 0;
     }
 
     // The landing (0x4886A0 / 0x488830): the spread s = ftol(the octagonal distance from the gun / 32 / +0xCC (1.0)
