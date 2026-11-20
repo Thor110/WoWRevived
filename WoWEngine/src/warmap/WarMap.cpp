@@ -3,6 +3,7 @@
 #include <SDL3/SDL_keycode.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <string>
 
@@ -24,8 +25,8 @@ namespace wow
     }
 
     WarMap::WarMap(Resources& r, MenuColours c, const SaveInfo& start, std::vector<SaveInfo::WarMapObject> objects,
-                   std::map<int, int> frames, int scrollSpeed)
-        : Screen(Id, r, 0, warmap::PaletteGroup), colours(c), game(start)
+                   std::map<int, int> frames, std::vector<int> owners, int scrollSpeed, float clunting)
+        : Screen(Id, r, 0, warmap::PaletteGroup), colours(c), game(start), cluntingSpeed(clunting)
     {
         // One counter for each kind of object in a sector's list, with how many there are. The first object of a
         // kind carries the counter's position (cells of 36 pixels); the game places the rest itself. Kinds with no
@@ -54,7 +55,13 @@ namespace wow
         for (const Group& g : groups)
         {
             auto frame = frames.find(g.type);
-            Counter k{ g.x, g.y, frame == frames.end() ? 0 : frame->second, g.count, g.list % 2 == 0, g.list / 2 };
+            Counter k;
+            k.x = g.x; k.y = g.y;
+            k.frame = frame == frames.end() ? 0 : frame->second;
+            k.count = g.count;
+            k.players = g.list % 2 == 0;
+            k.kind = g.list / 2;
+            k.sector = g.sector;
             if ((!k.x && !k.y) || taken(k.x, k.y, k.kind))
             {
                 const auto& b = warmap::Sectors[g.sector];
@@ -71,6 +78,12 @@ namespace wow
             counters.push_back(k);
     }
         levels.fill(warmap::NormalLevel);
+        // who holds each sector, from the save (0 Human, 1 Martian, 2 no one), as the side being played (0),
+        // the other side (1) or no one (2)
+        owner.fill(2);
+        int side = res.Human() ? 0 : 1;
+        for (int s = 1; s <= warmap::SectorCount && size_t(s) < owners.size(); s++)
+            owner[size_t(s)] = owners[size_t(s)] == 2 ? 2 : owners[size_t(s)] == side ? 0 : 1;
         map = res.GetFrame(warmap::MapGType);
         sectorMap = res.GetFrame(warmap::SectorMapGType);
         // [Screen] "Scroll Speed" (default 40) in map pixels a tick, a fifth of it (provisional)
@@ -136,12 +149,51 @@ namespace wow
         if (!map) map = res.GetFrame(warmap::MapGType);
         if (!sectorMap) sectorMap = res.GetFrame(warmap::SectorMapGType);
 
+        animation++;
         // the clock
         {
             float before = game.ticks;
             game.ticks += warmap::Speeds[speed] / 30.0f;
             int hours = int(game.ticks) - int(before);
             if (hours > 0) warmap::AdvanceDate(game.dateTime, hours);
+        }
+
+        // Counters on their way: they move along their route at "Clunting Speed" map pixels a game hour
+        // (provisional: the route code, WWarMapRoute 0x4240D0 and its clunting, isn't traced yet), sector by
+        // sector. Going into a sector the other side holds stops them at its border: that's a battle, which
+        // needs the battle map. Arriving in a sector no one holds takes it (provisional).
+        float step = cluntingSpeed * warmap::Speeds[speed] / 30.0f;
+        for (size_t i = 0; i < counters.size(); i++)
+        {
+            Counter& k = counters[i];
+            if (k.route.empty()) continue;
+            float tx = float(k.route.front().first), ty = float(k.route.front().second);
+            float dx = tx - k.fx, dy = ty - k.fy, dist = std::sqrt(dx * dx + dy * dy);
+            if (dist > step) { k.fx += dx / dist * step; k.fy += dy / dist * step; }
+            else
+            {
+                k.fx = tx; k.fy = ty;
+                int next = k.routeSectors.front();
+                k.route.erase(k.route.begin());
+                k.routeSectors.erase(k.routeSectors.begin());
+                if (next != k.sector && owner[size_t(next)] == 1)
+                {
+                    message = "Battle in " + res.String(warmap::NameText(next)) + ": the battle map isn't rebuilt yet";
+                    k.route.clear(); k.routeSectors.clear();
+                    auto cell = FreeCell(k.sector, k.kind, int(i));
+                    k.fx = float(cell.first); k.fy = float(cell.second);
+                }
+                else
+                {
+                    k.sector = next;
+                    if (k.route.empty())
+                    {
+                        if (owner[size_t(next)] == 2) owner[size_t(next)] = 0;
+                        message = res.String(warmap::NameText(next)) + ": arrived";
+                    }
+                }
+            }
+            k.x = int(k.fx); k.y = int(k.fy);
         }
 
         int dx = 0, dy = 0;
@@ -216,6 +268,7 @@ namespace wow
             int x = k.x - cameraX, y = k.y - cameraY;
             if (x < -40 || y < -40 || x > canvas.Width() || y > canvas.Height()) continue;
             canvas.DrawSprite(0x77, k.frame, x, y);
+            if (&k - counters.data() == chosen) canvas.DrawSprite(0x54, 0, x, y); // cselecth.spr
             // the count, in the counter font (GType 0x6E, hcntfnt.fnt; where the game puts it isn't traced yet)
             if (k.count > 1)
                 canvas.DrawString(0x6E, std::to_string(k.count), { x, y + 26, 32, 10 }, TextCentreX);
@@ -247,15 +300,14 @@ namespace wow
         // traced yet)
         std::string status;
         static constexpr int ButtonText[3] = { 0x47B, 0x47C, 0x47E }; // "Unit View", "Construction view", "Resource view"
+        if (!message.empty()) status = message;
         if (hotButton >= 0) status = res.String(ButtonText[hotButton]);
         else if (hovered) status = res.String(warmap::NameText(hovered));
-        char date[64];
-        std::snprintf(date, sizeof(date), "%d/%d/%d  %02d:%02d  x%g", game.Day(), game.Month(), game.Year(), game.Hour(), game.Minute(),
-            double(warmap::Speeds[speed]));
+        DrawCalendar(canvas);
         {
             // a darkened strip behind the text so it reads on either map
             uint32_t* out = canvas.Pixels();
-            int rows = status.empty() ? 16 : 30;
+            int rows = status.empty() ? 0 : 16;
             for (int y = 2; y < 2 + rows; y++)
                 for (int x = 4; x < 240; x++)
                 {
@@ -263,8 +315,7 @@ namespace wow
                     p = (p >> 2) & 0x3F3F3F;
                 }
         }
-        canvas.DrawString(0x72, date, { 8, 4, 300, 14 }, 0, colours.items);
-        if (!status.empty()) canvas.DrawString(0x72, status, { 8, 18, 300, 14 }, 0, colours.items);
+        if (!status.empty()) canvas.DrawString(0x72, status, { 8, 4, 300, 14 }, 0, colours.items);
     }
 
     std::optional<Command> WarMap::OnKey(int key)
@@ -313,6 +364,12 @@ namespace wow
         PanelLayout panel = Panel();
         for (int i = 0; i < 3; i++)
             if (down && panel.buttons[i].Contains(x, y)) { viewMode = i + 1; return std::nullopt; } // 0x811F -> 0x419810
+        Rect sp = SpeedRect();
+        if (down && sp.Contains(x, y))
+        {
+            speed = std::clamp((x - sp.x) * int(std::size(warmap::Speeds)) / std::max(sp.w, 1), 0, int(std::size(warmap::Speeds)) - 1);
+            return std::nullopt;
+        }
         if (down && mini.Contains(x, y))
         {
             dragging = true;
@@ -320,7 +377,141 @@ namespace wow
             return std::nullopt;
         }
         if (!down) { dragging = false; return std::nullopt; }
-        if (int sector = SectorAt(x, y)) selected = sector;
+        // a counter of the side being played picks it; with one picked, a sector sends it there
+        int counter = CounterAt(x, y);
+        if (counter >= 0 && counters[size_t(counter)].players && counters[size_t(counter)].kind == 0)
+        {
+            chosen = chosen == counter ? -1 : counter;
+            return std::nullopt;
+        }
+        int sector = SectorAt(x, y);
+        if (chosen >= 0 && sector) { SendTo(chosen, sector); chosen = -1; return std::nullopt; }
+        if (sector) selected = sector;
         return std::nullopt;
+    }
+
+    // The calendar ("Calendar View", 0x426C10, drawn by 0x4271E0, frames from 0x427500): GType 0x93 (HU_CALEN.SPR
+    // 121 x 89, MA_CALEN.SPR 123 x 83) in the top right corner, 4 pixels in (0x4BA05C), with its parts on top.
+    Rect WarMap::CalendarRect() const
+    {
+        Rect size = SpriteRect(0x93, 0, 0);
+        return { ScreenW - size.w - 4, 4, size.w, size.h };
+    }
+
+    // The speed slider (0x431E30 with GType 0x97: hu_speed.spr 120 x 58, ma_speed.spr 65 x 26, 22 frames: 11
+    // positions, then the same lit), at 0, 0x1F in the Human calendar and 0x30, 0x16 in the Martian one. Which
+    // of its positions gives which game speed isn't traced; the engine uses position = speed (0-7).
+    Rect WarMap::SpeedRect() const
+    {
+        Rect c = CalendarRect();
+        Rect size = SpriteRect(0x97, 0, 0);
+        bool human = res.Human();
+        return { c.x + (human ? 0 : 0x30), c.y + (human ? 0x1F : 0x16), size.w, size.h };
+    }
+
+    void WarMap::DrawCalendar(Canvas& canvas) const
+    {
+        Rect c = CalendarRect();
+        canvas.DrawSprite(0x93, 0, c.x, c.y);
+        int hour = game.Hour(), minute = game.Minute();
+        if (res.Human())
+        {
+            // the clock face (144 frames: twelve an hour), month (5 frames each), am / pm, the day and year in
+            // digits (5 frames each; the first is hu_num03, 0-3), the pendulum, the twirl to the left
+            canvas.DrawSprite(0x96, (hour % 12) * 12 + minute / 5, c.x + 0x52, c.y + 4);
+            canvas.DrawSprite(0x95, (game.Month() - 1) * 5, c.x + 0x15, c.y + 0xC);
+            canvas.DrawSprite(0x94, hour >= 12 ? 5 : 0, c.x + 0x5A, c.y + 0x2B);
+            int day = game.Day(), year = game.Year();
+            int digits[6] = { day / 10 % 10, day % 10, year / 1000 % 10, year / 100 % 10, year / 10 % 10, year % 10 };
+            static constexpr int X[6] = { 7, 14, 48, 55, 62, 69 }; // 0x4BA688
+            for (int i = 0; i < 6; i++) canvas.DrawSprite(i == 0 ? 0x99 : 0x98, digits[i] * 5, c.x + X[i], c.y + 0xC);
+            canvas.DrawSprite(0x9B, (animation / 2) % 41, c.x + 0x54, c.y + 0x41);
+            Rect twirl = SpriteRect(0x9A, 0, 0);
+            canvas.DrawSprite(0x9A, 0, c.x - twirl.w, c.y + 6);
+        }
+        else
+        {
+            // the globe, the days gone by in six digits (the game time over 24000, 2400 ... 0.24 hours: days to
+            // two decimal places, 0x427500 with the table at 0x4BA910), and the goo
+            canvas.DrawSprite(0x96, (animation / 4) % 24, c.x + 0xB, c.y + 8);
+            static constexpr float Powers[6] = { 24000, 2400, 240, 24, 2.4f, 0.24f };
+            static constexpr int X[6] = { 32, 41, 50, 59, 74, 83 }; // 0x4BA670
+            for (int i = 0; i < 6; i++)
+                canvas.DrawSprite(0x98, (int(game.ticks / Powers[i]) % 10) * 5, c.x + X[i], c.y + 0x35);
+            canvas.DrawSprite(0x9B, animation % 100, c.x + 0x31, c.y + 7);
+        }
+        Rect sp = SpeedRect();
+        canvas.DrawSprite(0x97, speed + (sp.Contains(mouseX, mouseY) ? 11 : 0), sp.x, sp.y);
+    }
+
+    int WarMap::CounterAt(int x, int y) const
+    {
+        for (size_t i = counters.size(); i-- > 0;)
+        {
+            const Counter& k = counters[i];
+            if (k.kind != viewMode - 1) continue;
+            int cx = k.x - cameraX, cy = k.y - cameraY;
+            if (x >= cx && y >= cy && x < cx + 32 && y < cy + 32) return int(i);
+        }
+        return -1;
+    }
+
+    std::vector<int> WarMap::FindRoute(int from, int to) const
+    {
+        // the shortest way through neighbouring sectors (the game's own route finder, FindRoute / WRouteFinder,
+        // isn't traced; this is breadth first over the border table)
+        std::array<int, warmap::SectorCount + 1> previous;
+        previous.fill(-1);
+        std::vector<int> queue{ from };
+        previous[size_t(from)] = from;
+        for (size_t q = 0; q < queue.size(); q++)
+        {
+            int s = queue[q];
+            if (s == to) break;
+            for (int n = 1; n <= warmap::SectorCount; n++)
+                if (previous[size_t(n)] < 0 && warmap::Adjacent(s, n)) { previous[size_t(n)] = s; queue.push_back(n); }
+        }
+        if (previous[size_t(to)] < 0) return {};
+        std::vector<int> path;
+        for (int s = to; s != from; s = previous[size_t(s)]) path.insert(path.begin(), s);
+        return path;
+    }
+
+    std::pair<int, int> WarMap::FreeCell(int sector, int kind, int except) const
+    {
+        const IndexedImage* cells = res.GetFrame(0x84);
+        const auto& b = warmap::Sectors[sector];
+        constexpr int Cell = 36;
+        for (int y = b.top / Cell * Cell; y < b.bottom; y += Cell)
+            for (int x = b.left / Cell * Cell; x < b.right; x += Cell)
+            {
+                if (!cells || x < 0 || y < 0 || x >= cells->width || y >= cells->height ||
+                    cells->pixels[size_t(y) * size_t(cells->width) + size_t(x)] != sector) continue;
+                bool taken = false;
+                for (size_t i = 0; i < counters.size(); i++)
+                    if (int(i) != except && counters[i].kind == kind && counters[i].x == x && counters[i].y == y) taken = true;
+                if (!taken) return { x, y };
+            }
+        return { (b.left + b.right) / 2, (b.top + b.bottom) / 2 };
+    }
+
+    void WarMap::SendTo(int index, int sector)
+    {
+        Counter& k = counters[size_t(index)];
+        if (sector == k.sector) return;
+        std::vector<int> path = FindRoute(k.sector, sector);
+        if (path.empty()) { message = "No way there over land"; return; }
+        k.route.clear();
+        k.routeSectors.clear();
+        for (size_t i = 0; i < path.size(); i++)
+        {
+            const auto& b = warmap::Sectors[path[i]];
+            if (i + 1 < path.size()) k.route.push_back({ (b.left + b.right) / 2 - 16, (b.top + b.bottom) / 2 - 16 });
+            else k.route.push_back(FreeCell(path[i], k.kind, index));
+            k.routeSectors.push_back(path[i]);
+        }
+        k.fx = float(k.x);
+        k.fy = float(k.y);
+        message = "On the way to " + res.String(warmap::NameText(sector));
     }
 }

@@ -52,8 +52,10 @@ other side), through 0x49C050:
 | The same owner either side, or no one either side | 65 |
 
 The sectors themselves stay at 11, except the side being played's, which take a level from a table the view mode
-fills (0x4192F0, flt_4E98A0; not done yet). Who holds a sector (0x43CA30) is the sector object's; the engine takes it
-from who has units or buildings there until SECT's owner field is decoded (*provisional*).
+fills (0x4192F0, flt_4E98A0; not done yet). Who holds a sector is in the sector table at 0x4EAE1C (0xC0 bytes a
+sector, read by 0x43CA30): 0 Human, 1 Martian, 2 no one. The save has it straight after each SECT's six lists, before
+the sector's damage map (the sector object's writer, 0x43C5E0). Human.000 starts with sector 3 Martian and 18 sectors
+Human, some with nothing in them.
 
 ## Sectors
 
@@ -104,12 +106,43 @@ sets the view mode (0x419810: 1 units, 2 constructions, 3 resources, the world's
 (message 0x8034). Which of the buttons' 4 frames is which isn't confirmed; the engine uses 2 for the pressed one
 and 1 under the mouse.
 
+## The calendar
+
+"Calendar View" (0x426C10, drawn by 0x4271E0, its frames worked out by 0x427500) sits in the top right corner, 4
+pixels in (0x4BA05C): GType 0x93 (HU_CALEN.SPR 121 x 89, MA_CALEN.SPR 123 x 83) with its parts drawn on top.
+
+| Part | Human | Martian |
+|---|---|---|
+| 0x96 | HU_TIME (36 x 36, 144 frames, 12 an hour) at 0x52, 4 | ma_world, the turning globe (24 frames) at 0xB, 8 |
+| 0x95 | hu_month (60 frames, 5 a month) at 0x15, 0xC | |
+| 0x94 | hu_am_pm (10 frames) at 0x5A, 0x2B | |
+| 0x98, 0x99 | the day and year: six digits (5 frames each) at x 7, 14, 48, 55, 62, 69 (0x4BA688), y 0xC; the first is hu_num03 (0-3) | the days gone by: six digits (ma_spin) at x 32, 41, 50, 59, 74, 83 (0x4BA670), y 0x35: the game time over 24000, 2400, 240, 24, 2.4 and 0.24 hours (0x4BA910), so days to two decimal places ("2341.90" in WoWRevived's screenshot) |
+| 0x9B | hu_pend, the pendulum (41 frames) at 0x54, 0x41 | ma_goo (100 frames) at 0x31, 7 |
+| 0x9A | hu_twirl, just left of the calendar at y 6 | |
+| 0x97 | hu_speed, the speed slider (120 x 58) at 0, 0x1F | ma_speed (65 x 26) at 0x30, 0x16 |
+
+The speed slider (0x431E30) has 22 frames, 11 positions then the same lit. Which position gives which game speed isn't
+traced; the engine uses position = speed index (0-7), and clicking along it sets the speed (*provisional*).
+
+## Moving units
+
+In Unit View a click on one of your counters picks it (GType 0x54, cselecth.spr, drawn over it) and a click on a
+sector sends it there. Everything about the trip is a stand-in until the route code is traced (WWarMapRoute
+0x4240D0, the route finder WRouteFinder / FindRoute, "WM clunting", route arrows RTypeArrow):
+
+- the way is the fewest sectors through the border table;
+- it travels from sector centre to sector centre at `[Tweak] "Clunting Speed"` (0x428B70, default 7) map pixels a
+  game hour, and ends in a free cell of the sector;
+- going into a sector the other side holds stops it at the border with a message (a battle, which needs the battle
+  map);
+- arriving in a sector no one holds takes it.
+
 ## The clock
 
-The calendar (0x41F550) adds `speed / 30` hours to the game time every update (0x41F640, 0x41F6C0; 30 is "Game
+The calendar object (0x41F550) adds `speed / 30` hours to the game time every update (0x41F640, 0x41F6C0; 30 is "Game
 Frequency"), with the speeds at 0x4BA470: 0, 1, 2, 3, 4, 6, 8, 10. Each whole hour moves the date on (0x41B770),
-with February's leap years. The engine starts at speed 1, one game hour a second; `+` and `-` change it
-(*provisional* keys).
+with February's leap years. The engine starts at speed 1, one game hour a second; the calendar's slider, or `+` and
+`-` (*provisional* keys), change it.
 
 ## The war map menu
 
@@ -124,6 +157,6 @@ The engine scrolls with the arrow keys, at the screen edges, and by clicking or 
 
 ## Still to do
 
-The game's scroll rules, the resources readout (top right in WoWRevived's screenshot), the event messages (top
-left), the own sectors' shading, SECT's owner field, the counters' fill order, selecting and moving units, routes,
-construction, research, the AI's turns, saving, and the battle map.
+The game's scroll rules, the event messages (top left; the engine shows only the latest), the own sectors' shading,
+the counters' fill order, the real route rules and arrows, construction, research, the AI's turns, saving, and the
+battle map.

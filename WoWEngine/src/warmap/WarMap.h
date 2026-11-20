@@ -11,6 +11,8 @@
 #include "warmap/WarMapData.h"
 
 #include <array>
+#include <string>
+#include <utility>
 #include <map>
 #include <vector>
 
@@ -24,7 +26,7 @@ namespace wow
         // start: the save it begins from (its WMAP block gives the view and sector)
         // counters: each unit type's frame in the counter sprites (OBJ.ojd record 23)
         WarMap(Resources& res, MenuColours colours, const SaveInfo& start, std::vector<SaveInfo::WarMapObject> objects,
-               std::map<int, int> counters, int scrollSpeed);
+               std::map<int, int> counters, std::vector<int> owners, int scrollSpeed, float cluntingSpeed = 7.0f);
 
         void Update() override;
         void Draw(Canvas& canvas) const override;
@@ -64,7 +66,29 @@ namespace wow
         struct PanelLayout { Rect frame, mini, buttons[3]; };
         PanelLayout Panel() const;
 
-        struct Counter { int x, y, frame, count; bool players; int kind; }; // kind 0 units, 1 constructions, 2 resources
+        int chosen = -1;                 // the counter picked to move (drawn with cselecth.spr, GType 0x54)
+        float cluntingSpeed = 7.0f;      // [Tweak] "Clunting Speed" (0x428B70, default 7)
+        std::string message;             // the latest war map message
+        int animation = 0;               // ticks, for the calendar's pendulum / goo and spinning digits
+        Rect CalendarRect() const;
+        Rect SpeedRect() const;
+        void DrawCalendar(Canvas& canvas) const;
+        int CounterAt(int screenX, int screenY) const;
+        std::vector<int> FindRoute(int from, int to) const;
+        std::pair<int, int> FreeCell(int sector, int kind, int except) const;
+        void SendTo(int counter, int sector);
+
+        struct Counter
+        {
+            int x = 0, y = 0, frame = 0, count = 0;
+            bool players = false;
+            int kind = 0;                // 0 units, 1 constructions, 2 resources
+            int sector = 0;
+            // travelling: where it's heading, through these points (sector by sector)
+            std::vector<std::pair<int, int>> route;
+            std::vector<int> routeSectors;
+            float fx = 0, fy = 0;        // exact position while travelling
+        };
         std::vector<Counter> counters;   // what's drawn: one per kind of object, with how many there are
     };
 }

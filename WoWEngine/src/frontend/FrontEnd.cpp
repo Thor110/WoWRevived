@@ -422,7 +422,7 @@ namespace wow
             catch (const std::exception& e) { SDL_Log("OBJ.ojd unit counters: %s", e.what()); }
         }
         Show(std::make_unique<WarMap>(res, settings.colours, info, SaveInfo::WarMapObjects(data), std::move(counterFrames),
-            ini.GetInt("Screen", "Scroll Speed", 40)));
+            SaveInfo::SectorOwners(data), ini.GetInt("Screen", "Scroll Speed", 40), ini.GetFloat("Tweak", "Clunting Speed", 7.0f)));
     }
 
     std::unique_ptr<Screen> FrontEnd::WarMapMenu()

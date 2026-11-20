@@ -133,6 +133,10 @@ int main(int argc, char** argv)
             for (const auto& t : wow::SaveInfo::Tags(data)) counts[t.name]++;
             for (const auto& [n, c] : counts) std::printf("  %s x%d\n", n.c_str(), c);
             static const char* const Lists[6] = { "HUNI", "AUNI", "HCON", "ACON", "HRES", "ARES" };
+            auto owners = wow::SaveInfo::SectorOwners(data);
+            std::printf("  owners (sector 1-30, 0 Human 1 Martian 2 no one):");
+            for (int i = 1; i <= 30; i++) std::printf(" %d", owners[size_t(i)]);
+            std::printf("\n");
             for (const auto& o : wow::SaveInfo::WarMapObjects(data))
                 std::printf("  sector %2d %s type %3d  id %3d at %d,%d\n", o.sector, Lists[o.list], o.unitType, o.id, o.x, o.y);
             return 0;

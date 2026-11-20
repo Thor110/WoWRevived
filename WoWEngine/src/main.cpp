@@ -90,6 +90,12 @@ namespace
                         else if (k == "right") o.keys.push_back(SDLK_RIGHT);
                         else if (k == "backspace") o.keys.push_back(SDLK_BACKSPACE);
                         else if (k == "click") o.keys.push_back(-1); // a left click where --mouse put the mouse
+                        else if (k.rfind("click:", 0) == 0)   // click:x:y clicks there
+                        {
+                            int cx = std::atoi(k.c_str() + 6), cy = 0;
+                            if (auto colon = k.find(':', 6); colon != std::string::npos) cy = std::atoi(k.c_str() + colon + 1);
+                            o.keys.push_back(-2 - (cx << 12 | cy)); // packed into a negative "key"
+                        }
                         else if (k.size() > 1 && k[0] == '=') // =text types the letters
                             for (char c : k.substr(1)) if (c >= 'a' && c <= 'z') o.keys.push_back(int(SDLK_A + (c - 'a')));
                         if (end == std::string::npos) break;
@@ -213,6 +219,14 @@ int main(int argc, char** argv)
             for (int key : options.keys)
             {
                 if (key == -1) { frontEnd.OnMouseButton(options.mouseX, options.mouseY, true); frontEnd.OnMouseButton(options.mouseX, options.mouseY, false); continue; }
+                if (key <= -2)
+                {
+                    int packed = -2 - key, cx = packed >> 12, cy = packed & 0xFFF;
+                    frontEnd.OnMouseMove(cx, cy);
+                    frontEnd.OnMouseButton(cx, cy, true);
+                    frontEnd.OnMouseButton(cx, cy, false);
+                    continue;
+                }
                 frontEnd.OnKey(key);
                 // letters are typed too, as SDL's text input would send them
                 if (key >= int(SDLK_A) && key <= int(SDLK_Z)) { char text[2] = { char('a' + (key - int(SDLK_A))), 0 }; frontEnd.OnText(text); }

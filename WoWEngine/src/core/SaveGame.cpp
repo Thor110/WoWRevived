@@ -96,4 +96,22 @@ namespace wow
         }
         return objects;
     }
+
+    std::vector<int> SaveInfo::SectorOwners(std::span<const uint8_t> d)
+    {
+        std::vector<int> owners(31, 2);
+        int sector = 0;
+        for (size_t i = 0; i + 4 <= d.size() && sector < 30; i++)
+        {
+            if (std::memcmp(&d[i], "SECT", 4) != 0) continue;
+            sector++;
+            for (size_t j = i + 4; j + 4 <= d.size(); j++)
+                if (std::memcmp(&d[j], "DMGL", 4) == 0)
+                {
+                    if (j >= 4) owners[size_t(sector)] = int(d[j - 4] | (d[j - 3] << 8) | (d[j - 2] << 16) | (d[j - 1] << 24));
+                    break;
+                }
+        }
+        return owners;
+    }
 }

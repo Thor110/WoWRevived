@@ -74,5 +74,10 @@ namespace wow
             bool PlayersSide() const { return list % 2 == 0; }
         };
         static std::vector<WarMapObject> WarMapObjects(std::span<const uint8_t> data);
+
+        // Who holds each sector, [1]-[30]: 0 Human, 1 Martian, 2 no one. The sector object's writer (0x43C5E0)
+        // puts it straight after SECT's six lists, before the sector's damage map (DMGL); the game keeps it in
+        // the sector table at 0x4EAE1C (0xC0 bytes a sector) and reads it with 0x43CA30.
+        static std::vector<int> SectorOwners(std::span<const uint8_t> data);
     };
 }
