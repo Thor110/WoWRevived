@@ -85,6 +85,7 @@ if(TARGET SDL3::SDL3)
         src/frontend/Credits.cpp
         src/frontend/FrontEnd.cpp
         src/frontend/MovieScreen.cpp
+        src/frontend/Splash.cpp
         src/platform/Movie.cpp
         src/warmap/WarMap.cpp
     )

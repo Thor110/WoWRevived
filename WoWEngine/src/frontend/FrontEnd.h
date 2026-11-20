@@ -18,6 +18,8 @@ namespace wow
         MenuColours colours;
     };
 
+    class WarMap;
+
     class FrontEnd
     {
     public:
@@ -88,7 +90,27 @@ namespace wow
         void ApplyVolumes();
         void StartAmbient(bool restart);
         std::unique_ptr<Screen> screen;
+        // The Fullscreen View's fades (0x4065E0, bigBlack.SPR, GType 0x5C): a command from one of its controls
+        // starts the fade-out (50% black, then black a tick later) and arrives 5 ticks later (0x811B); a new view
+        // fades in (black, then 50%, then clear: 0x811D). overlay: 0 none, 1 half, 2 black.
+        void Dispatch(const Command& command, bool fromControl);
+        bool Fades(const Screen& s) const;
+        std::optional<Command> delayed;
+        int delayTicks = 0;
+        int fadeIn = 0;
+        int overlay = 0;
         std::unique_ptr<Screen> warMap;   // kept while its menus are showing
+        WarMap* ActiveWarMap() const;
+        // The war map's music (0x41B070, command 0x813C): CD tracks 2 and 3 in turn, or without CD music one of
+        // the ambient sounds 0xFD-0xFF every 10 seconds; and its clock sound (0x41F860)
+        void WarMapSounds(WarMap& map);
+        void MusicStep();
+        void StopWarMapSounds();
+        int musicTimer = -1;       // ticks until the next music step, -1 with no war map
+        int musicTrack = 1;        // dword_4B9DE0: 0 for track 2, 1 for track 3 (the first step goes to track 2)
+        int warAmbient = 0;        // world +0x12C
+        int clockSound = 0;        // the calendar's +0x34
+        int clockSpeed = -1;       // the speed it was last set for
         int loadedGroup = -1;
         bool quit = false;
         // typed cheat codes (0x401000): "englishrose" shows the hidden end of the credits

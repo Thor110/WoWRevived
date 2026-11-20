@@ -20,6 +20,8 @@ namespace wow
     struct MenuColours
     {
         int heading = 7;      // [Colours] "Menu Heading"
+        int glowFirst = 4;    // [Colours] "Menu Glow First" (dword_4B93F4)
+        int glowLast = 9;     // [Colours] "Menu Glow Last" (dword_4B93F8)
         int items = 4;        // [Colours] "Menu Items"
         int staticText = 4;   // [Colours] "Menu Static Text"
         int lineSpacing = 4;  // [Tweak] "Text Line Spacing", for free-standing text
@@ -60,12 +62,19 @@ namespace wow
         void Changed(size_t index) override;
         void TextChanged(size_t index) override;
 
+        // The glow (WFullScreenMenu 0x40A060, timer 0x8129 every 2 ticks -> 0x40ADC0): the focused control's text
+        // level steps between "Menu Glow First" and "Menu Glow Last" and back; when the focus moves, the control
+        // it leaves goes back to "Menu Items".
+        void Update() override;
+
     private:
         void Stack(Button button);
         void Centre();
 
         int style;
         MenuColours colours;
+        int glowLevel = -1, glowStep = 1, glowTicks = 0;
+        int glowing = -1;     // the control the glow is on
         int nextY = 0;
         int column = -1, columnTop = 0, columnBottom = 0;
         std::map<size_t, OnChange> onChange;

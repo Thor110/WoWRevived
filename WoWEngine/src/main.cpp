@@ -138,6 +138,8 @@ namespace
             if (ini.Get("Colours", "Menu Heading", value)) settings.colours.heading = std::atoi(value.c_str());
             if (ini.Get("Colours", "Menu Items", value)) settings.colours.items = std::atoi(value.c_str());
             if (ini.Get("Colours", "Menu Static Text", value)) settings.colours.staticText = std::atoi(value.c_str());
+            if (ini.Get("Colours", "Menu Glow First", value)) settings.colours.glowFirst = std::atoi(value.c_str());
+            if (ini.Get("Colours", "Menu Glow Last", value)) settings.colours.glowLast = std::atoi(value.c_str());
             if (ini.Get("Tweak", "Text Line Spacing", value)) settings.colours.lineSpacing = std::atoi(value.c_str());
         }
         return settings;

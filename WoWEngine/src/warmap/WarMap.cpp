@@ -1,5 +1,6 @@
 #include "warmap/WarMap.h"
 
+#include <SDL3/SDL_keyboard.h>
 #include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_log.h>
 
@@ -122,6 +123,7 @@ namespace wow
     WarMap::PanelLayout WarMap::Panel() const
     {
         PanelLayout p;
+        if (!panelShown) return p; // hidden with Tab: nothing to hit
         p.mini = { ScreenW - 115, ScreenH - 175, MiniW, MiniH };
         bool human = res.Human();
         Rect frameSize = SpriteRect(0x80, 0, 0);
@@ -133,6 +135,9 @@ namespace wow
             Rect size = SpriteRect(Gtypes[i], 0, 0);
             p.buttons[i] = { p.frame.x + (human ? HumanX[i] : MartianX[i]), p.frame.y + (human ? 0x29 : 0x24), size.w, size.h };
         }
+        // the Research button (0x423420 -> 0x45BD70, GType 0x341 rese-but.spr, control 0x7D)
+        Rect rb = SpriteRect(0x341, 0, 0);
+        p.research = { p.frame.x + (human ? 0x48 : 0x3A), p.frame.y + (human ? 5 : 0xC), rb.w, rb.h };
         return p;
     }
 
@@ -161,21 +166,21 @@ namespace wow
         log.push_back({ std::move(text), 5 * 30 });
     }
 
-    void WarMap::Update()
+    // The calendar's tick (0x41F6C0): an hour asked for by a click on the calendar ("Advance time", +0x30), or
+    // else the speed's hours a second over the 30 updates of a second; whole hours move the date on (0x41B770).
+    // Returns the game hours that went by.
+    float WarMap::ClockTick()
     {
-        for (LogLine& line : log) if (line.life > 0) line.life--;
-        if (!map) map = res.GetFrame(warmap::MapGType);
-        if (!sectorMap) sectorMap = res.GetFrame(warmap::SectorMapGType);
+        float before = game.ticks;
+        if (forcedHours > 0) { forcedHours--; game.ticks += 1.0f; }
+        else game.ticks += warmap::Speeds[speed] / 30.0f;
+        int hours = int(game.ticks) - int(before);
+        if (hours > 0) warmap::AdvanceDate(game.dateTime, hours);
+        return game.ticks - before;
+    }
 
-        animation++;
-        // the clock
-        {
-            float before = game.ticks;
-            game.ticks += warmap::Speeds[speed] / 30.0f;
-            int hours = int(game.ticks) - int(before);
-            if (hours > 0) warmap::AdvanceDate(game.dateTime, hours);
-        }
-
+    void WarMap::MoveCounters(float hours)
+    {
         // Counters on their way: routes (WWarMapRoute 0x4240D0) move on every game hour (message 0x802D, 0x425080)
         // from sector waypoint to sector waypoint, at the unit's own speed (see PixelsPerHour). Going into a sector
         // the other side holds stops them at its border: that's a battle, which needs the battle map. Arriving in a
@@ -184,7 +189,7 @@ namespace wow
         {
             Counter& k = counters[i];
             if (k.route.empty()) continue;
-            float step = PixelsPerHour(k) * warmap::Speeds[speed] / 30.0f;
+            float step = PixelsPerHour(k) * hours;
             float tx = float(k.route.front().first), ty = float(k.route.front().second);
             float dx = tx - k.fx, dy = ty - k.fy, dist = std::sqrt(dx * dx + dy * dy);
             if (dist > step) { k.fx += dx / dist * step; k.fy += dy / dist * step; }
@@ -221,11 +226,19 @@ namespace wow
             k.x = int(k.fx); k.y = int(k.fy);
         }
 
+    }
+
+    void WarMap::Update()
+    {
+        for (LogLine& line : log) if (line.life > 0) line.life--;
+        if (!map) map = res.GetFrame(warmap::MapGType);
+        if (!sectorMap) sectorMap = res.GetFrame(warmap::SectorMapGType);
+
+        animation++;
+        MoveCounters(ClockTick());
+        TurnCalendar();
+
         int dx = 0, dy = 0;
-        if (keys[0]) dx -= scrollStep;
-        if (keys[1]) dx += scrollStep;
-        if (keys[2]) dy -= scrollStep;
-        if (keys[3]) dy += scrollStep;
         if (mouseX >= 0 && !dragging)
         {
             if (mouseX < EdgeZone) dx -= scrollStep;
@@ -237,6 +250,7 @@ namespace wow
         PanelLayout panel = Panel();
         hotButton = -1;
         for (int i = 0; i < 3; i++) if (panel.buttons[i].Contains(mouseX, mouseY)) hotButton = i;
+        if (panel.research.Contains(mouseX, mouseY)) hotButton = 3;
         bool overPanel = panel.mini.Contains(mouseX, mouseY) || hotButton >= 0 || (panel.frame.Contains(mouseX, mouseY) && res.Human());
         hovered = mouseX >= 0 && !overPanel ? SectorAt(mouseX, mouseY) : 0;
     }
@@ -307,22 +321,28 @@ namespace wow
         // buttons' frames aren't confirmed), then the mini-map: the whole map at a fifteenth, the sector under the
         // mouse lit, and the view's outline
         PanelLayout panel = Panel();
-        canvas.DrawSprite(0x80, 0, panel.frame.x, panel.frame.y);
-        static constexpr int ButtonGtypes[3] = { 0x33, 0x35, 0x34 };
-        for (int i = 0; i < 3; i++)
-            canvas.DrawSprite(ButtonGtypes[i], viewMode == i + 1 ? 2 : hotButton == i ? 1 : 0, panel.buttons[i].x, panel.buttons[i].y);
-        Rect mini = panel.mini;
-        canvas.DrawSprite(warmap::MiniMapGType, 0, mini.x, mini.y, warmap::NormalLevel); // slot 6, like the map
-        int lit = hovered ? hovered : selected;
-        if (lit) canvas.DrawSprite(warmap::MiniSectorGType, lit, mini.x, mini.y);
+        if (panelShown)
         {
-            uint32_t* out = canvas.Pixels();
-            int x0 = mini.x + cameraX * MiniW / warmap::MapWidth, y0 = mini.y + cameraY * MiniH / warmap::MapHeight;
-            int x1 = mini.x + (cameraX + ViewW()) * MiniW / warmap::MapWidth, y1 = mini.y + (cameraY + ViewH()) * MiniH / warmap::MapHeight;
-            const uint32_t colour = 0xFFFFFF;
-            auto plot = [&](int x, int y) { if (x >= 0 && y >= 0 && x < canvas.Width() && y < canvas.Height()) out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = colour; };
-            for (int x = x0; x <= x1; x++) { plot(x, y0); plot(x, y1); }
-            for (int y = y0; y <= y1; y++) { plot(x0, y); plot(x1, y); }
+            canvas.DrawSprite(0x80, 0, panel.frame.x, panel.frame.y);
+            static constexpr int ButtonGtypes[3] = { 0x33, 0x35, 0x34 };
+            for (int i = 0; i < 3; i++)
+                canvas.DrawSprite(ButtonGtypes[i], viewMode == i + 1 ? 2 : hotButton == i ? 1 : 0, panel.buttons[i].x, panel.buttons[i].y);
+            // a push button's frames (0x433DB0): 0, 1 under the mouse, 2 held under the mouse, 3 held off it
+            int researchFrame = researchHeld ? (hotButton == 3 ? 2 : 3) : hotButton == 3 ? 1 : 0;
+            canvas.DrawSprite(0x341, researchFrame, panel.research.x, panel.research.y);
+            Rect mini = panel.mini;
+            canvas.DrawSprite(warmap::MiniMapGType, 0, mini.x, mini.y, warmap::NormalLevel); // slot 6, like the map
+            int lit = hovered ? hovered : selected;
+            if (lit) canvas.DrawSprite(warmap::MiniSectorGType, lit, mini.x, mini.y);
+            {
+                uint32_t* out = canvas.Pixels();
+                int x0 = mini.x + cameraX * MiniW / warmap::MapWidth, y0 = mini.y + cameraY * MiniH / warmap::MapHeight;
+                int x1 = mini.x + (cameraX + ViewW()) * MiniW / warmap::MapWidth, y1 = mini.y + (cameraY + ViewH()) * MiniH / warmap::MapHeight;
+                const uint32_t colour = 0xFFFFFF;
+                auto plot = [&](int x, int y) { if (x >= 0 && y >= 0 && x < canvas.Width() && y < canvas.Height()) out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = colour; };
+                for (int x = x0; x <= x1; x++) { plot(x, y0); plot(x, y1); }
+                for (int y = y0; y <= y1; y++) { plot(x0, y); plot(x1, y); }
+            }
         }
 
         // the message list
@@ -335,7 +355,7 @@ namespace wow
         // the sector under the mouse or the panel button's name, and the engine's own notes (provisional: the game
         // shows these its own way, not traced)
         std::string status;
-        static constexpr int ButtonText[3] = { 0x47B, 0x47C, 0x47E }; // "Unit View", "Construction view", "Resource view"
+        static constexpr int ButtonText[4] = { 0x47B, 0x47C, 0x47E, 0x47D }; // "Unit View", "Construction view", "Resource view", "View Research"
         if (!message.empty()) status = message;
         if (hotButton >= 0) status = res.String(ButtonText[hotButton]);
         else if (hovered) status = res.String(warmap::NameText(hovered));
@@ -354,39 +374,60 @@ namespace wow
         if (!status.empty()) canvas.DrawString(0x72, status, { 8, ScreenH - 18, 300, 14 }, 0, colours.items);
     }
 
+    // The keys, as the war map view (0x41C5E0 and 0x41D640) and the world (0x41A450) take them. Each press (and
+    // each repeat while held) is one step, as with WM_KEYDOWN.
     std::optional<Command> WarMap::OnKey(int key)
     {
+        const bool ctrl = (SDL_GetModState() & SDL_KMOD_CTRL) != 0;
+        // the view's scroll keys send 0x7A with the view's new top-left: steps of the map's size, not the view's
+        auto scrollTo = [&](int x, int y) { cameraX = x; cameraY = y; Clamp(); };
+        const int w = warmap::MapWidth, h = warmap::MapHeight;
         switch (key)
         {
-        case SDLK_LEFT: keys[0] = true; break;
-        case SDLK_RIGHT: keys[1] = true; break;
-        case SDLK_UP: keys[2] = true; break;
-        case SDLK_DOWN: keys[3] = true; break;
-        case SDLK_ESCAPE: return Command{ Commands::Back, 0 };
-        // the game's speed (provisional keys: the war map's own speed controls aren't traced yet)
-        case SDLK_EQUALS: case SDLK_KP_PLUS: speed = std::min(speed + 1, int(std::size(warmap::Speeds)) - 1); break;
-        case SDLK_MINUS: case SDLK_KP_MINUS: speed = std::max(speed - 1, 0); break;
-        default: break;
+        // the view (0x41C5E0): F1 Unit view, F2 Construction view, F3-F5 Resource view with each kind
+        case SDLK_F1: viewMode = 1; break;
+        case SDLK_F2: viewMode = 2; break;
+        case SDLK_F3: case SDLK_F4: case SDLK_F5: viewMode = 3; resourceKind = int(key - SDLK_F3); break;
+        // 0x41D640
+        case SDLK_ESCAPE: return Command{ Commands::Back, 0 };  // 0x80B5, the war map menu
+        case SDLK_HOME:                                         // centre on the selected sector (0x41E000, not animated)
+            if (selected)
+            {
+                const warmap::SectorInfo& r = warmap::Sectors[selected];
+                CentreOn((r.left + r.right) / 2, (r.top + r.bottom) / 2);
+            }
+            break;
+        case SDLK_PAGEUP: scrollTo(cameraX, 0); break;
+        case SDLK_PAGEDOWN: scrollTo(cameraX, h); break;
+        case SDLK_UP: scrollTo(cameraX, cameraY - (ctrl ? h / 8 : h / 16)); break;
+        case SDLK_DOWN: scrollTo(cameraX, cameraY + (ctrl ? h / 8 : h / 16)); break;
+        case SDLK_LEFT: scrollTo(cameraX - (ctrl ? w / 3 : w / 7), cameraY); break;
+        case SDLK_RIGHT: scrollTo(cameraX + (ctrl ? w / 3 : w / 7), cameraY); break;
+        case SDLK_R: return Command{ ResearchCommand, 0 };     // the research screen
+        // 'M' (0x6C, the message history) isn't in yet
+        // the world (0x41A450)
+        case SDLK_TAB: panelShown = !panelShown; break;         // the mini-map and its frame (0x42F310)
+        case SDLK_SPACE:                                        // Unit -> Construction -> Resource 0, 1, 2 -> Unit
+            if (viewMode == 1) viewMode = 2;
+            else if (viewMode == 2) { viewMode = 3; resourceKind = 0; }
+            else if (resourceKind < 2) resourceKind++;
+            else viewMode = 1;
+            break;
+        default:
+            // '0'-'9' set the clock's speed, '0' being 10 (0x41F640)
+            if (key >= int(SDLK_0) && key <= int(SDLK_9)) speed = key == SDLK_0 ? 10 : int(key - SDLK_0);
+            break;
         }
         return std::nullopt;
     }
 
-    void WarMap::OnKeyUp(int key)
-    {
-        switch (key)
-        {
-        case SDLK_LEFT: keys[0] = false; break;
-        case SDLK_RIGHT: keys[1] = false; break;
-        case SDLK_UP: keys[2] = false; break;
-        case SDLK_DOWN: keys[3] = false; break;
-        default: break;
-        }
-    }
+    void WarMap::OnKeyUp(int) {}
 
     void WarMap::OnMouseMove(int x, int y)
     {
         mouseX = x;
         mouseY = y;
+        if (draggingSpeed) SetSpeedFromX(x);
         if (dragging)
         {
             Rect mini = MiniMapRect();
@@ -400,10 +441,29 @@ namespace wow
         PanelLayout panel = Panel();
         for (int i = 0; i < 3; i++)
             if (down && panel.buttons[i].Contains(x, y)) { viewMode = i + 1; return std::nullopt; } // 0x811F -> 0x419810
+        // the Research button acts when the button comes up over it
+        if (down && panel.research.Contains(x, y)) { researchHeld = true; return std::nullopt; }
+        if (!down && researchHeld)
+        {
+            researchHeld = false;
+            if (panel.research.Contains(x, y)) return Command{ ResearchCommand, 0 };
+            return std::nullopt;
+        }
+        // the speed slider (a Scrollbar, 0x431E30): pressing it sets the position under the mouse, and moving
+        // with the button held drags it until the button comes up, wherever the mouse is by then
         Rect sp = SpeedRect();
+        if (!down && draggingSpeed) { draggingSpeed = false; return std::nullopt; }
         if (down && sp.Contains(x, y))
         {
-            speed = std::clamp((x - sp.x) * int(std::size(warmap::Speeds)) / std::max(sp.w, 1), 0, int(std::size(warmap::Speeds)) - 1);
+            draggingSpeed = true;
+            SetSpeedFromX(x);
+            return std::nullopt;
+        }
+        // a click on the rest of the calendar moves time on an hour at once (0x4278A0: +0x30 and the tick)
+        if (down && CalendarRect().Contains(x, y))
+        {
+            forcedHours++;
+            MoveCounters(ClockTick());
             return std::nullopt;
         }
         if (down && mini.Contains(x, y))
@@ -437,6 +497,17 @@ namespace wow
     // The speed slider (0x431E30 with GType 0x97: hu_speed.spr 120 x 58, ma_speed.spr 65 x 26, 22 frames: 11
     // positions, then the same lit), at 0, 0x1F in the Human calendar and 0x30, 0x16 in the Martian one. Its
     // position is the speed (0-10, see warmap::Speeds).
+    void WarMap::SetSpeedFromX(int x)
+    {
+        // the Scrollbar's position (0x431EF0): (max + 1) x (x - left margin) / (length - both margins), no rounding;
+        // the margins are 18 and 31 on the Human slider, 8 and 11 on the Martian one
+        Rect sp = SpeedRect();
+        int left = res.Human() ? 18 : 8, right = res.Human() ? 31 : 11;
+        int positions = int(std::size(warmap::Speeds));
+        int span = std::max(sp.w - left - right, 1);
+        speed = std::clamp(positions * (x - sp.x - left) / span, 0, positions - 1);
+    }
+
     Rect WarMap::SpeedRect() const
     {
         Rect c = CalendarRect();
@@ -445,36 +516,107 @@ namespace wow
         return { c.x + (human ? 0 : 0x30), c.y + (human ? 0x1F : 0x16), size.w, size.h };
     }
 
+    void WarMap::TurnCalendar()
+    {
+        CalendarWheels& w = wheels;
+        const bool human = res.Human();
+        const float hours = game.ticks;
+        // the targets (0x427500)
+        if (human)
+        {
+            w.cycle = (w.cycle + 1) % 30;                                       // a frame an update
+            w.faceTarget = int((hours - float(int(hours / 12.0f) * 12)) * 8.0f); // 0x4A9E24 = 1/12, 0x4A9E28 = 8
+            w.ampmTarget = (int(hours) / 12 & 1) * 5;
+            int day = game.Day(), year = game.Year();
+            w.digitTarget[0] = (day / 10 % 10) * 5;
+            w.digitTarget[1] = (day % 10) * 5;
+            w.monthTarget = (game.Month() - 1) * 5;
+            w.digitTarget[2] = (year / 1000 % 10) * 5;
+            w.digitTarget[3] = (year / 100 % 10) * 5;
+            w.digitTarget[4] = (year / 10 % 10) * 5;
+            w.digitTarget[5] = (year % 10) * 5;
+        }
+        else
+        {
+            w.cycle = (w.cycle + (speed ? 4 : 1)) % 100;
+            w.globe = int(hours) % 24;
+            // the days gone by to two places: the hours over 24000, 2400 ... 0.24 (0x4BA910)
+            static constexpr float Powers[6] = { 24000, 2400, 240, 24, 2.4f, 0.24f };
+            for (int i = 0; i < 6; i++) w.digitTarget[i] = (int(hours / Powers[i]) % 10) * 5;
+        }
+        if (!w.started)
+        {
+            // a new calendar starts on its targets
+            for (int i = 0; i < 6; i++) w.digit[i] = w.digitTarget[i];
+            w.ampm = w.ampmTarget; w.month = w.monthTarget; w.face = w.faceTarget;
+            w.started = true;
+            return;
+        }
+        // the wheels (0x427710): a digit goes on by its step for the speed (frames mod 50) and stops on its target
+        // when it would pass it (going round to 0, once it's within the first 10 frames)
+        static constexpr int MartianStep[11][6] = { // 0x4BA6A0
+            { 1, 1, 1, 1, 1, 1 }, { 1, 1, 1, 1, 1, 2 }, { 1, 1, 1, 1, 1, 4 }, { 1, 1, 1, 1, 1, 5 },
+            { 1, 1, 1, 1, 2, 5 }, { 1, 1, 1, 1, 2, 5 }, { 1, 1, 1, 1, 4, 5 }, { 1, 1, 1, 2, 4, 5 },
+            { 1, 1, 1, 2, 5, 5 }, { 1, 1, 1, 2, 5, 5 }, { 1, 1, 1, 2, 5, 5 } };
+        static constexpr int HumanStep[11][6] = { // 0x4BA7A8
+            { 1, 1, 1, 1, 1, 1 }, { 1, 1, 1, 1, 1, 1 }, { 1, 1, 1, 1, 1, 1 }, { 1, 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1, 1 }, { 1, 1, 1, 1, 1, 1 }, { 1, 1, 1, 1, 1, 1 }, { 1, 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1, 1 }, { 2, 1, 1, 1, 1, 1 }, { 4, 1, 1, 1, 1, 1 } };
+        static constexpr int AmPmStep[11] = { 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 3 };        // 0x4BA8B0
+        static constexpr int FaceStep[11] = { 2, 3, 3, 5, 6, 9, 13, 17, 21, 25, 35 };  // 0x4BA8E0
+        auto roll = [](int& frame, int target, int step) {
+            if (frame == target) return;
+            frame = (frame + step) % 50;
+            if (target == 0 ? frame < 10 : frame > target) frame = target;
+        };
+        // one frame at a time, up to n, stopping on the target
+        auto creep = [](int& frame, int target, int n, int frames) {
+            for (; n > 0 && frame != target; n--) frame = (frame + 1) % frames;
+        };
+        const int s = std::clamp(speed, 0, 10);
+        if (!human)
+        {
+            for (int i = 0; i < 6; i++) roll(w.digit[i], w.digitTarget[i], MartianStep[s][i]);
+            return;
+        }
+        creep(w.digit[0], w.digitTarget[0], HumanStep[s][0], 20); // hu_num03: 0-3
+        for (int i = 1; i < 6; i++) roll(w.digit[i], w.digitTarget[i], HumanStep[s][i]);
+        creep(w.ampm, w.ampmTarget, AmPmStep[s], 10);
+        creep(w.month, w.monthTarget, 1, 60);
+        creep(w.face, w.faceTarget, FaceStep[s], 96);
+    }
+
+    // The calendar's drawing (0x4271E0).
     void WarMap::DrawCalendar(Canvas& canvas) const
     {
         Rect c = CalendarRect();
         canvas.DrawSprite(0x93, 0, c.x, c.y);
-        int hour = game.Hour(), minute = game.Minute();
+        const CalendarWheels& w = wheels;
+        const int s = std::clamp(speed, 0, 10);
         if (res.Human())
         {
-            // the clock face (144 frames: twelve an hour), month (5 frames each), am / pm, the day and year in
-            // digits (5 frames each; the first is hu_num03, 0-3), the pendulum, the twirl to the left
-            canvas.DrawSprite(0x96, (hour % 12) * 12 + minute / 5, c.x + 0x52, c.y + 4);
-            canvas.DrawSprite(0x95, (game.Month() - 1) * 5, c.x + 0x15, c.y + 0xC);
-            canvas.DrawSprite(0x94, hour >= 12 ? 5 : 0, c.x + 0x5A, c.y + 0x2B);
-            int day = game.Day(), year = game.Year();
-            int digits[6] = { day / 10 % 10, day % 10, year / 1000 % 10, year / 100 % 10, year / 10 % 10, year % 10 };
-            static constexpr int X[6] = { 7, 14, 48, 55, 62, 69 }; // 0x4BA688
-            for (int i = 0; i < 6; i++) canvas.DrawSprite(i == 0 ? 0x99 : 0x98, digits[i] * 5, c.x + X[i], c.y + 0xC);
-            canvas.DrawSprite(0x9B, (animation / 2) % 41, c.x + 0x54, c.y + 0x41);
+            // the clock face: 96 frames over 12 hours, and at the top speeds (an hour step of 21 frames or more)
+            // the 48 blurred ones after them
+            static constexpr int FaceStep[11] = { 2, 3, 3, 5, 6, 9, 13, 17, 21, 25, 35 };
+            canvas.DrawSprite(0x96, FaceStep[s] >= 21 ? 0x60 + w.face / 2 : w.face, c.x + 0x52, c.y + 4);
+            canvas.DrawSprite(0x94, w.ampm, c.x + 0x5A, c.y + 0x2B);
+            canvas.DrawSprite(0x95, w.month, c.x + 0x15, c.y + 0xC);
+            // the pendulum: frames 0-29 while stopped, 30-40 swinging while the clock runs (the game also sets a
+            // flag on the sprite then, +0x14 bit 0, not worked out)
+            canvas.DrawSprite(0x9B, s ? 30 + w.cycle * 11 / 30 : w.cycle, c.x + 0x54, c.y + 0x41);
             Rect twirl = SpriteRect(0x9A, 0, 0);
             canvas.DrawSprite(0x9A, 0, c.x - twirl.w, c.y + 6);
+            // the day and year (the first digit is hu_num03, 0-3)
+            static constexpr int X[6] = { 7, 14, 48, 55, 62, 69 }; // 0x4BA688
+            for (int i = 0; i < 6; i++) canvas.DrawSprite(i == 0 ? 0x99 : 0x98, w.digit[i], c.x + X[i], c.y + 0xC);
         }
         else
         {
-            // the globe, the days gone by in six digits (the game time over 24000, 2400 ... 0.24 hours: days to
-            // two decimal places, 0x427500 with the table at 0x4BA910), and the goo
-            canvas.DrawSprite(0x96, (animation / 4) % 24, c.x + 0xB, c.y + 8);
-            static constexpr float Powers[6] = { 24000, 2400, 240, 24, 2.4f, 0.24f };
+            // the globe (the hour of the day), the days gone by in six digits, and the goo
+            canvas.DrawSprite(0x96, w.globe, c.x + 0xB, c.y + 8);
             static constexpr int X[6] = { 32, 41, 50, 59, 74, 83 }; // 0x4BA670
-            for (int i = 0; i < 6; i++)
-                canvas.DrawSprite(0x98, (int(game.ticks / Powers[i]) % 10) * 5, c.x + X[i], c.y + 0x35);
-            canvas.DrawSprite(0x9B, animation % 100, c.x + 0x31, c.y + 7);
+            for (int i = 0; i < 6; i++) canvas.DrawSprite(0x98, w.digit[i], c.x + X[i], c.y + 0x35);
+            canvas.DrawSprite(0x9B, w.cycle, c.x + 0x31, c.y + 7);
         }
         Rect sp = SpeedRect();
         canvas.DrawSprite(0x97, speed + (sp.Contains(mouseX, mouseY) ? 11 : 0), sp.x, sp.y);
@@ -492,86 +634,133 @@ namespace wow
         return -1;
     }
 
+    namespace
+    {
+        constexpr double TurnRadians = 6.283185307179586 / 4096.0; // headings are 4096ths of a turn
+        int Heading(float x0, float y0, float x1, float y1) // 0x43FDA0
+        {
+            double a = std::atan2(double(y1 - y0), double(x1 - x0)) / TurnRadians;
+            return (int(std::lround(a)) % 4096 + 4096) % 4096;
+        }
+        std::pair<float, float> Polar(int heading, float distance) // 0x43FE90
+        {
+            double a = heading * TurnRadians;
+            return { float(std::cos(a) * distance), float(std::sin(a) * distance) };
+        }
+        int AngleDiff(int a, int b) // 0x43FF30: a - b in -2048..2047
+        {
+            int d = ((a - b) % 4096 + 4096) % 4096;
+            return d >= 2048 ? d - 4096 : d;
+        }
+    }
+
+    std::vector<WarMap::Counter::ArrowPoint> WarMap::ArrowCurve(const std::vector<std::pair<float, float>>& control)
+    {
+        // RArrow's curve (0x4244E0 -> 0x424A40): the control points 2^5 apart, then five passes of subdivision,
+        // each new midpoint bent towards the headings at its two ends by 5/11 of the average offset
+        constexpr int Steps = 32;
+        using P = Counter::ArrowPoint;
+        if (control.size() < 2) return {};
+        int count = int(control.size() - 1) * Steps + 1;
+        std::vector<P> p(size_t(count), P{ 0, 0, 0 });
+        for (size_t i = 0; i < control.size(); i++) p[i * Steps] = { control[i].first, control[i].second, 0 };
+        for (int step = Steps; step >= 2; step /= 2)
+        {
+            for (int i = 0; i + step < count; i += step)
+                p[size_t(i)].heading = Heading(p[size_t(i)].x, p[size_t(i)].y, p[size_t(i + step)].x, p[size_t(i + step)].y);
+            for (int i = 0; i + step < count; i += step)
+            {
+                const P& a = p[size_t(i)];
+                const P& b = p[size_t(i + step)];
+                float mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+                float length = std::hypot(b.x - a.x, b.y - a.y);
+                int h = Heading(a.x, a.y, b.x, b.y);
+                float vx = 0, vy = 0;
+                int terms = 0;
+                auto offset = [&](int diff) {
+                    float o = float(std::tan(diff * TurnRadians)) * length * 0.5f;
+                    return std::clamp(o, -length / 2, length / 2);
+                };
+                if (i > 0)
+                {
+                    auto [x, y] = Polar(h - 0x400, offset(AngleDiff(h, a.heading)));
+                    vx += x; vy += y; terms++;
+                }
+                if (i < count - 2 * step)
+                {
+                    auto [x, y] = Polar(h - 0x400, offset(AngleDiff(b.heading + 0x800, h + 0x800)));
+                    vx -= x; vy -= y; terms++;
+                }
+                if (terms) { vx /= float(terms); vy /= float(terms); }
+                p[size_t(i + step / 2)] = { mx + vx * 5.0f / 11.0f, my + vy * 5.0f / 11.0f, 0 };
+            }
+        }
+        for (int i = 1; i + 1 < count; i++)
+            p[size_t(i)].heading = Heading(p[size_t(i - 1)].x, p[size_t(i - 1)].y, p[size_t(i + 1)].x, p[size_t(i + 1)].y);
+        p[0].heading = p[1].heading;
+        p[size_t(count - 1)].heading = p[size_t(count - 2)].heading;
+        return p;
+    }
+
     void WarMap::DrawRouteArrow(Canvas& canvas, const Counter& k) const
     {
-        // RArrow (0x4244E0) makes an RTypeArrow (0x49CAC0, drawn by 0x49CDB0) through the route's points: a curve
-        // with 2^5 steps a stretch (made by 0x424A40), a textured strip along it and a head at its end. The style is
-        // OBJ.ojd record 14's: 0 / 1 for the Humans, 2 / 3 for the Martians (one more where the route's +0x5E is
-        // clear; the engine always uses the first). Its texture (GType 0x19 harrow2.raw / marrow2.raw, or 0x18
-        // ...arrow1.raw) is 256 x 64: the body strip in its first 64 columns, the head's triangle in the next 128.
-        // The body's half width runs from the style's first number to its second, and stops a third of a stretch
-        // short of the end (the style's step count / 3), where the head starts, its half width the third number.
-        // Provisional: 0x424A40 bends the curve by headings (0x43FDA0, 0x43FF30, 0x43FE90) where the engine uses a
-        // Catmull-Rom spline; the head is one triangle (the game draws three, 0x410190) its fourth number long; the
-        // body's texture runs along the curve a pixel a row; the Martian styles' -0.4 isn't used.
+        // RTypeArrow (0x49CAC0, drawn by 0x49CDB0) along the route's curve. Style (OBJ.ojd record 14): attacks 0
+        // (Human) / 2 (Martian), other moves 1 / 3. Its texture is 256 x 64: the body strip in the first 64 columns,
+        // the head's triangle from 64 to 191 with its point at (128, 0).
+        if (k.arrow.size() < 2) return;
         bool human = res.Human();
-        auto style = arrowTypes.find(human ? 0 : 2);
+        auto style = arrowTypes.find((human ? 0 : 2) + (k.attack ? 0 : 1));
         if (style == arrowTypes.end()) return;
         const ObjOjd::ArrowType& t = style->second;
         const std::vector<uint8_t>* texture = res.GetRaw(t.gtype);
         const ShadeTable* shade = res.ShadeFor(t.gtype);
-        constexpr int TexW = 256, TexH = 64, Steps = 32; // 2^5 (0x4244E0's pow(2.0, 5))
+        constexpr int TexW = 256, TexH = 64, Steps = 32;
         if (!texture || texture->size() < size_t(TexW * TexH) || !shade) return;
         const uint32_t* colours = shade->Level(0);
-
-        std::vector<std::pair<float, float>> points{ { float(k.x + 16 - cameraX), float(k.y + 16 - cameraY) } };
-        // one point a sector, as 0x4244E0 takes them (the waypoints, 0x437380), and the cell it ends in
-        for (size_t i = 0; i < k.route.size(); i++)
-            if (k.routeWaypoint[i]) points.push_back({ float(k.route[i].first + 16 - cameraX), float(k.route[i].second + 16 - cameraY) });
-        std::vector<std::pair<float, float>> curve;
-        for (size_t i = 0; i + 1 < points.size(); i++)
-        {
-            auto p0 = points[i > 0 ? i - 1 : i], p1 = points[i], p2 = points[i + 1], p3 = points[i + 2 < points.size() ? i + 2 : i + 1];
-            for (int s = 0; s < Steps; s++)
-            {
-                float u = float(s) / Steps, u2 = u * u, u3 = u2 * u;
-                auto at = [&](float a, float b, float c, float d) {
-                    return 0.5f * (2 * b + (c - a) * u + (2 * a - 5 * b + 4 * c - d) * u2 + (3 * b - a - 3 * c + d) * u3);
-                };
-                curve.push_back({ at(p0.first, p1.first, p2.first, p3.first), at(p0.second, p1.second, p2.second, p3.second) });
-            }
-        }
-        curve.push_back(points.back());
-        int n = int(curve.size());
-        int headAt = std::max(0, n - 1 - Steps / 3);
-        auto direction = [&](int i) {
-            int a = std::max(0, i - 1), b = std::min(n - 1, i + 1);
-            float dx = curve[size_t(b)].first - curve[size_t(a)].first, dy = curve[size_t(b)].second - curve[size_t(a)].second;
-            float len = std::sqrt(dx * dx + dy * dy);
-            return len > 0 ? std::make_pair(dx / len, dy / len) : std::make_pair(1.0f, 0.0f);
+        const int n = int(k.arrow.size());
+        auto at = [&](int i) { return std::make_pair(k.arrow[size_t(i)].x - float(cameraX), k.arrow[size_t(i)].y - float(cameraY)); };
+        // the edges: at right angles to each point's heading, the half width going from the first number to the
+        // second by (second - first) / points a point
+        auto edges = [&](int i, float& lx, float& ly, float& rx, float& ry) {
+            float w = float(t.a) + float(t.b - t.a) * float(i) / float(n);
+            auto [dx, dy] = Polar(k.arrow[size_t(i)].heading + 0x400, w);
+            auto [x, y] = at(i);
+            lx = x + dx; ly = y + dy; rx = x - dx; ry = y - dy;
         };
-        // the body
-        float along = 0;
-        auto edge = [&](int i, float& lx, float& ly, float& rx, float& ry) {
-            auto [dx, dy] = direction(i);
-            float w = float(t.a) + float(t.b - t.a) * float(i) / float(std::max(n - 1, 1));
-            lx = curve[size_t(i)].first - dy * w; ly = curve[size_t(i)].second + dx * w;
-            rx = curve[size_t(i)].first + dy * w; ry = curve[size_t(i)].second - dx * w;
-        };
-        float lx0, ly0, rx0, ry0;
-        edge(0, lx0, ly0, rx0, ry0);
-        for (int i = 1; i <= headAt; i++)
+        int bodyEnd = std::max(0, n - Steps / 3 - 1);
+        float plx, ply, prx, pry;
+        edges(0, plx, ply, prx, pry);
+        for (int i = 1; i <= bodyEnd; i++)
         {
-            float lx1, ly1, rx1, ry1;
-            edge(i, lx1, ly1, rx1, ry1);
-            float step = std::hypot(curve[size_t(i)].first - curve[size_t(i - 1)].first, curve[size_t(i)].second - curve[size_t(i - 1)].second);
-            float v0 = along, v1 = along + step;
-            along = v1;
-            Canvas::TexVertex l0{ lx0, ly0, 0, v0 }, r0{ rx0, ry0, 63, v0 }, l1{ lx1, ly1, 0, v1 }, r1{ rx1, ry1, 63, v1 };
-            canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, l0, r0, r1);
-            canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, l0, r1, l1);
-            lx0 = lx1; ly0 = ly1; rx0 = rx1; ry0 = ry1;
+            float lx, ly, rx, ry;
+            edges(i, lx, ly, rx, ry);
+            // each quad takes the whole 64 x 64 strip
+            Canvas::TexVertex l0{ plx, ply, 0, 0 }, l1{ lx, ly, 0, 63 }, r1{ rx, ry, 63, 63 }, r0{ prx, pry, 63, 0 };
+            canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, l0, l1, r1);
+            canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, l0, r1, r0);
+            plx = lx; ply = ly; prx = rx; pry = ry;
         }
-        // the head: its base across the curve where the body stops, its point the style's length on
-        auto [hx, hy] = curve[size_t(headAt)];
-        auto [dx, dy] = direction(headAt);
-        float c = float(t.c), d = float(t.d);
-        Canvas::TexVertex left{ hx - dy * c, hy + dx * c, 64, 63 }, right{ hx + dy * c, hy - dx * c, 191, 63 },
-            tip{ hx + dx * d, hy + dy * d, 128, 0 };
-        canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, left, right, tip);
+        // the head at the last body point B: wings W1, W2 a head half width either side (moved k = the style's
+        // float times D1 back), the point the head length on, and the body's last edge points L and R between
+        auto [bx, by] = at(bodyEnd);
+        int h = k.arrow[size_t(bodyEnd)].heading;
+        auto [d1x, d1y] = Polar(h, float(t.c));
+        auto [d2x, d2y] = Polar(h, float(t.d));
+        float kf = t.f;
+        Canvas::TexVertex w1{ bx + d1y - kf * d1x, by - d1x - kf * d1y, 64, 63 };
+        Canvas::TexVertex w2{ bx - d1y - kf * d1x, by + d1x - kf * d1y, 191, 63 };
+        Canvas::TexVertex tip{ bx + d2x, by + d2y, 127, 0 };
+        Canvas::TexVertex right{ prx, pry, 112, 63 }, left{ plx, ply, 144, 63 };
+        canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, w1, right, tip);
+        Canvas::TexVertex tip2 = tip;
+        tip2.u = 128;
+        canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, right, left, tip2);
+        canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, left, w2, tip2);
 
-        // the arrival label (a text object, font 0x71, at the route's end, 0x49D260), the hours still to go being
-        // what's left of the way over the counter's pixels an hour
+        // an attack's arrival label (0x424776): boxed text (0x49D260, font 0x71) at the route's end, the box black
+        // (dword_4DAFC8) with a 1 pixel outline (dword_4DAF88 black for the Humans, the Martians' side colour
+        // dword_4DAF9C), the text 1 pixel in; the hours still to go are what's left of the way at the counter's speed
+        if (!k.attack) return;
         float left_ = 0, px = float(k.x), py = float(k.y);
         for (const auto& p : k.route)
         {
@@ -579,12 +768,25 @@ namespace wow
             px = float(p.first); py = float(p.second);
         }
         float perHour = PixelsPerHour(k);
-        if (perHour > 0)
-        {
-            std::string label = warmap::ArrivalText(game.dateTime, left_ / perHour, human);
-            auto [ex, ey] = points.back();
-            canvas.DrawString(0x71, label, Rect{ int(ex) - 60, int(ey) - 10, 120, 20 }, TextCentreX | TextCentreY);
-        }
+        if (perHour <= 0) return;
+        std::string label = warmap::ArrivalText(game.dateTime, left_ / perHour, human,
+            [&](int month) { return res.String(warmap::MonthText(month)); });
+        auto [ex, ey] = at(n - 1);
+        const Font* font = res.GetFont(0x71);
+        int tw = font ? font->Measure(label) : 0;
+        int th = font ? font->Height() : 10;
+        Rect box{ int(ex) - tw / 2 - 1, int(ey) - th / 2 - 1, tw + 2, th + 2 };
+        auto six = [](int v) { return uint32_t((v * 255 + 31) / 63); };
+        uint32_t outline = human ? 0 : (six(12) << 16 | six(42) << 8 | six(4));
+        uint32_t* out = canvas.Pixels();
+        for (int y = box.y; y < box.y + box.h; y++)
+            for (int x = box.x; x < box.x + box.w; x++)
+            {
+                if (x < 0 || y < 0 || x >= canvas.Width() || y >= canvas.Height()) continue;
+                bool edge = x == box.x || y == box.y || x == box.x + box.w - 1 || y == box.y + box.h - 1;
+                out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = edge ? outline : 0;
+            }
+        canvas.DrawString(0x71, label, Rect{ box.x + 1, box.y + 1, tw, th }, 0);
     }
 
     bool WarMap::HasCommandPost(int sector) const
@@ -737,6 +939,8 @@ namespace wow
         for (int s : path) through += " " + std::to_string(s);
         SDL_Log("War map: route from sector %d to %d for unit class %d: %s", k.sector, sector, k.moveClass,
                 path.empty() ? why.c_str() : ("through" + through).c_str());
+        // an attack (into a sector the other side holds) has to be to a neighbouring sector (0x424160)
+        if (!path.empty() && owner[size_t(sector)] == 1 && path.size() != 1) { path.clear(); why = "An attack has to be on a neighbouring sector"; }
         if (path.empty()) { message = why; return; }
         k.route.clear();
         k.routeSectors.clear();
@@ -766,6 +970,20 @@ namespace wow
             k.routeSectors.push_back(path[i]);
             k.routeWaypoint.push_back(true);
             at = path[i];
+        }
+        // the arrow's control points (0x4244E0): where the route leaves the first sector (the link's land point, or
+        // its sea point for a naval route), the waypoints of the sectors on the way, and the destination's waypoint
+        {
+            std::vector<std::pair<float, float>> control;
+            int first = path.front();
+            int kind = warmap::RouteLinkKind(k.sector, first);
+            bool bySea = k.moveClass == 3 || (k.moveClass == 4 && !(kind & warmap::RouteKind::Land));
+            const warmap::SectorLink* link = bySea ? warmap::SeaLink(k.sector, first) : warmap::LandLink(k.sector, first);
+            if (link) control.push_back({ float(bySea ? link->sea[0] : link->land[0]), float(bySea ? link->sea[1] : link->land[1]) });
+            else { auto w = warmap::Waypoint(k.sector); control.push_back({ float(w.x), float(w.y) }); }
+            for (int s : path) { auto w = warmap::Waypoint(s); control.push_back({ float(w.x), float(w.y) }); }
+            k.arrow = ArrowCurve(control);
+            k.attack = owner[size_t(sector)] == 1;
         }
         k.fx = float(k.x);
         k.fy = float(k.y);

@@ -2,6 +2,7 @@
 
 #include "core/AiTable.h"
 #include "frontend/MovieScreen.h"
+#include "frontend/Splash.h"
 #include "core/SaveGame.h"
 #include "warmap/WarMap.h"
 #include "core/ObjOjd.h"
@@ -88,8 +89,9 @@ namespace wow
         : res(r), settings(s), ini(i), files(f), sound(f, r.Human())
     {
         ApplyVolumes();
-        // start-up (0x4039D0): the disc check, then RAGELOGO, TITLE and the main menu
-        Execute({ CmdInsertCd, CmdRageLogo });
+        // start-up (WGame::Start 0x402A30 sends 0x74): the legal splash screens, then the disc check, RAGELOGO,
+        // TITLE and the main menu
+        Show(std::make_unique<SplashScreen>(res, Command{ CmdInsertCd, CmdRageLogo }));
     }
 
     void FrontEnd::ApplyVolumes()
@@ -122,6 +124,12 @@ namespace wow
         if (from == CdPlayer::Id && next->Id() != CdPlayer::Id && !ini.GetBool("WoW Engine", "CD Player Music Continues", false))
             music.Stop();
         screen = std::move(next);
+        sound.SetMenuDuck(screen->Id() == CmdWarMapMenu);
+        delayed.reset();
+        overlay = 0;
+        fadeIn = 0;
+        // a Fullscreen View fades in from black (0x406310 sends 0x811D), except Display Settings (+0x94, 0x409713)
+        if (Fades(*screen) && screen->Id() != CmdDisplaySettings) { fadeIn = 2; overlay = 2; }
         // the "not rebuilt" placeholder returns to the menu it was opened from
         if (!screen->Previous() && screen->Id() != CmdMainMenu)
             screen->SetPrevious(from == CmdOptions || from == CmdLoadGame || from == CmdSaveMenu ? from : CmdMainMenu);
@@ -415,10 +423,14 @@ namespace wow
         if (!name.empty()) info.name = name;
         SDL_Log("War map from %s: \"%s\", %d/%d/%d, view %u,%u sector %u", gamePath.c_str(), info.name.c_str(), info.Day(), info.Month(),
             info.Year(), info.warMap[0], info.warMap[1], info.warMap[2]);
-        // WWarMapWorld (0x417CD0) fades every sound out over 30 ticks
+        // WWarMapWorld (0x417CD0) fades every sound out over 30 ticks, stops the CD and has the music start 5
+        // seconds later (0x4181BF)
         sound.FadeOutAll(30);
         ambient = 0;
         warMap.reset();
+        StopWarMapSounds();
+        music.Stop();
+        musicTimer = 5 * 30;
         std::map<int, ObjOjd::UnitData> units;
         std::map<int, ObjOjd::ArrowType> arrows;
         if (auto obj = files.Resolve("OBJ.ojd"))
@@ -547,6 +559,11 @@ namespace wow
             StartWarMap(SaveSlot::GamePath(res.Human(), command.param), {});
             break;
         case CmdWarMapMenu: Show(WarMapMenu()); break;
+        case WarMap::ResearchCommand:
+            // the research screen (0x41A450 'R', the Research button) isn't rebuilt yet; Back returns to the map
+            if (screen && screen->Id() == WarMap::Id) warMap.reset(screen.release());
+            Show(NotRebuilt(command.id, Commands::Back));
+            break;
         case CmdStartNetworkGame:
         case 0xAB:
             // TODO: network games need network play
@@ -565,7 +582,7 @@ namespace wow
             // on the war map Escape opens its menu, and in that menu it (and Resume Campaign, which sends the same
             // 0x8123) goes back to the map
             if (current == WarMap::Id) { Execute({ CmdWarMapMenu, 0 }); break; }
-            if (current == CmdWarMapMenu && warMap) { Show(std::move(warMap)); break; }
+            if ((current == CmdWarMapMenu || current == WarMap::ResearchCommand) && warMap) { Show(std::move(warMap)); break; }
             // Escape goes back to the menu this one was opened from; the main menu itself ignores it, and so does
             // the Insert CD menu (0x408AB0)
             if (current != CmdMainMenu && current != CmdInsertCd) Execute({ screen->Previous() ? screen->Previous() : CmdMainMenu, 0 });
@@ -574,14 +591,119 @@ namespace wow
         }
     }
 
+    bool FrontEnd::Fades(const Screen& s) const
+    {
+        // every front-end screen derives from the Fullscreen View (0x4061B0), the war map menu included; the
+        // war map itself and the movie player don't
+        return s.Id() != WarMap::Id && s.Id() != MovieScreen::Id;
+    }
+
+    void FrontEnd::Dispatch(const Command& command, bool fromControl)
+    {
+        if (delayed) return; // the view is fading out: it takes no more input
+        if (fromControl && screen && Fades(*screen))
+        {
+            delayed = command;
+            delayTicks = 0;
+            overlay = 1;
+            return;
+        }
+        Execute(command);
+    }
+
     void FrontEnd::Update()
     {
         sound.Update();
         if (!screen) return;
+        if (delayed)
+        {
+            // 0x811C: 50% black, then black; 0x811B: the command 5 ticks after the click
+            delayTicks++;
+            overlay = 2;
+            if (delayTicks >= 5)
+            {
+                Command c = *delayed;
+                delayed.reset();
+                Execute(c);
+            }
+            return;
+        }
+        if (fadeIn > 0) { fadeIn--; overlay = fadeIn; }
         screen->Update();
         if (screen->Id() == WarMap::Id)
             for (int id : static_cast<WarMap*>(screen.get())->TakeSounds()) sound.Play(id);
-        if (auto command = screen->TakeCommand()) Execute(*command);
+        if (WarMap* map = ActiveWarMap()) WarMapSounds(*map);
+        else if (musicTimer >= 0) StopWarMapSounds();
+        // the credits' own exit is sent straight on (0x4056F0); the rest come from the view's controls
+        if (auto command = screen->TakeCommand()) Dispatch(*command, screen->Id() != Credits::Id);
+    }
+
+    WarMap* FrontEnd::ActiveWarMap() const
+    {
+        if (screen && screen->Id() == WarMap::Id) return static_cast<WarMap*>(screen.get());
+        return static_cast<WarMap*>(warMap.get());
+    }
+
+    void FrontEnd::WarMapSounds(WarMap& map)
+    {
+        if (musicTimer > 0 && --musicTimer == 0) MusicStep();
+        // the clock (0x41F860, on each change of speed): a Human clock ticks only while stopped (0x1A2, looping,
+        // faded out over 15 ticks once it runs again); a Martian one has a sound for every speed (0x1A1 + speed,
+        // the old one faded over 5 ticks and the new one faded in over 5)
+        int speed = map.Speed();
+        if (speed == clockSpeed) return;
+        clockSpeed = speed;
+        if (res.Human())
+        {
+            if (speed) { sound.FadeOut(clockSound, 15); clockSound = 0; }
+            else if (!sound.Active(clockSound)) clockSound = sound.Play(0x1A2);
+        }
+        else
+        {
+            sound.FadeOut(clockSound, 5);
+            clockSound = sound.Play(0x1A1 + speed);
+            sound.FadeIn(clockSound, 5);
+        }
+    }
+
+    void FrontEnd::MusicStep()
+    {
+        // the ambient sound from the last step fades out over 60 ticks
+        sound.FadeOut(warAmbient, 60);
+        warAmbient = 0;
+        constexpr int TenSeconds = 10 * 30;
+        if (ini.GetBool(SoundSection, "CD", true))
+        {
+            // still playing (the CD player's music, say): stop it and look again in 10 seconds
+            if (music.Playing() && !music.Finished()) { music.Stop(); musicTimer = TenSeconds; return; }
+            static constexpr int Tracks[2] = { 2, 3 };  // ArgList 0x4B9DD8
+            musicTrack = (musicTrack + 1) % 2;
+            int track = Tracks[musicTrack];
+            char name[64];
+            std::snprintf(name, sizeof(name), "Music-%s\\%02d Track%02d.wav", res.Human() ? "Human" : "Martian", track, track);
+            auto path = files.Resolve(name);
+            if (path && music.Play(*path) && music.LengthMs() / 1000 > 10)
+            {
+                SDL_Log("Playing track %d for %u seconds", track, unsigned(music.LengthMs() / 1000));
+                musicTimer = int(music.LengthMs() / 1000) * 30;
+                return;
+            }
+            musicTimer = TenSeconds;
+            return;
+        }
+        warAmbient = sound.Play(0xFD + std::rand() % 3);
+        sound.FadeIn(warAmbient, 60);
+        musicTimer = TenSeconds;
+    }
+
+    void FrontEnd::StopWarMapSounds()
+    {
+        if (musicTimer >= 0) music.Stop();
+        musicTimer = -1;
+        sound.FadeOut(warAmbient, 0);
+        sound.FadeOut(clockSound, 0);
+        warAmbient = clockSound = 0;
+        clockSpeed = -1;
     }
 
     void FrontEnd::Draw(Canvas& canvas) const
@@ -592,6 +714,7 @@ namespace wow
         if (warMap && !screen->Background()) warMap->Draw(canvas);
         if (screen->Background()) canvas.DrawSprite(screen->Background(), 0, 0, 0);
         screen->Draw(canvas);
+        if (overlay) canvas.DrawSprite(0x5C, 0, 0, 0, 0, overlay == 1 ? Canvas::Blend::Translucent : Canvas::Blend::Opaque);
         DrawCursor(canvas);
     }
 
@@ -628,7 +751,8 @@ namespace wow
             }
         }
         if (!screen) return;
-        if (auto command = screen->OnKey(key)) Execute(*command);
+        // Escape's back (0x40A1B0 sends 0x8123 itself) goes straight on; a control's command fades out first
+        if (auto command = screen->OnKey(key)) Dispatch(*command, key != SDLK_ESCAPE);
     }
 
     void FrontEnd::OnMouseMove(int x, int y)
@@ -641,6 +765,6 @@ namespace wow
     void FrontEnd::OnMouseButton(int x, int y, bool down)
     {
         if (!screen) return;
-        if (auto command = screen->OnMouseButton(x, y, down)) Execute(*command);
+        if (auto command = screen->OnMouseButton(x, y, down)) Dispatch(*command, true);
     }
 }

@@ -68,6 +68,7 @@ namespace wow
     void CdPlayer::Select(int t, bool play)
     {
         track = std::clamp(t, FirstTrack, LastTrack);
+        if (!play && music.Paused()) music.Stop(); // a paused track doesn't carry over to another
         if (play)
         {
             auto file = TrackFile(track);
@@ -96,9 +97,14 @@ namespace wow
         {
         case PrevTrack: Select(track - 1, playing); break;
         case NextTrack: Select(track + 1, playing); break;
-        case Play: Select(track, true); break;
-        case Stop: music.Stop(); playing = false; Refresh(); break;
-        case Pause: if (playing) music.SetPaused(!music.Paused()); break;
+        // Play (0x408328) resumes a paused track, otherwise starts it; Pause (0x40833B) pauses the CD and counts
+        // as not playing, so Play comes back in Stop's place
+        case Play:
+            if (music.Paused()) { music.SetPaused(false); playing = true; Refresh(); }
+            else Select(track, true);
+            break;
+        case Stop: music.Stop(); music.SetPaused(false); playing = false; Refresh(); break;
+        case Pause: if (playing) { music.SetPaused(true); playing = false; Refresh(); } break;
         default: break;
         }
         return true;
@@ -124,7 +130,7 @@ namespace wow
         if (!anyMusic) line = res.String(0x4CC);
         else
         {
-            uint32_t seconds = playing ? music.PositionMs() / 1000 : 0;
+            uint32_t seconds = playing || music.Paused() ? music.PositionMs() / 1000 : 0;
             char text[32];
             std::snprintf(text, sizeof(text), "[%d]<%02u:%02u>", track - 1, seconds / 60, seconds % 60);
             line = text;

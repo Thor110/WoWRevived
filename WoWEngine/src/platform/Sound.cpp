@@ -1,6 +1,8 @@
 #include "platform/Sound.h"
 
 #include <algorithm>
+#include <cmath>
+#include <array>
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
@@ -54,7 +56,9 @@ namespace wow
         if (!def) return 0;
         const auto& group = def->groups[0];
         if (group.empty()) return 0;
-        const SoundSample& sample = group[group.size() == 1 ? 0 : size_t(std::rand()) % group.size()];
+        // the sound's samples are taken in turn, not at random (0x466BC0)
+        size_t& cursor = nextVariation[id];
+        const SoundSample& sample = group[cursor++ % group.size()];
         auto pcm = Sample(sample);
         if (!pcm || pcm->empty()) return 0;
 
@@ -66,7 +70,41 @@ namespace wow
         v.type = std::clamp(def->type, 0, 5);
         v.gain = def->volume * volume;
         std::lock_guard<std::mutex> l(lock);
+        // Voices (0x463640): 8 at once; Ambient 2, Engine 4, Explosions 4, Weapons 4, Special 2, Speech any.
+        // At a type's limit, Ambient and Engine take the quietest of their own voices, Explosions and Weapons the
+        // oldest, and Special fails. With all 8 in use a sound takes the lowest-type voice below it, else fails.
+        // New speech drops the speech already playing to 0.7.
+        static constexpr int Limit[6] = { 2, 4, 4, 4, 2, 1000 };
+        constexpr size_t Voices = 8;
+        auto loudness = [&](const Voice& o) { return o.gain * o.fade; };
+        auto erase = [&](size_t i) { voices.erase(voices.begin() + std::ptrdiff_t(i)); };
+        int sameType = 0;
+        for (const Voice& o : voices) if (o.type == v.type) sameType++;
+        if (v.type == SoundDef::Speech)
+            for (Voice& o : voices) if (o.type == SoundDef::Speech) o.speechFade = 0.7f;
+        if (sameType >= Limit[v.type])
+        {
+            if (v.type == SoundDef::Special) return 0;
+            size_t pick = voices.size();
+            for (size_t i = 0; i < voices.size(); i++)
+            {
+                if (voices[i].type != v.type) continue;
+                if (pick == voices.size()) { pick = i; continue; }
+                bool better = v.type <= SoundDef::Engine ? loudness(voices[i]) < loudness(voices[pick]) : voices[i].age < voices[pick].age;
+                if (better) pick = i;
+            }
+            if (pick < voices.size()) erase(pick);
+        }
+        else if (voices.size() >= Voices)
+        {
+            size_t pick = voices.size();
+            for (size_t i = 0; i < voices.size(); i++)
+                if (voices[i].type < v.type && (pick == voices.size() || voices[i].type < voices[pick].type)) pick = i;
+            if (pick == voices.size()) return 0;
+            erase(pick);
+        }
         v.handle = nextHandle++;
+        v.age = started++;
         voices.push_back(v);
         return v.handle;
     }
@@ -91,11 +129,41 @@ namespace wow
         return false;
     }
 
+    void Sound::FadeOut(int handle, int ticks)
+    {
+        std::lock_guard<std::mutex> l(lock);
+        if (ticks <= 0) { voices.erase(std::remove_if(voices.begin(), voices.end(), [&](const Voice& v) { return v.handle == handle; }), voices.end()); return; }
+        for (Voice& v : voices) if (v.handle == handle && !v.fadeOutTicks) { v.fadeOutTicks = ticks; v.fadeOutDone = 0; }
+    }
+
     void Sound::FadeOutAll(int ticks)
     {
         std::lock_guard<std::mutex> l(lock);
         if (ticks <= 0) { voices.clear(); return; }
         for (Voice& v : voices) { v.fadeOutTicks = ticks; v.fadeOutDone = 0; }
+    }
+
+    void Sound::SetMenuDuck(bool on)
+    {
+        std::lock_guard<std::mutex> l(lock);
+        menuDuck = on;
+    }
+
+    float Sound::Curve(float volume)
+    {
+        // DirectSound volume (hundredths of a dB) = table[trunc(127 v)], table[i] = trunc(4745.61156 log10((i + 1) / 128)):
+        // -10000 (silence) at 0 up to 0 at 127
+        static const std::array<float, 128> gains = [] {
+            std::array<float, 128> g{};
+            for (int i = 0; i < 128; i++)
+            {
+                int hundredths = int(4745.61156 * std::log10(double(i + 1) / 128.0));
+                g[size_t(i)] = i == 0 ? 0.0f : float(std::pow(10.0, hundredths / 2000.0));
+            }
+            return g;
+        }();
+        int i = std::clamp(int(127.0f * volume), 0, 127);
+        return gains[size_t(i)];
     }
 
     void Sound::SetVolumes(float m, const float types[6])
@@ -137,11 +205,15 @@ namespace wow
     void Sound::Mix(float* out, int frames)
     {
         std::lock_guard<std::mutex> l(lock);
+        bool speechPlaying = false;
+        for (const Voice& v : voices) if (v.type == SoundDef::Speech) speechPlaying = true;
         for (Voice& v : voices)
         {
             const auto& pcm = *v.pcm;
             const double length = double(pcm.size() / size_t(v.channels)); // frames
-            float gain = v.gain * v.fade * typeVolume[v.type] * master / 32768.0f;
+            // the duck (0x4CA998): 0.5 for everything but speech while speech plays, 0.25 under the war map menu
+            float duck = v.type == SoundDef::Speech ? 1.0f : menuDuck ? 0.25f : speechPlaying ? 0.5f : 1.0f;
+            float gain = Curve(v.gain * v.fade * v.speechFade * typeVolume[v.type] * master * duck) / 32768.0f;
             for (int i = 0; i < frames; i++)
             {
                 if (v.position >= length)

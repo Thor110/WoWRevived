@@ -316,10 +316,12 @@ namespace wow::warmap
     // A route's arrival label (0x41B9A0, called by 0x424160 and every game hour by 0x425080 with the hours still
     // to go): for the Humans the arrival's hour, "03pm" (the hour mod 12, so noon is "00pm"), with " 4 Sep" after
     // it unless it's within 24 hours on the same day, and the year when it isn't this year's; for the Martians
-    // the days since the start at the arrival, with hundredths: "12.50".
-    inline std::string ArrivalText(const uint16_t (&now)[6], float hours, bool human)
+    // the days since the start at the arrival, with hundredths: "12.50". The month names are TEXT 0x521-0x52C
+    // (MonthText, loaded by 0x41BF90 from the ids at 0x4B9F60).
+    inline int MonthText(int month) { return 0x521 + month; } // month from 0
+    template <typename MonthName>
+    inline std::string ArrivalText(const uint16_t (&now)[6], float hours, bool human, MonthName monthName)
     {
-        static constexpr const char* Months[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
         uint16_t at[6];
         for (int i = 0; i < 6; i++) at[i] = now[i];
         int whole = int(hours), minutes = now[1] + int((hours - float(whole)) * 60.0f);
@@ -334,7 +336,7 @@ namespace wow::warmap
             text += at[2] >= 12 ? "pm" : "am";
             if (!(hours < 24.0f && at[3] == now[3]))
             {
-                text += " " + std::to_string(at[3] + 1) + " " + Months[at[4] % 12];
+                text += " " + std::to_string(at[3] + 1) + " " + monthName(at[4] % 12);
                 if (at[5] != now[5]) text += " " + std::to_string(at[5]);
             }
         }

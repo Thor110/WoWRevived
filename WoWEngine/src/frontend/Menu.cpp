@@ -171,4 +171,22 @@ namespace wow
         int dy = (ScreenH - (bottom - top)) / 2 - top;
         for (Button& b : buttons) { b.rect.x += dx; b.rect.y += dy; }
     }
+
+    void Menu::Update()
+    {
+        Screen::Update();
+        if (++glowTicks < 2) return;
+        glowTicks = 0;
+        if (glowLevel < 0) glowLevel = colours.glowFirst;
+        if (selected < 0 || size_t(selected) >= buttons.size()) return;
+        if (selected != glowing)
+        {
+            if (glowing >= 0 && size_t(glowing) < buttons.size()) buttons[size_t(glowing)].level = colours.items;
+            glowing = selected;
+        }
+        glowLevel += glowStep;
+        if (glowLevel > colours.glowLast) { glowLevel--; glowStep = -1; }
+        if (glowLevel < colours.glowFirst) { glowLevel++; glowStep = 1; }
+        buttons[size_t(selected)].level = glowLevel;
+    }
 }

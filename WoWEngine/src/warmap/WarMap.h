@@ -23,6 +23,7 @@ namespace wow
     {
     public:
         static constexpr int Id = 0x8A; // the command that starts it
+        static constexpr int ResearchCommand = 0x7D; // the research screen (0x41A450 'R', the Research button)
 
         // start: the save it begins from (its WMAP block gives the view and sector)
         // units: each unit type's counter frame (OBJ.ojd record 23) and war map speed (records 37/38)
@@ -39,6 +40,7 @@ namespace wow
         int SectorAt(int screenX, int screenY) const; // 0 off the land
         int HoveredSector() const { return hovered; }
         const SaveInfo& Game() const { return game; }
+        int Speed() const { return speed; }  // the clock's speed, 0-10
         void SetSectorLimits(int units, int boats) { maxUnits = units; maxBoats = boats; }
         // sounds (SFX.ojd ids) the war map wants played, taken by the front end every update
         std::vector<int> TakeSounds() { return std::exchange(sounds, {}); }
@@ -60,15 +62,22 @@ namespace wow
         int mouseX = -1, mouseY = -1;
         int hovered = 0, selected = 0;
         int scrollStep = 8;
-        bool keys[4] = {};               // left, right, up, down held
         bool dragging = false;           // the mini-map
+        bool draggingSpeed = false;      // the speed slider, held
+        void SetSpeedFromX(int x);
         int speed = 1;                   // index into warmap::Speeds (the calendar's +0x24)
+        int forcedHours = 0;             // the calendar's +0x30: hours to go on by, one a tick
+        float ClockTick();
+        void MoveCounters(float hours);
         // who holds each sector: 0 the side being played, 1 the other side, 2 no one
         std::array<int, warmap::SectorCount + 1> owner{};
         int viewMode = 1;                // 1 units, 2 constructions, 3 resources (0x419810, the WWarMapWorld's +0x70)
-        int hotButton = -1;              // the panel button under the mouse
+        int hotButton = -1;              // the panel button under the mouse (3: the Research button)
+        bool researchHeld = false;       // the Research button, pressed
+        int resourceKind = 0;            // the Resource view's kind, 0-2 (dword_4E9F40; F3-F5 or Space)
+        bool panelShown = true;          // the mini-map and its frame (Tab, 0x41A450)
 
-        struct PanelLayout { Rect frame, mini, buttons[3]; };
+        struct PanelLayout { Rect frame, mini, buttons[3], research; };
         PanelLayout Panel() const;
 
         int chosen = -1;                 // the counter picked to move (drawn with cselecth.spr, GType 0x54)
@@ -81,7 +90,20 @@ namespace wow
         std::vector<LogLine> log;
         void Log(std::string text);
         std::vector<int> sounds;
-        int animation = 0;               // ticks, for the calendar's pendulum / goo and spinning digits
+        int animation = 0;               // ticks
+        // The calendar's moving parts (Calendar View 0x426C10): each wheel's frame and the frame it's heading for
+        // (0x427500 sets the targets, 0x427710 turns the wheels, both every update)
+        struct CalendarWheels
+        {
+            int digit[6] = {}, digitTarget[6] = {};  // +0xD4 / +0xEC: frames, 5 a digit
+            int ampm = 0, ampmTarget = 0;             // +0x9C / +0xA0 (Human)
+            int month = 0, monthTarget = 0;           // +0xA8 / +0xAC (Human)
+            int face = 0, faceTarget = 0;             // +0x90 / +0x94 (Human: 8 frames an hour over 12 hours)
+            int globe = 0;                            // the Martian globe: the hour of the day
+            int cycle = 0;                            // +0xB8: the pendulum (Human, 0-29) or the goo (Martian, 0-99)
+            bool started = false;
+        } wheels;
+        void TurnCalendar();
         Rect CalendarRect() const;
         Rect SpeedRect() const;
         void DrawCalendar(Canvas& canvas) const;
@@ -107,12 +129,18 @@ namespace wow
             // travelling: where it's heading, through these points (sector by sector)
             std::vector<std::pair<int, int>> route;
             std::vector<int> routeSectors;
-            std::vector<bool> routeWaypoint; // the points the arrow goes through: a waypoint or the last cell
+            std::vector<bool> routeWaypoint; // a sector's waypoint (or the last cell) rather than a border point
+            // the route's arrow (0x4244E0): its curve points (x, y and heading in 4096ths of a turn), and whether it's
+            // an attack (into a sector the other side holds: the big arrow and the arrival label)
+            struct ArrowPoint { float x, y; int heading; };
+            std::vector<ArrowPoint> arrow;
+            bool attack = false;
             float fx = 0, fy = 0;        // exact position while travelling
         };
         float PixelsPerHour(const Counter& k) const; // how far a counter goes in a game hour
         std::vector<int> FindRoute(int from, int to, const Counter& k, std::string* why = nullptr) const;
         void DrawRouteArrow(Canvas& canvas, const Counter& k) const;
+        static std::vector<Counter::ArrowPoint> ArrowCurve(const std::vector<std::pair<float, float>>& control);
         std::vector<Counter> counters;   // what's drawn: one per kind of object, with how many there are
     };
 }

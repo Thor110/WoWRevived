@@ -44,7 +44,8 @@ namespace wow
         case Button::Kind::Push:
         case Button::Kind::Graphic:
         case Button::Kind::Edit:
-            plateFrame = glassFrame = down ? 2 : lit ? 1 : 0;
+            // 0x433DB0: 0 normal, 1 highlighted, 2 pressed and highlighted, 3 pressed but not highlighted
+            plateFrame = glassFrame = down ? (lit ? 2 : 3) : lit ? 1 : 0;
             break;
         case Button::Kind::Check:
         case Button::Kind::Radio:

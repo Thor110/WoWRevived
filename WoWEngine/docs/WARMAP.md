@@ -114,7 +114,9 @@ sits in the bottom right corner; WoWRevived's screenshot puts it 115 in from the
 0x418C14 puts the frame above the mini-map: 0x50 + 0x20 higher and 9 to the left in Human games (the mini-map then
 shows through the frame's window), 0x44 + 0x28 and 10 in Martian ones (the mini-map hangs below it). A button
 sets the view mode (0x419810: 1 units, 2 constructions, 3 resources, the world's +0x70) and stays pressed
-(message 0x8034). Which of the buttons' 4 frames is which isn't confirmed; the engine uses 2 for the pressed one
+(message 0x8034). The frame also holds the Research button (0x45BD70, GType 0x341 rese-but.spr, control 0x7D) at
+(0x48, 5) in Human games and (0x3A, 0xC) in Martian ones; its tooltip is 0x47D "View Research" with the current
+research. Tab hides the frame and the mini-map (0x41A450). Which of the buttons' 4 frames is which isn't confirmed; the engine uses 2 for the pressed one
 and 1 under the mouse.
 
 ## The calendar
@@ -124,18 +126,31 @@ pixels in (0x4BA05C): GType 0x93 (HU_CALEN.SPR 121 x 89, MA_CALEN.SPR 123 x 83) 
 
 | Part | Human | Martian |
 |---|---|---|
-| 0x96 | HU_TIME (36 x 36, 144 frames, 12 an hour) at 0x52, 4 | ma_world, the turning globe (24 frames) at 0xB, 8 |
+| 0x96 | HU_TIME (36 x 36, 144 frames): 96 over 12 hours (8 an hour), then 48 blurred ones shown at speeds 8-10, at 0x52, 4 | ma_world, the globe (24 frames: the hour of the day) at 0xB, 8 |
 | 0x95 | hu_month (60 frames, 5 a month) at 0x15, 0xC | |
 | 0x94 | hu_am_pm (10 frames) at 0x5A, 0x2B | |
 | 0x98, 0x99 | the day and year: six digits (5 frames each) at x 7, 14, 48, 55, 62, 69 (0x4BA688), y 0xC; the first is hu_num03 (0-3) | the days gone by: six digits (ma_spin) at x 32, 41, 50, 59, 74, 83 (0x4BA670), y 0x35: the game time over 24000, 2400, 240, 24, 2.4 and 0.24 hours (0x4BA910), so days to two decimal places ("2341.90" in WoWRevived's screenshot) |
-| 0x9B | hu_pend, the pendulum (41 frames) at 0x54, 0x41 | ma_goo (100 frames) at 0x31, 7 |
+| 0x9B | hu_pend, the pendulum (41 frames: 0-29 while the clock is stopped, 30-40 while it runs; a frame an update) at 0x54, 0x41 | ma_goo (100 frames, 4 an update while the clock runs, 1 while stopped) at 0x31, 7 |
 | 0x9A | hu_twirl, just left of the calendar at y 6 | |
 | 0x97 | hu_speed, the speed slider (120 x 58) at 0, 0x1F | ma_speed (65 x 26) at 0x30, 0x16 |
 
 The speed slider (0x431E30, a "Scrollbar" of 11 positions, 0-10) has 22 frames, the 11 positions then the same lit.
 Moving it sends the calendar 0x114/0x115 with the position, which becomes the speed (0x427932 -> 0x41F640), unless
 0x41AEA0 finds a sector that says no (0x43D010 for each of the 30; not traced), when it's 0. Where along the slider
-a click lands is the engine's own reckoning (*provisional*).
+a click lands is the Scrollbar's (0x431EF0): (max + 1) x (x - left margin) / (length - both margins), the margins 18
+and 31 on the Human slider, 8 and 11 on the Martian one. The digits 0-9 set the speed too ('0' is 10).
+
+A click on the rest of the calendar ("Advance time", 0x481) moves the game on an hour at once (0x4278A0: the
+calendar's +0x30, then its tick, which takes an hour off +0x30 instead of the speed's step).
+
+The wheels (0x427500 sets where each is heading, 0x427710 turns them, both every update) don't jump: each digit goes
+on by a step for the speed (0x4BA6A0 Martian, 0x4BA7A8 Human, six to a speed; frames mod 50) and stops on its
+target once it would pass it; the Human first digit, am/pm (0x4BA8B0), month (1) and clock face (0x4BA8E0: 2, 3,
+3, 5, 6, 9, 13, 17, 21, 25, 35) go a frame at a time, up to their step, until they reach it. While the calendar is
+paused (its +0x38, during dialogs) it flashes, two updates on and two off.
+
+The clock's sound (0x41F860, on every change of speed): a Human clock ticks (0x1A2, looping) only while stopped and
+fades over 15 updates once it runs; a Martian one has a sound for each speed, 0x1A1 + speed, faded in and out over 5.
 
 ## Moving units
 
@@ -228,8 +243,16 @@ left (*provisional*: the engine's own).
 
 The calendar object (0x41F550) adds `speed / 30` hours to the game time every update (0x41F640, 0x41F6C0; 30 is "Game
 Frequency"), with the speeds at 0x4BA470 the floats 0.0-10.0 (the slider's position). Each whole hour moves the date on (0x41B770),
-with February's leap years. The engine starts at speed 1, one game hour a second; the calendar's slider, or `+` and
-`-` (*provisional* keys), change it.
+with February's leap years. The engine starts at speed 1, one game hour a second; the calendar's slider or the
+digits change it.
+
+## Music
+
+The war map stops the CD when it starts and takes its first music step 5 seconds later (0x4181BF, command 0x813C).
+A step (0x41B070) fades out the last ambient sound over 60 updates; then, with CD music on ([Sound\Volume] "CD"),
+if the disc is still playing (the CD player's music) it stops it and looks again in 10 seconds, otherwise it plays
+the next of tracks 2 and 3 in turn (from 2) and comes back when it ends (or in 10 seconds if the track is 10 seconds
+or shorter). Without CD music it plays ambient sound 0xFD + rand() % 3, faded in over 60, every 10 seconds.
 
 ## The war map menu
 
@@ -237,10 +260,28 @@ Escape opens 0x80B5 ("Warmap menu", 0x49B980), drawn over the map: heading 0x3FC
 "Resume Campaign (Escape)" (focused), 0x90 "Return to Main Menu", 0x8117 critical event options, 0x3ED Sound
 Control, and the bottom button 0x80B6 "Save & Exit Game". The battle map has its own (0x80B8, 0x49BD50).
 
+## Keys
+
+The view (0x41C5E0, 0x41D640) and the world (0x41A450) take a key press at a time:
+
+| Key | |
+|---|---|
+| F1 / F2 / F3-F5 | Unit view, Construction view, Resource view with resource 0-2 |
+| Space | the next view: Unit, Construction, Resource 0, 1, 2, Unit |
+| Tab | hide or show the mini-map and its frame |
+| 0-9 | the speed, '0' being 10 |
+| Home | centre on the selected sector (its rectangle's middle, 0x41E000) |
+| PgUp / PgDn | to the top / bottom of the map |
+| arrows | a seventh of the map's width or a sixteenth of its height (Ctrl: a third / an eighth) |
+| Esc | the war map menu (0x80B5) |
+| R | research (0x7D) |
+| M | the message history (0x6C, not in yet) |
+| Backspace | clears the world's time-running flag (+0x64), which tells the opponent; not in yet |
+
 ## Scrolling
 
-The engine scrolls with the arrow keys, at the screen edges, and by clicking or dragging on the mini-map, at
-`[Screen] "Scroll Speed"` / 5 pixels a tick (*provisional*: the game's own scroll rules aren't traced).
+Besides the keys, the engine scrolls at the screen edges and by clicking or dragging on the mini-map, at
+`[Screen] "Scroll Speed"` / 5 pixels a tick (*provisional*: the game's own edge scrolling isn't traced).
 
 ## Still to do
 
