@@ -228,6 +228,17 @@ selection at +0x430, filled by its recorded commands 4 clear, 5 select (Shift ad
   if it's yours and 12 if not, in mode 2 4 to move into yours or no one's and 5 into the other side's.
 - Selected and lit counters get the ring (cselecth.spr, GType 0x54) and are drawn over the rest. A quick right
   click (Cancel) clears the selection.
+- **The Warmap menu** (0x41D120): the right button held for `[Tweak] "Quick Cancel Timeout"` (5) updates opens a
+  WPopupMenu (0x432C60, "Warmap menu", z 0x61B2) with Cancel (command 0x73, icon GType 0x1C RBHcncl, text 0x476),
+  then the items the active tool, the selection or the sector under the mouse adds through 0x805C (the sector,
+  if it's yours, is selected first). The menu is a grid of WHotButtons (0x434300, font 0x71): items with the same
+  command share a row (0x4331C0), the rows go down a column (0x433220), and only the hovered item's row opens out
+  (0x433330). It's shown with its first item centred on the mouse, a quarter of its height above it, kept 3 pixels
+  inside the screen (flipped right to left if it hits the right edge), sound 0x193 (0x432FB0); Escape closes it
+  with 0x196, a click outside closes it, and an item's command goes to the war map. The engine shows the items'
+  text as their tool tips and the icon's next frame under the mouse (*provisional*), and has only Cancel so far:
+  the sector's Build / Resume building tasks / Cancel Move (0x429A70) and an object's Information (0x440300)
+  come with construction and the information screen.
 
 - **Routes** (WWarMapRoute 0x4240D0) move on every game hour: the calendar sends 0x802D with the hours gone by and
   the route's handler (0x424F00) moves its entries on (0x425080). A route keeps its sectors, the start first

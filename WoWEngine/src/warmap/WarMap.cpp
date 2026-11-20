@@ -871,6 +871,9 @@ namespace wow
         if (!map) map = res.GetFrame(warmap::MapGType);
         if (!sectorMap) sectorMap = res.GetFrame(warmap::SectorMapGType);
 
+        // the right button held for [Tweak] "Quick Cancel Timeout" updates opens the Warmap menu (0x805B -> 0x41D120)
+        if (rightDownAt >= 0 && popup.empty() && animation - rightDownAt == quickCancelTimeout && mouseX >= 0)
+            OpenWarmapMenu(mouseX, mouseY);
         if (!economyStarted)
         {
             economyStarted = true;
@@ -1049,6 +1052,14 @@ namespace wow
                 }
         }
         if (!status.empty()) canvas.DrawString(0x72, status, { 8, ScreenH - 18, 300, 14 }, 0, colours.items);
+        // the popup menu over everything (z 0x61B2): each item's icon, the next frame while the mouse is on it
+        // (*provisional*: the hot button's frames aren't traced)
+        for (size_t i = 0; i < popup.size(); i++)
+        {
+            const PopupItem& item = popup[i];
+            const IndexedImage* lit = int(i) == popupHover ? res.GetFrame(item.icon, 1) : nullptr;
+            canvas.DrawSprite(item.icon, lit ? 1 : 0, item.rect.x, item.rect.y);
+        }
     }
 
     // The keys, as the war map view (0x41C5E0 and 0x41D640) and the world (0x41A450) take them. Each press (and
@@ -1058,6 +1069,7 @@ namespace wow
     // "Warmap menu" popup, 0x41D120, which isn't in yet.) Cancel drops the selection (the player's action 2).
     std::optional<Command> WarMap::OnRightButton(int, int, bool down)
     {
+        if (!popup.empty()) { rightDownAt = -1; return std::nullopt; }
         if (down) { rightDownAt = animation; return std::nullopt; }
         bool quick = rightDownAt >= 0 && animation - rightDownAt <= quickCancelTimeout;
         rightDownAt = -1;
@@ -1067,6 +1079,7 @@ namespace wow
 
     int WarMap::TipOwner(int x, int y) const
     {
+        for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) return 100 + int(i);
         PanelLayout panel = Panel();
         for (int i = 0; i < 3; i++) if (panel.buttons[i].Contains(x, y)) return i;
         if (panel.research.Contains(x, y)) return 3;
@@ -1077,6 +1090,8 @@ namespace wow
     std::string WarMap::TipText(int owner, int level) const
     {
         static constexpr int ButtonText[3] = { 0x47B, 0x47C, 0x47E }; // the view buttons' labels (0x433480)
+        // a popup item's text (its +0x0C; 0x475 "View map" would be the hovered sector's name)
+        if (owner >= 100 && size_t(owner - 100) < popup.size()) return res.String(popup[size_t(owner - 100)].text);
         if (owner >= 0 && owner < 3) return res.String(ButtonText[owner]);
         // the Research button (0x45BEB0): "View Research" and what's being researched, 0x461 with nothing
         if (owner == 3) return res.String(0x47D) + "\n" + res.String(0x461);
@@ -1087,6 +1102,11 @@ namespace wow
 
     std::optional<Command> WarMap::OnKey(int key)
     {
+        if (!popup.empty())
+        {
+            if (key == SDLK_ESCAPE) ClosePopup(true);
+            return std::nullopt;
+        }
         const bool ctrl = (SDL_GetModState() & SDL_KMOD_CTRL) != 0;
         // the view's scroll keys send 0x7A with the view's new top-left: steps of the map's size, not the view's
         auto scrollTo = [&](int x, int y) { cameraX = x; cameraY = y; Clamp(); };
@@ -1132,10 +1152,59 @@ namespace wow
 
     void WarMap::OnKeyUp(int) {}
 
+    // The Warmap menu (0x41D120): Cancel (command 0x73, icon GType 0x1C RBHcncl, text 0x476), then the items the
+    // active tool, the player's selection or the sector under the mouse (if it's the player's: it's selected
+    // and the selection cancelled first) adds through 0x805C (Build, Resume building tasks, Cancel Move,
+    // Information: not in yet, they come with construction and the information screen). Shown at the mouse
+    // (0x432FB0): the first item centred on it (a quarter of its height above), kept 3 pixels inside the screen,
+    // sound 0x193. Items with the same command would share a row (0x4331C0), only the hovered one's opened out
+    // (0x433330); the rows go down the column (0x433220).
+    void WarMap::OpenWarmapMenu(int x, int y)
+    {
+        popup.clear();
+        popupHover = -1;
+        int sector = SectorAt(x, y);
+        if (sector && owner[size_t(sector)] == 0 && selection.empty()) selected = sector;
+        auto add = [&](int command, int icon, int text) {
+            Rect r = SpriteRect(icon, 0, 0);
+            if (r.w <= 0) r.w = r.h = 32;
+            popup.push_back({ command, icon, text, r });
+        };
+        add(0x73, 0x1C, 0x476);
+        int w = 0, h = 0;
+        for (const PopupItem& item : popup) { w = std::max(w, item.rect.w); h += item.rect.h; }
+        int left = x - popup[0].rect.w / 2, top = y - popup[0].rect.h / 4;
+        left = std::clamp(left, 3, ScreenW - 3 - w);
+        top = std::clamp(top, 3, ScreenH - 3 - h);
+        int at = top;
+        for (PopupItem& item : popup) { item.rect.x = left; item.rect.y = at; at += item.rect.h; }
+        sounds.push_back(0x193);
+    }
+
+    void WarMap::ClosePopup(bool escape)
+    {
+        popup.clear();
+        popupHover = -1;
+        if (escape) sounds.push_back(0x196);
+    }
+
+    // A popup command reaching the war map (and the sector, 0x43AF47): 0x73, Cancel, is the player's action 2,
+    // the selection dropped.
+    void WarMap::PopupCommand(int command)
+    {
+        if (command == 0x73) ClearSelection();
+    }
+
     void WarMap::OnMouseMove(int x, int y)
     {
         mouseX = x;
         mouseY = y;
+        if (!popup.empty())
+        {
+            popupHover = -1;
+            for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) popupHover = int(i);
+            return;
+        }
         if (draggingSpeed) SetSpeedFromX(x);
         if (dragging)
         {
@@ -1225,6 +1294,16 @@ namespace wow
 
     std::optional<Command> WarMap::OnMouseButton(int x, int y, bool down)
     {
+        // the popup has the mouse (0x42E9B0): a click on an item sends its command to the war map and closes it
+        // (0x4330B0), one anywhere else just closes it
+        if (!popup.empty())
+        {
+            if (!down) return std::nullopt;
+            for (const PopupItem& item : popup)
+                if (item.rect.Contains(x, y)) { int command = item.command; ClosePopup(false); PopupCommand(command); return std::nullopt; }
+            ClosePopup(false);
+            return std::nullopt;
+        }
         Rect mini = MiniMapRect();
         PanelLayout panel = Panel();
         for (int i = 0; i < 3; i++)
@@ -1536,8 +1615,12 @@ namespace wow
 
     std::vector<WarMap::Counter::ArrowPoint> WarMap::ArrowCurve(const std::vector<std::pair<float, float>>& control)
     {
-        // RArrow's curve (0x4244E0 -> 0x424A40): the control points 2^5 apart, then five passes of subdivision,
-        // each new midpoint bent towards the headings at its two ends by 5/11 of the average offset
+        // RArrow's curve (0x4244E0 -> 0x424A40): the control points 2^5 apart, then five passes of subdivision.
+        // Each pass gives the inner points the heading of the chord through their neighbours a step either side,
+        // then puts each new midpoint between two points, bent by 5/11 (-(-0.4545)) of the average of two offsets
+        // at right angles to the chord h (heading h - 0x400): tan(h - the start's heading) x half the chord, and
+        // less tan(h - the end's heading) x half the chord (0x43FF30(a, b) is b - a), each held to half the
+        // chord; the start's term is left out for the first stretch and the end's for the last.
         constexpr int Steps = 32;
         using P = Counter::ArrowPoint;
         if (control.size() < 2) return {};
@@ -1546,8 +1629,10 @@ namespace wow
         for (size_t i = 0; i < control.size(); i++) p[i * Steps] = { control[i].first, control[i].second, 0 };
         for (int step = Steps; step >= 2; step /= 2)
         {
-            for (int i = 0; i + step < count; i += step)
-                p[size_t(i)].heading = Heading(p[size_t(i)].x, p[size_t(i)].y, p[size_t(i + step)].x, p[size_t(i + step)].y);
+            // each inner point's heading: the chord from the point a step before to the one a step after
+            // (0x424A63; the two ends keep theirs, which the bends below never use)
+            for (int i = step; i < count - step; i += step)
+                p[size_t(i)].heading = Heading(p[size_t(i - step)].x, p[size_t(i - step)].y, p[size_t(i + step)].x, p[size_t(i + step)].y);
             for (int i = 0; i + step < count; i += step)
             {
                 const P& a = p[size_t(i)];
@@ -1568,7 +1653,7 @@ namespace wow
                 }
                 if (i < count - 2 * step)
                 {
-                    auto [x, y] = Polar(h - 0x400, offset(AngleDiff(b.heading + 0x800, h + 0x800)));
+                    auto [x, y] = Polar(h - 0x400, offset(AngleDiff(h + 0x800, b.heading + 0x800)));
                     vx -= x; vy -= y; terms++;
                 }
                 if (terms) { vx /= float(terms); vy /= float(terms); }

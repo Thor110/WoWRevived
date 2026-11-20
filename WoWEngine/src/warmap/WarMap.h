@@ -146,6 +146,14 @@ namespace wow
         void BuildPreview(int sector);
         void ClearSelection() { selection.clear(); previewSector = -1; }
         void UpdateBand();
+        // The "Warmap menu" (WPopupMenu 0x432C60, opened by 0x41D120 when the right button is held): a column of
+        // icon buttons (WHotButton 0x434300), one row a command
+        struct PopupItem { int command, icon, text; Rect rect; };
+        std::vector<PopupItem> popup;
+        int popupHover = -1;
+        void OpenWarmapMenu(int x, int y);
+        void ClosePopup(bool escape);
+        void PopupCommand(int command);
         int clunWidth = 4, clunSpacing = 4;
         float cluntingSpeed = 7.0f;      // [Tweak] "Clunting Speed" (0x428B70, default 7): only for units with no speed
         std::string message;             // the engine's own note (a refused route), shown in the status strip
