@@ -120,6 +120,8 @@ namespace wow
         int fadeIn = 0;
         int overlay = 0;
         std::unique_ptr<Screen> warMap;   // kept while its menus are showing
+        std::unique_ptr<Screen> battleMap; // kept while its menu is showing
+        std::unique_ptr<Screen> BattleMapMenu();
         WarMap* ActiveWarMap() const;
         // tool tips (0x433870)
         void UpdateTooltip();

@@ -12,11 +12,27 @@ calendar's hour (ftol(+0x28) % 24, 0x47AF10), the shade tables for that hour's l
 battle before, and the briefing sound stopped (0x41B360). Then it counts the enemy's units and constructions in the
 sector for the next battle (0x43983E). The screen uses palette group 0x2F0 (bm).
 
-*Provisional*, until the rest is in: the view starts on the map's centre (the game centres it on the player's HQ,
-types 58 / 278 for the Humans and 120 / 830 for the Martians, through the iso projection, `Landscape::ProjectY`),
-scrolls 16 pixels a tick with the arrow keys or the mouse within 4 pixels of an edge, and Escape (the game's opens
-the battle map menu, 0x80B8) ends it with 0x97, which settles the battle on the war map and shows the Debriefing.
-The whole screen is the view; the game's panel and mini-map aren't in.
+The window (WBattleMap 0x484A30, "BattleMap", 0x8018) makes the terrain view over the screen (0x484D00, 64 x 64
+tiles), sets the world's size to the landscape's (+0x1C, +0x20) and scrolls to the start view. The view's scroll
+is kept between 0 and the world's size less the view's less 1 (0x42F6F0 / 0x40E5A0).
+
+- **Start view** (0x439B7E): the player's HQ, looked for among the Human constructions (type 278 in London or 314
+  elsewhere in a Human game; 830 in sector 3 or 120 elsewhere in a Martian one) and centred on its units (0x42A2A0
+  / 0x42A340); else the deployment's centre (dword_4F742C / 4F7434); else the map's middle, (+0x1C / 2, +0x28 x
+  +0x30 >> 16 / 2). It's projected with the height there (0x47B170, `Landscape::ProjectY`) and half the screen is
+  taken off. *Not yet*: with no objects or deployment it's always the middle.
+- **Edges** (0x484DF0): with the mouse within 4 pixels of an edge (32 in a window), the view moves by the mouse's
+  distance from the centre / (half the width / 40), across and down at once.
+- **Keys** (0x485610), a step a press: Up / Down the world's height / 16 (Ctrl / 8); Left / Right its width / 7
+  (Ctrl / 3); Page Up / Down to the top or bottom; Escape the battle map menu (0x80B8). *Not yet*: the digits
+  (select group, packet 0x12), Backspace (halt, 0x11), Tab (0x80C8) and Home (centre on the selection, 0x43A480).
+- **Battle map menu** (0x49BD50, "Battlemap menu"): heading 0x3FD "Battle Options", Resume (0x8123, 0x405) and a
+  bottom Sound Control (0x3ED, 0x411); no save, no quit. Drawn over the battle map, sound effects at a quarter and
+  the world paused while it's open (0x484FB0).
+- **Popup** (0x485DE0, the right button held for `[Tweak] "Quick Cancel Timeout"` updates): Cancel (0x73, icon
+  0x1C) and, unless the player has a selection or both sides have objects on the map, Return to Warmap (0x76,
+  icon 0x2C, 0x47A), then the items of whoever answers 0x805C. Return to Warmap goes to the world, which ends the
+  battle map (0x97); with no objects on the map it's always offered. The Debriefing then follows as before.
 
 ## The landscape (WLandscape, 0x47AF10-0x47CCF0)
 

@@ -141,7 +141,7 @@ namespace wow
         tip.reset();
         hoverOwner = -2;
         screen = std::move(next);
-        sound.SetMenuDuck(screen->Id() == CmdWarMapMenu);
+        sound.SetMenuDuck(screen->Id() == CmdWarMapMenu || screen->Id() == BattleMap::MenuCommand);
         delayed.reset();
         overlay = 0;
         fadeIn = 0;
@@ -675,6 +675,21 @@ namespace wow
         return m;
     }
 
+    std::unique_ptr<Screen> FrontEnd::BattleMapMenu()
+    {
+        // 0x49BD50, "Battlemap menu" (0x80B8 from the battle map's Escape, 0x484FB0): drawn over the battle map with
+        // its palette group, sound effects at a quarter and the world paused (+0x44) while it's open. Resume (0x8123)
+        // goes back; that's all but Sound Control: no save, no quit.
+        if (screen && screen->Id() == BattleMap::Id) battleMap = std::move(screen);
+        auto m = std::make_unique<Menu>(BattleMap::MenuCommand, res, settings.colours, 0, 0x2F0);
+        m->AddHeading(0x3FD);                          // "Battle Options"
+        m->AddButton(Commands::Back, 0x405);
+        m->FocusLast();
+        m->AddBottomButton(CmdSoundControl, 0x411);
+        m->SetPrevious(BattleMap::Id);
+        return m;
+    }
+
     std::unique_ptr<Screen> FrontEnd::NotRebuilt(int command, int previous)
     {
         auto m = NewMenu(command);
@@ -751,6 +766,7 @@ namespace wow
             StartWarMap(SaveSlot::GamePath(res.Human(), command.param), {}, command.param, true);
             break;
         case CmdWarMapMenu: Show(WarMapMenu()); break;
+        case BattleMap::MenuCommand: Show(BattleMapMenu()); break;
         case WarMap::ResearchCommand:
             // 0x7D (0x419A4D): time stops, the war map steps back and the local player's research opens (0x458150)
             if (screen && screen->Id() == WarMap::Id) warMap.reset(screen.release());
@@ -812,7 +828,9 @@ namespace wow
             // files the battle is settled at once.
             if (ActiveWarMap() && StartBattleMap()) break;
             [[fallthrough]];
+        case BattleMap::ReturnCommand:  // Return to Warmap: 0x76 to the world flushes the queues and sends 0x97
         case BattleMap::EndCommand:
+            battleMap.reset();
             // 0x97 (0x41A0DC): the battle's end. The battle isn't fought on the battle map yet, so the war map
             // settles it (*provisional*), then the Debriefing (0x49A7B0)
             if (WarMap* map = ActiveWarMap())
@@ -856,6 +874,7 @@ namespace wow
             // 0x8123) goes back to the map
             if (current == WarMap::Id) { Execute({ CmdWarMapMenu, 0 }); break; }
             if ((current == CmdWarMapMenu || current == WarMap::ResearchCommand) && warMap) { Show(std::move(warMap)); break; }
+            if (current == BattleMap::MenuCommand && battleMap) { Show(std::move(battleMap)); break; }
             // Escape goes back to the menu this one was opened from; the main menu itself ignores it, and so does
             // the Insert CD menu (0x408AB0)
             if (current != CmdMainMenu && current != CmdInsertCd) Execute({ screen->Previous() ? screen->Previous() : CmdMainMenu, 0 });
@@ -868,7 +887,7 @@ namespace wow
     {
         // every front-end screen derives from the Fullscreen View (0x4061B0), the war map menu included; the
         // war map itself and the movie player don't
-        return s.Id() != WarMap::Id && s.Id() != MovieScreen::Id;
+        return s.Id() != WarMap::Id && s.Id() != MovieScreen::Id && s.Id() != BattleMap::Id; // nor the battle map (a WView, 0x484A30)
     }
 
     void FrontEnd::Dispatch(const Command& command, bool fromControl)
@@ -1013,6 +1032,7 @@ namespace wow
         if (auto d = dayTimes.find(int(b.hours) % 24); d != dayTimes.end()) s.dayTime = &d->second;
         s.shadeClass = Landscape::ShadeClass(lastEnemyCount);
         s.human = res.Human();
+        s.quickCancelTimeout = ini.GetInt("Tweak", "Quick Cancel Timeout", 5);
         try
         {
             auto battle = std::make_unique<BattleMap>(res, s);
@@ -1126,7 +1146,8 @@ namespace wow
         canvas.Clear(0);
         if (!screen) return;
         // the war map's menus are drawn over the map
-        if (warMap && !screen->Background()) warMap->Draw(canvas);
+        if (battleMap && !screen->Background()) battleMap->Draw(canvas);
+        else if (warMap && !screen->Background()) warMap->Draw(canvas);
         if (screen->Background()) canvas.DrawSprite(screen->Background(), 0, 0, 0);
         screen->Draw(canvas);
         DrawTooltip(canvas);

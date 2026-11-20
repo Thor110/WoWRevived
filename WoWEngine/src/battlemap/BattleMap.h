@@ -1,6 +1,8 @@
-// The battle map (EnterBattleMap 0x439770, WLandscapeView 0x49F240): so far its ground. It builds the sector's
-// landscape (WLandscape 0x47AF10: the map OBJ.ojd record 8 names, lit for the hour of the game's clock) and draws it
-// with the terrain view, scrolled with the arrow keys or the mouse at the screen's edges. See docs/BATTLEMAP.md.
+// The battle map (EnterBattleMap 0x439770, WBattleMap 0x484A30, WLandscapeView 0x49F240): so far its ground. It
+// builds the sector's landscape (WLandscape 0x47AF10: the map OBJ.ojd record 8 names, lit for the hour of the
+// game's clock) and draws it with the terrain view, scrolled by the view's keys (0x485610) and its edges (0x484DF0).
+// Escape opens the battle map menu (0x80B8); the right button held opens the popup with Return to Warmap (0x76).
+// See docs/BATTLEMAP.md.
 #pragma once
 #include "core/Landscape.h"
 #include "core/ObjOjd.h"
@@ -17,6 +19,8 @@ namespace wow
         static constexpr int Id = 0x71;
         // The command that ends the battle map (0x97, the battle's end, 0x41A0DC)
         static constexpr int EndCommand = 0x97;
+        static constexpr int MenuCommand = 0x80B8;      // the battle map menu (0x49BD50)
+        static constexpr int ReturnCommand = 0x76;      // Return to Warmap: to the world, which ends the battle map
 
         struct Setup
         {
@@ -26,7 +30,7 @@ namespace wow
             int shadeClass = 0;         // Landscape::ShadeClass
             const ObjOjd::BattleTables::DayTime* dayTime = nullptr;
             bool human = true;
-            int scrollStep = 16;        // *provisional*: pixels a tick
+            int quickCancelTimeout = 5; // [Tweak] "Quick Cancel Timeout": updates the right button is held for the popup
         };
 
         // Throws when the map's files can't be read.
@@ -36,9 +40,12 @@ namespace wow
         void Draw(Canvas& canvas) const override;
         std::optional<Command> OnKey(int sdlKey) override;
         void OnKeyUp(int sdlKey) override;
-        void OnMouseMove(int x, int y) override { mouseX = x; mouseY = y; }
-        std::optional<Command> OnMouseButton(int, int, bool) override { return std::nullopt; }
+        void OnMouseMove(int x, int y) override;
+        std::optional<Command> OnMouseButton(int x, int y, bool down) override;
+        std::optional<Command> OnRightButton(int x, int y, bool down) override;
         int CursorAt(int, int) const override { return 0; }
+        int TipOwner(int x, int y) const override;
+        std::string TipText(int owner, int level) const override;
 
         int ScrollX() const { return scrollX; }
         int ScrollY() const { return scrollY; }
@@ -53,6 +60,13 @@ namespace wow
         DitherTables dither;
         int scrollX = 0, scrollY = 0;
         int mouseX = -1, mouseY = -1;
-        int keysX = 0, keysY = 0;
+        int ticks = 0;
+        int rightDownAt = -1;
+        struct PopupItem { int command, icon, text; Rect rect; };
+        std::vector<PopupItem> popup;       // "Battlemap menu" (WPopupMenu 0x432C60, 0x485DE0)
+        int popupHover = -1;
+        void OpenPopup(int x, int y);
+        void ClosePopup(bool escape);
+        void EdgeScroll();
     };
 }
