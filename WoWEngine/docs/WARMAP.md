@@ -185,11 +185,33 @@ In Unit View a click on one of your counters picks it (GType 0x54, cselecth.spr,
 sector sends it there.
 
 - **Routes** (WWarMapRoute 0x4240D0) move on every game hour: the calendar sends 0x802D with the hours gone by and
-  the route's handler (0x424F00) moves its entries on (0x425080), point to point. A route goes from a sector's
-  waypoint, across the link's two border points, to the next sector's waypoint (0x425080 and the arrows both take
-  the points from 0x437380 and the link table).
-- **Arrows**: RArrow (0x4244E0) makes a curve through the route's points (one a sector: its waypoint, from
-  0x437380), 2^5 steps a stretch (0x424A40), and an RTypeArrow (0x49CAC0, drawn by 0x49CDB0) along it. Its style
+  the route's handler (0x424F00) moves its entries on (0x425080). A route keeps its sectors, the start first
+  (+0x4C, +0x48), its length (+0x68: waypoint to waypoint, 0x437380, whole pixels each) and an entry for each group
+  of units (RouteEntry 0x42AFE0): its speed (unit +0x54 x 0.05), the way still to go (+0x30, the length at
+  first), the hours still to go (+0x34, length / speed), what's left of the way to the next waypoint (+0x38, of
+  +0x3C) and the path index it last reached (+0x24); and its place in a formation `[Tweak] "Route clunting width"`
+  (4) wide and `"Route clunting spacing"` (4) apart (0x42AF20 / 0x42AF60): the n-th at ((n % w) - w / 2,
+  (n / w) - w / 2) x spacing. Each hour (0x425080):
+  - the first puts the units at the curve's start, plus their places (0x4406A0)
+  - unless it's an attack or interrupted already, every sector from the slowest entry's on is checked: one with a
+    battle (+0x124), or held by the other side, other than the start, interrupts the route (+0x60) with event 11,
+    TravelInterrupted (0x41EF80: "Travel interrupted" 0x419, sound 0x147, and the event box if the option's on)
+  - each entry goes (way still to go / hours still to go) x hours; on getting to a waypoint it arrives there if
+    it's the last, or the route was interrupted (0xAD to the group with the sector; +0x58 the one before);
+    otherwise the next waypoint's distance is added
+  - on the map it's that far along the arrow's curve: point `segment x 32 + int(f)` and the fraction between it
+    and the next, f = (1 - left / length) x 32; the smallest of these over the entries trims the arrow (+0x5C: its
+    body is drawn only past it)
+  - once every entry has arrived, a route that isn't an attack raises event 3, ArrivedInSector, for its goal, and
+    goes from the route manager (0x41FBD0), which sends the world 0x802C when none are left (not traced).
+  Attacks on the same sector arrive together: when a route is added the route manager (0x41FCF0) gives every
+  attack heading for a sector the longest hours still to go of the routes heading there (0x4255F0), label too.
+  The engine moves a counter as a route of one entry; where it stands on the curve is its centre (the counter's
+  corner 16 up and left), *provisional*.
+- **Arrows**: RArrow (0x4244E0) makes a curve through the route's points: for the start the point where a route
+  over land leaves it for the next sector (its link, 0x4BCEB0), then each sector's waypoint (0x437380); a naval
+  route (+0x50: its first unit's +0x52 is 5 or 6), or a point that's 0, 0, takes the sector's sea waypoint
+  (0x4373A0) instead. 2^5 (+0x44 = 5) steps a stretch (0x424A40), and an RTypeArrow (0x49CAC0, drawn by 0x49CDB0) along it. Its style
   is OBJ.ojd record 14 (`wowdump --arrows`; a table of 24 bytes at 0x59EDB8): 0 / 1 Human, 2 / 3 Martian (one
   more when the route's +0x5E is clear), each a GType, four numbers and a float:
 
@@ -204,13 +226,10 @@ sector sends it there.
   its width), the head's triangle in the next 128 (apex at 128, 0). The body is textured quads (0x410090) out to
   a third of a stretch from the end, its half width going from the first number to the second along the way
   (offsets at right angles from 0x43FE90); the head is textured triangles (0x410190) from there. A text object (0x49D260, font 0x71) at the end shows the
-  arrival, set when the route starts (0x424160) and every game hour after (0x425080) from the hours still to go
-  by 0x41B9A0: for the Humans the hour, "03pm" (hour mod 12, am/pm from 0x4B9FC0), then " 4 Sep" unless it's within
+  arrival of an attack, set when the route starts (0x424160) and when its hours are set again (0x4255F0), by
+  0x41B9A0: for the Humans the hour, "03pm" (hour mod 12, am/pm from 0x4B9FC0), then " 4 Sep" unless it's within
   24 hours on the same day, then the year if it's another year's; for the Martians the days since the start at the
-  arrival with hundredths, "12.50". The engine draws all of this with the game's textures and numbers, but:
-  the curve is a Catmull-Rom spline (*provisional*: 0x424A40 bends it by headings), the head is one triangle the
-  fourth number long (the game uses three), the body texture runs a pixel a row along the curve, the float isn't
-  used, and every route takes style 0 / 2.
+  arrival with hundredths, "12.50". The engine draws the curve, body, head and label as the game does.
 - **Speed**: each unit type's war map speed is the word at +0x54 in the unit table (0x51A0F0, 0xB0 bytes a type),
   set by OBJ.ojd record 37 (three words: +0x52, +0x54, +0x56) and scaled by record 38 (two floats, multiplying +0x54
   and +0x56); record 15 starts a type. A new route's arrival time (0x424160) is its length in map pixels (+0x68) over
@@ -223,9 +242,17 @@ sector sends it there.
   1000 steps) over 31 nodes whose neighbour lists are at 0x4BD260. 0x435710 builds a 32 x 32 table of link kinds at
   0x4EAA18 from a switch on to x 100 + from (bit 1 widens to 7): 0xF over land, 0x10 by sea, 0x1F both, 0x18 by sea
   with an unknown 8. The table and the neighbour lists agree exactly (79 links, all both ways); the engine's copy is
-  `warmap::RouteLinks`. Each step's cost (0x42ABD0) is the straight line between the two waypoints (0x437380), in
-  whole pixels; there's no estimate to the goal, so it's the shortest way. A step is refused, with a code left at
-  0x4EA198 that nothing reads:
+  `warmap::RouteLinks`, and the neighbour lists `warmap::Neighbours`. Each step's cost (0x42ABD0) is 0 from a
+  sector to itself, else the straight line between the two waypoints (0x437380), in whole pixels. The A* itself
+  (0x44EE70 / 0x44EFA0 / 0x44F120, the engine's `warmap::AStar`, which the sector paths use too) has no separate
+  estimate: a node's h is the cost function asked for (node, goal), and the start's for (goal, start), so it's -1
+  unless they're neighbours. The open list is in f order, a new node going before the first with an f no lower
+  than its own; a node reached again more cheaply takes the new parent and g but isn't moved in the list, and a
+  closed one isn't opened again; neighbours are tried in the table's order; it gives up when the neighbours tried
+  less one a node reach 1000. On the map it comes to the shortest way every time (checked over every pair of
+  sectors with every link open). A route stands when it reaches the goal with more than the start in it
+  (0x424160). A step is refused, with a code left at 0x4EA198 (by whichever call refused last, estimates
+  included) that nothing reads:
   - 0: a unit in the route can't move (unit +0x54's +0x128; not done)
   - 1 / 2: the link isn't one of the unit's: the unit type's +0x4E (OBJ.ojd record 36) is 0-2 for land units
     (link bits 1, 2 or 4), 3 for boats (0x10), 4 for fliers (any)
@@ -236,12 +263,15 @@ sector sends it there.
   - 4 / 5: a sector passed through (not the goal) has no command building, or isn't the player's
   - 6: the start has no command building and the step goes into a sector that isn't the player's
   - 7 / 8: the goal would hold more than `[Tweak] "Max units in sector"` (default 15) units, or `"Max boats in
-    sector"` (5) boats, counting what's there already
+    sector"` (5) boats: the player's there already (0x43D090 / 0x43D0F0, boats being class 3), every route's
+    heading there (0x420060; a route counts as boats when its first unit's +0x52 is 5 or 6) and these
   The Human campaign starts with command posts in 15 sectors, so most moves through the player's own sectors
   are allowed. The text for
   a refusal is the engine's own. Boats cross at a link's sea points, fliers at its land points if it has them.
-- Going into a sector the other side holds stops the counter at the border with a message (a battle, which needs
-  the battle map), and arriving in a sector no one holds takes it (*provisional*).
+- Arriving in a sector the other side holds gives "Battle in" and the sector (a battle, which needs the battle
+  map) and the counter stays where it came from; arriving in a sector no one holds takes it (*provisional*).
+- **Saved routes** (0x425A60): origin, destination, +0x5F, +0x5E (attack), +0x44 (5), the path's count, +0x34, the
+  path (the start first), the u8 +0x50 (naval) and the units.
 
 ## Martian pods
 
@@ -294,7 +324,7 @@ VX and VY are `[Tweak] "Distance Crippler VX"` and `"VY"` (0.5 each; 0x43C0A0-0x
 The cached paths: each sector object keeps one to every other sector (+0xA0, `GetPath(n)` 0x43C090), rebuilt when
 it's told 0xB7 (0x43AFEF, after a construction is finished or a sector changes hands; the engine rebuilds them
 when an owner or a command building changes). Each is a `WSectorPath(side, from, to)` (0x4A39E0) for the side
-holding the start: an A* (0x44EE70, at most 1000 goes) over land links only, where a step into a sector held by
+holding the start: the same A* over land links only, where a step into a sector held by
 neither that side nor no one is impassable, so is one where neither end has its command building, or into one
 without it that isn't the goal; otherwise it costs the whole pixels between the waypoints. A path of only its
 start (or none) has a count of 0.

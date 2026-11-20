@@ -552,6 +552,7 @@ namespace wow
         map->SetArrowTypes(std::move(arrows));
         map->SetDeposits(std::move(deposits), ini.GetFloat("Tweak", "Resource Drop Off Rate", 3.0f));
         map->SetPodInterval(ini.GetInt("Tweak", "Pod Interval (hours)", 24));
+        map->SetRouteFormation(ini.GetInt("Tweak", "Route clunting width", 4), ini.GetInt("Tweak", "Route clunting spacing", 4));
         map->SetEconomy(ini.GetFloat("Tweak", "Distance Crippler VX", 0.5f), ini.GetFloat("Tweak", "Distance Crippler VY", 0.5f),
                         ini.GetFloat("Tweak", "Resource Buffer", 30.0f));
         map->SetQuickCancelTimeout(ini.GetInt("Tweak", "Quick Cancel Timeout", 5));

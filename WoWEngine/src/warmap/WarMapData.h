@@ -68,6 +68,13 @@ namespace wow::warmap
         return { Sectors[sector - 1].ax, Sectors[sector - 1].ay };
     }
 
+    // The point naval routes pass through in a sector (0x4373A0: the record's next two numbers); 0, 0 inland.
+    inline Point SeaWaypoint(int sector)
+    {
+        if (sector < 1 || sector > SectorCount) return { 0, 0 };
+        return { Sectors[sector - 1].bx, Sectors[sector - 1].by };
+    }
+
     // The sector links (a table of pointers at 0x4BCEB0, one list per sector, 36 bytes a link, read by the route
     // arrows 0x4244E0): the neighbour, then two points where a route over land crosses from this sector into it
     // (leaving, arriving), then two for a route by sea; all zero where there's no such way.
@@ -245,6 +252,14 @@ namespace wow::warmap
         { 30, 29, { 1171, 2110, 1126, 2117 }, { 1271, 2038, 1254, 2053 } },
     };
 
+    // The from sector's link to another, whatever its points (0x4244E0 looks it up by the neighbour alone)
+    inline const SectorLink* FindLink(int from, int to)
+    {
+        for (const SectorLink& l : SectorLinks)
+            if (l.from == from && l.to == to) return &l;
+        return nullptr;
+    }
+
     inline const SectorLink* LandLink(int from, int to)
     {
         for (const SectorLink& l : SectorLinks)
@@ -274,6 +289,46 @@ namespace wow::warmap
         { 25, 30, 0x1f }, { 26, 29, 0x10 }, { 27, 28, 0x1f }, { 27, 29, 0x10 }, { 28, 29, 0x1f }, { 28, 30, 0xf },
         { 29, 30, 0x1f },
     };
+
+    // The route finder's node table (0x4BD260, built from 0x4BCF2C): each sector's neighbours in the order the A*
+    // tries them, ended by -1.
+    inline constexpr int NeighbourTable[SectorCount + 1][8] = {
+        { -1 },
+        { 2, 3, 4, -1 },
+        { 1, 3, 6, 9, -1 },
+        { 1, 2, 4, 6, 7, -1 },
+        { 1, 3, 7, 8, 11, -1 },
+        { 9, 12, 15, 18, 22, -1 },
+        { 2, 3, 7, 9, -1 },
+        { 3, 4, 6, 8, 9, 10, -1 },
+        { 4, 7, 10, 11, 14, -1 },
+        { 5, 6, 7, 10, 12, 2, -1 },
+        { 7, 8, 9, 11, 12, 13, 14, -1 },
+        { 8, 10, 14, 4, 17, -1 },
+        { 5, 9, 10, 13, 15, 18, -1 },
+        { 10, 12, 14, 15, 16, 17, -1 },
+        { 10, 11, 13, 17, 8, 21, -1 },
+        { 5, 12, 13, 16, 18, 19, -1 },
+        { 13, 15, 17, 19, 20, 21, -1 },
+        { 13, 14, 16, 21, 11, 26, -1 },
+        { 5, 15, 19, 22, 12, -1 },
+        { 15, 16, 18, 20, 22, 23, 24, -1 },
+        { 16, 19, 21, 24, 25, -1 },
+        { 16, 17, 20, 25, 26, 14, -1 },
+        { 18, 19, 23, 5, 27, -1 },
+        { 19, 22, 24, 27, 28, -1 },
+        { 19, 20, 23, 25, 28, 30, -1 },
+        { 20, 21, 24, 26, 30, 29, -1 },
+        { 21, 25, 17, 29, -1 },
+        { 23, 28, 22, 29, -1 },
+        { 23, 24, 27, 29, 30, -1 },
+        { 28, 30, 25, 26, 27, -1 },
+        { 24, 25, 28, 29, -1 },
+    };
+    inline const int* Neighbours(int sector)
+    {
+        return sector >= 1 && sector <= SectorCount ? NeighbourTable[sector] : NeighbourTable[0];
+    }
 
     inline int RouteLinkKind(int a, int b)
     {

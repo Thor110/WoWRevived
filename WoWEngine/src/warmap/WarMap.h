@@ -12,6 +12,7 @@
 #include "frontend/Menu.h"
 #include "warmap/WarMapData.h"
 
+#include <algorithm>
 #include <array>
 #include <string>
 #include <utility>
@@ -49,6 +50,8 @@ namespace wow
         int Speed() const { return speed; }  // the clock's speed, 0-10
         void SetSectorLimits(int units, int boats) { maxUnits = units; maxBoats = boats; }
         void SetPodInterval(int hours) { podInterval = hours; }
+        // [Tweak] "Route clunting width" and "Route clunting spacing" (0x42AF20 / 0x42AF60, both 4)
+        void SetRouteFormation(int width, int spacing) { clunWidth = std::max(1, width); clunSpacing = spacing; }
         // The war map's objects from a save read exactly (each with its ref into that save's objects, in order).
         static std::vector<SaveInfo::WarMapObject> ObjectsOf(const SaveFile& save);
         // Keeps the save the war map came from, so it can be written again: its objects (in ObjectsOf's order),
@@ -110,7 +113,9 @@ namespace wow
         std::vector<SaveObject> table;
         std::map<int, ObjOjd::UnitData> unitData;
         float ClockTick();
-        void MoveCounters(float hours);
+        void MoveRoutes(int hours);      // the routes' 0x802D (0x425080)
+        void Arrive(int index, int sector, int previous);
+        void ArriveTogether();           // 0x41FCF0
         // who holds each sector: 0 the side being played, 1 the other side, 2 no one
         std::array<int, warmap::SectorCount + 1> owner{};
         int viewMode = 1;                // 1 units, 2 constructions, 3 resources (0x419810, the WWarMapWorld's +0x70)
@@ -125,6 +130,7 @@ namespace wow
         PanelLayout Panel() const;
 
         int chosen = -1;                 // the counter picked to move (drawn with cselecth.spr, GType 0x54)
+        int clunWidth = 4, clunSpacing = 4;
         float cluntingSpeed = 7.0f;      // [Tweak] "Clunting Speed" (0x428B70, default 7): only for units with no speed
         std::string message;             // the engine's own note (a refused route), shown in the status strip
         // The message list (PopupMessageController 0x420A30 at 0x28, 4; lines added by 0x4191A0 -> 0x420DA0):
@@ -198,10 +204,23 @@ namespace wow
             int sector = 0;
             int speed = 0;               // the unit type's war map speed (unit +0x54), 0 for constructions and resources
             int moveClass = 0;           // the unit type's +0x4E: 0-2 land, 3 boats, 4 fliers
-            // travelling: where it's heading, through these points (sector by sector)
-            std::vector<std::pair<int, int>> route;
-            std::vector<int> routeSectors;
-            std::vector<bool> routeWaypoint; // a sector's waypoint (or the last cell) rather than a border point
+            // Travelling (WWarMapRoute 0x4240D0 and its RouteEntry 0x42AFE0; a counter is a route of one entry):
+            // the route's sectors, the start first (+0x4C, count +0x48)
+            std::vector<int> path;
+            bool Travelling() const { return path.size() > 1; }
+            float remaining = 0;         // entry +0x30: the way still to go, waypoint to waypoint
+            float hoursLeft = 0;         // entry +0x34
+            float segmentLeft = 0;       // entry +0x38: of the way to the next sector's waypoint
+            float segmentLength = 0;     // entry +0x3C
+            int segment = 0;             // entry +0x24: the path index it last reached
+            bool segmentStarted = false; // entry +0x28: set on reaching a sector, cleared half way to the next
+            int offsetX = 0, offsetY = 0; // entry +0x10 / +0x14: its place in the formation
+            int hoursOn = 0;             // route +0x30: game hours it has been going
+            bool interrupted = false;    // route +0x60
+            bool naval = false;          // route +0x50: its first unit's +0x52 is 5 or 6
+            int trim = 0;                // the arrow's +0x5C: drawn from this curve point on (behind the units)
+            float labelHours = 0;        // route +0x6C: the hours to arrival the attack label shows
+            uint16_t labelFrom[6] = {};  // the date the label counts from
             // the route's arrow (0x4244E0): its curve points (x, y and heading in 4096ths of a turn), and whether it's
             // an attack (into a sector the other side holds: the big arrow and the arrival label)
             struct ArrowPoint { float x, y; int heading; };
@@ -209,7 +228,6 @@ namespace wow
             bool attack = false;
             std::vector<int> refs;       // its objects in the save's table
             bool moved = false;          // sent somewhere since it was read (its objects then take its place)
-            float fx = 0, fy = 0;        // exact position while travelling
         };
         float PixelsPerHour(const Counter& k) const; // how far a counter goes in a game hour
         int CrewOf(const Counter& k) const;          // the men its objects carry

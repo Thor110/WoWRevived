@@ -44,10 +44,11 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 - [x] **View shading**: the Construction view from the economy (table 1, levels 67-77) (0x4192F0) — 03
 - [x] **Resource warnings / alerts**: thresholds 0.3 / 0.8, counters 336 / 504, events 13 / 14 with their sounds
       (0x4198C0 at 0x419EFB); the event box for critical events comes with Milestone 3 — 03
-- [ ] **Travel as the game does it**: formation offsets, per-hour movement along segment lengths, arrival together
-      (0x41FCF0), the arrow trimmed behind the leading units, TravelInterrupted, sea waypoints, 0x802C when no
-      routes are left (0x425080, 0x42AFE0, 0x4373A0) — 03, 04
-- [ ] **A\* details**: newest-first ties, no re-sort on improvement, the 1000-step limit (0x44EFA0) — 08
+- [x] **Travel as the game does it**: formation offsets, per-hour movement along segment lengths, attacks arriving
+      together (0x41FCF0), the arrow trimmed behind the units, TravelInterrupted, sea waypoints (0x425080, 0x42AFE0,
+      0x4373A0); still to come: several units sent as one route, the world's 0x802C when no routes are left — 03, 04
+- [x] **A\* details**: the cost as its own estimate, newest-first ties, no re-sort on improvement, the neighbour
+      order, the 1000 limit (0x44EE70 / 0x44EFA0 / 0x44F120); the goal's limit counts routes heading there — 08
 - [x] **Sector paths cache** (WM_COMMAND 0xB7, WSectorPath 0x4A39E0) for the economy; the AI will use it too — 14
 - [ ] **Counter cells**: shrink by "WM clunting adj" (4) from "WM clunting res" (36) when a sector is full, sliding
       over 5 ticks; spiral mode 3 for units and constructions, 2 for resources (0x4205F0, 0x4208B0, 0x4209E0) — 03

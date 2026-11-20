@@ -1,6 +1,7 @@
 #include "warmap/WarMap.h"
 
 #include "core/Random.h"
+#include "warmap/AStar.h"
 
 #include <SDL3/SDL_keyboard.h>
 #include <SDL3/SDL_keycode.h>
@@ -292,7 +293,7 @@ namespace wow
     }
 
     // The sectors' cached paths (WM_COMMAND 0xB7 to each sector, 0x43AFEF: new WSectorPath(owner, this, n) for
-    // n = 1-30, 0x4A39E0). An A* (0x44EE70, at most 1000 goes, no estimate) over land links only, with the cost
+    // n = 1-30, 0x4A39E0). The A* (warmap::AStar) over land links only, with the cost
     // (0x4A3D10): impassable into a sector held by neither the path's side (the start's owner) nor no one, when
     // neither end has its command building, or into one without it that isn't the goal; otherwise the whole
     // pixels between the two waypoints. A path keeps its sector count (the start included), or 0 when there's
@@ -313,38 +314,18 @@ namespace wow
             {
                 if (goal == start) continue;
                 auto cost = [&](int a, int b) {
+                    if (a == b) return 0;
                     if (!(warmap::RouteLinkKind(a, b) & 1)) return -1;
                     if (owner[size_t(b)] != side && owner[size_t(b)] != 2) return -1;
                     bool ca = HasCommandPost(a), cb = HasCommandPost(b);
                     if (!ca && !cb) return -1;
                     if (!cb && b != goal) return -1;
                     auto pa = warmap::Waypoint(a), pb = warmap::Waypoint(b);
-                    double dx = pb.x - pa.x, dy = pb.y - pa.y;
-                    return int(std::sqrt(dx * dx + dy * dy));
+                    int dx = pa.x - pb.x, dy = pa.y - pb.y;
+                    return int(std::sqrt(double(dx * dx + dy * dy)));
                 };
-                std::array<int, warmap::SectorCount + 1> best, previous;
-                std::array<bool, warmap::SectorCount + 1> done{};
-                best.fill(INT32_MAX);
-                previous.fill(-1);
-                best[size_t(start)] = 0;
-                for (int go = 0; go < 1000; go++)
-                {
-                    int s = -1;
-                    for (int n = 1; n <= warmap::SectorCount; n++)
-                        if (!done[size_t(n)] && best[size_t(n)] != INT32_MAX && (s < 0 || best[size_t(n)] < best[size_t(s)])) s = n;
-                    if (s < 0 || s == goal) break;
-                    done[size_t(s)] = true;
-                    for (int n = 1; n <= warmap::SectorCount; n++)
-                    {
-                        if (done[size_t(n)] || n == s) continue;
-                        int c = cost(s, n);
-                        if (c < 0) continue;
-                        if (best[size_t(s)] + c < best[size_t(n)]) { best[size_t(n)] = best[size_t(s)] + c; previous[size_t(n)] = s; }
-                    }
-                }
-                if (previous[size_t(goal)] < 0) continue;
-                int count = 1;
-                for (int s = goal; s != start; s = previous[size_t(s)]) count++;
+                std::vector<int> path = warmap::AStar(start, goal, cost);
+                int count = path.size() > 1 ? int(path.size()) : 0;
                 pathLength[size_t(start)][size_t(goal)] = count;
             }
         }
@@ -399,12 +380,14 @@ namespace wow
             for (const Counter& k : counters)
             {
                 if (k.kind != 0 || k.sector < 1 || k.sector > N) continue;
+                // a travelling unit's goes to the sector it last reached (0x424E90)
+                const int at = k.Travelling() ? k.path[size_t(k.segment)] : k.sector;
                 auto unit = unitData.find(k.type);
                 if (unit == unitData.end()) continue;
                 const bool human = k.players == res.Human();
-                const float crew = float(CrewOf(k)), still = k.route.empty() ? 0.5f : 1.0f;
+                const float crew = float(CrewOf(k)), still = k.Travelling() ? 1.0f : 0.5f;
                 for (int i = 0; i < 3; i++)
-                    economy[size_t(k.sector)].demand[size_t((human ? 0 : 3) + i)] += unit->second.upkeep[i] * still * crew;
+                    economy[size_t(at)].demand[size_t((human ? 0 : 3) + i)] += unit->second.upkeep[i] * still * crew;
             }
             break;
         case 4:
@@ -491,10 +474,10 @@ namespace wow
     }
 
     // The world's 0x802D, every whole game hour (0x419E9D): the routes, the players, both sides' research, the
-    // pods, each sector, then the resource warnings. (The pods and the warnings are in so far; the routes move
-    // every update in MoveCounters.)
+    // pods, each sector, then the resource warnings. (The routes, the pods and the warnings are in so far.)
     void WarMap::Hourly(int hours)
     {
+        MoveRoutes(hours);
         DropPod(hours);
         ResourceWarnings();
     }
@@ -625,7 +608,7 @@ namespace wow
             bool taken = false;
             for (const Counter& c : counters) if (c.kind == 0 && c.x == x && c.y == y) { taken = true; break; }
             if (taken) continue;
-            k.x = x; k.y = y; k.fx = float(x); k.fy = float(y);
+            k.x = x; k.y = y;
             counters.push_back(k);
             return int(counters.size()) - 1;
         }
@@ -724,14 +707,15 @@ namespace wow
         {
             if (k.sector < 1 || k.sector > warmap::SectorCount) continue;
             SaveRoute* route = nullptr;
-            if (!k.route.empty() && !k.routeSectors.empty())
+            if (k.Travelling())
             {
                 SaveRoute r;
-                r.origin = uint32_t(k.sector);
-                r.destination = uint32_t(k.routeSectors.back());
-                for (int sector : k.routeSectors)
-                    if (sector != k.sector && (r.path.empty() || r.path.back() != uint32_t(sector))) r.path.push_back(uint32_t(sector));
-                r.field50 = k.attack ? 1 : 0;
+                r.origin = uint32_t(k.path.front());
+                r.destination = uint32_t(k.path.back());
+                r.flag5F = 1;
+                r.flag5E = k.attack ? 1 : 0;
+                for (int sector : k.path) r.path.push_back(uint32_t(sector));
+                r.field50 = k.naval ? 1 : 0;
                 s.routes.push_back(std::move(r));
                 route = &s.routes.back();
             }
@@ -763,53 +747,124 @@ namespace wow
         return s.Write();
     }
 
-    void WarMap::MoveCounters(float hours)
+    // The routes' hourly step (WWarMapRoute's 0x802D, 0x425080), for each counter on its way:
+    //   - its first hour puts it at the curve's start, plus its place in the formation (0x4406A0)
+    //   - unless it's interrupted already or an attack, every sector from the one it last reached to the end is
+    //     checked: one with a battle (+0x124), or held by the other side, other than where the route started,
+    //     interrupts it (+0x60) with event 11, TravelInterrupted (0x41EF80: "Travel interrupted" (0x419), sound
+    //     0x147; with the [Event] option on the game also opens its event box, not in yet)
+    //   - it goes the way still to go over the hours still to go each hour, waypoint to waypoint (0x437380); on
+    //     reaching a sector's waypoint it arrives there if that's the last, or the route was interrupted
+    //   - on the map it's that far along the arrow's curve (32 points a sector), and the arrow is drawn from there
+    //     on (+0x5C)
+    //   - when every counter on it has arrived, a route that isn't an attack raises event 3, ArrivedInSector
+    void WarMap::MoveRoutes(int hours)
     {
-        // Counters on their way: routes (WWarMapRoute 0x4240D0) move on every game hour (message 0x802D, 0x425080)
-        // from sector waypoint to sector waypoint, at the unit's own speed (see PixelsPerHour). Going into a sector
-        // the other side holds stops them at its border: that's a battle, which needs the battle map. Arriving in a
-        // sector no one holds takes it (provisional).
+        constexpr int Steps = 32; // the curve's points a sector (+0x40: 2 to the power +0x44, 5)
+        const float h = float(hours);
         for (size_t i = 0; i < counters.size(); i++)
         {
             Counter& k = counters[i];
-            if (k.route.empty()) continue;
-            float step = PixelsPerHour(k) * hours;
-            float tx = float(k.route.front().first), ty = float(k.route.front().second);
-            float dx = tx - k.fx, dy = ty - k.fy, dist = std::sqrt(dx * dx + dy * dy);
-            if (dist > step) { k.fx += dx / dist * step; k.fy += dy / dist * step; }
-            else
+            if (!k.Travelling() || k.arrow.size() < 2) continue;
+            const int origin = k.path.front(), last = int(k.path.size()) - 1;
+            if (++k.hoursOn == 1)
             {
-                k.fx = tx; k.fy = ty;
-                int next = k.routeSectors.front();
-                k.route.erase(k.route.begin());
-                k.routeSectors.erase(k.routeSectors.begin());
-                k.routeWaypoint.erase(k.routeWaypoint.begin());
-                if (next != k.sector && owner[size_t(next)] == 1)
+                k.x = int(k.arrow[0].x) + k.offsetX - 16;
+                k.y = int(k.arrow[0].y) + k.offsetY - 16;
+            }
+            if (!k.interrupted && !k.attack)
+                for (int n = k.segment; n <= last; n++)
                 {
-                    // BattleInSector (event 0, 0x41E850): "Battle in" and the sector, and the attack sound (0x139,
-                    // or 0x13A for sector 3 or London); defending a sector of ours would be 0x138. The battle itself
-                    // needs the battle map, so the counter stops at the border.
-                    Log(res.String(0x210) + " " + res.String(warmap::NameText(next)));
-                    sounds.push_back(next == 3 || next == 30 ? 0x13A : 0x139);
-                    k.route.clear(); k.routeSectors.clear(); k.routeWaypoint.clear();
-                    auto cell = FreeCell(k.sector, k.kind, int(i));
-                    k.fx = float(cell.first); k.fy = float(cell.second);
-                }
-                else
-                {
-                    k.sector = next;
-                    if (k.route.empty())
+                    int s = k.path[size_t(n)];
+                    if ((battle[size_t(s)] || owner[size_t(s)] == 1) && s != origin)
                     {
-                        if (owner[size_t(next)] == 2) owner[size_t(next)] = 0;
-                        // ArrivedInSector (event 3, 0x41EAE0): "Vehicle/s arrived in" and the sector, sound 0x120
-                        Log(res.String(0x211) + " " + res.String(warmap::NameText(next)));
-                        sounds.push_back(0x120);
+                        k.interrupted = true;
+                        Log(res.String(0x419));
+                        sounds.push_back(0x147);
+                        break;
                     }
                 }
+            // (with no hours left the game divides by 0; here it just gets there)
+            float speed = k.hoursLeft > 0.0f ? k.remaining / k.hoursLeft : k.segmentLeft + k.remaining + 1.0f;
+            k.hoursLeft -= h;
+            float d = speed * h;
+            k.segmentLeft -= d;
+            k.remaining -= d;
+            if (k.segmentLeft <= 0.0f)
+            {
+                k.segment++;
+                k.segmentStarted = true;
+                if (k.segment == last || k.interrupted)
+                {
+                    Arrive(int(i), k.path[size_t(k.segment)], k.path[size_t(k.segment - 1)]);
+                    continue;
+                }
+                auto a = warmap::Waypoint(k.path[size_t(k.segment)]), b = warmap::Waypoint(k.path[size_t(k.segment + 1)]);
+                int dx = a.x - b.x, dy = a.y - b.y;
+                k.segmentLength = float(std::sqrt(double(dx * dx + dy * dy)));
+                k.segmentLeft += k.segmentLength;
             }
-            k.x = int(k.fx); k.y = int(k.fy);
+            float frac = 1.0f - k.segmentLeft / k.segmentLength;
+            if (frac >= 0.5f && k.segmentStarted) k.segmentStarted = false;
+            float f = frac * float(Steps);
+            int whole = int(f);
+            // (the game reads past the curve when an hour goes beyond the next waypoint; kept on it here)
+            int at = std::clamp(k.segment * Steps + whole, 0, int(k.arrow.size()) - 2);
+            k.trim = at;
+            const auto& p0 = k.arrow[size_t(at)];
+            const auto& p1 = k.arrow[size_t(at + 1)];
+            float part = f - float(whole);
+            k.x = int(p0.x + (p1.x - p0.x) * part) + k.offsetX - 16;
+            k.y = int(p0.y + (p1.y - p0.y) * part) + k.offsetY - 16;
         }
+    }
 
+    // A counter arriving (0x425471: 0xAD to the group with the sector, +0x58 the one before, then the entry goes),
+    // and the route ending with it (0x4253F9). Going into a sector the other side holds is a battle, which needs
+    // the battle map: "Battle in" and the sector with the attack sound (0x139, or 0x13A for sector 3 or London),
+    // and the counter stays in the sector it came from (provisional). Arriving in a sector no one holds takes it
+    // (provisional).
+    void WarMap::Arrive(int index, int sector, int previous)
+    {
+        Counter& k = counters[size_t(index)];
+        const bool attack = k.attack;
+        int at = sector;
+        if (owner[size_t(sector)] == 1)
+        {
+            Log(res.String(0x210) + " " + res.String(warmap::NameText(sector)));
+            sounds.push_back(sector == 3 || sector == 30 ? 0x13A : 0x139);
+            at = previous;
+        }
+        else if (owner[size_t(sector)] == 2) owner[size_t(sector)] = 0;
+        k.path.clear();
+        k.arrow.clear();
+        k.sector = at;
+        auto cell = FreeCell(at, k.kind, index);
+        k.x = cell.first;
+        k.y = cell.second;
+        // ArrivedInSector (event 3, 0x41EAE0): "Vehicle/s arrived in" and the sector, sound 0x120
+        if (!attack && at == sector)
+        {
+            Log(res.String(0x211) + " " + res.String(warmap::NameText(sector)));
+            sounds.push_back(0x120);
+        }
+    }
+
+    // Attacks on the same sector arrive together (the route manager's 0x41FCF0, after a route is added): the
+    // longest hours still to go of every route heading there go to each attack heading there (0x4255F0, its label
+    // too).
+    void WarMap::ArriveTogether()
+    {
+        std::array<float, warmap::SectorCount + 1> longest{};
+        for (const Counter& k : counters)
+            if (k.Travelling()) longest[size_t(k.path.back())] = std::max(longest[size_t(k.path.back())], k.hoursLeft);
+        for (Counter& k : counters)
+            if (k.Travelling() && k.attack)
+            {
+                k.hoursLeft = longest[size_t(k.path.back())];
+                k.labelHours = k.hoursLeft;
+                for (int i = 0; i < 6; i++) k.labelFrom[i] = game.dateTime[i];
+            }
     }
 
     void WarMap::Update()
@@ -824,7 +879,7 @@ namespace wow
             for (int phase = 0; phase < 5; phase++) EconomyPhase(phase);
         }
         animation++;
-        MoveCounters(ClockTick());
+        ClockTick();
         if (hoursPassed > 0) Hourly(hoursPassed);
         EconomyPhase(animation % 5);
         ShadeSectors();
@@ -894,7 +949,7 @@ namespace wow
 
         // Routes: an arrow from each travelling counter through the rest of its points
         for (const Counter& k : counters)
-            if (!k.route.empty() && k.kind == viewMode - 1) DrawRouteArrow(canvas, k);
+            if (k.Travelling() && k.kind == viewMode - 1) DrawRouteArrow(canvas, k);
 
         // the counters (GType 0x77, 32 pixels) of the kind the view shows, with how many when there's more than one
         for (const Counter& k : counters)
@@ -1088,7 +1143,7 @@ namespace wow
         if (down && CalendarRect().Contains(x, y))
         {
             forcedHours++;
-            MoveCounters(ClockTick());
+            ClockTick();
             if (hoursPassed > 0) Hourly(hoursPassed);
             return std::nullopt;
         }
@@ -1353,10 +1408,12 @@ namespace wow
             auto [x, y] = at(i);
             lx = x + dx; ly = y + dy; rx = x - dx; ry = y - dy;
         };
+        // the body from the units on (+0x5C: the quads past it)
         int bodyEnd = std::max(0, n - Steps / 3 - 1);
+        int from = std::clamp(k.trim, 0, bodyEnd);
         float plx, ply, prx, pry;
-        edges(0, plx, ply, prx, pry);
-        for (int i = 1; i <= bodyEnd; i++)
+        edges(from, plx, ply, prx, pry);
+        for (int i = from + 1; i <= bodyEnd; i++)
         {
             float lx, ly, rx, ry;
             edges(i, lx, ly, rx, ry);
@@ -1385,17 +1442,10 @@ namespace wow
 
         // an attack's arrival label (0x424776): boxed text (0x49D260, font 0x71) at the route's end, the box black
         // (dword_4DAFC8) with a 1 pixel outline (dword_4DAF88 black for the Humans, the Martians' side colour
-        // dword_4DAF9C), the text 1 pixel in; the hours still to go are what's left of the way at the counter's speed
+        // dword_4DAF9C), the text 1 pixel in: the arrival date worked out when the route was made, or when its
+        // hours were last set (0x424431 / 0x4255F0)
         if (!k.attack) return;
-        float left_ = 0, px = float(k.x), py = float(k.y);
-        for (const auto& p : k.route)
-        {
-            left_ += std::hypot(float(p.first) - px, float(p.second) - py);
-            px = float(p.first); py = float(p.second);
-        }
-        float perHour = PixelsPerHour(k);
-        if (perHour <= 0) return;
-        std::string label = warmap::ArrivalText(game.dateTime, left_ / perHour, human,
+        std::string label = warmap::ArrivalText(k.labelFrom, k.labelHours, human,
             [&](int month) { return res.String(warmap::MonthText(month)); });
         auto [ex, ey] = at(n - 1);
         const Font* font = res.GetFont(0x71);
@@ -1433,63 +1483,54 @@ namespace wow
 
     std::vector<int> WarMap::FindRoute(int from, int to, const Counter& k, std::string* why) const
     {
-        // The game's route finder: an A* (0x44EFA0, set up by 0x44EE70 from 0x424160) over the route links, with
-        // 0x42ABD0 giving each step's cost, or refusing it. The cost is the straight line between the two
-        // sectors' waypoints (0x437380), whole pixels. A step is refused (the reason left at 0x4EA198):
-        //   1/2  the link isn't one the unit can take (land units over land, boats by sea, fliers anywhere)
+        // The game's route finder: the A* (warmap::AStar; set up by 0x424160) with 0x42ABD0 giving each step's
+        // cost, or refusing it, the reason left at 0x4EA198 (by whichever call refused last, the A*'s estimates
+        // included). The cost is 0 from a sector to itself, else the straight line between the two sectors'
+        // waypoints (0x437380), whole pixels. A step is refused:
+        //   0    a unit that can't move (0x42A410; not in yet)
+        //   1/2  the link isn't one the unit can take: land units need a land link (bits 0-2), boats a sea one
+        //        (bit 4); fliers take any
         //   3    neither end has its owner's command post
-        //   4/5  a sector passed through (not the goal) has no command post, or isn't the player's
+        //   4/5  into a sector other than the goal that has no command post, or isn't the player's
         //   6    the route's start has no command post and the step goes into a sector that isn't the player's
-        //   7/8  the goal would hold more than "Max units in sector" units, or "Max boats in sector" boats
-        // There's no estimate to the goal, so it finds the shortest way, as Dijkstra does.
+        //   7/8  into the goal when it would hold more than "Max units in sector" of the player's units, or "Max
+        //        boats in sector" boats: those there, those on their way there (0x420060) and these
+        // The route stands when the A* gets there with more than the start in it.
         int reason = -1;
-        auto allowed = [&](int a, int b) {
+        auto cost = [&](int a, int b) -> int {
+            if (a == b) return 0;
             int kind = warmap::RouteLinkKind(a, b);
-            if (!kind) return false;
-            if (k.moveClass <= 2 && !(kind & warmap::RouteKind::Land)) { reason = 1; return false; }
-            if (k.moveClass == 3 && !(kind & warmap::RouteKind::Sea)) { reason = 2; return false; }
-            if (!HasCommandPost(a) && !HasCommandPost(b)) { reason = 3; return false; }
+            if (k.moveClass <= 2 && !(kind & warmap::RouteKind::Land)) { reason = 1; return -1; }
+            if (k.moveClass == 3 && !(kind & warmap::RouteKind::Sea)) { reason = 2; return -1; }
+            if (!HasCommandPost(a) && !HasCommandPost(b)) { reason = 3; return -1; }
             if (b != to)
             {
-                if (!HasCommandPost(b)) { reason = 4; return false; }
-                if (owner[size_t(b)] != 0) { reason = 5; return false; }
+                if (!HasCommandPost(b)) { reason = 4; return -1; }
+                if (owner[size_t(b)] != 0) { reason = 5; return -1; }
             }
-            if (!HasCommandPost(from) && owner[size_t(b)] != 0) { reason = 6; return false; }
+            if (!HasCommandPost(from) && owner[size_t(b)] != 0) { reason = 6; return -1; }
             if (b == to)
             {
-                int units = k.count, boats = k.moveClass == 3 ? k.count : 0;
+                int units = k.moveClass != 3 ? k.count : 0, boats = k.moveClass == 3 ? k.count : 0;
                 for (const Counter& c : counters)
-                    if (c.players && c.kind == 0 && c.sector == to && c.route.empty())
-                        (c.moveClass == 3 ? boats : units) += c.count;
-                if (k.moveClass != 3 && units > maxUnits) { reason = 7; return false; }
-                if (k.moveClass == 3 && boats > maxBoats) { reason = 8; return false; }
+                {
+                    if (c.kind != 0 || &c == &k) continue;
+                    if (!c.Travelling())
+                    {
+                        // 0x43D090 / 0x43D0F0: the player's units in the sector, boats (class 3) apart
+                        if (c.players && c.sector == to) (c.moveClass == 3 ? boats : units) += c.count;
+                    }
+                    else if (c.path.back() == to) (c.naval ? boats : units) += c.count;
+                }
+                if (k.moveClass != 3 && units > maxUnits) { reason = 7; return -1; }
+                if (k.moveClass == 3 && boats > maxBoats) { reason = 8; return -1; }
             }
-            return true;
+            auto pa = warmap::Waypoint(a), pb = warmap::Waypoint(b);
+            int dx = pa.x - pb.x, dy = pa.y - pb.y;
+            return int(std::sqrt(double(dx * dx + dy * dy)));
         };
-        std::array<int, warmap::SectorCount + 1> best;
-        std::array<int, warmap::SectorCount + 1> previous;
-        std::array<bool, warmap::SectorCount + 1> done{};
-        best.fill(INT32_MAX);
-        previous.fill(-1);
-        best[size_t(from)] = 0;
-        for (;;)
-        {
-            int s = -1;
-            for (int n = 1; n <= warmap::SectorCount; n++)
-                if (!done[size_t(n)] && best[size_t(n)] != INT32_MAX && (s < 0 || best[size_t(n)] < best[size_t(s)])) s = n;
-            if (s < 0 || s == to) break;
-            done[size_t(s)] = true;
-            auto a = warmap::Waypoint(s);
-            for (int n = 1; n <= warmap::SectorCount; n++)
-            {
-                if (done[size_t(n)] || !allowed(s, n)) continue;
-                auto b = warmap::Waypoint(n);
-                double dx = b.x - a.x, dy = b.y - a.y;
-                int d = best[size_t(s)] + int(std::sqrt(dx * dx + dy * dy));
-                if (d < best[size_t(n)]) { best[size_t(n)] = d; previous[size_t(n)] = s; }
-            }
-        }
-        if (to == from || previous[size_t(to)] < 0)
+        std::vector<int> path = warmap::AStar(from, to, cost);
+        if (path.size() <= 1)
         {
             if (why)
             {
@@ -1502,8 +1543,7 @@ namespace wow
             }
             return {};
         }
-        std::vector<int> path;
-        for (int s = to; s != from; s = previous[size_t(s)]) path.insert(path.begin(), s);
+        path.erase(path.begin());
         return path;
     }
 
@@ -1558,8 +1598,7 @@ namespace wow
     void WarMap::SendTo(int index, int sector)
     {
         Counter& k = counters[size_t(index)];
-        if (sector == k.sector) return;
-        k.moved = true;
+        if (sector == k.sector || k.Travelling()) return;
         std::string why;
         std::vector<int> path = FindRoute(k.sector, sector, k, &why);
         std::string through;
@@ -1569,51 +1608,57 @@ namespace wow
         // an attack (into a sector the other side holds) has to be to a neighbouring sector (0x424160)
         if (!path.empty() && owner[size_t(sector)] == 1 && path.size() != 1) { path.clear(); why = "An attack has to be on a neighbouring sector"; }
         if (path.empty()) { message = why; return; }
-        k.route.clear();
-        k.routeSectors.clear();
-        k.routeWaypoint.clear();
-        // out of each sector across the link's two border points, through the next sector's waypoint (0x437380),
-        // ending in a free cell of the last; the counter's corner follows the points less half its size
-        int at = k.sector;
-        for (size_t i = 0; i < path.size(); i++)
+        k.moved = true;
+        path.insert(path.begin(), k.sector);
+        k.path = path;
+        k.attack = owner[size_t(sector)] == 1; // +0x5E: not when the goal is the side's own or no one's
+        auto unit = unitData.find(k.type);
+        k.naval = unit != unitData.end() && (unit->second.field52 == 5 || unit->second.field52 == 6);
+        // the arrow's control points (0x4244E0): for the start, the point of its link to the next sector where a
+        // route over land leaves it (0x4BCEB0); then every sector's waypoint (0x437380). A naval route, or a point
+        // that's 0, 0, takes the sector's sea waypoint instead (0x4373A0).
+        std::vector<std::pair<float, float>> control;
+        for (size_t n = 0; n < path.size(); n++)
         {
-            // land units cross at a link's land points, boats at its sea points, fliers whichever it has
-            int kind = warmap::RouteLinkKind(at, path[i]);
-            bool bySea = k.moveClass == 3 || (k.moveClass == 4 && !(kind & warmap::RouteKind::Land));
-            const warmap::SectorLink* link = bySea ? warmap::SeaLink(at, path[i]) : warmap::LandLink(at, path[i]);
-            if (link)
+            warmap::Point at = warmap::Waypoint(path[n]);
+            if (n == 0)
             {
-                const int* p = bySea ? link->sea : link->land;
-                k.route.push_back({ p[0] - 16, p[1] - 16 });
-                k.routeSectors.push_back(at);
-                k.routeWaypoint.push_back(false);
-                k.route.push_back({ p[2] - 16, p[3] - 16 });
-                k.routeSectors.push_back(path[i]);
-                k.routeWaypoint.push_back(false);
+                const warmap::SectorLink* link = warmap::FindLink(path[0], path[1]);
+                at = link ? warmap::Point{ link->land[0], link->land[1] } : warmap::Point{ 0, 0 };
             }
-            auto w = warmap::Waypoint(path[i]);
-            if (i + 1 < path.size()) k.route.push_back({ w.x - 16, w.y - 16 });
-            else k.route.push_back(FreeCell(path[i], k.kind, index));
-            k.routeSectors.push_back(path[i]);
-            k.routeWaypoint.push_back(true);
-            at = path[i];
+            if (k.naval || (at.x == 0 && at.y == 0)) at = warmap::SeaWaypoint(path[n]);
+            control.push_back({ float(at.x), float(at.y) });
         }
-        // the arrow's control points (0x4244E0): where the route leaves the first sector (the link's land point, or
-        // its sea point for a naval route), the waypoints of the sectors on the way, and the destination's waypoint
+        k.arrow = ArrowCurve(control);
+        // the route's length (+0x68): waypoint to waypoint, whole pixels each; a RouteEntry (0x42AFE0) goes it at
+        // its unit's speed (+0x54 x 0.05), so in length / speed hours, starting on the first sector's way, and
+        // takes its place in a formation [Tweak] "Route clunting width" (4) wide, "Route clunting spacing" (4)
+        // apart: the n-th at ((n % w) - w / 2, (n / w) - w / 2) x spacing (a counter is the route's only one)
+        float length = 0;
+        for (size_t n = 1; n < path.size(); n++)
         {
-            std::vector<std::pair<float, float>> control;
-            int first = path.front();
-            int kind = warmap::RouteLinkKind(k.sector, first);
-            bool bySea = k.moveClass == 3 || (k.moveClass == 4 && !(kind & warmap::RouteKind::Land));
-            const warmap::SectorLink* link = bySea ? warmap::SeaLink(k.sector, first) : warmap::LandLink(k.sector, first);
-            if (link) control.push_back({ float(bySea ? link->sea[0] : link->land[0]), float(bySea ? link->sea[1] : link->land[1]) });
-            else { auto w = warmap::Waypoint(k.sector); control.push_back({ float(w.x), float(w.y) }); }
-            for (int s : path) { auto w = warmap::Waypoint(s); control.push_back({ float(w.x), float(w.y) }); }
-            k.arrow = ArrowCurve(control);
-            k.attack = owner[size_t(sector)] == 1;
+            auto a = warmap::Waypoint(path[n - 1]), b = warmap::Waypoint(path[n]);
+            int dx = b.x - a.x, dy = b.y - a.y;
+            length += float(std::sqrt(double(dx * dx + dy * dy)));
         }
-        k.fx = float(k.x);
-        k.fy = float(k.y);
+        k.remaining = length;
+        k.hoursLeft = length / PixelsPerHour(k);
+        {
+            auto a = warmap::Waypoint(path[0]), b = warmap::Waypoint(path[1]);
+            int dx = a.x - b.x, dy = a.y - b.y;
+            k.segmentLength = k.segmentLeft = float(std::sqrt(double(dx * dx + dy * dy)));
+        }
+        k.segment = 0;
+        k.segmentStarted = true;
+        k.hoursOn = 0;
+        k.interrupted = false;
+        k.trim = 0;
+        const int n = 0;
+        k.offsetX = (n % clunWidth - clunWidth / 2) * clunSpacing;
+        k.offsetY = (n / clunWidth - clunWidth / 2) * clunSpacing;
+        k.labelHours = k.hoursLeft;
+        for (int i = 0; i < 6; i++) k.labelFrom[i] = game.dateTime[i];
+        ArriveTogether();
         message.clear();
     }
 }
