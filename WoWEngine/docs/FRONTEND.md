@@ -96,11 +96,25 @@ WGame's handler (0x402B80) doesn't act on a command straight away: it stores it 
 
 The other movies go the same way: 0x8036 plays RAGELOGO then 0x8038, which plays TITLE then opens the main menu. Victory and defeat play VICTORY or DEFEAT, then the credits.
 
+### Movies
+
+Start-up (0x4039D0) sends 0x8133 with 0x8036: the disc check, then RAGELOGO, TITLE and the main menu. Each movie is
+0x42CCF0(name), which moves the game to 0x8041 and remembers the command for after it (0x4D255C); 0x44DE20 builds
+`FMV\<name>.smk`, stops every sound (0x465B20) and plays it (0x44F2C0, SMACKW32.DLL), centred on the 640 x 480
+screen, until its last frame or Escape (0x44E3E0, VK_ESCAPE). Every movie on the discs is SMK2, 640 x 180,
+Y-interlaced (shown 360 high on every other line), 25 frames a second, with 16-bit stereo sound at 22050 Hz; the
+Martian disc's INTRO, VICTORY and DEFEAT differ from the Human disc's.
+
+WoWEngine's `MovieScreen` (0x8041) plays `FMV-Human\` or `FMV-Martian\<name>.mp4` (`FMV\` for TITLE and RAGELOGO,
+the folders WoWRevived's Smackw32 wrapper uses) through Media Foundation on Windows, otherwise the `.smk` there or
+in `FMV`, with its own Smacker decoder (`core/Smacker`, checked with `wowdump --smk`). An `.mp4` larger than the
+screen is scaled down to fit.
+
 ### In the engine
 
 - The disc check always passes, because the engine runs from the copy WoWLauncher made of both discs, music included. So the Insert CD menu goes straight on; `--open 0x8133` still shows it.
 - Typing in the Edit Campaign field comes from SDL's text input, converted to Latin-1 like the save files.
-- The movies, setting up the campaign (0x404660), loading a save (0x80B3) and starting the war map (0x8A, 0xA5, 0xAB) wait for the campaign to be rebuilt, and show a "not rebuilt yet" placeholder.
+- Setting up the campaign (0x404660), loading a save (0x80B3) and starting the war map (0x8A, 0xA5, 0xAB) wait for the campaign to be rebuilt, and show a "not rebuilt yet" placeholder.
 - There's no network play yet, so Select Service Provider lists no providers and the session menu always says it's waiting. The Network Host and Waiting for Player menus can be opened with `--open 0x9F` and `--open 0xA1`.
 
 ## Sound

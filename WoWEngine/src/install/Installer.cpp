@@ -45,9 +45,27 @@ namespace wow::install
         };
         std::string lower = Lower(discPath);
         if (lower.rfind("directx/", 0) == 0 || lower.rfind("winsys/", 0) == 0) return true;
-        // WoWLauncher deletes FMV\*.smk (WoWRevived plays its own versions of the movies)
-        if (lower.rfind("fmv/", 0) == 0 && lower.find('/', 4) == std::string::npos && fs::path(lower).extension() == ".smk") return true;
         return lower.find('/') == std::string::npos && files.count(lower) > 0;
+    }
+
+    // Where a disc file goes. The movies are laid out as WoWRevived's Smackw32 wrapper looks for them: TITLE and
+    // RAGELOGO (the same on both discs) in FMV, and each disc's own INTRO, VICTORY and DEFEAT in FMV-Human or
+    // FMV-Martian, so both sides keep theirs. Everything else keeps its place.
+    std::string TargetPath(const std::string& discPath, Side side, bool& ownSide)
+    {
+        ownSide = false;
+        std::string lower = Lower(discPath);
+        if (lower.rfind("fmv/", 0) == 0 && lower.find('/', 4) == std::string::npos && fs::path(lower).extension() == ".smk")
+        {
+            std::string name = discPath.substr(4);
+            std::string upper = name;
+            for (char& c : upper) c = char(std::toupper(static_cast<unsigned char>(c)));
+            upper = upper.substr(0, upper.size() - 4) + ".smk";
+            if (upper == "TITLE.smk" || upper == "RAGELOGO.smk") return "FMV/" + upper;
+            ownSide = true;
+            return std::string(side == Side::Human ? "FMV-Human/" : "FMV-Martian/") + upper;
+        }
+        return discPath;
     }
 
     DiscInfo Identify(Disc& disc)
@@ -106,9 +124,11 @@ namespace wow::install
             if (Skipped(f.path)) continue;
             // the Human disc always writes its copy, the Martian disc only adds files that aren't there yet,
             // so the result is the same whichever disc comes first
-            auto already = existing.Resolve(f.path);
-            if (already && info.side != Side::Human) continue;
-            fs::path out = already ? *already : options.target / fs::path(f.path);
+            bool ownSide = false;
+            std::string target = TargetPath(f.path, info.side, ownSide);
+            auto already = existing.Resolve(target);
+            if (already && info.side != Side::Human && !ownSide) continue;
+            fs::path out = already ? *already : options.target / fs::path(target);
             fs::create_directories(out.parent_path(), ec);
             progress("Copying " + f.path, double(done) / double(total));
             std::ofstream file(out, std::ios::binary | std::ios::trunc);

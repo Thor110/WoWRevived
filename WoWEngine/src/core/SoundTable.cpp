@@ -114,7 +114,7 @@ namespace wow
                 break;
             }
             case 14: volume = f32(); break;
-            case 15: entry().flag15 = true; break;
+            case 15: entry().stereo = true; break;
             case 16: break;
             case 17: group = std::min(std::max(int(u16()) - 1, 0), 2); break;
             case 18: entry().positional = true; break;

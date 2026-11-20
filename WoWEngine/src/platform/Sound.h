@@ -42,6 +42,7 @@ namespace wow
         void Update();
 
         bool Available() const { return stream != nullptr; }
+        float Master() const { return master; }
         const SoundTable& Table() const { return table; }
 
     private:
@@ -49,7 +50,8 @@ namespace wow
         {
             int handle = 0;
             std::shared_ptr<const std::vector<int16_t>> pcm;
-            double position = 0, step = 1;
+            double position = 0, step = 1; // in frames
+            int channels = 1;                 // 2 for a stereo sound (SFX.ojd record 15)
             bool loop = false;
             int type = 0;
             float gain = 1;           // the sound's own volume times the volume it was played at

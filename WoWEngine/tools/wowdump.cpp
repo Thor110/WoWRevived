@@ -20,11 +20,15 @@
 #include "core/Models.h"
 #include "core/ObjOjd.h"
 #include "core/SaveGame.h"
+#include "core/Smacker.h"
 #include "core/Palette.h"
 #include "core/SoundTable.h"
 #include "core/Sprite.h"
 #include "core/TextOjd.h"
 
+#include <cstring>
+#include <algorithm>
+#include <cstdlib>
 #include <cctype>
 #include <cstdio>
 #include <exception>
@@ -50,6 +54,7 @@ static int Usage()
         "       wowdump --ai <AI.ojd>              print the AI table\n"
         "       wowdump --units <OBJ.ojd>          print each unit type's counter frame, class and war map speed\n"
         "       wowdump --arrows <OBJ.ojd>         print the route arrow styles\n"
+        "       wowdump --smk <movie.smk> <outdir> [every]  decode a Smacker movie: frames as BMPs, sound as a WAV\n"
         "       wowdump --save <save file>         print a save's name, date and sections\n"
         "       wowdump --models <archive>         check and summarise every WOF, IOB and CLS\n"
         "       wowdump --iob <archive> <name> <palette> <out.bmp>\n");
@@ -103,6 +108,55 @@ int main(int argc, char** argv)
             const auto& info = sprite.Info();
             std::printf("%ux%u, %u frame(s)\n", info.width, info.height, info.frames);
             WriteSpriteBmp(argv[5], sprite.Decode(frame), palette);
+            return 0;
+        }
+
+        if (first == "--smk" && (argc == 4 || argc == 5))
+        {
+            wow::Smacker movie{ fs::path(argv[2]) };
+            fs::path out = argv[3];
+            fs::create_directories(out);
+            int every = argc == 5 ? std::max(1, std::atoi(argv[4])) : 100;
+            std::printf("%d x %d (shown %d high), %d frames at %.4f s, audio %s %d Hz %d ch\n", movie.Width(), movie.Height(),
+                        movie.DisplayHeight(), movie.Frames(), movie.FrameSeconds(), movie.HasAudio() ? "yes" : "no",
+                        movie.AudioRate(), movie.AudioChannels());
+            std::vector<int16_t> audio;
+            while (movie.DecodeFrame(audio))
+            {
+                if (movie.FrameIndex() % every) continue;
+                // a 24-bit BMP of the frame as shown (every other line when interlaced)
+                int w = movie.Width(), h = movie.DisplayHeight();
+                const size_t row = (size_t(w) * 3 + 3) & ~size_t(3); // rows are padded to 4 bytes
+                std::vector<uint8_t> bmp(54 + row * size_t(h));
+                auto put32 = [&](size_t at, uint32_t v) { for (int i = 0; i < 4; i++) bmp[at + size_t(i)] = uint8_t(v >> (8 * i)); };
+                bmp[0] = 'B'; bmp[1] = 'M'; put32(2, uint32_t(bmp.size())); put32(10, 54); put32(14, 40);
+                put32(18, uint32_t(w)); put32(22, uint32_t(-h)); bmp[26] = 1; bmp[28] = 24;
+                for (int y = 0; y < h; y++)
+                {
+                    int source = movie.Interlaced() || movie.Doubled() ? y / 2 : y;
+                    bool blank = movie.Interlaced() && (y & 1);
+                    for (int x = 0; x < w; x++)
+                    {
+                        uint32_t c = blank ? 0 : movie.Palette()[movie.Pixels()[size_t(source) * size_t(w) + size_t(x)]];
+                        size_t at = 54 + size_t(y) * row + size_t(x) * 3;
+                        bmp[at] = uint8_t(c); bmp[at + 1] = uint8_t(c >> 8); bmp[at + 2] = uint8_t(c >> 16);
+                    }
+                }
+                char name[32];
+                std::snprintf(name, sizeof(name), "frame%05d.bmp", movie.FrameIndex());
+                std::ofstream(out / name, std::ios::binary).write(reinterpret_cast<const char*>(bmp.data()), std::streamsize(bmp.size()));
+            }
+            // the sound as a WAV
+            uint32_t bytes = uint32_t(audio.size() * 2), rate = uint32_t(movie.AudioRate()), ch = uint32_t(movie.AudioChannels());
+            std::vector<uint8_t> wav(44);
+            auto put = [&](size_t at, uint32_t v, int n) { for (int i = 0; i < n; i++) wav[at + size_t(i)] = uint8_t(v >> (8 * i)); };
+            std::memcpy(wav.data(), "RIFF", 4); put(4, 36 + bytes, 4); std::memcpy(wav.data() + 8, "WAVEfmt ", 8);
+            put(16, 16, 4); put(20, 1, 2); put(22, ch, 2); put(24, rate, 4); put(28, rate * ch * 2, 4); put(32, ch * 2, 2); put(34, 16, 2);
+            std::memcpy(wav.data() + 36, "data", 4); put(40, bytes, 4);
+            std::ofstream w(out / "audio.wav", std::ios::binary);
+            w.write(reinterpret_cast<const char*>(wav.data()), 44);
+            w.write(reinterpret_cast<const char*>(audio.data()), std::streamsize(bytes));
+            std::printf("%zu samples of sound\n", audio.size());
             return 0;
         }
 
@@ -222,8 +276,8 @@ int main(int argc, char** argv)
             auto table = wow::SoundTable::Load(ReadFile(argv[2]), human);
             for (const auto& [id, s] : table.Sounds())
             {
-                std::printf("0x%03X  %-10s vol %.2f%s%s", unsigned(id), wow::SoundTable::TypeName(s.type), double(s.volume),
-                    s.loop ? "  loop" : "", s.positional ? "  positional" : "");
+                std::printf("0x%03X  %-10s vol %.2f%s%s%s", unsigned(id), wow::SoundTable::TypeName(s.type), double(s.volume),
+                    s.loop ? "  loop" : "", s.positional ? "  positional" : "", s.stereo ? "  stereo" : "");
                 for (int g = 0; g < 3; g++)
                 {
                     if (s.groups[g].empty()) continue;

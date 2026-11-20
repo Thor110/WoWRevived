@@ -23,6 +23,7 @@ add_library(wowcore STATIC
     src/core/Ffuh.cpp
     src/core/GameFiles.cpp
     src/core/Palette.cpp
+    src/core/Smacker.cpp
     src/core/Sprite.cpp
     src/core/TextOjd.cpp
     src/core/ObjOjd.cpp
@@ -83,8 +84,15 @@ if(TARGET SDL3::SDL3)
         src/frontend/CdPlayer.cpp
         src/frontend/Credits.cpp
         src/frontend/FrontEnd.cpp
+        src/frontend/MovieScreen.cpp
+        src/platform/Movie.cpp
         src/warmap/WarMap.cpp
     )
+    if(WIN32)
+        # WoWRevived's .mp4 movies through Media Foundation
+        target_sources(WoWEngine PRIVATE src/platform/Mp4Movie.cpp)
+        target_link_libraries(WoWEngine PRIVATE mfplat mfreadwrite mfuuid ole32)
+    endif()
     # IniStore.h is shared with the patch DLLs so the engine reads the same WoWRevived.ini
     target_include_directories(WoWEngine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../WoWPatches/Common)
     target_link_libraries(WoWEngine PRIVATE wowcore SDL3::SDL3)

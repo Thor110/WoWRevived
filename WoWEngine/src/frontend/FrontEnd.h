@@ -62,6 +62,7 @@ namespace wow
         std::unique_ptr<Screen> WaitingForPlayer(int previous); // 0xAC, 0x406B30
         std::unique_ptr<Screen> NetworkSessions(int previous); // 0xA4 (opened by 0xA6), 0x407110
         std::unique_ptr<Screen> NotRebuilt(int command, int previous);
+        void PlayMovie(const std::string& name, Command next);
         std::unique_ptr<Screen> WarMapMenu();                // 0x80B5, 0x49B980
         void StartWarMap(const std::string& gamePath, const std::string& name);
 

@@ -2,7 +2,8 @@
 //   1. works out which disc is which: the Human disc has Human.cd, the Martian disc MARTIAN.CD, and the
 //      language comes from ENGLISH.CD / FRENCH.CD / GERMAN.CD / ITALIAN.CD / SPANISH.CD
 //   2. copies the game files, leaving out everything WoWLauncher's clean-up deletes (the setup program, DirectX,
-//      the original FMV\*.smk movies, the side markers Human.cd and MARTIAN.CD...). The discs can come in either order: where both have a file, the Human
+//      the side markers Human.cd and MARTIAN.CD...); the movies go to FMV (TITLE, RAGELOGO) and each disc's own
+//      INTRO, VICTORY and DEFEAT to FMV-Human or FMV-Martian. The discs can come in either order: where both have a file, the Human
 //      disc's copy wins (the Human disc always overwrites, the Martian disc never does)
 //   3. rips the music (tracks 2-5 of each disc) to the folders the _inmm wrapper reads, named after the disc:
 //      the Human disc's to Music-Human\NN TrackNN.wav, the Martian disc's to Music-Martian\NN TrackNN.wav

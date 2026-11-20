@@ -1,6 +1,7 @@
 #include "frontend/FrontEnd.h"
 
 #include "core/AiTable.h"
+#include "frontend/MovieScreen.h"
 #include "core/SaveGame.h"
 #include "warmap/WarMap.h"
 #include "core/ObjOjd.h"
@@ -39,6 +40,8 @@ namespace wow
         constexpr int CmdReplaceCampaign = 0x8140; // also "no campaign in that slot": on to naming it
         constexpr int CmdEditCampaign = 0x8139;   // "Begin Campaign"
         constexpr int CmdIntro = 0x8037;          // plays INTRO, then 0x8A
+        constexpr int CmdRageLogo = 0x8036;       // plays RAGELOGO, then 0x8038 (start-up, after the disc check)
+        constexpr int CmdTitle = 0x8038;          // plays TITLE, then the main menu
         constexpr int CmdStartCampaign = 0x8A;    // the war map
         constexpr int CmdWarMapMenu = 0x80B5;     // the war map's Escape menu
         constexpr int CmdSoundControl = 0x3ED;
@@ -85,7 +88,8 @@ namespace wow
         : res(r), settings(s), ini(i), files(f), sound(f, r.Human())
     {
         ApplyVolumes();
-        Show(MainMenu());
+        // start-up (0x4039D0): the disc check, then RAGELOGO, TITLE and the main menu
+        Execute({ CmdInsertCd, CmdRageLogo });
     }
 
     void FrontEnd::ApplyVolumes()
@@ -442,6 +446,22 @@ namespace wow
         Show(std::move(map));
     }
 
+    void FrontEnd::PlayMovie(const std::string& name, Command next)
+    {
+        std::string error;
+        auto movie = Movie::Open(files, name, res.Human(), error);
+        if (!movie)
+        {
+            SDL_Log("%s: %s", name.c_str(), error.c_str());
+            Execute(next);
+            return;
+        }
+        // every sound stops for the movie (0x44DEFE -> 0x465B20)
+        sound.FadeOutAll(0);
+        ambient = 0;
+        Show(std::make_unique<MovieScreen>(res, std::move(movie), next, sound.Master()));
+    }
+
     std::unique_ptr<Screen> FrontEnd::WarMapMenu()
     {
         // 0x49B980, "Warmap menu": drawn over the map, with the war map's palette group
@@ -515,11 +535,10 @@ namespace wow
         case CmdInsertCdProceed:
             if (CorrectCdInserted()) Execute({ insertCdNext, 0 });
             break;
-        case CmdIntro:
-            // TODO: the game plays the INTRO movie here, then sends 0x8A
-            SDL_Log("INTRO movie (not rebuilt)");
-            Execute({ CmdStartCampaign, 0 });
-            break;
+        // the movies (0x402B80: each plays through 0x42CCF0, with the command to send when it's over)
+        case CmdRageLogo: PlayMovie("RAGELOGO", { CmdTitle, 0 }); break;
+        case CmdTitle: PlayMovie("TITLE", { CmdMainMenu, 0 }); break;
+        case CmdIntro: PlayMovie("INTRO", { CmdStartCampaign, 0 }); break;
         case CmdStartCampaign:
             // a new campaign starts from Human.000 or Martian.000 in the game folder (0x4043D0, slot 0)
             StartWarMap(res.Human() ? "Human.000" : "Martian.000", campaignName);
@@ -587,6 +606,7 @@ namespace wow
             { 0xB, 0, 0 },     { 0xC, -16, -16 }, { 0xD, 0, 0 },     { 0xE, 0, 0 },     { 0xF, 0, 0 },     { 0x10, 0, 0 },
         };
         if (!GameCursor() || mouseX < 0 || !screen) return;
+        if (screen->Id() == MovieScreen::Id) return; // no cursor over a movie
         int index = screen->CursorAt(mouseX, mouseY);
         if (index < 0 || index >= int(std::size(Cursors))) index = 0;
         const CursorDef& c = Cursors[index];

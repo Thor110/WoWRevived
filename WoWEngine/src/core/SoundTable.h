@@ -17,7 +17,8 @@
 //   11 s16 rate        sample rate for this sound's samples: 11 = 11025, 22 = 22050, else as given (default 22050)
 //   13 s16 id          copies another sound's entry over this one
 //   14 f32             the volume for the sounds that follow
-//   15                 calls 0x466C30(1) on the sound
+//   15                 the samples are stereo (0x466C30(1) sets each sample's +0x15, which 0x466300 passes
+//                      to 0x465D10 as the buffer's channel count)
 //   16                 ignored ("Ignoring constant")
 //   17 u16 group       the samples that follow go in variation group (group - 1), up to 3 groups of 5
 //   18                 positional: only plays when its map position is on screen (0x464EE0)
@@ -50,7 +51,8 @@ namespace wow
         int priority = 0xC0;     // 0x80 for speech
         bool loop = false;       // opcode 7
         bool positional = false; // opcode 18
-        bool flag6 = false, flag15 = false;
+        bool flag6 = false;
+        bool stereo = false;   // 15: the samples are interleaved 16-bit stereo (0x463F9F -> 0x466C30, sample +0x15)
         int field58 = 0, field5C = 0, field64 = 0;
         std::vector<SoundSample> groups[3];
     };

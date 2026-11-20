@@ -24,7 +24,8 @@ namespace wow
 
     Sound::Sound(const GameFiles& files, bool human) : table(LoadTable(files, human)), library(files)
     {
-        SDL_AudioSpec spec{ SDL_AUDIO_F32, 1, OutputRate };
+        // as the game's primary buffer (0x465C40): 22050 Hz, 16-bit stereo
+        SDL_AudioSpec spec{ SDL_AUDIO_F32, 2, OutputRate };
         stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, Feed, this);
         if (!stream) { SDL_Log("Sound effects are off, the audio device can't be opened: %s", SDL_GetError()); return; }
         SDL_ResumeAudioStreamDevice(stream);
@@ -60,6 +61,7 @@ namespace wow
         Voice v;
         v.pcm = pcm;
         v.step = double(sample.rate) / OutputRate;
+        v.channels = def->stereo ? 2 : 1; // each sample's buffer is mono or stereo by the flag (0x465D10)
         v.loop = def->loop;
         v.type = std::clamp(def->type, 0, 5);
         v.gain = def->volume * volume;
@@ -125,11 +127,11 @@ namespace wow
     void SDLCALL Sound::Feed(void* self, SDL_AudioStream* stream, int additional, int)
     {
         auto* sound = static_cast<Sound*>(self);
-        int frames = additional / int(sizeof(float));
+        int frames = additional / int(2 * sizeof(float));
         if (frames <= 0) return;
-        sound->mixBuffer.assign(size_t(frames), 0.0f);
+        sound->mixBuffer.assign(size_t(frames) * 2, 0.0f);
         sound->Mix(sound->mixBuffer.data(), frames);
-        SDL_PutAudioStreamData(stream, sound->mixBuffer.data(), frames * int(sizeof(float)));
+        SDL_PutAudioStreamData(stream, sound->mixBuffer.data(), frames * int(2 * sizeof(float)));
     }
 
     void Sound::Mix(float* out, int frames)
@@ -138,7 +140,7 @@ namespace wow
         for (Voice& v : voices)
         {
             const auto& pcm = *v.pcm;
-            const double length = double(pcm.size());
+            const double length = double(pcm.size() / size_t(v.channels)); // frames
             float gain = v.gain * v.fade * typeVolume[v.type] * master / 32768.0f;
             for (int i = 0; i < frames; i++)
             {
@@ -147,12 +149,18 @@ namespace wow
                     if (!v.loop) break;
                     v.position -= length;
                 }
-                out[i] += float(pcm[size_t(v.position)]) * gain;
+                size_t at = size_t(v.position) * size_t(v.channels);
+                float left = float(pcm[at]) * gain;
+                float right = v.channels == 2 ? float(pcm[at + 1]) * gain : left;
+                out[i * 2] += left;
+                out[i * 2 + 1] += right;
                 v.position += v.step;
             }
         }
         // finished one-shot sounds go
-        voices.erase(std::remove_if(voices.begin(), voices.end(), [](const Voice& v) { return !v.loop && v.position >= double(v.pcm->size()); }), voices.end());
-        for (int i = 0; i < frames; i++) out[i] = std::clamp(out[i], -1.0f, 1.0f);
+        voices.erase(std::remove_if(voices.begin(), voices.end(), [](const Voice& v) {
+            return !v.loop && v.position >= double(v.pcm->size() / size_t(v.channels));
+        }), voices.end());
+        for (int i = 0; i < frames * 2; i++) out[i] = std::clamp(out[i], -1.0f, 1.0f);
     }
 }
