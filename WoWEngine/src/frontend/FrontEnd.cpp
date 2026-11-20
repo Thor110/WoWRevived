@@ -1076,6 +1076,11 @@ namespace wow
         s.vehicles.attractAccMax = ini.GetFloat("Vehicles", "attractAccMax", 0.1f);
         s.zMapRes = ini.GetInt("System", "ZMapRes", 400);
         s.sound = &sound;
+        s.armour.scenery = ini.GetFloat("Tweak", "Scenery Armour Modifier", 1.2f);
+        s.armour.humanFriend = ini.GetFloat("Tweak", "HumanFriend Armour Modifier", 1.8f);
+        s.armour.humanEnemy = ini.GetFloat("Tweak", "HumanEnemy Armour Modifier", 1.8f);
+        s.armour.martianFriend = ini.GetFloat("Tweak", "MartianFriend Armour Modifier", 1.8f);
+        s.armour.martianEnemy = ini.GetFloat("Tweak", "MartianEnemy Armour Modifier", 1.8f);
         s.researchDone = [this, human = res.Human()](bool side, int index) {
             WarMap* wm = ActiveWarMap();
             if (!wm) return false;

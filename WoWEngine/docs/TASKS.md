@@ -188,12 +188,14 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       crushing, the selection voice 0x109 (0x439000)
 - [~] **Unit groups, orders, stances, specials** (Black Dust ... Scan) and the order panel (0x480190, 0x47CCF0-;
       the 0x80A0 stagger 0x47CEE0): the popup's order items as the first selected member gives them (0x47E1E0,
-      armed / moving, the special orders' types and research 0x47DA80) and the stances (0x80B2); the digits do
-      nothing in the game (packet 0x12 has no handler). Still to do: Abandon (0x80A0), Retreat and the
+      armed / moving, the special orders' types and research 0x47DA80), the stances (0x80B2) and Abandon; the digits do
+      nothing in the game (packet 0x12 has no handler). Still to do: Retreat and the
       reinforcement points (0x480EF0, 0x43D150), Force Fire and the specials' modes, the combined panel (0x448500)
       — 07, 10, 11
-- [ ] **Weapons and effects**: shots, explosions, gas, area effects; smoke and particle emitters (0x4949A0,
-      0x47F050) — 10, 11, 12
+- [~] **Weapons and effects**: shots, explosions, gas, area effects; smoke and particle emitters (0x4949A0,
+      0x47F050). In: health (0x47DA20), damage and death (0x48AB20, 0x80A0), WExplosion with its parts, splash
+      damage and scorch (0x488180, 0x488350, 0x488200, 0x48A5A0), Abandon. Still to do: the shots and turrets,
+      targeting, area blasts (0x487B00), emitters, lights, the scenery's damage — 10, 11, 12
 - [ ] **Battle AI** (0x445010) — 07
 - [~] **Battle map music**: CD tracks 4 / 5 (the war map's is done) — 11
 - [x] **Positional sound**: listener at the view centre, inner / outer rects, pan 4·dx (0x464FF0), opcode 18's cull,

@@ -69,6 +69,7 @@ namespace wow
             // a vehicle (category 1) drives: 0x490820 / 0x490E70 (the turn limit by move class, the phase from rand())
             // every object's +0xAC is its type's +0x44 word (the neighbours keep apart by it)
             if (auto d = setup.units->find(u.type); d != setup.units->end()) u.drive.radius = int16_t(d->second.hitPoints);
+            u.health = MaxHealth(u.type);
             if (auto d = setup.units->find(u.type); d != setup.units->end() && d->second.category == 1)
             {
                 u.vehicle = true;
@@ -982,6 +983,10 @@ namespace wow
         ticks++;
         // the listener (dword_4E9250 / dy): the view's centre
         if (setup.sound) setup.sound->SetListener(scrollX + 320, scrollY + 240);
+        // 0x80A0 arriving (posted by 0x48AB20)
+        for (size_t i = 0; i < units.size();)
+            if (units[i].dieAt >= 0 && ticks >= units[i].dieAt) Die(i);
+            else i++;
         // the effects' animation (0x489050)
         for (size_t i = 0; i < effects.size(); i++)
         {
@@ -1187,6 +1192,14 @@ namespace wow
                     // keeps it at +0x54 and, for Roam and Attack, its centre as home (0x483AE0)
                     for (size_t g = 0; g < selected.size() && g < groupStance.size(); g++)
                         if (selected[g]) groupStance[g] = param;
+                    return std::nullopt;
+                }
+                if (command == 0x80CE && param == 0x8067)
+                {
+                    // Abandon (0x4817C0): each member gets 0x8067, which sends itself 0x80A0 at once (0x489FA0)
+                    for (size_t i = 0; i < units.size();)
+                        if (units[i].players && selected[size_t(units[i].group)]) Die(i);
+                        else i++;
                     return std::nullopt;
                 }
                 if (command == 0x80CE || command == 0x80F3)

@@ -452,8 +452,44 @@ set the group's mode (+0x1DC) for the next click.
 **The digits** build packet 0x12 (select group n, 0 as 10) but the selection's 0x4812B0 has no case for it: they do
 nothing in the game.
 
-*Provisional*: only the stances act (they're kept per group, for the AI and weapons to come); Abandon, Force Fire and
-the specials are listed but not acted on, and Retreat isn't listed (no reinforcement points, 0x43D150, yet).
+*Provisional*: the stances and Abandon act (the stances are kept per group, for the AI and weapons to come); Force
+Fire and the specials are listed but not acted on, and Retreat isn't listed (no reinforcement points, 0x43D150, yet).
+
+## Damage and death (0x48AB20, 0x48A5A0, 0x80A0 in 0x489FA0; WExplosion 0x488180 / 0x488350 / 0x488200; `battlemap/Combat.cpp`)
+
+**Health** (+0xC4) starts at the maximum (0x47DA20): the type table's +0x4A, which is record 34 times the armour
+modifier for its faction and the side played, then record 35's (`[Tweak]` "Scenery / HumanFriend / HumanEnemy /
+MartianFriend / MartianEnemy Armour Modifier", 1.2 and 1.8; the survey's "armour"). The Armoured Lorry has 161, the
+Parliament 17,999. Every object on 0x489E20 (vehicles, buildings, scenery) can be hit (+0xB8 bit 7; the turrets clear
+it).
+
+**Taking damage** (vt+0xE0, 0x48AB20): +0xC0 bit 3 (hit this update), the health less the amount, and at 0 or under
+0x80A0 to itself 10 + rand() % 20 updates on (0x4355A0); the status bar is refreshed and, the first time it's under
+40 %, the object goes on the world's damaged list.
+
+**Dying** (0x80A0, 0x489FA0): it posts itself 0x8057 (gone) and makes its type's destruction effect (+0x98) with
+0x488070 at its point, ftol(+0x84 + its +0x41 byte x 1.414) up, the firer its parent (none for a unit). The battle's key
+building going (the Martian Base 0x33E where the kind is 3, else the Communications Centre 0x78; Parliament 0x116
+where it's 0x1E, else 0x13A) speaks 0x112 if it was the player's, else 0x13B. Abandon (0x8067) sends 0x80A0 at once.
+
+**Explosions** are the types the factory makes as WExplosion (0x488180, and Death_Explosion 6-8's 0x48CD80 on it):
+0x221-0x243, 0x247-0x255 and its switch's 715-717, 946-948, 986, 997-999, 1006-1008. +0xC8 is the type's +0x44 (the
+radius; the survey had it as the damage) and +0xCA its +0x4A (the power, armour modifiers and all). Added (0x488350):
+its sound (+0xA2) at its point; its parts started, each a child at the part's offset (an explosion part going off
+first: Death_Explosion_2 (591, the Armoured Lorry's: radius 40, power 24, sound 205) has part 997, an explosion with
+sprite GType 191, radius 0 and power 100); its radius (+0xAC) set; then **Detonate** (0x488200): everything within
+reach (0x47FC50: the octagonal distance from whole positions at most its radius + the other's +0xAC; kind 4 and itself
+left out), except the firer and, unless vt+0xF8 says otherwise, the firer's side, gets vt+0xC0 with 1.0 (0x48A5A0:
+health over 0 and +0xB8 bit 7, then ftol((1 - distance / (both radii)) x the power x 1.0) to vt+0xE0); and under 64
+up, not on water (0x47FFE0: terrain 1-3), 0x804B to the landscape scorches the ground (0x47C4C0 with the radius and the
+power). Then it plays as a WAnimEffect, its sprite if it has one.
+
+In sector 30, Abandon on the lorry group: each lorry went up (591 and 997), the others nearby losing 5 to 11 of 161 and
+the Parliament 4.
+
+*Provisional*: an object goes at once rather than on the next update, and only units are hit (the scenery's damage
+and the damaged list aren't in); the kind is taken as the sector; the explosions' light parts (334-346, the fading
+light 0x48E100), their emitters (smoke) and the status bars aren't in.
 
 ## Driving (the ground vehicle 0x490820-0x4935C0; the group's move 0x482E60; `battlemap/Driving.cpp`)
 

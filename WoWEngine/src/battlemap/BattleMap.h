@@ -79,6 +79,7 @@ namespace wow
             const std::map<int, std::pair<int, float>>* moveSlopes = nullptr;   // record 11 (0x4F04C0 / 0x4F0510)
             int zMapRes = 400;
             Sound* sound = nullptr;
+            ObjOjd::ArmourModifiers armour;     // [Tweak] the armour modifiers (0x4373D0-0x437510)
             // a research item's state is 2 (0x45B890), by side and its place in that side's tree (the globals from
             // 0x588C40 Human, 0x588F20 Martian, four bytes each)
             std::function<bool(bool human, int index)> researchDone;   // the front end's mixer: the battle's speech and engine sounds          // [System] "ZMapRes" (dword_4F7424): the bucket grid's cell size
@@ -165,8 +166,17 @@ namespace wow
             int offset = 0;             // +0x13A, rand() % (0x802E's value + 1): more room at the route's end
         };
         struct Unit { int type; float x, y; int heading; bool players; int group = 0; bool vehicle = false; Drive drive;
-                      WofInstance* wof = nullptr; int engineSound = 0; };
+                      WofInstance* wof = nullptr; int engineSound = 0;
+                      int health = 0;       // +0xC4: the type's +0x4A (0x47DA20) to start with
+                      int dieAt = -1;       // a 0x80A0 posted to itself (the update it arrives on)
+                    };
         void EngineSound(Unit& u);                              // 0x491450
+        // Damage and death (0x48A5A0, 0x48AB20, 0x80A0 in 0x489FA0) and the explosions (WExplosion 0x488180)
+        int MaxHealth(int type) const;                          // 0x47DA20: +0x4A with the armour modifiers
+        void Damage(size_t unit, int amount);                   // vt+0xE0, 0x48AB20
+        void Die(size_t unit);                                  // 0x80A0
+        void Explode(int type, int x, int y, int z);            // 0x488070 + 0x488350 / 0x488200
+        static bool IsExplosion(int type);
         std::vector<Unit> units;
         int startX = 0, startY = 0;                          // dword_4F742C / 4F7434: the player's deployment centre
         void Deploy();
