@@ -31,6 +31,10 @@ namespace wow
         // interleaved. False after the last.
         virtual bool Next(std::vector<int16_t>& audio) = 0;
         virtual double Time() const = 0;
+        // A movie whose sound is read on its own (ReadAudio) rather than with each frame (Next): the .mp4s.
+        virtual bool SeparateAudio() const { return false; }
+        // Appends at least this many seconds of sound; false once there's none left.
+        virtual bool ReadAudio(std::vector<int16_t>&, double) { return false; }
         virtual const std::vector<uint32_t>& Frame() const = 0; // Width() x Height(), 0xRRGGBB
     };
 

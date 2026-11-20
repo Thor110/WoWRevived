@@ -44,5 +44,11 @@ namespace wow
         bool finished = false;
         double clock = 0;             // seconds into the movie
         std::vector<int16_t> sound;
+        bool audioEnded = false;      // a separate sound track has no more
+        // With a separate sound track: kept this far ahead, and at most this many frames decoded an update (late
+        // frames are shown only if their time hasn't passed)
+        static constexpr double SoundAhead = 1.0;
+        static constexpr int MostFramesAnUpdate = 2;
+        void UpdateSeparate();
     };
 }

@@ -33,6 +33,7 @@ namespace wow
         // sound has got ahead, so the picture keeps time with it.
         clock += 1.0 / 30.0;
         if (audio && audio->Available()) clock = std::max(clock, audio->Played());
+        if (movie->SeparateAudio()) { UpdateSeparate(); return; }
         // keep the queue topped up
         auto wanted = [&]() {
             if (ended || queue.size() >= 64) return false;
@@ -56,6 +57,39 @@ namespace wow
             queue.pop_front();
         }
         if (ended && queue.empty()) Finish();
+    }
+
+    // A movie with its sound on its own (the .mp4s): the sound is kept a second ahead whatever the pictures do, so
+    // it never runs dry while a big frame decodes; the pictures follow the clock, skipping any whose time has gone.
+    void MovieScreen::UpdateSeparate()
+    {
+        while (audio && audio->Available() && !audioEnded && audio->Queued() < SoundAhead)
+        {
+            sound.clear();
+            bool more = false;
+            try { more = movie->ReadAudio(sound, 0.25); }
+            catch (const std::exception& e) { SDL_Log("Movie: %s", e.what()); }
+            audio->Push(sound);
+            if (!more) audioEnded = true;
+        }
+        for (int n = 0; n < MostFramesAnUpdate && !ended && (queue.empty() || queue.back().time <= clock); n++)
+        {
+            bool more = false;
+            try { more = movie->Next(sound); }
+            catch (const std::exception& e) { SDL_Log("Movie: %s", e.what()); }
+            if (!more) { ended = true; break; }
+            // a frame already behind the clock is only worth keeping as the latest
+            if (!queue.empty() && queue.back().time <= clock) queue.pop_back();
+            queue.push_back({ movie->Time(), movie->Frame() });
+        }
+        while (!queue.empty() && queue.front().time <= clock)
+        {
+            shown = std::move(queue.front().pixels);
+            queue.pop_front();
+        }
+        // done when the pictures are, and the sound has played out (or there's none)
+        bool soundDone = !audio || !audio->Available() || (audioEnded && audio->Queued() <= 0.0);
+        if (ended && queue.empty() && soundDone) Finish();
     }
 
     void MovieScreen::Draw(Canvas& canvas) const
