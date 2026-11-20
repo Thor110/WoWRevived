@@ -132,6 +132,7 @@ namespace wow
         if (setup.human)
         {
             rectColour = six(0x2F, 0, 0);
+            boxInner = six(0x28, 0, 0);
             vehicleColour = six(0, 0x3F, 0);
             otherColour = six(0x20, 0x3F, 0);
             enemyColour = six(0, 0, 0x3F);
@@ -139,6 +140,7 @@ namespace wow
         else
         {
             rectColour = six(0x0C, 0x2A, 4);
+            boxInner = six(5, 0x27, 4);
             vehicleColour = six(0x3F, 0, 0);
             otherColour = six(0x3F, 0x20, 0);
             enemyColour = six(0, 0x3F, 0);
@@ -165,6 +167,121 @@ namespace wow
         }
     }
 
+    // An object's screen point (+0x2C / +0x30, the view's coordinates): its renderer's point less the scroll
+    bool BattleMap::UnitScreen(const Unit& u, int& sx, int& sy) const
+    {
+        const int ix = int(u.x), iy = int(u.y);
+        sx = ix - scrollX;
+        sy = land.ProjectY(iy, land.HeightAt(ix, iy)) - scrollY;
+        return true;
+    }
+
+    // The hotspot's half size: the type's +0x40 byte (0x48A660 makes it 2 x that square)
+    int BattleMap::Selectable(const Unit& u) const
+    {
+        if (!setup.units) return 0;
+        auto d = setup.units->find(u.type);
+        return d == setup.units->end() ? 0 : d->second.size40;
+    }
+
+    // 0x485930 / 0x497770, the left button let go in cursor mode 0:
+    //  - with a box (0x49C350): every object that counts (0x48A4C0 / 0x48A530: the player's, its screen point inside
+    //    the box, a vehicle or with +0x3C set) is a hit; with at least one (world +0x114), the selection is cleared
+    //    (packet 4) and each hit's group selected (0x8088 to +0x48)
+    //  - else on an object's hotspot (0x497680): the player's, not selected yet, and with Ctrl only a vehicle: the
+    //    selection is cleared and its group selected
+    // *Provisional*: +0x3C isn't read (only vehicles count for the box); the hotspot is taken as centred on the screen
+    // point, the frontmost (largest y) when they overlap.
+    void BattleMap::ReleaseLeft(int x, int y)
+    {
+        if (!setup.units) return;
+        auto vehicle = [&](const Unit& u) {
+            auto d = setup.units->find(u.type);
+            return d != setup.units->end() && d->second.category == 1;
+        };
+        if (boxActive)
+        {
+            boxActive = false;
+            const int l = std::min(dragX0, dragX1), r = std::max(dragX0, dragX1);
+            const int t = std::min(dragY0, dragY1), b = std::max(dragY0, dragY1);
+            std::vector<int> hits;
+            for (const Unit& u : units)
+            {
+                if (!u.players || !vehicle(u)) continue;
+                int sx, sy;
+                UnitScreen(u, sx, sy);
+                if (sx >= l && sx < r && sy >= t && sy < b) hits.push_back(u.group);
+            }
+            if (hits.empty()) return;
+            selected.assign(selected.size(), false);
+            for (int g : hits) selected[size_t(g)] = true;
+            return;
+        }
+        const Unit* best = nullptr;
+        int bestY = INT32_MIN;
+        for (const Unit& u : units)
+        {
+            const int half = Selectable(u);
+            if (!half) continue;
+            int sx, sy;
+            UnitScreen(u, sx, sy);
+            if (x >= sx - half && x < sx + half && y >= sy - half && y < sy + half && sy > bestY) { best = &u; bestY = sy; }
+        }
+        if (!best || !best->players || selected[size_t(best->group)]) return;
+        if ((SDL_GetModState() & SDL_KMOD_CTRL) && !vehicle(*best)) return;
+        selected.assign(selected.size(), false);
+        selected[size_t(best->group)] = true;
+    }
+
+    // The selected units' brackets (0x4972F0 / 0x497000: GType 5, hselec.spr, frames 0-3 at the hotspot's corners 8 in)
+    // and power bar (GType 7, hpower.spr, at the middle of its bottom 8 up; its frame the frame count x (1 - damage
+    // / max), at most the last: the last, as nothing is damaged yet); then the drag box (0x49C3E0): two lines a side
+    // (dword_4DAF9C outside, dword_4DAFB8 inside) 12 short of each corner where the side is 23 or longer, and GType 6
+    // (ho-selec.spr) frames 0-3 at its corners 7 in
+    void BattleMap::DrawSelection(Canvas& canvas) const
+    {
+        for (const Unit& u : units)
+        {
+            if (!u.players || !selected[size_t(u.group)]) continue;
+            const int half = Selectable(u);
+            int sx, sy;
+            UnitScreen(u, sx, sy);
+            const int l = sx - half, t = sy - half, r = sx + half, b = sy + half;
+            canvas.DrawSprite(5, 0, l + 8, t + 8);
+            canvas.DrawSprite(5, 1, r - 8, t + 8);
+            canvas.DrawSprite(5, 2, l + 8, b - 8);
+            canvas.DrawSprite(5, 3, r - 8, b - 8);
+            if (const Sprite* bar = res.GetSprite(7))
+                canvas.DrawSprite(7, std::max(0, bar->FrameCount() - 1), (l + r) / 2, b - 8);
+        }
+        if (!dragging || !boxActive) return;
+        const int l = std::min(dragX0, dragX1), r = std::max(dragX0, dragX1);
+        const int t = std::min(dragY0, dragY1), b = std::max(dragY0, dragY1);
+        uint32_t* px = canvas.Pixels();
+        const int cw = canvas.Width(), ch = canvas.Height();
+        auto plot = [&](int x, int y, uint32_t c) { if (x >= 0 && y >= 0 && x < cw && y < ch) px[size_t(y) * size_t(cw) + size_t(x)] = c; };
+        auto hline = [&](int x0, int x1, int y, uint32_t c) { for (int x = x0; x <= x1; x++) plot(x, y, c); };
+        auto vline = [&](int x, int y0, int y1, uint32_t c) { for (int y = y0; y <= y1; y++) plot(x, y, c); };
+        if (b - t >= 23)
+        {
+            vline(l, t + 12, b - 12, rectColour);
+            vline(l + 1, t + 12, b - 12, boxInner);
+            vline(r, t + 12, b - 12, rectColour);
+            vline(r - 1, t + 12, b - 12, boxInner);
+        }
+        if (r - l >= 23)
+        {
+            hline(l + 12, r - 12, t, rectColour);
+            hline(l + 12, r - 12, t + 1, boxInner);
+            hline(l + 12, r - 12, b, rectColour);
+            hline(l + 12, r - 12, b - 1, boxInner);
+        }
+        canvas.DrawSprite(6, 0, l + 7, t + 7);
+        canvas.DrawSprite(6, 1, r - 7, t + 7);
+        canvas.DrawSprite(6, 2, l + 7, b - 7);
+        canvas.DrawSprite(6, 3, r - 7, b - 7);
+    }
+
     // 0x486E80's 0x201 / 0x200: the point under the mouse, as a share of the world, less half the view (0x7A)
     void BattleMap::MinimapScroll(int x, int y)
     {
@@ -183,7 +300,8 @@ namespace wow
     {
         units.clear();
         for (const BattleGroup& g : setup.groups)
-            for (const auto& [x, y] : g.places) units.push_back({ g.type, x, y, 0, g.Players() });
+            for (const auto& [x, y] : g.places) units.push_back({ g.type, x, y, 0, g.Players(), int(&g - &setup.groups[0]) });
+        selected.assign(setup.groups.size(), false);
         if (!setup.units) return;
         auto unit = [&](int type) -> const ObjOjd::UnitData* {
             auto u = setup.units->find(type);
@@ -670,6 +788,14 @@ namespace wow
         mouseX = x;
         mouseY = y;
         if (miniDrag) MinimapScroll(x, y);
+        // 0x200 with the button held (0x485D00 -> 0x49C250): the rectangle's far corner; it's a box once it's more
+        // than 4 pixels from where it started either way (+0x18 / +0x1C)
+        if (dragging)
+        {
+            dragX1 = x;
+            dragY1 = y;
+            if (std::abs(dragX1 - dragX0) > 4 || std::abs(dragY1 - dragY0) > 4) boxActive = true;
+        }
         popupHover = -1;
         for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) popupHover = int(i);
     }
@@ -727,14 +853,29 @@ namespace wow
 
     std::optional<Command> BattleMap::OnMouseButton(int x, int y, bool down)
     {
-        if (!down) miniDrag = false;
+        if (!down)
+        {
+            const bool wasMini = miniDrag;
+            miniDrag = false;
+            if (dragging && !wasMini) ReleaseLeft(x, y);
+            dragging = false;
+            return std::nullopt;
+        }
         if (popup.empty() && down && InMinimap(x, y))
         {
             miniDrag = true;   // the minimap takes the mouse (0x42E9B0) until the button's let go
             MinimapScroll(x, y);
             return std::nullopt;
         }
-        if (popup.empty() || !down) return std::nullopt;
+        if (popup.empty())
+        {
+            // 0x201 (cursor modes 0 and 1): a drag rectangle starts here (0x49C230) and the view keeps the mouse
+            dragging = true;
+            boxActive = false;
+            dragX0 = dragX1 = x;
+            dragY0 = dragY1 = y;
+            return std::nullopt;
+        }
         for (const PopupItem& item : popup)
             if (item.rect.Contains(x, y))
             {
@@ -808,6 +949,7 @@ namespace wow
             }
         };
         TerrainView::Render(land, tiles, table, levels, dither, t, -scrollX, -scrollY, nullptr, between, &window);
+        DrawSelection(canvas);
         // the minimap (0x486CB0): the picture, the dots (2 x 2 each, 0x4A1DD0), the view's rectangle (0x49C7C0)
         if (miniShown && miniPicture)
             if (const ShadeTable* shade = res.GetShade(21))

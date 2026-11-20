@@ -87,7 +87,7 @@ namespace wow
         void LoadScenery(const Landscape::Sun& sun, char letter);
         void PlaceBridge(const PlacedObject& o);
         // The battle units (each war map object's +0x4C list): type, place, heading (4096 a turn), whose
-        struct Unit { int type; float x, y; int heading; bool players; };
+        struct Unit { int type; float x, y; int heading; bool players; int group = 0; };
         std::vector<Unit> units;
         int startX = 0, startY = 0;                          // dword_4F742C / 4F7434: the player's deployment centre
         void Deploy();
@@ -109,6 +109,16 @@ namespace wow
         void MakeDots();
         bool InMinimap(int x, int y) const { return miniShown && miniPicture && x >= miniX && y >= miniY && x < miniX + miniW && y < miniY + miniH; }
         void MinimapScroll(int x, int y);
+        // Selection (docs/BATTLEMAP.md "Selecting"): the selected groups (each war map object's units are one group,
+        // WBMGroup), the drag rectangle (0x49C080) and the hotspots (0x496D60)
+        std::vector<bool> selected;                         // by group (setup.groups' index)
+        bool dragging = false, boxActive = false;
+        int dragX0 = 0, dragY0 = 0, dragX1 = 0, dragY1 = 0;
+        uint32_t boxInner = 0;                              // dword_4DAFB8
+        bool UnitScreen(const Unit& u, int& sx, int& sy) const;
+        int Selectable(const Unit& u) const;                // its +0x40 byte (half the hotspot), or 0
+        void ReleaseLeft(int x, int y);
+        void DrawSelection(Canvas& canvas) const;
         int scrollX = 0, scrollY = 0;
         int mouseX = -1, mouseY = -1;
         int ticks = 0;

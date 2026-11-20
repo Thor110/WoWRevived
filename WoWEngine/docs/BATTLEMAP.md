@@ -370,3 +370,31 @@ EnterBattleMap makes it with the sector (+0x8C). Its parts:
 - **Tab** (0x80C8): hides it, or makes the dots again and shows it.
 
 *Not yet*: the type 987 and 694 / 695 dots, and the fog (every unit shows).
+
+## Selecting (0x484FB0 / 0x485930 / 0x485D00, the drag rectangle 0x49C080, hotspots 0x496D60-0x497890)
+
+The selection is by group: a war map object's battle units are one group (WBMGroup), and every way of selecting
+sends 0x8088 to an object's group (+0x48), which selects all its units.
+
+- **The drag rectangle** (0x49C080, vtable 0x4B1070): the left button down in cursor modes 0 and 1 (0x201) starts
+  it at the mouse (0x49C230) and the view keeps the mouse. Moving with the button held (0x485D00 -> 0x49C250) moves
+  its far corner; once that's more than 4 pixels from the start either way (+0x18 / +0x1C) it's a box (+0x17),
+  with four GType 6 (`ho-selec.spr`) corner sprites, frames 0-3. While it's a box every move asks the objects which
+  are inside (0x8010 -> 0x48A4C0, counting them in world +0x114).
+- **Drawn** (0x49C3E0), normalised: where a side is 23 or longer, two lines 12 short of each corner: dword_4DAF9C
+  on the edge, dword_4DAFB8 one pixel in (Human 40, 0, 0; Martian 5, 39, 4); the corners at 7 in.
+- **Let go** (0x485930): a box (0x49C350) with at least one object inside clears the selection (packet 4) and sends
+  0x8011 with the box: each object (0x48A530) that is the player's (+0x24 0), whose screen point (+0x2C, +0x30) is
+  in the box (PtInRect) and that is a vehicle (+0xB8 bit 0) or has +0x3C set, selects its group. Otherwise the
+  click goes by cursor mode (1 orders, 3 building; nothing yet).
+- **Hotspots** (0x496D60, made by 0x48A660 for objects whose vtbl+0xF0 says so): a square window 2 x the type's
+  +0x40 byte wide over the object. Let go on it in cursor mode 0 (0x497770 -> 0x497680): nothing if it's selected
+  already or not the player's; with Ctrl only a vehicle; else the selection is cleared and its group selected.
+  (With Ctrl in mode 1 it's force fire at the ground under it, packet 0x13.)
+- **Shown** (0x8012 -> 0x4972F0 / 0x497000): a selected object of the player's gets GType 5 (`hselec.spr`)
+  frames 0-3 at its hotspot's corners 8 in, and GType 7 (`hpower.spr`) at the middle of its bottom edge 8 up, its
+  frame ftol(frame count x (1 - damage / maximum)), at most the last (0x497290 keeps it up to date).
+
+*Provisional*: the hotspot is taken as centred on the object's screen point (the ground under it); +0x3C isn't read
+(only vehicles count for the box); the frontmost hotspot is the one lowest on screen; no damage yet, so the power
+bar is full. Orders (cursor mode 1), Shift adding to the selection (packet 5) and the group keys aren't in.

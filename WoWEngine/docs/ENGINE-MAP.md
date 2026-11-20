@@ -96,7 +96,9 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x486E80–0x487A50 | Renderers, transient and effect objects | 512 of each |
 | 0x489340–0x4916E0 | Vehicles | Steering values (`Vehicles` section), shown on `Fun` / `Debug` toggles |
 | 0x493DF0–0x494370 | WRouteFinder | |
-| 0x495620–0x496E60 | Puppets | Units' sub-objects and hotspots |
+| 0x495620–0x496D60 | Puppets | Units' sub-objects |
+| 0x496D60–0x497890 | Hotspots | An object's click window, its selection brackets and power bar; `BattleMap::ReleaseLeft` / `DrawSelection` |
+| 0x49C080–0x49C740 | Drag rectangle | The selection box; `BattleMap::DrawSelection` |
 | 0x497890–0x498750 | WBridge | Segments (0x497900) and their stitching (0x497AC0, 0x497E00, 0x498110); `src/core/Bridge.cpp`, `WofInstance::Stitch` (docs/BATTLEMAP.md) |
 | 0x499850–0x49A820 | Briefing and debriefing | `src/frontend/Briefing` |
 | 0x49B980–0x49BD50 | War map and battle map menus | |
