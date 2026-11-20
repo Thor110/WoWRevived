@@ -37,7 +37,7 @@ How the original game builds its menus, worked out from the vanilla exe. The eng
 
 ## Which side is being played
 
-The game checks for `Human.cd` in the game folder (0x402630) to pick the side. WoWEngine takes `--human` or `--martian` from WoWLauncher instead, and only falls back to `Human.cd` when it's given neither. The CD Player plays the side's own disc's music: `Music-Human` in a Human game, `Music-Martian` in a Martian one. Saves are `SaveGame\Human.001`–`.005` or `SaveGame\Martian.001`–`.005` (0x404C60).
+The game checks for `Human.cd` in the game folder (0x402630) to pick the side. WoWEngine takes `--human` or `--martian` from WoWLauncher instead, and plays the Humans when given neither; the install doesn't copy `Human.cd` or `MARTIAN.cd`. The CD Player plays the side's own disc's music: `Music-Human` in a Human game, `Music-Martian` in a Martian one. Saves are `SaveGame\Human.001`–`.005` or `SaveGame\Martian.001`–`.005` (0x404C60).
 
 ## Menus
 

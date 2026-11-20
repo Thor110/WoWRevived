@@ -1,11 +1,37 @@
 #include "frontend/Canvas.h"
 
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
 namespace wow
 {
     void Canvas::Clear(uint32_t colour) { std::fill(pixels, pixels + size_t(width) * height, colour); }
+
+    void Canvas::DrawTexturedTriangle(const uint8_t* texture, int texW, int texH, const uint32_t* colours,
+                                      const TexVertex& a, const TexVertex& b, const TexVertex& c)
+    {
+        float area = (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y);
+        if (std::abs(area) < 0.5f) return;
+        int minX = std::max(0, int(std::floor(std::min({ a.x, b.x, c.x }))));
+        int maxX = std::min(width - 1, int(std::ceil(std::max({ a.x, b.x, c.x }))));
+        int minY = std::max(0, int(std::floor(std::min({ a.y, b.y, c.y }))));
+        int maxY = std::min(height - 1, int(std::ceil(std::max({ a.y, b.y, c.y }))));
+        for (int y = minY; y <= maxY; y++)
+            for (int x = minX; x <= maxX; x++)
+            {
+                float px = float(x) + 0.5f, py = float(y) + 0.5f;
+                float w0 = ((b.x - px) * (c.y - py) - (c.x - px) * (b.y - py)) / area;
+                float w1 = ((c.x - px) * (a.y - py) - (a.x - px) * (c.y - py)) / area;
+                float w2 = 1.0f - w0 - w1;
+                if (w0 < 0 || w1 < 0 || w2 < 0) continue;
+                int u = int(w0 * a.u + w1 * b.u + w2 * c.u), v = int(w0 * a.v + w1 * b.v + w2 * c.v);
+                u = ((u % texW) + texW) % texW;
+                v = ((v % texH) + texH) % texH;
+                uint8_t index = texture[size_t(v) * size_t(texW) + size_t(u)];
+                if (index) pixels[size_t(y) * size_t(width) + size_t(x)] = colours[index];
+            }
+    }
 
     void Canvas::DrawImage(const IndexedImage& image, const uint32_t* colours, int x, int y, Blend blend)
     {

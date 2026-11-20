@@ -12,6 +12,8 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <optional>
+#include <vector>
 #include <string>
 #include <utility>
 
@@ -31,6 +33,8 @@ namespace wow
         const Sprite* GetSprite(int gtype);
         const IndexedImage* GetFrame(int gtype, int frame = 0);
         const Font* GetFont(int gtype);
+        // A graphics entry's file as it is (class 6 entries are raw 8-bit images, like the route arrows' 256 x 64)
+        const std::vector<uint8_t>* GetRaw(int gtype);
         // Loads a palette group's shade tables into their slots, as LoadShadeTables does (see ShadeGroups.h).
         void LoadShadeGroup(int paletteGType);
         const ShadeTable* GetShade(int slot) const;
@@ -46,6 +50,7 @@ namespace wow
         std::map<int, std::unique_ptr<Sprite>> sprites;
         std::map<std::pair<int, int>, IndexedImage> frames;
         std::map<int, std::unique_ptr<Font>> fonts;
+        std::map<int, std::optional<std::vector<uint8_t>>> raws;
         std::map<int, std::unique_ptr<ShadeTable>> shades; // by slot
         std::set<std::string> reported;
     };

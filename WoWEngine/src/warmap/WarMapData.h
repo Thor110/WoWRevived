@@ -304,8 +304,10 @@ namespace wow::warmap
     inline int NameText(int sector) { return 0x002 + sector; }
 
     // The game clock (the calendar, 0x41F550): its time in hours goes up by Speeds[speed] / 30 every game update
-    // (0x41F640, 0x41F6C0; 30 is "Game Frequency"), and each whole hour moves the date on (0x41B770).
-    inline constexpr float Speeds[] = { 0, 1, 2, 3, 4, 6, 8, 10 }; // 0x4BA470
+    // (0x41F640 keeps speed / "Game Frequency" at +0x2C, 0x41F6C0 adds it), and each whole hour moves the date on
+    // (0x41B770). The speed is the speed slider's position, 0-10 (a scrollbar of 11, 0x431E30), and the table at
+    // 0x4BA470 is floats 0.0-10.0, so it's that many game hours every 30 updates.
+    inline constexpr float Speeds[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }; // 0x4BA470
 
     // Moves a date (the DtTm words: hours elapsed, minute, hour, day and month from 0, year) on by some hours.
     inline void AdvanceDate(uint16_t (&d)[6], int hours)

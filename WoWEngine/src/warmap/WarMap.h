@@ -40,6 +40,7 @@ namespace wow
         int HoveredSector() const { return hovered; }
         const SaveInfo& Game() const { return game; }
         void SetSectorLimits(int units, int boats) { maxUnits = units; maxBoats = boats; }
+        void SetArrowTypes(std::map<int, ObjOjd::ArrowType> types) { arrowTypes = std::move(types); }
 
     private:
         void CentreOn(int mapX, int mapY);
@@ -79,9 +80,11 @@ namespace wow
         bool HasCommandPost(int sector) const;
         // [Tweak] "Max units in sector" (0x42AAF0, default 15) and "Max boats in sector" (0x42AB30, default 5)
         int maxUnits = 15, maxBoats = 5;
+        std::map<int, ObjOjd::ArrowType> arrowTypes; // OBJ.ojd record 14
         // the types of the finished constructions in each sector (both sides')
         std::array<std::vector<int>, warmap::SectorCount + 1> finished;
         std::pair<int, int> FreeCell(int sector, int kind, int except) const;
+        std::vector<std::pair<int, int>> SectorCells(int sector) const;
         void SendTo(int counter, int sector);
 
         struct Counter
@@ -95,10 +98,12 @@ namespace wow
             // travelling: where it's heading, through these points (sector by sector)
             std::vector<std::pair<int, int>> route;
             std::vector<int> routeSectors;
+            std::vector<bool> routeWaypoint; // the points the arrow goes through: a waypoint or the last cell
             float fx = 0, fy = 0;        // exact position while travelling
         };
         float PixelsPerHour(const Counter& k) const; // how far a counter goes in a game hour
         std::vector<int> FindRoute(int from, int to, const Counter& k, std::string* why = nullptr) const;
+        void DrawRouteArrow(Canvas& canvas, const Counter& k) const;
         std::vector<Counter> counters;   // what's drawn: one per kind of object, with how many there are
     };
 }

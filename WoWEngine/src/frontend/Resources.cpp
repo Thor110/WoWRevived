@@ -64,6 +64,23 @@ namespace wow
         return &(frames[key] = sprite->Decode(frame));
     }
 
+    const std::vector<uint8_t>* Resources::GetRaw(int id)
+    {
+        auto it = raws.find(id);
+        if (it == raws.end())
+        {
+            std::optional<std::vector<uint8_t>> data;
+            if (const GType* g = FindGType(id))
+            {
+                data = vfs.Load(g->file);
+                if (!data) Missing(g->file);
+            }
+            else Missing("graphics entry " + std::to_string(id));
+            it = raws.emplace(id, std::move(data)).first;
+        }
+        return it->second ? &*it->second : nullptr;
+    }
+
     const Font* Resources::GetFont(int id)
     {
         auto it = fonts.find(id);

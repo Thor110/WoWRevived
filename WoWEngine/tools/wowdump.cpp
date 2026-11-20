@@ -48,7 +48,8 @@ static int Usage()
         "       wowdump --obj <obj.ojd> [martian]   print the graphics table\n"
         "       wowdump --sfx <SFX.ojd> [martian]   print the sound table\n"
         "       wowdump --ai <AI.ojd>              print the AI table\n"
-        "       wowdump --units <OBJ.ojd>          print each unit type's counter frame and war map speed\n"
+        "       wowdump --units <OBJ.ojd>          print each unit type's counter frame, class and war map speed\n"
+        "       wowdump --arrows <OBJ.ojd>         print the route arrow styles\n"
         "       wowdump --save <save file>         print a save's name, date and sections\n"
         "       wowdump --models <archive>         check and summarise every WOF, IOB and CLS\n"
         "       wowdump --iob <archive> <name> <palette> <out.bmp>\n");
@@ -102,6 +103,13 @@ int main(int argc, char** argv)
             const auto& info = sprite.Info();
             std::printf("%ux%u, %u frame(s)\n", info.width, info.height, info.frames);
             WriteSpriteBmp(argv[5], sprite.Decode(frame), palette);
+            return 0;
+        }
+
+        if (first == "--arrows" && argc == 3)
+        {
+            for (const auto& [id, t] : wow::ObjOjd::LoadArrowTypes(ReadFile(argv[2])))
+                std::printf("arrow %d  gtype 0x%X  %d %d %d %d  %g\n", id, t.gtype, t.a, t.b, t.c, t.d, t.f);
             return 0;
         }
 

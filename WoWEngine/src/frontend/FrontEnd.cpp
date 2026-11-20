@@ -414,15 +414,19 @@ namespace wow
         ambient = 0;
         warMap.reset();
         std::map<int, ObjOjd::UnitData> units;
+        std::map<int, ObjOjd::ArrowType> arrows;
         if (auto obj = files.Resolve("OBJ.ojd"))
         {
             std::ifstream in(*obj, std::ios::binary);
             std::vector<uint8_t> objData((std::istreambuf_iterator<char>(in)), {});
             try { units = ObjOjd::LoadUnits(objData); }
             catch (const std::exception& e) { SDL_Log("OBJ.ojd units: %s", e.what()); }
+            try { arrows = ObjOjd::LoadArrowTypes(objData); }
+            catch (const std::exception& e) { SDL_Log("OBJ.ojd arrow types: %s", e.what()); }
         }
         auto map = std::make_unique<WarMap>(res, settings.colours, info, SaveInfo::WarMapObjects(data), std::move(units),
             SaveInfo::SectorOwners(data), ini.GetInt("Screen", "Scroll Speed", 40), ini.GetFloat("Tweak", "Clunting Speed", 7.0f));
+        map->SetArrowTypes(std::move(arrows));
         map->SetSectorLimits(ini.GetInt("Tweak", "Max units in sector", 15), ini.GetInt("Tweak", "Max boats in sector", 5));
         Show(std::move(map));
     }

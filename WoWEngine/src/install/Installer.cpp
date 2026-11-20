@@ -41,6 +41,7 @@ namespace wow::install
             "dsetup16.dll", "dsetup32.dll", "lang.dat", "layout.bin", "os.dat", "readme.txt", "setup.exe", "setup.ini",
             "setup.ins", "setup.lid", "wow.exe", "wowstart.exe",
             "english.cd", "french.cd", "german.cd", "italian.cd", "spanish.cd", // turned into language.txt
+            "human.cd", "martian.cd", // the side markers: WoWLauncher tells WoWEngine the side (--human / --martian)
         };
         std::string lower = Lower(discPath);
         if (lower.rfind("directx/", 0) == 0 || lower.rfind("winsys/", 0) == 0) return true;

@@ -42,6 +42,12 @@ namespace wow
         // Draws a frame of a graphics entry with its top-left corner at x, y (less the entry's hotspot).
         void DrawSprite(int gtype, int frame, int x, int y, int level = 0, Blend blend = Blend::Opaque);
         void DrawImage(const IndexedImage& image, const uint32_t* colours, int x, int y, Blend blend = Blend::Opaque);
+        // A triangle filled from an 8-bit texture (texW x texH, index 0 left clear), its corners at x/y on screen
+        // and u/v in the texture, mapped straight across (affine), as the arrows' textured polygons
+        // (0x410090 quads, 0x410190 triangles)
+        struct TexVertex { float x, y, u, v; };
+        void DrawTexturedTriangle(const uint8_t* texture, int texW, int texH, const uint32_t* colours,
+                                  const TexVertex& a, const TexVertex& b, const TexVertex& c);
         // Draws Latin-1 text in a font from the graphics table, one line per '\n', aligned inside box. Lines are
         // the font's height plus lineSpacing apart: 2 for menu text objects (0x40F6D0), the [Tweak] setting
         // "Text Line Spacing" (default 4) for free-standing ones (0x40F620).

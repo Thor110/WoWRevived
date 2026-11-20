@@ -98,8 +98,10 @@ Construction View the buildings, Resource View the resources; a unit and a build
 
 The engine draws one counter (GType 0x77) per kind of object in a sector's list, at its first object's position,
 with the count in the counter font when there's more than one. Kinds without a position (all resources) go in the
-sector's first free cell, row by row (*provisional*: the game's own fill order, 0x4282C0, isn't traced, nor where
-it puts the count).
+sector's first free cell. Each sector has a grid of 36 pixel cells over its bounds, rounded out (0x428110), a cell
+being the sector's when CHI.SPR (GType 0x84) has its number at the cell's corner; the war map takes cells in a
+square spiral from the grid's middle cell (0x4283F0 modes 2 and 3; 0 and 1 go row by row): the middle, then rings
+1-15 built by 0x4282C0, each clockwise from the cell above the middle. Where the count goes isn't traced.
 
 ## The mini-map panel
 
@@ -129,8 +131,10 @@ pixels in (0x4BA05C): GType 0x93 (HU_CALEN.SPR 121 x 89, MA_CALEN.SPR 123 x 83) 
 | 0x9A | hu_twirl, just left of the calendar at y 6 | |
 | 0x97 | hu_speed, the speed slider (120 x 58) at 0, 0x1F | ma_speed (65 x 26) at 0x30, 0x16 |
 
-The speed slider (0x431E30) has 22 frames, 11 positions then the same lit. Which position gives which game speed isn't
-traced; the engine uses position = speed index (0-7), and clicking along it sets the speed (*provisional*).
+The speed slider (0x431E30, a "Scrollbar" of 11 positions, 0-10) has 22 frames, the 11 positions then the same lit.
+Moving it sends the calendar 0x114/0x115 with the position, which becomes the speed (0x427932 -> 0x41F640), unless
+0x41AEA0 finds a sector that says no (0x43D010 for each of the 30; not traced), when it's 0. Where along the slider
+a click lands is the engine's own reckoning (*provisional*).
 
 ## Moving units
 
@@ -141,8 +145,26 @@ sector sends it there.
   the route's handler (0x424F00) moves its entries on (0x425080), point to point. A route goes from a sector's
   waypoint, across the link's two border points, to the next sector's waypoint (0x425080 and the arrows both take
   the points from 0x437380 and the link table).
-- **Arrows**: RArrow (0x4244E0) makes a curve through the route's points, 2^5 steps a stretch, which RTypeArrow
-  draws. The engine draws a dotted line through the points instead (*provisional*).
+- **Arrows**: RArrow (0x4244E0) makes a curve through the route's points (one a sector: its waypoint, from
+  0x437380), 2^5 steps a stretch (0x424A40), and an RTypeArrow (0x49CAC0, drawn by 0x49CDB0) along it. Its style
+  is OBJ.ojd record 14 (`wowdump --arrows`; a table of 24 bytes at 0x59EDB8): 0 / 1 Human, 2 / 3 Martian (one
+  more when the route's +0x5E is clear), each a GType, four numbers and a float:
+
+  | Style | GType | Body half width (tail, head end) | Head half width, length | Float |
+  |---|---|---|---|---|
+  | 0 | 0x19 (h/marrow2.raw) | 20, 12 | 32, 50 | 0 |
+  | 1 | 0x18 (h/marrow1.raw) | 14, 6 | 18, 28 | 0 |
+  | 2 | 0x19 | 8, 16 | 26, 64 | -0.4 |
+  | 3 | 0x18 | 4, 12 | 20, 56 | -0.4 |
+
+  The textures are raw 8-bit images (graphics class 6) 256 x 64: the body strip in the first 64 columns (across
+  its width), the head's triangle in the next 128 (apex at 128, 0). The body is textured quads (0x410090) out to
+  a third of a stretch from the end, its half width going from the first number to the second along the way
+  (offsets at right angles from 0x43FE90); the head is textured triangles (0x410190) from there, with a "--:--"
+  label at the end (not drawn yet). The engine draws all of this with the game's textures and numbers, but:
+  the curve is a Catmull-Rom spline (*provisional*: 0x424A40 bends it by headings), the head is one triangle the
+  fourth number long (the game uses three), the body texture runs a pixel a row along the curve, the float isn't
+  used, and every route takes style 0 / 2.
 - **Speed**: each unit type's war map speed is the word at +0x54 in the unit table (0x51A0F0, 0xB0 bytes a type),
   set by OBJ.ojd record 37 (three words: +0x52, +0x54, +0x56) and scaled by record 38 (two floats, multiplying +0x54
   and +0x56); record 15 starts a type. A new route's arrival time (0x424160) is its length in map pixels (+0x68) over
@@ -177,7 +199,7 @@ sector sends it there.
 ## The clock
 
 The calendar object (0x41F550) adds `speed / 30` hours to the game time every update (0x41F640, 0x41F6C0; 30 is "Game
-Frequency"), with the speeds at 0x4BA470: 0, 1, 2, 3, 4, 6, 8, 10. Each whole hour moves the date on (0x41B770),
+Frequency"), with the speeds at 0x4BA470 the floats 0.0-10.0 (the slider's position). Each whole hour moves the date on (0x41B770),
 with February's leap years. The engine starts at speed 1, one game hour a second; the calendar's slider, or `+` and
 `-` (*provisional* keys), change it.
 
@@ -195,5 +217,5 @@ The engine scrolls with the arrow keys, at the screen edges, and by clicking or 
 ## Still to do
 
 The game's scroll rules, the event messages (top left; the engine shows only the latest), the own sectors' shading,
-the counters' fill order, the arrows' drawing, a unit that can't move (refusal 0), construction (so command posts can be built), research, the AI's turns, saving, and the
+the arrows' exact curve and head, a unit that can't move (refusal 0), construction (so command posts can be built), research, the AI's turns, saving, and the
 battle map.

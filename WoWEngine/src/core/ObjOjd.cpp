@@ -139,4 +139,30 @@ namespace wow
         }
         return units;
     }
+
+    std::map<int, ObjOjd::ArrowType> ObjOjd::LoadArrowTypes(std::span<const uint8_t> data)
+    {
+        std::map<int, ArrowType> types;
+        ByteReader r(data);
+        auto f32 = [&]() { uint32_t b = r.U32(); float f; std::memcpy(&f, &b, 4); return f; };
+        while (r.Remaining() > 0)
+        {
+            if (r.Remaining() < 5) throw FormatError("OBJ.ojd: record header cut short");
+            r.Skip(3);
+            int type = int16_t(r.U16());
+            if (type == 14)
+            {
+                ArrowType& t = types[int16_t(r.U16())];
+                t.gtype = int16_t(r.U16());
+                t.a = int16_t(r.U16());
+                t.b = int16_t(r.U16());
+                t.c = int16_t(r.U16());
+                t.d = int16_t(r.U16());
+                t.f = f32();
+            }
+            else if (type == 2 || type == 3 || type == 4) { uint16_t len = r.U16(); r.Skip(size_t(len) + 2); }
+            else SkipPayload(r, type);
+        }
+        return types;
+    }
 }

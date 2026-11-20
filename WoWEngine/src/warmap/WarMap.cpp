@@ -32,10 +32,7 @@ namespace wow
     {
         // One counter for each kind of object in a sector's list, with how many there are. The first object of a
         // kind carries the counter's position (cells of 36 pixels); the game places the rest itself. Kinds with no
-        // position (all resources) go in the sector's first free cell: 0x428110 lays a 36 pixel grid over the
-        // sector's bounds and counts a cell as the sector's when CHI.SPR (GType 0x84, the sectors drawn a little
-        // smaller, with the sea areas numbered from 192) has the sector's number at its corner. The order the
-        // game fills the cells in (0x4282C0) isn't traced yet; row by row is a stand-in.
+        // position (all resources) go in the sector's first free cell, in the game's spiral order (SectorCells).
         // a construction counts once it's finished: 0x42AA70 wants its +0x7C at least its +0x78, taken here as the
         // save's second float against its first (provisional: which float is which isn't traced; at the start
         // both are 1)
@@ -54,8 +51,6 @@ namespace wow
             g->count++;
             if (!g->x && !g->y) { g->x = o.x; g->y = o.y; }
         }
-        const IndexedImage* cells = res.GetFrame(0x84);
-        constexpr int Cell = 36;
         auto taken = [&](int x, int y, int kind) {
             for (const Counter& c : counters) if (c.kind == kind && c.x == x && c.y == y) return true;
             return false;
@@ -74,15 +69,9 @@ namespace wow
             k.sector = g.sector;
             if ((!k.x && !k.y) || taken(k.x, k.y, k.kind))
             {
-                const auto& b = warmap::Sectors[g.sector];
                 bool placed = false;
-                for (int y = b.top / Cell * Cell; y < b.bottom && !placed; y += Cell)
-                    for (int x = b.left / Cell * Cell; x < b.right && !placed; x += Cell)
-                    {
-                        bool inside = cells && x >= 0 && y >= 0 && x < cells->width && y < cells->height &&
-                                      cells->pixels[size_t(y) * size_t(cells->width) + size_t(x)] == g.sector;
-                        if (inside && !taken(x, y, k.kind)) { k.x = x; k.y = y; placed = true; }
-                    }
+                for (const auto& [x, y] : SectorCells(g.sector))
+                    if (!taken(x, y, k.kind)) { k.x = x; k.y = y; placed = true; break; }
                 if (!placed) continue;
             }
             counters.push_back(k);
@@ -194,10 +183,11 @@ namespace wow
                 int next = k.routeSectors.front();
                 k.route.erase(k.route.begin());
                 k.routeSectors.erase(k.routeSectors.begin());
+                k.routeWaypoint.erase(k.routeWaypoint.begin());
                 if (next != k.sector && owner[size_t(next)] == 1)
                 {
                     message = "Battle in " + res.String(warmap::NameText(next)) + ": the battle map isn't rebuilt yet";
-                    k.route.clear(); k.routeSectors.clear();
+                    k.route.clear(); k.routeSectors.clear(); k.routeWaypoint.clear();
                     auto cell = FreeCell(k.sector, k.kind, int(i));
                     k.fx = float(cell.first); k.fy = float(cell.second);
                 }
@@ -279,29 +269,9 @@ namespace wow
             }
         }
 
-        // Routes: a line from each travelling counter through the rest of its points. The game draws arrows
-        // (RArrow 0x4244E0: a curve through the points, 2^5 steps a stretch, drawn by RTypeArrow), which aren't
-        // rebuilt yet; the line is a stand-in.
-        {
-            uint32_t* out = canvas.Pixels();
-            const uint32_t colour = 0xFFFFFF;
-            auto plot = [&](int x, int y) {
-                if (x >= 0 && y >= 0 && x < canvas.Width() && y < canvas.Height()) out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = colour;
-            };
-            for (const Counter& k : counters)
-            {
-                if (k.route.empty() || k.kind != viewMode - 1) continue;
-                int px = k.x + 16 - cameraX, py = k.y + 16 - cameraY;
-                for (const auto& p : k.route)
-                {
-                    int qx = p.first + 16 - cameraX, qy = p.second + 16 - cameraY;
-                    int steps = std::max(std::abs(qx - px), std::abs(qy - py));
-                    for (int t = 0; t <= steps; t += 2) // dotted
-                        plot(px + (qx - px) * t / std::max(steps, 1), py + (qy - py) * t / std::max(steps, 1));
-                    px = qx; py = qy;
-                }
-            }
-        }
+        // Routes: an arrow from each travelling counter through the rest of its points
+        for (const Counter& k : counters)
+            if (!k.route.empty() && k.kind == viewMode - 1) DrawRouteArrow(canvas, k);
 
         // the counters (GType 0x77, 32 pixels) of the kind the view shows, with how many when there's more than one
         for (const Counter& k : counters)
@@ -441,8 +411,8 @@ namespace wow
     }
 
     // The speed slider (0x431E30 with GType 0x97: hu_speed.spr 120 x 58, ma_speed.spr 65 x 26, 22 frames: 11
-    // positions, then the same lit), at 0, 0x1F in the Human calendar and 0x30, 0x16 in the Martian one. Which
-    // of its positions gives which game speed isn't traced; the engine uses position = speed (0-7).
+    // positions, then the same lit), at 0, 0x1F in the Human calendar and 0x30, 0x16 in the Martian one. Its
+    // position is the speed (0-10, see warmap::Speeds).
     Rect WarMap::SpeedRect() const
     {
         Rect c = CalendarRect();
@@ -496,6 +466,85 @@ namespace wow
             if (x >= cx && y >= cy && x < cx + 32 && y < cy + 32) return int(i);
         }
         return -1;
+    }
+
+    void WarMap::DrawRouteArrow(Canvas& canvas, const Counter& k) const
+    {
+        // RArrow (0x4244E0) makes an RTypeArrow (0x49CAC0, drawn by 0x49CDB0) through the route's points: a curve
+        // with 2^5 steps a stretch (made by 0x424A40), a textured strip along it and a head at its end. The style is
+        // OBJ.ojd record 14's: 0 / 1 for the Humans, 2 / 3 for the Martians (one more where the route's +0x5E is
+        // clear; the engine always uses the first). Its texture (GType 0x19 harrow2.raw / marrow2.raw, or 0x18
+        // ...arrow1.raw) is 256 x 64: the body strip in its first 64 columns, the head's triangle in the next 128.
+        // The body's half width runs from the style's first number to its second, and stops a third of a stretch
+        // short of the end (the style's step count / 3), where the head starts, its half width the third number.
+        // Provisional: 0x424A40 bends the curve by headings (0x43FDA0, 0x43FF30, 0x43FE90) where the engine uses a
+        // Catmull-Rom spline; the head is one triangle (the game draws three, 0x410190) its fourth number long; the
+        // body's texture runs along the curve a pixel a row; the Martian styles' -0.4 isn't used.
+        bool human = res.Human();
+        auto style = arrowTypes.find(human ? 0 : 2);
+        if (style == arrowTypes.end()) return;
+        const ObjOjd::ArrowType& t = style->second;
+        const std::vector<uint8_t>* texture = res.GetRaw(t.gtype);
+        const ShadeTable* shade = res.ShadeFor(t.gtype);
+        constexpr int TexW = 256, TexH = 64, Steps = 32; // 2^5 (0x4244E0's pow(2.0, 5))
+        if (!texture || texture->size() < size_t(TexW * TexH) || !shade) return;
+        const uint32_t* colours = shade->Level(0);
+
+        std::vector<std::pair<float, float>> points{ { float(k.x + 16 - cameraX), float(k.y + 16 - cameraY) } };
+        // one point a sector, as 0x4244E0 takes them (the waypoints, 0x437380), and the cell it ends in
+        for (size_t i = 0; i < k.route.size(); i++)
+            if (k.routeWaypoint[i]) points.push_back({ float(k.route[i].first + 16 - cameraX), float(k.route[i].second + 16 - cameraY) });
+        std::vector<std::pair<float, float>> curve;
+        for (size_t i = 0; i + 1 < points.size(); i++)
+        {
+            auto p0 = points[i > 0 ? i - 1 : i], p1 = points[i], p2 = points[i + 1], p3 = points[i + 2 < points.size() ? i + 2 : i + 1];
+            for (int s = 0; s < Steps; s++)
+            {
+                float u = float(s) / Steps, u2 = u * u, u3 = u2 * u;
+                auto at = [&](float a, float b, float c, float d) {
+                    return 0.5f * (2 * b + (c - a) * u + (2 * a - 5 * b + 4 * c - d) * u2 + (3 * b - a - 3 * c + d) * u3);
+                };
+                curve.push_back({ at(p0.first, p1.first, p2.first, p3.first), at(p0.second, p1.second, p2.second, p3.second) });
+            }
+        }
+        curve.push_back(points.back());
+        int n = int(curve.size());
+        int headAt = std::max(0, n - 1 - Steps / 3);
+        auto direction = [&](int i) {
+            int a = std::max(0, i - 1), b = std::min(n - 1, i + 1);
+            float dx = curve[size_t(b)].first - curve[size_t(a)].first, dy = curve[size_t(b)].second - curve[size_t(a)].second;
+            float len = std::sqrt(dx * dx + dy * dy);
+            return len > 0 ? std::make_pair(dx / len, dy / len) : std::make_pair(1.0f, 0.0f);
+        };
+        // the body
+        float along = 0;
+        auto edge = [&](int i, float& lx, float& ly, float& rx, float& ry) {
+            auto [dx, dy] = direction(i);
+            float w = float(t.a) + float(t.b - t.a) * float(i) / float(std::max(n - 1, 1));
+            lx = curve[size_t(i)].first - dy * w; ly = curve[size_t(i)].second + dx * w;
+            rx = curve[size_t(i)].first + dy * w; ry = curve[size_t(i)].second - dx * w;
+        };
+        float lx0, ly0, rx0, ry0;
+        edge(0, lx0, ly0, rx0, ry0);
+        for (int i = 1; i <= headAt; i++)
+        {
+            float lx1, ly1, rx1, ry1;
+            edge(i, lx1, ly1, rx1, ry1);
+            float step = std::hypot(curve[size_t(i)].first - curve[size_t(i - 1)].first, curve[size_t(i)].second - curve[size_t(i - 1)].second);
+            float v0 = along, v1 = along + step;
+            along = v1;
+            Canvas::TexVertex l0{ lx0, ly0, 0, v0 }, r0{ rx0, ry0, 63, v0 }, l1{ lx1, ly1, 0, v1 }, r1{ rx1, ry1, 63, v1 };
+            canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, l0, r0, r1);
+            canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, l0, r1, l1);
+            lx0 = lx1; ly0 = ly1; rx0 = rx1; ry0 = ry1;
+        }
+        // the head: its base across the curve where the body stops, its point the style's length on
+        auto [hx, hy] = curve[size_t(headAt)];
+        auto [dx, dy] = direction(headAt);
+        float c = float(t.c), d = float(t.d);
+        Canvas::TexVertex left{ hx - dy * c, hy + dx * c, 64, 63 }, right{ hx + dy * c, hy - dx * c, 191, 63 },
+            tip{ hx + dx * d, hy + dy * d, 128, 0 };
+        canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, left, right, tip);
     }
 
     bool WarMap::HasCommandPost(int sector) const
@@ -589,21 +638,51 @@ namespace wow
         return path;
     }
 
-    std::pair<int, int> WarMap::FreeCell(int sector, int kind, int except) const
+    std::vector<std::pair<int, int>> WarMap::SectorCells(int sector) const
     {
-        const IndexedImage* cells = res.GetFrame(0x84);
+        // Each sector has a grid of 36 pixel cells over its bounds (0x428110, rounded out to whole cells); a cell
+        // is the sector's when CHI.SPR (GType 0x84) has the sector's number at its corner (0x49BF50). Counters
+        // take cells in a square spiral from the grid's middle cell (0x4283F0 modes 2 and 3, which the war map
+        // uses): the middle, then rings 1-15 (0x4282C0), each clockwise from the cell above the middle.
+        std::vector<std::pair<int, int>> cells;
+        if (sector < 1 || sector > warmap::SectorCount) return cells;
+        const IndexedImage* map = res.GetFrame(0x84);
         const auto& b = warmap::Sectors[sector];
         constexpr int Cell = 36;
-        for (int y = b.top / Cell * Cell; y < b.bottom; y += Cell)
-            for (int x = b.left / Cell * Cell; x < b.right; x += Cell)
-            {
-                if (!cells || x < 0 || y < 0 || x >= cells->width || y >= cells->height ||
-                    cells->pixels[size_t(y) * size_t(cells->width) + size_t(x)] != sector) continue;
-                bool taken = false;
-                for (size_t i = 0; i < counters.size(); i++)
-                    if (int(i) != except && counters[i].kind == kind && counters[i].x == x && counters[i].y == y) taken = true;
-                if (!taken) return { x, y };
-            }
+        int left = b.left / Cell * Cell, top = b.top / Cell * Cell;
+        int w = ((b.right + Cell - 1) / Cell * Cell - left) / Cell, h = ((b.bottom + Cell - 1) / Cell * Cell - top) / Cell;
+        int cx = w / 2, cy = h / 2;
+        auto consider = [&](int dx, int dy) {
+            int gx = cx + dx, gy = cy + dy;
+            if (gx < 0 || gy < 0 || gx >= w || gy >= h) return;
+            int x = left + gx * Cell, y = top + gy * Cell;
+            if (map && x >= 0 && y >= 0 && x < map->width && y < map->height &&
+                map->pixels[size_t(y) * size_t(map->width) + size_t(x)] == sector)
+                cells.push_back({ x, y });
+        };
+        consider(0, 0);
+        for (int r = 1; r < 16; r++)
+        {
+            int dx = 0, dy = -r;
+            for (int i = 0; i < r; i++) consider(dx++, dy);
+            for (int i = 0; i < 2 * r; i++) consider(dx, dy++);
+            for (int i = 0; i < 2 * r; i++) consider(dx--, dy);
+            for (int i = 0; i < 2 * r; i++) consider(dx, dy--);
+            for (int i = 0; i < r; i++) consider(dx++, dy);
+        }
+        return cells;
+    }
+
+    std::pair<int, int> WarMap::FreeCell(int sector, int kind, int except) const
+    {
+        for (const auto& [x, y] : SectorCells(sector))
+        {
+            bool taken = false;
+            for (size_t i = 0; i < counters.size(); i++)
+                if (int(i) != except && counters[i].kind == kind && counters[i].x == x && counters[i].y == y) taken = true;
+            if (!taken) return { x, y };
+        }
+        const auto& b = warmap::Sectors[sector];
         return { (b.left + b.right) / 2, (b.top + b.bottom) / 2 };
     }
 
@@ -620,6 +699,7 @@ namespace wow
         if (path.empty()) { message = why; return; }
         k.route.clear();
         k.routeSectors.clear();
+        k.routeWaypoint.clear();
         // out of each sector across the link's two border points, through the next sector's waypoint (0x437380),
         // ending in a free cell of the last; the counter's corner follows the points less half its size
         int at = k.sector;
@@ -634,13 +714,16 @@ namespace wow
                 const int* p = bySea ? link->sea : link->land;
                 k.route.push_back({ p[0] - 16, p[1] - 16 });
                 k.routeSectors.push_back(at);
+                k.routeWaypoint.push_back(false);
                 k.route.push_back({ p[2] - 16, p[3] - 16 });
                 k.routeSectors.push_back(path[i]);
+                k.routeWaypoint.push_back(false);
             }
             auto w = warmap::Waypoint(path[i]);
             if (i + 1 < path.size()) k.route.push_back({ w.x - 16, w.y - 16 });
             else k.route.push_back(FreeCell(path[i], k.kind, index));
             k.routeSectors.push_back(path[i]);
+            k.routeWaypoint.push_back(true);
             at = path[i];
         }
         k.fx = float(k.x);

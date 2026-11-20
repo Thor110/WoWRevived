@@ -43,7 +43,7 @@ namespace
     constexpr uint64_t TickNs = 1'000'000'000ull / 30; // "Game Frequency" defaults to 30 updates a second
 
     // Command line: [game folder] [--human | --martian] [--open command] [--screenshot file.bmp [keys]]
-    // --human / --martian pick the side (WoWLauncher passes one); without either, Human.cd present means Human.
+    // --human / --martian pick the side (WoWLauncher passes one); without either it's Human.
     // --open starts on the screen a menu command opens (0x8E Game Options, 0x6E Save Game...).
     // --ticks N runs N game updates (30 a second) after the keys, before the screenshot.
     // --mouse x,y moves the mouse there first (game coordinates), for screenshots of the cursor and highlights.
@@ -198,9 +198,9 @@ int main(int argc, char** argv)
     int exitCode = 0;
     try
     {
-        // the side: as WoWLauncher says (--human / --martian), else the game's own way (0x402630), Human.cd
-        // present meaning a Human game
-        bool human = options.side >= 0 ? options.side == 1 : files->Resolve("Human.cd").has_value();
+        // the side: as WoWLauncher says (--human / --martian), Human without either. (The game itself, 0x402630,
+        // looks for Human.cd; the install doesn't copy the side markers.)
+        bool human = options.side != 0;
         wow::Vfs vfs(*files);
         wow::Resources resources(vfs, human);
         wow::Settings ini(vfs.Files());

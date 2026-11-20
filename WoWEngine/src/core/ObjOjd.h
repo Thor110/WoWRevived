@@ -49,5 +49,10 @@ namespace wow
             int field56 = 0;      // +0x56, record 37 (scaled by record 38)
         };
         static std::map<int, UnitData> LoadUnits(std::span<const uint8_t> data);
+
+        // The war map's route arrow styles (RTypeArrow, a table of 24 bytes each at 0x59EDB8), from record 14
+        // (0x437C10): the index, then the sprite's GType and four more words, and a float
+        struct ArrowType { int gtype = 0; int a = 0, b = 0, c = 0, d = 0; float f = 0; };
+        static std::map<int, ArrowType> LoadArrowTypes(std::span<const uint8_t> data);
     };
 }
