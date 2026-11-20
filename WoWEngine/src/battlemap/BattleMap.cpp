@@ -81,6 +81,7 @@ namespace wow
                 u.drive.phase = int16_t(random::Rand());
             }
             AddRenderer(u.type, u.x, u.y, u.heading, int(i));
+            AddPartRenderers(i);
         }
         for (const Unit& u : units) Occupy(u.type, u.x, u.y);
         SetUpGrounds();
@@ -603,6 +604,75 @@ namespace wow
 
     // A battle unit's renderer by its GType's class (0x47EB10): a WOF model (2) posed at its place and heading, an
     // IOB model (1) or a sprite (0). Drawn with the ground like the scenery.
+    // The unit's turrets' WOF models (0x47EE10 makes each part a child object with its renderer: 742 on the Armoured
+    // Lorry), turned with the turret; posed each update at the unit's point plus the part's offset turned by the
+    // unit's heading, its height the unit's plus the part's z (PoseParts)
+    // *Provisional*: the offset's turn (x along the heading, y across it) and the height; the other WOF parts (the
+    // lorries' 324, WOF 739, which looks to be a shadow drawn some other way) and the parts' own parts (a turret's gun
+    // has a sprite, GType class 6) aren't drawn.
+    void BattleMap::AddPartRenderers(size_t index)
+    {
+        Unit& u = units[index];
+        u.attached.clear();
+        auto t = setup.units->find(u.type);
+        if (t == setup.units->end()) return;
+        int turret = 0;
+        for (const auto& part : t->second.parts)
+        {
+            const bool isTurret = (part.a >= 0x2E6 && part.a <= 0x313) || (part.a >= 0x389 && part.a <= 0x38C);
+            const int thisTurret = isTurret ? turret++ : -1;
+            auto pt = setup.units->find(part.a);
+            if (pt == setup.units->end()) continue;
+            const int gtype = pt->second.field28;
+            const GType* g = res.FindGType(gtype);
+            if (!g || g->gclass != 2 || !isTurret) continue;
+            auto f = wofFiles.find(gtype);
+            if (f == wofFiles.end())
+            {
+                auto data = res.LoadFile(g->file);
+                f = wofFiles.emplace(gtype, data ? std::move(*data) : std::vector<uint8_t>{}).first;
+            }
+            if (f->second.empty()) continue;
+            float scale = 65536.0f;
+            int follow = 0, depth = 0;
+            if (setup.six)
+                if (auto six = setup.six->find(gtype); six != setup.six->end())
+                {
+                    scale = six->second.a;
+                    follow = six->second.c;
+                    depth = 2 * int16_t(six->second.d);
+                }
+            std::unique_ptr<WofInstance> w;
+            try { w = std::make_unique<WofInstance>(f->second, scale, follow); }
+            catch (const std::exception&) { continue; }
+            Attached a;
+            a.wof = w.get();
+            a.ox = int16_t(part.b);
+            a.oy = int16_t(part.c);
+            a.oz = int16_t(part.d);
+            a.turret = thisTurret;
+            u.attached.push_back(a);
+            objects.push_back({ int(u.y) + depth, 0, 0, nullptr, w.get(), g->paletteSlot, 0, -1, int(index), depth });
+            wofs.push_back(std::move(w));
+        }
+        PoseParts(u);
+    }
+
+    void BattleMap::PoseParts(Unit& u)
+    {
+        if (u.attached.empty()) return;
+        const double a = double(u.heading & 0xFFF) * 0.000244140625 * 6.283185307;
+        const double c = std::cos(a), s = std::sin(a);
+        for (const Attached& p : u.attached)
+        {
+            const int x = int(u.x + float(p.ox * c - p.oy * s));
+            const int y = int(u.y + float(p.ox * s + p.oy * c));
+            int heading = u.heading;
+            if (p.turret >= 0 && size_t(p.turret) < u.turrets.size()) heading += u.turrets[size_t(p.turret)].turn;
+            p.wof->Transform(land, heading & 0xFFF, x, y, int(float(land.HeightAt(x, y)) + u.drive.lift) + p.oz);
+        }
+    }
+
     void BattleMap::AddRenderer(int type, float x, float y, int heading, int unit)
     {
         if (!setup.units) return;
@@ -1011,7 +1081,11 @@ namespace wow
         }
         // the guns (their own updates, each a child of its unit or its turret)
         for (size_t i = 0; i < units.size(); i++)
+        {
+            for (Turret& t : units[i].turrets) TurretTick(units[i], t);
             for (Gun& g : units[i].guns) GunTick(i, g);
+            PoseParts(units[i]);
+        }
         // the flying objects (effects, smoke, shells)
         UpdateEffects();
         UpdateLights();

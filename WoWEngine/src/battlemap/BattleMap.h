@@ -199,12 +199,24 @@ namespace wow
         // armed (+0xD0), +0xF0 (bit 0 aimed, 1 landed), the point aimed at (+0xBC..+0xC4)
         // A mortar's (WMortar 0x488930) launch list (+0xB4, from its type's emitters, +0x3C): each entry's count of
         // shells fired; spent when an entry's passed its limit (the list freed)
+        // Its hardpoint (+0xB0, from the part's record 27 box when box[0] is 0 or more): +4 the middle, +6 the half
+        // width, against its own heading (+0x40: its parent's); its turret (-1 on the unit itself)
         struct Gun { int type = 0, cls = 0, state = 0, counter = 0; bool armed = false; uint32_t flags = 0; int tx = 0, ty = 0, tz = 0;
-                     std::vector<int> fired; bool spent = false; };
+                     std::vector<int> fired; bool spent = false;
+                     int turret = -1; bool hardpoint = false; int middle = 0, half = 0; };
+        // A turret (0x489820 on the vehicle 0x490820: 0x2E6-0x313, 0x389-0x38C): its type, its part's offset, its turn
+        // from its unit (+0x190), the point it's aiming at (+0xC8 / +0xCC, +0xE4 bit 1), its hardpoint and its turning
+        // sound (+0xE8)
+        struct Turret { int type = 0, ox = 0, oy = 0, oz = 0, turn = 0; bool aiming = false; int aimX = 0, aimY = 0;
+                        bool hardpoint = false; int middle = 0, half = 0, sound = 0; };
+        // A part drawn with its unit (a WOF of its own: a turret's, or another like the lorries' 324)
+        struct Attached { WofInstance* wof = nullptr; int ox = 0, oy = 0, oz = 0, turret = -1; };
         struct Unit { int type; float x, y; int heading; bool players; int group = 0; bool vehicle = false; Drive drive;
                       WofInstance* wof = nullptr; int engineSound = 0;
                       int health = 0;       // +0xC4: the type's +0x4A (0x47DA20) to start with
                       std::vector<Gun> guns;         // its weapon children (and its turrets')
+                      std::vector<Turret> turrets;
+                      std::vector<Attached> attached;
                       int dieAt = -1;       // a 0x80A0 posted to itself (the update it arrives on)
                       int id = 0;           // +0x08, the object's id (kept by a group's target, +0x30)
                       int scanCount = 0;    // +0xDA, updates since its last look round (0x4967E0)
@@ -232,6 +244,10 @@ namespace wow
         void ChaseTargets();                                    // 0x483B70 -> 0x4826D0
         void Aim(Unit& u, int x, int y, int z);                 // vt+0xC8: 0x491110 -> 0x496200 -> guns 0x494D20
         void GunTick(size_t unit, Gun& g);                      // 0x494DB0 and the class's update
+        void TurretTick(Unit& u, Turret& t);                    // 0x489B40
+        int GunHeading(const Unit& u, const Gun& g) const;      // its +0x40: its turret's or its unit's
+        void AddPartRenderers(size_t unit);
+        void PoseParts(Unit& u);
         void Impact(size_t unit, const Gun& g);                 // 0x4886A0's landing: 0x487F50
         void ImpactAt(int size, int x, int y, int z, int group); // 0x487F50: the effect by size and terrain
         void Launch(size_t unit, Gun& g);                       // 0x4889D0

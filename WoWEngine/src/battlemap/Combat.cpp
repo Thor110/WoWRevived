@@ -62,6 +62,8 @@ namespace wow
         const Unit u = units[index];
         auto t = setup.units->find(u.type);
         if (u.engineSound && setup.sound) setup.sound->Stop(u.engineSound);
+        for (const Turret& tr : u.turrets)
+            if (tr.sound && setup.sound) setup.sound->Stop(tr.sound);
         // the object gone: its view object and its place in the list
         objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) { return o.unit == int(index); }), objects.end());
         for (ViewObject& o : objects)

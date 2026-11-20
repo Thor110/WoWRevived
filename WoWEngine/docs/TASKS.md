@@ -199,7 +199,8 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       target (0x4826D0, 0x496200); attacking an object (packet 0x10, 0x481F70, Approach 0x496300) and looking round
       by stance (0x4967E0, 0x496570; its scale flt_59E44C is never written, so it finds nothing); the mortars and
       their shells in flight (0x4889D0, 0x488F00, 0x47F770); the flying objects' update, emitters (debris, smoke
-      trails) and damage smoke (0x487890, 0x47F050, 0x48AEF0, 0x48ADD0). Still to do: turret turning and arcs,
+      trails) and damage smoke (0x487890, 0x47F050, 0x48AEF0, 0x48ADD0). Turrets turning and drawn, and the guns' arcs
+      (0x489B40, 0x494FD0). Still to do:
       the scenery's damage, the statuses' other effects and 0x80F4 — 10, 11, 12. (Lights, 0x48DDC0 / 0x48E100, and
       area blasts with the timed statuses, 0x487B50 / 0x495CB0, are in.)
 - [ ] **Battle AI** (0x445010) — 07

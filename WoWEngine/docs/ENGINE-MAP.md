@@ -107,6 +107,7 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x47E1E0 / 0x47DA80 | Object's orders / special order check | The popup's order items for the selection's first member; `BattleMap::AddOrders` / `CanDo` |
 | 0x488180–0x488350 / 0x48AB20 / 0x48A5A0 | WExplosion, TakeDamage, HitByExplosion | Explosions, splash damage, health and death; `src/battlemap/Combat.cpp` |
 | 0x4949A0–0x495280 / 0x4886A0 / 0x487F50 | Guns | The fire cycle, aim and landing; `src/battlemap/Weapons.cpp` |
+| 0x489820–0x489D80 / 0x494FD0 | Turrets | Turning, hardpoints and the guns' arcs; `src/battlemap/Weapons.cpp`, drawn in `BattleMap.cpp` |
 | 0x487B00–0x487E54 / 0x495CB0 | Area blasts | Their detonation by type and the timed statuses; `src/battlemap/Combat.cpp` |
 | 0x48DD50–0x48E270 | Lights | The light parts and their fade; `src/battlemap/Effects.cpp` |
 | 0x487730–0x487890 / 0x47F050 / 0x48AEF0 / 0x48ADD0 | Flying objects | Effects' update, emitters, damage smoke; `src/battlemap/Effects.cpp` |

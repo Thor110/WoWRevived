@@ -585,9 +585,33 @@ its east side, the side they were on, a few units in from its middle, and took i
 
 *Provisional*: the shells' frame (0 is drawn), the mortar's place on its
 unit (the shells start at the unit's point), type 0x3DB's case, 0x80B9 and vt+0x38, the posts (+0xE4), the battle
-told of an unarmed object seen, the turrets' turning and arcs, the guns' place on their unit, the research
+told of an unarmed object seen, the guns' place on their unit, the research
 multipliers and the "CAN'T GET TO WITHIN ATTACK DISTANCE!" check aren't in; a target that's gone clears the group's
 target (the game's tidy-up of 0x8057 isn't traced); WProjectile and 0x48DBE0 fly no visible missile.
+
+**Turrets** (0x489820 on the vehicle 0x490820: 0x2E6-0x313 and 0x389-0x38C; update 0x489B40). Each part may have a
+**hardpoint** (+0xB0, made by 0x47EE10 from the part's record 27 box when box[0] is 0 or more: four words, +4 the
+middle, +6 the half width). The Armoured Lorry's turret 742 has middle 0, half 4096 (all round); its gun 414 has
+middle 0, half 256 (a sixteenth of a turn each way). Each update a turret copies its unit's status (vt+0x8C ->
+vt+0x88, vt+0x94 -> vt+0x90), then wants the heading to its point (+0xC8 / +0xCC) if it's aiming (+0xE4 bit 1, set by
+its aim, 0x491110 / 0x496200, cleared with the group's target), else its hardpoint's middle plus its unit's heading.
+d = 0x43FF30(wanted, its heading) (its heading less the wanted): under -50 it turns +50, over 50 -50, else not.
+Aiming, the turn is taken only while |0x43FF30(+0x190 + the step, the middle)| stays under the half width; not
+aiming, always. +0x190 is its turn from its unit; its heading (vt+0x30, 0x489D00) is its unit's plus that. Turning
+with no sound yet (+0xE8), a type +0xA2 that isn't 0 and vt+0x9C clear, its sound starts (0x4883C0 / 0x4883E0);
+stopped, a sound playing stops (vt+0x13C). Then the vehicle's own update (0x4913B0). A gun's **arc** (0x494FD0, with
+a hardpoint): |0x43FF30(ftol(vt+0x2C + the middle), the heading to its point)| under the half width, vt+0x2C
+(0x47D930) being its own heading (+0x40, its parent's) and leaving its argument on the stack as 0x43FF30's second;
+aimed is in range and in the arc. The turrets' WOF models (742: WOF 688) are drawn with the unit (each part a child
+object with its renderer, 0x47EE10), posed at the unit's point plus the part's offset, turned with the turret.
+
+In sector 30, Force Fire west of the lorries: each turret turned 50 an update toward the point, holding on it as the
+lorry itself turned under it, and settled within 50 (d -12 to -37 as the lorry drove); the guns were aimed (in range
+and arc) from update 160 and fired, the barrels drawn pointing west.
+
+*Provisional*: a turret's place is its unit's point plus the part's offset (x along the heading); the vehicle update
+it runs after isn't; the lorries' other WOF part (324, WOF 739: drawn solid it shows as a pale diamond under each
+lorry, a shadow drawn some other way) and the turrets' guns' sprites (GType class 6) aren't drawn.
 
 **Area blasts** (0x487B00 on WExplosion: the factory's 718-720, 788-790 and 812-823; impact sizes 44-61): made as a
 WExplosion (sound, parts, radius +0x44, power +0x4A), but their detonation (vt+0xE0 = 0x487B50) replaces WExplosion's

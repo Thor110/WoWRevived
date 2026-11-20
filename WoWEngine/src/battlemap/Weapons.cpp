@@ -78,24 +78,89 @@ namespace wow
     void BattleMap::SetUpGuns(Unit& u)
     {
         u.guns.clear();
+        u.turrets.clear();
         auto t = setup.units->find(u.type);
         if (t == setup.units->end()) return;
-        auto addGun = [&](int type) {
-            const int cls = WeaponClass(type);
+        auto addGun = [&](const ObjOjd::UnitData::Part& part, int turret) {
+            const int cls = WeaponClass(part.a);
             if (cls < 0) return;
             Gun g;
-            g.type = type;
+            g.type = part.a;
             g.cls = cls;
+            g.turret = turret;
+            g.hardpoint = part.box[0] >= 0;
+            g.middle = uint16_t(part.box[2]);
+            g.half = uint16_t(part.box[3]);
             u.guns.push_back(g);
         };
         for (const auto& part : t->second.parts)
         {
             if (IsTurret(part.a))
             {
+                Turret tr;
+                tr.type = part.a;
+                tr.ox = int16_t(part.b);
+                tr.oy = int16_t(part.c);
+                tr.oz = int16_t(part.d);
+                tr.hardpoint = part.box[0] >= 0;
+                tr.middle = uint16_t(part.box[2]);
+                tr.half = uint16_t(part.box[3]);
+                u.turrets.push_back(tr);
                 if (auto tt = setup.units->find(part.a); tt != setup.units->end())
-                    for (const auto& sub : tt->second.parts) addGun(sub.a);
+                    for (const auto& sub : tt->second.parts) addGun(sub, int(u.turrets.size()) - 1);
             }
-            else addGun(part.a);
+            else addGun(part, -1);
+        }
+    }
+
+    int BattleMap::GunHeading(const Unit& u, const Gun& g) const
+    {
+        if (g.turret >= 0 && size_t(g.turret) < u.turrets.size()) return (u.heading + u.turrets[size_t(g.turret)].turn) & 0xFFF;
+        return u.heading & 0xFFF;
+    }
+
+    // A turret's update (0x489B40): its unit's status copied (vt+0x8C -> vt+0x88, vt+0x94 -> vt+0x90); the heading
+    // wanted: aiming (+0xE4 bit 1), the heading from it to the point (0x43FDA0); else its hardpoint's middle plus its
+    // unit's heading. d = 0x43FF30(wanted, its heading) (its heading less the wanted, in a half turn each way): under
+    // -50 it turns +50, over 50 -50, else not. Aiming, the turn is taken only if |0x43FF30(+0x190 + the step, the
+    // middle)| stays under the half width; not aiming, always (+0x190 += the step). Its heading is then its unit's
+    // plus +0x190 (vt+0x30). Turning, with no sound yet, a type +0xA2 that isn't 0 and vt+0x9C clear, its sound
+    // starts at its point (0x4883C0 / 0x4883E0: +0xE8); not turning, a sound playing stops (vt+0x13C). Then the
+    // vehicle's own update (0x4913B0).
+    // With the Armoured Lorry's turret 742 (a whole turn's hardpoint) and gun 414 (+-256 of the turret's heading).
+    // *Provisional*: the turret's place is its unit's plus its part's offset; the vehicle update it then runs isn't.
+    void BattleMap::TurretTick(Unit& u, Turret& t)
+    {
+        const int heading = (u.heading + t.turn) & 0xFFF;
+        int want = 0;
+        if (t.aiming)
+        {
+            float len = 0;
+            HeadingAndLength(u.x, u.y, float(t.aimX), float(t.aimY), want, len);
+        }
+        else want = (t.middle + u.heading) & 0xFFFF;
+        auto diff = [](int a, int b) {
+            int d = (b & 0xFFF) - (a & 0xFFF);
+            while (d < -2048) d += 4096;
+            while (d > 2047) d -= 4096;
+            return d;
+        };
+        const int d = diff(want, heading);
+        int step = 0;
+        if (d < -50) step = 50;
+        if (d > 50) step = -50;
+        if (!t.aiming || std::abs(diff(t.turn + step, t.middle)) < t.half) t.turn += step;
+        t.turn = int16_t(t.turn);
+        if (step != 0)
+        {
+            auto tt = setup.units->find(t.type);
+            if (!t.sound && tt != setup.units->end() && tt->second.fieldA2 && setup.sound)
+                t.sound = setup.sound->Play(tt->second.fieldA2, 1.0f, 0, int(u.x), land.ProjectY(int(u.y), land.HeightAt(int(u.x), int(u.y))));
+        }
+        else if (t.sound && setup.sound)
+        {
+            setup.sound->Stop(t.sound);
+            t.sound = 0;
         }
     }
 
@@ -240,6 +305,9 @@ namespace wow
         groupTargets[size_t(group)] = GroupTarget{};
         for (Unit& u : units)
             if (u.group == group)
+                for (Turret& t : u.turrets) t.aiming = false;
+        for (Unit& u : units)
+            if (u.group == group)
                 for (Gun& g : u.guns)
                 {
                     g.armed = false;
@@ -325,7 +393,7 @@ namespace wow
         // the unit's 0x496200: one jittered point for all its children
         int cx = 0, cy = 0, cz = 0;
         jitter(x, y, z, cx, cy, cz);
-        size_t gun = 0;
+        size_t gun = 0, turret = 0;
         auto arm = [&](int ax, int ay, int az) {
             if (gun >= u.guns.size()) return;
             Gun& g = u.guns[gun++];
@@ -344,6 +412,13 @@ namespace wow
                 if (tt == setup.units->end()) continue;
                 int gx = 0, gy = 0, gz = 0;
                 jitter(cx, cy, cz, gx, gy, gz);
+                if (turret < u.turrets.size())
+                {
+                    Turret& tr = u.turrets[turret++];
+                    tr.aiming = true;
+                    tr.aimX = gx;
+                    tr.aimY = gy;
+                }
                 for (const auto& sub : tt->second.parts)
                     if (WeaponClass(sub.a) >= 0) arm(gx, gy, gz);
             }
@@ -360,8 +435,9 @@ namespace wow
     // then lands the shot: the shell's (0x4886A0) once in state 2 when the count is a multiple of 5, the rocket's
     // (0x488830) in state 3.
     // The mortar's update (0x488CA0) launches its shells as the cycle goes to 1 (0x4889D0, Launch).
-    // *Provisional*: the arcs (hardpoints) and
-    // the research multipliers (+0xC8 / +0xCC, 0x494AF0) aren't in; the gun is at its unit's point.
+    // The arc (0x494FD0, with a hardpoint): |0x43FF30(ftol(vt+0x2C (its own +0x40) + the middle), the heading to the
+    // point)| under the half width (vt+0x2C leaves its argument on the stack: that's 0x43FF30's second).
+    // *Provisional*: the research multipliers (+0xC8 / +0xCC, 0x494AF0) aren't in; the gun is at its unit's point.
     void BattleMap::GunTick(size_t index, Gun& g)
     {
         Unit& u = units[index];
@@ -409,8 +485,16 @@ namespace wow
             int heading = 0;
             float length = 0;
             HeadingAndLength(u.x, u.y, float(g.tx), float(g.ty), heading, length);
+            bool inArc = true;
+            if (g.hardpoint)
+            {
+                int d = (heading & 0xFFF) - ((GunHeading(u, g) + g.middle) & 0xFFF);
+                while (d < -2048) d += 4096;
+                while (d > 2047) d -= 4096;
+                inArc = std::abs(d) < g.half;
+            }
             const bool inRange = float(w[0]) * 1.0f > length;
-            g.flags = (g.flags & ~1u) | (inRange ? 1u : 0u);
+            g.flags = (g.flags & ~1u) | (inRange && inArc ? 1u : 0u);
         }
         if (g.cls == 0 && g.state == 2 && !(g.flags & 2) && g.counter % 5 == 0)
         {
