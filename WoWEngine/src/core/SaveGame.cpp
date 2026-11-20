@@ -83,7 +83,7 @@ namespace wow
             for (int l = 0; l < 6; l++)
                 if (std::memcmp(&d[i], Lists[l], 4) == 0 && i + 8 <= d.size() && std::memcmp(&d[i + 4], "WMOB", 4) == 0) list = l;
             if (list < 0 || std::memcmp(&d[i], "SELO", 4) != 0 || std::memcmp(&d[i + 16], "WMOB", 4) != 0) continue;
-            size_t typeAt = (list == 2 || list == 3) ? i - 12 : i - 4;
+            size_t typeAt = list >= 2 ? i - 12 : i - 4; // constructions and resources have two floats after the type
             if (typeAt >= d.size()) continue;
             WarMapObject o;
             o.list = list;

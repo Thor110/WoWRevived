@@ -20,6 +20,10 @@ What's worked out about the war map (WWarMapWorld, constructor 0x417CD0), and wh
 | 0x82 | `HMINIHI.SPR` / `mminihi.spr` | 6 | The mini-map's highlight |
 | 0x83 | `HSECTOR.SPR` / `MSECTOR.SPR` | 5 | 31 frames, one per sector, to light a sector on the mini-map |
 | 0x76-0x78 | `HU-CNT24/32/48.SPR` | 5 | The round unit and building counters, 150 frames |
+| 0x84 | `CHI.SPR` | 6 | Another numbered map: the sectors drawn a little smaller, and the sea areas numbered from 192. Used while the sector objects are set up, to find each sector's counter cells |
+| 0x80 | `hmframe.SPR` 122 x 290 / `mmframe.SPR` 121 x 130 | 5 | The mini-map panel |
+| 0x33, 0x35, 0x34 | `unit-but`, `man-but`, `res-but` / `munits`, `mcog`, `mfact` | 5 | Its Unit, Construction and Resource view buttons, 4 frames |
+| 0x6E | `hcntfnt.fnt` | 9 | The counter font |
 | 0x62-0x67 | `HUD-UL/UM/UR/BL/BM/BR.spr` | 5 | Frame corners and edges; where the war map uses them isn't traced yet |
 
 **Palette group hw** (0x2ED, 0x40BCF2) loads `{S}W{S}W` into slot 6 (the map's 89-level table), `{S}W{S}I` into
@@ -31,10 +35,25 @@ The menus drawn over the war map use these slots too.
 (0x49BE70) gives each value a shade level, 11 to start with, and the map is drawn with each pixel's colour taken
 from the level of the sector map value under it. Changing one entry relights a whole sector or border.
 
-**The 89 levels** of the map's table are tint ramps either side of the normal 11, then solid colours at 59-66 (red,
-bright green, cream, orange, dark red, green, tan, white). WoWRevived's screenshots show borders coloured by who
-holds the sectors either side; which levels the game picks for that isn't traced yet. The engine marks the selected
-sector's borders white and the hovered sector's cream (*provisional*).
+**The 89 levels** of the map's table are tint ramps either side of the normal 11, then solid colours at 59-66. The
+colours are each side's own: in the Human table 63 is dark red and 64 green, in the Martian table the other way
+round, so each side sees its own frontier in its own colour.
+
+**Borders** are coloured by 0x41D9B0 from the two sectors either side (a coastline has the sea, no one, on its
+other side), through 0x49C050:
+
+| Border | Level |
+|---|---|
+| On the selected sector | 66 |
+| On the sector under the mouse (the other sector the war map tracks) | 61 |
+| The side being played against no one | 64 |
+| The other side against no one | 63 |
+| The two sides against each other | 62 |
+| The same owner either side, or no one either side | 65 |
+
+The sectors themselves stay at 11, except the side being played's, which take a level from a table the view mode
+fills (0x4192F0, flt_4E98A0; not done yet). Who holds a sector (0x43CA30) is the sector object's; the engine takes it
+from who has units or buildings there until SECT's owner field is decoded (*provisional*).
 
 ## Sectors
 
@@ -56,10 +75,34 @@ Sector n's name is TEXT.ojd string 0x002 + n (0x002 is "The Sea", 0x003 "North W
   The H lists belong to the side being played: in Martian.000 the Martians are in HUNI. Each object is a u32
   unit type (buildings have two floats after it), `SELO` with an id and its position on the war map, `WMOB` and
   its sector, then its battle map units. Only the first object of a kind carries a position; the ones after it are
-  at 0, 0 and show as the number on its counter. Resources are laid out differently and aren't read yet.
+  at 0, 0 and show as the number on its counter. Resources are laid out like buildings and have no positions.
 - A unit type's counter frame is OBJ.ojd record type 23, after record 15 picks the unit type (0x437D62,
-  0x437EF4). The engine draws counter GType 0x77 at each object's position, moving a counter along when two kinds
-  share one (*provisional*: the game's counter layout isn't traced).
+  0x437EF4).
+
+## Counters
+
+The world's constructor makes 30 sector objects (0x420160 -> 0x428110), each laying a grid of 36 pixel cells
+(dword_4EA0D4) over the sector's bounds, a cell counting as the sector's when CHI.SPR has the sector's number at its
+corner. Saved positions are cell corners (468 = 13 x 36). Each view mode shows one kind: Unit View the units, 
+Construction View the buildings, Resource View the resources; a unit and a building can share a cell.
+
+The engine draws one counter (GType 0x77) per kind of object in a sector's list, at its first object's position,
+with the count in the counter font when there's more than one. Kinds without a position (all resources) go in the
+sector's first free cell, row by row (*provisional*: the game's own fill order, 0x4282C0, isn't traced, nor where
+it puts the count).
+
+## The mini-map panel
+
+"WarMap miniMap view" (0x422C70) is the mini-map (0x7F) with its highlight (0x82) and the sector frames (0x83). It
+sits in the bottom right corner; WoWRevived's screenshot puts it 115 in from the right and 175 up from the bottom.
+"WarMap miniMap frame" (0x423420) is the panel: frame 0x80, and three view buttons (0x4333B0, command 0x811F, ids
+0x94 / 0x93 / 0x92) at (6, 0x29), (0x2A, 0x29), (0x4F, 0x29) in Human games and (0xA, 0x24), (0x2D, 0x24),
+(0x51, 0x24) in Martian ones, labelled 0x47B "Unit View", 0x47C "Construction view", 0x47E "Resource view".
+0x418C14 puts the frame above the mini-map: 0x50 + 0x20 higher and 9 to the left in Human games (the mini-map then
+shows through the frame's window), 0x44 + 0x28 and 10 in Martian ones (the mini-map hangs below it). A button
+sets the view mode (0x419810: 1 units, 2 constructions, 3 resources, the world's +0x70) and stays pressed
+(message 0x8034). Which of the buttons' 4 frames is which isn't confirmed; the engine uses 2 for the pressed one
+and 1 under the mouse.
 
 ## The clock
 
@@ -81,6 +124,6 @@ The engine scrolls with the arrow keys, at the screen edges, and by clicking or 
 
 ## Still to do
 
-The game's scroll rules and HUD (the resources readout top right and the control panel above the mini-map in
-WoWRevived's screenshots), ownership colours, the counters' own layout and their numbers' font, resources,
-selecting and moving units, routes, research, the AI's turns, saving, and the battle map.
+The game's scroll rules, the resources readout (top right in WoWRevived's screenshot), the event messages (top
+left), the own sectors' shading, SECT's owner field, the counters' fill order, selecting and moving units, routes,
+construction, research, the AI's turns, saving, and the battle map.

@@ -13,11 +13,13 @@ namespace wow
         constexpr int ScreenW = 640, ScreenH = 480;
         constexpr int EdgeZone = 4;           // pixels from the edge that scroll the view
         // The map's shade table has 89 levels: ramps of tints either side of the normal 11, then solid colours at
-        // 59-66 (red, bright green, cream, orange, dark red, green, tan, white), which the game gives border
-        // values to colour sector borders by who holds them. Which the game uses for the selected and hovered
-        // sector isn't traced yet; these are stand-ins.
-        constexpr int SelectedBorderLevel = 66; // white
-        constexpr int HoverBorderLevel = 61;    // cream
+        // 59-66. 0x41D9B0 colours each border by the sectors either side of it:
+        constexpr int SelectedBorderLevel = 66; // white: the selected sector's ([+0x84]+0x60)
+        constexpr int HoverBorderLevel = 61;    // cream: the other sector it tracks ([+0x84]+0x5C), the one under the mouse
+        constexpr int OwnBorderLevel = 64;      // green: the side being played against no one
+        constexpr int EnemyBorderLevel = 63;    // dark red: the other side against no one
+        constexpr int FrontLevel = 62;          // orange: the two sides against each other
+        constexpr int PlainBorderLevel = 65;    // tan: the same owner either side, or no one
         constexpr int MiniW = 100, MiniH = 170;
     }
 
@@ -25,29 +27,49 @@ namespace wow
                    std::map<int, int> frames, int scrollSpeed)
         : Screen(Id, r, 0, warmap::PaletteGroup), colours(c), game(start)
     {
-        // One counter for each kind of unit or building in a list: the first of a kind carries the position,
-        // the ones after it at 0, 0 add to its count. Where two kinds share a position (a sector's first unit and
-        // first building do), the later one moves along a counter's width. That layout is a stand-in until the
-        // game's own counter layout is traced.
-        for (size_t i = 0; i < objects.size(); i++)
+        // One counter for each kind of object in a sector's list, with how many there are. The first object of a
+        // kind carries the counter's position (cells of 36 pixels); the game places the rest itself. Kinds with no
+        // position (all resources) go in the sector's first free cell: 0x428110 lays a 36 pixel grid over the
+        // sector's bounds and counts a cell as the sector's when CHI.SPR (GType 0x84, the sectors drawn a little
+        // smaller, with the sea areas numbered from 192) has the sector's number at its corner. The order the
+        // game fills the cells in (0x4282C0) isn't traced yet; row by row is a stand-in.
+        struct Group { int sector, list, type, x, y, count; };
+        std::vector<Group> groups;
+        for (const auto& o : objects)
         {
-            const auto& o = objects[i];
-            if (o.list >= 4) continue; // resources
-            auto frame = frames.find(o.unitType);
-            if (o.x == 0 && o.y == 0)
+            if (o.sector < 1 || o.sector > warmap::SectorCount) continue;
+            Group* g = nullptr;
+            for (Group& existing : groups)
+                if (existing.sector == o.sector && existing.list == o.list && existing.type == o.unitType) { g = &existing; break; }
+            if (!g) { groups.push_back({ o.sector, o.list, o.unitType, 0, 0, 0 }); g = &groups.back(); }
+            g->count++;
+            if (!g->x && !g->y) { g->x = o.x; g->y = o.y; }
+        }
+        const IndexedImage* cells = res.GetFrame(0x84);
+        constexpr int Cell = 36;
+        auto taken = [&](int x, int y, int kind) {
+            for (const Counter& c : counters) if (c.kind == kind && c.x == x && c.y == y) return true;
+            return false;
+        };
+        for (const Group& g : groups)
+        {
+            auto frame = frames.find(g.type);
+            Counter k{ g.x, g.y, frame == frames.end() ? 0 : frame->second, g.count, g.list % 2 == 0, g.list / 2 };
+            if ((!k.x && !k.y) || taken(k.x, k.y, k.kind))
             {
-                if (!counters.empty()) counters.back().count++;
-                continue;
-            }
-            Counter k{ o.x, o.y, frame == frames.end() ? 0 : frame->second, 1, o.PlayersSide() };
-            for (bool moved = true; moved;)
-            {
-                moved = false;
-                for (const Counter& other : counters)
-                    if (other.x == k.x && other.y == k.y) { k.x += 36; moved = true; }
+                const auto& b = warmap::Sectors[g.sector];
+                bool placed = false;
+                for (int y = b.top / Cell * Cell; y < b.bottom && !placed; y += Cell)
+                    for (int x = b.left / Cell * Cell; x < b.right && !placed; x += Cell)
+                    {
+                        bool inside = cells && x >= 0 && y >= 0 && x < cells->width && y < cells->height &&
+                                      cells->pixels[size_t(y) * size_t(cells->width) + size_t(x)] == g.sector;
+                        if (inside && !taken(x, y, k.kind)) { k.x = x; k.y = y; placed = true; }
+                    }
+                if (!placed) continue;
             }
             counters.push_back(k);
-        }
+    }
         levels.fill(warmap::NormalLevel);
         map = res.GetFrame(warmap::MapGType);
         sectorMap = res.GetFrame(warmap::SectorMapGType);
@@ -77,7 +99,29 @@ namespace wow
         cameraY = std::clamp(cameraY, 0, warmap::MapHeight - ViewH());
     }
 
-    Rect WarMap::MiniMapRect(const Canvas*) const { return { ScreenW - MiniW - 8, ScreenH - MiniH - 8, MiniW, MiniH }; }
+    // The mini-map panel, "WarMap miniMap frame" (0x423420) around "WarMap miniMap view" (0x422C70). The view sits
+    // in the bottom right corner (where exactly is from WoWRevived's screenshot: 115 and 175 in from the right and
+    // bottom edges); 0x418C14 then puts the frame (GType 0x80: hmframe.SPR 122 x 290, mmframe.SPR 121 x 130) above
+    // it, 0x50 + 0x20 higher and 9 to the left in Human games, 0x44 + 0x28 and 10 in Martian ones. The three view
+    // buttons (0x4333B0, command 0x811F) are placed in the frame by 0x423420.
+    WarMap::PanelLayout WarMap::Panel() const
+    {
+        PanelLayout p;
+        p.mini = { ScreenW - 115, ScreenH - 175, MiniW, MiniH };
+        bool human = res.Human();
+        Rect frameSize = SpriteRect(0x80, 0, 0);
+        p.frame = { p.mini.x - (human ? 9 : 10), p.mini.y - (human ? 0x50 + 0x20 : 0x44 + 0x28), frameSize.w, frameSize.h };
+        static constexpr int Gtypes[3] = { 0x33, 0x35, 0x34 };        // Unit View, Construction View, Resource View
+        static constexpr int HumanX[3] = { 6, 0x2A, 0x4F }, MartianX[3] = { 0xA, 0x2D, 0x51 };
+        for (int i = 0; i < 3; i++)
+        {
+            Rect size = SpriteRect(Gtypes[i], 0, 0);
+            p.buttons[i] = { p.frame.x + (human ? HumanX[i] : MartianX[i]), p.frame.y + (human ? 0x29 : 0x24), size.w, size.h };
+        }
+        return p;
+    }
+
+    Rect WarMap::MiniMapRect() const { return Panel().mini; }
 
     int WarMap::SectorAt(int x, int y) const
     {
@@ -113,7 +157,11 @@ namespace wow
             if (mouseY >= ScreenH - EdgeZone) dy += scrollStep;
         }
         if (dx || dy) { cameraX += dx; cameraY += dy; Clamp(); }
-        hovered = mouseX >= 0 && !MiniMapRect().Contains(mouseX, mouseY) ? SectorAt(mouseX, mouseY) : 0;
+        PanelLayout panel = Panel();
+        hotButton = -1;
+        for (int i = 0; i < 3; i++) if (panel.buttons[i].Contains(mouseX, mouseY)) hotButton = i;
+        bool overPanel = panel.mini.Contains(mouseX, mouseY) || hotButton >= 0 || (panel.frame.Contains(mouseX, mouseY) && res.Human());
+        hovered = mouseX >= 0 && !overPanel ? SectorAt(mouseX, mouseY) : 0;
     }
 
     void WarMap::Draw(Canvas& canvas) const
@@ -125,12 +173,29 @@ namespace wow
         {
             // every pixel takes its colour from the level its sector map value has
             std::array<int, 256> lv = levels;
-            auto outline = [&](int sector, int level) {
+            // every border, from the owners either side (a coastline has the sea on its other side)
+            std::array<int, 128> sideA{}, sideB{};
+            for (int sector = 1; sector <= warmap::SectorCount; sector++)
                 for (int border : warmap::SectorBorders[sector])
-                    if (border > 0 && border + 31 < 256) lv[size_t(border + 31)] = level;
-            };
-            if (selected) outline(selected, SelectedBorderLevel);
-            if (hovered && hovered != selected) outline(hovered, HoverBorderLevel);
+                    if (border > 0 && border < 128) (sideA[size_t(border)] ? sideB : sideA)[size_t(border)] = sector;
+            for (int border = 1; border < 128 && border + 31 < 256; border++)
+            {
+                int a = sideA[size_t(border)], b = sideB[size_t(border)];
+                if (!a) continue;
+                int level = PlainBorderLevel;
+                if (selected && (a == selected || b == selected)) level = SelectedBorderLevel;
+                else if (hovered && (a == hovered || b == hovered)) level = HoverBorderLevel;
+                else
+                {
+                    int oa = owner[size_t(a)], ob = b ? owner[size_t(b)] : 2;
+                    if (oa != ob)
+                    {
+                        if (oa == 2 || ob == 2) level = (oa == 0 || ob == 0) ? OwnBorderLevel : EnemyBorderLevel;
+                        else level = FrontLevel;
+                    }
+                }
+                lv[size_t(border + 31)] = level;
+            }
             const uint32_t* palettes[256];
             for (int v = 0; v < 256; v++) palettes[v] = shade->Level(lv[size_t(v)]);
             uint32_t* out = canvas.Pixels();
@@ -144,18 +209,27 @@ namespace wow
             }
         }
 
-        // the counters (GType 0x77, 32 pixels), with how many when there's more than one
+        // the counters (GType 0x77, 32 pixels) of the kind the view shows, with how many when there's more than one
         for (const Counter& k : counters)
         {
+            if (k.kind != viewMode - 1) continue; // each view shows its own kind
             int x = k.x - cameraX, y = k.y - cameraY;
             if (x < -40 || y < -40 || x > canvas.Width() || y > canvas.Height()) continue;
             canvas.DrawSprite(0x77, k.frame, x, y);
+            // the count, in the counter font (GType 0x6E, hcntfnt.fnt; where the game puts it isn't traced yet)
             if (k.count > 1)
-                canvas.DrawString(0x72, std::to_string(k.count), { x, y + 30, 32, 10 }, TextCentreX, colours.items);
+                canvas.DrawString(0x6E, std::to_string(k.count), { x, y + 26, 32, 10 }, TextCentreX);
         }
 
-        // the mini-map: the whole map at a fifteenth, the sector under the mouse lit, and the view's outline
-        Rect mini = MiniMapRect();
+        // the panel: its frame, the three view buttons (frame 2 for the one that's on, 1 under the mouse; the
+        // buttons' frames aren't confirmed), then the mini-map: the whole map at a fifteenth, the sector under the
+        // mouse lit, and the view's outline
+        PanelLayout panel = Panel();
+        canvas.DrawSprite(0x80, 0, panel.frame.x, panel.frame.y);
+        static constexpr int ButtonGtypes[3] = { 0x33, 0x35, 0x34 };
+        for (int i = 0; i < 3; i++)
+            canvas.DrawSprite(ButtonGtypes[i], viewMode == i + 1 ? 2 : hotButton == i ? 1 : 0, panel.buttons[i].x, panel.buttons[i].y);
+        Rect mini = panel.mini;
         canvas.DrawSprite(warmap::MiniMapGType, 0, mini.x, mini.y, warmap::NormalLevel); // slot 6, like the map
         int lit = hovered ? hovered : selected;
         if (lit) canvas.DrawSprite(warmap::MiniSectorGType, lit, mini.x, mini.y);
@@ -172,7 +246,9 @@ namespace wow
         // the sector under the mouse, and the date (provisional placement: the game's own text objects aren't
         // traced yet)
         std::string status;
-        if (hovered) status = res.String(warmap::NameText(hovered));
+        static constexpr int ButtonText[3] = { 0x47B, 0x47C, 0x47E }; // "Unit View", "Construction view", "Resource view"
+        if (hotButton >= 0) status = res.String(ButtonText[hotButton]);
+        else if (hovered) status = res.String(warmap::NameText(hovered));
         char date[64];
         std::snprintf(date, sizeof(date), "%d/%d/%d  %02d:%02d  x%g", game.Day(), game.Month(), game.Year(), game.Hour(), game.Minute(),
             double(warmap::Speeds[speed]));
@@ -234,6 +310,9 @@ namespace wow
     std::optional<Command> WarMap::OnMouseButton(int x, int y, bool down)
     {
         Rect mini = MiniMapRect();
+        PanelLayout panel = Panel();
+        for (int i = 0; i < 3; i++)
+            if (down && panel.buttons[i].Contains(x, y)) { viewMode = i + 1; return std::nullopt; } // 0x811F -> 0x419810
         if (down && mini.Contains(x, y))
         {
             dragging = true;

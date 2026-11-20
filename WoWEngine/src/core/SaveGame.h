@@ -65,7 +65,7 @@ namespace wow
             // 0 HUNI, 1 AUNI, 2 HCON, 3 ACON, 4 HRES, 5 ARES. The H lists are the side being played (in
             // Martian.000 the Martians are in HUNI), the A lists the other side's. Only the first object of a
             // kind in a list has a position; the rest are at 0, 0 and show as the count on its counter.
-            // Resources are laid out differently (floats) and aren't read yet.
+            // Resources are laid out like constructions and have no positions of their own.
             int list = 0;
             int unitType = 0;  // OBJ.ojd's unit type
             int id = 0;

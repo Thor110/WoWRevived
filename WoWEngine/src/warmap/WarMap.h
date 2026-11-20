@@ -40,7 +40,7 @@ namespace wow
     private:
         void CentreOn(int mapX, int mapY);
         void Clamp();
-        Rect MiniMapRect(const Canvas* canvas = nullptr) const;
+        Rect MiniMapRect() const;
         int ViewW() const;
         int ViewH() const;
 
@@ -56,8 +56,15 @@ namespace wow
         bool keys[4] = {};               // left, right, up, down held
         bool dragging = false;           // the mini-map
         int speed = 1;                   // index into warmap::Speeds (the calendar's +0x24)
+        // who holds each sector: 0 the side being played, 1 the other side, 2 no one
+        std::array<int, warmap::SectorCount + 1> owner{};
+        int viewMode = 1;                // 1 units, 2 constructions, 3 resources (0x419810, the WWarMapWorld's +0x70)
+        int hotButton = -1;              // the panel button under the mouse
 
-        struct Counter { int x, y, frame, count; bool players; };
+        struct PanelLayout { Rect frame, mini, buttons[3]; };
+        PanelLayout Panel() const;
+
+        struct Counter { int x, y, frame, count; bool players; int kind; }; // kind 0 units, 1 constructions, 2 resources
         std::vector<Counter> counters;   // what's drawn: one per kind of object, with how many there are
     };
 }
