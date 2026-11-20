@@ -70,6 +70,7 @@ namespace wow
             // every object's +0xAC is its type's +0x44 word (the neighbours keep apart by it)
             if (auto d = setup.units->find(u.type); d != setup.units->end()) u.drive.radius = int16_t(d->second.hitPoints);
             u.health = MaxHealth(u.type);
+            if (auto d = setup.units->find(u.type); d != setup.units->end()) u.stance = d->second.field43;   // 0x495740
             SetUpGuns(u);
             if (auto d = setup.units->find(u.type); d != setup.units->end() && d->second.category == 1)
             {
@@ -1270,7 +1271,7 @@ namespace wow
                     // packet 0x15 -> 0x4817C0: the stance (0x80B2) to the group and each member (+0xD8); the group
                     // keeps it at +0x54 and, for Roam and Attack, its centre as home (0x483AE0)
                     for (size_t g = 0; g < selected.size() && g < groupStance.size(); g++)
-                        if (selected[g]) groupStance[g] = param;
+                        if (selected[g]) SetStance(int(g), param);
                     return std::nullopt;
                 }
                 if (command == 0x80CE && param == 0x8067)

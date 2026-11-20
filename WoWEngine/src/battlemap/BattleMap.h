@@ -222,6 +222,8 @@ namespace wow
                       int scanCount = 0;    // +0xDA, updates since its last look round (0x4967E0)
                       int statusTime = 0, status = 0; // +0xDC / +0xE0: a timed status (0x80F5 frozen, 0x80F6, 0x80F7)
                       bool Frozen() const { return statusTime != 0 && status == 0x80F5; }  // vt+0x108, 0x489860
+                      bool Turned() const { return statusTime != 0 && status == 0x80F7; }  // vt+0xF8, 0x489880
+                      int stance = 1;       // +0xD8: its type's +0x43 byte (record 56) to start with (0x495740)
                     };
         int nextId = 1;
         Unit* UnitById(int id);
@@ -265,6 +267,8 @@ namespace wow
         void SetStatus(size_t unit, int status, int level);     // 0x80F5-0x80F7 (0x495CB0)
         void ChangeStatus(Unit& u, int status);                 // vt+0x90, 0x496760
         void StatusTick(Unit& u);                               // 0x4967E0's timer
+        void SetStance(int group, int stance);                  // 0x80B2 to the group: it and each member (+0xD8)
+        void TurnOnOwn(Unit& u);                                // 0x496100
         std::vector<Unit> units;
         int startX = 0, startY = 0;                          // dword_4F742C / 4F7434: the player's deployment centre
         void Deploy();

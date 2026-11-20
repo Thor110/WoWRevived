@@ -119,7 +119,7 @@ namespace wow
             Unit& u = units[i];
             auto ut = setup.units->find(u.type);
             if (ut == setup.units->end() || ut->second.category == 4) continue;
-            if (firer >= 0 && u.group == firer) continue;   // the firer's own (0x47EB00), unless vt+0xF8 says not
+            if (firer >= 0 && u.group == firer && !u.Turned()) continue;   // the firer's own (0x47EB00), unless turned (vt+0xF8)
             const int reach = radius + u.drive.radius;
             const int d = Octagonal(int(u.x), int(u.y), x, y);
             if (d > reach || reach == 0) continue;
@@ -143,8 +143,11 @@ namespace wow
     // 788-790 a hit if it's Martian (0x4406E0 = 1); 812-814 0x80F4 (the firer, 1-3, 120 / 240 / 360); 815-817
     // 0x80F5 (frozen) at 1-3; 818-820 0x80F6 at 1-3 and a hit; 821-823 0x80F7 at 1-3. (The switch also has 0x80F5
     // for 0x1F8-0x1FA, 0x21E-0x220 and 0x244-0x246, which the factory doesn't make as area blasts.)
-    // *Provisional*: 0x80F4 (taking the key buildings over, 0x495CB0) and 0x80F7's 0x496100 aren't in; the
-    // statuses' other effects (but frozen guns and 0x80F6's stance) aren't traced.
+    // (An area blast spares the firer's side outright; WExplosion's own detonation spares it unless the object is
+    // turned, vt+0xF8.)
+    // *Provisional*: 0x80F4 isn't in: its key building case (0x495CB0: the Martian base 0x33E or the Communications
+    // Centre 0x78, Parliament 0x116 or 0x13A, by the kind) passes it to the battle (0x43B920: +0x128 the time,
+    // dword_4E9B60 the firer's side) and speaks 0x115, which is the battle's end, not in yet.
     void BattleMap::AreaDetonate(int type, int x, int y, int radius, int power, int firer)
     {
         for (size_t i = 0; i < units.size(); i++)
@@ -173,8 +176,10 @@ namespace wow
     // 0x496760); 0x80F6 first has the group's guns stood down (0x805A) and its stance 0 (0x80B2). 0x496760, the
     // status changing from 0x80F6 to another, gives the group the type's +0x43 byte as its stance again (from 0x80F7,
     // its own case). The unit's update (0x4967E0) counts the timer down (vt+0x8C) and at 0 sets the status 0.
-    // Frozen (vt+0x108 = 0x489860: the timer running and the status 0x80F5) stops its guns (0x496920).
-    // *Provisional*: the stance given back is 1 (the +0x43 byte isn't read).
+    // Frozen (vt+0x108 = 0x489860: the timer running and the status 0x80F5) stops its guns (0x496920) and its driving
+    // (0x4909D0). Turned (vt+0xF8 = 0x489880: running and 0x80F7): set (0x496100, TurnOnOwn) it aims at its own side's
+    // vehicles; while it lasts it takes no other aim (0x496300) and its own side's explosions hit it (0x488200).
+    // *Provisional*: frozen holds the vehicle still (Steer and Advance not run) rather than what 0x4909D0's callers do.
     void BattleMap::SetStatus(size_t index, int status, int level)
     {
         Unit& u = units[index];
@@ -188,17 +193,47 @@ namespace wow
                         if (g.state != 0) g.state = 4;
                         g.flags |= 1;
                     }
-            groupStance[size_t(u.group)] = 0;
+            SetStance(u.group, 0);
         }
+        if (status == 0x80F7) TurnOnOwn(u);
         u.statusTime = (level + 2) * 150;
         ChangeStatus(u, status);
     }
 
+    // vt+0x90 (0x496760): leaving 0x80F6, the group gets the type's +0x43 byte as its stance (0x80B2); leaving 0x80F7,
+    // the group's target goes (0x482880(0))
     void BattleMap::ChangeStatus(Unit& u, int status)
     {
         if (u.status == 0x80F6 && status != 0x80F6 && u.group >= 0 && size_t(u.group) < groupStance.size())
-            groupStance[size_t(u.group)] = 1;
+            if (auto t = setup.units->find(u.type); t != setup.units->end()) SetStance(u.group, t->second.field43);
+        if (u.status == 0x80F7 && status != 0x80F7 && u.group >= 0) StopAttacking(u.group);
         u.status = status;
+    }
+
+    // 0x80B2 to a group (0x4817C0): it keeps the stance (+0x54) and each member takes it (+0xD8)
+    void BattleMap::SetStance(int group, int stance)
+    {
+        if (group < 0 || size_t(group) >= groupStance.size()) return;
+        groupStance[size_t(group)] = stance;
+        for (Unit& m : units)
+            if (m.group == group) m.stance = stance;
+    }
+
+    // 0x496100, as 0x80F7 arrives (before its status is set): every vehicle (+0xB8 bit 0) of its own side (0x4406E0)
+    // within its sight (+0x48; 0x43FF00 from whole positions, under it), neither under the ground (+0x84 below 0.0),
+    // is approached (vt+0xC4, 0x496300) in turn, the last one's aim standing; itself is passed over by 0x496300
+    void BattleMap::TurnOnOwn(Unit& u)
+    {
+        auto t = setup.units->find(u.type);
+        if (t == setup.units->end()) return;
+        const int sight = ObjOjd::Vision(t->second, setup.armour);
+        for (const Unit& o : units)
+        {
+            if (o.players != u.players || !o.vehicle) continue;
+            if (Octagonal(int(u.x), int(u.y), int(o.x), int(o.y)) >= sight) continue;
+            if (o.drive.lift < 0.0f || u.drive.lift < 0.0f) continue;
+            Approach(u, o);
+        }
     }
 
     void BattleMap::StatusTick(Unit& u)

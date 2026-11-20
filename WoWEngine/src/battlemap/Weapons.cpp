@@ -228,7 +228,7 @@ namespace wow
     // object's less (it - this) x r / d across and down, its height plus its +0x41 byte x 1.414 (vt+0xC8)
     void BattleMap::Approach(Unit& u, const Unit& target)
     {
-        if (&u == &target) return;
+        if (u.Turned() || &u == &target) return;
         auto t = setup.units->find(target.type);
         if (t == setup.units->end()) return;
         const float dx = target.x - u.x, dy = target.y - u.y;
@@ -259,7 +259,7 @@ namespace wow
         if (t == setup.units->end()) return;
         const int count = u.scanCount++;
         if (count <= int16_t(t->second.field92)) return;
-        const int stance = u.group >= 0 && size_t(u.group) < groupStance.size() ? groupStance[size_t(u.group)] : 1;
+        const int stance = u.stance;
         if (stance >= 2 && stance <= 3 && size_t(u.group) < groupTargets.size() && groupTargets[size_t(u.group)].target == 0)
             AutoTarget(u);
         u.scanCount = 0;

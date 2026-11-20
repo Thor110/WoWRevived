@@ -638,8 +638,24 @@ Frozen (vt+0x108 = 0x489860: timer running, status 0x80F5) keeps its guns from f
 With the tower made the other side's and the lorries given mortar 938 for the test, its shells' 815 blasts
 (radius 60, power 84) froze the tower for 450 updates at a time (level 1), the lorries' own group spared.
 
-*Provisional*: 0x80F4 (0x495CB0's key building case) and 0x80F7's 0x496100 aren't in; the stance given back is 1
-(the +0x43 byte isn't read); what else the statuses stop (driving, say) isn't traced.
+**What the statuses do.** Frozen (0x80F5; vt+0x108 = 0x489860, the timer running with that status): its guns don't
+fire (0x496920) and, a vehicle, it doesn't drive (0x4909D0). 0x80F6: its group's guns stood down and the group's
+stance 0 (0x80B2 to the group, each member taking it at +0xD8); leaving it (0x496760), the stance given back is
+the type's +0x43 byte (record 56, each unit's own stance from the start, 0x495740). Turned (0x80F7; vt+0xF8 =
+0x489880): as it arrives, before its status is set, 0x496100 has it approach (vt+0xC4) each vehicle of its own side
+(0x4406E0) within its sight (+0x48, octagonal, under it) where neither is under the ground, the last one's aim
+standing; while it lasts it takes no other aim (0x496300 checks vt+0xF8 first) and its own side's explosions hit it
+(0x488200 spares the firer's side only where vt+0xF8 is clear); leaving it, the group's target goes (0x482880(0)).
+0x80F4 goes to the key buildings (0x495CB0: the Martian base 0x33E or the Communications Centre 0x78, Parliament
+0x116 or 0x13A, by the kind), which pass it to the battle (0x43B920: +0x128 the time, dword_4E9B60 the firer's
+side) and speak 0x115: control of the sector, for the battle's end.
+
+With lorry 1 turned and lorry 2 frozen at update 40 for the test: lorry 2 stayed where it was through 440 updates
+while the others drove off on an order; lorry 1 aimed at its own unit 5 and fired on it six times in 120 updates,
+none doing damage, unit 5 being of the firer's own group (spared unless it's turned itself).
+
+*Provisional*: 0x80F4 (the battle's control of the sector) isn't in; frozen holds a vehicle still (its steering
+and step not run) rather than as 0x4909D0's callers do.
 
 ## Flying objects and emitters (0x487730, 0x487890, 0x47F050, 0x47F770; 0x48AEF0, 0x48ADD0; `battlemap/Effects.cpp`)
 

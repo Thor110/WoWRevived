@@ -268,8 +268,12 @@ namespace wow
             d.flags &= ~0x800u;
             EngineSound(u);
         }
-        Steer(u);
-        Advance(u);
+        // frozen (vt+0x108, 0x4909D0's check), it doesn't move
+        if (!u.Frozen())
+        {
+            Steer(u);
+            Advance(u);
+        }
         if (u.wof)
         {
             const int ix = int(u.x), iy = int(u.y);
