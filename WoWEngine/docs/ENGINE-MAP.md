@@ -102,6 +102,8 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x493DF0–0x494960 | WRouteFinder | Node grid, route requests, route building; `src/battlemap/Routes.cpp` |
 | 0x48A950 / 0x48A9A0 | Footprints | vt+0xE4 / +0xE8: an object's ground marked blocked (0x47C280) or cleared; `BattleMap::Occupy` |
 | 0x4983D0 / 0x4984E0 | Bridge links | The bridge's two route nodes (via 0x494220, joined by 0x494400) and a vehicle's deck height on it; `BattleMap::AddBridgeNodes` / `OnBridge` |
+| 0x483590 / 0x488FB0 | Destination flag / WAnimEffect | The "_ACK" flag and the one-shot animated sprites; `BattleMap::SpawnEffect` |
+| 0x491450 | Engine sound | `BattleMap::EngineSound` |
 | 0x499420–0x4998D0 | BatRoute | The battle A*'s cost (line cost 0x4994B0, turn penalty 0x499660, goal 0x499800) and the route container; `BattleMap::LineCost` / `StepCost` |
 | 0x495620–0x496D60 | Puppets | Units' sub-objects |
 | 0x496D60–0x497890 | Hotspots | An object's click window, its selection brackets and power bar; `BattleMap::ReleaseLeft` / `DrawSelection` |

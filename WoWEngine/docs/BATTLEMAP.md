@@ -594,3 +594,29 @@ and separation, avoidance, velocity matching and cohesion aren't asked; a broken
 kills the vehicle (0x80A0) and stops its group. In the test the group crossed 24 over the water at speed 1, then went
 on along the route on the south bank.
 *Provisional*: broken bridges aren't in.
+
+## Sounds and the flag (0x483590, 0x481770, 0x4913B0 / 0x491450; the mixer `platform/Sound`)
+
+**The listener** is the view's centre (dword_4E9250 / dy) in the screen space the objects' points (+0x2C / +0x30) are
+in. A sound played at a point (0x464EE0's x, y; 0, 0 for none) is at full volume within 320 x 200 of it, falling off
+each way to nothing at 640 x 400 (ambient: 640 x 400 to 960 x 600), 0 when the across factor is under 0.05, the two
+multiplied (0x464FF0); it pans by its x less the listener's x 4 (DSBPAN, not speech); an opcode 18 sound beyond the
+outer border isn't made. The 5th argument picks the variation group: for speech, the voice.
+
+**The flag** (0x483590): a player's move by a player's group (+0x1D8 bits 3 and 4) makes type 0x17C ("_ACK", category
+4, GType 26), a WAnimEffect (0x488FB0): its sprite at the point (going straight, the goal + 2 vertices; with a route,
+its last node), its depth half the width + 64 (0x489000), its frame counter (8.8) going on 0x80 an update (0x40EF20)
+and gone past its last frame (7 frames: 12 updates). Then, unless the group has a target, it speaks **0x10A** in the
+group's voice (0x449120: its first member's type's +0xA0; the three groups of 0x10A are the three voices, Sc / Sb /
+Sa). "ROUTE NOT FOUND" (0x4833F0) speaks **0x10B** the same way. Speech plays at the listener (0x481770), and the leader's
+portrait flashes (0x4842D0, not in).
+
+**Engine sounds** (0x4913B0): an update in which a vehicle is neither going (vt+0x144) nor faster than 0.01 sets
++0x188 bit 11 and, if bit 10 was set, clears it and calls vt+0x124 (0x491590); any other sets bit 10 and, from bit 11,
+calls vt+0x120 (0x491570). Both end in 0x491450: the sound at +0xE8 stopped, then (not dead, vt+0x9C) the type's
++0xA2 while going or +0xA4 while not, played at its screen point. For the Armoured Lorry those are 0x33 (TRKLOTS,
+Engine, 0.6, looping) and 0x7A (TRUCKt01, 0.5). A battle's start (flags 0x801) has bit 11 set, so nothing plays until a
+vehicle first moves.
+
+*Provisional*: the engine sound stays where it started; vt+0x110 / vt+0x114 (the ground patch +0x13C / +0x13E) and
+the selection voice (0x109, 0x439000) aren't in; a quiet positional voice isn't let go.

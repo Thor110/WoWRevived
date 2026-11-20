@@ -1075,6 +1075,7 @@ namespace wow
         s.vehicles.attractAccWeight = ini.GetFloat("Vehicles", "attractAccWeight", 0.001f);
         s.vehicles.attractAccMax = ini.GetFloat("Vehicles", "attractAccMax", 0.1f);
         s.zMapRes = ini.GetInt("System", "ZMapRes", 400);
+        s.sound = &sound;
         if (s.zMapRes < 1) s.zMapRes = 400;
         try
         {

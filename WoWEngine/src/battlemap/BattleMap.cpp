@@ -1,4 +1,5 @@
 #include "battlemap/BattleMap.h"
+#include "platform/Sound.h"
 #include "frontend/Canvas.h"
 #include "frontend/Resources.h"
 #include "core/Bytes.h"
@@ -930,9 +931,67 @@ namespace wow
         ScrollTo(scrollX - (W / 2 - mouseX) / div, scrollY - (H / 2 - mouseY) / div);
     }
 
+    BattleMap::~BattleMap()
+    {
+        if (setup.sound)
+            for (const Unit& u : units)
+                if (u.engineSound) setup.sound->Stop(u.engineSound);
+    }
+
+    // 0x488FB0's object as it's made: its type's sprite (GType +0x28) at the point, its depth half the sprite's
+    // width + 64 (0x489000)
+    void BattleMap::SpawnEffect(int type, int x, int y)
+    {
+        auto u = setup.units->find(type);
+        if (u == setup.units->end()) return;
+        const int gtype = u->second.field28;
+        const GType* g = res.FindGType(gtype);
+        const Sprite* sprite = res.GetSprite(gtype);
+        const IndexedImage* image = res.GetFrame(gtype, 0);
+        if (!g || !sprite || !image) return;
+        Effect e;
+        e.gtype = gtype;
+        e.frames = sprite->FrameCount();
+        e.alive = true;
+        effects.push_back(e);
+        const int depth = image->width / 2 + 64;
+        objects.push_back({ y + depth, x, land.ProjectY(y, land.HeightAt(x, y)), nullptr, nullptr, g->paletteSlot, gtype, -1, -1, 0,
+                            int(effects.size()) - 1 });
+        std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+    }
+
+    // 0x481770: speech at the listener, the group's voice (0x449120: its first member's type's +0xA0) choosing the
+    // samples
+    void BattleMap::Speak(int id, int group)
+    {
+        if (!setup.sound) return;
+        int voice = 0;
+        for (const Unit& u : units)
+            if (u.group == group)
+            {
+                if (auto t = setup.units->find(u.type); t != setup.units->end()) voice = t->second.fieldA0;
+                break;
+            }
+        setup.sound->Play(id, 1.0f, voice);
+    }
+
     void BattleMap::Update()
     {
         ticks++;
+        // the listener (dword_4E9250 / dy): the view's centre
+        if (setup.sound) setup.sound->SetListener(scrollX + 320, scrollY + 240);
+        // the effects' animation (0x489050)
+        for (size_t i = 0; i < effects.size(); i++)
+        {
+            Effect& e = effects[i];
+            if (!e.alive || e.frames < 3) continue;
+            e.counter += 0x80;
+            if (e.counter > (e.frames - 1) << 8)
+            {
+                e.alive = false;
+                objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) { return o.effect == int(i); }), objects.end());
+            }
+        }
         // the right button held for [Tweak] "Quick Cancel Timeout" updates opens the popup (0x805B -> 0x485DE0)
         if (rightDownAt >= 0 && popup.empty() && ticks - rightDownAt == setup.quickCancelTimeout && mouseX >= 0)
             OpenPopup(mouseX, mouseY);
@@ -1084,7 +1143,8 @@ namespace wow
                 if (o.sprite)
                 {
                     // 0x40EE10: the frame at the point less the hot spot, through the slot's table at level 0
-                    const IndexedImage* image = res.GetFrame(o.sprite, 0);
+                    const int frame = o.effect >= 0 ? effects[size_t(o.effect)].counter >> 8 : 0;
+                    const IndexedImage* image = res.GetFrame(o.sprite, frame);
                     const GType* g = res.FindGType(o.sprite);
                     if (image && g) canvas.DrawImage(*image, shade->Level(0), o.x - g->hotX - scrollX, o.y - g->hotY - scrollY);
                     continue;

@@ -4,6 +4,7 @@
 // budget (0x492F40), then every update the speed is controlled (0x492DE0), the heading turned within its limit,
 // the step taken and the arrival checked (0x491870).
 #include "battlemap/BattleMap.h"
+#include "platform/Sound.h"
 #include "core/Bridge.h"
 #include "core/Random.h"
 #include <SDL3/SDL.h>
@@ -128,6 +129,7 @@ namespace wow
             {
                 // 0x4833F0: "ROUTE NOT FOUND": the members get 0x8031 and the group stops
                 SDL_Log("ROUTE NOT FOUND");
+                Speak(0x10B, group);    // a player's move (bits 3 and 4)
                 for (size_t i : members)
                 {
                     auto& d = units[i].drive;
@@ -140,11 +142,21 @@ namespace wow
             // 0x483270: "ROUTE FOUND": each member gets 0x802E(ftol(sqrt(members) + 1) x its radius, the route)
             SDL_Log("ROUTE FOUND: %zu nodes, from vertex %d,%d to %d,%d", path.size(), ssx, ssy, gx, gy);
             const auto route = BuildRoute(group, path);
+            // the flag at the route's last node and the acknowledgement (0x483590)
+            {
+                const RouteNode& last = route->nodes.back();
+                SpawnEffect(0x17C, int32_t(int64_t(last.x) * cell - half) >> 16, int32_t(int64_t(last.y) * cell - half) >> 16);
+                Speak(0x10A, group);
+            }
             const int scale = int(std::sqrt(double(n)) - -1.0);
             for (size_t i : members) FollowRoute(units[i], scale * units[i].drive.radius, route);
             return;
         }
         SDL_Log("GOING STRAIGHT THERE! (from vertex %d,%d to %d,%d)", ssx, ssy, gx, gy);
+        // 0x483590 at (the goal + 2): a player's move by a player's group (+0x1D8 bits 3 and 4) puts the "_ACK" flag
+        // (type 0x17C, a WAnimEffect) there and, with no target (+0x2C), the group speaks 0x10A
+        SpawnEffect(0x17C, int32_t(int64_t(gx + 2) * cell - half) >> 16, int32_t(int64_t(gy + 2) * cell - half) >> 16);
+        Speak(0x10A, group);
         const int dx = int(int32_t(int64_t(gx) * cell - half) >> 16), dy = int(int32_t(int64_t(gy) * cell - half) >> 16);
         // 0x80C2 to each member (0x490A70)
         double speeds = 0;
@@ -197,6 +209,24 @@ namespace wow
         u.drive.pendingValue = value;
     }
 
+    // 0x491450 (vt+0x138): the engine sound (+0xE8) stopped (vt+0x13C), then, unless it's dead (vt+0x9C), its type's
+    // +0xA2 while it's going (vt+0x144) or +0xA4 while not, at its screen point (+0x2C / +0x30)
+    // *Provisional*: the sound stays at the point it started from (the game's may follow the vehicle); vt+0x110 /
+    // vt+0x114 (the ground patch it holds, +0x13C / +0x13E) aren't in.
+    void BattleMap::EngineSound(Unit& u)
+    {
+        if (!setup.sound) return;
+        if (u.engineSound) setup.sound->Stop(u.engineSound);
+        u.engineSound = 0;
+        auto t = setup.units->find(u.type);
+        if (t == setup.units->end()) return;
+        const bool going = !(u.drive.flags & 1) || u.drive.link;
+        const int id = going ? t->second.fieldA2 : t->second.fieldA4;
+        if (id == 0) return;
+        const int x = int(u.x), y = land.ProjectY(int(u.y), land.HeightAt(int(u.x), int(u.y)));
+        u.engineSound = setup.sound->Play(id, 1.0f, 0, x, y);
+    }
+
     // 0x4913B0: one update of a unit
     void BattleMap::Drive(size_t index)
     {
@@ -211,7 +241,25 @@ namespace wow
             d.flags = (d.flags & ~0x2000u) | (!(d.flags & 1) ? 0x2000u : 0u);
         }
         const bool active = !(d.flags & 1) || d.link;  // vt+0x144 (0x4909D0): not stopped, or on a link (bits 5, 8 not in)
-        if (!active && !(double(d.speed) > 0.01)) return;
+        // the edges (0x4913B0): stopping sets bit 11 and, from bit 10, clears it and calls vt+0x124 (0x491590: vt+0x110,
+        // then the engine sound); going sets bit 10 and, from bit 11, clears it and calls vt+0x120 (0x491570: vt+0x114,
+        // then the engine sound)
+        if (!active && !(double(d.speed) > 0.01))
+        {
+            d.flags |= 0x800;
+            if (d.flags & 0x400)
+            {
+                d.flags &= ~0x400u;
+                EngineSound(u);
+            }
+            return;
+        }
+        d.flags |= 0x400;
+        if (d.flags & 0x800)
+        {
+            d.flags &= ~0x800u;
+            EngineSound(u);
+        }
         Steer(u);
         Advance(u);
         if (u.wof)

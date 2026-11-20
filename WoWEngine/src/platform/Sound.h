@@ -1,9 +1,12 @@
 // Sound effects, speech and the menu and credits music that come from the sound libraries (SFX.ojd, see
 // core/SoundTable.h), mixed in software into one SDL audio stream.
 //
-// The game's sound objects (0x4648C0, 0x54 bytes) pick a sample from the sound's first variation group, play it
-// at the sound's volume scaled by the [Sound\Volume] setting for its type and by Master, and can fade in over a
-// number of ticks (0x464E60). Looping sounds (opcode 7) play until they're stopped; others end with their sample.
+// The game's sound objects (0x4648C0, 0x54 bytes) pick a sample from one of the sound's variation groups in turn,
+// play it at the sound's volume scaled by the [Sound\Volume] setting for its type and by Master and, for one
+// played at a point, by how far that is from the listener (0x464FF0) with the pan from its x, and can fade in over
+// a number of ticks (0x464E60).
+// *Provisional*: a quiet positional sound keeps its voice (the game lets it go and takes one again when it's
+// louder), and the volume and pan are set every update rather than on alternate ones. Looping sounds (opcode 7) play until they're stopped; others end with their sample.
 #pragma once
 #include "core/SoundTable.h"
 
@@ -24,9 +27,12 @@ namespace wow
         Sound(const Sound&) = delete;
         Sound& operator=(const Sound&) = delete;
 
-        // Starts a sound by its SFX.ojd id. Returns a handle, or 0 if it can't be played (unknown id, no sample,
-        // no audio device).
-        int Play(int id, float volume = 1.0f);
+        // Starts a sound by its SFX.ojd id (0x464EE0): a sample from the variation group (speech's three are the
+        // voices), at a point in screen space (0, 0 for none). Returns a handle, or 0 if it can't be played (unknown
+        // id, no sample, no audio device, or a positional sound beyond the outer border).
+        int Play(int id, float volume = 1.0f, int group = 0, int x = 0, int y = 0);
+        // The listener (dword_4E9250 / dy): the view's centre in the same screen space.
+        void SetListener(int x, int y);
         void Stop(int handle);
         // Ramps the sound up from silence over this many game ticks (30 a second).
         void FadeIn(int handle, int ticks);
@@ -57,6 +63,10 @@ namespace wow
         struct Voice
         {
             int handle = 0;
+            bool placed = false;      // played at a point (not 0, 0)
+            int x = 0, y = 0;
+            float attenuation = 1;    // 0x464FF0 against the listener
+            float pan = 0;            // DSBPAN units: the point's x from the listener x 4 (not speech)
             std::shared_ptr<const std::vector<int16_t>> pcm;
             double position = 0, step = 1; // in frames
             int channels = 1;                 // 2 for a stereo sound (SFX.ojd record 15)
@@ -83,9 +93,11 @@ namespace wow
         int nextHandle = 1;
         uint64_t started = 0;
         bool menuDuck = false;
-        std::map<int, size_t> nextVariation; // round-robin cursor per sound id (0x466BC0)
+        std::map<std::pair<int, int>, size_t> nextVariation; // round-robin cursor per sound id and group (0x466BC0)
         static float Curve(float volume);     // the 128-step decibel table (0x465B20)
         float master = 1.0f, typeVolume[6] = { 1, 1, 1, 1, 1, 1 };
+        int listenerX = 0, listenerY = 0;
+        void Place(Voice& v) const;
         std::vector<float> mixBuffer;
     };
 }

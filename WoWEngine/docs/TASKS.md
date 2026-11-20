@@ -182,16 +182,19 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       and the destination's nearest passable node (0x482B00), the route finder (0x493DF0-0x494960, the BatRoute cost
       0x499420-, the shared A* in core/AStar.h) with route following, arrival and cohesion (docs/BATTLEMAP.md
       "Driving", "Routes"), the bridges' route nodes and links with the deck height (0x4983D0, 0x494220, 0x4984E0),
-      and the objects' footprints (0x48A950 -> 0x47C280). Still to do: the search spread over updates, footprints
-      taken off (vt+0xE8) and node removal, broken bridges, crushing (0x493DF0-0x494960),
-      the ground's cost, bridges, the destination flag, speech and engine sounds
+      and the objects' footprints (0x48A950 -> 0x47C280), the "_ACK" flag (0x483590, a WAnimEffect), the order
+      speech 0x10A / 0x10B in the group's voice and the engine sounds on the start / stop edges (0x4913B0, 0x491450).
+      Still to do: the search spread over updates, footprints taken off (vt+0xE8) and node removal, broken bridges,
+      crushing, the selection voice 0x109 (0x439000)
 - [ ] **Unit groups, orders, stances, specials** (Black Dust ... Scan) and the order panel (0x480190, 0x47CCF0-;
       the 0x80A0 stagger 0x47CEE0) — 07, 10, 11
 - [ ] **Weapons and effects**: shots, explosions, gas, area effects; smoke and particle emitters (0x4949A0,
       0x47F050) — 10, 11, 12
 - [ ] **Battle AI** (0x445010) — 07
 - [~] **Battle map music**: CD tracks 4 / 5 (the war map's is done) — 11
-- [ ] **Positional sound**: listener at the view centre, inner / outer rects, pan 4·dx (0x464FF0) — 09
+- [x] **Positional sound**: listener at the view centre, inner / outer rects, pan 4·dx (0x464FF0), opcode 18's cull,
+      variation groups as voices (platform/Sound); to do: quiet voices let go and taken back, alternate-update volume
+      and pan — 09
 
 ## Milestone 6: the rest of the original
 

@@ -21,6 +21,8 @@
 
 namespace wow
 {
+    class Sound;
+
     class BattleMap : public Screen
     {
     public:
@@ -74,11 +76,13 @@ namespace wow
             } vehicles;
             const std::map<int, std::array<int, 17>>* moveCosts = nullptr;      // OBJ.ojd record 10 (0x4F6E38)
             const std::map<int, std::pair<int, float>>* moveSlopes = nullptr;   // record 11 (0x4F04C0 / 0x4F0510)
-            int zMapRes = 400;          // [System] "ZMapRes" (dword_4F7424): the bucket grid's cell size
+            int zMapRes = 400;
+            Sound* sound = nullptr;   // the front end's mixer: the battle's speech and engine sounds          // [System] "ZMapRes" (dword_4F7424): the bucket grid's cell size
         };
 
         // Throws when the map's files can't be read.
         BattleMap(Resources& res, const Setup& setup);
+        ~BattleMap() override;
 
         void Update() override;
         void Draw(Canvas& canvas) const override;
@@ -107,7 +111,14 @@ namespace wow
         struct IsoModel { IobModel model; std::vector<uint8_t> lights; int slot = 0; };
         std::map<int, IsoModel> models;
         struct ViewObject { int key; int x, y; const IsoModel* model; const WofInstance* wof = nullptr; int slot = 0; int sprite = 0; int light = -1;
-                            int unit = -1, depth = 0; };
+                            int unit = -1, depth = 0, effect = -1; };
+        // The animated effects (WAnimEffect 0x488FB0, the factory's cases 918-920, 952-972, 988-993, 1000 and 0x17C):
+        // a sprite whose frame counter (8.8, the renderer's +0x38) goes on by +0xC0 (0x80) an update (0x40EF20), gone
+        // past the last frame (vt+0x78)
+        struct Effect { int gtype = 0, counter = 0, frames = 0; bool alive = false; };
+        std::vector<Effect> effects;
+        void SpawnEffect(int type, int x, int y);
+        void Speak(int id, int group);                          // 0x481770 with the group's voice (0x449120)
         std::vector<ViewObject> objects;    // sorted by key
         std::map<int, ShadeTable> slotTables;
         std::map<std::string, std::vector<uint8_t>> masks;   // the shadows' .raw masks
@@ -150,7 +161,8 @@ namespace wow
             int offset = 0;             // +0x13A, rand() % (0x802E's value + 1): more room at the route's end
         };
         struct Unit { int type; float x, y; int heading; bool players; int group = 0; bool vehicle = false; Drive drive;
-                      WofInstance* wof = nullptr; };
+                      WofInstance* wof = nullptr; int engineSound = 0; };
+        void EngineSound(Unit& u);                              // 0x491450
         std::vector<Unit> units;
         int startX = 0, startY = 0;                          // dword_4F742C / 4F7434: the player's deployment centre
         void Deploy();

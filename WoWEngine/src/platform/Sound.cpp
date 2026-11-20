@@ -49,15 +49,60 @@ namespace wow
         return pcm;
     }
 
-    int Sound::Play(int id, float volume)
+    // 0x464FF0: 1 for a sound not at a point; else, against the listener, 0 outside the outer border, 1 inside the
+    // inner, and between them each way 1 - (the distance past the inner) / (outer - inner), 0 when the across one is
+    // under 0.05; the two multiplied. Ambient sounds have the larger borders.
+    namespace
+    {
+        float Attenuation(int type, int dx, int dy)
+        {
+            const bool ambient = type == SoundDef::Ambient;
+            const int innerX = ambient ? 640 : 320, innerY = ambient ? 400 : 200;
+            const int outerX = ambient ? 960 : 640, outerY = ambient ? 600 : 400;
+            auto axis = [](int d, int inner, int outer) {
+                d = std::abs(d);
+                if (d >= outer) return 0.0f;
+                if (d <= inner) return 1.0f;
+                return 1.0f - float(d - inner) / float(outer - inner);
+            };
+            const float fx = axis(dx, innerX, outerX), fy = axis(dy, innerY, outerY);
+            if (fx < 0.05f) return 0.0f;
+            return fx * fy;
+        }
+    }
+
+    void Sound::Place(Voice& v) const
+    {
+        if (!v.placed) return;
+        v.attenuation = Attenuation(v.type, v.x - listenerX, v.y - listenerY);
+        v.pan = v.type == SoundDef::Speech ? 0.0f : float(std::clamp((v.x - listenerX) * 4, -10000, 10000));
+    }
+
+    void Sound::SetListener(int x, int y)
+    {
+        std::lock_guard<std::mutex> l(lock);
+        listenerX = x;
+        listenerY = y;
+        for (Voice& v : voices) Place(v);
+    }
+
+    int Sound::Play(int id, float volume, int groupIndex, int x, int y)
     {
         if (!stream) return 0;
         const SoundDef* def = table.Find(id);
         if (!def) return 0;
-        const auto& group = def->groups[0];
+        if (groupIndex < 0 || groupIndex > 2) groupIndex = 0;
+        const auto& group = def->groups[groupIndex];
         if (group.empty()) return 0;
+        const bool placed = x != 0 || y != 0;
+        // opcode 18: not even made when its point is beyond the outer border
+        if (def->positional && placed)
+        {
+            const bool ambient = def->type == SoundDef::Ambient;
+            if (std::abs(x - listenerX) >= (ambient ? 960 : 640) || std::abs(y - listenerY) >= (ambient ? 600 : 400)) return 0;
+        }
         // the sound's samples are taken in turn, not at random (0x466BC0)
-        size_t& cursor = nextVariation[id];
+        size_t& cursor = nextVariation[{ id, groupIndex }];
         const SoundSample& sample = group[cursor++ % group.size()];
         auto pcm = Sample(sample);
         if (!pcm || pcm->empty()) return 0;
@@ -69,7 +114,11 @@ namespace wow
         v.loop = def->loop;
         v.type = std::clamp(def->type, 0, 5);
         v.gain = def->volume * volume;
+        v.placed = placed;
+        v.x = x;
+        v.y = y;
         std::lock_guard<std::mutex> l(lock);
+        Place(v);
         // Voices (0x463640): 8 at once; Ambient 2, Engine 4, Explosions 4, Weapons 4, Special 2, Speech any.
         // At a type's limit, Ambient and Engine take the quietest of their own voices, Explosions and Weapons the
         // oldest, and Special fails. With all 8 in use a sound takes the lowest-type voice below it, else fails.
@@ -220,7 +269,10 @@ namespace wow
             const double length = double(pcm.size() / size_t(v.channels)); // frames
             // the duck (0x4CA998): 0.5 for everything but speech while speech plays, 0.25 under the war map menu
             float duck = v.type == SoundDef::Speech ? 1.0f : menuDuck ? 0.25f : speechPlaying ? 0.5f : 1.0f;
-            float gain = Curve(v.gain * v.fade * v.speechFade * typeVolume[v.type] * master * duck) / 32768.0f;
+            float gain = Curve(v.gain * v.fade * v.speechFade * v.attenuation * typeVolume[v.type] * master * duck) / 32768.0f;
+            // the pan (DSBPAN, hundredths of a dB taken off the far side)
+            const float panLeft = v.pan > 0 ? std::pow(10.0f, -v.pan / 2000.0f) : 1.0f;
+            const float panRight = v.pan < 0 ? std::pow(10.0f, v.pan / 2000.0f) : 1.0f;
             for (int i = 0; i < frames; i++)
             {
                 if (v.position >= length)
@@ -231,8 +283,8 @@ namespace wow
                 size_t at = size_t(v.position) * size_t(v.channels);
                 float left = float(pcm[at]) * gain;
                 float right = v.channels == 2 ? float(pcm[at + 1]) * gain : left;
-                out[i * 2] += left;
-                out[i * 2 + 1] += right;
+                out[i * 2] += left * panLeft;
+                out[i * 2 + 1] += right * panRight;
                 v.position += v.step;
             }
         }
