@@ -37,11 +37,11 @@ namespace wow
     // group's average war map speed (+0x1D0) x 0.01 x members / 2; a unit standing still (speed 0.01 or less) waits
     // ftol(5 x members x (its distance - the nearest's) / (the farthest's - the nearest's + 1) + rand() % 8) updates,
     // one already moving none, before 0x808B(0) sets it going.
-    // The point goes to its vertex and then the nearest node the group can stand on (0x482B00).
-    // *Provisional*: the route finder (0x494440) isn't in, so every order goes straight; the start isn't snapped (it
-    // only feeds the route search and the attack range check), and the distances the stagger uses (+0xD4, the
-    // group's +0x68 / +0x6C) are taken as each member's distance to the point; "ALREADY AT DESTINATION" (within 3
-    // cells), the destination flag (type 0x17C) and the speech (0x10A) aren't.
+    // Both ends go to their vertices and then the nearest node the group can stand on (0x482B00), and the route
+    // finder is asked (0x494440, Routes.cpp): going straight, the members get 0x80C2 to where it says; with a
+    // route, 0x802E. The group's members are its vehicles (+0xB8 bit 0) not on a bridge link or with bit 8.
+    // *Provisional*: the attack range (+0x2C's target, "CAN'T GET TO WITHIN ATTACK DISTANCE!"), the destination flag
+    // (type 0x17C), the speech (0x10A, 0x10B) and the re-post while another group's search runs aren't in.
     void BattleMap::OrderMove(int x, int y)
     {
         // each selected group gets the order (0x804F to the group)
@@ -79,43 +79,96 @@ namespace wow
     void BattleMap::OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y)
     {
         if (members.empty()) return;
-        // the point to its vertex, kept on the map, then to the nearest node the group can stand on; back to the world
+        // each member's distance to the point (0x43FF00, +0xD4), the nearest (+0x68) and the farthest (+0x6C),
+        // whose position is the route's start
+        auto octagonal = [](int x0, int y0, int x1, int y1) {
+            const int a = std::abs(x1 - x0), b = std::abs(y1 - y0);
+            return b - (std::min(a, b) >> 1) + a;
+        };
+        int nearest = 1000000, farthest = -1000000, sx = 0, sy = 0;
+        for (size_t i : members)
+        {
+            Unit& u = units[i];
+            const int d = octagonal(int(u.x), int(u.y), x, y);
+            u.drive.toPoint = d;
+            if (d < nearest) nearest = d;
+            if (d > farthest)
+            {
+                farthest = d;
+                sx = int(u.x);
+                sy = int(u.y);
+            }
+        }
+        // both ends to vertices, kept on the map; "ALREADY AT DESTINATION" within 3; then each to the nearest node
+        // the group can stand on (0x482B00)
         const int32_t cell = land.Cell(), half = land.HalfCell();
         auto toVertex = [&](int v, int count) {
             return std::clamp(int(int32_t((int64_t(int32_t(uint32_t(v) << 16)) + half) / cell)), 0, count - 1);
         };
-        int nx = 0, ny = 0;
-        NearestPassable(group, toVertex(x, land.Width()), toVertex(y, land.Height()), nx, ny);
-        const int dx = int(int32_t(int64_t(nx) * cell - half) >> 16), dy = int(int32_t(int64_t(ny) * cell - half) >> 16);
+        const int svx = toVertex(sx, land.Width()), svy = toVertex(sy, land.Height());
+        const int dvx = toVertex(x, land.Width()), dvy = toVertex(y, land.Height());
+        if (octagonal(svx, svy, dvx, dvy) <= 3)
+        {
+            SDL_Log("ALREADY AT DESTINATION");
+            return;
+        }
+        int ssx = 0, ssy = 0, gx = 0, gy = 0;
+        NearestPassable(group, svx, svy, ssx, ssy);
+        NearestPassable(group, dvx, dvy, gx, gy);
         const int n = int(members.size());
-        int nearest = INT32_MAX, farthest = INT32_MIN;
+        orders.push_back({ n, 0, nearest, farthest });
+        const int order = int(orders.size()) - 1;
+        for (size_t i : members) units[i].drive.order = order;
+        // a ground vehicle always asks for a route (vt+0x70 and vt+0x118 both no)
+        std::vector<int> path;
+        if (RequestRoute(group, ssx, ssy, gx, gy, 4, path))
+        {
+            if (path.empty())
+            {
+                // 0x4833F0: "ROUTE NOT FOUND": the members get 0x8031 and the group stops
+                SDL_Log("ROUTE NOT FOUND");
+                for (size_t i : members)
+                {
+                    auto& d = units[i].drive;
+                    d.flags |= 1;
+                    d.flags &= ~0x2020u;
+                    d.pendingAt = -1;
+                }
+                return;
+            }
+            // 0x483270: "ROUTE FOUND": each member gets 0x802E(ftol(sqrt(members) + 1) x its radius, the route)
+            SDL_Log("ROUTE FOUND: %zu nodes, from vertex %d,%d to %d,%d", path.size(), ssx, ssy, gx, gy);
+            const auto route = BuildRoute(group, path);
+            const int scale = int(std::sqrt(double(n)) - -1.0);
+            for (size_t i : members) FollowRoute(units[i], scale * units[i].drive.radius, route);
+            return;
+        }
+        SDL_Log("GOING STRAIGHT THERE! (from vertex %d,%d to %d,%d)", ssx, ssy, gx, gy);
+        const int dx = int(int32_t(int64_t(gx) * cell - half) >> 16), dy = int(int32_t(int64_t(gy) * cell - half) >> 16);
+        // 0x80C2 to each member (0x490A70)
         double speeds = 0;
-        std::vector<int> dist;
+        int count = 0;
+        for (const Unit& o : units)
+            if (o.group == group)
+            {
+                count++;
+                if (auto t = setup.units->find(o.type); t != setup.units->end()) speeds += int16_t(t->second.warMapSpeed);
+            }
+        const float groupSpeed = count ? float(speeds / count) : 0.0f;
         for (size_t i : members)
         {
-            const Unit& u = units[i];
-            const int d = int(std::sqrt(double(u.x - dx) * (u.x - dx) + double(u.y - dy) * (u.y - dy)));
-            dist.push_back(d);
-            nearest = std::min(nearest, d);
-            farthest = std::max(farthest, d);
-            if (auto t = setup.units->find(u.type); t != setup.units->end()) speeds += t->second.warMapSpeed;
-        }
-        const float groupSpeed = float(speeds / n);
-        orders.push_back({ n, 0 });
-        const int order = int(orders.size()) - 1;
-        for (size_t k = 0; k < members.size(); k++)
-        {
-            Unit& u = units[members[k]];
+            Unit& u = units[i];
             auto& d = u.drive;
-            d.order = order;
+            d.route.reset();
+            d.waypoint = 0;
             d.tx = dx;
             d.ty = dy;
-            d.arrival = float(double(d.radius) * setup.vehicles.arrivalRadius - -20.0);
-            d.grow = float(double(groupSpeed) * 0.01 * (double(n) * 0.5));
+            d.arrival = float(double(float(double(d.radius) * setup.vehicles.arrivalRadius)) - -20.0);
+            d.grow = float(double(groupSpeed) * 0.01 * (double(count) * 0.5));
             int delay = 0;
             if (!(double(d.speed) > 0.01))
             {
-                const float share = float(double(5 * n) * double(dist[k] - nearest) / (double(farthest - nearest) - -1.0));
+                const float share = float(double(5 * n) * double(d.toPoint - nearest) / (double(farthest - nearest) - -1.0));
                 delay = int(double(random::Rand() % 8) + share);
             }
             Post808B(u, 0, delay);
@@ -176,12 +229,11 @@ namespace wow
     // the speed long, the turn at most min(8 + 120 x maxAcc x speed, +0x140 x speed) toward its heading (a type of base
     // 0x13 turned more than 0x400 away drives backwards), and the step the speed long along the heading (0x43FE90),
     // taken by vt+0x54 (0x47F770).
-    // The behaviours in the game's order: the lookahead's braking (vt+0x158, when 0x492350 finds something ahead), the
+    // The behaviours in the game's order: away from ground it can't cross (vt+0x158, when 0x492350 says so), the
     // neighbours gathered (0x492C00), arrival (vt+0x168, not arrived and not bit 5), separation (vt+0x154, no link and
-    // not bit 5), the target (vt+0x150), avoidance (vt+0x15C, no link), attraction (vt+0x160, not bit 5), velocity
-    // matching (vt+0x16C, no link and not bit 5) and the attribute (vt+0x164, also needing +0xEC).
-    // *Provisional*: the lookahead without its ground check, separation, the target, avoidance, braking and velocity
-    // matching are in; arrival and attraction (both need a route), the attribute, bit 5 and the bridge links aren't.
+    // not bit 5), the target (vt+0x150), avoidance (vt+0x15C, no link), braking (vt+0x160, not bit 5), velocity
+    // matching (vt+0x16C, no link and not bit 5) and cohesion (vt+0x164, the same and on a route).
+    // *Provisional*: bit 5 and the bridge links aren't in.
     void BattleMap::Steer(Unit& u)
     {
         auto& d = u.drive;
@@ -189,7 +241,6 @@ namespace wow
         d.phase = int16_t(d.phase + 1);
         if (d.phase % 3 == 0)
         {
-            d.flags &= ~4u; // arrival (0x491FA0): no route, so not arriving
             std::vector<std::pair<float, float>> acc;
             auto add = [&](float weight, float max, float fx, float fy) {
                 float ax = fx * weight, ay = fy * weight;
@@ -205,7 +256,18 @@ namespace wow
                     add(float(double(v.attributeAccWeight) * v.maxAcc), float(double(v.attributeAccMax) * v.maxAcc),
                         float(-(d.ax / len)), float(-(d.ay / len)));
             }
-            const Neighbours n = Gather(u);
+            Neighbours n = Gather(u);
+            // arrival (vt+0x168, 0x491FA0; not arrived and not bit 5): on a route inside the arrival radius, bit 2 and
+            // against the step, arrivalAcc*; else bit 2 cleared
+            if (!(d.flags & 2))
+            {
+                if (d.route && float(d.dist) < d.arrival)
+                {
+                    d.flags |= 4;
+                    add(float(double(v.arrivalAccWeight) * v.maxAcc), float(double(v.arrivalAccMax) * v.maxAcc), -d.dx, -d.dy);
+                }
+                else d.flags &= ~4u;
+            }
             // separation (vt+0x154, 0x4920A0): the neighbours' push x how many there are
             if (n.count > 0)
                 add(float(double(v.separationAccWeight) * v.maxAcc), float(double(v.separationAccMax) * v.maxAcc),
@@ -240,6 +302,15 @@ namespace wow
             if (n.matched > 0)
                 add(float(double(v.velMatchAccWeight) * v.maxAcc), float(double(v.velMatchAccMax) * v.maxAcc),
                     float(double(n.stepX) / n.matched), float(double(n.stepY) / n.matched));
+            // cohesion (vt+0x164, 0x492240; with a route): toward the moving group members' average position,
+            // attractAcc*
+            if (d.route && n.matched > 0)
+            {
+                n.posX = float(double(n.posX) / n.matched);
+                n.posY = float(double(n.posY) / n.matched);
+                add(float(double(v.attractAccWeight) * v.maxAcc), float(double(v.attractAccMax) * v.maxAcc),
+                    float(double(n.posX) - u.x), float(double(n.posY) - u.y));
+            }
             double used = 0, sx = 0, sy = 0;
             for (auto [ax, ay] : acc)
             {
@@ -562,15 +633,44 @@ namespace wow
         else d.speed = 0.0f;
     }
 
-    // 0x491870: the distance to the target (+0xFC); with no route it has arrived inside the arrival radius (plus
-    // +0x13A, 0 without a route). On arriving (once: bit 1): its group counts it (0x482450) and 0x808B(1) stops it
-    // 9 x (members not yet arrived) + 60 updates on.
+    // 0x491870: the distance to the target (+0xFC, whole). On a route, short of its last node: the next waypoint
+    // once inside the arrival radius, or once the node after is nearer than this one (off a bridge link); at the last
+    // node, or with no route, it has arrived inside the arrival radius + the offset (+0x13A), and the route is let
+    // go. On arriving (once: bit 1): its group counts it (0x482450) and 0x808B(1) stops it 9 x (members not yet
+    // arrived) + 60 updates on.
+    // *Provisional*: the second target (+0xC8 / +0xCC) taken first when set, 0x80B9 to the group, the sector stats and
+    // the selection refresh aren't in.
     void BattleMap::Advance(Unit& u)
     {
         auto& d = u.drive;
-        d.dist = int(std::sqrt(double(double(d.tx) - u.x) * (double(d.tx) - u.x) + double(double(d.ty) - u.y) * (double(d.ty) - u.y)));
-        const bool arrived = !(0.0 + d.arrival <= double(d.dist));
-        if (!arrived || (d.flags & 2)) return;
+        auto distanceTo = [&](int x, int y) {
+            const float fx = float(double(x) - u.x), fy = float(double(y) - u.y);
+            return int(std::sqrt(double(fx) * fx + double(fy) * fy));
+        };
+        d.dist = distanceTo(d.tx, d.ty);
+        bool reached = false;
+        if (d.route && d.waypoint < int(d.route->nodes.size()) - 1)
+        {
+            const RouteNode& nd = d.route->nodes[size_t(d.waypoint + 1)];
+            const int32_t cell = land.Cell(), half = land.HalfCell();
+            const int next = distanceTo(int32_t(int64_t(nd.x) * cell - half) >> 16, int32_t(int64_t(nd.y) * cell - half) >> 16);
+            if (next < d.dist) reached = true;     // and not on a bridge link
+            if (float(d.dist) < d.arrival) reached = true;
+        }
+        else if (float(d.offset) + d.arrival > float(d.dist)) reached = true;
+        if (!reached) return;
+        if (d.route)
+        {
+            if (d.waypoint < int(d.route->nodes.size()) - 1)
+            {
+                d.waypoint++;
+                SetWaypoint(u, d.waypoint);
+                return;
+            }
+            d.waypoint = 0;
+            d.route.reset();
+        }
+        if (d.flags & 2) return;
         d.flags |= 2;
         int left = 0;
         if (d.order >= 0)

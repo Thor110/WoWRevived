@@ -79,6 +79,7 @@ namespace wow
             AddRenderer(u.type, u.x, u.y, u.heading, int(i));
         }
         SetUpGrounds();
+        SetUpRouteFinder();
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
 
         // The start view (0x439B7E): on the player's HQ (the player's constructions list, HCON, searched for type

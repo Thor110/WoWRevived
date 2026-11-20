@@ -427,12 +427,19 @@ update (0x4913B0) steers while vt+0x144 (0x4909D0) is true, which it is when bit
 vt+0x108), and while the speed is over 0.01.
 
 **The order**: the left button let go in cursor mode 1 on the ground (0x485A53) picks the world point under the
-mouse (0x47B3F0) and sends packet 0x0E; the selection's group (0x4812B0 -> 0x481CA0 -> 0x482510 -> 0x804F, 0x482E60)
-snaps it to a cell and, when it can go straight there, logs "GOING STRAIGHT THERE!" and sends each member 0x80C2
-with it. 0x80C2 (0x490A70): the route goes; the target is the point; the arrival radius the unit's radius (+0xAC, the
-type's +0x44 word) x `arrivalRadius` - -20, its growth the group's average war map speed (+0x1D0) x 0.01 x members
-x 0.5; then 0x808B(0) is posted (0x4355A0's last argument is the delay): at once if the unit is moving (speed over
-0.01), else after ftol(5 x members x (+0xD4 - the group's +0x68) / (+0x6C - +0x68 + 1) + rand() % 8) updates.
+mouse (0x47B3F0) and sends packet 0x0E; each selected group (0x4812B0 -> 0x481CA0 -> 0x482510 -> 0x804F, 0x482E60)
+then, while another group's route search runs, posts itself the order again 10 updates on; else it measures each
+member's distance to the point (0x43FF00 from whole positions, +0xD4; members are vehicles, +0xB8 bit 0, not on a
+link or with bit 8), the nearest (+0x68) and the farthest (+0x6C), whose position is the start. Both ends go to
+vertices (kept on the map); within 3 of each other it's "ALREADY AT DESTINATION" (when the first member is a vehicle
+without bit 9). Each end goes to the nearest node the group can stand on (0x482B00, below), and a ground vehicle
+(vt+0x70 and vt+0x118 both no) asks the route finder (0x494440 with radius 4 and limit 200, "Routes" below). When it
+says to go straight, "GOING STRAIGHT THERE!": each member gets 0x80C2 with where it says (back in the world: v x cell
+- half >> 16). 0x80C2 (0x490A70): the route goes (+0xEC, +0xF0 0); the target is the point; the arrival radius the
+unit's radius (+0xAC, the type's +0x44 word) x `arrivalRadius` - -20, its growth the group's average war map speed
+(+0x1D0) x 0.01 x members x 0.5; then 0x808B(0) is posted (0x4355A0's last argument is the delay): at once if the
+unit is moving (speed over 0.01), else after ftol(5 x members x (+0xD4 - the group's +0x68) / (+0x6C - +0x68 + 1) +
+rand() % 8) updates. The offset (+0x13A) is left as it was.
 Backspace (packet 0x11) sends the members 0x8031: stopped.
 
 **The ground** (WBMGroup 0x4802E0, 0x480680): each group works out from its members, by move class (the type's +0x52
@@ -444,11 +451,6 @@ to 8, for all 8 classes. A vertex's cost (0x480680, strict or not) reads its ATM
 the high + 1): 0 for a terrain cost of -1 or a slope over the max, and, unless airborne, for flags bit 1, bit 2 when
 strict, or bit 3 in its own sector; else the slope cost x the terrain cost. In sector 30 the group of five came to max
 slope 6, class 2, terrains 0-3 closed and 4-7 costing 3, 4, 9 and 5; the ground under them cost 1 to 8.
-
-**The point** (0x482B00, both ends of a move): the point's vertex goes to the route finder's node at or before it
-(((v - 4) / 4) x 4 + 4, nodes 4 apart) and squares 0, 4, 8 ... under 200 out are tried at 8 points each (right,
-right-down, down, left-down, left, left-up, up, right-up), kept on the map, until the group can stand there (0x480680
-strict). An order onto the Thames stops on the embankment.
 
 **Steering** (0x492F40), every vt+0x148 (3) updates on the phase:
 - the accelerations, each its force x weight x maxAcc with its length at most max x maxAcc (0x491B20): arrival
@@ -486,6 +488,10 @@ strict). An order onto the Thames stops on the embankment.
 - **avoidance** (0x491D90): with bit 3, away along +0x110 (its unit vector negated), `avoidanceAccWeight` /
   `avoidanceAccMax`; **braking** (0x491C70): with bit 3, against the step (its unit vector negated), halved unless
   bit 4, `brakingAccWeight` / `brakingAccMax`;
+- **arrival** (0x491FA0): on a route inside the arrival radius, bit 2 and against the step (+0x88 / +0x8C, not made a
+  unit), `arrivalAccWeight` / `arrivalAccMax`; otherwise bit 2 cleared;
+- **cohesion** (0x492240, the survey's "attraction to the route"): on a route, with any matched neighbours, toward
+  their average position (+0x130 / +0x134 made the average), `attractAccWeight` / `attractAccMax`;
 - **separation** (0x4920A0): with any counted, the push x the count, `separationAccWeight` / `separationAccMax`;
   **velocity matching** (0x492160): with any matched, their average step, `velMatchAccWeight` / `velMatchAccMax`;
 - added in that order until their lengths come to maxAcc (the one that crosses it cut to what's left); the sum goes
@@ -499,15 +505,62 @@ toward its heading (0x43FF30) at most min(ftol(8 + 120 x maxAcc x speed), +0x140
 than 0x400 away turning toward the opposite and driving backwards; the step the speed long along the heading
 (0x43FE90), taken by vt+0x54 (0x47F770: the ground's height at the new point); the model turned to the heading.
 
-**Arriving** (0x491870): +0xFC the distance to the target; with no route it has arrived inside the arrival radius
-(+ +0x13A). Once (bit 1): the group counts it (0x482450) and 0x808B(1) stops it 9 x (members not arrived) + 60
-updates on, so it runs on a little before slowing to a stop.
+**Arriving** (0x491870): +0xFC the distance to the target (whole). On a route short of its last node, the next
+waypoint (0x491790) comes once inside the arrival radius, or once the node after is nearer than this one (off a
+link); at the last node, or with no route, it has arrived inside the arrival radius + the offset (+0x13A), and the
+route is let go. Once (bit 1): the group counts it (0x482450) and 0x808B(1) stops it 9 x (members not arrived) + 60
+updates on, so it runs on a little before slowing to a stop. (A second target at +0xC8 / +0xCC, when set and not the
+target already, is taken first.)
 
-*Provisional*: the lookahead (without crushing, bit 7 or the bridge links), vt+0x158, separation, the target,
-avoidance, braking and velocity matching are in, and the speed is slowed by the ground's cost; each group's ground is
-set up once at the start, counting every member as +0xB8 bit 0; arrival and attraction (they need a route) aren't (in a test
-the five of a group travelled 34-54 apart and stopped 20-39 apart, their radii 14). Only units are in the grid (the
-game's holds every battle map object that places itself), vt+0xBC lets all through, and the cells are worked out
-from where they are each time rather than where they were put in; no route finder (every order goes
-straight, through buildings, though onto ground it can stand on); the start isn't snapped, and the stagger's
-distances and the bridges' links are approximations; no destination flag, speech or engine sounds yet.
+*Provisional*: each group's ground is set up once at the start, counting every member as +0xB8 bit 0 (in a test the
+five of a group travelled 34-54 apart and stopped 20-39 apart, their radii 14). Only units are in the grid (the game's
+holds every battle map object that places itself), vt+0xBC lets all through, and the cells are worked out from where
+they are each time rather than where they were put in. Crushing, bit 5, bit 7, bit 9, the bridges' links, the second
+target, the attack range ("CAN'T GET TO WITHIN ATTACK DISTANCE!"), the order re-posted while another search runs,
+the destination flag (type 0x17C), speech (0x10A, 0x10B) and engine sounds aren't in yet.
+
+## Routes (WRouteFinder 0x493DF0-0x494960, BatRoute 0x499420-0x4998D0; `battlemap/Routes.cpp`)
+
+**The nodes** (0x493DF0, when the landscape is set up): one every 4 vertices from 4 each way, (width - 4) / 4 across
+and (height - 4) / 4 down (62 x 61 for sector 30's 251 x 251), each joined to those round it in the order left,
+right, up, down, up-left, down-right, up-right, down-left. Nothing is checked here; a flag byte each (the link byte,
+for bridges, 0x494220 adds up to 0x400 more nodes) starts at 0.
+
+**The nearest node** (0x482B00, both ends of a move): the vertex goes to the node at or before it (((v - 4) / 4) x 4 +
+4) and squares 0, 4, 8 ... under 200 out are tried at 8 points each (right, right-down, down, left-down, left,
+left-up, up, right-up), kept on the map, until the group can stand there (0x480680 strict). An order onto the Thames
+stops on the embankment.
+
+**The request** (0x494440: start and goal in vertices, the radius, the limit, the group): with a search already
+running it waits. Each end becomes its node ((v - 4) / 4 kept to 1 .. count - 1). The radius over the float distance
+(0x43FED0), over 1, makes the goal the start: no route. Else the goal is pulled back the radius along the line from
+the start and when that line can be crossed (0x4994B0) that's the goal: no route. Otherwise a BatRoute cost
+(0x499420) and an A* (0x44EE70, the war map's, `core/AStar.h`) are started, which the group's update polls
+(0x483B70 -> 0x483270, 0x44EFA0 trying 200 neighbours an update, giving up only when nothing's left to try).
+
+**The cost** (0x499660, from a to b with the goal): the line cost (0x4994B0: Bresenham over the vertices, each one's
+strict 0x480680 added up, -1 at the first that can't be crossed, else the whole length x the sum / the count) times
+the turn penalty from 0x4D09F8 (8 x 8: 1, 3, 6, 10, 16 by how far apart the ways are) for the way to the goal against
+the way to b, x 5 >> 4, + 1. A way is 0x4D0AF8[(dy's sign x 3 + dx's sign) x 3 + (|dx| - |dy|)'s sign] (signs as 0,
+1, 2; 8 for no difference, which indexes on into 0x4D0AF8 itself). Two nodes sharing a link byte cost their straight
+distance x the group's +0x5A instead. The A*'s h is the same cost to the goal, so it's a real estimate; the goal
+(0x499800) is any node within the radius (0x43FF00).
+
+**The route** (0x494690 when found): a node per step (vertices, the link byte); each between the ends moves to the
+average of it and the two either side (whole numbers, toward 0) when the lines from the one before and to the one
+after can both be crossed; the headings (0x43FDA0, less 0x400) from each node's neighbours (the first's to the next,
+the last's from the one before). "ROUTE FOUND" (0x483270): each member gets 0x802E(ftol(sqrt(members) + 1) x its
+radius, the route); "ROUTE NOT FOUND" (0x4833F0): 0x8031 to each, the group stops (speech 0x10B).
+
+**Following** (0x802E, 0x4911B0): the route kept (+0xEC, counted); the offset (+0x13A) rand() % (the value + 1); the
+waypoint (+0xF0) the nearest node by 0x43FF00 (the last of equals); 0x491790 sets the target to it, with the arrival
+radius the radius + 20 and no growth at a link node, else the radius x `arrivalRadius` + 20 and the growth as 0x80C2's;
+then 0x808B(0) after the same stagger as 0x80C2's.
+
+In sector 30, from vertex 152,100 to 80,94 the search ran along the river's north edge, 19 nodes, its corners
+smoothed. With the straight-line check forced off, a group of five followed a 21-node route to the west and stopped
+at its end, 1600 updates on.
+
+*Provisional*: the search is run to its end at once rather than 200 tries an update; the bridges don't add their
+nodes (so nothing crosses the river: "ROUTE NOT FOUND", the whole north bank searched in under a second), nor do the
+buildings mark their ground (0x47C280), so on open ground most orders go straight; the link-byte cost is never used.

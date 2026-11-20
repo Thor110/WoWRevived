@@ -179,8 +179,10 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       reversing, arrival and the delayed stop, Backspace's halt, the neighbours (0x492C00 on the ZMapRes bucket
       grid) with separation and velocity matching, the collision lookahead (0x492350) with avoidance and braking
       the groups' ground (0x4802E0, 0x480680: OBJ.ojd records 10 and 11) for the speed, the lookahead's ground check
-      and the destination's nearest passable node (0x482B00) (docs/BATTLEMAP.md "Driving"). Still to do: crushing,
-      arrival and attraction, the route finder (0x493DF0-0x494960),
+      and the destination's nearest passable node (0x482B00), the route finder (0x493DF0-0x494960, the BatRoute cost
+      0x499420-, the shared A* in core/AStar.h) with route following, arrival and cohesion (docs/BATTLEMAP.md
+      "Driving", "Routes"). Still to do: the search spread over updates, bridges' route nodes and links, buildings'
+      footprints (0x47C280), crushing (0x493DF0-0x494960),
       the ground's cost, bridges, the destination flag, speech and engine sounds
 - [ ] **Unit groups, orders, stances, specials** (Black Dust ... Scan) and the order panel (0x480190, 0x47CCF0-;
       the 0x80A0 stagger 0x47CEE0) — 07, 10, 11

@@ -10,6 +10,7 @@
 //   - the neighbours are tried in the node table's order (0x4BD260, warmap::Neighbours)
 //   - it gives up once the neighbours tried, less one for each node taken off the list, reach the limit (1000)
 #pragma once
+#include "core/AStar.h"
 #include "warmap/WarMapData.h"
 
 #include <vector>
@@ -21,53 +22,12 @@ namespace wow::warmap
     template <class Cost>
     std::vector<int> AStar(int from, int to, Cost&& cost, int limit = 1000)
     {
-        struct Node { int f, g, h, id, parent; };
-        std::vector<Node> nodes;
-        std::vector<int> open, closed; // indices into nodes; open in f order, closed newest first
-        {
-            int h = cost(to, from);
-            nodes.push_back({ h, 0, h, from, -1 });
-            open.push_back(0);
-        }
-        int tried = 0;
-        while (!open.empty())
-        {
-            int current = open.front();
-            open.erase(open.begin());
-            closed.insert(closed.begin(), current);
-            if (nodes[size_t(current)].id == to)
-            {
-                std::vector<int> path;
-                for (int n = current; n >= 0; n = nodes[size_t(n)].parent) path.insert(path.begin(), nodes[size_t(n)].id);
-                return path;
-            }
-            int count = 0;
-            for (const int* nb = Neighbours(nodes[size_t(current)].id); *nb >= 0; nb++)
-            {
-                count++;
-                const int id = *nb;
-                int c = cost(nodes[size_t(current)].id, id);
-                if (c < 0) continue;
-                const int g = nodes[size_t(current)].g + c;
-                int found = -1;
-                for (int n : open) if (nodes[size_t(n)].id == id) { found = n; break; }
-                if (found < 0) for (int n : closed) if (nodes[size_t(n)].id == id) { found = n; break; }
-                if (found >= 0)
-                {
-                    Node& o = nodes[size_t(found)];
-                    if (g < o.g) { o.parent = current; o.g = g; o.f = o.h + g; }
-                    continue;
-                }
-                int h = cost(id, to);
-                nodes.push_back({ g + h, g, h, id, current });
-                int added = int(nodes.size()) - 1;
-                auto at = open.begin();
-                while (at != open.end() && nodes[size_t(*at)].f < g + h) ++at;
-                open.insert(at, added);
-            }
-            tried += count - 1;
-            if (tried >= limit) return {};
-        }
-        return {};
+        std::vector<int> list;
+        auto next = [&list](int id) -> const std::vector<int>& {
+            list.clear();
+            for (const int* nb = Neighbours(id); *nb >= 0; nb++) list.push_back(*nb);
+            return list;
+        };
+        return AStarSearch(from, to, cost, next, [](int id, int goal) { return id == goal; }, limit);
     }
 }

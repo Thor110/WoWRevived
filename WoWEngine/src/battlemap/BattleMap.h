@@ -66,6 +66,10 @@ namespace wow
                 float collisionCheckDist = 0.5f;    // flt_59E1D4
                 float attributeAccWeight = 0.3f;    // flt_59E2C4
                 float attributeAccMax = 0.2f;       // flt_59E27C
+                float arrivalAccWeight = 0.33f;     // flt_59E414
+                float arrivalAccMax = 0.2f;         // flt_59E3CC
+                float attractAccWeight = 0.001f;    // flt_59E36C
+                float attractAccMax = 0.1f;         // flt_59E2F4
             } vehicles;
             const std::map<int, std::array<int, 17>>* moveCosts = nullptr;      // OBJ.ojd record 10 (0x4F6E38)
             const std::map<int, std::pair<int, float>>* moveSlopes = nullptr;   // record 11 (0x4F04C0 / 0x4F0510)
@@ -113,6 +117,10 @@ namespace wow
         void LoadScenery(const Landscape::Sun& sun, char letter);
         void PlaceBridge(const PlacedObject& o);
         // The battle units (each war map object's +0x4C list): type, place, heading (4096 a turn), whose
+        // A route ("BatRoute" 0x499850): its nodes (16 bytes each in the game): x and y in vertices, the heading less
+        // 0x400, and the link byte (a bridge)
+        struct RouteNode { int x = 0, y = 0, heading = 0; uint8_t link = 0; };  // 16 bytes each, vertices
+        struct Route { std::vector<RouteNode> nodes; };
         // A vehicle's driving state (the ground vehicle 0x490820: its fields by their offsets; docs/BATTLEMAP.md
         // "Driving")
         struct Drive
@@ -132,6 +140,10 @@ namespace wow
             int radius = 0;             // +0xAC, the type's +0x44 word
             int pendingAt = -1, pendingValue = 0; // a 0x808B on its way (0x4355A0)
             int order = -1;             // the move order it's on (its group's arrival count)
+            std::shared_ptr<const Route> route; // +0xEC, the route it's following (shared, as the game counts)
+            int waypoint = 0;           // +0xF0
+            int toPoint = 0;            // +0xD4, from the last order's point (0x43FF00)
+            int offset = 0;             // +0x13A, rand() % (0x802E's value + 1): more room at the route's end
         };
         struct Unit { int type; float x, y; int heading; bool players; int group = 0; bool vehicle = false; Drive drive;
                       WofInstance* wof = nullptr; };
@@ -142,7 +154,19 @@ namespace wow
         void AddRenderer(int type, float x, float y, int heading, int unit = -1);
         // Driving (Driving.cpp): the move order (0x482E60 straight there, 0x80C2), each update's steering and step
         // (0x4913B0, 0x492F40, 0x492DE0, 0x491870), halt (0x8031)
-        struct MoveOrder { int members = 0, arrived = 0; };
+        struct MoveOrder { int members = 0, arrived = 0, nearest = 0, farthest = 0; };  // +0x56, +0x68 / +0x6C
+        // The route finder (WRouteFinder 0x493DF0-0x494960, BatRoute 0x499420-0x4998D0; Routes.cpp)
+        int rfCols = 0, rfRows = 0;                     // +0x30 / +0x34
+        std::vector<std::vector<int>> rfLinks;          // each node's neighbours (connDat through connList)
+        std::vector<int16_t> rfX, rfY;                  // nodeXCMem / nodeYCMem
+        std::vector<uint8_t> rfFlags;                   // nodeFMem: the link byte (bridges)
+        void SetUpRouteFinder();                                                        // 0x493DF0
+        int LineCost(int group, int x0, int y0, int x1, int y1) const;                  // 0x4994B0
+        int StepCost(int group, int goal, int a, int b) const;                          // 0x499660
+        bool RequestRoute(int group, int sx, int sy, int& dx, int& dy, int radius, std::vector<int>& path); // 0x494440
+        std::shared_ptr<const Route> BuildRoute(int group, const std::vector<int>& path) const;            // 0x494690
+        void FollowRoute(Unit& u, int value, std::shared_ptr<const Route> route);       // 0x802E, 0x4911B0
+        void SetWaypoint(Unit& u, int index);                                           // 0x491790
         std::vector<MoveOrder> orders;
         void OrderMove(int x, int y);
         void OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y);

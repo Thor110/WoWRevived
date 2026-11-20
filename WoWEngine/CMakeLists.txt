@@ -101,6 +101,7 @@ if(TARGET SDL3::SDL3)
         src/platform/Movie.cpp
         src/battlemap/BattleMap.cpp
         src/battlemap/Driving.cpp
+        src/battlemap/Routes.cpp
         src/warmap/WarMap.cpp
         src/warmap/Production.cpp
         src/warmap/BuildWindow.cpp

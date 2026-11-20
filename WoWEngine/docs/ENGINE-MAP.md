@@ -77,7 +77,7 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x44A160–0x44A8D0 | DeePlay | DirectPlay networking: send and receive threads, Human and Martian players |
 | 0x44AE60–0x44E4B0 | DeeDraw | DirectDraw surfaces, flip and blit, the cursor, error strings |
 | 0x44DE20–0x44E060 | FMV | `FMV\*.smk` and `*.fmv` |
-| 0x44EE70–0x44F120 | AStar | Pathfinding |
+| 0x44EE70–0x44F120 | AStar | Pathfinding, shared by both maps; `src/core/AStar.h` |
 | 0x44F2C0 | Smacker | Opens movie files |
 | 0x457F20–0x45BB90 | WResearch | Research plans, improvement multipliers, obsolete items |
 | 0x45D1A0–0x45F770 | Research and dialog screens | Hotspots, proposals, blueprints |
@@ -99,7 +99,8 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x449710–0x449BD0 | WBucketGrid | The battle map's object grid, `[System] ZMapRes` cells; 0x449920 gives a point's cell and its nearer neighbours; `BattleMap::Gather` |
 | 0x4802E0–0x480740 | WBMGroup ground | The group's terrain and slope costs from OBJ.ojd records 10 / 11 and a vertex's cost; `BattleMap::SetUpGrounds` / `CellCost` |
 | 0x482B00 | Nearest passable node | `BattleMap::NearestPassable` |
-| 0x493DF0–0x494370 | WRouteFinder | |
+| 0x493DF0–0x494960 | WRouteFinder | Node grid, route requests, route building; `src/battlemap/Routes.cpp` |
+| 0x499420–0x4998D0 | BatRoute | The battle A*'s cost (line cost 0x4994B0, turn penalty 0x499660, goal 0x499800) and the route container; `BattleMap::LineCost` / `StepCost` |
 | 0x495620–0x496D60 | Puppets | Units' sub-objects |
 | 0x496D60–0x497890 | Hotspots | An object's click window, its selection brackets and power bar; `BattleMap::ReleaseLeft` / `DrawSelection` |
 | 0x49C080–0x49C740 | Drag rectangle | The selection box; `BattleMap::DrawSelection` |
