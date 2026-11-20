@@ -9,6 +9,7 @@
 #include "core/ShadeTable.h"
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <span>
 #include <vector>
 
@@ -63,7 +64,17 @@ namespace wow
 
         // Draws the ground with world (0, 0) at originX, originY (the game's +0x4E / +0x52, the scroll negated).
         // levels is the 256-byte LANDR .INT table (byte_4DA660) that turns a vertex's light into a shade level.
+        // between(y) is called after each row with the world y the next row starts at, and once more at the end
+        // with INT_MAX: the objects whose depth is under it are drawn then (0x49F70A), so the ground and the
+        // objects overlap as the game draws them.
         static void Render(Landscape& land, const TerrainTiles& tiles, const ShadeTable& table, std::span<const uint8_t> levels,
-            const DitherTables& dither, const Target& target, int originX, int originY, const Fog* fog = nullptr);
+            const DitherTables& dither, const Target& target, int originX, int originY, const Fog* fog = nullptr,
+            const std::function<void(int)>& between = {});
+
+        // 0x4579A4: one patch (a ground half cell or a part of an IOB object): header {width | side bit, height,
+        // middle row, kind}, its rows, three light levels, and the dither set's byte offset. Kind 1 (transparent)
+        // leaves texel 0 undrawn.
+        static void DrawPatch(const uint8_t* header, const uint8_t* rows, int phaseSeed, int x, int y, const int lights[3],
+            int ditherBase, bool transparent, const Target& t, const DitherTables& dither, const ShadeTable& table);
     };
 }

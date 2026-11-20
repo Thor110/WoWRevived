@@ -31,8 +31,10 @@ namespace wow
             return s / 52;
         }
 
-        // 0x40CA90: the light a slope gets
-        double SlopeLight(int a, int b, int c, float strength, float ambient, const Landscape::Sun& sun)
+    }
+
+    double Landscape::SlopeLight(int a, int b, int c, float strength, float ambient, const Sun& sun)
+    {
         {
             double x = a, y = float(b), z = c;
             double sum = x * x + y * y + z * z;

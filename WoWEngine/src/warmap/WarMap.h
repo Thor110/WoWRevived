@@ -41,6 +41,7 @@ namespace wow
         void FightBattle();                        // 0x71 / 0x98: the battle (*provisional*: settled here)
         // The other side's units and constructions in a sector (0x43983E: the lists' counts, dword_4F7430)
         int EnemyObjects(int sector) const;
+        const std::map<int, ObjOjd::UnitData>& Units() const { return unitData; }
         const DebriefingInfo& Debriefing() const { return debriefing; }
         void ReturnFromBattle();                   // 0x99 / 0x8017, then the view's 0x418980: 0x808D and 0x41E730
 

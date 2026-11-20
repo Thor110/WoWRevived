@@ -49,6 +49,14 @@ namespace wow
         sun.shade = Landscape::ShadeLevel(levels, set[2], 0.0f);
         land.LightTheMap(sun);
         dither = DitherTables::Build(Need(res, "dat\\dith.dat"));
+        // the bm group's tables that go with the hour (0x40C08D): buildings, vehicles and nature by side
+        const std::string hour(1, letter);
+        const std::pair<int, std::string> slots[] = {
+            { 1, "BMHB" + hour }, { 2, "BMHV" + hour }, { 3, "BMMV" + hour }, { 4, "BMMB" + hour },
+            { 10, "BMR" + std::to_string(s.shadeClass) + "NA" + hour } };
+        for (const auto& [slot, name] : slots)
+            if (auto data = res.LoadFile("dat\\" + name + ".SHH")) slotTables[slot] = ShadeTable::LoadShh(*data);
+        if (s.loadScenery) LoadScenery(sun, letter);
 
         // The start view (0x439B7E): on the player's HQ (the Human constructions list is searched for type 278 in
         // London or 314 elsewhere in a Human game, 830 in sector 3 or 120 elsewhere in a Martian one, and centred
@@ -58,6 +66,58 @@ namespace wow
         int cx = land.WorldWidth() / 2;
         int cy = (land.Height() * land.Cell() >> 16) / 2;
         ScrollTo(cx - 320, land.ProjectY(cy, land.HeightAt(cx, cy)) - 240);
+    }
+
+    // EnterBattleMap's scenery (0x439770 with [Debug] "Load scenery"): dat\<sector>.nsb, placed as the game does
+    // (core/Scenery.h). The objects with an RTypeISO model (GType class 1) are drawn; *not yet*: the sprites (class
+    // 0, 14: lamps, the buildings' shadows), the WOF bridges, and the ambient sound scenery.
+    void BattleMap::LoadScenery(const Landscape::Sun& sun, char)
+    {
+        auto data = res.LoadFile("dat\\" + std::to_string(setup.sector) + ".nsb");
+        if (!data || !setup.units) return;
+        std::vector<SceneryObject> list;
+        try { list = wow::LoadScenery(*data); }
+        catch (const std::exception&) { return; }
+        auto radius = [&](int type) {
+            auto u = setup.units->find(type);
+            return u == setup.units->end() ? 0 : int(int16_t(u->second.hitPoints));
+        };
+        const int worldW = land.WorldWidth(), worldH = land.Height() * land.Cell() >> 16;
+        for (const PlacedObject& o : PlaceScenery(list, setup.enemyCount, radius))
+        {
+            auto u = setup.units->find(o.type);
+            if (u == setup.units->end()) continue;
+            const int gtype = u->second.field28;
+            const GType* g = res.FindGType(gtype);
+            if (!g || g->gclass != 1) continue;
+            auto m = models.find(gtype);
+            if (m == models.end())
+            {
+                IsoModel im;
+                auto file = res.LoadFile(g->file);
+                if (!file) { models[gtype]; continue; }
+                try { im.model = IobModel::Load(*file); }
+                catch (const std::exception&) { models[gtype]; continue; }
+                im.lights = IsoObject::BaseLights(im.model, sun, levels);
+                im.slot = g->paletteSlot;
+                m = models.emplace(gtype, std::move(im)).first;
+            }
+            if (m->second.model.patches.empty()) continue;
+            const IobModel& model = m->second.model;
+            // 0x47EB10: the collision radius, max(2 x half width, depth) x [Tweak] "ISO obj col rad mul" (0.66);
+            // 0x47F960 keeps the object that far inside the map
+            const int r = int(float(std::max(2 * IsoObject::HalfWidth(model), IsoObject::Depth(model))) * 0.66f);
+            float x = o.x, y = o.y;
+            if (float(worldW - r) < x) x = float(worldW - r);
+            if (float(worldH - r) < y) y = float(worldH - r);
+            if (float(r) > x) x = float(r);
+            if (float(r) > y) y = float(r);
+            // 0x47F480: the renderer's point, the ground's height there plus the object's own (+0x80)
+            const int ix = int(x), iy = int(y);
+            const int h = int(float(land.HeightAt(ix, iy)) + o.z);
+            objects.push_back({ iy + IsoObject::Depth(model), ix, land.ProjectY(iy, h), &m->second });
+        }
+        std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
     }
 
     // The view's scroll (0x42F6F0 through the camera, 0x40E5A0): 0 to the world's size (the landscape's +0x1C and
@@ -200,7 +260,21 @@ namespace wow
     {
         canvas.Clear(0);
         TerrainView::Target t{ canvas.Pixels(), canvas.Width(), 0, 0, canvas.Width(), canvas.Height() };
-        TerrainView::Render(land, tiles, table, levels, dither, t, -scrollX, -scrollY);
+        // the ground row by row, each object drawn once the rows reach its depth (0x49F610)
+        size_t next = 0;
+        auto between = [&](int limit) {
+            for (; next < objects.size() && objects[next].key < limit; next++)
+            {
+                const ViewObject& o = objects[next];
+                auto st = slotTables.find(o.model->slot);
+                const ShadeTable* shade = st != slotTables.end() ? &st->second : res.GetShade(o.model->slot);
+                if (!shade) continue;
+                const IobModel& m = o.model->model;
+                IsoObject::Draw(m, o.model->lights, o.x - IsoObject::HalfWidth(m) - scrollX, o.y + IsoObject::OffsetY(m) - scrollY,
+                                *shade, dither, t);
+            }
+        };
+        TerrainView::Render(land, tiles, table, levels, dither, t, -scrollX, -scrollY, nullptr, between);
         // the popup over everything, each item's next frame under the mouse
         for (size_t i = 0; i < popup.size(); i++)
         {

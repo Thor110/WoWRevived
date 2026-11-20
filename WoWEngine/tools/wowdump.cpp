@@ -22,6 +22,7 @@
 #include "core/Models.h"
 #include "core/Landscape.h"
 #include "core/TerrainView.h"
+#include "core/Scenery.h"
 #include "core/Random.h"
 #include "core/ObjOjd.h"
 #include "core/Research.h"
@@ -457,6 +458,34 @@ int main(int argc, char** argv)
             wow::TerrainView::Render(l, tiles, table, ints, dither, target, -scrollX, -scrollY);
             wow::WriteBmp(argc == 10 ? argv[9] : argv[7], px.data(), width, height);
             std::printf("%s: %d patches, drew %dx%d at %d,%d (hour %d, '%s')\n", argv[2], int(tiles.offsets.size()), width, height, scrollX, scrollY, it->first, set.name.c_str());
+            return 0;
+        }
+        if (first == "--scenery" && argc == 4)
+        {
+            auto objects = wow::LoadScenery(ReadFile(argv[2]));
+            auto obj = ReadFile(argv[3]);
+            auto units = wow::ObjOjd::LoadUnits(obj);
+            auto gtypes = wow::ObjOjd::LoadGTypes(obj, true);
+            std::map<int, int> counts;
+            for (const auto& o : objects) counts[o.type]++;
+            std::printf("%zu objects\n", objects.size());
+            for (const auto& [type, n] : counts)
+            {
+                auto u = units.find(type);
+                int g = u != units.end() ? u->second.field28 : 0;
+                auto gt = gtypes.find(g);
+                std::printf("type %4d x%-5d %-6s gtype 0x%03X class %2d  %s\n", type, n, u != units.end() ? u->second.code.c_str() : "?", g,
+                            gt != gtypes.end() ? int(gt->second.gclass) : -1, gt != gtypes.end() ? gt->second.file.c_str() : "");
+                if (u != units.end())
+                    for (const auto& p : u->second.parts)
+                    {
+                        auto cu = units.find(p.a);
+                        int cg = cu != units.end() ? cu->second.field28 : 0;
+                        auto cgt = gtypes.find(cg);
+                        std::printf("    part type %d at %d,%d,%d scale %g: gtype 0x%03X class %d %s\n", p.a, int16_t(p.b), int16_t(p.c), int16_t(p.d), double(p.f), cg,
+                                    cgt != gtypes.end() ? int(cgt->second.gclass) : -1, cgt != gtypes.end() ? cgt->second.file.c_str() : "");
+                    }
+            }
             return 0;
         }
         if (first == "--iob" && argc == 6)

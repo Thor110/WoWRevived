@@ -105,8 +105,9 @@ namespace wow
             int ditherBase;             // 4CA0D8 less the table's start
             const DitherTables* dither;
             const ShadeTable* table;
+            bool transparent;           // kind 1 (0x4574CD): texel 0 isn't drawn
 
-            // 0x45702D
+            // 0x45702D (kind 0) and 0x4574CD (kind 1)
             void Rows(int rows)
             {
                 for (; rows > 0; rows--)
@@ -151,8 +152,11 @@ namespace wow
                                 for (int i = 0; i < n; i++)
                                 {
                                     int texel = run ? texels[0] : texels[i];
-                                    int level = ((e >> 8) & 0xFF) + dither->LevelAt(d + i * 4);
-                                    out[i] = table->Level(level)[texel];
+                                    if (!transparent || texel)
+                                    {
+                                        int level = ((e >> 8) & 0xFF) + dither->LevelAt(d + i * 4);
+                                        out[i] = table->Level(level)[texel];
+                                    }
                                     e += step;
                                 }
                             }
@@ -165,22 +169,26 @@ namespace wow
                 }
             }
         };
+    }
 
-        // 0x4579A4
-        void DrawPatch(const uint8_t* p, int patchOffset, int tileIndex, int x, int y, const int lights[3], int ditherBase,
-            const TerrainView::Target& t, const DitherTables& dither, const ShadeTable& table)
+    // 0x4579A4
+    void TerrainView::DrawPatch(const uint8_t* p, const uint8_t* rows, int phaseSeed, int x, int y, const int lights[3], int ditherBase,
+        bool transparent, const Target& t, const DitherTables& dither, const ShadeTable& table)
+    {
         {
             int w = p[0] & 0x7F, h = p[1], split = p[2];
             bool flag = (p[0] & 0x80) != 0;
             if (x >= t.right || x + w < t.left || y >= t.bottom || y + h < t.top) return;
             Spans s{};
             s.t = &t;
-            s.data = p + 4;
+            s.data = rows;
+            s.transparent = transparent;
             s.x = x;
             s.y = y;
             s.line = y;
-            // The game seeds the dither phase from the patch's address; its offset in the map file stands in
-            s.phase = s.nextPhase = uint8_t((patchOffset + h + tileIndex) & 0xFC);
+            // The game seeds the dither phase from the patch's address, its height and the patch counter (4CA0E0);
+            // the caller passes an offset standing in for the address
+            s.phase = s.nextPhase = uint8_t((phaseSeed + h) & 0xFC);
             s.ditherBase = ditherBase + (h <= 8 ? 0x100 : 0) + (h <= 12 ? 0x100 : 0) + (h <= 16 ? 0x100 : 0);
             s.dither = &dither;
             s.table = &table;
@@ -218,7 +226,8 @@ namespace wow
     }
 
     void TerrainView::Render(Landscape& land, const TerrainTiles& tiles, const ShadeTable& table, std::span<const uint8_t> levels,
-        const DitherTables& dither, const Target& t, int originX, int originY, const Fog* fog)
+        const DitherTables& dither, const Target& t, int originX, int originY, const Fog* fog,
+        const std::function<void(int)>& between)
     {
         const int w = land.Width(), h = land.Height();
         const int32_t cell = land.Cell(), rowStep = land.RowStep(), hs = land.HeightScale(), hOff = land.HeightOffset();
@@ -298,11 +307,13 @@ namespace wow
                 int lights[3] = { corner[(p[3] >> 2) & 3], corner[(p[3] >> 4) & 3], corner[(p[3] >> 6) & 3] };
                 int atm = verts[v].atm;
                 int ditherBase = atm <= 3 ? atm << 10 : 0x2000;
-                DrawPatch(p, int(off), int(tileIndex), x, y, lights, ditherBase, t, dither, table);
+                DrawPatch(p, p + 4, int(off) + int(tileIndex), x, y, lights, ditherBase, false, t, dither, table);
             }
             if (minY > t.bottom) below++;
+            if (between) between(Mul(row + 1, cell) >> 16);
             row++;
             if (below >= 5 || row >= h - 1) break;
         }
+        if (between) between(INT32_MAX);
     }
 }

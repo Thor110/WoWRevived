@@ -146,3 +146,48 @@ the game starts the phase from the patch's address, the engine from its offset i
 
 *Not yet:* the black fill above and below the map (0x457D44), drawing objects between the rows (0x49F70A), and the
 view's place in the battle map screen.
+
+## Scenery (`dat\<sector>.nsb`, `core/Scenery`, `core/IsoObject`)
+
+With `[Debug] "Load scenery"` on (the default, 0x4F73F1), EnterBattleMap loads `dat\<sector>.nsb` into the world's
++0x11C list. It's that list's save (WObjectList 0x47D240 / 0x47D360): u32 0, the tag `BMOL`, a count, and each
+object as its u32 type and its class's Load (vtbl+8), without the save file's tags. The classes the 30 files use:
+scenery (WScenery 0x4895E0) x, y (kept on the map); tree circles 0xCF-0xD4 (0x48F3B0) x, y and a seed; fences and
+walls 445-447 (0x48D0A0) six dwords. `wowdump --scenery <nsb> <OBJ.ojd>` lists a file's types, GTypes and parts;
+all 30 read to their ends.
+
+Placing them (`PlaceScenery`), with the game's `rand()`:
+
+- **Burnt trees** (WScenery's constructor 0x489380): with more than 3 enemy units and buildings in the sector
+  (dword_4F7430, this battle's count), each scenery object made takes a `rand()`, and a tree (0xD5-0xE5) under
+  (0x8000 / 7) x (count - 3) becomes its red-weed kind (0x399-0x3A9).
+- **Tree circles** (0x48F410, when they start, after everything's loaded): `srand(seed)`, then 8, 4 or 2 trees
+  (types 0xCF / 0xD2, 0xD0 / 0xD3, 0xD1 / 0xD4) of the C kinds (0xD5 + `rand() % 7`) or D kinds (0xDC +
+  `rand() % 10`); the first at angle `rand() & 0xFFF` (of 4096), each next 4096 / n further round, at distance
+  `rand() % radius` (the unit table's +0x44 word), turned into x and y by 0x43FE90.
+
+*Provisional*: the `rand()` calls the other classes' constructors make aren't traced, so the burnt trees placed
+on their own may differ from the game's.
+
+Each object's GType (the unit table's +0x28) has a class that picks its renderer (0x47EB10): 0 a sprite, **1
+RTypeISO** (an IOB model), 2 a WOF model, 6 an atlas sprite, 14 a sprite at scale 1. The scenery's trees and
+buildings are IOB models; the engine draws those. *Not yet*: the sprites (street lamps, the buildings' shadows,
+part 331 `b-shad01.raw`), the WOF bridges of the walls, the ambient sound scenery (940, 994-996), and child parts.
+
+**Placing an object** (0x47F960 / 0x47F480): its position is kept a collision radius inside the map (for RTypeISO
+max(2 x half width, depth) x `[Tweak] "ISO obj col rad mul"` 0.66); +0x80 is the ground's height there (0x47B170)
+plus its own; its renderer's point is (x, the iso projection of y with that height), and its depth (+0x1E) its y.
+
+**RTypeISO** (0x49DDA0 / 0x49E1E0): the model's half width (header 0x0E / 2) is taken off x; its depth +0x26 is
+header 0x16 / sqrt 2 (x 0x2D4279A3 >> 38); y gets +0x26 / 2 less header 0x12. Its lights are made once (0x49DF40,
+brightness 255): for each patch three levels, from one normal for the patch, or (header 0x0A set) one normal for
+each corner named by the patch, lit like the ground (0x40CA90 with (-x, -z, -y)) times ftol(255 x the shade
+level), through the LANDR `.INT` table, at least 8. Drawn (0x4113F0 / 0x457C60), every patch goes at its offset
+through 0x4579A4 like a ground half cell, with the object's shade slot (buildings 1, `BMHB<letter>`; trees 10,
+`BMR<d>NA<letter>`; the bm group loads slots 1-4 and 10 by the hour), dither set 13 (DithDat + 0x3400) and its
+kind's span routine: kind 1 (0x4574CD) leaves texel 0 out. Up to two point lights nearer than their radius would
+add to the lights (0x4111B0); *not yet*.
+
+**With the ground** (0x49F610): the view's objects are kept in depth order; after each row of ground every object
+whose depth + its +0x26 is under the next row's world y is drawn, and the rest after the last row.
+

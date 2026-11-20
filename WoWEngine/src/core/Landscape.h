@@ -51,6 +51,9 @@ namespace wow
             float shade = 0;        // flt_4DA764: the shade table's level / 256 (0x40B570)
         };
         static Sun SunFor(int angleDegrees, const float set[4]);
+        // 0x40CA90: the light a surface gets from the sun, for a normal (across, any, up): sqrt of the sun's part
+        // of it, times the strength, plus the ambient (only the ambient when it faces away)
+        static double SlopeLight(int across, int other, int up, float strength, float ambient, const Sun& sun);
         // 0x40B570: the last of the shade table's 256 entries at or under ftol(third float x 64) gives the level;
         // with none, the level stays as it was
         static float ShadeLevel(std::span<const uint8_t> table, float third, float previous);

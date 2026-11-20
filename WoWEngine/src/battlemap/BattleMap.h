@@ -7,6 +7,9 @@
 #include "core/Landscape.h"
 #include "core/ObjOjd.h"
 #include "core/TerrainView.h"
+#include "core/IsoObject.h"
+#include "core/Scenery.h"
+#include <map>
 #include "frontend/Screen.h"
 #include <memory>
 #include <string>
@@ -31,6 +34,9 @@ namespace wow
             const ObjOjd::BattleTables::DayTime* dayTime = nullptr;
             bool human = true;
             int quickCancelTimeout = 5; // [Tweak] "Quick Cancel Timeout": updates the right button is held for the popup
+            int enemyCount = 0;         // dword_4F7430 for this battle (the scenery's burnt trees)
+            bool loadScenery = true;    // [Debug] "Load scenery" (0x4F73F1)
+            const std::map<int, ObjOjd::UnitData>* units = nullptr;
         };
 
         // Throws when the map's files can't be read.
@@ -58,6 +64,14 @@ namespace wow
         ShadeTable table;
         std::vector<uint8_t> levels;
         DitherTables dither;
+        // The scenery (dat\<sector>.nsb) as RTypeISO objects: the IOB models and their lights by GType, each
+        // object's screen point and depth, and the time-of-day shade tables of the slots they use
+        struct IsoModel { IobModel model; std::vector<uint8_t> lights; int slot = 0; };
+        std::map<int, IsoModel> models;
+        struct ViewObject { int key; int x, y; const IsoModel* model; };
+        std::vector<ViewObject> objects;    // sorted by key
+        std::map<int, ShadeTable> slotTables;
+        void LoadScenery(const Landscape::Sun& sun, char letter);
         int scrollX = 0, scrollY = 0;
         int mouseX = -1, mouseY = -1;
         int ticks = 0;

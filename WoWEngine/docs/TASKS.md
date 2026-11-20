@@ -161,7 +161,9 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       the rest of it (fog, zoomer, objects, battle info), 0x439ED0 and the battle-end dialogs aren't — 03, 06
 - [ ] **Deployment**: ring placement, HQ and entry-edge centres, random headings, the 0x80C3 rally (0x421FE0,
       0x4222C0) — 03
-- [ ] **Objects**: the factory map, units (WPuppet), vehicles with steering (`[Vehicles]`, 23 settings), tripods,
+- [~] **Objects**: the scenery (`dat\<sector>.nsb`: the tree circles, burnt trees, buildings) is placed and its
+      IOB models drawn with the ground (RTypeISO 0x49DDA0, ISOLib 0x4113F0 / 0x457C60; docs/BATTLEMAP.md). Still to
+      do: sprites, WOF models, child parts and point lights; the factory map, units (WPuppet), vehicles with steering (`[Vehicles]`, 23 settings), tripods,
       fliers, boats, buildings, bridges, fences, mines, pods (0x446B30, 0x48A4C0-, 0x4956D0-) — 07, 12, 13
 - [ ] **Unit groups, orders, stances, specials** (Black Dust ... Scan) and the order panel (0x480190, 0x47CCF0-;
       the 0x80A0 stagger 0x47CEE0) — 07, 10, 11

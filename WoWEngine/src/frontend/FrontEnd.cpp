@@ -1033,6 +1033,9 @@ namespace wow
         s.shadeClass = Landscape::ShadeClass(lastEnemyCount);
         s.human = res.Human();
         s.quickCancelTimeout = ini.GetInt("Tweak", "Quick Cancel Timeout", 5);
+        s.enemyCount = map->EnemyObjects(b.sector);
+        s.loadScenery = ini.GetBool("Debug", "Load scenery", true);
+        s.units = &map->Units();
         try
         {
             auto battle = std::make_unique<BattleMap>(res, s);
