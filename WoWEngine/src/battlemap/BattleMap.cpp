@@ -370,8 +370,8 @@ namespace wow
     }
 
     // The selected units' brackets (0x4972F0 / 0x497000: GType 5, hselec.spr, frames 0-3 at the hotspot's corners 8 in)
-    // and power bar (GType 7, hpower.spr, at the middle of its bottom 8 up; its frame the frame count x (1 - damage
-    // / max), at most the last: the last, as nothing is damaged yet); then the drag box (0x49C3E0): two lines a side
+    // and power bar (GType 7, hpower.spr, at the middle of its bottom 8 up; its frame the frame count x the damage,
+    // 1 - health / max, at most the last: frame 0 green at full health, to red); then the drag box (0x49C3E0): two lines a side
     // (dword_4DAF9C outside, dword_4DAFB8 inside) 12 short of each corner where the side is 23 or longer, and GType 6
     // (ho-selec.spr) frames 0-3 at its corners 7 in
     void BattleMap::DrawSelection(Canvas& canvas) const
@@ -388,7 +388,15 @@ namespace wow
             canvas.DrawSprite(5, 2, l + 8, b - 8);
             canvas.DrawSprite(5, 3, r - 8, b - 8);
             if (const Sprite* bar = res.GetSprite(7))
-                canvas.DrawSprite(7, std::max(0, bar->FrameCount() - 1), (l + r) / 2, b - 8);
+            {
+                // +0x98 = 1 - the health (vt+0xB4) / its type's (0x47DA20) (0x496DE3; 0x497290 as it's damaged):
+                // frame ftol(the frame count x it), at most the last, at least 0, so full health is frame 0
+                const int frames = bar->FrameCount();
+                const int max = MaxHealth(u.type);
+                const float damage = 1.0f - (max > 0 ? float(u.health) / float(max) : 1.0f);
+                const int frame = std::clamp(int(float(frames) * damage), 0, std::max(0, frames - 1));
+                canvas.DrawSprite(7, frame, (l + r) / 2, b - 8);
+            }
         }
         if (!dragging || !boxActive) return;
         const int l = std::min(dragX0, dragX1), r = std::max(dragX0, dragX1);
@@ -666,6 +674,10 @@ namespace wow
                     follow = six->second.c;
                     depth = 2 * int16_t(six->second.d);
                 }
+            // the object's scale (+0xA4): 1.0 as it's made (0x47D779), times the part's float (0x47EEC0), then its
+            // type's (+0xA8, 0x47EE24) as it starts; the model's scales then ftol(ftol(the GType's float) x it)
+            // (0x49DCA0, 0x47ED08)
+            scale = float(int(float(int(scale)) * (part.f * pt->second.scale)));
             std::unique_ptr<WofInstance> w;
             try { w = std::make_unique<WofInstance>(f->second, scale, follow); }
             catch (const std::exception&) { continue; }
@@ -724,6 +736,8 @@ namespace wow
                     follow = six->second.c;
                     depth = 2 * int16_t(six->second.d);
                 }
+            // the object's scale (+0xA4: 1.0 times its type's +0xA8 float, 0x47EE24) on the model's (0x47ED08)
+            scale = float(int(float(int(scale)) * u->second.scale));
             std::unique_ptr<WofInstance> w;
             try { w = std::make_unique<WofInstance>(f->second, scale, follow); }
             catch (const std::exception&) { return; }

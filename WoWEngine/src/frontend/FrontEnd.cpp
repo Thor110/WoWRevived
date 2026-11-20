@@ -249,7 +249,10 @@ namespace wow
 
     std::unique_ptr<Screen> FrontEnd::QuitGame(int previous)
     {
-        auto m = NewMenu(CmdQuitGame);
+        // from the main menu on its own backdrop; from the war map's menu ("Save & Exit Game") over the map, as that
+        // menu is (backdrop 0, the war map's palette group)
+        auto m = previous == CmdWarMapMenu ? std::make_unique<Menu>(CmdQuitGame, res, settings.colours, 0, warmap::PaletteGroup)
+                                           : NewMenu(CmdQuitGame);
         m->AddHeading(previous == CmdMainMenu ? 0x403 : 0x404);
         m->AddButton(CmdQuitGame, 0x445);
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x446);
@@ -1113,7 +1116,8 @@ namespace wow
         try
         {
             auto battle = std::make_unique<BattleMap>(res, s);
-            sound.FadeOut(briefingSound, 30);
+            // 0x41B360 (from EnterBattleMap 0x439EB4): the briefing sound faded out over 120 ticks (0x464EB0, 0x78)
+            sound.FadeOut(briefingSound, 120);
             briefingSound = 0;
             lastEnemyCount = map->EnemyObjects(b.sector);
             SDL_Log("Battle map: sector %d, %s, hour %d, view at %d,%d", s.sector, s.mapName.c_str(), int(b.hours) % 24, battle->ScrollX(), battle->ScrollY());

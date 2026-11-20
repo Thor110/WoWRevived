@@ -236,7 +236,12 @@ middle at noon and draws it.
 
 **Set-up** (0x49DCA0 / 0x49E330): the scales start at 1 and are multiplied by the GType's OBJ.ojd record 6 float
 (an ironclad's is 750, so a point is (p x 750) >> 16); the record's first word (+0x60) says whether the model tilts
-to the ground. From the file: piece count (header 0), the root piece (0x10), the vertex section (0x0C), the
+to the ground. **The object's own scale** then multiplies them (0x47ED08, each ftol'd): its +0xA4, 1.0 as it's made
+(0x47D779), times its type's +0xA8 float (record 25, dword_51A198) as it starts (0x47EE24) and, for a child part,
+times the part's float first (0x47EEC0, the parent's 0x47EE10 before the child's vt+0x24). The Armoured Lorry's is
+0.58 (83 to 48: about 23 pixels across, inside its radius 14 and its brackets); its turret's 0.5 x 0.58. (Until
+update 98 the engine left the object's scale out and drew the units about 1.7 times too big.) *Provisional*: the
+scenery and the bridges are still made at their record 6 scale alone. From the file: piece count (header 0), the root piece (0x10), the vertex section (0x0C), the
 material table (0x24, a u32 each: the texture offset, its top bit marking a masked material), the texture (0x28)
 and the smooth-shading groups (0x2C, a u32 offset for each piece). A piece record (0x61 bytes from 0x30): flags
 (+0x10: low two bits the damage variant, 8 drawn first, 0x10 last, 0x20 smooth), vertex and face counts, its pivot

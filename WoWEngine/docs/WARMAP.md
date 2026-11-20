@@ -693,8 +693,8 @@ queue pass later (0x95, 0x419A24).
    sector being viewed) there's none and the Debriefing says RETURNING TO WAR ROOMS; otherwise the side with
    more men in its units there wins (the holder on a tie), the loser's units, constructions and resources there go
    (0x43A250), the sector's flag goes and it and its neighbours are seen (0x418E17), and the game is over when the
-   Humans win in sector 3 or the Martians in London (30). The briefing sound is faded out over 30 ticks
-   (*provisional*), and the Debriefing follows at once.
+   Humans win in sector 3 or the Martians in London (30). The briefing sound is faded out over 120 ticks as the
+   battle map opens (0x41B360 from EnterBattleMap: 0x464EB0 with 0x78), and the Debriefing follows at once.
 4. **The Debriefing** (0x97 → 0x41A0DC: 0x42DB00(0), `new 0x49A7B0`; layout 0x49A820), on the Briefing's screen:
    "RETURNING TO WAR ROOMS" (0x4A8, sound 0x18E) with no battle fought (the report's +0x54); "DEFEAT" (0x4AA, 0x190)
    when byte_4E9B94 is set or the player has nothing left there (+0x28 + +0x48), else "VICTORY!" (0x4A9, 0x18F); the
