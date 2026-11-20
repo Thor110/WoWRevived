@@ -15,6 +15,7 @@
 #include "frontend/Screen.h"
 
 #include <map>
+#include <utility>
 
 namespace wow
 {
@@ -34,6 +35,7 @@ namespace wow
             int detail = 26;        // "Research Detail" (0x4B9414)
             int specification = 26; // "Research Specification" (0x4B9418)
             int enhancement = 26;   // "Research Enhancement" (0x4B941C)
+            int menuItems = 4, glowFirst = 4, glowLast = 9; // [Colours] "Menu Items", "Menu Glow First" / "Last"
         };
 
         ResearchScreen(Resources& res, Research& research, std::map<int, ObjOjd::ResearchPageInfo> pageInfo,
@@ -47,9 +49,13 @@ namespace wow
         int CursorAt(int, int) const override { return 0; }
         int TipOwner(int x, int y) const override;
         std::string TipText(int owner, int level) const override;
-        // the speech playing for the page (dword_589138), to be faded when the page goes (0x45E4A0)
+        // the speech playing for the page (dword_589138): the front end starts it when asked (the page's speech, 30
+        // ticks after the page shows, or at once on a click on the blueprint) and fades the last one out over 30
+        // ticks when the page goes (0x45E4A0 -> 0x464EB0)
         int Speech() const { return speechSound; }
         void SetSpeech(int handle) { speechSound = handle; }
+        int TakeSpeechStart() { return std::exchange(speechStart, 0); }
+        bool TakeSpeechFade() { return std::exchange(speechFade, false); }
 
     private:
         struct Hotspot { Rect rect; int command; int param; };
@@ -57,6 +63,10 @@ namespace wow
         void BuildDetail();                // 0x45D3F0 / 0x45DD50
         int SpriteWidth(int gtype) const;
         int SpriteHeight(int gtype) const;
+        void Activate(size_t hotspot);     // a hotspot's command (0x45ECB0: a click, Enter or Space)
+        void PageGoes();                   // 0x45E4A0: the speech faded, the delay dropped
+        int PageSpeech() const;            // the shown page's speech sound (0 for none)
+        std::string MakesAvailable(int item) const; // 0x8114
 
         Research& research;
         std::map<int, ObjOjd::ResearchPageInfo> pageInfo;
@@ -73,5 +83,11 @@ namespace wow
         std::vector<Line> detail;          // on the screen, wrapped and placed
         Rect blueprint, proposals;         // the blueprint window and the proposals list (empty without one)
         int speechSound = 0;
+        int speechStart = 0;               // a speech to start (an SFX id)
+        bool speechFade = false;
+        int speechDelay = -1;              // ticks until the page's speech starts
+        // the blueprint window's timer (0x45F3D0, 0x8129 every 2 ticks): the focused proposal's level steps between
+        // "Menu Glow First" and "Last" and back; one the focus leaves is left at "Menu Items" (0x8128)
+        int focusedLine = -1, glowingLine = -1, glowLevel = 4, glowStep = 1, glowTicks = 0;
     };
 }

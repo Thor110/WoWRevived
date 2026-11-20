@@ -180,6 +180,61 @@ namespace wow
             animating = research.AnimatePlans(openRate);
             Layout();
         }
+        if (speechDelay > 0 && --speechDelay == 0) { speechStart = PageSpeech(); speechDelay = -1; }
+        // 0x45F3D0 while the page's blueprint is up
+        if (research.ShownPage() >= 0 && ++glowTicks >= 2)
+        {
+            glowTicks = 0;
+            if (focusedLine != glowingLine)
+            {
+                if (glowingLine >= 0 && size_t(glowingLine) < detail.size()) detail[size_t(glowingLine)].level = colours.menuItems;
+                glowingLine = focusedLine;
+            }
+            glowLevel += glowStep;
+            if (glowLevel > colours.glowLast) { glowLevel--; glowStep = -1; }
+            if (glowLevel < colours.glowFirst) { glowLevel++; glowStep = 1; }
+            if (focusedLine >= 0 && size_t(focusedLine) < detail.size()) detail[size_t(focusedLine)].level = glowLevel;
+        }
+    }
+
+    int ResearchScreen::PageSpeech() const
+    {
+        const int g = research.ShownPage();
+        if (g < 0) return 0;
+        auto info = pageInfo.find(research.Pages()[size_t(g)].number);
+        return info != pageInfo.end() ? res.Text().Extra(info->second.speech) : 0;
+    }
+
+    void ResearchScreen::PageGoes()
+    {
+        speechFade = true;
+        speechDelay = -1;
+        focusedLine = glowingLine = -1;
+    }
+
+    // 0x8114 (asked by a proposal's tool tip, 0x45F0E0): "Makes Available:" (0x46E) and, a line each, the items
+    // still locked that have this one among their prerequisites and every other one done (0x45BA30), by their
+    // research names (0x45B690); no tip when there are none
+    std::string ResearchScreen::MakesAvailable(int number) const
+    {
+        const auto& items = research.Items();
+        std::string text = res.String(0x46E);
+        bool any = false;
+        for (const Research::Item& it : items)
+        {
+            if (it.kind == Research::TriggerItem || it.state != Research::Locked) continue;
+            bool among = false, ready = true;
+            for (int p : it.pre)
+            {
+                if (p < 0 || size_t(p) >= items.size()) continue;
+                if (p == number) { among = true; continue; }
+                if (items[size_t(p)].state != Research::Done && items[size_t(p)].state != Research::Obsolete) ready = false;
+            }
+            if (!among || !ready) continue;
+            text += "\n" + res.String(it.researchName);
+            any = true;
+        }
+        return any ? text : std::string();
     }
 
     void ResearchScreen::Draw(Canvas& canvas) const
@@ -258,17 +313,38 @@ namespace wow
         canvas.DrawSprite(ExitSprite, exitHeld ? 1 : 0, exitRect.x, exitRect.y);
     }
 
+    // The keyboard (0x45ECB0, on the focused folder or page): Up and Down move the focus to the one before or
+    // after (0x8008 / 0x8007 to their parent; round the ends, *provisional*), Enter and Space click it (0x201); Esc
+    // closes the screen (0x45E9E0)
     std::optional<Command> ResearchScreen::OnKey(int sdlKey)
     {
-        if (sdlKey == SDLK_ESCAPE) return Command{ CloseCommand, 0 }; // 0x45E9E0
+        if (sdlKey == SDLK_ESCAPE) return Command{ CloseCommand, 0 };
+        if (hotspots.empty()) return std::nullopt;
+        const int n = int(hotspots.size());
+        if (sdlKey == SDLK_UP || sdlKey == SDLK_DOWN)
+        {
+            const int step = sdlKey == SDLK_DOWN ? 1 : -1;
+            hover = hover < 0 ? (step > 0 ? 0 : n - 1) : (hover + step + n) % n;
+            focusedLine = -1;
+        }
+        else if ((sdlKey == SDLK_RETURN || sdlKey == SDLK_KP_ENTER || sdlKey == SDLK_SPACE) && hover >= 0)
+            Activate(size_t(hover));
         return std::nullopt;
     }
 
+    // The mouse takes the focus to what it's over (0x20 -> 0x42EBE0); a folder or page shows frame 1 while it has it
     void ResearchScreen::OnMouseMove(int x, int y)
     {
         hover = -1;
         for (size_t i = 0; i < hotspots.size(); i++)
             if (hotspots[i].rect.Contains(x, y)) hover = int(i);
+        if (research.ShownPage() >= 0)
+            for (size_t i = 0; i < detail.size(); i++)
+            {
+                const Line& l = detail[i];
+                if (l.item >= 0 && Rect{ l.x, l.y, l.w, l.h }.Contains(x, y)) { focusedLine = int(i); hover = -1; }
+            }
+        if (hover >= 0) focusedLine = -1;
     }
 
     std::optional<Command> ResearchScreen::OnMouseButton(int x, int y, bool down)
@@ -294,43 +370,49 @@ namespace wow
             if (proposals.Contains(x, y)) return std::nullopt;
             if (blueprint.Contains(x, y))
             {
-                auto info = pageInfo.find(research.Pages()[size_t(research.ShownPage())].number);
-                if (info != pageInfo.end())
-                    if (int speech = res.Text().Extra(info->second.speech)) sounds.push_back(speech);
+                speechStart = PageSpeech();
+                speechDelay = -1;
                 return std::nullopt;
             }
         }
         // the hotspots (0x45ECB0) send their command on the press
         for (size_t i = hotspots.size(); i-- > 0;)
-        {
-            const Hotspot& h = hotspots[i];
-            if (!h.rect.Contains(x, y)) continue;
-            if (h.command == PlanCommand)
-            {
-                // 0xBE: the folder opens (0x199) or closes (0x19A), the page goes (0x458D10, 0x19B), and the folders move
-                sounds.push_back(research.ClickPlan(h.param) ? 0x199 : 0x19A);
-                sounds.push_back(0x19B);
-                research.ShowPage(-1);
-                detail.clear();
-                animating = true;
-            }
-            else if (h.param != research.ShownPage())
-            {
-                // 0xBF: a new page (0x19B), its detail
-                sounds.push_back(0x19B);
-                research.ShowPage(h.param);
-                BuildDetail();
-                auto info = pageInfo.find(research.Pages()[size_t(h.param)].number);
-                if (info != pageInfo.end())
-                    if (int speech = res.Text().Extra(info->second.speech)) sounds.push_back(speech); // *provisional*: at once, not 30 ticks on
-            }
-            return std::nullopt;
-        }
+            if (hotspots[i].rect.Contains(x, y)) { Activate(i); return std::nullopt; }
         return std::nullopt;
+    }
+
+    void ResearchScreen::Activate(size_t i)
+    {
+        const Hotspot h = hotspots[i];
+        if (h.command == PlanCommand)
+        {
+            // 0xBE: the folder opens (0x199) or closes (0x19A), the page goes (0x458D10, 0x19B), and the folders move
+            sounds.push_back(research.ClickPlan(h.param) ? 0x199 : 0x19A);
+            sounds.push_back(0x19B);
+            if (research.ShownPage() >= 0) PageGoes();
+            research.ShowPage(-1);
+            detail.clear();
+            animating = true;
+        }
+        else if (h.param != research.ShownPage())
+        {
+            // 0xBF: a new page (0x19B), the old one's speech faded (0x45E4A0), its detail, its speech 30 ticks on
+            sounds.push_back(0x19B);
+            if (research.ShownPage() >= 0) PageGoes();
+            research.ShowPage(h.param);
+            BuildDetail();
+            speechDelay = 30;
+        }
     }
 
     int ResearchScreen::TipOwner(int x, int y) const
     {
+        if (research.ShownPage() >= 0)
+            for (size_t i = 0; i < detail.size(); i++)
+            {
+                const Line& l = detail[i];
+                if (l.item >= 0 && Rect{ l.x, l.y, l.w, l.h }.Contains(x, y)) return 10000 + int(i);
+            }
         for (size_t i = hotspots.size(); i-- > 0;) if (hotspots[i].rect.Contains(x, y)) return int(i);
         return -1;
     }
@@ -338,6 +420,7 @@ namespace wow
     // 0x45C6E0 / 0x45D1A0 (0x80A3): a folder's or a page's name; 0x8114: an item's "Makes Available:" list
     std::string ResearchScreen::TipText(int owner, int level) const
     {
+        if (level == 1 && owner >= 10000 && size_t(owner - 10000) < detail.size()) return MakesAvailable(detail[size_t(owner - 10000)].item);
         if (level != 1 || owner < 0 || size_t(owner) >= hotspots.size()) return {};
         const Hotspot& h = hotspots[size_t(owner)];
         if (h.command == PlanCommand) return res.String(research.Plans()[size_t(h.param)].text);

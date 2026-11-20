@@ -135,9 +135,9 @@ the folder (+0x3C up to 0x16 Human, 0x26 Martian) first, then what's left unroll
 
 **Clicks.** A folder (0xBE): it's selected (sound 0x199), or unselected if it was (0x19A); the page goes (0x458D10,
 sound 0x19B) and the folders move. A page (0xBF): if it isn't the one shown, 0x19B, its items are marked looked at
-(fresh 2, 0x45CD70) and its detail shows (0x45D380); its scientist's speech plays (the page's speech text's TEXT.ojd
-sound, 0x414700; *provisional*: at once, where the game starts it 30 ticks on and fades the last one out over 30
-when the page goes). An item in the detail (0x84): if it isn't the one picked already, sound 0x132 and it becomes
+(fresh 2, 0x45CD70) and its detail shows (0x45D380); its scientist's speech plays 30 ticks on (the page's speech text's TEXT.ojd
+sound, 0x414700), and the last page's is faded out over 30 ticks when its page goes (0x45E4A0 -> 0x464EB0), the
+screen closing included. An item in the detail (0x84): if it isn't the one picked already, sound 0x132 and it becomes
 the current research (0x458A00).
 
 **The detail** (0x45D3F0 Human, 0x45DD50 Martian). The blueprint window (0x45F4B0) at (0x118, 0x16) Human or
@@ -163,8 +163,18 @@ coloured "Research Current" for the one being researched, "Research New" for one
 Proposal" (0x45F070). A click on one researches it (0x84); a click elsewhere on the blueprint plays the speech
 again (0x45F710). The overlays are drawn over all of it (0x45E930).
 
-Not yet: the keyboard (the hotspots' Up / Down / Enter, 0x45ECB0), the tool tips' "Makes Available:" lists
-(0x8114), the speech's delay and fade, the list's own scrolling and colour cycling (0x45F320 / 0x45F3D0).
+**The keyboard** (0x45ECB0, on a folder or page): the mouse takes the focus to whatever it's over (0x20 ->
+0x42EBE0), a folder or page showing frame 1 while it has it. Up and Down move the focus to the one before or after
+(0x8008 / 0x8007 to their parent; the engine goes round the ends, *provisional*), Enter and Space click it (0x201 ->
+0x111 with its command), Esc closes the screen.
+
+**The proposals** (0x45F0E0): a proposal's tool tip asks the research (0x8114 with the item's index): "Makes
+Available:" (0x46E) and a line for each item still locked that has it among its prerequisites with every other one
+done or obsolete (0x45BA30), by its research name (record 40, 0x45B690); none when there are no such items. The
+blueprint window's timer (0x45F320, 0x8129 every 2 ticks, 0x45F3D0) steps the focused proposal's colour level
+between `[Colours] "Menu Glow First"` (4) and `"Menu Glow Last"` (9) and back, as the menus do; one the focus leaves
+is left at `"Menu Items"` (4), not its own colour, until the detail is built again. Esc there would close the page
+(0xBF with -1), but the screen takes Esc first.
 
 ## The computer player's choice
 
@@ -175,6 +185,5 @@ trigger (none: nothing). It becomes the research (as 0x458A00, and 0x80A3 to the
 
 ## Still to do
 
-The rest of the screen (above); the AI's choice (0x45A400 / 0x45B4E0, its
-plan lists) with the war map AI; the battle map setting +0xAC; the cheat that finishes everything (0x458460, keys
+The battle map setting +0xAC (the triggers); the cheat that finishes everything (0x458460, keys
 2 14 12 4 1 0 2 10 at 0x4013A0; `Research::CompleteAll` is ready for it).

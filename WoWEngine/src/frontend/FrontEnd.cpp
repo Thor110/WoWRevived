@@ -760,6 +760,9 @@ namespace wow
                 c.detail = ini.GetInt("Colours", "Research Detail", c.detail);
                 c.specification = ini.GetInt("Colours", "Research Specification", c.specification);
                 c.enhancement = ini.GetInt("Colours", "Research Enhancement", c.enhancement);
+                c.menuItems = settings.colours.items;
+                c.glowFirst = settings.colours.glowFirst;
+                c.glowLast = settings.colours.glowLast;
                 const int rate = res.Human() ? ini.GetInt("Research", "Human Open Rate", 20) : ini.GetInt("Research", "Martian Open Rate", 10);
                 Show(std::make_unique<ResearchScreen>(res, *map->LocalResearch(), researchPages, c, rate));
             }
@@ -769,6 +772,8 @@ namespace wow
             if (current == ResearchScreen::Id && warMap)
             {
                 if (WarMap* map = ActiveWarMap(); map && map->LocalResearch()) map->LocalResearch()->ShowPage(-1);
+                if (screen && screen->Id() == ResearchScreen::Id)
+                    if (int h = static_cast<ResearchScreen*>(screen.get())->Speech()) sound.FadeOut(h, 30); // 0x45E4A0
                 sound.Play(0x19D);
                 Show(std::move(warMap));
             }
@@ -891,6 +896,16 @@ namespace wow
         stillTicks++;
         UpdateTooltip();
         for (int id : screen->TakeSounds()) sound.Play(id);
+        if (screen->Id() == ResearchScreen::Id)
+        {
+            auto* rs = static_cast<ResearchScreen*>(screen.get());
+            if (rs->TakeSpeechFade() && rs->Speech()) { sound.FadeOut(rs->Speech(), 30); rs->SetSpeech(0); }
+            if (int id = rs->TakeSpeechStart())
+            {
+                if (rs->Speech()) sound.FadeOut(rs->Speech(), 30);
+                rs->SetSpeech(sound.Play(id));
+            }
+        }
         if (WarMap* map = ActiveWarMap()) { if (!inBattle) WarMapSounds(*map); }
         else if (musicTimer >= 0) StopWarMapSounds();
         // the credits' own exit is sent straight on (0x4056F0); the rest come from the view's controls
