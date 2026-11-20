@@ -119,6 +119,7 @@ namespace wow
     void FrontEnd::Show(std::unique_ptr<Screen> next)
     {
         int from = screen ? screen->Id() : 0;
+        SDL_Log("Screen 0x%X", next->Id());
         // Leaving the CD Player stops its music. The original doesn't (its CD player has no destructor of its own,
         // so the disc played on until something else used the drive); [WoW Engine] "CD Player Music Continues"
         // = 1 keeps that.

@@ -59,6 +59,7 @@ namespace wow
 #ifdef _WIN32
         if (auto mp4 = files.Resolve(folder + "\\" + name + ".mp4"))
         {
+            SDL_Log("Movie %s: playing %s", name.c_str(), mp4->string().c_str());
             std::string why;
             if (auto movie = OpenMp4(*mp4, why)) return movie;
             SDL_Log("%s: %s; trying the .smk", mp4->string().c_str(), why.c_str());
@@ -71,6 +72,7 @@ namespace wow
             error = "no " + folder + "\\" + name + " movie (.mp4 or .smk)";
             return nullptr;
         }
+        SDL_Log("Movie %s: playing %s", name.c_str(), smk->string().c_str());
         try { return std::make_unique<SmackerMovie>(*smk); }
         catch (const std::exception& e)
         {
