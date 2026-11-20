@@ -449,7 +449,13 @@ namespace wow
         // Each group's periodic stance work (0x483B70: +0x58 counting to +0x5C, 90): Roam and Attack (3) wanders to a
         // random point; Attack and Retaliate (2, 1) go back home (+0x60 / +0x64) if more than 400 from it
         std::vector<int> groupTicks, groupHomeX, groupHomeY;
-        std::vector<bool> groupBusy;                            // +0x1D8 bit 0 without a target (Avoid's run, Retreat)
+        std::vector<bool> groupBusy;
+        // 0x80F4 posted to an object (0x4355A0 with its delay): the update it arrives, the object, the firer, the level
+        struct ControlPost { int at = 0, unit = 0, attacker = 0, level = 0; };
+        std::vector<ControlPost> controlPosts;
+        int controlLevel = 0;
+        bool controlByPlayer = false;
+        void ControlArrives(const ControlPost& p);              // 0x495CB0's case 0x80F4                            // +0x1D8 bit 0 without a target (Avoid's run, Retreat)
         void GroupTick(int group);
         void GroupGone(int group);                              // its last unit gone: the AI told
     public:
@@ -458,5 +464,9 @@ namespace wow
         // The war map objects that left by a reinforcement point, and the sector each went to
         std::vector<std::pair<int, int>> RetreatedRefs() const;
         bool Fought() const { return battleOn; }
+        // 0x80F4 taken by the other side's key building (0x495CB0 -> the sector, 0x43B920): the level (+0x128, 1-3;
+        // 0 for none) and whether the player's side fired it (dword_4E9B60)
+        int ControlLevel() const { return controlLevel; }
+        bool ControlByPlayer() const { return controlByPlayer; }
     };
 }

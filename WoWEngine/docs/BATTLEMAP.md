@@ -636,7 +636,7 @@ WExplosion (sound, parts, radius +0x44, power +0x4A), but their detonation (vt+0
 | --- | --- |
 | 718-720 | a hit (vt+0xC0 with 1.0, 0x48A5A0) only if it's under the ground (+0x84 below 0.0) |
 | 788-790 | a hit only if it's Martian (0x4406E0 = 1) |
-| 812-814 | 0x80F4 with the firer, 1-3 and 120 / 240 / 360 (to the battle's key buildings: taking them over) |
+| 812-814 | 0x80F4 with the firer and 1-3, arriving 120 / 240 / 360 updates on (Infiltrate: to the other side's key building, intel for the war map) |
 | 815-817 | 0x80F5 at 1-3: frozen |
 | 818-820 | 0x80F6 at 1-3 and a hit |
 | 821-823 | 0x80F7 at 1-3 |
@@ -660,15 +660,22 @@ the type's +0x43 byte (record 56, each unit's own stance from the start, 0x49574
 (0x4406E0) within its sight (+0x48, octagonal, under it) where neither is under the ground, the last one's aim
 standing; while it lasts it takes no other aim (0x496300 checks vt+0xF8 first) and its own side's explosions hit it
 (0x488200 spares the firer's side only where vt+0xF8 is clear); leaving it, the group's target goes (0x482880(0)).
-0x80F4 goes to the key buildings (0x495CB0: the Martian base 0x33E or the Communications Centre 0x78, Parliament
-0x116 or 0x13A, by the kind), which pass it to the battle (0x43B920: +0x128 the time, dword_4E9B60 the firer's
-side) and speak 0x115: control of the sector, for the battle's end.
+**0x80F4 is Infiltrate's** (guns 800-802, mode 13-15, fire the blasts 812-814): each object in reach is posted
+0x80F4 with the firer (+0xCC) and the level 1-3 (0x4355A0: its last argument, 120 / 240 / 360, is the delay). On
+arrival (0x495CB0) only the battle's key building acts on it (the Martian base 0x33E or the Communications Centre
+0x78, Parliament 0x116 or 0x13A, by the kind), and only when it isn't the player's (+0x24 not 0) and the firer is
+still there (0x440110): it tells its sector (vt+0xDC -> +0x48 -> +0x48) 0x80F4 (0x43B920: the sector's +0x128 the
+level, dword_4E9B60 the firer's side by 0x4406E0) and speaks 0x115. The war map's set-up after the battle
+(0x418E17) turns that into intel (docs/WARMAP.md "Intel and the fog"). In `Combat.cpp`: `controlPosts`,
+`ControlArrives`; the level and side go back with the losses (`ControlLevel`, `ControlByPlayer` ->
+`WarMap::FightBattle`). In the test (Parliament made the other side's) a level 2 post from a lorry arrived 240
+updates on and set the level 2, fired by the player; one posted to a lorry did nothing.
 
 With lorry 1 turned and lorry 2 frozen at update 40 for the test: lorry 2 stayed where it was through 440 updates
 while the others drove off on an order; lorry 1 aimed at its own unit 5 and fired on it six times in 120 updates,
 none doing damage, unit 5 being of the firer's own group (spared unless it's turned itself).
 
-*Provisional*: 0x80F4 (the battle's control of the sector) isn't in; frozen holds a vehicle still (its steering
+*Provisional*: frozen holds a vehicle still (its steering
 and step not run) rather than as 0x4909D0's callers do.
 
 ## The battle's end (the battle world's update 0x43A980, the report 0x43A800; `battlemap/BattleMap.cpp`, `warmap/WarMap.cpp`)
@@ -702,8 +709,8 @@ RETURNING TO WAR ROOMS.
 *Provisional*: the units are what's counted (not every object with a side); the objects waiting off the map
 (reinforcements) aren't in; the report's +0x6C is taken as the side holding the sector as the battle began; the
 game's end as sector 3 won by a Human player or 30 by a Martian; the war map's taking of the losses isn't checked
-end to end (no save with a contested sector to hand); 0x80F4's control (+0x128, dword_4E9B60, used by the war
-map's 0x418980 on the research) isn't in.
+end to end (no save with a contested sector to hand); nor is Infiltrate's intel (0x80F4's +0x128) reaching the war
+map.
 
 ## The modes and specials (0x4817C0, 0x481CA0, 0x496920, 0x482570; `battlemap/Weapons.cpp`)
 

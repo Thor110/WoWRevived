@@ -162,9 +162,8 @@ namespace wow
     // for 0x1F8-0x1FA, 0x21E-0x220 and 0x244-0x246, which the factory doesn't make as area blasts.)
     // (An area blast spares the firer's side outright; WExplosion's own detonation spares it unless the object is
     // turned, vt+0xF8.)
-    // *Provisional*: 0x80F4 isn't in: its key building case (0x495CB0: the Martian base 0x33E or the Communications
-    // Centre 0x78, Parliament 0x116 or 0x13A, by the kind) passes it to the battle (0x43B920: +0x128 the time,
-    // dword_4E9B60 the firer's side) and speaks 0x115, which is the battle's end, not in yet.
+    // 812-814 post 0x80F4 (0x4355A0) with the firer (+0xCC) and the level 1-3, arriving 120 / 240 / 360 updates on
+    // (ControlArrives).
     void BattleMap::AreaDetonate(int type, int x, int y, int radius, int power, int firer, int attacker)
     {
         for (size_t i = 0; i < units.size(); i++)
@@ -183,6 +182,7 @@ namespace wow
             };
             if (type >= 718 && type <= 720) { if (u.drive.lift < 0.0f) hit(); }
             else if (type >= 788 && type <= 790) { if (ut->second.faction == 1) hit(); }
+            else if (type >= 812 && type <= 814) controlPosts.push_back({ ticks + 120 * (type - 811), u.id, attacker, type - 811 });
             else if (type >= 815 && type <= 817) SetStatus(i, 0x80F5, type - 814);
             else if (type >= 818 && type <= 820) { SetStatus(i, 0x80F6, type - 817); hit(); }
             else if (type >= 821 && type <= 823) SetStatus(i, 0x80F7, type - 820);
@@ -307,5 +307,26 @@ namespace wow
     {
         if (u.statusTime == 0) return;
         if (--u.statusTime == 0) ChangeStatus(u, 0);
+    }
+}
+
+namespace wow
+{
+    // 0x495CB0's case 0x80F4 (firer, level): with the firer still there (0x440110) and the object not the player's
+    // (+0x24 not 0) and the battle's key building (the Martian base 0x33E where the kind is 3, else the
+    // Communications Centre 0x78; Parliament 0x116 where it's 0x1E, else 0x13A), the sector (vt+0xDC -> +0x48 ->
+    // +0x48) is told 0x80F4 (0x43B920: its +0x128 the level, dword_4E9B60 the firer's side, 0x4406E0) and 0x115 is
+    // spoken with the building's voice (byte_51A190). Any other object does nothing with it.
+    // *Provisional*: the kind is taken as the sector, as for the battle's end.
+    void BattleMap::ControlArrives(const ControlPost& p)
+    {
+        const Unit* u = UnitById(p.unit);
+        const Unit* firer = UnitById(p.attacker);
+        if (!u || !firer || p.attacker == 0 || u->players) return;
+        const bool key = u->type == (setup.sector == 3 ? 0x33E : 0x78) || u->type == (setup.sector == 30 ? 0x116 : 0x13A);
+        if (!key) return;
+        controlLevel = p.level;
+        controlByPlayer = firer->players;
+        Speak(0x115, u->group);
     }
 }

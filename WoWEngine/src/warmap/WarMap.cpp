@@ -1377,7 +1377,8 @@ namespace wow
         return out;
     }
 
-    void WarMap::FightBattle(const std::vector<int>* lost, const std::vector<std::pair<int, int>>* retreated)
+    void WarMap::FightBattle(const std::vector<int>* lost, const std::vector<std::pair<int, int>>* retreated,
+                             int controlLevel, bool controlByPlayer)
     {
         for (auto& r : research) if (r) r->UpdateTriggers(encountered); // 0x41A094, on the way to the battle map
         const int s = battleSector;
@@ -1485,7 +1486,7 @@ namespace wow
             RefreshSector(s);
             battle[size_t(s)] = false;
             if (pendingBattle == s) pendingBattle = 0;
-            RevealAfterBattle(s, 0);
+            RevealAfterBattle(s, controlLevel, controlByPlayer);
             return;
         }
         const int winner = men[0] > men[1] ? 0 : men[1] > men[0] ? 1 : holder; // relative: 0 the player
@@ -1505,7 +1506,7 @@ namespace wow
         ClearSide(s, winner != 0);
         battle[size_t(s)] = false;
         if (pendingBattle == s) pendingBattle = 0;
-        RevealAfterBattle(s, 0);
+        RevealAfterBattle(s, controlLevel, controlByPlayer);
     }
 
     // Back on the war map (0x419AA2, then the view's 0x418980): the result is announced (0x808D -> 0x41AED0) and
@@ -2938,18 +2939,29 @@ namespace wow
                 }
     }
 
-    // The war map's set-up after a battle (0x418E17, for each sector with +0x128 set): every object in the sector,
-    // both sides', gets 336 hours of intel (0x422BA0), and so do those in up to `research` of its neighbours
-    // (0x441AD0) that the other side holds, research being 3, 2 or 1 by which of three research items is
-    // done (Human 0x588D94 / 0x588D90 / 0x588D8C, Martian 0x58906C / 0x589068 / 0x589064), 0 otherwise.
-    // (Battles aren't in yet, so nothing calls it: the other side's counters stay hidden, as at the start of
-    // the original's campaigns.)
-    void WarMap::RevealAfterBattle(int sector, int research)
+    // The war map's set-up after a battle (0x418E17): the first sector with +0x128 set (the level of an Infiltrate's
+    // 0x80F4 taken by the other side's key building on the battle map, 0x43B920; nothing else sets it) has it
+    // cleared, and n = the level + 3, 2 or 1 by which of three research items the firer's side (dword_4E9B60) has
+    // done (Human 0x588D94 / 0x588D90 / 0x588D8C: items 85 / 84 / 83; Martian 0x58906C / 0x589068 / 0x589064:
+    // 83 / 82 / 81; 0x45B890, state 2); every object in the sector, both sides', gets 336 hours of intel
+    // (0x422BA0), and so do those in its neighbours (0x441AD0, in order) not held by the firer's side (0x43CA30),
+    // n of them.
+    void WarMap::RevealAfterBattle(int sector, int level, bool byPlayer)
     {
+        if (level <= 0) return;
+        const bool firerHuman = res.Human() ? byPlayer : !byPlayer;
+        const Research* r = byPlayer ? research[0].get() : research[1].get();
+        auto done = [&](int item) { return r && item >= 0 && size_t(item) < r->Items().size() && r->Items()[size_t(item)].state == 2; };
+        int n = level;
+        const int base = firerHuman ? 85 : 83;
+        if (done(base)) n += 3;
+        else if (done(base - 1)) n += 2;
+        else if (done(base - 2)) n += 1;
         auto reveal = [&](int s) { for (Counter& k : counters) if (k.sector == s) k.intel = 0x150; };
         reveal(sector);
-        for (const int* n = warmap::Neighbours(sector); *n >= 0 && research > 0; n++)
-            if (owner[size_t(*n)] == 1) { reveal(*n); research--; }
+        const int firerOwner = byPlayer ? 0 : 1;
+        for (const int* nb = warmap::Neighbours(sector); *nb >= 0 && n > 0; nb++)
+            if (owner[size_t(*nb)] != firerOwner) { reveal(*nb); n--; }
         LayoutAll();
     }
 

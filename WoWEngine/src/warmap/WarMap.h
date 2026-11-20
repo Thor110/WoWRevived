@@ -41,7 +41,8 @@ namespace wow
         BriefingInfo Briefing() const;             // the Briefing's figures (0x4999E0) for the battle's sector
         // 0x71 / 0x98 -> 0x97: the battle's end. With the battle map's losses (the war map objects whose battle units
         // all went), those objects go; without (no battle map), it's settled here (*provisional*)
-        void FightBattle(const std::vector<int>* lost = nullptr, const std::vector<std::pair<int, int>>* retreated = nullptr);
+        void FightBattle(const std::vector<int>* lost = nullptr, const std::vector<std::pair<int, int>>* retreated = nullptr,
+                         int controlLevel = 0, bool controlByPlayer = false);
         // Each sector as a reinforcement points' source for the battle map (0x43D150): whether the player holds it and
         // whether its holder's command building is there finished (0x43C990)
         struct ReinforcementSource { int sector = 0; bool players = false, hq = false; };
@@ -452,7 +453,7 @@ namespace wow
         Rect BoxButtonRect() const;
         void DrawBox(Canvas& canvas) const;
         bool Visible(int counter) const; // 0x421630
-        void RevealAfterBattle(int sector, int research);                          // 0x418E17
+        void RevealAfterBattle(int sector, int level, bool byPlayer);              // 0x418E17
         void SlideCounters();            // 0x4209E0
         void SendTo(int counter, int sector);
 

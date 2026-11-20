@@ -843,8 +843,17 @@ namespace wow
             // what the battle map's fight left (the war map objects whose units all went), when there was one
             std::optional<std::vector<int>> lost;
             std::vector<std::pair<int, int>> retreated;
+            int controlLevel = 0;
+            bool controlByPlayer = false;
             for (Screen* sc : { battleMap.get(), screen.get() })
-                if (auto* bm = dynamic_cast<BattleMap*>(sc); bm && bm->Fought()) { lost = bm->LostRefs(); retreated = bm->RetreatedRefs(); break; }
+                if (auto* bm = dynamic_cast<BattleMap*>(sc); bm && bm->Fought())
+                {
+                    lost = bm->LostRefs();
+                    retreated = bm->RetreatedRefs();
+                    controlLevel = bm->ControlLevel();
+                    controlByPlayer = bm->ControlByPlayer();
+                    break;
+                }
             battleMap.reset();
             // 0x97 (0x41A0DC): the battle's end. The battle isn't fought on the battle map yet, so the war map
             // settles it (*provisional*), then the Debriefing (0x49A7B0)
@@ -852,7 +861,7 @@ namespace wow
             {
                 sound.FadeOut(briefingSound, 30);
                 briefingSound = 0;
-                map->FightBattle(lost ? &*lost : nullptr, lost ? &retreated : nullptr);
+                map->FightBattle(lost ? &*lost : nullptr, lost ? &retreated : nullptr, controlLevel, controlByPlayer);
                 auto d = std::make_unique<Debriefing>(res, BattleColoursFromIni(), map->Debriefing(), ini.GetInt("Debriefing", "Delay", 300));
                 const int h = sound.Play(d->Sound());   // +0x98, faded in over 60 ticks (0x464E60)
                 sound.FadeIn(h, 60);

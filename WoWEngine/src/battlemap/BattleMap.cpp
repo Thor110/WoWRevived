@@ -1132,6 +1132,14 @@ namespace wow
             if (props[i].dieAt >= 0 && ticks >= props[i].dieAt) { PropDies(i); continue; }
             SmoulderProp(i);
         }
+        // the 0x80F4s arriving (0x4355A0's delay)
+        for (size_t k = 0; k < controlPosts.size();)
+        {
+            if (controlPosts[k].at > ticks) { k++; continue; }
+            const ControlPost p = controlPosts[k];
+            controlPosts.erase(controlPosts.begin() + std::ptrdiff_t(k));
+            ControlArrives(p);
+        }
         // the flying objects (effects, smoke, shells)
         UpdateEffects();
         UpdateLights();
