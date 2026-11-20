@@ -39,6 +39,8 @@ namespace wow
             bool loadScenery = true;    // [Debug] "Load scenery" (0x4F73F1)
             const std::map<int, ObjOjd::UnitData>* units = nullptr;
             const std::map<int, ObjOjd::BattleTables::Six>* six = nullptr;  // OBJ.ojd record 6 (the WOF GTypes)
+            const std::map<int, ObjOjd::BattleTables::Thirteen>* lights = nullptr; // record 13 (the light parts)
+            bool showLights = true;     // [Options] "Show lights" (byte_4B8808)
         };
 
         // Throws when the map's files can't be read.
@@ -70,11 +72,13 @@ namespace wow
         // object's screen point and depth, and the time-of-day shade tables of the slots they use
         struct IsoModel { IobModel model; std::vector<uint8_t> lights; int slot = 0; };
         std::map<int, IsoModel> models;
-        struct ViewObject { int key; int x, y; const IsoModel* model; const WofInstance* wof = nullptr; int slot = 0; int sprite = 0; };
+        struct ViewObject { int key; int x, y; const IsoModel* model; const WofInstance* wof = nullptr; int slot = 0; int sprite = 0; int light = -1; };
         std::vector<ViewObject> objects;    // sorted by key
         std::map<int, ShadeTable> slotTables;
         std::map<std::string, std::vector<uint8_t>> masks;   // the shadows' .raw masks
         std::vector<std::unique_ptr<WofInstance>> wofs;      // the bridges' segments, posed once
+        struct Light { int x, y, z, range; float intensity; };
+        std::vector<Light> lights;                           // the light parts that stayed (RTypeLight 0x4A27A0)
         Landscape::Sun sun;
         void LoadScenery(const Landscape::Sun& sun, char letter);
         void PlaceBridge(const PlacedObject& o);

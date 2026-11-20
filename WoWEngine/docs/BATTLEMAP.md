@@ -179,8 +179,24 @@ ambient sound scenery (940, 994-996), and the other child parts (the lamps' 334,
 +0x2E the sprite's width and height less it; +0x26 is 1. Drawn (0x40EE10) at its point less the hot spot, frame
 +0x38 >> 8 (0), through 0x40B500 with the GType's palette slot (+0x18, the battle map's table for the hour) at
 level 0. Its shadow part takes the half width from +0x28..+0x2A (half the sprite's width) and depth 1. The lamp
-(0x48F290) is WScenery with its own vtable; its other part, 334 (with 335-346 an emitter class, 0x48DD50, whose
-update rolls `rand() % 100` against flt_4DA768), is the light it gives at night: *not yet*.
+(0x48F290) is WScenery with its own vtable; its other part, 334, is its light (below).
+
+**Lights** (types 334-346, 0x48DD50, each with an OBJ.ojd record 13 entry, 0x4EC598: a float and three words; the
+lamp's 334 is 0.4, 0, 0, 0; those with words set fade in and out, 0x48E100, *not yet*):
+
+- **Start** (0x48DE80): for a parent of category 0 to 3, `rand() % 100` (taken as the objects start, in the list's
+  order with the tree circles) must be at most 100 x flt_4DA768, the hour's fourth float (0x40B030: 1 at night,
+  0.8 to 0 round dawn and dusk, 0 by day, so one lamp in a hundred is lit even at noon), and the parent not
+  Martian (+0x0C 1); then `[Options] "Show lights"` (byte_4B8808, default 1) must be on, else the light goes. One
+  that stays is raised 16 (+0xA0 += 16, so 32 over the ground for the lamp's part at 16).
+- **Renderer** (RTypeLight 0x4A27A0, 0x4A2800 / 0x4A2840): its range is the type's +0x44 word (50 for 334), its
+  intensity the record's float; its +0x26 is -32 - range, so it comes before the rows it covers.
+- **Draw** (0x4A2980 -> 0x4A0140): when the view reaches it, every vertex in the window within range/cell
+  vertices of it gets `ftol(intensity x 256 x PointLight)` added to its shown level (+2), at most 255.
+  PointLight (0x40C930): from the vertex to the light (dx, dy, dz: the light's height less the vertex's) at
+  distance d, with the ground's rise to the next vertex across (hx) and down (hy) over a cell, it's 0 when d is
+  out of range or the facing (hx, hy, cell)/|..| . (dx, dy, dz)/d is 0 or less, else (1 - d / range) x
+  sqrt(facing). The lamp's light covers a vertex or so round it.
 
 **The spot under each object** (WScenery's start 0x4896D0, after its parts): an object whose type is category 0,
 2 or 3 (+0x10; 0x47D828 sets +0xB8 bit 1, and the scenery is all category 0) puts the sun's point level on the

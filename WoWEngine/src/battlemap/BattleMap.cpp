@@ -124,7 +124,46 @@ namespace wow
         // the others (the ambient sound scenery) aren't checked.
         for (const SceneryObject& c : list)
             if (c.type >= 0xCF && c.type <= 0xD4) land.SetPointLight(c.x, c.y, sun);
-        for (const PlacedObject& o : PlaceScenery(list, setup.enemyCount, radius))
+        // the light parts (types 334-346, 0x48DD50) and which types have one
+        auto lightPart = [&](int type) -> const ObjOjd::UnitData::Part* {
+            auto u = setup.units->find(type);
+            if (u == setup.units->end()) return nullptr;
+            for (const auto& part : u->second.parts)
+                if (part.a >= 334 && part.a <= 346) return &part;
+            return nullptr;
+        };
+        auto category = [&](int type) {
+            auto u = setup.units->find(type);
+            return u == setup.units->end() ? -1 : u->second.category;
+        };
+        auto rolls = [&](int type) { const int c = category(type); return lightPart(type) && c >= 0 && c <= 3; };
+        // 0x48DE80, as the light starts: for a parent of category 0 to 3 it stays when rand() % 100 is at most 100 x
+        // the hour's fourth float (flt_4DA768: 1 at night, 0 by day) and the parent isn't Martian; then only with
+        // "Show lights" on. It's raised 16 (+0xA0), and lights the ground (RTypeLight, 0x4A2980) with record 13's
+        // float as its intensity (0x48E050) out to its type's +0x44 word.
+        const float chance = setup.dayTime ? setup.dayTime->sets[0].f[3] : 0.0f;
+        auto addLight = [&](const PlacedObject& o, const ObjOjd::UnitData& parent) {
+            const ObjOjd::UnitData::Part* part = lightPart(o.type);
+            if (!part) return;
+            const int c = parent.category;
+            if (c >= 0 && c <= 3)
+            {
+                if (double(chance) * 100.0 < double(o.roll)) return;
+                if (parent.faction == 1) return;
+            }
+            if (!setup.showLights) return;
+            auto pu = setup.units->find(part->a);
+            if (pu == setup.units->end()) return;
+            float intensity = 0;
+            if (setup.lights)
+                if (auto t = setup.lights->find(part->a); t != setup.lights->end()) intensity = t->second.f;
+            const int range = int(int16_t(pu->second.hitPoints));
+            const int x = int(o.x) + int16_t(part->b), y = int(o.y) + int16_t(part->c);
+            const int z = land.HeightAt(x, y) + int(o.z) + int16_t(part->d) + 16;
+            objects.push_back({ y + (-32 - range), x, y, nullptr, nullptr, 0, 0, int(lights.size()) });
+            lights.push_back({ x, y, z, range, intensity });
+        };
+        for (const PlacedObject& o : PlaceScenery(list, setup.enemyCount, radius, rolls))
         {
             auto u = setup.units->find(o.type);
             if (u == setup.units->end()) continue;
@@ -142,6 +181,7 @@ namespace wow
                 const int h = int(float(land.HeightAt(ix, iy)) + o.z);
                 objects.push_back({ iy + 1, ix, land.ProjectY(iy, h), nullptr, nullptr, g->paletteSlot, gtype });
                 shadows(u->second, o.x, o.y, image->width / 2, 1);
+                addLight(o, u->second);
                 land.SetPointLight(ix, iy, sun);
                 continue;
             }
@@ -173,6 +213,7 @@ namespace wow
             const int h = int(float(land.HeightAt(ix, iy)) + o.z);
             objects.push_back({ iy + IsoObject::Depth(model), ix, land.ProjectY(iy, h), &m->second });
             shadows(u->second, x, y, (IsoObject::HalfWidth(model) - -IsoObject::HalfWidth(model)) / 2, IsoObject::Depth(model));
+            addLight(PlacedObject{ o.type, x, y, o.z, {}, o.roll }, u->second);
             land.SetPointLight(ix, iy, sun);
         }
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
@@ -370,10 +411,17 @@ namespace wow
         TerrainView::Target t{ canvas.Pixels(), canvas.Width(), 0, 0, canvas.Width(), canvas.Height() };
         // the ground row by row, each object drawn once the rows reach its depth (0x49F610)
         size_t next = 0;
+        TerrainView::Window window;
         auto between = [&](int limit) {
             for (; next < objects.size() && objects[next].key < limit; next++)
             {
                 const ViewObject& o = objects[next];
+                if (o.light >= 0)
+                {
+                    const Light& l = lights[size_t(o.light)];
+                    TerrainView::AddLight(land, window, l.x, l.y, l.z, l.range, l.intensity);
+                    continue;
+                }
                 const int slot = o.model ? o.model->slot : o.slot;
                 auto st = slotTables.find(slot);
                 const ShadeTable* shade = st != slotTables.end() ? &st->second : res.GetShade(slot);
@@ -396,7 +444,7 @@ namespace wow
                                 *shade, dither, t);
             }
         };
-        TerrainView::Render(land, tiles, table, levels, dither, t, -scrollX, -scrollY, nullptr, between);
+        TerrainView::Render(land, tiles, table, levels, dither, t, -scrollX, -scrollY, nullptr, between, &window);
         // the popup over everything, each item's next frame under the mouse
         for (size_t i = 0; i < popup.size(); i++)
         {

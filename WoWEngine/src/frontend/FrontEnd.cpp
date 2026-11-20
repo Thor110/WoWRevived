@@ -562,6 +562,7 @@ namespace wow
                 auto tables = ObjOjd::LoadBattleTables(objData);
                 dayTimes = tables.dayTimes;
                 wofTypes = tables.six;
+                lightTypes = tables.thirteen;
             }
             catch (const std::exception& e) { SDL_Log("OBJ.ojd day times: %s", e.what()); }
         }
@@ -1042,6 +1043,8 @@ namespace wow
         s.loadScenery = ini.GetBool("Debug", "Load scenery", true);
         s.units = &map->Units();
         s.six = &wofTypes;
+        s.lights = &lightTypes;
+        s.showLights = ini.GetBool("Options", "Show lights", true);
         try
         {
             auto battle = std::make_unique<BattleMap>(res, s);

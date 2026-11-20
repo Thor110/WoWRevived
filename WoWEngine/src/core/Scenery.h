@@ -32,6 +32,7 @@ namespace wow
         int type = 0;
         float x = 0, y = 0, z = 0;
         int extra[4] = {};      // a bridge's two ends (x1, y1, x2, y2)
+        int roll = -1;          // the rand() % 100 its light part took as it started (0x48DE80), or -1
     };
 
     // What the battle map makes of the list (0x47D240 then ActivateAll 0x47D030), with the game's rand():
@@ -41,10 +42,18 @@ namespace wow
     //  - a tree circle (0xCF-0xD4, 0x48F410), as it starts: srand(its saved value), then 8, 4 or 2 trees (0xCF / 0xD2
     //    first) of the C (0xD5 + rand() % 7) or D (0xDC + rand() % 10) kinds round its centre, the first at angle
     //    rand() & 0xFFF of 4096, each a further 4096 / n on, at rand() % its radius (the unit table's +0x44)
-    // radius(type) gives that word. Trees are put after the rest, as they start after everything's loaded.
-    // *Provisional*: the order of the rand() calls of objects other than trees isn't traced.
+    //  - an object with a light part (the street lamp's 334, 0x48DE80), as it starts: rand() % 100, which says
+    //    whether the light stays (rolls(type) says which types do)
+    // radius(type) gives that word. The objects start in the list's order after everything's loaded; the circles'
+    // trees are put after the rest. *Provisional*: the order of the rand() calls of objects other than trees and
+    // lights isn't traced.
+    template <typename Radius, typename Rolls>
+    std::vector<PlacedObject> PlaceScenery(const std::vector<SceneryObject>& objects, int enemyCount, Radius radius, Rolls rolls);
     template <typename Radius>
-    std::vector<PlacedObject> PlaceScenery(const std::vector<SceneryObject>& objects, int enemyCount, Radius radius);
+    std::vector<PlacedObject> PlaceScenery(const std::vector<SceneryObject>& objects, int enemyCount, Radius radius)
+    {
+        return PlaceScenery(objects, enemyCount, radius, [](int) { return false; });
+    }
 
     namespace scenery
     {
@@ -59,26 +68,32 @@ namespace wow
         }
     }
 
-    template <typename Radius>
-    std::vector<PlacedObject> PlaceScenery(const std::vector<SceneryObject>& objects, int enemyCount, Radius radius)
+    template <typename Radius, typename Rolls>
+    std::vector<PlacedObject> PlaceScenery(const std::vector<SceneryObject>& objects, int enemyCount, Radius radius, Rolls rolls)
     {
         std::vector<PlacedObject> out;
-        std::vector<const SceneryObject*> circles;
+        std::vector<std::pair<const SceneryObject*, size_t>> starts; // in the list's order: a circle, or an object's index
         for (const SceneryObject& o : objects)
         {
             int type = scenery::Burnt(o.type, enemyCount);
             if (o.type >= 0xCF && o.type <= 0xD4)
             {
                 random::Rand(); // the circle's own seed (0x48F343), replaced by the saved one
-                circles.push_back(&o);
+                starts.push_back({ &o, 0 });
                 continue;
             }
             PlacedObject p{ type, float(o.x), float(o.y), 0.0f };
             if (o.type >= 445 && o.type <= 447) std::copy(o.extra, o.extra + 4, p.extra);
+            if (rolls(type)) starts.push_back({ nullptr, out.size() });
             out.push_back(p);
         }
-        for (const SceneryObject* c : circles)
+        for (const auto& [c, index] : starts)
         {
+            if (!c)
+            {
+                out[index].roll = random::Rand() % 100;
+                continue;
+            }
             random::Seed(uint32_t(c->extra[0]));
             static const int Counts[6] = { 8, 4, 2, 8, 4, 2 };
             const int n = Counts[c->type - 0xCF];

@@ -67,9 +67,22 @@ namespace wow
         // between(y) is called after each row with the world y the next row starts at, and once more at the end
         // with INT_MAX: the objects whose depth is under it are drawn then (0x49F70A), so the ground and the
         // objects overlap as the game draws them.
+        // The vertices the view works on this frame (+0x118 / +0x11C the first column and row, +0x120 / +0x124 how
+        // many), which Render fills in before the first row
+        struct Window { int firstCol = 0, firstRow = 0, cols = 0, rows = 0; };
+
         static void Render(Landscape& land, const TerrainTiles& tiles, const ShadeTable& table, std::span<const uint8_t> levels,
             const DitherTables& dither, const Target& target, int originX, int originY, const Fog* fog = nullptr,
-            const std::function<void(int)>& between = {});
+            const std::function<void(int)>& between = {}, Window* window = nullptr);
+
+        // 0x40C930: how much a point light at (dx, dy, dz) from a vertex gives it, for the ground's rise to the next
+        // vertex across (hx) and down (hy) over a step: (1 - distance / range) x sqrt(the facing), 0 out of range
+        // or facing away
+        static double PointLight(int dx, int dy, int dz, int hx, int hy, int step, int range, int inner);
+
+        // 0x4A0140 (RTypeLight's draw, 0x4A2980): a light at world (x, y, height z) adds intensity x 256 x
+        // PointLight to the shown level of each vertex within range of it in the window (at most 255)
+        static void AddLight(Landscape& land, const Window& window, int x, int y, int z, int range, float intensity);
 
         // 0x4579A4: one patch (a ground half cell or a part of an IOB object): header {width | side bit, height,
         // middle row, kind}, its rows, three light levels, and the dither set's byte offset. Kind 1 (transparent)

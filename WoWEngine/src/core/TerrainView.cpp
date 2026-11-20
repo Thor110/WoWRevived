@@ -2,6 +2,7 @@
 #include "core/Bytes.h"
 #include "core/Random.h"
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 
 namespace wow
@@ -227,7 +228,7 @@ namespace wow
 
     void TerrainView::Render(Landscape& land, const TerrainTiles& tiles, const ShadeTable& table, std::span<const uint8_t> levels,
         const DitherTables& dither, const Target& t, int originX, int originY, const Fog* fog,
-        const std::function<void(int)>& between)
+        const std::function<void(int)>& between, Window* window)
     {
         const int w = land.Width(), h = land.Height();
         const int32_t cell = land.Cell(), rowStep = land.RowStep(), hs = land.HeightScale(), hOff = land.HeightOffset();
@@ -244,6 +245,9 @@ namespace wow
         if (firstRow < 0) firstRow = 0;
         if (last >= w) last = w - 1;
         if (firstRow >= h - 1) firstRow = h - 2;
+        // the game's window ends at the last row on screen; every row's shown level is worked out here, so it runs
+        // to the map's end (the rows below the screen aren't drawn)
+        if (window) *window = { first, firstRow, last - first + 1, h - firstRow };
 
         // Each vertex's shown light: lit level less scorch and moving lights, dimmed by the fog (0x4A0003). The
         // game does the rows on screen; every row is done here, which only differs for rows below the screen.
@@ -315,5 +319,75 @@ namespace wow
             if (below >= 5 || row >= h - 1) break;
         }
         if (between) between(INT32_MAX);
+    }
+
+    double TerrainView::PointLight(int dx, int dy, int dz, int hx, int hy, int step, int range, int inner)
+    {
+        // the distance (kept as a float) and the direction to the light
+        const int d2 = dx * dx + dy * dy + dz * dz;
+        double dist = double(d2);
+        float distF = float(d2);
+        if (d2 > 0)
+        {
+            dist = std::sqrt(double(d2));
+            distF = float(dist);
+        }
+        if (!(dist < double(range + inner))) return 0.0;
+        const float nx = float(dx / double(distF)), ny = float(dy / double(distF)), nz = float(dz / double(distF));
+        // the ground's normal, (hx, hy, step) over its length
+        const float s = float(step);
+        const float l2 = float(double(hx) * hx + double(hy) * hy + double(s) * s);
+        double ax = hx, ay = hy, az = s;
+        if (l2 > 0.0f)
+        {
+            const double l = std::sqrt(double(l2));
+            ax = hx / l;
+            ay = hy / l;
+            az = s / l;
+        }
+        const double facing = ax * nx + ay * ny + az * nz;
+        if (!(facing > 0.0)) return 0.0;
+        double q = double(distF - double(inner)) / double(range);
+        if (q < 0.0) q = 0.0;
+        return (1.0 - q) * std::sqrt(facing);
+    }
+
+    void TerrainView::AddLight(Landscape& land, const Window& win, int x, int y, int z, int range, float intensity)
+    {
+        const int32_t cell = land.Cell();
+        const int w = land.Width(), h = land.Height();
+        auto& verts = land.Vertices();
+        // the light's point and range are words (+0x38..+0x3E)
+        x &= 0xFFFF; y &= 0xFFFF; z &= 0xFFFF; range &= 0xFFFF;
+        const int vx = Shl16(x) / cell, vy = Shl16(y) / cell, r = Shl16(range) / cell;
+        int x0 = vx - r - win.firstCol, y0 = vy - r - win.firstRow;
+        int x1 = vx + r - win.firstCol + 1, y1 = vy + r - win.firstRow + 1;
+        if (x0 < 0) x0 = 0;
+        if (y0 < 0) y0 = 0;
+        if (x1 > win.cols) x1 = win.cols;
+        if (y1 > win.rows) y1 = win.rows;
+        const float level = float(double(intensity) * 256.0);
+        float rowY = float(y - (Mul(win.firstRow + y0, cell) >> 16));
+        const float step = float(double(cell) * double(0.000015258789f));
+        for (int j = y0; j < y1; j++)
+        {
+            float colX = float(x - (Mul(win.firstCol + x0, cell) >> 16));
+            const int stepInt = int(step), dy = int(rowY);
+            for (int i = x0; i < x1; i++)
+            {
+                const int vxi = win.firstCol + i, vyi = win.firstRow + j;
+                if (vxi + 1 < w && vyi + 1 < h)
+                {
+                    Landscape::Vertex& v = verts[size_t(vyi) * size_t(w) + size_t(vxi)];
+                    const int h0 = v.height;
+                    const int hRight = verts[size_t(vyi) * size_t(w) + size_t(vxi) + 1].height;
+                    const int hDown = verts[size_t(vyi + 1) * size_t(w) + size_t(vxi)].height;
+                    const int add = int(PointLight(int(colX), dy, z - h0, hRight - h0, hDown - h0, stepInt, range, 0) * level);
+                    v.shown = uint8_t(std::min(255, add + v.shown));
+                }
+                colX = float(double(colX) - step);
+            }
+            rowY = float(double(rowY) - step);
+        }
     }
 }
