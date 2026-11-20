@@ -712,6 +712,12 @@ game's end as sector 3 won by a Human player or 30 by a Martian; the war map's t
 end to end (no save with a contested sector to hand); nor is Infiltrate's intel (0x80F4's +0x128) reaching the war
 map.
 
+**The selection voice** (0x439000, an object added to the selection by 0x8088): with byte_4D2554 set and the
+selection then holding just that one (0x4216D0 = 1), the player's (+0x24 0) vehicle (+0xB8 bit 0) says 0x109 in its
+type's voice (byte_51A190). A fresh selection, by click or box, so speaks once, by its first object
+(`SelectionSpeech`); in the test both a box over the lorries and a click on one said it. *Provisional*:
+byte_4D2554 is taken as set.
+
 ## The modes and specials (0x4817C0, 0x481CA0, 0x496920, 0x482570; `battlemap/Weapons.cpp`)
 
 **The group's mode** (+0x1DC) is set by the popup's Force Fire and specials (0x80F3 with the command, 0x4817C0):
@@ -888,8 +894,19 @@ In sector 30, with sector 24 taken to have its command building for the test (no
 in the save, so there are no points), the points were (100, 350), kinds 7 and 1 (24's entry (65, 350) brought in
 from the left edge); Retreat sent the lorries along a 47-node route and all five left there by updates 3164-3236.
 
-*Provisional*: the room checks (0x43AC40) aren't in; kinds 7 and 1 share 0x436050's first point (the engine's
-EntryPoint); what 0x80BB does isn't traced: a unit within 256 (|dx| + |dy|) of its point leaves the map (the group
+**The room check** (0x43AC40, with the sector's object: its land flag and a count) is the war map's: the local
+player's objects in the sector, land ones (move class +0x4E, word_51A13E, not 3) or boats by the flag, plus those
+on their way there (0x420060) plus the sector's count from 0x4F86B8 (land) / 0x4F76F0 (boats), plus the count, below
+`Max units in sector` (dword_4EA1B4) / `Max boats in sector` (dword_4EA1CC). The callers: 0x43AC10 (the war map's
+factories, a type and 1), the points' set-up (0x43D150: type 19's move class for kind 5, else type 1's, and 1),
+0x43D3F0 with a count (Retreat: the group's war map objects, 0x4216D0, one here; the flag from the move class, 5
+and 6 not land), and 0x481F70 (an attack on a point's marker, by +0x1D8 bits 8 / 9, not in). In the engine it's
+`WarMap::HasRoom` through the battle's `hasRoom`. 0x4F86B8 / 0x4F76F0 are cleared as the battle map opens and
+closes (0x439770, 0x439ED0) and counted up per sector by a war map object's 0x80B9 once all its battle units have
+had it (0x428D70's case, +0x60 up to 0x4216D0), boats in the second.
+
+*Provisional*: 0x4F86B8 / 0x4F76F0 are taken as 0; the room check isn't exercised by the test save (its battle has
+one side only, so no points are set up); kinds 7 and 1 share 0x436050's first point (the engine's EntryPoint); what 0x80BB does isn't traced: a unit within 256 (|dx| + |dy|) of its point leaves the map (the group
 spreads as it arrives); the retreated object is taken out of its counter into a new one in that sector, arriving
 from the battle's sector (AddCounter, Arrive).
 

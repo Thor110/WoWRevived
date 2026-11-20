@@ -261,6 +261,7 @@ namespace wow
             if (hits.empty()) return;
             selected.assign(selected.size(), false);
             for (int g : hits) selected[size_t(g)] = true;
+            SelectionSpeech(hits.front());
             return;
         }
         const Unit* best = HotspotAt(x, y);
@@ -286,6 +287,7 @@ namespace wow
             if (ctrl && !vehicle(*best)) return;
             ClearSelection();
             selected[size_t(best->group)] = true;
+            SelectionSpeech(best->group);
             return;
         }
         // mode 1 (0x497794): with Ctrl force fire at the ground under it (packet 0x13); else the player's selects
@@ -300,6 +302,7 @@ namespace wow
         {
             ClearSelection();
             selected[size_t(best->group)] = true;
+            SelectionSpeech(best->group);
         }
         else AttackObject(best->id);
     }
@@ -1063,6 +1066,20 @@ namespace wow
 
     // 0x481770: speech at the listener, the group's voice (0x449120: its first member's type's +0xA0) choosing the
     // samples
+    // 0x439000, an object added to the selection (0x8088 to +0x48): with byte_4D2554 set and the selection holding just
+    // it (0x4216D0 = 1), the player's (+0x24 0) vehicle (+0xB8 bit 0) says 0x109 in its type's voice (byte_51A190).
+    // So a fresh selection speaks once, by its first object.
+    // *Provisional*: byte_4D2554 is taken as set; a group stands for its war map object.
+    void BattleMap::SelectionSpeech(int group)
+    {
+        for (const Unit& u : units)
+            if (u.group == group)
+            {
+                if (u.players && u.vehicle) Speak(0x109, group);
+                return;
+            }
+    }
+
     void BattleMap::Speak(int id, int group)
     {
         if (!setup.sound) return;

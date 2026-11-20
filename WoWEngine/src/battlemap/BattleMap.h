@@ -57,6 +57,8 @@ namespace wow
             // finished (0x43C990)
             struct Source { int sector = 0; bool players = false, hq = false; };
             std::vector<Source> sources;
+            // 0x43AC40 on a sector: room there for `count` more of the player's land objects (else boats)
+            std::function<bool(bool land, int sector, int count)> hasRoom;
             int noBuildBorder = 16;     // [Tweak] "No-build border width (vertices)" (dword_59D93C)
             // [Vehicles] (each setting's value at its object's +0x14)
             struct Vehicles
@@ -163,6 +165,7 @@ namespace wow
         void AddLight(int type, int x, int y, int z);           // a light part made (0x48DDC0, 0x48E050, 0x48DE80)
         void UpdateLights();                                    // 0x48E100 for the fading ones
         void Speak(int id, int group);                          // 0x481770 with the group's voice (0x449120)
+        void SelectionSpeech(int group);                       // 0x439000's 0x109
         std::vector<ViewObject> objects;    // sorted by key
         std::map<int, ShadeTable> slotTables;
         std::map<std::string, std::vector<uint8_t>> masks;   // the shadows' .raw masks
@@ -250,7 +253,7 @@ namespace wow
         std::vector<ReinforcePoint> rpoints;
         void SetUpReinforcements();                             // 0x43D150
         void Retreat(int group);                                // 0x480EF0
-        int NearestPoint(int x, int y, int moveClass) const;    // 0x43D3F0
+        int NearestPoint(int x, int y, int moveClass, int count = 0) const; // 0x43D3F0
         std::vector<int> groupRetreat;                          // the sector a group's retreating to (0x80BB), 0 none
         std::vector<bool> groupLeft;                            // a group with a unit that left the map
         void LeaveMap(size_t unit);

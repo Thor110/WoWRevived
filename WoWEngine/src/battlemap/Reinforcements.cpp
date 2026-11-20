@@ -17,8 +17,10 @@ namespace wow
     // the player holding that sector (or the debug flag), and its war map taking a unit of type 19 (kind 5) or 1
     // (else) by its move class (0x43AC40), the point goes in the table (x, y, the sector, the kind, held, 0) and its
     // marker, type 0x3DB, is made there (+0xCC the sector, +0xC8 the kind).
-    // *Provisional*: 0x43AC40's room check isn't in (taken as yes); 0x436050 is the engine's EntryPoint, whose
-    // first point serves kinds 7 and 1 and its second kind 5 (so 7 and 1 share a point).
+    // The room check (0x43AC40 on the sector, its land flag from the type's move class +0x4E not 3, the count 1) is
+    // the war map's (WarMap::HasRoom through the setup's hasRoom).
+    // *Provisional*: 0x436050 is the engine's EntryPoint, whose first point serves kinds 7 and 1 and its second
+    // kind 5 (so 7 and 1 share a point).
     void BattleMap::SetUpReinforcements()
     {
         rpoints.clear();
@@ -41,6 +43,12 @@ namespace wow
                 if (right < left && right < top && right < bottom) x = w - 100;
                 if (bottom < left && bottom < top && bottom < right) y = h - 100;
                 if (!src.players) continue;
+                if (setup.hasRoom)
+                {
+                    auto rt = setup.units->find(kind == 5 ? 19 : 1);
+                    const bool land = rt == setup.units->end() || rt->second.moveClass != 3;
+                    if (!setup.hasRoom(land, src.sector, 1)) continue;
+                }
                 rpoints.push_back({ x, y, src.sector, kind, src.players });
                 // its marker (type 0x3DB, a sprite: GType 862)
                 if (auto u = setup.units->find(0x3DB); u != setup.units->end())
@@ -55,8 +63,7 @@ namespace wow
     // check's "not land" flag; 0 and 1 as they are); of the table's points of that kind the player holds, the nearest
     // (0x43FF00 from the point, under 1000000); with a count, the room check (0x43AC40) on its sector.
     // moveClass -1 takes any kind (the engine's own, for a unit's arrival).
-    // *Provisional*: the room check isn't in.
-    int BattleMap::NearestPoint(int x, int y, int moveClass) const
+    int BattleMap::NearestPoint(int x, int y, int moveClass, int count) const
     {
         int kind = moveClass;
         if (moveClass == 2 || moveClass == 3 || moveClass == 4 || moveClass == 7) kind = 1;
@@ -70,11 +77,13 @@ namespace wow
             const int d = b - (std::min(a, b) >> 1) + a;
             if (d < bestD) { bestD = d; best = int(i); }
         }
+        if (best >= 0 && count && setup.hasRoom && !setup.hasRoom(!(moveClass == 5 || moveClass == 6), rpoints[size_t(best)].sector, count))
+            return -1;
         return best;
     }
 
     // Retreat (0x480EF0) for a group: the nearest point (0x43D3F0) to its first member's whole position for its type's
-    // move class (+0x52) and its count of objects (0x4216D0). With +0x1D8 bits 8 and 9 both set, or no point, speech
+    // move class (+0x52) and its count of objects (0x4216D0: one war map object a group here). With +0x1D8 bits 8 and 9 both set, or no point, speech
     // 0x121 ("can't", 0x464EE0 with its voice) and the group's leader is told (0x4842D0). Otherwise: the members told
     // 0x80B9 (0x4821A0), the target cleared (+0x2C / +0x30 0, +0x34..+0x3C -1), the guns stood down (0x805A), +0x1D8
     // bit 0 cleared (0x480EB0), each member 0x80B9 again, bit 3 set, bit 0 set, the group sent to the point (0x804F
@@ -90,7 +99,7 @@ namespace wow
         if (!first || !first->players) return;
         auto t = setup.units->find(first->type);
         if (t == setup.units->end()) return;
-        const int k = NearestPoint(int(first->x), int(first->y), t->second.field52);
+        const int k = NearestPoint(int(first->x), int(first->y), t->second.field52, 1);
         if (k < 0)
         {
             Speak(0x121, group);

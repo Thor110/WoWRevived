@@ -469,7 +469,8 @@ factory is the local player's; anything else raises ConstructionCompleted (event
 0x45FF00: the head goes, back on the end with its whole time again if it has repeats left (and there's room), and
 the factory goes on unless the queue is empty or a vehicle is next and the sector has no room for it (0x43AC40:
 the local player's units, or boats, there and on their way, plus one, below `Max units in sector` / `Max boats in
-sector`; the game adds counts from 0x4F86B8 / 0x4F76F0, not worked out yet). When it stops it isn't busy any
+sector`; the game adds counts from 0x4F86B8 / 0x4F76F0, the battle map's, see docs/BATTLEMAP.md, taken as 0 here;
+`WarMap::HasRoom` takes the land flag and the count for the battle map's callers). When it stops it isn't busy any
 more (the world redraws its shading, 0x4192F0) and, for the local player's, raises ConstructorIdle (event 9) if it's
 a unit, else FacilityIdle (event 10).
 

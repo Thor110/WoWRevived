@@ -185,7 +185,7 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       and the objects' footprints (0x48A950 -> 0x47C280), the "_ACK" flag (0x483590, a WAnimEffect), the order
       speech 0x10A / 0x10B in the group's voice and the engine sounds on the start / stop edges (0x4913B0, 0x491450).
       Still to do: the search spread over updates, footprints taken off (vt+0xE8) and node removal, broken bridges,
-      crushing, the selection voice 0x109 (0x439000)
+      crushing (the selection voice 0x109, 0x439000, is in)
 - [~] **Unit groups, orders, stances, specials** (Black Dust ... Scan) and the order panel (0x480190, 0x47CCF0-;
       the 0x80A0 stagger 0x47CEE0): the popup's order items as the first selected member gives them (0x47E1E0,
       armed / moving, the special orders' types and research 0x47DA80), the stances (0x80B2) and Abandon; the digits do
@@ -204,7 +204,8 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       their shells in flight (0x4889D0, 0x488F00, 0x47F770); the flying objects' update, emitters (debris, smoke
       trails) and damage smoke (0x487890, 0x47F050, 0x48AEF0, 0x48ADD0). Turrets turning and drawn, and the guns' arcs
       (0x489B40, 0x494FD0). Still to do:
-      the room checks (0x43AC40) and the reinforcements arriving (Infiltrate's 0x80F4, intel for the war map, is in) — 10, 11, 12. (Reinforcement
+      the reinforcements arriving (Infiltrate's 0x80F4, intel for the war map, and the room checks 0x43AC40 for the
+      points and Retreat, are in) — 10, 11, 12. (Reinforcement
       points and Retreat, 0x43D150 / 0x480EF0, are in.) (The battle's end, 0x43A980 / 0x43A800, with the
       losses taken back to the war map, is in.) (The scenery's damage and death, 0x489E20 / 0x48AB20 / 0x48A9A0,
       lights, 0x48DDC0 / 0x48E100, area blasts

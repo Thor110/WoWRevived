@@ -53,6 +53,7 @@ namespace wow
         // (HUNI, AUNI, HCON, ACON, HRES, ARES), each object with its battle units' saved places
         std::vector<BattleGroup> BattleGroups(int sector) const;
         // who holds the sector: 0 the side being played, 1 the other side, 2 no one
+        bool HasRoom(bool land, int sector, int count) const; // 0x43AC40: room for `count` more of the player's
         int SectorOwner(int sector) const { return sector >= 0 && sector <= warmap::SectorCount ? owner[size_t(sector)] : 2; }
         const std::map<int, ObjOjd::UnitData>& Units() const { return unitData; }
         const DebriefingInfo& Debriefing() const { return debriefing; }
@@ -202,7 +203,7 @@ namespace wow
         void ReadFactories();
         void Produce(int ref, int hours);        // 0x45FC90, the factory's 0x802D
         bool PopEntry(int ref, ObjectTail& f);    // 0x45FF00
-        bool HasRoomFor(int type, int sector) const; // 0x43AC10 / 0x43AC40
+        bool HasRoomFor(int type, int sector) const; // 0x43AC10
         int CounterOf(int ref) const;
         void StartConstruction(int ref, float hours);   // 0x80AE
         void ConstructionProgress(int ref, float hours);// 0x80AD

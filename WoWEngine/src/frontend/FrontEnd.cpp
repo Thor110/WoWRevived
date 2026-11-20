@@ -1070,6 +1070,7 @@ namespace wow
         s.showSmoke = ini.GetBool("Options", "Show Smoke & particles", true);
         s.groups = map->BattleGroups(b.sector);
         for (const WarMap::ReinforcementSource& r : map->ReinforcementSources()) s.sources.push_back({ r.sector, r.players, r.hq });
+        s.hasRoom = [this](bool land, int sector, int count) { WarMap* wm = ActiveWarMap(); return !wm || wm->HasRoom(land, sector, count); };
         // the owner as a faction (0x43CA30): the side being played, the other, or no one
         const int owner = map->SectorOwner(b.sector), played = res.Human() ? 0 : 1;
         s.ownerFaction = owner == 2 ? 2 : owner == 0 ? played : 1 - played;

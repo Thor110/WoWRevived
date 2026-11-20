@@ -79,7 +79,14 @@ namespace wow
     bool WarMap::HasRoomFor(int type, int sector) const
     {
         auto unit = unitData.find(type);
-        const bool boat = unit != unitData.end() && unit->second.moveClass == 3;
+        return HasRoom(!(unit != unitData.end() && unit->second.moveClass == 3), sector, 1);
+    }
+
+    // 0x43AC40 (land, count): the same, for `count` more (0x43AC10 asks for 1; the battle map's reinforcement
+    // points and Retreat ask too, 0x43D150 / 0x43D3F0)
+    bool WarMap::HasRoom(bool land, int sector, int count) const
+    {
+        const bool boat = !land;
         int n = 0;
         for (const Counter& c : counters)
         {
@@ -88,7 +95,7 @@ namespace wow
             if (isBoat != boat) continue;
             if (c.Travelling() ? c.path.back() == sector : c.sector == sector) n += c.count;
         }
-        return n + 1 < (boat ? maxBoats : maxUnits);
+        return n + count < (boat ? maxBoats : maxUnits);
     }
 
     // 0x45FF00: the entry at the head is done with. One with repeats left (a count of 0 is none; 4, for ever, is
