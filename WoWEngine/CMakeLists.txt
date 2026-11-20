@@ -31,6 +31,7 @@ add_library(wowcore STATIC
     src/core/Font.cpp
     src/core/Vfs.cpp
     src/core/Bmp.cpp
+    src/core/BuildList.cpp
     src/core/ShadeTable.cpp
     src/core/SaveGame.cpp
     src/core/SaveFile.cpp
@@ -92,6 +93,7 @@ if(TARGET SDL3::SDL3)
         src/frontend/Splash.cpp
         src/platform/Movie.cpp
         src/warmap/WarMap.cpp
+        src/warmap/Production.cpp
     )
     if(WIN32)
         # WoWRevived's .mp4 movies through Media Foundation

@@ -61,6 +61,9 @@ namespace wow
             int researchDays = 0; // record 39: its research time in days; the table keeps it in hours (+0x08,
                                   // ResearchHours)
             int researchFaction = 2; // the faction as it was when record 39 came, which is what the hours use
+            int builders[3] = { 0, 0, 0 }; // +0x78-0x80, records 49 / 50 / 51 (one, two or three): what builds it
+            float buildDays = 0;     // record 43: its manufacture time in days (+0x5C after the modifier)
+            int buildFaction = 2;    // the faction as it was when record 43 came
             int researchName = 0;    // +0x1C, record 40: its name on the research screen
             int researchingText = 0; // +0x20, record 41: "Researching ..." while it isn't done
             int researchedText = 0;  // +0x24, record 42: what it says once done
@@ -75,6 +78,12 @@ namespace wow
         // (Friend when they're the same), 1 for scenery; truncated, kept as a 16-bit word
         struct ResearchModifiers { float humanFriend = 0.75f, humanEnemy = 0.75f, martianFriend = 0.75f, martianEnemy = 0.75f; };
         static int ResearchHours(const UnitData& unit, bool playingHuman, const ResearchModifiers& m);
+        // The manufacture time in hours (0x461B60 / 0x461E60): +0x5C (record 43's days x [Tweak] "<HumanFriend |
+        // HumanEnemy | MartianFriend | MartianEnemy> Manufacture Modifier", 1.0 / 0.85 / 1.0 / 0.85, by its faction
+        // then and the side being played, 0x438529) x 24, times its battle units for a vehicle (class 1), truncated
+        struct ManufactureModifiers { float humanFriend = 1.0f, humanEnemy = 0.85f, martianFriend = 1.0f, martianEnemy = 0.85f; };
+        static float BuildTable(const UnitData& unit, bool playingHuman, const ManufactureModifiers& m); // +0x5C
+        static int BuildHours(const UnitData& unit, bool playingHuman, const ManufactureModifiers& m);
 
         // The war map's route arrow styles (RTypeArrow, a table of 24 bytes each at 0x59EDB8), from record 14
         // (0x437C10): the index, then the sprite's GType and four more words, and a float

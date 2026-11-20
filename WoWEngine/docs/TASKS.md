@@ -118,9 +118,14 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       list's scrolling (0x45E670, 0x45F320) — 09
 - [x] **Durations text**: day / days / hr / hrs (0x41BDA0, `Research::Duration`) and the Human / Martian date
       formats (0x41B440, the Briefing) — 03
-- [ ] **What can be built**: the command building rules (0x45F970) — 09
-- [ ] **Build list / production**: 32-item queue, time ×24 h, resource slowdown, repeats, events 1 / 2 / 9 / 10
-      (0x45F770-0x462EE0) — 09
+- [x] **What can be built** (`WarMap::BuildOptions`, WARMAP.md "Production"): builders, research, the command
+      building rules, type 39 and byte_4BD2E0 (0x45F970, 0x442460, 0x42A410) — 09
+- [~] **Build list / production** (`core/BuildList`, `warmap/Production.cpp`, WARMAP.md "Production"): each
+      object's factory read from and written back into its save bytes exactly (every object of the three saves),
+      the hourly progress with the resource slowdown, repeats, vehicles made, events 1 / 2 / 9 / 10, the room
+      check, and route refusal 0 for a constructor at work (0x45FC90, 0x461D60, 0x45FF00, 0x43AC40); to do: the
+      construction's side of 0x80AC / 0x80AD / 0x80AE, adding and removing entries (0x460240, 0x4603B0, 0x8131),
+      the Build List window (0x460B00, panels 0x2FA-0x300), where among the objects' 0x802D it comes — 09
 - [ ] **Unit table**: all 65 OBJ.ojd record types and the `[Tweak]` armour / research / manufacture modifiers
       (0x437750) — 06
 - [ ] **War map AI**: the 10-state machine every game hour, its 14 `[Tweak]` values, AI.ojd's sites (0x442890,

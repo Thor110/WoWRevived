@@ -130,6 +130,16 @@ namespace wow
             case 40: units[unit].researchName = int16_t(r.U16()); break;    // 0x438473
             case 41: units[unit].researchingText = int16_t(r.U16()); break; // 0x438494
             case 42: units[unit].researchedText = int16_t(r.U16()); break;  // 0x4384B5
+            case 43: // 0x438529, scaled by the faction the type has so far
+            {
+                uint32_t b = r.U32();
+                std::memcpy(&units[unit].buildDays, &b, 4);
+                units[unit].buildFaction = units[unit].faction;
+                break;
+            }
+            case 49: case 50: case 51: // 0x4386AE: one, two or three builders
+                for (int i = 0; i < type - 48; i++) units[unit].builders[i] = int16_t(r.U16());
+                break;
             case 26: units[unit].faction = int16_t(r.U16()); break;     // 0x437F51
             case 39: // 0x4383F2, scaled by the faction the type has so far
                 units[unit].researchDays = int16_t(r.U16());
@@ -190,6 +200,21 @@ namespace wow
         if (unit.researchFaction == 0) factor = playingHuman ? m.humanFriend : m.humanEnemy;
         else if (unit.researchFaction == 1) factor = playingHuman ? m.martianEnemy : m.martianFriend;
         return int16_t(int(float(unit.researchDays * 24) * factor));
+    }
+
+    float ObjOjd::BuildTable(const UnitData& unit, bool playingHuman, const ManufactureModifiers& m)
+    {
+        float factor = 1.0f;
+        if (unit.buildFaction == 0) factor = playingHuman ? m.humanFriend : m.humanEnemy;
+        else if (unit.buildFaction == 1) factor = playingHuman ? m.martianEnemy : m.martianFriend;
+        return unit.buildDays * factor;
+    }
+
+    int ObjOjd::BuildHours(const UnitData& unit, bool playingHuman, const ManufactureModifiers& m)
+    {
+        double hours = double(BuildTable(unit, playingHuman, m)) * 24.0; // dbl_4AADD0
+        if (unit.category == 1) hours *= unit.battleUnits; // fimul on the x87 value, no rounding between
+        return int(hours);
     }
 
     std::map<int, ObjOjd::ArrowType> ObjOjd::LoadArrowTypes(std::span<const uint8_t> data)

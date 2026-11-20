@@ -583,6 +583,12 @@ namespace wow
                         ini.GetFloat("Tweak", "Resource Buffer", 30.0f));
         map->SetQuickCancelTimeout(ini.GetInt("Tweak", "Quick Cancel Timeout", 5));
         map->SetSectorLimits(ini.GetInt("Tweak", "Max units in sector", 15), ini.GetInt("Tweak", "Max boats in sector", 5));
+        ObjOjd::ManufactureModifiers manufacture;
+        manufacture.humanFriend = ini.GetFloat("Tweak", "HumanFriend Manufacture Modifier", 1.0f);
+        manufacture.humanEnemy = ini.GetFloat("Tweak", "HumanEnemy Manufacture Modifier", 0.85f);
+        manufacture.martianFriend = ini.GetFloat("Tweak", "MartianFriend Manufacture Modifier", 1.0f);
+        manufacture.martianEnemy = ini.GetFloat("Tweak", "MartianEnemy Manufacture Modifier", 0.85f);
+        map->SetManufacture(manufacture);
         if (exact) map->UseSave(std::move(*exact));
         ObjOjd::ResearchModifiers modifiers;
         modifiers.humanFriend = ini.GetFloat("Tweak", "HumanFriend Research Modifier", 0.75f);

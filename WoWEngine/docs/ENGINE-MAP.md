@@ -81,7 +81,7 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x44F2C0 | Smacker | Opens movie files |
 | 0x457F20–0x45BB90 | WResearch | Research plans, improvement multipliers, obsolete items |
 | 0x45D1A0–0x45F770 | Research and dialog screens | Hotspots, proposals, blueprints |
-| 0x460A80–0x461500 | Build list | |
+| 0x45F770–0x462EE0 | WBuildList | Each factory's queue: what it can make (0x45F970), the hourly progress (0x45FC90), save (0x460900); the Build List window from 0x460B00. `core/BuildList`, `warmap/Production.cpp` |
 | 0x462EF0–0x466910 | SoundFXSystem | `sfx.ojd`, `SFX\SFX.WoW`, `VOX\HUMAN.WoW`, `VOX\MARTIAN.WoW`, volume groups, 128 sound objects |
 | 0x466E30–0x4783C0 | C runtime and STL | Not rebuilt; replaced by the C++ standard library |
 | 0x4783D0 | Reaper | Fatal error handler |

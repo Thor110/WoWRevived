@@ -335,7 +335,8 @@ selection at +0x430, filled by its recorded commands 4 clear, 5 select (Shift ad
   sectors with every link open). A route stands when it reaches the goal with more than the start in it
   (0x424160). A step is refused, with a code left at 0x4EA198 (by whichever call refused last, estimates
   included) that nothing reads:
-  - 0: a unit in the route can't move (unit +0x54's +0x128; not done)
+  - 0: a unit in the route can't move: its factory (+0x54) has something queued (+0x128), a constructor at work
+    (0x42A410)
   - 1 / 2: the link isn't one of the unit's: the unit type's +0x4E (OBJ.ojd record 36) is 0-2 for land units
     (link bits 1, 2 or 4), 3 for boats (0x10), 4 for fliers (any)
   - 3: neither end has its owner's command building, finished (0x43C990: a Human sector needs a Command Post, type
@@ -422,6 +423,55 @@ demand, ratio, demand and a 0. The start saves have 30, 0, 1, 0, 0 everywhere.
 spread demand among its sectors (from 1). Under 0.3 a counter (0x4E9BA0) goes up one a call and past 336 raises
 event 14, ResourceAlert, clearing both counters; otherwise, under 0.8, another (0x4E9BB0) goes up and past 504
 raises event 13, ResourceWarning. They count calls, not hours.
+
+## Production
+
+An object that can build (its type among some type's builders, OBJ.ojd records 49-51: constructor vehicles,
+factories) has a factory, WBuildList (0x45F770-0x462EE0, at the object's +0x54; `core/BuildList`,
+`warmap/Production.cpp`): a queue of up to 32 entries and a busy flag (+0x12C).
+
+**Saved** at the end of the object's WMOB part (0x42A220): after its battle map units, u32 has-a-factory, the
+factory (0x460900) if so, then u32 the object's +0x3C (a vehicle's VEHU tag follows). The factory: u32 the queue's
+length and, if that isn't 0, u8 busy and each entry (0x461F00): u32 type, u32 the object it's working on
+(0xDEADDEAD for none), four u32s (where a construction goes), u32 repeats (1-3, 4 for ever) and the hours left
+(+0x34, a float). Every object in Human.000, Martian.000 and Human.001 reads and writes back exactly
+(`wowdump --factories`); none has anything queued, so the entries are as the code reads them (provisional until a
+save with a queue turns up). Most objects' units end with BATP (VEHI for a vehicle), but some write more after it
+(type 451 four more u32s); those have no factory, so their tail is the last 8 bytes.
+
+**What it can make** (0x45F970, the list the Build List window shows): types 1-1008 whose builders include the
+object's type and whose research (the unit table's +0x04) is done or obsolete, or which have none (0x442460).
+In a sector without its command building finished (0x43C990) only the command building is offered (58, 278 in
+sector 30; 120, 830 in sector 3; both sides' are tried), and nothing while the object is working on something
+(0x42A410); in a sector with one, neither 58 nor 120 is. Type 39 isn't offered in the sectors byte_4BD2E0 marks
+(3, 7, 10, 13, 16, 19, 20, 24; boats can't go there either, 0x4419E0).
+
+**Every game hour** (its 0x802D, 0x45FB20 -> 0x45FC90), only while busy: the hours are divided by the product of
+the sector's three ratios for the factory's side (0-2 Human, 3-5 Martian, "The economy"; 1 with the cheat
+byte_58913C), so a short supply slows it. Then while there's time left and a queue, the entry at the head
+(0x461D60):
+  - starts if it's at 0 hours: ftol(record 43 x the manufacture modifier x 24), times the type's battle units for
+    a vehicle (category 1). The modifier is `[Tweak] HumanFriend / HumanEnemy / MartianFriend / MartianEnemy
+    Manufacture Modifier` (1.0, 0.85, 1.0, 0.85), by the type's faction and the side being played, as record 43 is
+    read
+  - tells the object it's working on (not for a vehicle) 0x80AD with the time, or 0x80AC once it's done
+  - done, counts its repeats down (not 4) and passes what's left over on
+A vehicle done is made in the sector (0x4620B0 -> 0x43CD10) and raises UnitCompleted (event 2) for it if the
+factory is the local player's; anything else raises ConstructionCompleted (event 1) for its object. Then
+0x45FF00: the head goes, back on the end with its whole time again if it has repeats left (and there's room), and
+the factory goes on unless the queue is empty or a vehicle is next and the sector has no room for it (0x43AC40:
+the local player's units, or boats, there and on their way, plus one, below `Max units in sector` / `Max boats in
+sector`; the game adds counts from 0x4F86B8 / 0x4F76F0, not worked out yet). When it stops it isn't busy any
+more (the world redraws its shading, 0x4192F0) and, for the local player's, raises ConstructorIdle (event 9) if it's
+a unit, else FacilityIdle (event 10).
+
+Tested with one entry injected into a Human factory (type 35 in sector 13): type 1, 4 days and 5 battle units, so
+480 hours, with 2 repeats. It made the two units 480 and 998 hours in, then raised FacilityIdle.
+
+Still to do (provisional now): what the construction does with 0x80AD / 0x80AC / 0x80AE (it's shown as the share
+done and finished outright at the end), adding and removing entries (0x8026 -> 0x460240 / 0x4603B0; 0x8131 when
+the object it's working on goes), the Build List window (0x460B00, panels 0x2FA-0x300), and where among the
+world's objects their 0x802D comes (after the research here).
 
 ## Battles
 
@@ -619,5 +669,5 @@ Besides the keys, the engine scrolls at the screen edges and by clicking or drag
 ## Still to do
 
 The game's scroll rules, the event messages (top left; the engine shows only the latest), the own sectors' shading,
-the arrows' exact curve and head, a unit that can't move (refusal 0), construction (so command posts can be built), the research screen, the AI's turns, saving, and the
+the arrows' exact curve and head, construction (the Build List window, and the construction's side of it, so command posts can be built), the AI's turns, saving, and the
 battle map.

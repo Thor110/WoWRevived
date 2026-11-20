@@ -62,6 +62,15 @@ namespace wow::warmap
 
     // The point routes pass through in a sector (0x437380).
     struct Point { int x, y; };
+    // byte_4BD2E0 (0x4373C0), by sector: set for 3, 7, 10, 13, 16, 19, 20 and 24. Boats (base types 19 / 22) can't
+    // go there (0x4419E0) and type 39 can't be built there (0x45F970). (The survey calls it "landlocked".)
+    inline bool Landlocked(int sector)
+    {
+        static constexpr uint8_t Table[32] = { 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0,
+                                               1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 };
+        return sector >= 0 && sector < 32 && Table[sector];
+    }
+
     inline Point Waypoint(int sector)
     {
         if (sector < 1 || sector > SectorCount) return { 0, 0 };

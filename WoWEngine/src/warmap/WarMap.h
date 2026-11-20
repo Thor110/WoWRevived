@@ -9,6 +9,7 @@
 #include "core/SaveFile.h"
 #include "core/SaveGame.h"
 #include "core/ObjOjd.h"
+#include "core/BuildList.h"
 #include "core/Research.h"
 #include "frontend/Briefing.h"
 #include "frontend/Menu.h"
@@ -65,6 +66,8 @@ namespace wow
         const SaveInfo& Game() const { return game; }
         int Speed() const { return speed; }  // the clock's speed, 0-10
         void SetSectorLimits(int units, int boats) { maxUnits = units; maxBoats = boats; }
+        // [Tweak] "HumanFriend / HumanEnemy / MartianFriend / MartianEnemy Manufacture Modifier" (0x437664-0x437724)
+        void SetManufacture(const ObjOjd::ManufactureModifiers& m) { manufacture = m; }
         void SetPodInterval(int hours) { podInterval = hours; }
         void SetClunting(int res, int adj) { clunRes = std::max(1, res); clunAdj = adj; for (auto& g : grids) g.size = 0; LayoutAll(); }
         // [Tweak] "Route clunting width" and "Route clunting spacing" (0x42AF20 / 0x42AF60, both 4)
@@ -140,13 +143,25 @@ namespace wow
         void ResourceWarnings();
         std::array<bool, warmap::SectorCount + 1> podFlag{}; // a sector's +0x64: a pod landed among the Humans
         std::array<bool, warmap::SectorCount + 1> battle{};  // a sector's +0x124: a battle there
-        void AddUnit(int type, int sector, bool players);
+        int AddUnit(int type, int sector, bool players); // the new counter, or -1
         int AddCounter(int type, int sector, bool players, int ref);
         // the save it came from, and its objects (counters hold indices into it)
         std::optional<SaveFile> save;
         std::vector<SaveObject> table;
         std::vector<int> destroyed;      // refs into the table of objects gone from the map (not written back)
         std::map<int, ObjOjd::UnitData> unitData;
+        // The factories (WBuildList, docs/WARMAP.md "Production"): each object's that has one, by its place in the
+        // table, as read from (and written back into) the end of its saved bytes
+        std::map<int, ObjectTail> factories;
+        ObjOjd::ManufactureModifiers manufacture;
+        void ReadFactories();
+        void Produce(int ref, int hours);        // 0x45FC90, the factory's 0x802D
+        bool PopEntry(int ref, ObjectTail& f);    // 0x45FF00
+        bool HasRoomFor(int type, int sector) const; // 0x43AC10 / 0x43AC40
+        int CounterOf(int ref) const;
+        bool Working(int ref) const;              // 0x42A410: its factory has something queued
+        std::vector<int> BuildOptions(int ref) const; // 0x45F970
+        int RefOfId(uint32_t id) const;
         float ClockTick();
         void MoveRoutes(int hours);      // the routes' 0x802D (0x425080)
         void Arrive(int index, int sector, int previous);

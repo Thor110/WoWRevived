@@ -489,6 +489,10 @@ namespace wow
         MoveRoutes(hours);
         // both sides' research (0x419EE2 / 0x419EEE: the local player's, then the other's, 0x458BD0)
         for (auto& r : research) if (r) r->Advance(hours);
+        // every factory's 0x802D (0x45FB20; where it comes among the world's objects is still to be placed)
+        std::vector<int> refs;
+        for (const auto& [ref, f] : factories) refs.push_back(ref);
+        for (int ref : refs) Produce(ref, hours);
         DropPod(hours);
         ResourceWarnings();
     }
@@ -564,7 +568,7 @@ namespace wow
     // A unit put in a sector (0x43CEB0): its own counter in the sector's next free cell. With a save behind the map
     // it also gets a saved record: a copy of one of the same type (its battle map units with it), with new ids
     // (the lowest free ones, as the game hands them out).
-    void WarMap::AddUnit(int type, int sector, bool players)
+    int WarMap::AddUnit(int type, int sector, bool players)
     {
         int ref = -1;
         if (save)
@@ -584,13 +588,23 @@ namespace wow
                     for (int b = 0; b < 4; b++) o.bytes[at + size_t(b)] = uint8_t(uint32_t(id) >> (8 * b));
                 }
                 o.SetSector(sector);
+                // a new object's factory starts empty, whatever the one it's copied from was making
+                std::optional<ObjectTail> tail = ReadTail(o);
+                if (tail && tail->hasFactory)
+                {
+                    tail->queue = {};
+                    WriteTail(o, *tail);
+                    tail = ReadTail(o);
+                }
                 table.push_back(std::move(o));
                 ref = int(table.size()) - 1;
+                if (tail && tail->hasFactory) factories[ref] = *tail;
             }
             else SDL_Log("War map: no saved unit of type %d to copy, so the new one won't be saved", type);
         }
-        AddCounter(type, sector, players, ref);
+        int k = AddCounter(type, sector, players, ref);
         RecomputeOwner(sector); // 0x43CEB0 -> 0x43CA40
+        return k;
     }
 
     int WarMap::AddCounter(int type, int sector, bool players, int ref)
@@ -686,6 +700,7 @@ namespace wow
                 int k = AddCounter(o.Type(), int(route.origin), o.list == 0, int(table.size()) - 1);
                 if (k >= 0 && route.destination >= 1 && int(route.destination) <= warmap::SectorCount) SendTo(k, int(route.destination));
             }
+        ReadFactories();
     }
 
     // The war map written back into the save it came from (0x41AD80): the view, the clock and date, the message
@@ -2479,7 +2494,7 @@ namespace wow
         // cost, or refusing it, the reason left at 0x4EA198 (by whichever call refused last, the A*'s estimates
         // included). The cost is 0 from a sector to itself, else the straight line between the two sectors'
         // waypoints (0x437380), whole pixels. A step is refused:
-        //   0    a unit that can't move (0x42A410; not in yet)
+        //   0    a unit that can't move: its factory has something queued (0x42A410, a constructor at work)
         //   1/2  the link isn't one the unit can take: land units need a land link (bits 0-2), boats a sea one
         //        (bit 4); fliers take any
         //   3    neither end has its owner's command post
@@ -2489,8 +2504,12 @@ namespace wow
         //        boats in sector" boats: those there, those on their way there (0x420060) and these
         // The route stands when the A* gets there with more than the start in it.
         int reason = -1;
+        bool atWork = false;
+        for (int g : group)
+            for (int ref : counters[size_t(g)].refs) atWork = atWork || Working(ref);
         auto cost = [&](int a, int b) -> int {
             if (a == b) return 0;
+            if (atWork) { reason = 0; return -1; }
             int kind = warmap::RouteLinkKind(a, b);
             // every unit of the group (0x42AC5E): land units need a land link, boats a sea one
             bool anyLand = false;

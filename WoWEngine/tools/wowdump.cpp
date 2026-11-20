@@ -16,6 +16,7 @@
 #include "core/AiTable.h"
 #include "core/Archive.h"
 #include "core/Bmp.h"
+#include "core/BuildList.h"
 #include "core/Ffuh.h"
 #include "core/GameFiles.h"
 #include "core/Models.h"
@@ -210,12 +211,46 @@ int main(int argc, char** argv)
             return 0;
         }
 
+        // --factories save: every object's factory (its WMOB tail), and a check that writing them again changes nothing
+        if (first == "--factories" && argc == 3)
+        {
+            auto save = wow::SaveFile::Parse(ReadFile(argv[2]));
+            int objects = 0, read = 0, factories = 0, same = 0;
+            for (int s = 1; s <= 30; s++)
+                for (const auto& list : save.Sector(s).lists)
+                    for (const wow::SaveObject& o : list)
+                    {
+                        objects++;
+                        auto t = wow::ReadTail(o);
+                        if (!t)
+                        {
+                            std::printf("sector %d type %d: tail not found (%zu bytes), last 48:", s, o.Type(), o.bytes.size());
+                            for (size_t i = o.bytes.size() > 48 ? o.bytes.size() - 48 : 0; i < o.bytes.size(); i++) std::printf(" %02X", o.bytes[i]);
+                            std::printf("\n");
+                            continue;
+                        }
+                        read++;
+                        wow::SaveObject copy = o;
+                        wow::WriteTail(copy, *t);
+                        if (copy.bytes == o.bytes) same++;
+                        if (t->hasFactory)
+                        {
+                            factories++;
+                            std::printf("sector %2d type %3d: factory, %zu queued%s\n", s, o.Type(), t->queue.entries.size(), t->queue.busy ? ", busy" : "");
+                            for (const auto& e : t->queue.entries)
+                                std::printf("    type %d target %08X repeat %d hours %.1f\n", e.type, e.target, e.repeat, e.hours);
+                        }
+                    }
+            std::printf("%d objects, %d tails read (%d written back the same), %d factories\n", objects, read, same, factories);
+            return 0;
+        }
+
         if (first == "--units" && argc == 3)
         {
             for (const auto& [id, u] : wow::ObjOjd::LoadUnits(ReadFile(argv[2])))
                 if (u.warMapSpeed || u.field52 || u.field56 || u.category)
-                    std::printf("unit %3d  faction %d (research %d, %d days)  category %d  battle units %d  counter %3d  class %d  +52 %3d  speed %4d (%.2f map px/hour)  +56 %4d  upkeep %g %g %g  working %g %g %g\n",
-                                id, u.faction, u.researchFaction, u.researchDays, u.category, u.battleUnits, u.counterFrame, u.moveClass, u.field52, u.warMapSpeed, u.warMapSpeed * 0.05, u.field56,
+                    std::printf("unit %3d  built by %d %d %d  build %g days  faction %d (research %d, %d days)  category %d  battle units %d  counter %3d  class %d  +52 %3d  speed %4d (%.2f map px/hour)  +56 %4d  upkeep %g %g %g  working %g %g %g\n",
+                                id, u.builders[0], u.builders[1], u.builders[2], double(u.buildDays), u.faction, u.researchFaction, u.researchDays, u.category, u.battleUnits, u.counterFrame, u.moveClass, u.field52, u.warMapSpeed, u.warMapSpeed * 0.05, u.field56,
                                 u.upkeep[0], u.upkeep[1], u.upkeep[2], u.activity[0], u.activity[1], u.activity[2]);
             return 0;
         }
