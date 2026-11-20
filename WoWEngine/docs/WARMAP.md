@@ -52,7 +52,9 @@ other side), through 0x49C050:
 | The same owner either side, or no one either side | 65 |
 
 The sectors themselves stay at 11, except the side being played's, which take a level from a table the view mode
-fills (0x4192F0, flt_4E98A0; not done yet). Who holds a sector is in the sector table at 0x4EAE1C (0xC0 bytes a
+fills (0x4192F0, flt_4E98A0): in Unit View from the strength of the units in each sector (dword_4F7654), in the
+other views from its resources (0x424000, from the sector table at 0x4EAE20). Both need data that isn't read yet,
+so the engine leaves them at 11. Who holds a sector is in the sector table at 0x4EAE1C (0xC0 bytes a
 sector, read by 0x43CA30): 0 Human, 1 Martian, 2 no one. The save has it straight after each SECT's six lists, before
 the sector's damage map (the sector object's writer, 0x43C5E0). Human.000 starts with sector 3 Martian and 18 sectors
 Human, some with nothing in them.
@@ -63,7 +65,13 @@ Sector n's name is TEXT.ojd string 0x002 + n (0x002 is "The Sea", 0x003 "North W
 "London"). `src/warmap/WarMapData.h` has the two tables, read from the exe's data section:
 
 - **0x4BAE78**, 32 bytes a sector: its bounds on the map (left, top, right, bottom; 0x418980 centres the view on
-  them) and two more points, not worked out yet.
+  them), then two points that belong to the next sector. 0x437380 reads a sector's route waypoint from 0x4BAE68 +
+  sector x 32, the previous entry's first point, so sector n's waypoint is entry n - 1's (all 30 fall inside their
+  own sectors; London's is 1111, 2034). The second point isn't worked out yet.
+- **0x4BCEB0**, the sector links: a pointer per sector to a list of 36 byte links, read by the route arrows
+  (0x4244E0): the neighbour, two points where a route over land crosses the border (leaving, arriving), and two
+  for a route by sea; zeros where there's no such way. There are 170; the land links are exactly the neighbours
+  of the border table, and some sectors also link by sea to ones they don't border (sector 1 to 6 and 8).
 - **0x4D0C00**, 8 border numbers a sector. 0x49BE70 turns it into border -> (sector, sector); two sectors are
   neighbours when they share a land border.
 
@@ -127,15 +135,20 @@ traced; the engine uses position = speed index (0-7), and clicking along it sets
 ## Moving units
 
 In Unit View a click on one of your counters picks it (GType 0x54, cselecth.spr, drawn over it) and a click on a
-sector sends it there. Everything about the trip is a stand-in until the route code is traced (WWarMapRoute
-0x4240D0, the route finder WRouteFinder / FindRoute, "WM clunting", route arrows RTypeArrow):
+sector sends it there.
 
-- the way is the fewest sectors through the border table;
-- it travels from sector centre to sector centre at `[Tweak] "Clunting Speed"` (0x428B70, default 7) map pixels a
-  game hour, and ends in a free cell of the sector;
-- going into a sector the other side holds stops it at the border with a message (a battle, which needs the battle
-  map);
-- arriving in a sector no one holds takes it.
+- **Routes** (WWarMapRoute 0x4240D0) move on every game hour: the calendar sends 0x802D with the hours gone by and
+  the route's handler (0x424F00) moves its entries on (0x425080), point to point. A route goes from a sector's
+  waypoint, across the link's two border points, to the next sector's waypoint (0x425080 and the arrows both take
+  the points from 0x437380 and the link table).
+- **Arrows**: RArrow (0x4244E0) makes a curve through the route's points, 2^5 steps a stretch, which RTypeArrow
+  draws. The engine draws a dotted line through the points instead (*provisional*).
+- **Speed**: each unit's speed is in the unit data, which isn't read yet; every counter goes at
+  `[Tweak] "Clunting Speed"` (0x428B70, default 7) map pixels a game hour (*provisional*).
+- **The way**: the shortest over land through the links (*provisional*: the game's FindRoute, 0x44EFA0, isn't
+  traced).
+- Going into a sector the other side holds stops the counter at the border with a message (a battle, which needs
+  the battle map), and arriving in a sector no one holds takes it (*provisional*).
 
 ## The clock
 
@@ -158,5 +171,5 @@ The engine scrolls with the arrow keys, at the screen edges, and by clicking or 
 ## Still to do
 
 The game's scroll rules, the event messages (top left; the engine shows only the latest), the own sectors' shading,
-the counters' fill order, the real route rules and arrows, construction, research, the AI's turns, saving, and the
+the counters' fill order, unit speeds, the route finder and the arrows' drawing, sea routes, construction, research, the AI's turns, saving, and the
 battle map.

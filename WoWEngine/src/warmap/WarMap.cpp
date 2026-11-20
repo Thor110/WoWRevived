@@ -158,9 +158,9 @@ namespace wow
             if (hours > 0) warmap::AdvanceDate(game.dateTime, hours);
         }
 
-        // Counters on their way: they move along their route at "Clunting Speed" map pixels a game hour
-        // (provisional: the route code, WWarMapRoute 0x4240D0 and its clunting, isn't traced yet), sector by
-        // sector. Going into a sector the other side holds stops them at its border: that's a battle, which
+        // Counters on their way: routes (WWarMapRoute 0x4240D0) move on every game hour (message 0x802D, 0x425080)
+        // from sector waypoint to sector waypoint. Each unit's own speed comes from the unit data, which isn't
+        // read yet, so they all go at "Clunting Speed" map pixels a game hour (provisional), sector by sector. Going into a sector the other side holds stops them at its border: that's a battle, which
         // needs the battle map. Arriving in a sector no one holds takes it (provisional).
         float step = cluntingSpeed * warmap::Speeds[speed] / 30.0f;
         for (size_t i = 0; i < counters.size(); i++)
@@ -258,6 +258,30 @@ namespace wow
                 const uint8_t* sec = &s->pixels[size_t(cameraY + y) * size_t(s->width) + size_t(cameraX)];
                 uint32_t* dst = out + size_t(y) * size_t(canvas.Width());
                 for (int x = 0; x < w; x++) dst[x] = palettes[sec[x]][src[x]];
+            }
+        }
+
+        // Routes: a line from each travelling counter through the rest of its points. The game draws arrows
+        // (RArrow 0x4244E0: a curve through the points, 2^5 steps a stretch, drawn by RTypeArrow), which aren't
+        // rebuilt yet; the line is a stand-in.
+        {
+            uint32_t* out = canvas.Pixels();
+            const uint32_t colour = 0xFFFFFF;
+            auto plot = [&](int x, int y) {
+                if (x >= 0 && y >= 0 && x < canvas.Width() && y < canvas.Height()) out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = colour;
+            };
+            for (const Counter& k : counters)
+            {
+                if (k.route.empty() || k.kind != viewMode - 1) continue;
+                int px = k.x + 16 - cameraX, py = k.y + 16 - cameraY;
+                for (const auto& p : k.route)
+                {
+                    int qx = p.first + 16 - cameraX, qy = p.second + 16 - cameraY;
+                    int steps = std::max(std::abs(qx - px), std::abs(qy - py));
+                    for (int t = 0; t <= steps; t += 2) // dotted
+                        plot(px + (qx - px) * t / std::max(steps, 1), py + (qy - py) * t / std::max(steps, 1));
+                    px = qx; py = qy;
+                }
             }
         }
 
@@ -458,20 +482,35 @@ namespace wow
 
     std::vector<int> WarMap::FindRoute(int from, int to) const
     {
-        // the shortest way through neighbouring sectors (the game's own route finder, FindRoute / WRouteFinder,
-        // isn't traced; this is breadth first over the border table)
+        // The shortest way over land, through the sector links (0x4BCEB0). The game's own route finder (FindRoute
+        // 0x44EFA0, WRouteFinder) isn't traced; this is Dijkstra over the links' lengths.
+        std::array<double, warmap::SectorCount + 1> best;
         std::array<int, warmap::SectorCount + 1> previous;
+        std::array<bool, warmap::SectorCount + 1> done{};
+        best.fill(1e18);
         previous.fill(-1);
-        std::vector<int> queue{ from };
-        previous[size_t(from)] = from;
-        for (size_t q = 0; q < queue.size(); q++)
+        best[size_t(from)] = 0;
+        for (;;)
         {
-            int s = queue[q];
-            if (s == to) break;
+            int s = -1;
             for (int n = 1; n <= warmap::SectorCount; n++)
-                if (previous[size_t(n)] < 0 && warmap::Adjacent(s, n)) { previous[size_t(n)] = s; queue.push_back(n); }
+                if (!done[size_t(n)] && best[size_t(n)] < 1e17 && (s < 0 || best[size_t(n)] < best[size_t(s)])) s = n;
+            if (s < 0 || s == to) break;
+            done[size_t(s)] = true;
+            auto a = warmap::Waypoint(s);
+            for (int n = 1; n <= warmap::SectorCount; n++)
+            {
+                const warmap::SectorLink* link = done[size_t(n)] ? nullptr : warmap::LandLink(s, n);
+                if (!link) continue;
+                auto b = warmap::Waypoint(n);
+                // waypoint, out across the border at the link's two points, on to the next waypoint
+                double d = best[size_t(s)] + std::hypot(double(link->land[0] - a.x), double(link->land[1] - a.y)) +
+                           std::hypot(double(link->land[2] - link->land[0]), double(link->land[3] - link->land[1])) +
+                           std::hypot(double(b.x - link->land[2]), double(b.y - link->land[3]));
+                if (d < best[size_t(n)]) { best[size_t(n)] = d; previous[size_t(n)] = s; }
+            }
         }
-        if (previous[size_t(to)] < 0) return {};
+        if (to != from && previous[size_t(to)] < 0) return {};
         std::vector<int> path;
         for (int s = to; s != from; s = previous[size_t(s)]) path.insert(path.begin(), s);
         return path;
@@ -503,12 +542,24 @@ namespace wow
         if (path.empty()) { message = "No way there over land"; return; }
         k.route.clear();
         k.routeSectors.clear();
+        // out of each sector across the link's two border points, through the next sector's waypoint (0x437380),
+        // ending in a free cell of the last; the counter's corner follows the points less half its size
+        int at = k.sector;
         for (size_t i = 0; i < path.size(); i++)
         {
-            const auto& b = warmap::Sectors[path[i]];
-            if (i + 1 < path.size()) k.route.push_back({ (b.left + b.right) / 2 - 16, (b.top + b.bottom) / 2 - 16 });
+            const warmap::SectorLink* link = warmap::LandLink(at, path[i]);
+            if (link)
+            {
+                k.route.push_back({ link->land[0] - 16, link->land[1] - 16 });
+                k.routeSectors.push_back(at);
+                k.route.push_back({ link->land[2] - 16, link->land[3] - 16 });
+                k.routeSectors.push_back(path[i]);
+            }
+            auto w = warmap::Waypoint(path[i]);
+            if (i + 1 < path.size()) k.route.push_back({ w.x - 16, w.y - 16 });
             else k.route.push_back(FreeCell(path[i], k.kind, index));
             k.routeSectors.push_back(path[i]);
+            at = path[i];
         }
         k.fx = float(k.x);
         k.fy = float(k.y);
