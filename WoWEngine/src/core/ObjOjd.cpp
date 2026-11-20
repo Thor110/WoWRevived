@@ -402,4 +402,29 @@ namespace wow
         }
         return deposits;
     }
+
+    std::map<int, std::string> ObjOjd::LoadSectorMaps(std::span<const uint8_t> data)
+    {
+        std::map<int, std::string> maps;
+        ByteReader r(data);
+        while (r.Remaining() > 0)
+        {
+            if (r.Remaining() < 5) throw FormatError("OBJ.ojd: record header cut short");
+            r.Skip(3);
+            int type = int16_t(r.U16());
+            if (type == 8)
+            {
+                int sector = int16_t(r.U16());
+                uint16_t len = r.U16();
+                std::string name;
+                bool ended = false;
+                for (uint16_t i = 0; i < len; i++) { char c = char(r.U8()); if (!c) ended = true; else if (!ended) name += c; } // up to its NUL
+                maps[sector] = name;
+                r.Skip(8 + 12);
+            }
+            else if (type == 2 || type == 3 || type == 4) { uint16_t len = r.U16(); r.Skip(size_t(len) + 2); }
+            else SkipPayload(r, type);
+        }
+        return maps;
+    }
 }

@@ -70,6 +70,20 @@ namespace wow
         const std::vector<Vertex>& Vertices() const { return vertices; }
         int32_t WorldWidth() const { return worldWidth; }
         int32_t TopY() const { return topY; }
+        int32_t WorldHeight() const { return worldHeight; }
+        // The iso projection (0x47C547, 0x439C05): a world y and height to a screen y, about y / sqrt 2 less h x 0.69
+        // (fixed-point multiplies by 0xB4B10D5D and 0x2C3E63FB), from the map's top edge
+        int ProjectY(int y, int h) const
+        {
+            int32_t a = int32_t(uint32_t(y) << 16);
+            int32_t u = int32_t((int64_t(a) * int32_t(0xB4B10D5D)) >> 32) + a;
+            u >>= 16;
+            u += int32_t(uint32_t(u) >> 31);
+            int32_t b = int32_t(uint32_t(h) << 16);
+            int32_t v = int32_t((int64_t(b) * 0x2C3E63FB) >> 32) >> 14;
+            v += int32_t(uint32_t(v) >> 31);
+            return u - v + topY;
+        }
         int32_t RowStep() const { return rowStep; }
         int32_t HeightScale() const { return heightScale; }
         int32_t HeightOffset() const { return heightOffset; }

@@ -7,6 +7,7 @@
 #include "core/SaveGame.h"
 #include "frontend/ResearchScreen.h"
 #include "warmap/WarMap.h"
+#include "battlemap/BattleMap.h"
 #include "core/ObjOjd.h"
 
 #include <fstream>
@@ -554,6 +555,10 @@ namespace wow
             catch (const std::exception& e) { SDL_Log("OBJ.ojd research pages: %s", e.what()); }
             try { deposits = ObjOjd::LoadSectorDeposits(objData); }
             catch (const std::exception& e) { SDL_Log("OBJ.ojd sector deposits: %s", e.what()); }
+            try { sectorMaps = ObjOjd::LoadSectorMaps(objData); }
+            catch (const std::exception& e) { SDL_Log("OBJ.ojd sector maps: %s", e.what()); }
+            try { dayTimes = ObjOjd::LoadBattleTables(objData).dayTimes; }
+            catch (const std::exception& e) { SDL_Log("OBJ.ojd day times: %s", e.what()); }
         }
         // each object type's class (AI.ojd, 0x441580 -> 0x518B14)
         std::map<int, int> classes, weights;
@@ -803,8 +808,13 @@ namespace wow
         case 0x71:
         case 0x98:
             // 0x41A082: on to the battle map (0x98 flushes the queue first, 0x435600, taking the waiting 0x71 with
-            // it). The battle map isn't in yet: the war map settles the battle and its end (0x97, 0x41A0DC) brings
-            // up the Debriefing (0x49A7B0) at once. *Provisional*: the briefing sound is faded out here.
+            // it). The battle map shows the sector's ground; leaving it (0x97) settles the battle. Without the map's
+            // files the battle is settled at once.
+            if (ActiveWarMap() && StartBattleMap()) break;
+            [[fallthrough]];
+        case BattleMap::EndCommand:
+            // 0x97 (0x41A0DC): the battle's end. The battle isn't fought on the battle map yet, so the war map
+            // settles it (*provisional*), then the Debriefing (0x49A7B0)
             if (WarMap* map = ActiveWarMap())
             {
                 sound.FadeOut(briefingSound, 30);
@@ -984,6 +994,40 @@ namespace wow
                 out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = edge ? outline : fill;
             }
         canvas.DrawString(0x6F, tip->text, text, TextCentreX | TextCentreY);
+    }
+
+    // EnterBattleMap (0x439770), as far as it goes: the sector's landscape (0x47AF10, lit for the calendar's hour,
+    // ftol(+0x28) % 24) and its shade tables (0x40B570, from the enemy count of the battle before), the briefing
+    // sound stopped (0x41B360), then the count for the next battle (0x43983E)
+    bool FrontEnd::StartBattleMap()
+    {
+        WarMap* map = ActiveWarMap();
+        if (!map) return false;
+        BriefingInfo b = map->Briefing();
+        auto name = sectorMaps.find(b.sector);
+        if (name == sectorMaps.end()) return false;
+        BattleMap::Setup s;
+        s.sector = b.sector;
+        s.mapName = name->second;
+        s.hours = b.hours;
+        if (auto d = dayTimes.find(int(b.hours) % 24); d != dayTimes.end()) s.dayTime = &d->second;
+        s.shadeClass = Landscape::ShadeClass(lastEnemyCount);
+        s.human = res.Human();
+        try
+        {
+            auto battle = std::make_unique<BattleMap>(res, s);
+            sound.FadeOut(briefingSound, 30);
+            briefingSound = 0;
+            lastEnemyCount = map->EnemyObjects(b.sector);
+            SDL_Log("Battle map: sector %d, %s, hour %d, view at %d,%d", s.sector, s.mapName.c_str(), int(b.hours) % 24, battle->ScrollX(), battle->ScrollY());
+            Show(std::move(battle));
+            return true;
+        }
+        catch (const std::exception& e)
+        {
+            SDL_Log("battle map: %s", e.what());
+            return false;
+        }
     }
 
     WarMap* FrontEnd::ActiveWarMap() const

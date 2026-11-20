@@ -1,6 +1,22 @@
 # The battle map
 
-Milestone 5. This page grows as the battle map's parts are worked out; so far it covers the terrain.
+Milestone 5. This page grows as the battle map's parts are worked out; so far it covers the terrain and the first
+form of the battle map screen.
+
+## The screen (`src/battlemap/BattleMap`)
+
+After the Briefing (0x71 / 0x98, see docs/WARMAP.md, Battles) the front end opens the battle map for the battle's
+sector, as EnterBattleMap (0x439770) begins: the sector's map from OBJ.ojd record 8 (0x437ADD: the sector, then a
+name to the sector table's +0xAC, `land03.cls` and so on; `ObjOjd::LoadSectorMaps`), the landscape lit for the
+calendar's hour (ftol(+0x28) % 24, 0x47AF10), the shade tables for that hour's letter and the LANDR digit from the
+battle before, and the briefing sound stopped (0x41B360). Then it counts the enemy's units and constructions in the
+sector for the next battle (0x43983E). The screen uses palette group 0x2F0 (bm).
+
+*Provisional*, until the rest is in: the view starts on the map's centre (the game centres it on the player's HQ,
+types 58 / 278 for the Humans and 120 / 830 for the Martians, through the iso projection, `Landscape::ProjectY`),
+scrolls 16 pixels a tick with the arrow keys or the mouse within 4 pixels of an edge, and Escape (the game's opens
+the battle map menu, 0x80B8) ends it with 0x97, which settles the battle on the war map and shows the Debriefing.
+The whole screen is the view; the game's panel and mini-map aren't in.
 
 ## The landscape (WLandscape, 0x47AF10-0x47CCF0)
 

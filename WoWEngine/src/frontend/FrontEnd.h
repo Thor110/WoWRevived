@@ -141,6 +141,10 @@ namespace wow
         void BriefingTransition();
         BattleColours BattleColoursFromIni() const;
         int briefingSound = 0;
+        std::map<int, std::string> sectorMaps;                  // OBJ.ojd record 8
+        std::map<int, ObjOjd::BattleTables::DayTime> dayTimes;   // OBJ.ojd record 9
+        int lastEnemyCount = 0;                                 // dword_4F7430 from the battle before
+        bool StartBattleMap();
         bool inBattle = false;
         int musicTimer = -1;       // ticks until the next music step, -1 with no war map
         int musicTrack = 1;        // dword_4B9DE0: 0 for track 2, 1 for track 3 (the first step goes to track 2)

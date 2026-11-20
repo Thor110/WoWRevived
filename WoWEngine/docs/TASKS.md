@@ -152,10 +152,12 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       0x4579A4 / 0x45702D, the ISOLib dither 0x410F80, the per-frame vertex levels 0x49FDA0; docs/BATTLEMAP.md).
       Still to do: the blitter modes, WOFLib, RTypeISO, objects between the terrain rows (0x44F890-0x457F14,
       0x49DA50) — 08, 13
-- [ ] **Battle map screen**: keys, mouse, the minimap, fog of war, the battle map menu 0x80B8 (0x49BD50: heading
-      0x3FD, Resume, Sound Control) (0x484A30, 0x4346C0) — 05, 11, 13, 14
-- [ ] **Enter / leave a sector**, the battle-end dialogs, the briefing sound stopped (0x439770, 0x439ED0, 0x41B360)
-      — 03, 06
+- [~] **Battle map screen**: `src/battlemap/BattleMap` opens after the Briefing with the sector's ground (OBJ.ojd
+      record 8, the calendar's hour), scrolls, and Escape ends it (*provisional*). Still to do: the start view on
+      the HQ, the game's scrolling, keys, mouse, the panel and minimap, fog of war, the battle map menu 0x80B8
+      (0x49BD50: heading 0x3FD, Resume, Sound Control) (0x484A30, 0x4346C0) — 05, 11, 13, 14
+- [~] **Enter / leave a sector**: the landscape, shade tables, briefing sound and enemy count of 0x439770 are in;
+      the rest of it (fog, zoomer, objects, battle info), 0x439ED0 and the battle-end dialogs aren't — 03, 06
 - [ ] **Deployment**: ring placement, HQ and entry-edge centres, random headings, the 0x80C3 rally (0x421FE0,
       0x4222C0) — 03
 - [ ] **Objects**: the factory map, units (WPuppet), vehicles with steering (`[Vehicles]`, 23 settings), tripods,

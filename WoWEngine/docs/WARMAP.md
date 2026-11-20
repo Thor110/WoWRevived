@@ -681,8 +681,9 @@ queue pass later (0x95, 0x419A24).
    Debriefing follows the fade at once.
 3. **The battle map** (0x71, or 0x98 after the queue is flushed, 0x435600 → 0x41A082): 0x44E5B0(1), both
    research objects' vtbl+0x28, 0x42DB00(1), the world hidden, byte_4D2554 = 1, and the sector shown. Its end comes
-   back as 0x97 (and leaving a viewed sector, 0x76 to the world, flushes the queues and sends 0x97 too). The battle
-   map isn't in yet, so the engine settles the battle here (*provisional*): with only one side in the sector (a
+   back as 0x97 (and leaving a viewed sector, 0x76 to the world, flushes the queues and sends 0x97 too). The engine
+   shows the sector's ground (docs/BATTLEMAP.md) until Escape; nothing is fought there yet, so at 0x97 the engine
+   settles the battle (*provisional*): with only one side in the sector (a
    sector being viewed) there's none and the Debriefing says RETURNING TO WAR ROOMS; otherwise the side with
    more men in its units there wins (the holder on a tie), the loser's units, constructions and resources there go
    (0x43A250), the sector's flag goes and it and its neighbours are seen (0x418E17), and the game is over when the

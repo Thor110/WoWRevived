@@ -151,5 +151,8 @@ namespace wow
         // Each sector's resource deposits, one for each of the six kinds (Human iron, coal, oil; Martian blood,
         // copper, heavy elements), from record 8 (0x437750 into the sector table at 0x4EAE1C, +0x04).
         static std::map<int, std::array<int, 6>> LoadSectorDeposits(std::span<const uint8_t> data);
+        // Each sector's battle map, the name record 8 puts at the sector table's +0xAC (0x437B0A, 0x4EAEC8 + sector
+        // x 0xC0): WLandscape (0x47B900) loads maps\<name>.cls (or .ils) and .atm
+        static std::map<int, std::string> LoadSectorMaps(std::span<const uint8_t> data);
     };
 }

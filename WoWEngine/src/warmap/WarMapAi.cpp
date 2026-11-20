@@ -56,6 +56,14 @@ namespace wow
         return out;
     }
 
+    int WarMap::EnemyObjects(int sector) const
+    {
+        int n = 0;
+        for (int kind = 0; kind < 2; kind++)
+            for (int c : SectorObjects(sector, false, kind)) n += counters[size_t(c)].count;
+        return n;
+    }
+
     // 0x4356C0: b is among a's neighbours (0x4BD260) by land (the link table's bits 0-2)
     static bool Adjacent(int a, int b)
     {

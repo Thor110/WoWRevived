@@ -94,6 +94,7 @@ if(TARGET SDL3::SDL3)
         src/frontend/MovieScreen.cpp
         src/frontend/Splash.cpp
         src/platform/Movie.cpp
+        src/battlemap/BattleMap.cpp
         src/warmap/WarMap.cpp
         src/warmap/Production.cpp
         src/warmap/BuildWindow.cpp
