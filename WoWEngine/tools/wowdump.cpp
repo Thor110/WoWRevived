@@ -7,20 +7,31 @@
 //                                          render a sprite from an archive (e.g. DAT/Dat.wow CD_BD1.SPR CD.PAL)
 //   wowdump --text <TEXT.ojd> [martian]    print every string with its id (Human strings unless "martian")
 //   wowdump --obj <obj.ojd> [martian]      print the graphics table (id, class, palette slot, file)
+//   wowdump --sfx <SFX.ojd> [martian]      print the sound table (id, type, volume, flags, samples)
+//   wowdump --ai <AI.ojd>                  print the AI table (entries, then each side's rule lists)
+//   wowdump --save <save file>             print a save's name, date and time, and where its sections are
+//   wowdump --models <archive>             read every WOF, IOB and CLS/ATM in an archive and summarise them
+//   wowdump --iob <archive> <name> <palette> <out.bmp>  save a building's pre-rendered picture
+#include "core/AiTable.h"
 #include "core/Archive.h"
 #include "core/Bmp.h"
 #include "core/Ffuh.h"
 #include "core/GameFiles.h"
+#include "core/Models.h"
 #include "core/ObjOjd.h"
+#include "core/SaveGame.h"
 #include "core/Palette.h"
+#include "core/SoundTable.h"
 #include "core/Sprite.h"
 #include "core/TextOjd.h"
 
+#include <cctype>
 #include <cstdio>
 #include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <map>
 #include <vector>
 #include <string>
 
@@ -34,7 +45,12 @@ static int Usage()
         "       wowdump --check <game folder>      check for the required game files\n"
         "       wowdump --sprite <archive> <sprite> <palette> <out.bmp> [frame]\n"
         "       wowdump --text <TEXT.ojd> [martian] print the game's strings\n"
-        "       wowdump --obj <obj.ojd> [martian]   print the graphics table\n");
+        "       wowdump --obj <obj.ojd> [martian]   print the graphics table\n"
+        "       wowdump --sfx <SFX.ojd> [martian]   print the sound table\n"
+        "       wowdump --ai <AI.ojd>              print the AI table\n"
+        "       wowdump --save <save file>         print a save's name, date and sections\n"
+        "       wowdump --models <archive>         check and summarise every WOF, IOB and CLS\n"
+        "       wowdump --iob <archive> <name> <palette> <out.bmp>\n");
     return 2;
 }
 
@@ -88,6 +104,110 @@ int main(int argc, char** argv)
             return 0;
         }
 
+        if (first == "--ai" && argc == 3)
+        {
+            auto table = wow::AiTable::Load(ReadFile(argv[2]));
+            for (const auto& [id, e] : table.entries) std::printf("entry %3d  value %6d  weight %6d\n", id, e.value, e.weight);
+            for (int side = 0; side < 2; side++)
+                for (const auto& [list, rules] : table.rules[side])
+                {
+                    std::printf("%s list %d: %zu rules\n", side ? "Martian" : "Human", list, rules.size());
+                    for (const auto& r : rules)
+                    {
+                        std::printf("   ");
+                        for (int i = 0; i < r.count; i++) std::printf(" %5u", r.words[i]);
+                        std::printf("\n");
+                    }
+                }
+            std::printf("%zu entries\n", table.entries.size());
+            return 0;
+        }
+        if (first == "--save" && argc == 3)
+        {
+            auto data = ReadFile(argv[2]);
+            auto info = wow::SaveInfo::Read(data);
+            std::printf("version %u  \"%s\"  %02d/%02d/%d %02d:%02d (%.1f ticks)  war map %u %u %u %u  date fields %u %u %u\n",
+                info.version, info.name.c_str(), info.Day(), info.Month(), info.Year(), info.Hour(), info.Minute(), double(info.ticks),
+                info.warMap[0], info.warMap[1], info.warMap[2], info.warMap[3], info.dateTime[0], info.dateTime[1], info.dateTime[2]);
+            std::map<std::string, int> counts;
+            for (const auto& t : wow::SaveInfo::Tags(data)) counts[t.name]++;
+            for (const auto& [n, c] : counts) std::printf("  %s x%d\n", n.c_str(), c);
+            return 0;
+        }
+        if (first == "--models" && argc == 3)
+        {
+            wow::Archive archive(argv[2]);
+            int ok = 0, failed = 0;
+            auto ext = [](const std::string& n) { auto d = n.rfind('.'); std::string e = d == std::string::npos ? "" : n.substr(d + 1); for (char& c : e) c = char(std::toupper(static_cast<unsigned char>(c))); return e; };
+            for (size_t i = 0; i < archive.Entries().size(); i++)
+            {
+                const std::string& name = archive.Entries()[i].name;
+                std::string e = ext(name);
+                if (e != "WOF" && e != "IOB" && e != "CLS") continue;
+                try
+                {
+                    auto data = archive.Read(i);
+                    if (e == "WOF")
+                    {
+                        auto m = wow::WofModel::Load(data);
+                        size_t v = 0, f = 0;
+                        for (const auto& p : m.pieces) { v += p.vertices.size(); f += p.faces.size(); }
+                        std::printf("%-12s WOF  %3zu pieces %5zu vertices %5zu faces  texture 256x%d  %zu materials\n", name.c_str(), m.pieces.size(), v, f, m.textureHeight, m.materials.size() / 4);
+                    }
+                    else if (e == "IOB")
+                    {
+                        auto m = wow::IobModel::Load(data);
+                        auto pic = m.Picture();
+                        std::printf("%-12s IOB  %5d points %5d patches %s  header %dx%d  picture %dx%d\n", name.c_str(), m.faceCount, m.litTriangles, m.animated ? "animated" : "static  ", m.width, m.height, pic.width, pic.height);
+                    }
+                    else
+                    {
+                        std::string atmName = name.substr(0, name.size() - 3) + "ATM";
+                        std::vector<uint8_t> atm;
+                        if (auto a = archive.Find(atmName)) atm = archive.Read(*a);
+                        auto t = wow::Terrain::Load(data, atm);
+                        int land = 0;
+                        for (uint8_t h : t.heights) land += h != 0;
+                        bool atmOk = t.tiles.size() == size_t(t.width - 1) * size_t(t.height - 1);
+                        std::printf("%-12s CLS  %dx%d  %d triangles  %zu more bytes  land %d%%  ATM %s\n", name.c_str(), t.width, t.height, t.triangles, t.rest.size(), int(100.0 * land / double(t.heights.size())), atmOk ? "matches" : t.tiles.empty() ? "missing" : "wrong size");
+                    }
+                    ok++;
+                }
+                catch (const std::exception& ex) { std::printf("%-12s FAILED: %s\n", name.c_str(), ex.what()); failed++; }
+            }
+            std::printf("%d read, %d failed\n", ok, failed);
+            return failed ? 1 : 0;
+        }
+        if (first == "--iob" && argc == 6)
+        {
+            wow::Archive archive(argv[2]);
+            auto model = wow::IobModel::Load(archive.Read(argv[3]));
+            wow::Palette palette = wow::Palette::Load(archive.Read(argv[4]));
+            WriteSpriteBmp(argv[5], model.Picture(), palette);
+            return 0;
+        }
+        if (first == "--sfx")
+        {
+            if (argc != 3 && argc != 4) return Usage();
+            bool human = !(argc == 4 && std::string(argv[3]) == "martian");
+            auto table = wow::SoundTable::Load(ReadFile(argv[2]), human);
+            for (const auto& [id, s] : table.Sounds())
+            {
+                std::printf("0x%03X  %-10s vol %.2f%s%s", unsigned(id), wow::SoundTable::TypeName(s.type), double(s.volume),
+                    s.loop ? "  loop" : "", s.positional ? "  positional" : "");
+                for (int g = 0; g < 3; g++)
+                {
+                    if (s.groups[g].empty()) continue;
+                    std::printf("  [");
+                    for (size_t i = 0; i < s.groups[g].size(); i++)
+                        std::printf("%s%s%s@%d", i ? " " : "", s.groups[g][i].vox ? "VOX:" : "", s.groups[g][i].name.c_str(), s.groups[g][i].rate);
+                    std::printf("]");
+                }
+                std::printf("\n");
+            }
+            std::printf("%zu sounds\n", table.Sounds().size());
+            return 0;
+        }
         if (first == "--text" || first == "--obj")
         {
             if (argc != 3 && argc != 4) return Usage();

@@ -6,6 +6,7 @@
 #include "frontend/Menu.h"
 #include "frontend/Settings.h"
 #include "platform/Music.h"
+#include "platform/Sound.h"
 
 #include <memory>
 
@@ -27,6 +28,9 @@ namespace wow
         void OnKey(int sdlKey);
         void OnText(const char* utf8) { if (screen) screen->OnText(utf8); }
         void OnMouseMove(int x, int y);
+        void OnMouseLeave() { mouseX = mouseY = -1; }
+        // Draw the game's own mouse cursor (on by default; [WoW Engine] "System Cursor" = 1 uses the system's)
+        bool GameCursor() const { return !ini.GetBool("WoW Engine", "System Cursor", false); }
         void OnMouseButton(int x, int y, bool down);
 
         // Opens a screen by its command id, as if a button had sent it (the --open start option).
@@ -59,6 +63,8 @@ namespace wow
         std::unique_ptr<Screen> NotRebuilt(int command, int previous);
 
         bool AnySaveGame() const;
+        void DrawCursor(Canvas& canvas) const;
+        int mouseX = -1, mouseY = -1; // -1: outside the picture
         bool CorrectCdInserted() const;
 
         // what the game keeps in globals between menus
@@ -73,6 +79,10 @@ namespace wow
         Settings& ini;
         const GameFiles& files;
         Music music;
+        Sound sound;
+        int ambient = 0;           // dword_4D25D0: the menus' ambient sound 0x18C
+        void ApplyVolumes();
+        void StartAmbient(bool restart);
         std::unique_ptr<Screen> screen;
         int loadedGroup = -1;
         bool quit = false;

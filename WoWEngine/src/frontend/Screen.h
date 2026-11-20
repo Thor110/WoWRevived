@@ -75,6 +75,9 @@ namespace wow
         virtual bool Handle(const Command&) { return false; }
 
         virtual std::optional<Command> OnKey(int sdlKey);
+        // The cursor the controls ask for at a point (their WM_SETCURSOR answer, an index into the cursor table at
+        // 0x4B9200): 0 is the normal arrow, 0x11 the text field's (0x431500).
+        virtual int CursorAt(int x, int y) const;
         // Typed text (UTF-8, from SDL's text input), for an Edit control that has the focus.
         void OnText(std::string_view utf8);
         void OnMouseMove(int x, int y);

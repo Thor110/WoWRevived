@@ -31,6 +31,9 @@ add_library(wowcore STATIC
     src/core/Bmp.cpp
     src/core/ShadeTable.cpp
     src/core/SaveGame.cpp
+    src/core/SoundTable.cpp
+    src/core/Models.cpp
+    src/core/AiTable.cpp
 )
 target_include_directories(wowcore PUBLIC src ${CMAKE_CURRENT_BINARY_DIR}/generated)
 configure_file(src/Version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.h @ONLY)
@@ -71,6 +74,7 @@ if(TARGET SDL3::SDL3)
         src/main.cpp
         src/platform/Video.cpp
         src/platform/Music.cpp
+        src/platform/Sound.cpp
         src/frontend/Resources.cpp
         src/frontend/Canvas.cpp
         src/frontend/Settings.cpp

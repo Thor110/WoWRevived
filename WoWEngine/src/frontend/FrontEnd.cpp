@@ -73,15 +73,42 @@ namespace wow
         constexpr int MenuBackdrop = 0x36F;
     }
 
-    FrontEnd::FrontEnd(Resources& r, FrontEndSettings s, Settings& i, const GameFiles& f) : res(r), settings(s), ini(i), files(f)
+    FrontEnd::FrontEnd(Resources& r, FrontEndSettings s, Settings& i, const GameFiles& f)
+        : res(r), settings(s), ini(i), files(f), sound(f, r.Human())
     {
-        music.SetVolume(ini.GetFloat(SoundSection, "Master", 1.0f));
+        ApplyVolumes();
         Show(MainMenu());
+    }
+
+    void FrontEnd::ApplyVolumes()
+    {
+        // [Sound\Volume], 0-1 (the settings at 0x4CA858-0x4CA870, one per sound type, and Master over them all)
+        static const char* const Types[6] = { "Ambient", "Engine", "Explosions", "Weapons", "Special", "Speech" };
+        float types[6];
+        for (int t = 0; t < 6; t++) types[t] = ini.GetFloat(SoundSection, Types[t], 1.0f);
+        float master = ini.GetFloat(SoundSection, "Master", 1.0f);
+        sound.SetVolumes(master, types);
+        music.SetVolume(master);
+    }
+
+    void FrontEnd::StartAmbient(bool restart)
+    {
+        // The main menu (0x405ED0) always starts the menu sound afresh, fading it in over 60 ticks; Game Options
+        // (0x406130) only starts it again if it has stopped.
+        if (!restart && sound.Active(ambient)) return;
+        sound.Stop(ambient);
+        ambient = sound.Play(0x18C);
+        sound.FadeIn(ambient, 60);
     }
 
     void FrontEnd::Show(std::unique_ptr<Screen> next)
     {
         int from = screen ? screen->Id() : 0;
+        // Leaving the CD Player stops its music. The original doesn't (its CD player has no destructor of its own,
+        // so the disc played on until something else used the drive); [WoW Engine] "CD Player Music Continues"
+        // = 1 keeps that.
+        if (from == CdPlayer::Id && next->Id() != CdPlayer::Id && !ini.GetBool("WoW Engine", "CD Player Music Continues", false))
+            music.Stop();
         screen = std::move(next);
         // the "not rebuilt" placeholder returns to the menu it was opened from
         if (!screen->Previous() && screen->Id() != CmdMainMenu)
@@ -132,7 +159,7 @@ namespace wow
     std::unique_ptr<Screen> FrontEnd::MainMenu()
     {
         auto m = NewMenu(CmdMainMenu);
-        // TODO: the game also starts the menu's ambient sound here (sound 0x18C, fading in over 60 ticks)
+        StartAmbient(true);
         m->AddHeading(0x3FB);
         if (settings.networkEnabled)
         {
@@ -154,6 +181,7 @@ namespace wow
     std::unique_ptr<Screen> FrontEnd::GameOptions(int previous)
     {
         auto m = NewMenu(CmdOptions);
+        StartAmbient(false);
         m->AddHeading(0x401);
         m->AddButton(0x3EF, 0x410);   // Display Settings
         m->AddButton(0x3ED, 0x411);   // Sound Control
@@ -183,7 +211,7 @@ namespace wow
             m->AddSlider(tenths, 10, [text](int v) { return Format(text, "%s - %d%%", v * 10); },
                 [this, name](Button& b) {
                     ini.SetFloat(SoundSection, name, float(b.value) / 10.0f);
-                    if (std::string(name) == "Master") music.SetVolume(float(b.value) / 10.0f);
+                    ApplyVolumes();
                 });
         };
         volume(0x43E, "Master");
@@ -425,8 +453,15 @@ namespace wow
             // TODO: these start the campaign (war map), which isn't rebuilt yet
             Show(NotRebuilt(command.id, CmdMainMenu));
             break;
-        case CdPlayer::Id: Show(std::make_unique<CdPlayer>(res, settings.colours, CmdMainMenu, music, files)); break;
-        case Credits::Id: Show(std::make_unique<Credits>(res, current, creditsEasterEgg)); break;
+        case CdPlayer::Id:
+            sound.FadeOutAll(60); // 0x407A21: the menu sound makes way for the CD
+            Show(std::make_unique<CdPlayer>(res, settings.colours, CmdMainMenu, music, files)); break;
+        case Credits::Id:
+            // the credits fade out every sound over 60 ticks (0x464AB0) before their own music; the menu sound
+            // comes back with the next menu
+            sound.FadeOutAll(60);
+            Show(std::make_unique<Credits>(res, current, creditsEasterEgg, sound));
+            break;
         case Commands::Back:
             // Escape goes back to the menu this one was opened from; the main menu itself ignores it, and so does
             // the Insert CD menu (0x408AB0)
@@ -438,6 +473,7 @@ namespace wow
 
     void FrontEnd::Update()
     {
+        sound.Update();
         if (!screen) return;
         screen->Update();
         if (auto command = screen->TakeCommand()) Execute(*command);
@@ -449,6 +485,24 @@ namespace wow
         if (!screen) return;
         if (screen->Background()) canvas.DrawSprite(screen->Background(), 0, 0, 0);
         screen->Draw(canvas);
+        DrawCursor(canvas);
+    }
+
+    void FrontEnd::DrawCursor(Canvas& canvas) const
+    {
+        // The cursor table (0x4B9200, read by 0x40CD30): GType and an offset from the mouse position for each
+        // cursor the controls can ask for. The sprite's own OBJ.ojd hotspot applies as well.
+        struct CursorDef { int gtype, dx, dy; };
+        static constexpr CursorDef Cursors[] = {
+            { 0x1, 0, 0 },     { 0x2, -16, -16 }, { 0x3, -16, -16 }, { 0x4, -16, -16 }, { 0x9, -16, -16 }, { 0xA, -16, -16 },
+            { 0x1, -8, -8 },   { 0x1, -8, -8 },   { 0x1, -8, -8 },   { 0x1, -8, -8 },   { 0x1, -8, -8 },   { 0x1, -8, -8 },
+            { 0xB, 0, 0 },     { 0xC, -16, -16 }, { 0xD, 0, 0 },     { 0xE, 0, 0 },     { 0xF, 0, 0 },     { 0x10, 0, 0 },
+        };
+        if (!GameCursor() || mouseX < 0 || !screen) return;
+        int index = screen->CursorAt(mouseX, mouseY);
+        if (index < 0 || index >= int(std::size(Cursors))) index = 0;
+        const CursorDef& c = Cursors[index];
+        canvas.DrawSprite(c.gtype, 0, mouseX + c.dx, mouseY + c.dy);
     }
 
     void FrontEnd::OnKey(int key)
@@ -471,6 +525,8 @@ namespace wow
 
     void FrontEnd::OnMouseMove(int x, int y)
     {
+        mouseX = x;
+        mouseY = y;
         if (screen) screen->OnMouseMove(x, y);
     }
 

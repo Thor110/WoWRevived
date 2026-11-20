@@ -103,6 +103,31 @@ The other movies go the same way: 0x8036 plays RAGELOGO then 0x8038, which plays
 - The movies, setting up the campaign (0x404660), loading a save (0x80B3) and starting the war map (0x8A, 0xA5, 0xAB) wait for the campaign to be rebuilt, and show a "not rebuilt yet" placeholder.
 - There's no network play yet, so Select Service Provider lists no providers and the session menu always says it's waiting. The Network Host and Waiting for Player menus can be opened with `--open 0x9F` and `--open 0xA1`.
 
+## Sound
+
+- **The sound table** (SFX.ojd, loader 0x463D10) and the three sound libraries are read in `core/SoundTable`; the format is described there. Sounds are played by 0x464EE0 (id, x, y, volume, ...), which makes a 0x54 byte sound object (0x4648C0). A looping sound (opcode 7) plays until it's stopped; another lasts as long as its sample.
+- **Volumes.** Each sound's type picks one of the `[Sound\Volume]` settings (0x4CA858 on): 0 Ambient, 1 Engine, 2 Explosions, 3 Weapons, 4 Special, 5 Speech, all under Master.
+- **The menus.** The main menu (0x405ED0) starts sound 0x18C, the looping "option" music, afresh each time and fades it in over 60 ticks (0x464E60). Game Options (0x406130) starts it again only if it has stopped. Opening the CD Player (0x407A21) or the credits (0x40535B) fades every sound out over 60 ticks (0x464AB0, "Fading out all current sounds"); the credits then play 0x191, the side's epilogue music (VOX `hepilog` or `mepilog`), and don't leave the bottom of the scroll until it ends.
+- **Credits timing.** The scroll steps on message 0x812E, which re-posts itself for the next tick, so it moves every other game tick (about 15 steps a second). That's what makes each side's scroll last as long as its music: 2988 steps for 206.8 seconds of `hepilog`, 3984 for 272.5 seconds of `mepilog`.
+- **Control sounds.** The front-end push buttons, checkboxes and sliders play nothing themselves; the click sounds (0x192-0x196) belong to the in-game controls.
+- **The CD Player** has no destructor of its own, so in the original the disc kept playing after leaving it. The engine stops the music when you leave; `[WoW Engine] "CD Player Music Continues" = 1` keeps the original behaviour.
+
+## The mouse cursor
+
+The game draws its own cursor (DeeDraw::DrawFlipCursor, 0x44C700). Controls answer WM_SETCURSOR with a number (0x42E780 sets it), and the table at 0x4B9200 (read by 0x40CD30) gives each number's GType and an offset from the mouse position:
+
+| Cursor | GType | Offset | | Cursor | GType | Offset |
+|---|---|---|---|---|---|---|
+| 0 | 0x1 normal | 0, 0 | | 0x9-0xB | 0x1 | -8, -8 |
+| 1 | 0x2 select | -16, -16 | | 0xC | 0xB "don't" | 0, 0 |
+| 2 | 0x3 select + | -16, -16 | | 0xD | 0xC wait | -16, -16 |
+| 3 | 0x4 select - | -16, -16 | | 0xE | 0xD add | 0, 0 |
+| 4 | 0x9 move | -16, -16 | | 0xF | 0xE subtract | 0, 0 |
+| 5 | 0xA attack | -16, -16 | | 0x10 | 0xF promote | 0, 0 |
+| 6-8 | 0x1 | -8, -8 | | 0x11 | 0x10 text | 0, 0 |
+
+The menus use cursor 0; the text field (0x431500) asks for 0x11. Each side has its own sprites (`hnrmcurs.spr` and `normcurs.spr`...). The engine hides the system cursor and draws this one; `[WoW Engine] "System Cursor" = 1` shows the system's instead.
+
 ## Still to do
 
 - **Shade-table groups.** The hw, hb, hr and bm groups build their shade-table names from unit data. They're needed for the war map and battle map, not the menus.

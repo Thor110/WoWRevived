@@ -45,6 +45,7 @@ namespace
     // Command line: [game folder] [--open command] [--screenshot file.bmp [keys]]
     // --open starts on the screen a menu command opens (0x8E Game Options, 0x6E Save Game...).
     // --ticks N runs N game updates (30 a second) after the keys, before the screenshot.
+    // --mouse x,y moves the mouse there first (game coordinates), for screenshots of the cursor and highlights.
     // --screenshot presses the comma separated keys (up, down, enter, escape), saves the frame and exits.
     struct Options
     {
@@ -53,6 +54,7 @@ namespace
         std::vector<int> keys;
         int open = 0;
         int ticks = 0;
+        int mouseX = -1, mouseY = -1;
     };
 
     Options ParseOptions(int argc, char** argv)
@@ -63,6 +65,12 @@ namespace
             std::string arg = argv[i];
             if (arg == "--open" && i + 1 < argc) o.open = int(std::strtol(argv[++i], nullptr, 0));
             else if (arg == "--ticks" && i + 1 < argc) o.ticks = std::atoi(argv[++i]);
+            else if (arg == "--mouse" && i + 1 < argc)
+            {
+                std::string at = argv[++i];
+                o.mouseX = std::atoi(at.c_str());
+                if (auto comma = at.find(','); comma != std::string::npos) o.mouseY = std::atoi(at.c_str() + comma + 1);
+            }
             else if (arg == "--screenshot" && i + 1 < argc)
             {
                 o.screenshot = argv[++i];
@@ -194,10 +202,13 @@ int main(int argc, char** argv)
 
         // typed text for the campaign name field (Edit Campaign)
         SDL_StartTextInput(video.Window());
+        // the game draws its own cursor over the picture
+        if (frontEnd.GameCursor()) SDL_HideCursor();
         if (options.open) frontEnd.Open(options.open);
         bool done = false;
         if (!options.screenshot.empty())
         {
+            if (options.mouseX >= 0) frontEnd.OnMouseMove(options.mouseX, options.mouseY);
             for (int key : options.keys)
             {
                 frontEnd.OnKey(key);
@@ -231,6 +242,9 @@ int main(int argc, char** argv)
                 case SDL_EVENT_TEXT_INPUT: frontEnd.OnText(event.text.text); break;
                 case SDL_EVENT_MOUSE_MOTION:
                     if (video.ToGame(event.motion.x, event.motion.y, x, y)) frontEnd.OnMouseMove(x, y);
+                    else frontEnd.OnMouseLeave();
+                    break;
+                case SDL_EVENT_WINDOW_MOUSE_LEAVE: frontEnd.OnMouseLeave();
                     break;
                 case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 case SDL_EVENT_MOUSE_BUTTON_UP:

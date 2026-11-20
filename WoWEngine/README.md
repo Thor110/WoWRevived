@@ -29,7 +29,7 @@ Targets:
 | Target | What it is |
 |---|---|
 | `WoWEngine` | The game. Pass the game folder as the first argument, or put the engine in the game folder. `--open 0x6E` starts on the screen a menu command opens. `--ticks N` runs N game updates before a screenshot. `--screenshot file.bmp [keys]` presses the listed keys (up, down, left, right, enter, escape, backspace, or =letters, which are also typed into a text field), saves the frame and exits. |
-| `wowdump` | Lists and extracts the KAT! and SfxL archives. `--check <folder>` reports missing game files, `--sprite` saves a sprite as a BMP, `--text` prints TEXT.ojd and `--obj` prints the OBJ.ojd graphics table. |
+| `wowdump` | Lists and extracts the KAT! and SfxL archives. `--check <folder>` reports missing game files, `--sprite` saves a sprite as a BMP, `--text` prints TEXT.ojd, `--obj` the OBJ.ojd graphics table, `--sfx` the SFX.ojd sound table, `--ai` AI.ojd, `--save` a save's name, date and sections, `--models` reads and summarises every WOF, IOB and CLS in an archive, and `--iob` saves a building's picture as a BMP. |
 | `wowcore` | The file formats and game data code, with no SDL dependency, so tools can use it on their own. |
 | `WoWLauncher` | The one program players start, laid out like WoWRevived's WoWLauncher. With the game installed it starts a Human or Martian game; without it, it's the installer: it finds the discs in the drives (or disc images you pick), copies the game and rips the music. See [Installing](#installing). |
 | `wowinstall-cli` | The same installer from the command line. |
@@ -48,12 +48,18 @@ src/core/       file formats and game data (no SDL)
   ObjOjd.*        OBJ.ojd graphics table (GType id to file, palette slot, hotspot)
   Font.*          .FNT fonts;  Charset.h  the game's Latin-1 to font table
   ShadeTable.*    .SHH shade tables;  ShadeGroups.h  which tables each palette group loads into which slot
+  SoundTable.*    SFX.ojd (the sound table) and the three sound libraries the samples come from
+  AiTable.*       AI.ojd (entries and each side's rule lists)
+  Models.*        WOF units, IOB buildings (with their pre-rendered pictures) and CLS/ATM terrain
+  SaveGame.*      save slots, and the start of a save (name, war map, game time, date)
   Vfs.*           the game's file lookup rules: archives, loose file overrides
   Bmp.*           BMP output for screenshots and wowdump
 src/frontend/   Resources (graphics, strings, shade tables), Canvas (drawing), Screen (controls), Menu, CdPlayer,
                 FrontEnd, Settings (WoWRevived.ini)
 src/install/    the installer: Disc (folders, .iso, .bin/.cue), DriveAudio (raw CD audio), Iso9660, Installer
-src/platform/   SDL3 code: window and true colour frame buffer (Video), music (Music); later sound effects and movies
+src/platform/   SDL3 code: window and true colour frame buffer (Video), music (Music), sound effects mixed in software
+                (Sound), starting the other program (Launch.h); later movies
+src/launcher/   WoWLauncher: the installer and launcher, with its own Windows-style controls (Ui)
 src/main.cpp    start-up and the fixed-rate game loop
 tools/          command line tools
 docs/           ENGINE-MAP.md (the exe mapped by subsystem), FRONTEND.md (how the menus work), IDA index
@@ -64,14 +70,15 @@ docs/           ENGINE-MAP.md (the exe mapped by subsystem), FRONTEND.md (how th
 - **Frame buffer.** The frame buffer is true colour, because each sprite is drawn through its own palette, so several palettes are on screen at once. `Video::Present` scales it to the window, letterboxed.
 - **Game loop.** Updates run at a fixed 30 per second, the game's default "Game Frequency". Drawing runs as fast as vsync allows.
 - **Settings.** Settings are read from and saved to the same `WoWRevived.ini` the launcher and patches use, through the shared `IniStore.h`, with the game's own section and value names. Existing installs carry straight over. The registry is never used.
+  The engine's own options go in a `[WoW Engine]` section: `"System Cursor" = 1` shows the system's mouse cursor instead of the game's, and `"CD Player Music Continues" = 1` keeps the CD Player's music playing after you leave it, as the original did.
 - **File names.** Every game path goes through `GameFiles::Resolve`, which matches names without regard to case. The discs mix cases (`DAT\Dat.wow`, `MAPS\MAPS.WoW`, `MARTIAN.cd`), and Linux and macOS file systems are case-sensitive.
 
 ## Road map
 
 1. **Foundations** (started): CMake and SDL3, the archives, FFUH, game file lookup, window and frame buffer.
-2. **Formats** (in progress): archives, FFUH, palettes, SPR, FNT, shade tables, TEXT.ojd and the OBJ.ojd graphics table are done, and all but the first three are read the way the game reads them. All of these have been checked against the English discs. Still to do: the unit-specific shade groups, the rest of OBJ.ojd (unit data), AI.ojd, SFX.ojd and sound libraries, CLS, WOF/IOB and maps.
-3. **Front end** (menus done): every menu is rebuilt: the menu framework, Main Menu, Single Player Options, Game Options, Display Settings, Sound Control, Critical event options, Load and Save Game, the new campaign menus (Select Campaign to Replace, Replace Existing Campaign?, Edit Campaign with its name field, Insert CD), the network menus (Select Service Provider, Network Host, Waiting for Player, the session list), Credits, Quit, and the CD Player with music (see `docs/FRONTEND.md`). The earlier menus match screenshots of the original for both sides; the new ones are built from the disassembly and haven't been compared yet. Still to do: Smacker movies (FMV), the cursor, tooltips, sound effects, and the network menus' lists, which wait for network play.
-4. **Audio**: SfxL sound effects, positional ambient sound, and the music played from the ripped `Music-Human` / `Music-Martian` WAV tracks.
+2. **Formats** (in progress): archives, FFUH, palettes, SPR, FNT, shade tables, TEXT.ojd, the OBJ.ojd graphics table, SFX.ojd and the sound libraries, and AI.ojd are read the way the game reads them; WOF units, IOB buildings and CLS/ATM terrain are read as far as WoWViewer worked them out (every one on the English discs reads); saves are read as far as their name, game time and date. All of these have been checked against the English discs. Still to do: the unit-specific shade groups, the rest of OBJ.ojd (unit data), what follows the heights in CLS, the rest of the save format, and the WOF animation data.
+3. **Front end** (menus done): every menu is rebuilt: the menu framework, Main Menu, Single Player Options, Game Options, Display Settings, Sound Control, Critical event options, Load and Save Game, the new campaign menus (Select Campaign to Replace, Replace Existing Campaign?, Edit Campaign with its name field, Insert CD), the network menus (Select Service Provider, Network Host, Waiting for Player, the session list), Credits, Quit, and the CD Player with music (see `docs/FRONTEND.md`). The earlier menus match screenshots of the original for both sides; the new ones are built from the disassembly and haven't been compared yet. The menu sound (the looping "option" music, faded in), the credits music and the game's own mouse cursor are in. Still to do: the movies (WoWRevived plays upscaled versions through Media Foundation; the engine needs a cross-platform player), tooltips, and the network menus' lists, which wait for network play.
+4. **Audio** (started): sound effects from SFX.ojd and the sound libraries, mixed with the [Sound\\Volume] settings for each type (Ambient, Engine, Explosions, Weapons, Special, Speech) under Master, fades, and the music from the ripped `Music-Human` / `Music-Martian` tracks. Still to do: positional sound on the maps, which comes with them.
 5. **War map**: the strategic layer, covering sectors, construction, research, AI turns and pods.
 6. **Battle map**: terrain, the 3D units (WOF/IOB with the shade tables), buildings, pathfinding, combat and fog of war.
 7. **Saves**: loading and writing the original save format, so old saves keep working.

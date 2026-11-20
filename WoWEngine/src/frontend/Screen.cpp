@@ -194,6 +194,13 @@ namespace wow
         return std::nullopt;
     }
 
+    int Screen::CursorAt(int x, int y) const
+    {
+        int hit = HitTest(x, y);
+        if (hit >= 0 && buttons[size_t(hit)].kind == Button::Kind::Edit) return 0x11;
+        return 0;
+    }
+
     void Screen::OnText(std::string_view utf8)
     {
         if (!Usable(selected) || buttons[size_t(selected)].kind != Button::Kind::Edit) return;
