@@ -189,8 +189,8 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 - [~] **Unit groups, orders, stances, specials** (Black Dust ... Scan) and the order panel (0x480190, 0x47CCF0-;
       the 0x80A0 stagger 0x47CEE0): the popup's order items as the first selected member gives them (0x47E1E0,
       armed / moving, the special orders' types and research 0x47DA80), the stances (0x80B2) and Abandon; the digits do
-      nothing in the game (packet 0x12 has no handler); Retreat (0x480EF0). Still to do: the specials' modes, the
-      combined panel (0x448500)
+      nothing in the game (packet 0x12 has no handler); Retreat (0x480EF0); the specials' modes and the special
+      weapons' firing (0x4817C0, 0x496920). Still to do: the members' specials (0x80E1-0x80E3, 0x80F0, 0x80EE, 0x80EF), the combined panel (0x448500)
       — 07, 10, 11
 - [~] **Weapons and effects**: shots, explosions, gas, area effects; smoke and particle emitters (0x4949A0,
       0x47F050). In: health (0x47DA20), damage and death (0x48AB20, 0x80A0), WExplosion with its parts, splash
@@ -208,7 +208,7 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       and the timed statuses with what they do (frozen, stance 0, turned), 0x487B50 / 0x495CB0 / 0x496100, are in.)
 - [~] **Battle AI** (0x445010): the computer player's battle part (threats, own list, the planner 0x4456B0, tasks,
       objects gone) and the groups' periodic stance work (0x483B70: roaming, going home) are in; the computer's
-      specials (0x482570) aren't — 07
+      specials (0x482570) are in too — 07
 - [~] **Battle map music**: CD tracks 4 / 5 (the war map's is done) — 11
 - [x] **Positional sound**: listener at the view centre, inner / outer rects, pan 4·dx (0x464FF0), opcode 18's cull,
       variation groups as voices (platform/Sound); to do: quiet voices let go and taken back, alternate-update volume

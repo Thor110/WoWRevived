@@ -453,7 +453,7 @@ set the group's mode (+0x1DC) for the next click.
 nothing in the game.
 
 *Provisional*: the stances and Abandon act (the stances are kept per group, for the AI and weapons to come); Force
-Fire and the specials are listed but not acted on; Retreat is listed with reinforcement points (below).
+Fire and the specials set the group's mode ("The modes and specials", below); Retreat is listed with reinforcement points (below).
 
 ## Damage and death (0x48AB20, 0x48A5A0, 0x80A0 in 0x489FA0; WExplosion 0x488180 / 0x488350 / 0x488200; `battlemap/Combat.cpp`)
 
@@ -704,6 +704,35 @@ RETURNING TO WAR ROOMS.
 game's end as sector 3 won by a Human player or 30 by a Martian; the war map's taking of the losses isn't checked
 end to end (no save with a contested sector to hand); 0x80F4's control (+0x128, dword_4E9B60, used by the war
 map's 0x418980 on the research) isn't in.
+
+## The modes and specials (0x4817C0, 0x481CA0, 0x496920, 0x482570; `battlemap/Weapons.cpp`)
+
+**The group's mode** (+0x1DC) is set by the popup's Force Fire and specials (0x80F3 with the command, 0x4817C0):
+Force Fire 0x80ED mode 1; 0x80EE (halt, 0x8031; the members 0x80B9; the target cleared and the guns stood down)
+mode 2; 0x80EF mode 3; 0x80D5-0x80DD modes 4-12; 0x80DE-0x80E0 13-15; 0x80E4-0x80EC 16-24. 0x80E1-0x80E3 (each
+member 0x80E1-0x80E3 with 1-3) and 0x80F0 (each member 0x80F0) act at once.
+
+**A gun fires** only in the mode its type wants (vt+0x84 of its owner, 0x496920; no group, always): 407-409 modes
+4-6, 706-708 7-9, 697-699 10-12, 800-802 13-15, 803 / 938 / 939 16, 804-811 17-24; every other gun 0. So the
+specials are special weapons: chosen, the group's ordinary guns hold while that one fires.
+
+**A click** on the ground (packet 0x0E, 0x481CA0), by the mode: 1 fires at the point (0x481E78: the target the
+point; speech 0x10C), the mode then 0; 2 tells the members 0x80EE first (if none is on a bridge link), 3 0x80EF;
+then, any mode but 1, the mode is 0, the target cleared and the group moves (0x482510). **An attack on an object**
+(packet 0x10) in mode 1 targets the object's point and sets the mode 0 (0x481423); in any other mode the object is
+the target and the mode stays, so a chosen special fires at it. **Ctrl's force fire** (packet 0x13, 0x4815B1) leaves
+the mode as it is, the same.
+
+**The computer's specials** (0x482570): from the target chase (0x4826D0, so while the group has a target), a group
+with +0x1D8 bit 7 (0x4802E0: not a player's, the computer played by the machine) when its count (+0x58) is a
+multiple of 8 draws rand() % 27: 0x80F0 (0), 0x80DB-0x80DD (3-5), 0x80D5-0x80DA (6-11), 0x80E1-0x80EC (15-26),
+nothing (1, 2, 12-14); one its first member can do (0x47DA80) is given to the group (0x4817C0).
+
+With mortar 706 given to the lorries for the test and Force Fire from the popup at a point: in mode 0 (after the
+click) the mortar was aimed and in range but held; set to mode 7 at update 300, it fired at 301. The lorries'
+own rockets (414, mode 0) fired from update 158 as before.
+
+*Provisional*: what the members do with 0x80E1-0x80E3, 0x80F0, 0x80EE and 0x80EF isn't traced (logged).
 
 ## The battle AI (the computer player 0x442890: 0x445210, 0x4455D0, 0x4456B0, 0x445010, 0x445B90; the groups' 0x483B70; `battlemap/BattleAi.cpp`)
 

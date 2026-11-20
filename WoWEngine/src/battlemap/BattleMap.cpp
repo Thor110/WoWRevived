@@ -272,10 +272,9 @@ namespace wow
             {
                 const int wx = x + scrollX;
                 const int wy = land.ScreenYToWorldY(wx, y + scrollY);
-                const bool force = (SDL_GetModState() & SDL_KMOD_CTRL) || forceFireNext;
-                forceFireNext = false;
+                const bool force = (SDL_GetModState() & SDL_KMOD_CTRL) != 0;
                 if (wy && force) ForceFire(wx, wy);
-                else if (wy) OrderMove(wx, wy);
+                else if (wy) OrderMove(wx, wy);     // (a group in mode 1 fires there instead, 0x481CA0)
             }
             return;
         }
@@ -294,7 +293,6 @@ namespace wow
         {
             const int wx = x + scrollX;
             const int wy = land.ScreenYToWorldY(wx, y + scrollY);
-            forceFireNext = false;
             if (wy) ForceFire(wx, wy);
         }
         else if (best->players)
@@ -1338,13 +1336,14 @@ namespace wow
                         else i++;
                     return std::nullopt;
                 }
-                if (command == 0x80F3 && param == 0x80ED)
+                if (command == 0x80F3)
                 {
-                    // Force Fire (0x4817C0 -> +0x1DC 1): the next click on the ground fires there
-                    forceFireNext = true;
+                    // Force Fire and the specials (0x4817C0): each selected group's mode (+0x1DC) for the next click
+                    for (size_t g = 0; g < selected.size(); g++)
+                        if (selected[g]) GroupOrder(int(g), param);
                     return std::nullopt;
                 }
-                if (command == 0x80CE || command == 0x80F3)
+                if (command == 0x80CE)
                 {
                     SDL_Log("order 0x%X 0x%X: not in yet", command, param);
                     return std::nullopt;

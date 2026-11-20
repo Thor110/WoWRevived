@@ -256,11 +256,14 @@ namespace wow
         // (target: 0 none, -1 a point, else the object's id)
         struct GroupTarget { int target = 0; int x = 0, y = 0, z = 0, lastX = -1, lastY = -1, lastZ = -1; };
         std::vector<GroupTarget> groupTargets;
-        bool forceFireNext = false;                             // the popup's Force Fire waiting for the click
         std::vector<int> groupMode, groupRange;
         std::array<int, 8> WeaponData(int type) const;          // OBJ.ojd record 12 (0x4F2F10)
         void SetUpGuns(Unit& u);
-        void ForceFire(int x, int y);                           // packet 0x13 / mode 1 (0x4812B0, 0x481CA0)
+        void ForceFire(int x, int y);                           // packet 0x13 (0x4812B0), each selected group
+        void ForceFireGroup(int g, int x, int y);               // the group's target the point
+        void GroupOrder(int g, int command);                    // 0x4817C0's special cases: the group's mode (+0x1DC)
+        static int FireMode(int gunType);                       // 0x496920: the group mode a gun fires in
+        void ComputerSpecials(int g);                           // 0x482570
         void StopAttacking(int group);                          // the target cleared, the guns 0x805A
         void AttackObject(int id);                              // packet 0x10 (0x4812B0 -> 0x481F70 -> 0x482880)
         void Approach(Unit& u, const Unit& target);             // vt+0xC4: 0x491100 -> 0x496300

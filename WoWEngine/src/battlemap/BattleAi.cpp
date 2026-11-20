@@ -80,8 +80,7 @@ namespace wow
         }
         GroupTarget& gt = groupTargets[size_t(g)];
         gt = GroupTarget{};
-        gt.target = target->id;
-        groupMode[size_t(g)] = 0;
+        gt.target = target->id;     // (the group's mode as it is: 0x482880 leaves it)
     }
 
     // 0x4456B0, with its own list not empty:

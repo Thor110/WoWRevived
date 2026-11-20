@@ -176,19 +176,74 @@ namespace wow
             bool members = false;
             for (const Unit& u : units) if (u.players && u.group == int(g) && !u.guns.empty()) members = true;
             if (!members) continue;
-            GroupTarget& t = groupTargets[g];
-            t.target = -1;
-            t.x = x;
-            t.y = y;
-            t.z = land.HeightAt(x, y);
-            t.lastX = t.lastY = t.lastZ = -1;
-            groupMode[g] = 0;
-            // the group's home becomes the point (0x4812B0's packet cases set +0x60 / +0x64; *provisional*: the
-            // values they store aren't traced)
-            if (g < groupHomeX.size()) { groupHomeX[g] = x; groupHomeY[g] = y; }
+            ForceFireGroup(int(g), x, y);
             if (!any) Speak(0x10C, int(g));
             any = true;
         }
+    }
+
+    // A group's target a point (packet 0x13's case, 0x4815B1: the members 0x80B9, the target cleared, the guns stood
+    // down, then +0x2C -1 and +0x40..+0x48 the point at its ground height, 0x47B170); its mode (+0x1DC) is left as it
+    // is, so a special chosen from the popup fires there
+    void BattleMap::ForceFireGroup(int g, int x, int y)
+    {
+        if (g < 0 || size_t(g) >= groupTargets.size()) return;
+        GroupTarget& t = groupTargets[size_t(g)];
+        t.target = -1;
+        t.x = x;
+        t.y = y;
+        t.z = land.HeightAt(x, y);
+        t.lastX = t.lastY = t.lastZ = -1;
+        // the group's home becomes the point (0x4812B0's packet cases set +0x60 / +0x64; *provisional*: the
+        // values they store aren't traced)
+        if (size_t(g) < groupHomeX.size()) { groupHomeX[size_t(g)] = x; groupHomeY[size_t(g)] = y; }
+    }
+
+    // 0x496920 (vt+0x84 of a gun's owner): with no group it may fire; otherwise its group's mode (+0x1DC) must be the
+    // one its type wants: 407-409 modes 4-6, 706-708 7-9, 697-699 10-12, 800-802 13-15, 803 / 938 / 939 16, 804-811
+    // 17-24; any other gun 0
+    int BattleMap::FireMode(int t)
+    {
+        if (t >= 0x197 && t <= 0x199) return t - 0x197 + 4;
+        if (t >= 706 && t <= 708) return t - 706 + 7;
+        if (t >= 697 && t <= 699) return t - 697 + 10;
+        if (t >= 800 && t <= 802) return t - 800 + 13;
+        if (t == 803 || t == 938 || t == 939) return 16;
+        if (t >= 804 && t <= 811) return t - 804 + 17;
+        return 0;
+    }
+
+    // 0x4817C0's other cases, a special from the popup (0x80F3 with its command), for a group: Force Fire (0x80ED)
+    // mode 1; 0x80EE: halted (0x8031), the members 0x80B9, the target cleared, the guns stood down (0x805A), bit 0
+    // cleared, mode 2; 0x80EF mode 3; 0x80D5-0x80DD modes 4-12; 0x80DE-0x80E0 13-15; 0x80E4-0x80EC 16-24; 0x80E1-0x80E3
+    // each member 0x80E1-0x80E3 with 1-3, and 0x80F0 each member 0x80F0, at once.
+    // *Provisional*: what the members do with 0x80E1-0x80E3, 0x80F0, 0x80EE and 0x80EF isn't traced.
+    void BattleMap::GroupOrder(int g, int command)
+    {
+        if (g < 0 || size_t(g) >= groupMode.size()) return;
+        int& mode = groupMode[size_t(g)];
+        if (command == 0x80ED) mode = 1;
+        else if (command == 0x80EE) { StopAttacking(g); mode = 2; }
+        else if (command == 0x80EF) mode = 3;
+        else if (command >= 0x80D5 && command <= 0x80DD) mode = command - 0x80D5 + 4;
+        else if (command >= 0x80DE && command <= 0x80E0) mode = command - 0x80DE + 13;
+        else if (command >= 0x80E4 && command <= 0x80EC) mode = command - 0x80E4 + 16;
+        else SDL_Log("group %d: special 0x%X to its members (not in yet)", g, command);
+    }
+
+    // 0x482570, from the group's target chase (0x4826D0, so only while it has a target) for a computer's group
+    // (+0x1D8 bit 7: not a player's, the computer player played by the machine, 0x4802E0) when +0x58 is a multiple
+    // of 8: rand() % 27 picks 0x80F0 (0), 0x80DB-0x80DD (3-5), 0x80D5-0x80DA (6-11), 0x80E1-0x80EC (15-26) or
+    // nothing (1, 2, 12-14); if its first member can (0x47DA80) the group's given it (0x4817C0)
+    void BattleMap::ComputerSpecials(int g)
+    {
+        static constexpr int table[27] = { 0x80F0, 0, 0, 0x80DB, 0x80DC, 0x80DD, 0x80D5, 0x80D6, 0x80D7, 0x80D8, 0x80D9, 0x80DA,
+            0, 0, 0, 0x80E1, 0x80E2, 0x80E3, 0x80E4, 0x80E5, 0x80E6, 0x80E7, 0x80E8, 0x80E9, 0x80EA, 0x80EB, 0x80EC };
+        const int command = table[random::Rand() % 27];
+        if (!command) return;
+        const Unit* first = nullptr;
+        for (const Unit& u : units) if (u.group == g) { first = &u; break; }
+        if (first && CanDo(first->type, command)) GroupOrder(g, command);
     }
 
     BattleMap::Unit* BattleMap::UnitById(int id)
@@ -216,12 +271,21 @@ namespace wow
             for (const Unit& u : units)
                 if (u.group == int(g)) { first = &u; break; }
             if (!first || !first->players) continue;
-            GroupTarget& t = groupTargets[g];
-            t = GroupTarget{};
-            t.target = id;
-            groupMode[g] = 0;
-            if (g < groupHomeX.size()) { groupHomeX[g] = int(target->x); groupHomeY[g] = int(target->y); }
             auto ft = setup.units->find(first->type);
+            // in mode 1 (Force Fire from the popup) the object's point is the target, and the mode 0 (0x481423);
+            // otherwise the mode stays (a special chosen fires at it)
+            if (groupMode[g] == 1)
+            {
+                ForceFireGroup(int(g), int(target->x), int(target->y));
+                groupMode[g] = 0;
+            }
+            else
+            {
+                GroupTarget& t = groupTargets[g];
+                t = GroupTarget{};
+                t.target = id;
+                if (g < groupHomeX.size()) { groupHomeX[g] = int(target->x); groupHomeY[g] = int(target->y); }
+            }
             if (!any && ft != setup.units->end() && ft->second.category == 1) Speak(0x10C, int(g));
             any = true;
         }
@@ -332,6 +396,9 @@ namespace wow
         {
             GroupTarget& t = groupTargets[g];
             if (t.target == 0) continue;
+            // a computer's group (+0x1D8 bit 7) every 8th of its counts tries a special (0x482570)
+            if (g < setup.groups.size() && !setup.groups[g].Players() && g < groupTicks.size() && groupTicks[g] % 8 == 0)
+                ComputerSpecials(int(g));
             const Unit* object = nullptr;
             if (t.target > 0)
             {
@@ -453,7 +520,7 @@ namespace wow
             else if (g.armed && (g.flags & 1))
             {
                 const int mode = u.group >= 0 && size_t(u.group) < groupMode.size() ? groupMode[size_t(u.group)] : 0;
-                if (mode == 0 && !u.Frozen()) g.state = 1;
+                if (mode == FireMode(g.type) && !u.Frozen()) g.state = 1;
                 else g.flags &= ~1u;
             }
             break;

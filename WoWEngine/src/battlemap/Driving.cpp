@@ -49,6 +49,15 @@ namespace wow
         for (size_t g = 0; g < selected.size(); g++)
         {
             if (!selected[g]) continue;
+            // 0x481CA0 by the group's mode: 1 (Force Fire from the popup) fires at the point instead (0x481E78);
+            // 2 and 3 tell the members 0x80EE / 0x80EF first (*not in*); then the mode 0 and the move
+            if (g < groupMode.size() && groupMode[g] == 1)
+            {
+                ForceFireGroup(int(g), x, y);
+                groupMode[g] = 0;
+                continue;
+            }
+            if (g < groupMode.size()) groupMode[g] = 0;
             StopAttacking(int(g));      // a move clears the target (0x481CA0)
             // and the point is the group's home (0x4812B0's case 0x0E: +0x60 / +0x64)
             if (g < groupHomeX.size()) { groupHomeX[g] = x; groupHomeY[g] = y; }

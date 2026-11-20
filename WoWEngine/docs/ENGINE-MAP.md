@@ -109,6 +109,7 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x4949A0–0x495280 / 0x4886A0 / 0x487F50 | Guns | The fire cycle, aim and landing; `src/battlemap/Weapons.cpp` |
 | 0x489820–0x489D80 / 0x494FD0 | Turrets | Turning, hardpoints and the guns' arcs; `src/battlemap/Weapons.cpp`, drawn in `BattleMap.cpp` |
 | 0x487B00–0x487E54 / 0x495CB0 / 0x496100 / 0x496760 | Area blasts | Their detonation by type and the timed statuses (frozen, stance 0, turned); `src/battlemap/Combat.cpp` |
+| 0x4817C0 / 0x481CA0 / 0x496920 / 0x482570 | Modes and specials | The group's mode, which guns fire in it, the computer's specials; `src/battlemap/Weapons.cpp` |
 | 0x43D150 / 0x43D3F0 / 0x480EF0 | Reinforcement points | The points, their markers and Retreat; `src/battlemap/Reinforcements.cpp` |
 | 0x43A980 / 0x43A800 / 0x4212F0 | The battle's end | Each side counted, the InfoBox, the report; the losses back to the war map (`BattleMap.cpp`, `WarMap::FightBattle`) |
 | 0x489E20 / 0x48A950 / 0x48A9A0 | Damageable objects | Health, bit 7, the footprint marked and freed; the scenery as `props` in `src/battlemap/Combat.cpp` |
