@@ -1004,6 +1004,7 @@ namespace wow
         {
             const float x = units[i].x, y = units[i].y;
             Drive(i);
+            StatusTick(units[i]);
             LookRound(i);
             Smoulder(i);
             moved |= units[i].x != x || units[i].y != y;

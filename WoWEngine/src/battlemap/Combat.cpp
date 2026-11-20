@@ -85,10 +85,14 @@ namespace wow
     // *Provisional*: only units are hit (the scenery's damage isn't in); a death explosion's firer (the dying
     // object's parent) is always none, so both sides are hit; a gun's spares its unit's group (0x47EB00); light parts (334-346) and emitters (smoke) aren't
     // made.
+    // The area blasts (0x487B00 on WExplosion: the factory's 718-720, 788-790, 812-823)
+    bool BattleMap::IsAreaBlast(int t) { return (t >= 718 && t <= 720) || (t >= 788 && t <= 790) || (t >= 812 && t <= 823); }
+
     void BattleMap::Explode(int type, int x, int y, int z, int firer)
     {
         auto t = setup.units->find(type);
-        if (t == setup.units->end() || !IsExplosion(type)) return;
+        const bool area = IsAreaBlast(type);
+        if (t == setup.units->end() || (!IsExplosion(type) && !area)) return;
         const int radius = int16_t(t->second.hitPoints);
         const int power = MaxHealth(type);
         const int ground = land.HeightAt(x, y);
@@ -97,9 +101,15 @@ namespace wow
         for (const auto& part : t->second.parts)
         {
             const int px = x + int16_t(part.b), py = y + int16_t(part.c), pz = z + int16_t(part.d);
-            if (IsExplosion(part.a)) Explode(part.a, px, py, pz, firer);
+            if (IsExplosion(part.a) || IsAreaBlast(part.a)) Explode(part.a, px, py, pz, firer);
             else if (part.a >= 334 && part.a <= 346) AddLight(part.a, px, py, land.HeightAt(px, py) + pz);
             else SpawnEffect(part.a, float(px), float(py), float(pz));
+        }
+        if (area)
+        {
+            AreaDetonate(type, x, y, radius, power, firer);
+            SpawnEffect(type, float(x), float(y), float(std::max(z, 0)));
+            return;
         }
         // Detonate
         for (size_t i = 0; i < units.size(); i++)
@@ -123,5 +133,75 @@ namespace wow
             if (terrain < 1 || terrain > 3) land.Scorch(x, y, radius, power);
         }
         SpawnEffect(type, float(x), float(y), float(std::max(z, 0)));
+    }
+
+    // An area blast's detonation (vt+0xE0 = 0x487B50, in place of WExplosion's 0x488200: no splash for all, no
+    // scorch): every object within reach (0x47FC50, its radius +0xAC) but the firer's side (0x47EB00) gets, by the
+    // blast's type: 718-720 a hit (vt+0xC0 with 1.0: 0x48A5A0) if it's under the ground (+0x84 below 0.0);
+    // 788-790 a hit if it's Martian (0x4406E0 = 1); 812-814 0x80F4 (the firer, 1-3, 120 / 240 / 360); 815-817
+    // 0x80F5 (frozen) at 1-3; 818-820 0x80F6 at 1-3 and a hit; 821-823 0x80F7 at 1-3. (The switch also has 0x80F5
+    // for 0x1F8-0x1FA, 0x21E-0x220 and 0x244-0x246, which the factory doesn't make as area blasts.)
+    // *Provisional*: 0x80F4 (taking the key buildings over, 0x495CB0) and 0x80F7's 0x496100 aren't in; the
+    // statuses' other effects (but frozen guns and 0x80F6's stance) aren't traced.
+    void BattleMap::AreaDetonate(int type, int x, int y, int radius, int power, int firer)
+    {
+        for (size_t i = 0; i < units.size(); i++)
+        {
+            Unit& u = units[i];
+            auto ut = setup.units->find(u.type);
+            if (ut == setup.units->end() || ut->second.category == 4) continue;
+            if (firer >= 0 && u.group == firer) continue;
+            const int reach = radius + u.drive.radius;
+            const int d = Octagonal(int(u.x), int(u.y), x, y);
+            if (d > reach || reach == 0) continue;
+            auto hit = [&]() {
+                if (units[i].health <= 0) return;
+                const float h = float((1.0 - double(float(d)) / double(float(reach))) * power);
+                Damage(i, int(double(h) * 1.0));
+            };
+            if (type >= 718 && type <= 720) { if (u.drive.lift < 0.0f) hit(); }
+            else if (type >= 788 && type <= 790) { if (ut->second.faction == 1) hit(); }
+            else if (type >= 815 && type <= 817) SetStatus(i, 0x80F5, type - 814);
+            else if (type >= 818 && type <= 820) { SetStatus(i, 0x80F6, type - 817); hit(); }
+            else if (type >= 821 && type <= 823) SetStatus(i, 0x80F7, type - 820);
+        }
+    }
+
+    // 0x80F5-0x80F7 (0x495CB0): the timer (vt+0x88: +0xDC) (level + 2) x 150 updates and the status (vt+0x90: +0xE0,
+    // 0x496760); 0x80F6 first has the group's guns stood down (0x805A) and its stance 0 (0x80B2). 0x496760, the
+    // status changing from 0x80F6 to another, gives the group the type's +0x43 byte as its stance again (from 0x80F7,
+    // its own case). The unit's update (0x4967E0) counts the timer down (vt+0x8C) and at 0 sets the status 0.
+    // Frozen (vt+0x108 = 0x489860: the timer running and the status 0x80F5) stops its guns (0x496920).
+    // *Provisional*: the stance given back is 1 (the +0x43 byte isn't read).
+    void BattleMap::SetStatus(size_t index, int status, int level)
+    {
+        Unit& u = units[index];
+        if (status == 0x80F6 && u.group >= 0 && size_t(u.group) < groupStance.size())
+        {
+            for (Unit& m : units)
+                if (m.group == u.group)
+                    for (Gun& g : m.guns)
+                    {
+                        g.armed = false;
+                        if (g.state != 0) g.state = 4;
+                        g.flags |= 1;
+                    }
+            groupStance[size_t(u.group)] = 0;
+        }
+        u.statusTime = (level + 2) * 150;
+        ChangeStatus(u, status);
+    }
+
+    void BattleMap::ChangeStatus(Unit& u, int status)
+    {
+        if (u.status == 0x80F6 && status != 0x80F6 && u.group >= 0 && size_t(u.group) < groupStance.size())
+            groupStance[size_t(u.group)] = 1;
+        u.status = status;
+    }
+
+    void BattleMap::StatusTick(Unit& u)
+    {
+        if (u.statusTime == 0) return;
+        if (--u.statusTime == 0) ChangeStatus(u, 0);
     }
 }

@@ -373,7 +373,7 @@ namespace wow
             else if (g.armed && (g.flags & 1))
             {
                 const int mode = u.group >= 0 && size_t(u.group) < groupMode.size() ? groupMode[size_t(u.group)] : 0;
-                if (mode == 0) g.state = 1;
+                if (mode == 0 && !u.Frozen()) g.state = 1;
                 else g.flags &= ~1u;
             }
             break;

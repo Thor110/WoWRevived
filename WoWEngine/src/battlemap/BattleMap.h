@@ -208,6 +208,8 @@ namespace wow
                       int dieAt = -1;       // a 0x80A0 posted to itself (the update it arrives on)
                       int id = 0;           // +0x08, the object's id (kept by a group's target, +0x30)
                       int scanCount = 0;    // +0xDA, updates since its last look round (0x4967E0)
+                      int statusTime = 0, status = 0; // +0xDC / +0xE0: a timed status (0x80F5 frozen, 0x80F6, 0x80F7)
+                      bool Frozen() const { return statusTime != 0 && status == 0x80F5; }  // vt+0x108, 0x489860
                     };
         int nextId = 1;
         Unit* UnitById(int id);
@@ -242,6 +244,11 @@ namespace wow
         void Die(size_t unit);                                  // 0x80A0
         void Explode(int type, int x, int y, int z, int firer = -1);  // 0x488070 + 0x488350 / 0x488200 (firer: a unit's group)
         static bool IsExplosion(int type);
+        static bool IsAreaBlast(int type);
+        void AreaDetonate(int type, int x, int y, int radius, int power, int firer);   // 0x487B50
+        void SetStatus(size_t unit, int status, int level);     // 0x80F5-0x80F7 (0x495CB0)
+        void ChangeStatus(Unit& u, int status);                 // vt+0x90, 0x496760
+        void StatusTick(Unit& u);                               // 0x4967E0's timer
         std::vector<Unit> units;
         int startX = 0, startY = 0;                          // dword_4F742C / 4F7434: the player's deployment centre
         void Deploy();

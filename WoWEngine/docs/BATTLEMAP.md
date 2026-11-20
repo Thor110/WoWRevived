@@ -589,6 +589,34 @@ told of an unarmed object seen, the turrets' turning and arcs, the guns' place o
 multipliers and the "CAN'T GET TO WITHIN ATTACK DISTANCE!" check aren't in; a target that's gone clears the group's
 target (the game's tidy-up of 0x8057 isn't traced); WProjectile and 0x48DBE0 fly no visible missile.
 
+**Area blasts** (0x487B00 on WExplosion: the factory's 718-720, 788-790 and 812-823; impact sizes 44-61): made as a
+WExplosion (sound, parts, radius +0x44, power +0x4A), but their detonation (vt+0xE0 = 0x487B50) replaces WExplosion's
+0x488200: no splash for everything and no scorch. Each object within reach (0x47FC50) but the firer's side
+(0x47EB00) gets, by the blast's type:
+
+| Types | What |
+| --- | --- |
+| 718-720 | a hit (vt+0xC0 with 1.0, 0x48A5A0) only if it's under the ground (+0x84 below 0.0) |
+| 788-790 | a hit only if it's Martian (0x4406E0 = 1) |
+| 812-814 | 0x80F4 with the firer, 1-3 and 120 / 240 / 360 (to the battle's key buildings: taking them over) |
+| 815-817 | 0x80F5 at 1-3: frozen |
+| 818-820 | 0x80F6 at 1-3 and a hit |
+| 821-823 | 0x80F7 at 1-3 |
+
+(The switch also sends 0x80F5 for 0x1F8-0x1FA, 0x21E-0x220 and 0x244-0x246, which the factory makes as WExplosions,
+whose own detonation runs instead: those cases are never reached.) **The statuses** (0x495CB0): 0x80F5-0x80F7 set the
+timer (vt+0x88: +0xDC) to (level + 2) x 150 updates and the status (vt+0x90: +0xE0, 0x496760); 0x80F6 first stands
+its group's guns down (0x805A) and sets the group's stance to 0 (0x80B2); leaving 0x80F6, the group's stance goes
+back to the type's +0x43 byte. The unit's update (0x4967E0) counts the timer down and at 0 sets the status 0.
+Frozen (vt+0x108 = 0x489860: timer running, status 0x80F5) keeps its guns from firing (0x496920). So the mortars
+706-708 (sizes 44-46) blast with 718-720 and hurt only what's under the ground, and 938 (53) freezes (815).
+
+With the tower made the other side's and the lorries given mortar 938 for the test, its shells' 815 blasts
+(radius 60, power 84) froze the tower for 450 updates at a time (level 1), the lorries' own group spared.
+
+*Provisional*: 0x80F4 (0x495CB0's key building case) and 0x80F7's 0x496100 aren't in; the stance given back is 1
+(the +0x43 byte isn't read); what else the statuses stop (driving, say) isn't traced.
+
 ## Flying objects and emitters (0x487730, 0x487890, 0x47F050, 0x47F770; 0x48AEF0, 0x48ADD0; `battlemap/Effects.cpp`)
 
 **The classes** on the flying object 0x487730 (its update 0x487890): WAnimEffect (0x488FB0, update 0x489050: the
