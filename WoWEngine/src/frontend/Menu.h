@@ -48,8 +48,8 @@ namespace wow
 
         // Rows that change a value; changed is called with the control after every change.
         using OnChange = std::function<void(Button&)>;
-        void AddCheck(int textId, bool value, OnChange changed);                 // 0x40A320
-        void AddRadio(int textId, int group, bool value, OnChange changed);      // 0x40A630
+        void AddCheck(int textId, bool value, OnChange changed, int tooltip = 0);             // 0x40A320
+        void AddRadio(int textId, int group, bool value, OnChange changed, int tooltip = 0);  // 0x40A630
         // label turns the value into the row's text ("Master Volume - 80%")
         void AddSlider(int value, int max, std::function<std::string(int)> label, OnChange changed); // 0x40AC80
 

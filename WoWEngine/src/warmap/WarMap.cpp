@@ -1,5 +1,7 @@
 #include "warmap/WarMap.h"
 
+#include "core/Random.h"
+
 #include <SDL3/SDL_keyboard.h>
 #include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_log.h>
@@ -31,6 +33,9 @@ namespace wow
                    std::map<int, ObjOjd::UnitData> units, std::map<int, int> objectClasses, std::vector<int> owners, int scrollSpeed, float clunting)
         : Screen(Id, r, 0, warmap::PaletteGroup), colours(c), game(start), cluntingSpeed(clunting)
     {
+        // the war map's numbers start from srand(1) each time (WWarMapWorld 0x417CD0)
+        random::Seed(1);
+        unitData = units;
         // A counter for each object (0x42B2F0, made by 0x4205F0), except that objects of class 7 (AI.ojd's class,
         // 0x518B14: wire fences, mines) share one a type and sector (0x4282A0 / 0x428270), with how many there are
         // in the counter font (GType 0x6E, right-aligned). An object saved at 0, 0 goes in the sector's next free
@@ -148,7 +153,14 @@ namespace wow
         if (!sectorMap) return 0;
         int mx = cameraX + x, my = cameraY + y;
         if (mx < 0 || my < 0 || mx >= sectorMap->width || my >= sectorMap->height) return 0;
-        return warmap::SectorOfValue(sectorMap->pixels[size_t(my) * size_t(sectorMap->width) + size_t(mx)]);
+        int value = sectorMap->pixels[size_t(my) * size_t(sectorMap->width) + size_t(mx)];
+        if (value <= warmap::SectorCount) return warmap::SectorOfValue(value);
+        // a border pixel (0x49BF50) belongs to the lowest-numbered sector whose border list has it
+        int border = value - 31;
+        for (int sector = 1; sector <= warmap::SectorCount; sector++)
+            for (int b : warmap::SectorBorders[sector])
+                if (border > 0 && b == border) return sector;
+        return 0;
     }
 
     float WarMap::PixelsPerHour(const Counter& k) const
@@ -162,8 +174,127 @@ namespace wow
     void WarMap::Log(std::string text)
     {
         SDL_Log("War map message: %s", text.c_str());
-        if (log.size() >= 10) log.erase(log.begin());
-        log.push_back({ std::move(text), 5 * 30 });
+        // 0x420DA0: at most 10 lines (0x4BA4FC), gone ones included, so the oldest goes; each lives 5 x 30 updates
+        if (log.size() >= 10)
+        {
+            // a line still scrolling away goes with it
+            if (log.front().state == 1 && --logPending <= 0) { logPending = 0; logScrolling = false; logScroll = 0; }
+            log.erase(log.begin());
+        }
+        log.push_back({ std::move(text), LogLife, 0 });
+    }
+
+    // The message list's tick (0x420CD0): live lines age (0x428A00); one that runs out starts the list scrolling up a
+    // pixel an update, and once it has gone up a line (16) the first run-out line is gone and the list drops back.
+    void WarMap::AgeLog()
+    {
+        LogLine* first = nullptr;
+        for (LogLine& line : log)
+        {
+            if (line.state == 0 && line.life > 0)
+            {
+                line.life--;
+                if (line.life == 0) { line.state = 1; logScrolling = true; logPending++; }
+            }
+            if (!first && line.state == 1) first = &line;
+        }
+        if (!logScrolling) return;
+        if (--logScroll != -16) return; // 0x4BA500
+        logScroll = 0;
+        if (first) first->state = 2;
+        if (--logPending <= 0) { logPending = 0; logScrolling = false; }
+    }
+
+    // 0x428A00 / 0x4289D0: a line's life set outright: live while there's any, gone at 0
+    void WarMap::SetLife(LogLine& line, int life)
+    {
+        line.life = std::max(life, 0);
+        line.state = line.life > 0 ? 0 : 2;
+    }
+
+    // The message history (world +0x6C, 'M'; 0x421150 / 0x421040): opening it gives every line with less than
+    // 5 seconds left another 5 seconds, so the last 10 show again; closing takes the 5 seconds off them all.
+    void WarMap::ToggleHistory()
+    {
+        historyOpen = !historyOpen;
+        sounds.push_back(historyOpen ? 0x193 : 0x196);
+        for (LogLine& line : log)
+        {
+            if (historyOpen) { if (line.life < LogLife) SetLife(line, line.life + LogLife); }
+            else SetLife(line, line.life - LogLife);
+        }
+        if (historyOpen) { logScroll = 0; logScrolling = false; logPending = 0; }
+    }
+
+    // 0x80CC: the last two lines (0x4BA504) shown again for 5 seconds
+    void WarMap::ReshowLastMessages()
+    {
+        int n = 0;
+        for (auto it = log.rbegin(); it != log.rend() && n < 2; ++it, ++n)
+            if (it->life < LogLife) SetLife(*it, it->life + LogLife);
+    }
+
+    // What one more finished facility of a kind would add to a sector's output (0x424000): with B the sector's
+    // deposit, n its finished facilities of the kind and r the drop-off rate, output(n) = n r B / (n + r - 1), and
+    // the value is output(n + 1) - output(n); B with none yet.
+    float WarMap::ResourceGain(int sector, int kind) const
+    {
+        auto it = deposits.find(sector);
+        float b = it == deposits.end() ? 0.0f : float(it->second[size_t(kind)]);
+        // the facility types of each kind (0x423920)
+        static constexpr int Facility[6] = { 47, 48, 49, 108, 109, 110 };
+        int n = 0;
+        for (int type : finished[size_t(sector)]) if (type == Facility[kind]) n++;
+        if (n == 0) return b;
+        const float r = resourceDropOff, fn = float(n);
+        return (fn + 1.0f) * r * b / (r + fn) - fn * r * b / (r + fn - 1.0f);
+    }
+
+    // The sectors' shading (0x4192F0 fills five tables, 0x41D9B0 turns them into levels of the map's shade table).
+    // Table 0, the Unit view: the objects in each sector of ours (dword_4F7650, one more for each object put in
+    // it), 0 for the rest, onto levels 17-35. Tables 2-4, the Resource view: what another facility of the side's
+    // kind 0-2 would give in every sector, onto 78-88, the top fixed at 80. A sector of ours takes
+    // lo + (v - min) / (max - min) x (hi - lo); in the Resource view so does every other; otherwise a sector no one
+    // holds is at 11, and the other side's is 11 too except in the Unit view, where it's 0 (dark). Table 1, the
+    // Construction view (67-77, top 1.0), is the sectors' production efficiency from the economy, which isn't in
+    // yet, so that view leaves the sectors at 11.
+    void WarMap::ShadeSectors()
+    {
+        levels.fill(warmap::NormalLevel);
+        if (viewMode == 2) { PulseBattles(); return; }
+        std::array<float, warmap::SectorCount + 1> v{};
+        if (viewMode == 1)
+            for (const Counter& k : counters)
+                if (k.sector >= 1 && k.sector <= warmap::SectorCount && owner[size_t(k.sector)] == 0) v[size_t(k.sector)] += float(std::max(k.count, 1));
+        if (viewMode == 3)
+        {
+            int kind = (res.Human() ? 0 : 3) + std::clamp(resourceKind, 0, 2);
+            for (int s = 1; s <= warmap::SectorCount; s++) v[size_t(s)] = ResourceGain(s, kind);
+        }
+        float lo = 1e6f, hi = -1e6f;
+        for (int s = 1; s <= warmap::SectorCount; s++) { lo = std::min(lo, v[size_t(s)]); hi = std::max(hi, v[size_t(s)]); }
+        if (viewMode == 3) hi = 80.0f;
+        float range = hi - lo;
+        if (range == 0.0f) range = 1.0f;
+        const int first = viewMode == 1 ? 17 : 78, last = viewMode == 1 ? 35 : 88;
+        for (int s = 1; s <= warmap::SectorCount; s++)
+        {
+            int level;
+            if (owner[size_t(s)] == 0 || viewMode == 3) level = int((v[size_t(s)] - lo) / range * float(last - first) + float(first));
+            else if (owner[size_t(s)] == 2) level = warmap::NormalLevel;
+            else level = 0;
+            levels[size_t(s)] = level;
+        }
+        PulseBattles();
+    }
+
+    // A sector with a battle in it pulses (0x41DE70): the view's frame count 0-22 as a ramp up and down 0-11-0, on
+    // 36 for ours and 47 for the rest.
+    void WarMap::PulseBattles()
+    {
+        int frame = animation % 23, ramp = frame > 11 ? 22 - frame : frame;
+        for (int s = 1; s <= warmap::SectorCount; s++)
+            if (battle[size_t(s)]) levels[size_t(s)] = 36 + (owner[size_t(s)] != 0 ? 11 : 0) + ramp;
     }
 
     // The calendar's tick (0x41F6C0): an hour asked for by a click on the calendar ("Advance time", +0x30), or
@@ -176,7 +307,75 @@ namespace wow
         else game.ticks += warmap::Speeds[speed] / 30.0f;
         int hours = int(game.ticks) - int(before);
         if (hours > 0) warmap::AdvanceDate(game.dateTime, hours);
+        hoursPassed = hours;
         return game.ticks - before;
+    }
+
+    // The world's 0x802D, every whole game hour (0x419E9D): the routes, the players, both sides' research, then
+    // the pods. (Only the pods are in so far; the routes move every update in MoveCounters.)
+    void WarMap::Hourly(int hours)
+    {
+        DropPod(hours);
+    }
+
+    // Martian pods (0x41A330): while fewer than 8 have come, every [Tweak] "Pod Interval (hours)" (24) one lands in
+    // sector 2, 4, 6, 7, 8, 9, 10 or 11 (byte_4B9DE8[rand() & 7]) carrying one of four loads (off_4B9E28[rand() % 4]:
+    // a ScoutMachineMk1, 62, alone or with a HandlingMachineMk1, 89, or a DiggingMechanismMk1, 91), added to the
+    // sector (0x43CEB0). In a Human sector it marks the sector (+0x64) for the battle check (0x41AB00); otherwise
+    // it's event 12, PodLanded (0x41F010): in a Martian sector sound 0x1B2 and "Pod landed: <sector>" (0x41E); in
+    // one no one holds a battle there (+0x124), sound 0x1B3 and "Pod landed in our territory: <sector>" (0x420) in
+    // a Human game, "Pod landed in enemy sector: ..." (0x41F) in a Martian one, with the battle to follow (0x8072,
+    // not in yet). A Martian game switches to the Unit view first (0x41A730).
+    void WarMap::DropPod(int hours)
+    {
+        if (pods >= 8) return;
+        podHours += hours;
+        if (podHours < podInterval) return;
+        podHours -= podInterval;
+        static constexpr int Sectors[8] = { 2, 4, 6, 7, 8, 9, 10, 11 };
+        static const std::vector<int> Loads[4] = { { 62 }, { 62, 89 }, { 62, 91 }, { 62, 89 } };
+        int sector = Sectors[random::Rand() & 7];
+        const std::vector<int>& load = Loads[random::Rand() % 4];
+        const bool human = res.Human();
+        for (int type : load) AddUnit(type, sector, !human);
+        pods++;
+        // who holds it, as Human 0 / Martian 1 / no one 2
+        int who = owner[size_t(sector)] == 2 ? 2 : (owner[size_t(sector)] == 0) == human ? 0 : 1;
+        if (who == 0) { podFlag[size_t(sector)] = true; return; }
+        if (!human) viewMode = 1;
+        std::string name = res.String(warmap::NameText(sector));
+        if (who == 1)
+        {
+            sounds.push_back(0x1B2);
+            Log(res.String(0x41E) + ": " + name);
+            return;
+        }
+        battle[size_t(sector)] = true;
+        sounds.push_back(0x1B3);
+        Log(res.String(human ? 0x420 : 0x41F) + ": " + name);
+    }
+
+    // A unit put in a sector (0x43CEB0): its own counter in the sector's next free cell
+    void WarMap::AddUnit(int type, int sector, bool players)
+    {
+        auto unit = unitData.find(type);
+        Counter k;
+        k.frame = unit == unitData.end() ? 0 : unit->second.counterFrame;
+        k.speed = unit == unitData.end() ? 0 : unit->second.warMapSpeed;
+        k.moveClass = unit == unitData.end() ? 0 : unit->second.moveClass;
+        k.count = 1;
+        k.players = players;
+        k.kind = 0;
+        k.sector = sector;
+        for (const auto& [x, y] : SectorCells(sector))
+        {
+            bool taken = false;
+            for (const Counter& c : counters) if (c.kind == 0 && c.x == x && c.y == y) { taken = true; break; }
+            if (taken) continue;
+            k.x = x; k.y = y; k.fx = float(x); k.fy = float(y);
+            counters.push_back(k);
+            return;
+        }
     }
 
     void WarMap::MoveCounters(float hours)
@@ -230,12 +429,14 @@ namespace wow
 
     void WarMap::Update()
     {
-        for (LogLine& line : log) if (line.life > 0) line.life--;
+        AgeLog();
         if (!map) map = res.GetFrame(warmap::MapGType);
         if (!sectorMap) sectorMap = res.GetFrame(warmap::SectorMapGType);
 
         animation++;
         MoveCounters(ClockTick());
+        if (hoursPassed > 0) Hourly(hoursPassed);
+        ShadeSectors();
         TurnCalendar();
 
         int dx = 0, dy = 0;
@@ -347,9 +548,10 @@ namespace wow
 
         // the message list
         {
-            int y = 4;
+            // 0x420C10: from (0x28, 4) plus the scroll, 16 apart, the live lines and the one scrolling away
+            int y = 4 + logScroll;
             for (const LogLine& line : log)
-                if (line.life > 0) { canvas.DrawString(0x72, line.text, { 0x28, y, ScreenW - 0x28, 14 }, 0); y += 16; }
+                if (line.life > 0 || line.state == 1) { canvas.DrawString(0x72, line.text, { 0x28, y, ScreenW - 0x28, 14 }, 0); y += 16; }
         }
 
         // the sector under the mouse or the panel button's name, and the engine's own notes (provisional: the game
@@ -376,6 +578,38 @@ namespace wow
 
     // The keys, as the war map view (0x41C5E0 and 0x41D640) and the world (0x41A450) take them. Each press (and
     // each repeat while held) is one step, as with WM_KEYDOWN.
+    // The right button on the map (0x41C5E0): let go within [Tweak] "Quick Cancel Timeout" (5) updates of pressing
+    // it, without Ctrl, it's command 0x73, Cancel: the counter picked to move is let go. (Held longer it opens the
+    // "Warmap menu" popup, 0x41D120, which isn't in yet.)
+    std::optional<Command> WarMap::OnRightButton(int, int, bool down)
+    {
+        if (down) { rightDownAt = animation; return std::nullopt; }
+        bool quick = rightDownAt >= 0 && animation - rightDownAt <= quickCancelTimeout;
+        rightDownAt = -1;
+        if (quick && !(SDL_GetModState() & SDL_KMOD_CTRL)) chosen = -1;
+        return std::nullopt;
+    }
+
+    int WarMap::TipOwner(int x, int y) const
+    {
+        PanelLayout panel = Panel();
+        for (int i = 0; i < 3; i++) if (panel.buttons[i].Contains(x, y)) return i;
+        if (panel.research.Contains(x, y)) return 3;
+        if (CalendarRect().Contains(x, y) && !SpeedRect().Contains(x, y)) return 4;
+        return -1;
+    }
+
+    std::string WarMap::TipText(int owner, int level) const
+    {
+        static constexpr int ButtonText[3] = { 0x47B, 0x47C, 0x47E }; // the view buttons' labels (0x433480)
+        if (owner >= 0 && owner < 3) return res.String(ButtonText[owner]);
+        // the Research button (0x45BEB0): "View Research" and what's being researched, 0x461 with nothing
+        if (owner == 3) return res.String(0x47D) + "\n" + res.String(0x461);
+        // the calendar (0x4278A0) answers only at the third level: "Advance time"
+        if (owner == 4 && level == 3) return res.String(0x481);
+        return {};
+    }
+
     std::optional<Command> WarMap::OnKey(int key)
     {
         const bool ctrl = (SDL_GetModState() & SDL_KMOD_CTRL) != 0;
@@ -404,7 +638,7 @@ namespace wow
         case SDLK_LEFT: scrollTo(cameraX - (ctrl ? w / 3 : w / 7), cameraY); break;
         case SDLK_RIGHT: scrollTo(cameraX + (ctrl ? w / 3 : w / 7), cameraY); break;
         case SDLK_R: return Command{ ResearchCommand, 0 };     // the research screen
-        // 'M' (0x6C, the message history) isn't in yet
+        case SDLK_M: ToggleHistory(); break;                     // the message history (0x6C / 0x6D)
         // the world (0x41A450)
         case SDLK_TAB: panelShown = !panelShown; break;         // the mini-map and its frame (0x42F310)
         case SDLK_SPACE:                                        // Unit -> Construction -> Resource 0, 1, 2 -> Unit
@@ -464,6 +698,7 @@ namespace wow
         {
             forcedHours++;
             MoveCounters(ClockTick());
+            if (hoursPassed > 0) Hourly(hoursPassed);
             return std::nullopt;
         }
         if (down && mini.Contains(x, y))

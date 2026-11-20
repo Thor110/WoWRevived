@@ -46,6 +46,7 @@ namespace wow
         bool Available() const { return stream != nullptr; }
         void Push(const std::vector<int16_t>& samples);
         void SetVolume(float gain);
+        void SetPaused(bool paused);
         double Queued() const;   // seconds not played yet
         double Played() const;   // seconds played so far
 

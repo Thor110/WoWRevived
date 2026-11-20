@@ -34,17 +34,22 @@ namespace wow
         void Draw(Canvas& canvas) const override;
         std::optional<Command> OnKey(int sdlKey) override;
         std::optional<Command> OnMouseButton(int x, int y, bool down) override;
+        std::optional<Command> OnRightButton(int x, int y, bool down) override;
+        void SetQuickCancelTimeout(int ticks) { quickCancelTimeout = ticks; }
         void OnMouseMove(int x, int y) override;
         void OnKeyUp(int sdlKey) override;
+        // tool tips: 0-2 the view buttons, 3 the Research button, 4 the calendar
+        int TipOwner(int x, int y) const override;
+        std::string TipText(int owner, int level) const override;
 
         int SectorAt(int screenX, int screenY) const; // 0 off the land
         int HoveredSector() const { return hovered; }
         const SaveInfo& Game() const { return game; }
         int Speed() const { return speed; }  // the clock's speed, 0-10
         void SetSectorLimits(int units, int boats) { maxUnits = units; maxBoats = boats; }
-        // sounds (SFX.ojd ids) the war map wants played, taken by the front end every update
-        std::vector<int> TakeSounds() { return std::exchange(sounds, {}); }
+        void SetPodInterval(int hours) { podInterval = hours; }
         void SetArrowTypes(std::map<int, ObjOjd::ArrowType> types) { arrowTypes = std::move(types); }
+        void SetDeposits(std::map<int, std::array<int, 6>> d, float dropOff) { deposits = std::move(d); resourceDropOff = dropOff; }
 
     private:
         void CentreOn(int mapX, int mapY);
@@ -67,11 +72,23 @@ namespace wow
         void SetSpeedFromX(int x);
         int speed = 1;                   // index into warmap::Speeds (the calendar's +0x24)
         int forcedHours = 0;             // the calendar's +0x30: hours to go on by, one a tick
+        int hoursPassed = 0;             // whole hours the last tick went over (0x802D's count)
+        void Hourly(int hours);          // the world's 0x802D
+        // Martian pods (0x41A330): world +0x48 hours since the last, +0x4C how many have come
+        int podHours = 0, pods = 0;
+        int podInterval = 24;            // [Tweak] "Pod Interval (hours)"
+        void DropPod(int hours);
+        std::array<bool, warmap::SectorCount + 1> podFlag{}; // a sector's +0x64: a pod landed among the Humans
+        std::array<bool, warmap::SectorCount + 1> battle{};  // a sector's +0x124: a battle there
+        void AddUnit(int type, int sector, bool players);
+        std::map<int, ObjOjd::UnitData> unitData;
         float ClockTick();
         void MoveCounters(float hours);
         // who holds each sector: 0 the side being played, 1 the other side, 2 no one
         std::array<int, warmap::SectorCount + 1> owner{};
         int viewMode = 1;                // 1 units, 2 constructions, 3 resources (0x419810, the WWarMapWorld's +0x70)
+        int rightDownAt = -1;            // the update the right button went down on
+        int quickCancelTimeout = 5;      // [Tweak] "Quick Cancel Timeout"
         int hotButton = -1;              // the panel button under the mouse (3: the Research button)
         bool researchHeld = false;       // the Research button, pressed
         int resourceKind = 0;            // the Resource view's kind, 0-2 (dword_4E9F40; F3-F5 or Space)
@@ -86,10 +103,19 @@ namespace wow
         // The message list (PopupMessageController 0x420A30 at 0x28, 4; lines added by 0x4191A0 -> 0x420DA0):
         // at most 10 (0x4BA4FC, the oldest goes), each a "Message Item" (0x428810, font 0x72) shown for 5 x 30
         // updates (0x4BA4F8 x "Game Frequency"), drawn top down 16 pixels apart (0x4BA500, 0x420C10).
-        struct LogLine { std::string text; int life = 0; };
+        // state: 0 live, 1 run out (scrolling away), 2 gone (kept for the history)
+        struct LogLine { std::string text; int life = 0; int state = 0; };
+        static constexpr int LogLife = 5 * 30; // 0x4BA4F8 x "Game Frequency"
         std::vector<LogLine> log;
+        int logScroll = 0;               // +0x1C: 0 to -16
+        bool logScrolling = false;       // +0x20
+        int logPending = 0;              // +0x38: lines run out and still to scroll away
+        bool historyOpen = false;        // the world's +0x6C
         void Log(std::string text);
-        std::vector<int> sounds;
+        void AgeLog();
+        static void SetLife(LogLine& line, int life);
+        void ToggleHistory();
+        void ReshowLastMessages();
         int animation = 0;               // ticks
         // The calendar's moving parts (Calendar View 0x426C10): each wheel's frame and the frame it's heading for
         // (0x427500 sets the targets, 0x427710 turns the wheels, both every update)
@@ -112,6 +138,11 @@ namespace wow
         // [Tweak] "Max units in sector" (0x42AAF0, default 15) and "Max boats in sector" (0x42AB30, default 5)
         int maxUnits = 15, maxBoats = 5;
         std::map<int, ObjOjd::ArrowType> arrowTypes; // OBJ.ojd record 14
+        std::map<int, std::array<int, 6>> deposits;  // each sector's deposit of each resource kind (OBJ.ojd record 8)
+        float resourceDropOff = 3.0f;                 // [Tweak] "Resource Drop Off Rate" (0x423F40)
+        float ResourceGain(int sector, int kind) const;
+        void ShadeSectors();
+        void PulseBattles();
         // the types of the finished constructions in each sector (both sides')
         std::array<std::vector<int>, warmap::SectorCount + 1> finished;
         std::pair<int, int> FreeCell(int sector, int kind, int except) const;

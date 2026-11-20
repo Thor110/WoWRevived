@@ -1,17 +1,12 @@
 #include "frontend/Screen.h"
 
+#include <SDL3/SDL_keyboard.h>
 #include <SDL3/SDL_keycode.h>
 
 #include <algorithm>
 
 namespace wow
 {
-    namespace
-    {
-        // the slider knob's centre in frame 0 and frame 10, measured from slidr.spr
-        constexpr int KnobInset = 22;
-    }
-
     Rect Screen::SpriteRect(int gtype, int x, int y) const
     {
         const IndexedImage* image = res.GetFrame(gtype);
@@ -63,8 +58,18 @@ namespace wow
         canvas.DrawSprite(b.plate, plateFrame, b.rect.x, b.rect.y);
         if (b.kind == Button::Kind::Edit)
         {
-            // the text being typed, with a caret while the field has the focus
-            canvas.DrawString(b.font, lit ? b.text + "_" : b.text, b.rect, TextCentreX | TextCentreY, b.level);
+            // the text being typed, and while the field has the focus the caret (0x4312D0: caret8.spr, GType 0x52,
+            // going round its frames at 0x33 / 256 of a frame a draw) at the caret's place in the text
+            canvas.DrawString(b.font, b.text, b.rect, TextCentreX | TextCentreY, b.level);
+            if (!lit) return;
+            const Font* font = res.GetFont(b.font);
+            int frames = 0;
+            while (frames < 64 && res.GetFrame(0x52, frames)) frames++;
+            caretAnimation += 0x33;
+            if (frames > 0 && caretAnimation >= frames * 256) caretAnimation -= frames * 256;
+            int x = TextLeft(b) + (font ? font->Measure(std::string_view(b.text).substr(0, size_t(std::clamp(b.caret, 0, int(b.text.size()))))) : 0);
+            int y = b.rect.y + (b.rect.h - (font ? font->Height() : 0)) / 2;
+            canvas.DrawSprite(0x52, frames > 0 ? caretAnimation / 256 : 0, x, y);
             return;
         }
         if (b.text.empty()) return;
@@ -93,6 +98,71 @@ namespace wow
             if (Usable(k)) return k;
         }
         return from;
+    }
+
+    std::string Screen::TipText(int owner, int) const
+    {
+        if (owner < 0 || size_t(owner) >= buttons.size() || !buttons[size_t(owner)].tooltip) return {};
+        return res.String(buttons[size_t(owner)].tooltip);
+    }
+
+    int Screen::TextLeft(const Button& b) const
+    {
+        const Font* font = res.GetFont(b.font);
+        int w = font ? font->Measure(b.text) : 0;
+        return b.rect.x + (b.rect.w - w) / 2;
+    }
+
+    // A click in a text field (0x4313F0): left of the text does nothing; otherwise the caret goes after the first
+    // character whose right edge is past the click (never before the first), or, past them all, before the last
+    void Screen::CaretFromX(Button& b, int x)
+    {
+        const Font* font = res.GetFont(b.font);
+        int left = TextLeft(b);
+        if (!font || x < left) return;
+        int n = int(b.text.size());
+        for (int k = 1; k < n; k++)
+            if (x < left + font->Measure(std::string_view(b.text).substr(0, size_t(k)))) { b.caret = k; return; }
+        if (n > 1) b.caret = n - 1;
+    }
+
+    // A text field's keys (0x431730): Up goes to the control before (0x8008), Down and Enter to the one after
+    // (0x8007); Delete takes the character after the caret, Backspace the one before it; Home and End; Left and
+    // Right a character, or with Ctrl a word (isspace). True if the key was the field's.
+    bool Screen::EditKey(Button& b, int key)
+    {
+        const bool ctrl = (SDL_GetModState() & SDL_KMOD_CTRL) != 0;
+        const int n = int(b.text.size());
+        auto space = [&](int i) { return i < n && (b.text[size_t(i)] == ' ' || (b.text[size_t(i)] >= 9 && b.text[size_t(i)] <= 13)); };
+        int& c = b.caret;
+        c = std::clamp(c, 0, n);
+        switch (key)
+        {
+        case SDLK_UP: selected = NextUsable(selected, -1); return true;
+        case SDLK_DOWN: case SDLK_RETURN: case SDLK_KP_ENTER: selected = NextUsable(selected, 1); return true;
+        case SDLK_DELETE:
+            if (c < n) { b.text.erase(size_t(c), 1); TextChanged(size_t(selected)); }
+            return true;
+        case SDLK_BACKSPACE:
+            if (c > 0) { b.text.erase(size_t(c - 1), 1); c--; TextChanged(size_t(selected)); }
+            return true;
+        case SDLK_HOME: c = 0; return true;
+        case SDLK_END: c = n; return true;
+        case SDLK_LEFT:
+            if (!ctrl) { if (c > 0) c--; return true; }
+            // back over spaces, then over the word, then forward onto it
+            if (c > 0) c--;
+            while (c > 0 && space(c)) c--;
+            while (c > 0 && !space(c)) c--;
+            if (c > 0 && space(c)) c++;
+            return true;
+        case SDLK_RIGHT:
+            if (!ctrl) { if (c < n) c++; return true; }
+            while (c < n && !space(c)) c++;
+            while (c < n && space(c)) c++;
+            return true;
+        default: return false;
+        }
     }
 
     int Screen::HitTest(int x, int y) const
@@ -126,9 +196,12 @@ namespace wow
 
     void Screen::SetSliderFromX(int index, int x)
     {
+        // the Scrollbar's position (0x431EF0): (max + 1) x (x - left margin) / (length - both margins), no rounding;
+        // the options rows (0x40AC80) give margins of 21 (0x15) each side
         const Button& b = buttons[size_t(index)];
-        int span = std::max(1, b.rect.w - 2 * KnobInset);
-        int position = ((x - b.rect.x - KnobInset) * b.max + span / 2) / span;
+        constexpr int Margin = 0x15;
+        int span = std::max(1, b.rect.w - 2 * Margin);
+        int position = (b.max + 1) * (x - b.rect.x - Margin) / span;
         SetValue(index, position);
     }
 
@@ -153,18 +226,14 @@ namespace wow
         bool slider = Usable(selected) && buttons[size_t(selected)].kind == Button::Kind::Slider;
         if (Usable(selected) && buttons[size_t(selected)].kind == Button::Kind::Edit)
         {
-            // a text field takes the typing (OnText); keys that would press a button only edit it
-            Button& b = buttons[size_t(selected)];
-            if (key == SDLK_BACKSPACE)
-            {
-                if (!b.text.empty()) { b.text.pop_back(); TextChanged(size_t(selected)); }
-                return std::nullopt;
-            }
-            if (key == SDLK_SPACE || key == SDLK_LEFT || key == SDLK_RIGHT) return std::nullopt;
+            // a text field takes the typing (OnText) and its own keys
+            if (EditKey(buttons[size_t(selected)], key)) return std::nullopt;
+            if (key == SDLK_SPACE) return std::nullopt;
         }
         if (slider && (key == SDLK_LEFT || key == SDLK_RIGHT))
             SetValue(selected, buttons[size_t(selected)].value + (key == SDLK_RIGHT ? 1 : -1));
-        else if (key == SDLK_UP || key == SDLK_LEFT) selected = NextUsable(std::max(selected, 0), -1);
+        else if (key == SDLK_UP || key == SDLK_LEFT || (key == SDLK_TAB && (SDL_GetModState() & SDL_KMOD_SHIFT)))
+            selected = NextUsable(std::max(selected, 0), -1); // Shift+Tab: 0x8008 (WControl 0x433F20)
         else if (key == SDLK_DOWN || key == SDLK_RIGHT || key == SDLK_TAB) selected = NextUsable(std::max(selected, 0), 1);
         else if ((key == SDLK_RETURN || key == SDLK_KP_ENTER || key == SDLK_SPACE) && Usable(selected))
             return Activate(selected);
@@ -186,12 +255,25 @@ namespace wow
         {
             pressed = hit;
             if (hit >= 0 && buttons[size_t(hit)].kind == Button::Kind::Slider) SetSliderFromX(hit, x);
+            // a click in a text field gives it the focus and places the caret (0x431500)
+            if (hit >= 0 && buttons[size_t(hit)].kind == Button::Kind::Edit) { selected = hit; CaretFromX(buttons[size_t(hit)], x); }
             return std::nullopt;
         }
         // like a Windows button: it acts when released over the control that was pressed
         int was = pressed;
         pressed = -1;
         if (hit >= 0 && hit == was && buttons[size_t(hit)].kind != Button::Kind::Edit) return Activate(hit);
+        return std::nullopt;
+    }
+
+    std::optional<Command> Screen::OnRightButton(int x, int y, bool down)
+    {
+        int hit = HitTest(x, y);
+        bool push = hit >= 0 && (buttons[size_t(hit)].kind == Button::Kind::Push || buttons[size_t(hit)].kind == Button::Kind::Graphic);
+        if (down) { if (push) pressed = hit; return std::nullopt; }
+        int was = pressed;
+        pressed = -1;
+        if (push && hit == was) return Activate(hit);
         return std::nullopt;
     }
 
@@ -221,9 +303,17 @@ namespace wow
                 while (i + 1 < utf8.size() && (static_cast<unsigned char>(utf8[i + 1]) & 0xC0) == 0x80) i++;
                 continue;
             }
-            if (c < 0x20 || c > 0xFF || (c >= 0x7F && c < 0xA0)) continue;
-            if (int(b.text.size()) >= b.maxLength) break;
-            b.text += char(c);
+            // WM_CHAR (0x431500) takes isalnum (ASCII) and space ! " # $ & ' ( ) * . : ; < = > ? ^ _
+            static constexpr std::string_view Allowed = " !\"#$&'()*.:;<=>?^_";
+            bool alnum = (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+            if (!alnum && (c > 0x7F || Allowed.find(char(c)) == std::string_view::npos)) continue;
+            // inserted at the caret, the text then cut to the field's length (0x431C30); at or past the length
+            // it's refused with sound 0x192
+            int at = std::clamp(b.caret, 0, int(b.text.size()));
+            if (at >= b.maxLength) { sounds.push_back(0x192); continue; }
+            b.text.insert(size_t(at), 1, char(c));
+            if (int(b.text.size()) > b.maxLength) b.text.resize(size_t(b.maxLength));
+            b.caret = at + 1;
             changed = true;
         }
         if (changed) TextChanged(size_t(selected));

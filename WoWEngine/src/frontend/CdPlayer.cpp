@@ -37,19 +37,22 @@ namespace wow
         y += buttons[Place(back)].rect.h + 0x14;
         status = SpriteRect(0xAA, 47, y);
 
-        auto transport = [&](int sprite, int param, int x) {
+        // each with its tool tip (0x407E33-0x408003): 0x4BC Previous Track, 0x4B9 Play, 0x4BA Stop, 0x4BD Pause,
+        // 0x4BB Next Track
+        auto transport = [&](int sprite, int param, int x, int tooltip) {
             Button b;
             b.kind = Button::Kind::Graphic; b.plate = sprite; b.command = { CmdTransport, param }; b.rect = { x, 291, 0, 0 };
+            b.tooltip = tooltip;
             return Place(b);
         };
-        size_t previousButton = transport(0xA1, PrevTrack, 54);
+        size_t previousButton = transport(0xA1, PrevTrack, 54, 0x4BC);
         int x = buttons[previousButton].rect.w + 0x41;
-        playButton = transport(0x9F, Play, x);
-        stopButton = transport(0x9E, Stop, x);
+        playButton = transport(0x9F, Play, x, 0x4B9);
+        stopButton = transport(0x9E, Stop, x, 0x4BA);
         x += buttons[stopButton].rect.w + 0x0B;
-        size_t pause = transport(0xA0, Pause, x);
+        size_t pause = transport(0xA0, Pause, x, 0x4BD);
         x += buttons[pause].rect.w + 0x0B;
-        transport(0xA2, NextTrack, x);
+        transport(0xA2, NextTrack, x, 0x4BB);
 
         for (int t = FirstTrack; t <= LastTrack && !anyMusic; t++) anyMusic = TrackFile(t).has_value();
         playing = music.Playing() && !music.Finished();

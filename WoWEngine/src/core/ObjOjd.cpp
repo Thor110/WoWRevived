@@ -165,4 +165,29 @@ namespace wow
         }
         return types;
     }
+
+    std::map<int, std::array<int, 6>> ObjOjd::LoadSectorDeposits(std::span<const uint8_t> data)
+    {
+        std::map<int, std::array<int, 6>> deposits;
+        ByteReader r(data);
+        while (r.Remaining() > 0)
+        {
+            if (r.Remaining() < 5) throw FormatError("OBJ.ojd: record header cut short");
+            r.Skip(3);
+            int type = int16_t(r.U16());
+            if (type == 8)
+            {
+                // 0x437750 case 8: the sector, its name (to the sector table's +0xAC), 4 int16s it skips, then the
+                // deposits of the six resource kinds (+0x04)
+                int sector = int16_t(r.U16());
+                uint16_t len = r.U16();
+                r.Skip(size_t(len) + 8);
+                std::array<int, 6>& d = deposits[sector];
+                for (int& v : d) v = int16_t(r.U16());
+            }
+            else if (type == 2 || type == 3 || type == 4) { uint16_t len = r.U16(); r.Skip(size_t(len) + 2); }
+            else SkipPayload(r, type);
+        }
+        return deposits;
+    }
 }

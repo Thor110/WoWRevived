@@ -98,6 +98,13 @@ namespace wow
         if (stream) SDL_SetAudioStreamGain(stream, gain);
     }
 
+    void MovieAudio::SetPaused(bool paused)
+    {
+        if (!stream) return;
+        if (paused) SDL_PauseAudioStreamDevice(stream);
+        else SDL_ResumeAudioStreamDevice(stream);
+    }
+
     void MovieAudio::Push(const std::vector<int16_t>& samples)
     {
         if (!stream || samples.empty()) return;

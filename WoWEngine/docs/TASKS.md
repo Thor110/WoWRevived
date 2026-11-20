@@ -15,21 +15,21 @@ tasks for that piece with the addresses needed). The aim is a 1:1 match with the
 - [x] Movies: RAGELOGO, TITLE, INTRO; Smacker and WoWRevived .mp4 (0x44DE20, 0x44F2C0) — 01, 07, 08
 - [x] CD player: Pause shows Play, Play resumes (0x4081D0) — 01
 - [ ] "Skip" setting (straight to Start New Campaign, 0x402A30) — 01
-- [ ] Options sliders: (max+1)·(x − 21)/(length − 42), no rounding (0x431EF0) — 05
-- [ ] Text field: caret, click to place, Home/End/Delete, Ctrl+arrows, the accepted characters, reject sound 0x192 (0x430FC0) — 05
-- [ ] Shift+Tab back a control; the right mouse button presses buttons too — 05
-- [ ] Tooltips: delays 15/70/150, `[Screen] Tool Tip Offset` 16, boxed text, CD player button tips 0x4B9-0x4BD, options tips 0x453-0x456 (0x433700, 0x49D470) — 05, 13
+- [x] Options sliders: (max+1)·(x − 21)/(length − 42), no rounding (0x431EF0) — 05
+- [x] Text field: caret, click to place, Home/End/Delete, Ctrl+arrows, the accepted characters, reject sound 0x192 (0x430FC0) — 05
+- [x] Shift+Tab back a control; the right mouse button presses push buttons too — 05
+- [~] Tooltips (the manager, the tip, the front end's and the war map panel's done; counters and facilities to do): delays 15/70/150, `[Screen] Tool Tip Offset` 16, boxed text, CD player button tips 0x4B9-0x4BD, options tips 0x453-0x456 (0x433700, 0x49D470) — 05, 13
 - [ ] InfoBox dialog (critical events) (0x432520) — 05, 03
 - [ ] Right-click popup menu, sounds 0x193-0x196 (0x432C60) — 05
 - [ ] Animated mouse cursors (wait cursor) and the busy icon while loading (0x40CDC0, 0x44E4B0) — 01, 08
-- [ ] Sound Control live preview: Master at once, the others on leaving, CD 2 ticks after (0x405A70) — 01
+- [x] Sound Control live preview: Master at once, the others (Ambient = type 0, Speech = type 5) on leaving (0x405A70, 0x4059A0) — 01
 - [ ] Display Settings: resolution list and colour depth as the original (0x409AD0) — 01
 - [ ] New campaign in its save slot: copy Human.000 / Martian.000 with the name (0x404660) — 01
 - [ ] Saving (0x80B4 → 0x4042D0) and loading through the war map's serialiser; Huffman encoder for saves — 01, 02, 03, 08
 - [ ] Game over: VICTORY / DEFEAT movie by code 0x80FA-0x80FD, then credits, then the main menu (0x402B80 0x80FE) — 01, 03
 - [ ] Commands one queue pass later (0x95) where the order matters — 01
 - [ ] Cheats: youlikeit, shym, datsun, curtains, icomeback, punyhumans, atchooo (englishrose is in) (0x401000) — 01
-- [ ] Pause on focus loss, Pause key, Alt+Enter (0x404BC0, 0x42CD40) — 01, 04
+- [x] Pause on focus loss, Pause key, Alt+Enter (0x404BC0, 0x42CD40) — 01, 04
 - [ ] CD player seek ±5 s (transport 4 / 6) (0x4081D0, 0x412660-) — 01, 02
 - [ ] Briefing and Debriefing screens (0x499930, 0x49A7B0; `[Briefing]` / `[Debriefing] Delay` 30 / 300) — 13
 
@@ -51,14 +51,14 @@ tasks for that piece with the addresses needed). The aim is a 1:1 match with the
 - [ ] Hourly step: 0x802D fan-out and the economy phases (0x41A760, 0x423B00, `[Tweak] Resource Drop Off Rate` 3.0) — 03, 04
 - [ ] Battle detection (0x41AB00): BattleInSector, UndefendedSectorLost, PodLanded; then the briefing hand-off — 03
 - [ ] Critical-event dialogs and the one-at-a-time queue; all 20 event handlers; the `[Event]` toggles (0x41E4E0-0x41F4B0) — 03
-- [ ] Martian pods: every 24 h, at most 8, sectors {2,4,6,7,8,9,10,11} (0x41A330) — 03
+- [x] Martian pods: every 24 h, at most 8, sectors {2,4,6,7,8,9,10,11} (0x41A330) — 03 (PodLanded's dialog and battle wait on those)
 - [ ] Resource warnings / alerts (0x4198C0) — 03
 - [ ] End of game: events 18/19, codes 0x80FA-0x80FD (0x41AED0) — 03
 - [ ] Save and load the war map: WMAP, CALN/DtTm, MPAD, routes, WMOB, sectors (0x41AC40) — 03, 04, 07
-- [~] Original keyboard (all but M and Backspace, which wait on the message history and the time-running flag): digits for speed, F1-F5 views, Space, Tab, Home, PgUp/PgDn, arrow steps, M, R, Esc, Backspace (0x41A450, 0x41C5E0) — 03
-- [ ] Original mouse: rubber band, sector selection, quick right-click cancel, right-hold menu, hover route preview (0x41D300-0x41D590) — 03
-- [ ] View shading by unit strength / resource value, enemy sectors in Unit view, pulsing battle sectors (0x4192F0, 0x41DE70) — 03
-- [ ] Message list: scroll-up on expiry, history (M, sounds 0x193 / 0x196), re-show last 2 (0x420CD0) — 03
+- [~] Original keyboard (all but Backspace, which waits on the time-running flag): digits for speed, F1-F5 views, Space, Tab, Home, PgUp/PgDn, arrow steps, M, R, Esc, Backspace (0x41A450, 0x41C5E0) — 03
+- [~] Original mouse: quick right-click cancel (done); rubber band, sector selection rules, right-hold menu, hover route preview to do (0x41D300-0x41D590) — 03
+- [~] View shading (0x4192F0, 0x41D9B0): Unit view by objects in our sectors, enemy sectors dark, Resource view by what another facility would give (done); pulsing battle sectors (0x41DE70) done; Construction view efficiency (needs the economy) to do — 03
+- [x] Message list: scroll-up on expiry, history (M, sounds 0x193 / 0x196), re-show last 2 (0x420CD0) — 03 (saving it, MPAD, comes with the war map save)
 - [~] Calendar: month names from TEXT 0x521+, odometer wheels, a click moves time on an hour (done); the flashing while paused and the time-running flag for the opponent (to do) (0x427500, 0x427710, 0x4278A0) — 03, 04
 - [x] Clock sounds 0x1A1-0x1A2 (0x41F860) — 03
 - [ ] War map menu items: Load, Sound Control, Event Menu, Quit, Return to Main Menu, with pause and time scale (0x41CD50) — 03
@@ -72,7 +72,7 @@ tasks for that piece with the addresses needed). The aim is a 1:1 match with the
 - [ ] Counter cells shrink when a sector is full (WM clunting res 36 / adj 4) and slide over 5 ticks (0x4205F0) — 03
 - [ ] A* details: newest-first ties, no re-sort on improvement, 1000-step limit (0x44EFA0) — 08
 - [ ] Sector paths cache (WM_COMMAND 0xB7) for resources and the AI — 14
-- [ ] Sector-map border pixels pick the lowest-numbered sector they touch (0x49C070) — 13
+- [x] Sector-map border pixels pick the lowest-numbered sector they touch (0x49BF50) — 13
 
 ## 4. Research, production, AI
 
@@ -97,7 +97,7 @@ tasks for that piece with the addresses needed). The aim is a 1:1 match with the
 
 ## 6. Data and platform
 
-- [ ] The game's random table: 1024 `rand()` values, MSVC formula, `srand(1)`, inclusive `% (n+1)` (0x4025F0) — 01, 10, 14
+- [x] The game's random table: 1024 `rand()` values, MSVC formula, `srand(1)`, inclusive `% (n+1)` (0x4025F0) — 01, 10, 14 (core/Random.h)
 - [ ] The ~229 registry/INI settings with their defaults (list in part 14) — 14
 - [ ] Unit table: all 65 OBJ.ojd record types and the `[Tweak]` armour / research / manufacture modifiers (0x437750) — 06
 - [ ] Object ids: 32768, lowest first then LIFO; the `VEHU` tag (0x4A....) — 14

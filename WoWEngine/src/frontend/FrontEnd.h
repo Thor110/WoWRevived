@@ -35,6 +35,10 @@ namespace wow
         // Draw the game's own mouse cursor (on by default; [WoW Engine] "System Cursor" = 1 uses the system's)
         bool GameCursor() const { return !ini.GetBool("WoW Engine", "System Cursor", false); }
         void OnMouseButton(int x, int y, bool down);
+        void OnRightButton(int x, int y, bool down);
+        // The game deactivated (the window lost the focus, or the Pause key, 0x42CD40): no updates come, the music
+        // and sounds stop and a movie pauses (0x404BC0); reactivated, they go on (0x404C10).
+        void SetPaused(bool paused);
 
         // Opens a screen by its command id, as if a button had sent it (the --open start option).
         void Open(int command) { Execute({ command, 0 }); }
@@ -87,6 +91,7 @@ namespace wow
         Music music;
         Sound sound;
         int ambient = 0;           // dword_4D25D0: the menus' ambient sound 0x18C
+        float pendingAmbient = -1.0f, pendingSpeech = -1.0f; // Sound Control's, applied when it closes
         void ApplyVolumes();
         void StartAmbient(bool restart);
         std::unique_ptr<Screen> screen;
@@ -101,6 +106,16 @@ namespace wow
         int overlay = 0;
         std::unique_ptr<Screen> warMap;   // kept while its menus are showing
         WarMap* ActiveWarMap() const;
+        // tool tips (0x433870)
+        void UpdateTooltip();
+        void DrawTooltip(Canvas& canvas) const;
+        struct Tip { std::string text; int x, y; };
+        std::optional<Tip> tip;
+        int stillTicks = 0;        // updates since the mouse last moved
+        int hoverOwner = -2;       // dword_4EA554: the part of the screen the mouse was last over
+        int hoverX = 0, hoverY = 0; // dword_4EA548 / 4EA54C: where the hovering started
+        bool mouseHeld = false, rightHeld = false;
+        bool musicWasPaused = false;
         // The war map's music (0x41B070, command 0x813C): CD tracks 2 and 3 in turn, or without CD music one of
         // the ambient sounds 0xFD-0xFF every 10 seconds; and its clock sound (0x41F860)
         void WarMapSounds(WarMap& map);

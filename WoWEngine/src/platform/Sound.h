@@ -43,6 +43,9 @@ namespace wow
         // Once per game tick: fades.
         void Update();
 
+        // Stops or restarts the mixing altogether (the game deactivated, 0x404BC0).
+        void SetPaused(bool paused);
+
         // While the war map menu (0x80B5) is open every sound but speech is at a quarter (0x41CF6C / 0x41CFAC).
         void SetMenuDuck(bool on);
 

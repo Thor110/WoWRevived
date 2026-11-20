@@ -1,6 +1,7 @@
 #include "frontend/FrontEnd.h"
 
 #include "core/AiTable.h"
+#include "core/Random.h"
 #include "frontend/MovieScreen.h"
 #include "frontend/Splash.h"
 #include "core/SaveGame.h"
@@ -123,6 +124,16 @@ namespace wow
         // = 1 keeps that.
         if (from == CdPlayer::Id && next->Id() != CdPlayer::Id && !ini.GetBool("WoW Engine", "CD Player Music Continues", false))
             music.Stop();
+        if (from == CmdSoundControl && (pendingAmbient >= 0 || pendingSpeech >= 0))
+        {
+            if (pendingAmbient >= 0) ini.SetFloat(SoundSection, "Ambient", pendingAmbient);
+            if (pendingSpeech >= 0) ini.SetFloat(SoundSection, "Speech", pendingSpeech);
+            pendingAmbient = pendingSpeech = -1.0f;
+            ApplyVolumes();
+        }
+        // a tip belongs to the screen it was asked of
+        tip.reset();
+        hoverOwner = -2;
         screen = std::move(next);
         sound.SetMenuDuck(screen->Id() == CmdWarMapMenu);
         delayed.reset();
@@ -224,19 +235,23 @@ namespace wow
     {
         auto m = NewMenu(CmdSoundControl);
         m->AddHeading(0x411);
-        // the menu works in tenths (0x4B8A7C-0x4B8A84); the settings hold 0-1 like the game's
-        auto volume = [&](int textId, const char* name) {
+        // the menu works in tenths (0x4B8A7C-0x4B8A84); the settings hold 0-1 like the game's. Master applies at
+        // once (the 0x812B timer, 0x4644A0); Ambient (sound type 0) and Speech (type 5) when the menu closes
+        // (0x4059A0, 0x464490)
+        auto volume = [&](int textId, const char* name, float* pending) {
             int tenths = int(std::lround(std::clamp(ini.GetFloat(SoundSection, name, 1.0f), 0.0f, 1.0f) * 10));
             std::string text = res.String(textId);
             m->AddSlider(tenths, 10, [text](int v) { return Format(text, "%s - %d%%", v * 10); },
-                [this, name](Button& b) {
+                [this, name, pending](Button& b) {
+                    if (pending) { *pending = float(b.value) / 10.0f; return; }
                     ini.SetFloat(SoundSection, name, float(b.value) / 10.0f);
                     ApplyVolumes();
                 });
         };
-        volume(0x43E, "Master");
-        volume(0x43F, "Ambient");
-        volume(0x440, "Speech");
+        pendingAmbient = pendingSpeech = -1.0f;
+        volume(0x43E, "Master", nullptr);
+        volume(0x43F, "Ambient", &pendingAmbient);
+        volume(0x440, "Speech", &pendingSpeech);
         m->AddCheck(0x441, ini.GetBool(SoundSection, "CD", true), [this](Button& b) { ini.SetBool(SoundSection, "CD", b.value != 0); });
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         return m;
@@ -268,16 +283,17 @@ namespace wow
             });
 
         bool eightBit = ini.GetInt("Screen", "BPP", 16) == 8;
-        m->AddRadio(0x447, 0x8110, eightBit, [this](Button& b) { if (b.value) ini.SetInt("Screen", "BPP", 8); });
-        m->AddRadio(0x448, 0x8110, !eightBit, [this](Button& b) { if (b.value) ini.SetInt("Screen", "BPP", 16); });
+        // the radios' tool tips are their labels; the options' are 0x453-0x456 (0x4098D5-0x4099A4)
+        m->AddRadio(0x447, 0x8110, eightBit, [this](Button& b) { if (b.value) ini.SetInt("Screen", "BPP", 8); }, 0x447);
+        m->AddRadio(0x448, 0x8110, !eightBit, [this](Button& b) { if (b.value) ini.SetInt("Screen", "BPP", 16); }, 0x448);
 
-        auto option = [&](int textId, const char* name) {
-            m->AddCheck(textId, ini.GetBool("Options", name, true), [this, name](Button& b) { ini.SetBool("Options", name, b.value != 0); });
+        auto option = [&](int textId, const char* name, int tooltip) {
+            m->AddCheck(textId, ini.GetBool("Options", name, true), [this, name](Button& b) { ini.SetBool("Options", name, b.value != 0); }, tooltip);
         };
-        option(0x44D, "Show lights");
-        option(0x450, "Show Smoke & particles");
-        option(0x44F, "Show gouraud shading");
-        option(0x44E, "Show vehicle shadows");
+        option(0x44D, "Show lights", 0x453);
+        option(0x450, "Show Smoke & particles", 0x456);
+        option(0x44F, "Show gouraud shading", 0x455);
+        option(0x44E, "Show vehicle shadows", 0x454);
 
         // [Screen] "Scroll Speed" (default 40) shows as (speed - 10) / 10
         int scroll = std::clamp((ini.GetInt("Screen", "Scroll Speed", 40) - 10) / 10, 0, 10);
@@ -433,6 +449,7 @@ namespace wow
         musicTimer = 5 * 30;
         std::map<int, ObjOjd::UnitData> units;
         std::map<int, ObjOjd::ArrowType> arrows;
+        std::map<int, std::array<int, 6>> deposits;
         if (auto obj = files.Resolve("OBJ.ojd"))
         {
             std::ifstream in(*obj, std::ios::binary);
@@ -441,6 +458,8 @@ namespace wow
             catch (const std::exception& e) { SDL_Log("OBJ.ojd units: %s", e.what()); }
             try { arrows = ObjOjd::LoadArrowTypes(objData); }
             catch (const std::exception& e) { SDL_Log("OBJ.ojd arrow types: %s", e.what()); }
+            try { deposits = ObjOjd::LoadSectorDeposits(objData); }
+            catch (const std::exception& e) { SDL_Log("OBJ.ojd sector deposits: %s", e.what()); }
         }
         // each object type's class (AI.ojd, 0x441580 -> 0x518B14)
         std::map<int, int> classes;
@@ -454,6 +473,9 @@ namespace wow
         auto map = std::make_unique<WarMap>(res, settings.colours, info, SaveInfo::WarMapObjects(data), std::move(units), std::move(classes),
             SaveInfo::SectorOwners(data), ini.GetInt("Screen", "Scroll Speed", 40), ini.GetFloat("Tweak", "Clunting Speed", 7.0f));
         map->SetArrowTypes(std::move(arrows));
+        map->SetDeposits(std::move(deposits), ini.GetFloat("Tweak", "Resource Drop Off Rate", 3.0f));
+        map->SetPodInterval(ini.GetInt("Tweak", "Pod Interval (hours)", 24));
+        map->SetQuickCancelTimeout(ini.GetInt("Tweak", "Quick Cancel Timeout", 5));
         map->SetSectorLimits(ini.GetInt("Tweak", "Max units in sector", 15), ini.GetInt("Tweak", "Max boats in sector", 5));
         Show(std::move(map));
     }
@@ -630,12 +652,87 @@ namespace wow
         }
         if (fadeIn > 0) { fadeIn--; overlay = fadeIn; }
         screen->Update();
-        if (screen->Id() == WarMap::Id)
-            for (int id : static_cast<WarMap*>(screen.get())->TakeSounds()) sound.Play(id);
+        stillTicks++;
+        UpdateTooltip();
+        for (int id : screen->TakeSounds()) sound.Play(id);
         if (WarMap* map = ActiveWarMap()) WarMapSounds(*map);
         else if (musicTimer >= 0) StopWarMapSounds();
         // the credits' own exit is sent straight on (0x4056F0); the rest come from the view's controls
         if (auto command = screen->TakeCommand()) Dispatch(*command, screen->Id() != Credits::Id);
+    }
+
+    // The tool-tip manager (WDesktop 0x433870), every update: with a tip up for the part of the screen under the
+    // mouse and the mouse still for less than [Screen] "Tool Tip Delay" (70), it stays (until a mouse button goes
+    // down). Otherwise a button held takes it away; a new part under the mouse marks where the hovering started;
+    // and the time the mouse has been still picks a level, 1 past "Quick Tool Tip Delay" (15), 2 past 70, 3 past
+    // "Slow Tool Tip Delay" (150), which is asked for (then the levels below it) and shown if there's any text.
+    void FrontEnd::UpdateTooltip()
+    {
+        if (!ini.GetBool("Screen", "Tool Tip Enable", true) || !screen || mouseX < 0 || screen->Id() == MovieScreen::Id)
+        {
+            tip.reset();
+            return;
+        }
+        const int quick = ini.GetInt("Screen", "Quick Tool Tip Delay", 15), normal = ini.GetInt("Screen", "Tool Tip Delay", 70),
+                  slow = ini.GetInt("Screen", "Slow Tool Tip Delay", 150);
+        int owner = screen->TipOwner(mouseX, mouseY);
+        const bool held = mouseHeld || rightHeld; // GetAsyncKeyState(1) / (2)
+        if (tip && owner == hoverOwner && stillTicks < normal)
+        {
+            if (held) tip.reset();
+            return;
+        }
+        if (held) { tip.reset(); return; }
+        if (owner != hoverOwner) { hoverX = mouseX; hoverY = mouseY; }
+        hoverOwner = owner;
+        int level = stillTicks > slow ? 3 : stillTicks > normal ? 2 : stillTicks > quick ? 1 : 0;
+        std::string text;
+        for (; level >= 1 && text.empty(); level--) text = screen->TipText(owner, level);
+        if (text.empty()) { tip.reset(); return; }
+        tip = Tip{ text, hoverX, hoverY };
+    }
+
+    // The tip (0x49D470): boxed text in font 0x6F made with grey (dword_4DAF90, 6-bit 48, 48, 48) in Human games
+    // and black (dword_4DAF88) in Martian ones, the text 1 in. Its top left goes 32 right and
+    // [Screen] "Tool Tip Offset" (16) less 32 down from where the hovering started; it's kept 4 in from the
+    // right edge and its middle at least 4 down, then grown by 2 on the left and top and 1 on the right and bottom.
+    void FrontEnd::DrawTooltip(Canvas& canvas) const
+    {
+        if (!tip) return;
+        const Font* font = res.GetFont(0x6F);
+        if (!font) return;
+        int tw = 0, lines = 0;
+        size_t start = 0;
+        for (;;)
+        {
+            size_t end = tip->text.find('\n', start);
+            tw = std::max(tw, font->Measure(tip->text.substr(start, end == std::string::npos ? std::string::npos : end - start)));
+            lines++;
+            if (end == std::string::npos) break;
+            start = end + 1;
+        }
+        int th = font->Height() * lines + 2 * (lines - 1);
+        int w = tw + 2, h = th + 2;
+        int offset = ini.GetInt("Screen", "Tool Tip Offset", 16);
+        int cx = tip->x + 32 + w / 2, cy = tip->y - offset + 32 + h / 2;
+        if (cx + w / 2 > canvas.Width()) cx = canvas.Width() - w / 2 - 4;
+        if (cy < 4) cy = 4;
+        Rect text{ cx - w / 2 + 1, cy - h / 2 + 1, tw, th };
+        Rect box{ cx - w / 2 - 2, cy - h / 2 - 2, w + 3, h + 3 };
+        // BoxedText's draw (0x49D300): the box filled with the colour it was made with, then a 1-pixel outline
+        // (dword_4DAF88 black for the Humans, the Martians' side colour dword_4DAF9C, 6-bit 12, 42, 4)
+        const uint32_t fill = res.Human() ? 0xC0C0C0 : 0;
+        auto six = [](int v) { return uint32_t((v * 255 + 31) / 63); };
+        const uint32_t outline = res.Human() ? 0 : (six(12) << 16 | six(42) << 8 | six(4));
+        uint32_t* out = canvas.Pixels();
+        for (int y = box.y; y < box.y + box.h; y++)
+            for (int x = box.x; x < box.x + box.w; x++)
+            {
+                if (x < 0 || y < 0 || x >= canvas.Width() || y >= canvas.Height()) continue;
+                bool edge = x == box.x || y == box.y || x == box.x + box.w - 1 || y == box.y + box.h - 1;
+                out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = edge ? outline : fill;
+            }
+        canvas.DrawString(0x6F, tip->text, text, TextCentreX | TextCentreY);
     }
 
     WarMap* FrontEnd::ActiveWarMap() const
@@ -691,7 +788,7 @@ namespace wow
             musicTimer = TenSeconds;
             return;
         }
-        warAmbient = sound.Play(0xFD + std::rand() % 3);
+        warAmbient = sound.Play(0xFD + random::Rand() % 3);
         sound.FadeIn(warAmbient, 60);
         musicTimer = TenSeconds;
     }
@@ -714,6 +811,7 @@ namespace wow
         if (warMap && !screen->Background()) warMap->Draw(canvas);
         if (screen->Background()) canvas.DrawSprite(screen->Background(), 0, 0, 0);
         screen->Draw(canvas);
+        DrawTooltip(canvas);
         if (overlay) canvas.DrawSprite(0x5C, 0, 0, 0, 0, overlay == 1 ? Canvas::Blend::Translucent : Canvas::Blend::Opaque);
         DrawCursor(canvas);
     }
@@ -757,13 +855,30 @@ namespace wow
 
     void FrontEnd::OnMouseMove(int x, int y)
     {
+        if (x != mouseX || y != mouseY) stillTicks = 0; // dword_4D14A4: the UI time of the last move
         mouseX = x;
         mouseY = y;
         if (screen) screen->OnMouseMove(x, y);
     }
 
+    void FrontEnd::SetPaused(bool paused)
+    {
+        if (paused) musicWasPaused = music.Paused();
+        if (!musicWasPaused) music.SetPaused(paused);
+        sound.SetPaused(paused);
+        if (screen) screen->SetPaused(paused);
+    }
+
+    void FrontEnd::OnRightButton(int x, int y, bool down)
+    {
+        rightHeld = down;
+        if (!screen) return;
+        if (auto command = screen->OnRightButton(x, y, down)) Dispatch(*command, true);
+    }
+
     void FrontEnd::OnMouseButton(int x, int y, bool down)
     {
+        mouseHeld = down;
         if (!screen) return;
         if (auto command = screen->OnMouseButton(x, y, down)) Dispatch(*command, true);
     }

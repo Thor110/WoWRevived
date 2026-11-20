@@ -6,6 +6,7 @@
 #include "core/GameFiles.h"
 #include "core/Vfs.h"
 #include "frontend/Canvas.h"
+#include "core/Random.h"
 #include "frontend/FrontEnd.h"
 #include "frontend/Resources.h"
 #include "frontend/Settings.h"
@@ -159,6 +160,9 @@ int main(int argc, char** argv)
         SDL_Log("SDL_Init failed: %s", SDL_GetError());
         return 1;
     }
+    // srand(timeGetTime()) and the table of 1024 rand() values (WinMain 0x401AE8, WGame 0x402630)
+    wow::random::Seed(uint32_t(SDL_GetTicks()));
+    wow::random::FillTable();
 
     Options options = ParseOptions(argc, argv);
     auto files = wow::GameFiles::Locate(CandidateFolders(options));
@@ -248,6 +252,14 @@ int main(int argc, char** argv)
         // fixed rate game updates, drawing as often as the display allows
         uint64_t previous = SDL_GetTicksNS();
         uint64_t lag = 0;
+        // byte_4EA3E0: the game is active; the window losing the focus or the Pause key stops it (0x42CD40)
+        bool active = true;
+        auto setActive = [&](bool on) {
+            if (on == active) return;
+            active = on;
+            frontEnd.SetPaused(!on);
+            SDL_Log("OnActivateApp %s", on ? "On" : "Off");
+        };
         while (!done && !frontEnd.QuitRequested())
         {
             SDL_Event event;
@@ -260,10 +272,13 @@ int main(int argc, char** argv)
                 case SDL_EVENT_QUIT: closed = true; break;
                 case SDL_EVENT_KEY_DOWN:
                     if (event.key.key == SDLK_RETURN && (event.key.mod & SDL_KMOD_ALT)) { if (!event.key.repeat) video.ToggleFullScreen(); }
-                    else frontEnd.OnKey(int(event.key.key));
+                    else if (event.key.key == SDLK_PAUSE) { if (!event.key.repeat) setActive(!active); }
+                    else if (active) frontEnd.OnKey(int(event.key.key));
                     break;
+                case SDL_EVENT_WINDOW_FOCUS_LOST: setActive(false); break;
+                case SDL_EVENT_WINDOW_FOCUS_GAINED: setActive(true); break;
                 case SDL_EVENT_KEY_UP: frontEnd.OnKeyUp(int(event.key.key)); break;
-                case SDL_EVENT_TEXT_INPUT: frontEnd.OnText(event.text.text); break;
+                case SDL_EVENT_TEXT_INPUT: if (active) frontEnd.OnText(event.text.text); break;
                 case SDL_EVENT_MOUSE_MOTION:
                     if (video.ToGame(event.motion.x, event.motion.y, x, y)) frontEnd.OnMouseMove(x, y);
                     else frontEnd.OnMouseLeave();
@@ -272,8 +287,16 @@ int main(int argc, char** argv)
                     break;
                 case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 case SDL_EVENT_MOUSE_BUTTON_UP:
-                    if (event.button.button == SDL_BUTTON_LEFT && video.ToGame(event.button.x, event.button.y, x, y))
-                        frontEnd.OnMouseButton(x, y, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN);
+                {
+                    // a press counts only inside the game's picture and while the game is active; a release always
+                    // does (off the picture it's at -1, -1, over nothing), so nothing is left held
+                    bool down = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
+                    bool inside = video.ToGame(event.button.x, event.button.y, x, y);
+                    if (!inside) x = y = -1;
+                    if (down && (!inside || !active)) break;
+                    if (event.button.button == SDL_BUTTON_LEFT) frontEnd.OnMouseButton(x, y, down);
+                    else if (event.button.button == SDL_BUTTON_RIGHT) frontEnd.OnRightButton(x, y, down);
+                }
                     break;
                 default: break;
                 }
@@ -286,7 +309,7 @@ int main(int argc, char** argv)
             if (lag > TickNs * 5) lag = TickNs * 5; // don't try to catch up after a long stall
             while (lag >= TickNs)
             {
-                frontEnd.Update();
+                if (active) frontEnd.Update();
                 lag -= TickNs;
             }
 

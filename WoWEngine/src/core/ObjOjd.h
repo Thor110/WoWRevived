@@ -13,6 +13,7 @@
 // The hotspot and load flag reset after each registration.
 #pragma once
 #include <cstdint>
+#include <array>
 #include <map>
 #include <span>
 #include <string>
@@ -54,5 +55,9 @@ namespace wow
         // (0x437C10): the index, then the sprite's GType and four more words, and a float
         struct ArrowType { int gtype = 0; int a = 0, b = 0, c = 0, d = 0; float f = 0; };
         static std::map<int, ArrowType> LoadArrowTypes(std::span<const uint8_t> data);
+
+        // Each sector's resource deposits, one for each of the six kinds (Human iron, coal, oil; Martian blood,
+        // copper, heavy elements), from record 8 (0x437750 into the sector table at 0x4EAE1C, +0x04).
+        static std::map<int, std::array<int, 6>> LoadSectorDeposits(std::span<const uint8_t> data);
     };
 }

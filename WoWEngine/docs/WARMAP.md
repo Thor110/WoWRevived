@@ -216,6 +216,36 @@ sector sends it there.
 - Going into a sector the other side holds stops the counter at the border with a message (a battle, which needs
   the battle map), and arriving in a sector no one holds takes it (*provisional*).
 
+## Martian pods
+
+Every whole game hour the world (0x802D, 0x419E9D) moves the routes, the players and both sides' research on, then
+the pods (0x41A330): while fewer than 8 have come, every `[Tweak] "Pod Interval (hours)"` (24) one lands in sector
+2, 4, 6, 7, 8, 9, 10 or 11 (`byte_4B9DE8[rand() & 7]`) with one of four loads (`off_4B9E28[rand() % 4]`: unit 62,
+ScoutMachineMk1, alone or with 89, HandlingMachineMk1, or 91, DiggingMechanismMk1). In a Human sector the sector is
+marked (+0x64) for the battle check; otherwise it's event 12, PodLanded (0x41F010): in a Martian sector sound
+0x1B2 and "Pod landed: <sector>"; in one no one holds, a battle there (+0x124), sound 0x1B3 and "Pod landed in our
+territory" (0x420, Human) or "Pod landed in enemy sector" (0x41F, Martian), with command 0x8072 to go to it. The
+war map seeds rand() with 1 when it's built (0x417DA3), so the first pod of a new Human campaign lands in sector
+4, Strathmore.
+
+A sector with a battle pulses (0x41DE70): the view's frame count 0-22 as 0-11-0 on level 36 for ours, 47 for the
+rest.
+
+## Sector shading
+
+0x4192F0 fills five tables of a value for each sector (at 0x4E98A0, each `{ float v[31]; min; max; lo; hi }`) and
+the view (0x41D9B0) turns the one for its mode into levels of the map's shade table:
+
+| View | Table | Value | Levels |
+|---|---|---|---|
+| Unit | 0 | the objects put in each sector of ours (`dword_4F7650[s]`, one more each time the sector's add method 0x43C790 runs); 0 elsewhere | 17-35 |
+| Construction | 1 | the sector's production efficiency from the economy (top fixed at 1.0); *not in yet* | 67-77 |
+| Resource | 2-4 | for the side's resource kind 0-2 (Human 0-2, Martian 3-5), what one more facility would add (0x424000): output(n + 1) - output(n), with output(n) = n r B / (n + r - 1), B the sector's deposit (OBJ.ojd record 8, the sector table's +0x04) and n its finished facilities of the kind (types 47-49, 108-110); B when there are none (top fixed at 80) | 78-88 |
+
+A sector of ours gets `lo + (v - min) / (max - min) x (hi - lo)` (truncated; a range of 0 counts as 1); in the
+Resource view so does every sector. Otherwise a sector no one holds is at 11, and the other side's is 11 too,
+except in the Unit view, where it's 0.
+
 ## Messages and events
 
 The war map's events (a table at 0x4BA0E8 of handler, "is it critical" test and name, 12 bytes each, raised by
@@ -227,7 +257,11 @@ one at a time, the rest queued; not done); every event writes a line to the mess
 
 The message list (PopupMessageController 0x420A30, at 0x28, 4) keeps at most 10 lines (0x4BA4FC), each a
 "Message Item" (0x428810, font 0x72) shown for 5 x 30 updates (0x4BA4F8), drawn top down 16 pixels apart
-(0x4BA500). Command 0x80CC shows the latest 2 (0x4BA504) again, 0x6D hides them all (neither done).
+(0x4BA500). Lines that have gone are kept (they count towards the 10). When a line runs out (0x420CD0) the list
+scrolls up a pixel an update; once it has gone up 16 the first run-out line is gone and the list drops back, and it
+goes on scrolling while more have run out. M (world 0x6C, a toggle on +0x6C) opens the history with sound 0x193:
+every line with less than 5 seconds left gets 5 more (0x421150), so the last 10 show; closing it (0x6D, sound
+0x196) takes the 5 seconds off them all. Command 0x80CC gives the last 2 (0x4BA504) another 5 seconds.
 
 So far the engine raises:
 
@@ -275,7 +309,7 @@ The view (0x41C5E0, 0x41D640) and the world (0x41A450) take a key press at a tim
 | arrows | a seventh of the map's width or a sixteenth of its height (Ctrl: a third / an eighth) |
 | Esc | the war map menu (0x80B5) |
 | R | research (0x7D) |
-| M | the message history (0x6C, not in yet) |
+| M | the message history (0x6C / 0x6D) |
 | Backspace | clears the world's time-running flag (+0x64), which tells the opponent; not in yet |
 
 ## Scrolling

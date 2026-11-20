@@ -113,7 +113,15 @@ screen is scaled down to fit.
 ### In the engine
 
 - The disc check always passes, because the engine runs from the copy WoWLauncher made of both discs, music included. So the Insert CD menu goes straight on; `--open 0x8133` still shows it.
-- Typing in the Edit Campaign field comes from SDL's text input, converted to Latin-1 like the save files.
+- Typing in the Edit Campaign field comes from SDL's text input. The field (WEditField 0x430FC0) works as the
+  game's: a caret (caret8.spr, GType 0x52, a frame every 5 draws or so: 0x33 / 256 of a frame each) shown while it
+  has the focus, starting at 0. WM_CHAR (0x431500) takes only ASCII letters and digits and
+  `space ! " # $ & ' ( ) * . : ; < = > ? ^ _`, inserted at the caret; the text is then cut to the field's length,
+  and a character at or past the length is refused with sound 0x192 (0x431C30). A click left of the text does
+  nothing, otherwise the caret goes after the first character whose right edge is past the click, never before
+  the first and, past the end, before the last (0x4313F0). Keys (0x431730): Up the control before, Down and Enter
+  the one after, Delete the character after the caret, Backspace the one before, Home, End, Left and Right a
+  character or with Ctrl a word.
 - Setting up the campaign (0x404660), loading a save (0x80B3) and starting the war map (0x8A, 0xA5, 0xAB) wait for the campaign to be rebuilt, and show a "not rebuilt yet" placeholder.
 - There's no network play yet, so Select Service Provider lists no providers and the session menu always says it's waiting. The Network Host and Waiting for Player menus can be opened with `--open 0x9F` and `--open 0xA1`.
 
@@ -153,6 +161,23 @@ The menus use cursor 0; the text field (0x431500) asks for 0x11. Each side has i
 - **Loading and saving.** Picking a save in the Load or Save menu needs the campaign (the war map), which isn't rebuilt yet.
 - **Sound for the credits.** The credits music (sound 0x191) isn't played yet. The game also waits for it to finish before leaving the credits.
 - **Other cheat codes.** 0x401000 recognises more typed codes than "englishrose", but they aren't decoded yet.
-- **Tooltips.** The CD Player's transport buttons carry tooltip strings (0x4B9–0x4BD) that aren't shown yet.
+- **Tooltips.** Done for the front end's controls (the CD Player's transport buttons 0x4BC / 0x4B9 / 0x4BA / 0x4BD /
+  0x4BB, Display Settings' colour radios with their labels and the options with 0x453–0x456) and the war map's
+  panel buttons, Research button and calendar ("Advance time", only at the third level). Still to do: the war
+  map's counters and facilities (0x428D70, 0x42A4B0, 0x426430 / 0x426AE0) and the owner position query (0x80D0).
+
+## Tool tips
+
+The desktop's manager (0x433870) runs every update, gated by `[Screen] "Tool Tip Enable"` (1). If a tip is up for the
+window under the mouse and the mouse has been still for less than `"Tool Tip Delay"` (70) it stays, until a mouse
+button goes down. Otherwise a button held takes it away; a new window under the mouse marks where the hovering
+started; and the time the mouse has been still picks a detail level: 1 past `"Quick Tool Tip Delay"` (15), 2 past 70,
+3 past `"Slow Tool Tip Delay"` (150). The window is asked for that level's text (0x807C), then the levels below, and
+any text makes a tip (0x49D470): BoxedText (0x49D260 / 0x49D300) in font 0x6F (tooltip.fnt), filled grey
+(dword_4DAF90, 6-bit 48, 48, 48) in Human games and black (dword_4DAF88) in Martian ones, outlined in black for the
+Humans and the side colour (12, 42, 4) for the Martians, the text 1 in. The window can say where it goes (0x80D0);
+otherwise its top left is 32 right of where the hovering started and `[Screen] "Tool Tip Offset"` (16) less 32 below
+it. It's kept 4 in from the right edge, its middle at least 4 down, and grown by 2 on the left and top and 1 on the
+right and bottom.
 - **Sounds.** Menu sounds (0x18C on the main menu, plus button clicks) aren't played yet.
 - **Mouse cursor.** The game's own cursor (GTypes 0x22/0x23 and so on) isn't drawn yet.

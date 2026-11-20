@@ -143,6 +143,13 @@ namespace wow
         for (Voice& v : voices) { v.fadeOutTicks = ticks; v.fadeOutDone = 0; }
     }
 
+    void Sound::SetPaused(bool paused)
+    {
+        if (!stream) return;
+        if (paused) SDL_PauseAudioStreamDevice(stream);
+        else SDL_ResumeAudioStreamDevice(stream);
+    }
+
     void Sound::SetMenuDuck(bool on)
     {
         std::lock_guard<std::mutex> l(lock);

@@ -23,6 +23,8 @@ namespace wow
         std::optional<Command> OnKey(int sdlKey) override;
         std::optional<Command> OnMouseButton(int, int, bool) override { return std::nullopt; }
         int CursorAt(int, int) const override { return -1; } // no cursor over a movie
+        // the movie pauses with the game (0x44E440)
+        void SetPaused(bool paused) override { if (audio) audio->SetPaused(paused); }
 
     private:
         void Finish();

@@ -20,6 +20,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace wow
@@ -51,8 +52,10 @@ namespace wow
         int max = 0;            // Slider
         int group = 0;          // Radio
         int maxLength = 0;      // Edit
+        int caret = 0;          // Edit: the caret, after this many characters (+0xA0)
         bool visible = true;
         bool focusable = true;  // headings and similar are drawn like controls but don't take part in input
+        int tooltip = 0;        // its tool tip's text id (the control's answer to 0x807C), 0 for none
     };
 
     class Screen
@@ -70,6 +73,8 @@ namespace wow
         void SetPrevious(int screen) { previous = screen; }
 
         virtual void Update() {}
+        // The game deactivated or reactivated (no updates come while it's paused).
+        virtual void SetPaused(bool) {}
         virtual void Draw(Canvas& canvas) const;
         // A screen can handle some of its own commands; returns true if it did.
         virtual bool Handle(const Command&) { return false; }
@@ -83,9 +88,20 @@ namespace wow
         virtual void OnMouseMove(int x, int y);
         virtual void OnKeyUp(int) {}
         virtual std::optional<Command> OnMouseButton(int x, int y, bool down);
+        // The right button: push buttons take it like the left (WGraphicPushButton 0x42FEF0, 0x204 / 0x205); the
+        // rest of the controls don't.
+        virtual std::optional<Command> OnRightButton(int x, int y, bool down);
+
+        // Tool tips (the desktop's manager 0x433870 asks the window under the mouse): which part of the screen is
+        // under the mouse (a control's index, or -1), and that part's text at a detail level of 1-3 (0x807C), empty
+        // if it has none at that level.
+        virtual int TipOwner(int x, int y) const { return HitTest(x, y); }
+        virtual std::string TipText(int owner, int level) const;
 
         // A command the screen sends by itself (from Update), picked up by the front end after each update.
         std::optional<Command> TakeCommand() { auto c = sent; sent.reset(); return c; }
+        // Sounds (SFX.ojd ids) the screen wants played, taken by the front end after each update.
+        std::vector<int> TakeSounds() { return std::exchange(sounds, {}); }
 
     protected:
         // Called after a checkbox, radio or slider changed its value.
@@ -110,8 +126,14 @@ namespace wow
         int selected = -1;
         int pressed = -1;
         std::optional<Command> sent;
+        std::vector<int> sounds;
 
     private:
+        // the text field (WEditField 0x430FC0)
+        int TextLeft(const Button& b) const;
+        void CaretFromX(Button& b, int x);           // 0x4313F0
+        bool EditKey(Button& b, int key);            // 0x431730
+        mutable int caretAnimation = 0;              // the caret sprite's frame, in 256ths (0x40EF20 with 0x33)
         bool Usable(int index) const;
         int NextUsable(int from, int step) const;
         int HitTest(int x, int y) const;

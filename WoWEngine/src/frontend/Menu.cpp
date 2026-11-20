@@ -48,7 +48,7 @@ namespace wow
         Stack(std::move(b));
     }
 
-    void Menu::AddCheck(int textId, bool value, OnChange changed)
+    void Menu::AddCheck(int textId, bool value, OnChange changed, int tooltip)
     {
         Button b;
         b.kind = Button::Kind::Check;
@@ -58,13 +58,14 @@ namespace wow
         b.level = colours.staticText;
         b.text = res.String(textId);
         b.value = value ? 1 : 0;
+        b.tooltip = tooltip;
         Stack(std::move(b));
         onChange[buttons.size() - 1] = std::move(changed);
     }
 
-    void Menu::AddRadio(int textId, int group, bool value, OnChange changed)
+    void Menu::AddRadio(int textId, int group, bool value, OnChange changed, int tooltip)
     {
-        AddCheck(textId, value, std::move(changed));
+        AddCheck(textId, value, std::move(changed), tooltip);
         buttons.back().kind = Button::Kind::Radio;
         buttons.back().group = group;
     }
