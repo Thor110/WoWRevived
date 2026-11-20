@@ -200,7 +200,7 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       by stance (0x4967E0, 0x496570; its scale flt_59E44C is never written, so it finds nothing); the mortars and
       their shells in flight (0x4889D0, 0x488F00, 0x47F770); the flying objects' update, emitters (debris, smoke
       trails) and damage smoke (0x487890, 0x47F050, 0x48AEF0, 0x48ADD0). Still to do: turret turning and arcs, area
-      blasts (0x487B00), lights, the scenery's damage — 10, 11, 12
+      blasts (0x487B00), the scenery's damage — 10, 11, 12. (Lights: the fading ones, 0x48DDC0 / 0x48E100, in.)
 - [ ] **Battle AI** (0x445010) — 07
 - [~] **Battle map music**: CD tracks 4 / 5 (the war map's is done) — 11
 - [x] **Positional sound**: listener at the view centre, inner / outer rects, pan 4·dx (0x464FF0), opcode 18's cull,

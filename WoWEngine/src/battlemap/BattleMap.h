@@ -48,6 +48,7 @@ namespace wow
             const std::map<int, ObjOjd::BattleTables::Six>* six = nullptr;  // OBJ.ojd record 6 (the WOF GTypes)
             const std::map<int, ObjOjd::BattleTables::Thirteen>* lights = nullptr; // record 13 (the light parts)
             bool showLights = true;     // [Options] "Show lights" (byte_4B8808)
+            bool showSmoke = true;      // [Options] "Show Smoke & particles" (byte_4B880C)
             std::vector<BattleGroup> groups; // the sector's war map objects (WarMap::BattleGroups)
             int ownerFaction = 2;       // who holds the sector (0x43CA30): 0 Human, 1 Martian, 2 no one
             int noBuildBorder = 16;     // [Tweak] "No-build border width (vertices)" (dword_59D93C)
@@ -145,13 +146,18 @@ namespace wow
         void Emit(size_t effect);                               // 0x47F050
         void Smoulder(size_t unit);                             // 0x48AEF0 (from the unit's update 0x4967E0)
         void Puff(size_t unit, int type);                       // 0x48ADD0
-        bool showSmoke = true;                                  // byte_4B880C, [Options] "Show Smoke & particles" (1)
+        void AddLight(int type, int x, int y, int z);           // a light part made (0x48DDC0, 0x48E050, 0x48DE80)
+        void UpdateLights();                                    // 0x48E100 for the fading ones
         void Speak(int id, int group);                          // 0x481770 with the group's voice (0x449120)
         std::vector<ViewObject> objects;    // sorted by key
         std::map<int, ShadeTable> slotTables;
         std::map<std::string, std::vector<uint8_t>> masks;   // the shadows' .raw masks
         std::vector<std::unique_ptr<WofInstance>> wofs;      // the bridges' segments, posed once
-        struct Light { int x, y, z, range; float intensity; };
+        // A light (0x48DD50 on 0x487A30: types 334-346): its point, range (its type's +0x44 word) and the intensity
+        // its renderer (RTypeLight 0x4A27A0, +0x40) has. One whose record 13 has times (a, b, c) fades (0x48E100):
+        // the phase (+0xCC), the updates left (+0xD0), the intensity it has (+0xC0) and its step (+0xC4).
+        struct Light { int x, y, z, range; float intensity; bool fading = false, alive = true; int phase = 0, count = 0, type = 0;
+                       float current = 0, step = 0; };
         std::vector<Light> lights;                           // the light parts that stayed (RTypeLight 0x4A27A0)
         Landscape::Sun sun;
         void LoadScenery(const Landscape::Sun& sun, char letter);

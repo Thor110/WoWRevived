@@ -143,7 +143,7 @@ namespace wow
     // gravity. Then the entry's count goes up, and past a limit (not 0) the list is freed.
     void BattleMap::Emit(size_t index)
     {
-        if (!showSmoke || effects[index].emitDone) return;
+        if (!setup.showSmoke || effects[index].emitDone) return;
         auto t = setup.units->find(effects[index].type);
         if (t == setup.units->end() || t->second.emitters.empty()) return;
         const auto& list = t->second.emitters;
@@ -183,6 +183,74 @@ namespace wow
         }
     }
 
+    // dword_4B84C8 (30) x the word / 20 (0x66666667, >> 3)
+    static int Ticks(int word) { return int((int64_t(word * 30) * 0x66666667LL >> 32) >> 3) + ((word * 30) < 0 ? 1 : 0); }
+
+    // A light part made at a point (z its height): with "Show lights" on (0x48DE80: otherwise it goes; a parent of
+    // category 0-3 also rolls against the hour, done for the scenery's in LoadScenery), raised 16 (+0xA0 less -16).
+    // As it's added (0x48DDC0): with any of record 13's times (+4, +8, +0xC) it fades: the intensity 0, the count
+    // Ticks(a), the step the float / that, phase 0, and it joins the updated list; then 0x47EE10 makes its renderer
+    // (vt+0x28, 0x48E050), which sets the intensity to the float again. Its range is its type's +0x44 word.
+    void BattleMap::AddLight(int type, int x, int y, int z)
+    {
+        if (!setup.showLights) return;
+        auto u = setup.units->find(type);
+        if (u == setup.units->end()) return;
+        ObjOjd::BattleTables::Thirteen t;
+        if (setup.lights)
+            if (auto it = setup.lights->find(type); it != setup.lights->end()) t = it->second;
+        Light l{ x, y, z + 16, int(int16_t(u->second.hitPoints)), t.f };
+        l.type = type;
+        if (t.a != 0 || t.b != 0 || t.c != 0)
+        {
+            l.fading = true;
+            l.count = Ticks(t.a);
+            l.step = t.f / float(l.count);
+            l.phase = 0;
+        }
+        l.current = t.f;
+        int index = -1;
+        for (size_t i = 0; i < lights.size(); i++)
+            if (!lights[i].alive) { index = int(i); break; }
+        if (index < 0) { lights.push_back(l); index = int(lights.size()) - 1; }
+        else lights[size_t(index)] = l;
+        objects.push_back({ y + (-32 - l.range), x, y, nullptr, nullptr, 0, 0, index });
+        std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+    }
+
+    // 0x48E100, each update of a fading light: with the count under 0 the phase moves on: from 0 (rising) the step 0
+    // and the count Ticks(b), phase 1 (holding); from 1 the count Ticks(c), the step -(intensity / that), phase 2
+    // (falling); from 2 it's gone (0x8057). Then its renderer takes the intensity (0x4A2840), the intensity goes up
+    // by the step and the count down by 1; the objects in its reach get 0x8066 (lit again).
+    // With record 13's a, b, c of 1, 1, 16 (338, a rocket's hit) it shows 0.35, 0.70, then 1.05 for three updates, then
+    // falls to 0 over 25.
+    // *Provisional*: 0x8066 (the IOB objects lit by it) isn't in.
+    void BattleMap::UpdateLights()
+    {
+        for (size_t i = 0; i < lights.size(); i++)
+        {
+            Light& l = lights[i];
+            if (!l.alive || !l.fading) continue;
+            if (l.count < 0)
+            {
+                ObjOjd::BattleTables::Thirteen t;
+                if (setup.lights)
+                    if (auto it = setup.lights->find(l.type); it != setup.lights->end()) t = it->second;
+                if (l.phase == 0) { l.step = 0; l.count = Ticks(t.b); l.phase = 1; }
+                else if (l.phase == 1) { l.phase = 2; l.count = Ticks(t.c); l.step = -(l.current / float(l.count)); }
+                else
+                {
+                    l.alive = false;
+                    objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) { return o.light == int(i); }), objects.end());
+                    continue;
+                }
+            }
+            l.intensity = l.current;
+            l.current += l.step;
+            l.count--;
+        }
+    }
+
     // 0x48AEF0, each update of an object (0x4967E0, after its look round): every 15th update (dword_4D2558 % 15),
     // with "Show Smoke & particles" on (and vt+0x9C not set): the level ftol(5 - its health fraction (vt+0xF4,
     // 0x48ADA0: +0xC4 / 0x47DA20) x 5), at most 4; above 0, if rand() is under 0xCCC a puff of 1000 (0x48ADD0), then
@@ -190,7 +258,7 @@ namespace wow
     // *Provisional*: +0xC0 bit 3's 0x80C1 to the parent's +0x48 +0x6C and vt+0x9C aren't in.
     void BattleMap::Smoulder(size_t index)
     {
-        if (ticks % 15 != 0 || !showSmoke) return;
+        if (ticks % 15 != 0 || !setup.showSmoke) return;
         const Unit& u = units[index];
         const int max = MaxHealth(u.type);
         if (max == 0) return;

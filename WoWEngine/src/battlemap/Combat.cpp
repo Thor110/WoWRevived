@@ -98,7 +98,8 @@ namespace wow
         {
             const int px = x + int16_t(part.b), py = y + int16_t(part.c), pz = z + int16_t(part.d);
             if (IsExplosion(part.a)) Explode(part.a, px, py, pz, firer);
-            else if (!(part.a >= 334 && part.a <= 346)) SpawnEffect(part.a, float(px), float(py), float(pz));
+            else if (part.a >= 334 && part.a <= 346) AddLight(part.a, px, py, land.HeightAt(px, py) + pz);
+            else SpawnEffect(part.a, float(px), float(py), float(pz));
         }
         // Detonate
         for (size_t i = 0; i < units.size(); i++)

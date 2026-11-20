@@ -1051,6 +1051,7 @@ namespace wow
         s.moveSlopes = &moveSlopes;
         s.weapons = &weaponData;
         s.showLights = ini.GetBool("Options", "Show lights", true);
+        s.showSmoke = ini.GetBool("Options", "Show Smoke & particles", true);
         s.groups = map->BattleGroups(b.sector);
         // the owner as a faction (0x43CA30): the side being played, the other, or no one
         const int owner = map->SectorOwner(b.sector), played = res.Human() ? 0 : 1;

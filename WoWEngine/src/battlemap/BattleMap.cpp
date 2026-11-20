@@ -1013,6 +1013,7 @@ namespace wow
             for (Gun& g : units[i].guns) GunTick(i, g);
         // the flying objects (effects, smoke, shells)
         UpdateEffects();
+        UpdateLights();
         if (moved)
         {
             for (ViewObject& o : objects)
@@ -1267,6 +1268,7 @@ namespace wow
                 if (o.light >= 0)
                 {
                     const Light& l = lights[size_t(o.light)];
+                    if (!l.alive) continue;
                     TerrainView::AddLight(land, window, l.x, l.y, l.z, l.range, l.intensity);
                     continue;
                 }

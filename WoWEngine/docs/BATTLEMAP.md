@@ -488,8 +488,7 @@ In sector 30, Abandon on the lorry group: each lorry went up (591 and 997), the 
 the Parliament 4.
 
 *Provisional*: an object goes at once rather than on the next update, and only units are hit (the scenery's damage
-and the damaged list aren't in); the kind is taken as the sector; the explosions' light parts (334-346, the fading
-light 0x48E100) and the status bars aren't in. (Their emitters are in: "Flying objects and emitters".)
+and the damaged list aren't in); the kind is taken as the sector; the status bars aren't in (the light parts are in: "Lights"). (Their emitters are in: "Flying objects and emitters".)
 
 ## Weapons (WProjectile base 0x4949A0 and its classes, 0x494DB0 / 0x494FD0, 0x4886A0 / 0x488830 -> 0x487F50; the group's target 0x4826D0; `battlemap/Weapons.cpp`)
 
@@ -620,8 +619,22 @@ still. (Called with +0xC0 bit 3 set first: that's cleared and 0x80C1 goes to the
 
 With the lorries at 40% health (level 3) and armed with a mortar for the test, each lorry gave off a 369 every 15
 updates (about 12 alive at a time), the shells trailed 367 in flight, and 1000 came now and then; over 600 updates
-the list held 57 slots, 35-50 alive. A rocket's hit (382) is a light (338) and 350, neither with a sprite: until the
-lights are in, it shows only as the scorch.
+the list held 57 slots, 35-50 alive. A rocket's hit (382) is a light (338) and 350, neither with a sprite: it shows as the
+light's flash on the ground and the scorch.
+
+**Lights** (0x48DD50 on 0x487A30: types 334-346; record 13 at 0x4EC598: a float and three times a, b, c): made as an
+explosion's part (or the scenery's, LoadScenery), at the part's point, height plus 16 (0x48DE80: +0xA0 less -16; gone
+at once with "Show lights" off; a parent of category 0-3 also rolls against the hour). Added (0x48DDC0): with any
+time set it fades: +0xC0 0, the count (+0xD0) Ticks(a) (a x 30 / 20), the step (+0xC4) the float / that, phase
+(+0xCC) 0, and it joins an updated list (dword_4D2550 +0x20); else +0xC0 is the float. Then 0x47EE10 makes its
+renderer (vt+0x28 = 0x48E050: RTypeLight 0x4A27A0 with its range, the type's +0x44 word) and sets +0xC0 to the float
+again, so a fading light starts from it, not 0. **Each update** (0x48E100): with the count under 0 the phase moves
+on: 0 to 1, the step 0 and the count Ticks(b); 1 to 2, the count Ticks(c) and the step -(+0xC0 / that); after 2
+it's gone (0x8057). Then the renderer takes +0xC0 (0x4A2840), +0xC0 goes up by the step, the count down by 1, and
+the objects within reach (0x47FC50) get 0x8066. 334-336 are steady (0.40, 0.38, 0.34; range 50, 60, 70); 337-346 are
+0.35 with a 1-2, b 1-12, c 12-24, range 30-120. A rocket's 338 (1, 1, 16; range 40) gave 0.35, 0.70, 1.05 three
+updates, then down to 0 over 25 and gone: the grass round the aim lit yellow at the peak and dark again after.
+*Provisional*: 0x8066 (the IOB objects lit again) isn't in; a light follows no moving parent (48DF50).
 
 *Provisional*: an object with no sprite is made only if its type has emitters, and goes once they're spent; a dead
 one's slot is taken again; one made in an update first moves in the next; frames under 3 never end; the parent's
