@@ -43,6 +43,7 @@ namespace wow
         // tool tips: 0-2 the view buttons, 3 the Research button, 4 the calendar
         int TipOwner(int x, int y) const override;
         int CursorAt(int x, int y) const override;
+        std::string CounterTip(int counter, int level) const;
         std::string TipText(int owner, int level) const override;
 
         int SectorAt(int screenX, int screenY) const; // 0 off the land
@@ -96,7 +97,17 @@ namespace wow
         bool dragging = false;           // the mini-map
         bool draggingSpeed = false;      // the speed slider, held
         void SetSpeedFromX(int x);
-        int speed = 1;                   // index into warmap::Speeds (the calendar's +0x24)
+        int speed = 0;                   // index into warmap::Speeds (the calendar's +0x24; 0 when it's made)
+        // Time running (world +0x64, 0x41A6C0): on, it's the player's action 0xA and the opponent's 0xC; off, 0xB
+        // and 0xD. Each on adds one to world +0x68 (0x8050 / 0x8054), each off takes one away and stops the
+        // clock (0x8051 / 0x8055 -> speed 0); while it's exactly 1 (one side waiting for the other) the calendar
+        // flashes (the clock document's +0x38)
+        bool timeRunning = false;
+        int timeVotes = 0;
+        bool calendarWaiting = false;
+        void SetTimeRunning(bool on);
+        void SetSpeed(int index);        // 0x41F640
+        bool SpeedChangeAllowed() const; // 0x41AEA0
         int forcedHours = 0;             // the calendar's +0x30: hours to go on by, one a tick
         int hoursPassed = 0;             // whole hours the last tick went over (0x802D's count)
         void Hourly(int hours);          // the world's 0x802D
@@ -241,6 +252,7 @@ namespace wow
             bool shared = false;         // class 7: one counter for every object of the type in the sector (+0x8C)
             int finishedCount = 0;       // of those, the finished ones (0x42AA70)
             bool unfinished = false;     // a construction not finished yet (drawn at 50% when it's ours)
+            float progress = 1.0f;       // a construction's +0x7C / +0x78
             int sector = 0;
             int speed = 0;               // the unit type's war map speed (unit +0x54), 0 for constructions and resources
             int moveClass = 0;           // the unit type's +0x4E: 0-2 land, 3 boats, 4 fliers

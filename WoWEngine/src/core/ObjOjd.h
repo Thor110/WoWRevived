@@ -53,6 +53,7 @@ namespace wow
             float upkeep[3] = { 0, 0, 0 };
             // more while it works (repairing, building; 0x51A15C, record 47, scaled by 48)
             float activity[3] = { 0, 0, 0 };
+            int nameText = 0;     // +0x14, record 21: the TEXT.ojd string of its name (0x440720)
         };
         static std::map<int, UnitData> LoadUnits(std::span<const uint8_t> data);
 

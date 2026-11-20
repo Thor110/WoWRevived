@@ -63,12 +63,13 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 - [~] **Right-click popup menu** widget (0x432C60): placement, sounds 0x193 / 0x196, closing, commands; to do: rows
       of several items opening out on hover, the flip at the right edge, the hot button's own look, and the
       sector's and objects' items (0x805C: Build, Resume building tasks, Cancel Move, Information) — 05
-- [~] **Keyboard**: Backspace and the time-running flag (world `+0x64`, recorded as actions 0xA / 0xB and passed to
-      the opponent) (0x41A6C0) — 03
-- [~] **Calendar**: flashing while paused (calendar `+0x38`, during dialogs), the modal counter 0x8050-0x8055; and a
-      sector that refuses a speed change (0x41AEA0 → 0x43D010) — 03, 04
-- [~] **Tool tips**: the counters (WMOB 0x428D70), constructions (0x42A4B0), resource facilities (0x426430 /
-      0x426AE0) with the detail levels, and the owner position query 0x80D0 — 04, 05
+- [x] **Keyboard / time running**: Backspace, map clicks and speed 0 turning time off and stopping the clock, the
+      digits turning it on, the two sides' votes (world +0x64 / +0x68, 0x8050-0x8055, 0x41A6C0, 0x41F640); the clock
+      starts stopped; the command records themselves come with the players — 03
+- [x] **Calendar**: flashing while one side waits (calendar +0x38, 0x4271E0), a sector with both sides in it refusing
+      a speed change (0x41AEA0 → 0x43D010) — 03, 04
+- [~] **Tool tips**: done: units (0x428D70) and constructions (0x42A4B0) with their levels; to do: the task lines
+      (with construction), resource facilities (0x426430 / 0x426AE0), the owner position query 0x80D0 — 04, 05
 - [~] **Research button**: its tooltip's current research, and the flash (60 ticks on 0x20 / 0x800A / 0x80A3)
       (0x45BEB0) — 04, 09
 - [ ] **Repair** (MRV / workshops) and **construction** progress and completion, CommandCentreBuilt (0x4297C0,

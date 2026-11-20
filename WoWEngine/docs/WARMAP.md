@@ -125,6 +125,18 @@ counter a type and sector (0x4282A0 / 0x428270) with a count in the counter font
 for such a counter, its bottom right on the counter's. Each view mode shows one kind: Unit View the units,
 Construction View the buildings, Resource View the resources.
 
+A counter of the player's has a tool tip (0x807C; the other side's have none), its level going up the longer the
+mouse stays:
+
+- **Units** (0x428D70): the type's name (unit table +0x14, OBJ.ojd record 21); "In transit" (0x51D) on its way (a
+  unit with a task shows "Currently building:", "Days to completion:" and "Efficiency:", or "Idle" / "Construction
+  suspended", 0x48E-0x493, which come with construction); from level 2, if it uses resources, "Resource use (Iron,
+  Coal, Oil)" (0x519 and the side's kinds), "Working:" (0x51B) its work figures when it has any, "Idle:" (0x51A) its
+  upkeep for all its men halved, and "Moving:" (0x51C) its upkeep for all its men, "%0.1f, %0.1f, %0.1f".
+- **Constructions** (0x42A4B0): the name, " X n" for a class 7 counter (0x43A160); unfinished, "\n%2.1f%% complete"
+  (0x4B5, +0x7C / +0x78) and no more (nothing for a class 7 one); finished, from level 2, "Resource use (...)" and
+  "Working:" when it has work figures.
+
 A counter's draw (0x42B850): depth 4, or 7 for the picked one (drawn over the rest), the pick ring at depth + 2,
 the count at + 1. The player's unfinished constructions are drawn at 50% (the sprite's +0x14 bit 0); the other
 side's counters are too while the intel on them is old (+0x3C under 168, not in yet). Still to come with the
@@ -426,8 +438,20 @@ left (*provisional*: the engine's own).
 
 The calendar object (0x41F550) adds `speed / 30` hours to the game time every update (0x41F640, 0x41F6C0; 30 is "Game
 Frequency"), with the speeds at 0x4BA470 the floats 0.0-10.0 (the slider's position). Each whole hour moves the date on (0x41B770),
-with February's leap years. The engine starts at speed 1, one game hour a second; the calendar's slider or the
-digits change it.
+with February's leap years. The clock document (0x41F550) is made with speed 0, so the war map starts with time
+stopped until the slider or a digit sets a speed.
+
+**Time running** (world +0x64, 0x41A6C0): turned on by a digit, which sets the speed first (0x41A450; refused,
+nothing changing, while any sector holds units or constructions of both sides, 0x41AEA0 -> 0x43D010); turned off by
+Backspace, any press of a mouse button on the map (0x201 / 0x204, a counter too), the research screen (0x7D),
+every critical event's box, and a speed of 0 (0x41F640). A change is recorded in the player's command stream
+(actions 0xA on / 0xB off, `{01,01,code,04}`) and the opponent is told (vtbl +0x30; the computer, 0x442A80,
+records 0xC / 0xD); when the commands are carried out the world gets 0x8050 / 0x8054 for each on, adding one to
++0x68, and 0x8051 / 0x8055 for each off, taking one away and setting the speed to 0. While +0x68 is exactly 1 (one
+side waiting for the other, as in a network game) the clock document's +0x38 is set and the calendar flashes:
+it isn't drawn, nor its wheels turned, while the tick count's bit 1 is set (0x4271E0). With the computer both
+records come together, so what shows is that turning time off stops the clock. A slider move sets the speed
+(0 if a sector refuses) without turning time on.
 
 ## Music
 
@@ -452,14 +476,14 @@ The view (0x41C5E0, 0x41D640) and the world (0x41A450) take a key press at a tim
 | F1 / F2 / F3-F5 | Unit view, Construction view, Resource view with resource 0-2 |
 | Space | the next view: Unit, Construction, Resource 0, 1, 2, Unit |
 | Tab | hide or show the mini-map and its frame |
-| 0-9 | the speed, '0' being 10 |
+| 0-9 | the speed, '0' being 10, and time running on (unless a sector with both sides in it refuses) |
 | Home | centre on the selected sector (its rectangle's middle, 0x41E000) |
 | PgUp / PgDn | to the top / bottom of the map |
 | arrows | a seventh of the map's width or a sixteenth of its height (Ctrl: a third / an eighth) |
 | Esc | the war map menu (0x80B5) |
 | R | research (0x7D) |
 | M | the message history (0x6C / 0x6D) |
-| Backspace | clears the world's time-running flag (+0x64), which tells the opponent; not in yet |
+| Backspace | turns time running off (+0x64, 0x41A6C0(0)), which stops the clock |
 
 ## Scrolling
 

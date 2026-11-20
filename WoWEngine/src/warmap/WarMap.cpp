@@ -50,7 +50,7 @@ namespace wow
         for (const auto& o : objects)
             if ((o.list == 2 || o.list == 3) && o.sector >= 1 && o.sector <= warmap::SectorCount && o.value[1] >= o.value[0])
                 finished[size_t(o.sector)].push_back(o.unitType);
-        struct Group { int sector, list, type, x, y, count; std::vector<int> refs; bool shared = false; int finished = 0; bool firstUnfinished = false; };
+        struct Group { int sector, list, type, x, y, count; std::vector<int> refs; bool shared = false; int finished = 0; bool firstUnfinished = false; float progress = 1.0f; };
         std::vector<Group> groups;
         for (const auto& o : objects)
         {
@@ -67,6 +67,7 @@ namespace wow
                 g = &groups.back();
                 g->shared = cls != objectClasses.end() && cls->second == 7;
                 g->firstUnfinished = !done;
+                if (o.list == 2 || o.list == 3) g->progress = o.value[0] != 0.0f ? o.value[1] / o.value[0] : 1.0f;
             }
             g->count++;
             if (done) g->finished++;
@@ -85,6 +86,7 @@ namespace wow
             k.shared = g.shared;
             k.finishedCount = g.finished;
             k.unfinished = g.firstUnfinished;
+            k.progress = g.progress;
             k.type = g.type;
             k.refs = g.refs;
             k.players = g.list % 2 == 0;
@@ -885,7 +887,9 @@ namespace wow
         if (hoursPassed > 0) Hourly(hoursPassed);
         EconomyPhase(animation % 5);
         ShadeSectors();
-        TurnCalendar();
+        // a waiting calendar is hidden every other pair of updates (0x4271E0: the tick count's bit 1), its wheels
+        // standing still then
+        if (!calendarWaiting || !(animation & 2)) TurnCalendar();
 
         int dx = 0, dy = 0;
         if (mouseX >= 0 && !dragging)
@@ -1039,7 +1043,7 @@ namespace wow
         if (!message.empty()) status = message;
         if (hotButton >= 0) status = res.String(ButtonText[hotButton]);
         else if (hovered) status = res.String(warmap::NameText(hovered));
-        DrawCalendar(canvas);
+        if (!calendarWaiting || !(animation & 2)) DrawCalendar(canvas);
         {
             // a darkened strip behind the text so it reads on either map
             uint32_t* out = canvas.Pixels();
@@ -1070,7 +1074,7 @@ namespace wow
     std::optional<Command> WarMap::OnRightButton(int, int, bool down)
     {
         if (!popup.empty()) { rightDownAt = -1; return std::nullopt; }
-        if (down) { rightDownAt = animation; return std::nullopt; }
+        if (down) { SetTimeRunning(false); rightDownAt = animation; return std::nullopt; } // 0x204: 0x41A6C0(0)
         bool quick = rightDownAt >= 0 && animation - rightDownAt <= quickCancelTimeout;
         rightDownAt = -1;
         if (quick && !(SDL_GetModState() & SDL_KMOD_CTRL)) ClearSelection(); // 0x73 -> the player's action 2
@@ -1084,7 +1088,66 @@ namespace wow
         for (int i = 0; i < 3; i++) if (panel.buttons[i].Contains(x, y)) return i;
         if (panel.research.Contains(x, y)) return 3;
         if (CalendarRect().Contains(x, y) && !SpeedRect().Contains(x, y)) return 4;
+        if (panel.frame.Contains(x, y) || panel.mini.Contains(x, y)) return -1;
+        // a counter of the player's answers 0x807C (the other side's don't)
+        int counter = CounterAt(x, y);
+        if (counter >= 0 && counters[size_t(counter)].players) return 1000 + counter;
         return -1;
+    }
+
+    // A counter's tool tip (0x807C, level 1-3 by how long the mouse has stayed):
+    //   units (0x428D70): the name (the type's +0x14, OBJ.ojd record 21); "In transit" (0x51D) on its way (a
+    //   unit with a task would show it: Currently building / Days to completion / Efficiency, Idle or
+    //   Construction suspended, 0x48E-0x493, not in yet); from level 2, if it uses resources: "Resource use"
+    //   (0x519) and the side's three kinds, "Working:" (0x51B) its work figures when it has any, then "Idle:"
+    //   (0x51A) and "Moving:" (0x51C) its upkeep for all its men, halved when idle
+    //   constructions (0x42A4B0): the name, " X n" for a class 7 counter (how many, 0x43A160); unfinished,
+    //   "n% complete" (0x4B5, +0x7C / +0x78), and nothing more; finished, from level 2, "Resource use" and
+    //   "Working:" when it has work figures
+    std::string WarMap::CounterTip(int index, int level) const
+    {
+        const Counter& k = counters[size_t(index)];
+        auto unit = unitData.find(k.type);
+        if (unit == unitData.end()) return {};
+        const ObjOjd::UnitData& u = unit->second;
+        const int base = res.Human() ? 0 : 3;
+        std::string tip = u.nameText ? res.String(u.nameText) : std::string();
+        auto figures = [&](const char* format, float a, float b, float c) {
+            char line[96];
+            std::snprintf(line, sizeof(line), format, a, b, c);
+            return std::string(line);
+        };
+        auto kinds = [&]() {
+            return "\n" + res.String(0x519) + " (" + res.String(0x214 + base) + ", " + res.String(0x215 + base) + ", " +
+                   res.String(0x216 + base) + ")";
+        };
+        const float work = u.activity[0] + u.activity[1] + u.activity[2];
+        const float keep = u.upkeep[0] + u.upkeep[1] + u.upkeep[2];
+        if (k.kind == 0)
+        {
+            if (k.Travelling()) tip += "\n" + res.String(0x51D);
+            if (level < 2 || work + keep == 0.0f) return tip;
+            tip += kinds();
+            if (work != 0.0f) tip += "\n" + res.String(0x51B) + figures(" %0.1f, %0.1f, %0.1f", u.activity[0], u.activity[1], u.activity[2]);
+            if (keep != 0.0f)
+            {
+                const float crew = float(CrewOf(k));
+                tip += "\n" + res.String(0x51A) + figures(" %0.1f, %0.1f, %0.1f", u.upkeep[0] * crew * 0.5f, u.upkeep[1] * crew * 0.5f, u.upkeep[2] * crew * 0.5f);
+                tip += "\n" + res.String(0x51C) + figures(" %0.1f, %0.1f, %0.1f", u.upkeep[0] * crew, u.upkeep[1] * crew, u.upkeep[2] * crew);
+            }
+            return tip;
+        }
+        if (k.shared) tip += " X " + std::to_string(k.count);
+        if (k.unfinished)
+        {
+            if (k.shared) return tip;
+            char line[48];
+            std::snprintf(line, sizeof(line), "\n%2.1f%% ", double(k.progress) * 100.0);
+            return tip + line + res.String(0x4B5);
+        }
+        if (level >= 2 && work != 0.0f)
+            tip += kinds() + "\n" + res.String(0x51B) + figures(" %0.1f, %0.1f, %0.1f", u.activity[0], u.activity[1], u.activity[2]);
+        return tip;
     }
 
     std::string WarMap::TipText(int owner, int level) const
@@ -1092,6 +1155,7 @@ namespace wow
         static constexpr int ButtonText[3] = { 0x47B, 0x47C, 0x47E }; // the view buttons' labels (0x433480)
         // a popup item's text (its +0x0C; 0x475 "View map" would be the hovered sector's name)
         if (owner >= 100 && size_t(owner - 100) < popup.size()) return res.String(popup[size_t(owner - 100)].text);
+        if (owner >= 1000 && size_t(owner - 1000) < counters.size()) return CounterTip(owner - 1000, level);
         if (owner >= 0 && owner < 3) return res.String(ButtonText[owner]);
         // the Research button (0x45BEB0): "View Research" and what's being researched, 0x461 with nothing
         if (owner == 3) return res.String(0x47D) + "\n" + res.String(0x461);
@@ -1132,7 +1196,8 @@ namespace wow
         case SDLK_DOWN: scrollTo(cameraX, cameraY + (ctrl ? h / 8 : h / 16)); break;
         case SDLK_LEFT: scrollTo(cameraX - (ctrl ? w / 3 : w / 7), cameraY); break;
         case SDLK_RIGHT: scrollTo(cameraX + (ctrl ? w / 3 : w / 7), cameraY); break;
-        case SDLK_R: return Command{ ResearchCommand, 0 };     // the research screen
+        case SDLK_R: SetTimeRunning(false); return Command{ ResearchCommand, 0 }; // the research screen (0x7D)
+        case SDLK_BACKSPACE: SetTimeRunning(false); break;     // stops the clock (0x41A6C0(0))
         case SDLK_M: ToggleHistory(); break;                     // the message history (0x6C / 0x6D)
         // the world (0x41A450)
         case SDLK_TAB: panelShown = !panelShown; break;         // the mini-map and its frame (0x42F310)
@@ -1144,13 +1209,60 @@ namespace wow
             break;
         default:
             // '0'-'9' set the clock's speed, '0' being 10 (0x41F640)
-            if (key >= int(SDLK_0) && key <= int(SDLK_9)) speed = key == SDLK_0 ? 10 : int(key - SDLK_0);
+            // (0x41A4A1, unless a sector holds both sides, 0x41AEA0), and time runs (0x41A6C0(1))
+            if (key >= int(SDLK_0) && key <= int(SDLK_9) && SpeedChangeAllowed())
+            {
+                SetSpeed(key == SDLK_0 ? 10 : int(key - SDLK_0));
+                SetTimeRunning(true);
+            }
             break;
         }
         return std::nullopt;
     }
 
     void WarMap::OnKeyUp(int) {}
+
+    // 0x41A6C0: a change of the time-running flag goes to both players' command streams (actions 0xA / 0xB for the
+    // player; the opponent, 0x442A80 for the computer, answers with 0xC / 0xD), and their commands reach the world
+    // as 0x8050 / 0x8054 (on) and 0x8051 / 0x8055 (off). With the computer both come at once, so time stopping is
+    // what shows: every off sets the speed to 0.
+    void WarMap::SetTimeRunning(bool on)
+    {
+        if (on == timeRunning) return;
+        timeRunning = on;
+        for (int side = 0; side < 2; side++)
+        {
+            if (on) timeVotes++;
+            else
+            {
+                timeVotes--;
+                SetSpeed(0);
+            }
+            calendarWaiting = timeVotes == 1;
+        }
+    }
+
+    // The clock's speed (0x41F640), and with it the hours a tick; a speed of 0 stops time (0x41A6C0(0)).
+    void WarMap::SetSpeed(int index)
+    {
+        speed = std::clamp(index, 0, int(std::size(warmap::Speeds)) - 1);
+        if (warmap::Speeds[speed] == 0.0f) SetTimeRunning(false);
+    }
+
+    // 0x41AEA0: every sector must allow it (0x43D010): one where one side has units or constructions (0x422860,
+    // 0x4228B0) while the other does too won't (a battle to come).
+    bool WarMap::SpeedChangeAllowed() const
+    {
+        std::array<int, warmap::SectorCount + 1> mine{}, theirs{};
+        for (const Counter& k : counters)
+        {
+            if (k.kind > 1 || k.Travelling() || k.sector < 1 || k.sector > warmap::SectorCount) continue;
+            (k.players ? mine : theirs)[size_t(k.sector)] += k.count;
+        }
+        for (int s = 1; s <= warmap::SectorCount; s++)
+            if (mine[size_t(s)] && theirs[size_t(s)]) return false;
+        return true;
+    }
 
     // The Warmap menu (0x41D120): Cancel (command 0x73, icon GType 0x1C RBHcncl, text 0x476), then the items the
     // active tool, the player's selection or the sector under the mouse (if it's the player's: it's selected
@@ -1313,7 +1425,7 @@ namespace wow
         if (!down && researchHeld)
         {
             researchHeld = false;
-            if (panel.research.Contains(x, y)) return Command{ ResearchCommand, 0 };
+            if (panel.research.Contains(x, y)) { SetTimeRunning(false); return Command{ ResearchCommand, 0 }; }
             return std::nullopt;
         }
         // the speed slider (a Scrollbar, 0x431E30): pressing it sets the position under the mouse, and moving
@@ -1344,7 +1456,9 @@ namespace wow
         const bool shift = (SDL_GetModState() & SDL_KMOD_SHIFT) != 0;
         if (down)
         {
-            // a counter of the player's takes the mouse (0x42BEB0 0x201); otherwise the band starts (0x201)
+            // a counter of the player's takes the mouse (0x42BEB0 0x201); otherwise the band starts (0x201); either
+            // way time stops (0x41A6C0(0))
+            SetTimeRunning(false);
             leftHeld = true;
             rubberBand = false;
             dragX = x; dragY = y;
@@ -1463,7 +1577,8 @@ namespace wow
         int left = res.Human() ? 18 : 8, right = res.Human() ? 31 : 11;
         int positions = int(std::size(warmap::Speeds));
         int span = std::max(sp.w - left - right, 1);
-        speed = std::clamp(positions * (x - sp.x - left) / span, 0, positions - 1);
+        // a scroll of the slider (0x4278A0 0x114 / 0x115): the speed, or 0 if a sector won't have it changed
+        SetSpeed(SpeedChangeAllowed() ? std::clamp(positions * (x - sp.x - left) / span, 0, positions - 1) : 0);
     }
 
     Rect WarMap::SpeedRect() const
