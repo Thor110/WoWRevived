@@ -21,6 +21,8 @@
 #include "core/GameFiles.h"
 #include "core/Models.h"
 #include "core/Landscape.h"
+#include "core/TerrainView.h"
+#include "core/Random.h"
 #include "core/ObjOjd.h"
 #include "core/Research.h"
 #include "core/SaveFile.h"
@@ -65,7 +67,9 @@ static int Usage()
         "       wowdump --models <archive>         check and summarise every WOF, IOB and CLS\n"
         "       wowdump --iob <archive> <name> <palette> <out.bmp>\n"
         "       wowdump --landscape <map.CLS> <map.ATM> [<OBJ.ojd> <hour> <LANDR.INT> <out.bmp>]\n"
-        "                                          build a battle map's terrain; light it for an hour\n");
+        "                                          build a battle map's terrain; light it for an hour\n"
+        "       wowdump --terrain <map.CLS> <map.ATM> <OBJ.ojd> <hour> <dat folder> <out.bmp> | <x> <y> <out.bmp>\n"
+        "                                          draw the ground as the battle map does: all of it, or 640x480 at x,y\n");
     return 2;
 }
 
@@ -425,6 +429,34 @@ int main(int argc, char** argv)
                 }
                 wow::WriteBmp(argv[7], px.data(), l.Width(), l.Height());
             }
+            return 0;
+        }
+        if (first == "--terrain" && (argc == 8 || argc == 10))
+        {
+            fs::path dat = argv[6];
+            wow::Terrain t = wow::Terrain::Load(ReadFile(argv[2]), ReadFile(argv[3]));
+            wow::Landscape l = wow::Landscape::Create(t);
+            auto tiles = wow::TerrainTiles::Load(t);
+            auto tables = wow::ObjOjd::LoadBattleTables(ReadFile(argv[4]));
+            auto it = tables.dayTimes.find(std::atoi(argv[5]));
+            if (it == tables.dayTimes.end()) throw std::runtime_error("OBJ.ojd has no lighting for that hour");
+            const auto& set = it->second.sets[0];
+            std::string letter = set.name.empty() ? "M" : set.name.substr(0, 1);
+            auto ints = ReadFile(dat / ("LANDR0" + letter + ".INT"));
+            auto sun = wow::Landscape::SunFor(it->second.angle, set.f);
+            sun.shade = wow::Landscape::ShadeLevel(ints, set.f[2], 0.0f);
+            l.LightTheMap(sun);
+            auto table = wow::ShadeTable::LoadShh(ReadFile(dat / ("LANDR0" + letter + ".SHH")));
+            wow::random::Seed(1);
+            wow::random::FillTable();
+            auto dither = wow::DitherTables::Build(ReadFile(dat / "DITH.DAT"));
+            int scrollX = 0, scrollY = 0, width = (l.Cell() >> 16) * l.Width(), height = (l.RowStep() >> 16) * l.Height() + l.TopY() + 64;
+            if (argc == 10) { scrollX = std::atoi(argv[7]); scrollY = std::atoi(argv[8]); width = 640; height = 480; }
+            std::vector<uint32_t> px(size_t(width) * size_t(height), 0);
+            wow::TerrainView::Target target{ px.data(), width, 0, 0, width, height };
+            wow::TerrainView::Render(l, tiles, table, ints, dither, target, -scrollX, -scrollY);
+            wow::WriteBmp(argc == 10 ? argv[9] : argv[7], px.data(), width, height);
+            std::printf("%s: %d patches, drew %dx%d at %d,%d (hour %d, '%s')\n", argv[2], int(tiles.offsets.size()), width, height, scrollX, scrollY, it->first, set.name.c_str());
             return 0;
         }
         if (first == "--iob" && argc == 6)

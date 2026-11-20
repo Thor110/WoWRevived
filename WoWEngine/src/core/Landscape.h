@@ -16,8 +16,9 @@ namespace wow
         struct Vertex
         {
             uint8_t light = 0;          // +0 the lit level LightTheMap leaves
-            uint8_t dynamicLight = 0;   // +1 lights that move: SetPointLight and the vehicles' headlight masks
-            uint8_t unused2 = 0;
+            uint8_t dynamicLight = 0;   // +1 lights that move: SetPointLight and the vehicles' headlight masks (the
+                                        // terrain view takes it off the lit level, 0x4A00BA)
+            uint8_t shown = 0;          // +2 the level the terrain view draws with, worked out each frame (0x49FDA0)
             int8_t normal[3] = {};      // +3 to +5: x 127, from CalcNormals
             int16_t height = 0;         // +6 world height: ((byte x scale >> 16) + header 0x30) x 92682 >> 16
             uint8_t atm = 0;            // +8 the cell's ATM byte (its top left vertex): low nibble the type, high the slope
@@ -53,6 +54,10 @@ namespace wow
         // 0x40B570: the last of the shade table's 256 entries at or under ftol(third float x 64) gives the level;
         // with none, the level stays as it was
         static float ShadeLevel(std::span<const uint8_t> table, float third, float previous);
+        // The digit in the LANDR file names (dword_4DAED0, 0x40B570): 0 for up to 3 enemy units and buildings in
+        // the sector, 1 for 4 to 9, 2 for 10 or more. The battle map counts them (dword_4F7430, 0x43983E) only
+        // after loading the tables, so a battle uses the count from the battle before (0 for the first).
+        static int ShadeClass(int enemyCount) { return enemyCount <= 3 ? 0 : enemyCount < 10 ? 1 : 2; }
 
         static Landscape Create(const Terrain& cls, const Tweaks& tweaks);
         static Landscape Create(const Terrain& cls) { return Create(cls, Tweaks{}); }
@@ -65,6 +70,11 @@ namespace wow
         const std::vector<Vertex>& Vertices() const { return vertices; }
         int32_t WorldWidth() const { return worldWidth; }
         int32_t TopY() const { return topY; }
+        int32_t RowStep() const { return rowStep; }
+        int32_t HeightScale() const { return heightScale; }
+        int32_t HeightOffset() const { return heightOffset; }
+        const std::vector<uint8_t>& Heights() const { return heights; }
+        std::vector<Vertex>& Vertices() { return vertices; }
 
         // 0x47B120: the height of the vertex a world position falls in
         int HeightAtNearest(int x, int y) const;
