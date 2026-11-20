@@ -42,6 +42,7 @@ namespace wow
         void OnKeyUp(int sdlKey) override;
         // tool tips: 0-2 the view buttons, 3 the Research button, 4 the calendar
         int TipOwner(int x, int y) const override;
+        int CursorAt(int x, int y) const override;
         std::string TipText(int owner, int level) const override;
 
         int SectorAt(int screenX, int screenY) const; // 0 off the land
@@ -130,7 +131,21 @@ namespace wow
         struct PanelLayout { Rect frame, mini, buttons[3], research; };
         PanelLayout Panel() const;
 
-        int chosen = -1;                 // the counter picked to move (drawn with cselecth.spr, GType 0x54)
+        // The player's selection (the player object's +0x430, filled by its commands 4 clear, 5 select, 6 drop),
+        // the cursor mode (0x4EA43C: 0 normal, 1 after a rubber band, 2 a move ready), the rubber band (tracker
+        // 0x4E9EE0) and a counter pressed (it takes the mouse, 0x42E9B0), and the route preview for the sector
+        // under the mouse (world +0x8C, 0x41D590 -> 0x419520): a route for each group of selected units
+        std::vector<int> selection;
+        bool Selected(int counter) const;
+        int cursorMode = 0;
+        bool leftHeld = false, rubberBand = false;
+        int dragX = 0, dragY = 0;        // where the button went down (on the screen)
+        int highlighted = 0;             // world +0x114: counters in the band
+        int pressedCounter = -1;
+        int previewSector = -1;
+        void BuildPreview(int sector);
+        void ClearSelection() { selection.clear(); previewSector = -1; }
+        void UpdateBand();
         int clunWidth = 4, clunSpacing = 4;
         float cluntingSpeed = 7.0f;      // [Tweak] "Clunting Speed" (0x428B70, default 7): only for units with no speed
         std::string message;             // the engine's own note (a refused route), shown in the status strip
@@ -248,14 +263,20 @@ namespace wow
             // its place in the counter placement (0x428620): the cell (-1 for none), and a slide to a new cell
             // (0x4286C0: the target, the step a tick and the distance still to go)
             int cell = -1;
+            bool inBand = false;         // inside the rubber band (0x440680)
             float slideX = 0, slideY = 0, stepX = 0, stepY = 0, slideStep = 0, slideLeft = 0;
             int targetX = 0, targetY = 0;
         };
         float PixelsPerHour(const Counter& k) const; // how far a counter goes in a game hour
         int CrewOf(const Counter& k) const;          // the men its objects carry
-        std::vector<int> FindRoute(int from, int to, const Counter& k, std::string* why = nullptr) const;
+        std::vector<int> FindRoute(int from, int to, const std::vector<int>& group, std::string* why = nullptr) const;
+        std::vector<int> PlanRoute(const std::vector<int>& group, int sector, std::string* why = nullptr) const;
+        void StartRoute(int counter, const std::vector<int>& path, int n);
+        std::vector<Counter::ArrowPoint> RouteCurve(const std::vector<int>& path, bool naval) const;
         void DrawRouteArrow(Canvas& canvas, const Counter& k) const;
         static std::vector<Counter::ArrowPoint> ArrowCurve(const std::vector<std::pair<float, float>>& control);
         std::vector<Counter> counters;   // what's drawn: one per kind of object, with how many there are
+        struct Preview { std::vector<int> group; std::vector<int> path; Counter shape; };
+        std::vector<Preview> preview;
     };
 }

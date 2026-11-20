@@ -43,14 +43,17 @@ namespace
     constexpr int GameWidth = 640;
     constexpr int GameHeight = 480;
     constexpr uint64_t TickNs = 1'000'000'000ull / 30;
-    constexpr int WaitKey = -100'000'000; // a "wait:n" in the screenshot keys, less n // "Game Frequency" defaults to 30 updates a second
+    constexpr int WaitKey = -100'000'000; // a "wait:n" in the screenshot keys, less n
+    constexpr int MoveKey = -50'000'000;  // a "move:x:y", less x << 12 | y
+    constexpr int DownKey = -60'000'000;  // "down:x:y"
+    constexpr int UpKey = -70'000'000;    // "up:x:y" // "Game Frequency" defaults to 30 updates a second
 
     // Command line: [game folder] [--human | --martian] [--open command] [--screenshot file.bmp [keys]]
     // --human / --martian pick the side (WoWLauncher passes one); without either it's Human.
     // --open starts on the screen a menu command opens (0x8E Game Options, 0x6E Save Game...).
     // --ticks N runs N game updates (30 a second) after the keys, before the screenshot.
     // --mouse x,y moves the mouse there first (game coordinates), for screenshots of the cursor and highlights.
-    // --screenshot presses the comma separated keys (up, down, enter, escape, f1-f9, click:x:y, wait:n updates), saves the frame and exits.
+    // --screenshot presses the comma separated keys (up, down, enter, escape, f1-f9, click:x:y, move:x:y, down:x:y, up:x:y, wait:n updates), saves the frame and exits.
     struct Options
     {
         fs::path gameFolder;
@@ -104,6 +107,15 @@ namespace
                         else if (k == "click") o.keys.push_back(-1); // a left click where --mouse put the mouse
                         else if (k.rfind("wait:", 0) == 0)   // wait:n runs n updates
                             o.keys.push_back(WaitKey - std::max(0, std::atoi(k.c_str() + 5)));
+                        else if (k.rfind("move:", 0) == 0 || k.rfind("down:", 0) == 0 || k.rfind("up:", 0) == 0)
+                        {
+                            // move:x:y moves the mouse there; down:x:y and up:x:y press and let go the left button there
+                            size_t at = k.find(':') + 1;
+                            int mx = std::atoi(k.c_str() + at), my = 0;
+                            if (auto colon = k.find(':', at); colon != std::string::npos) my = std::atoi(k.c_str() + colon + 1);
+                            int base = k[0] == 'm' ? MoveKey : k[0] == 'd' ? DownKey : UpKey;
+                            o.keys.push_back(base - (mx << 12 | my));
+                        }
                         else if (k.rfind("click:", 0) == 0)   // click:x:y clicks there
                         {
                             int cx = std::atoi(k.c_str() + 6), cy = 0;
@@ -261,6 +273,14 @@ int main(int argc, char** argv)
             if (options.mouseX >= 0) frontEnd.OnMouseMove(options.mouseX, options.mouseY);
             for (int key : options.keys)
             {
+                if (key <= MoveKey && key > WaitKey)
+                {
+                    int base = key <= UpKey ? UpKey : key <= DownKey ? DownKey : MoveKey, packed = base - key;
+                    int px = packed >> 12, py = packed & 0xFFF;
+                    frontEnd.OnMouseMove(px, py);
+                    if (base != MoveKey) frontEnd.OnMouseButton(px, py, base == DownKey);
+                    continue;
+                }
                 if (key <= WaitKey) { for (int t = 0; t < WaitKey - key; t++) frontEnd.Update(); continue; }
                 if (key == -1) { frontEnd.OnMouseButton(options.mouseX, options.mouseY, true); frontEnd.OnMouseButton(options.mouseX, options.mouseY, false); continue; }
                 if (key <= -2)

@@ -204,8 +204,30 @@ fades over 15 updates once it runs; a Martian one has a sound for each speed, 0x
 
 ## Moving units
 
-In Unit View a click on one of your counters picks it (GType 0x54, cselecth.spr, drawn over it) and a click on a
-sector sends it there.
+**Selecting and sending** (the war map view's mouse, 0x41C5E0 / 0x41D300 / 0x41D470; the player object's
+selection at +0x430, filled by its recorded commands 4 clear, 5 select (Shift adds), 6 drop, 2 cancel):
+
+- **A counter of yours** takes the mouse when pressed (0x42BEB0 0x201) and on letting go (0x42C160): in cursor
+  mode 1 with Shift it's dropped from the selection if it's in it and added if not; in modes 0 and 1 otherwise
+  the selection is just it; in modes 2 and 3 nothing.
+- **The rubber band** (tracker 0x4E9EE0): dragging on the map tells the sectors 0x8010 with the box (0x43C2B0):
+  each of your counters of the view's kind with its corner inside (PtInRect) is lit and counted (world +0x114).
+  Letting go with any inside clears the selection and selects them (0x8011, 0x43C340), cursor mode 1. The
+  engine counts it as a drag once the mouse has moved more than 2 pixels, and draws the box as a white line
+  (*provisional*: the tracker's look isn't traced).
+- **The route preview** (0x41D590 -> 0x419520), made again whenever the mouse goes onto another sector: in the Unit
+  view, with units selected and no band out, the selected units are put in groups by their sector and how they go
+  (naval: the unit's +0x52 is 5 or 6; 7; the rest), and each group gets a route to the sector with its arrow
+  (+0x5F), its label hours the length over the slowest unit's speed. Cursor mode 2 when any can go (0x41FF70),
+  back to 0 from 2 when none can.
+- **A click on a sector** in mode 2 (0x43C3F0), with routes heading there: the selection is sent (the player's
+  command 8, then cancel), sound 0x11F; each group's units take their places in its formation in order. In mode 0
+  or 1 a click selects the sector if it's yours (or with the cheats 0x4D1249 / 0x4D1279) and cancels.
+- **The cursor** (0x4EA438, set by what's under the mouse when told 0x20 with the mode): over a counter of yours 1,
+  in mode 1 with Shift 3 if it's selected and 2 if not, 12 in modes 2 and 3; over a sector in mode 0 the default
+  if it's yours and 12 if not, in mode 2 4 to move into yours or no one's and 5 into the other side's.
+- Selected and lit counters get the ring (cselecth.spr, GType 0x54) and are drawn over the rest. A quick right
+  click (Cancel) clears the selection.
 
 - **Routes** (WWarMapRoute 0x4240D0) move on every game hour: the calendar sends 0x802D with the hours gone by and
   the route's handler (0x424F00) moves its entries on (0x425080). A route keeps its sectors, the start first

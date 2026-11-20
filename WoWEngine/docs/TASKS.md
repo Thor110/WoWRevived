@@ -56,10 +56,11 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 - [~] **Counter decorations** (0x42B850): done: the class-7 counts ("%d" / "%d/%d") at the bottom right, the
       picked counter drawn on top, own unfinished buildings at 50%; with their systems: the power bar, production
       blink, idle and repair icons, old enemy intel at 50% — 04
-- [~] **Mouse**: rubber-band selection (sectors 0x8010 / 0x8011), the sector selection rules (own sectors only,
-      cheats aside), the right-hold "Warmap menu" popup with Cancel and the object's or sector's items (0x41D120,
-      0x805C), the hover route preview with cursor 2 (0x41D300-0x41D590); the quick cancel is done — 03
-- [ ] **Selection**: Shift-click, box select, the cursors; a click on a counter stops time (0x42BEB0) — 04
+- [~] **Mouse**: done: rubber-band selection (sectors 0x8010 / 0x8011), the sector selection rules, the hover route
+      preview with cursor mode 2 and the click that sends (0x41D300-0x41D590, 0x43C3F0), the quick cancel; to do:
+      the right-hold "Warmap menu" popup with Cancel and the object's or sector's items (0x41D120, 0x805C), the
+      rubber band's look — 03
+- [x] **Selection**: click, Shift-click, box select, the cursors (0x42BEB0, 0x42C160, 0x43ADA0 0x20) — 04
 - [ ] **Right-click popup menu** widget, sounds 0x193-0x196 (0x432C60) — 05
 - [~] **Keyboard**: Backspace and the time-running flag (world `+0x64`, recorded as actions 0xA / 0xB and passed to
       the opponent) (0x41A6C0) — 03

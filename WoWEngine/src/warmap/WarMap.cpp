@@ -11,7 +11,9 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <map>
 #include <string>
 
 namespace wow
@@ -897,6 +899,10 @@ namespace wow
         if (panel.research.Contains(mouseX, mouseY)) hotButton = 3;
         bool overPanel = panel.mini.Contains(mouseX, mouseY) || hotButton >= 0 || (panel.frame.Contains(mouseX, mouseY) && res.Human());
         hovered = mouseX >= 0 && !overPanel ? SectorAt(mouseX, mouseY) : 0;
+        // the selection drops what's gone off on its way or out of the view's kind
+        selection.erase(std::remove_if(selection.begin(), selection.end(), [&](int i) {
+            return size_t(i) >= counters.size() || counters[size_t(i)].Travelling() || counters[size_t(i)].kind != viewMode - 1; }), selection.end());
+        if (hovered != previewSector) BuildPreview(hovered);
     }
 
     void WarMap::Draw(Canvas& canvas) const
@@ -947,6 +953,8 @@ namespace wow
         // Routes: an arrow from each travelling counter through the rest of its points
         for (const Counter& k : counters)
             if (k.Travelling() && k.kind == viewMode - 1) DrawRouteArrow(canvas, k);
+        for (const Preview& p : preview)
+            if (p.path.size() > 1) DrawRouteArrow(canvas, p.shape);
 
         // The counters (GType 0x77) of the kind the view shows (WWarMapObject's draw, 0x42B850): at depth 4, or 7
         // for the one picked, so it's drawn over the rest; the player's unfinished constructions at 50% (the
@@ -960,7 +968,7 @@ namespace wow
             if (x < -40 || y < -40 || x > canvas.Width() || y > canvas.Height()) return;
             const bool dim = k.players && k.kind == 1 && k.unfinished;
             canvas.DrawSprite(0x77, k.frame, x, y, 0, dim ? Canvas::Blend::Translucent : Canvas::Blend::Opaque);
-            if (&k - counters.data() == chosen) canvas.DrawSprite(0x54, 0, x, y); // cselecth.spr
+            if (Selected(int(&k - counters.data())) || k.inBand) canvas.DrawSprite(0x54, 0, x, y); // cselecth.spr
             if (k.shared)
             {
                 std::string text = k.finishedCount < k.count ? std::to_string(k.finishedCount) + "/" + std::to_string(k.count)
@@ -970,10 +978,20 @@ namespace wow
                 canvas.DrawString(0x6E, text, { x, y + h - th, w, th }, TextRight);
             }
         };
+        auto onTop = [&](const Counter& k) { return Selected(int(&k - counters.data())) || k.inBand; };
         for (const Counter& k : counters)
-            if (k.kind == viewMode - 1 && &k - counters.data() != chosen) drawCounter(k); // each view shows its own kind
-        if (chosen >= 0 && size_t(chosen) < counters.size() && counters[size_t(chosen)].kind == viewMode - 1)
-            drawCounter(counters[size_t(chosen)]);
+            if (k.kind == viewMode - 1 && !onTop(k)) drawCounter(k); // each view shows its own kind
+        for (const Counter& k : counters)
+            if (k.kind == viewMode - 1 && onTop(k)) drawCounter(k);
+        // the rubber band (tracker 0x4E9EE0; its look isn't traced: a 1 pixel white box here)
+        if (rubberBand)
+        {
+            int l = std::min(dragX, mouseX), r = std::max(dragX, mouseX), t = std::min(dragY, mouseY), b = std::max(dragY, mouseY);
+            uint32_t* out = canvas.Pixels();
+            auto plot = [&](int px, int py) { if (px >= 0 && py >= 0 && px < canvas.Width() && py < canvas.Height()) out[size_t(py) * size_t(canvas.Width()) + size_t(px)] = 0xFFFFFFu; };
+            for (int px = l; px <= r; px++) { plot(px, t); plot(px, b); }
+            for (int py = t; py <= b; py++) { plot(l, py); plot(r, py); }
+        }
 
         // the panel: its frame, the three view buttons (frame 2 for the one that's on, 1 under the mouse; the
         // buttons' frames aren't confirmed), then the mini-map: the whole map at a fifteenth, the sector under the
@@ -1036,14 +1054,14 @@ namespace wow
     // The keys, as the war map view (0x41C5E0 and 0x41D640) and the world (0x41A450) take them. Each press (and
     // each repeat while held) is one step, as with WM_KEYDOWN.
     // The right button on the map (0x41C5E0): let go within [Tweak] "Quick Cancel Timeout" (5) updates of pressing
-    // it, without Ctrl, it's command 0x73, Cancel: the counter picked to move is let go. (Held longer it opens the
-    // "Warmap menu" popup, 0x41D120, which isn't in yet.)
+    // it, without Ctrl, it's command 0x73, Cancel. (Held longer it opens the
+    // "Warmap menu" popup, 0x41D120, which isn't in yet.) Cancel drops the selection (the player's action 2).
     std::optional<Command> WarMap::OnRightButton(int, int, bool down)
     {
         if (down) { rightDownAt = animation; return std::nullopt; }
         bool quick = rightDownAt >= 0 && animation - rightDownAt <= quickCancelTimeout;
         rightDownAt = -1;
-        if (quick && !(SDL_GetModState() & SDL_KMOD_CTRL)) chosen = -1;
+        if (quick && !(SDL_GetModState() & SDL_KMOD_CTRL)) ClearSelection(); // 0x73 -> the player's action 2
         return std::nullopt;
     }
 
@@ -1124,6 +1142,85 @@ namespace wow
             Rect mini = MiniMapRect();
             CentreOn((x - mini.x) * warmap::MapWidth / MiniW, (y - mini.y) * warmap::MapHeight / MiniH);
         }
+        if (leftHeld && pressedCounter < 0)
+        {
+            if (!rubberBand && (std::abs(x - dragX) > 2 || std::abs(y - dragY) > 2)) rubberBand = true;
+            if (rubberBand) UpdateBand();
+        }
+    }
+
+    bool WarMap::Selected(int counter) const
+    {
+        return std::find(selection.begin(), selection.end(), counter) != selection.end();
+    }
+
+    // While the rubber band is dragged the sectors are told 0x8010 with it (0x43C2B0): each counter of the view's
+    // kind of the player's, its corner inside (PtInRect, so not on the right or bottom edge), is lit (0x440680)
+    // and counted (world +0x114).
+    void WarMap::UpdateBand()
+    {
+        int left = std::min(dragX, mouseX) + cameraX, right = std::max(dragX, mouseX) + cameraX;
+        int top = std::min(dragY, mouseY) + cameraY, bottom = std::max(dragY, mouseY) + cameraY;
+        highlighted = 0;
+        for (Counter& k : counters)
+        {
+            k.inBand = k.players && k.kind == viewMode - 1 && !k.Travelling() &&
+                       k.x >= left && k.x < right && k.y >= top && k.y < bottom;
+            if (k.inBand) highlighted++;
+        }
+    }
+
+    // The route preview (0x41D590), made again whenever the mouse goes onto another sector (0x41D470): in the Unit
+    // view, with units selected and the rubber band not out, the selected units are put in groups by the sector
+    // they're in and how they go (0x419520: naval, the unit's +0x52 5 or 6; 7; or the rest), and each group gets a
+    // route to the sector, its arrow shown (+0x5F). Cursor mode 2 when any of them can go (0x41FF70 counts
+    // them, +0x5D), back to 0 from 2 when none can.
+    void WarMap::BuildPreview(int sector)
+    {
+        preview.clear();
+        previewSector = sector;
+        bool any = false;
+        if (viewMode == 1 && !rubberBand && !selection.empty() && sector)
+        {
+            std::map<int, std::vector<int>> groups;
+            for (int i : selection)
+            {
+                const Counter& k = counters[size_t(i)];
+                if (k.Travelling() || k.sector < 1 || k.sector > warmap::SectorCount) continue;
+                auto unit = unitData.find(k.type);
+                int f52 = unit == unitData.end() ? 0 : unit->second.field52;
+                int how = f52 == 5 || f52 == 6 ? 2 : f52 == 7 ? 1 : 0;
+                groups[k.sector * 3 + how].push_back(i);
+            }
+            for (auto& [key, group] : groups)
+            {
+                Preview p;
+                p.group = group;
+                if (key / 3 != sector) p.path = PlanRoute(group, sector);
+                if (p.path.size() > 1)
+                {
+                    any = true;
+                    const Counter& first = counters[size_t(group.front())];
+                    p.shape.arrow = RouteCurve(p.path, key % 3 == 2);
+                    p.shape.attack = owner[size_t(sector)] == 1;
+                    p.shape.path = p.path;
+                    // the label's hours (0x4243E2): the route's length over the slowest unit's speed
+                    float length = 0;
+                    for (size_t n = 1; n < p.path.size(); n++)
+                    {
+                        auto a = warmap::Waypoint(p.path[n - 1]), b = warmap::Waypoint(p.path[n]);
+                        int dx = b.x - a.x, dy = b.y - a.y;
+                        length += float(std::sqrt(double(dx * dx + dy * dy)));
+                    }
+                    for (int g : group) p.shape.labelHours = std::max(p.shape.labelHours, length / PixelsPerHour(counters[size_t(g)]));
+                    for (int i = 0; i < 6; i++) p.shape.labelFrom[i] = game.dateTime[i];
+                    (void)first;
+                }
+                preview.push_back(std::move(p));
+            }
+        }
+        if (any) cursorMode = 2;
+        else if (cursorMode == 2) cursorMode = 0;
     }
 
     std::optional<Command> WarMap::OnMouseButton(int x, int y, bool down)
@@ -1164,18 +1261,108 @@ namespace wow
             CentreOn((x - mini.x) * warmap::MapWidth / MiniW, (y - mini.y) * warmap::MapHeight / MiniH);
             return std::nullopt;
         }
-        if (!down) { dragging = false; return std::nullopt; }
-        // a counter of the side being played picks it; with one picked, a sector sends it there
-        int counter = CounterAt(x, y);
-        if (counter >= 0 && counters[size_t(counter)].players && counters[size_t(counter)].kind == 0)
+        if (!down && dragging) { dragging = false; return std::nullopt; }
+        const bool shift = (SDL_GetModState() & SDL_KMOD_SHIFT) != 0;
+        if (down)
         {
-            chosen = chosen == counter ? -1 : counter;
+            // a counter of the player's takes the mouse (0x42BEB0 0x201); otherwise the band starts (0x201)
+            leftHeld = true;
+            rubberBand = false;
+            dragX = x; dragY = y;
+            int counter = CounterAt(x, y);
+            pressedCounter = counter >= 0 && counters[size_t(counter)].players ? counter : -1;
+            return std::nullopt;
+        }
+        if (!leftHeld) return std::nullopt;
+        leftHeld = false;
+        if (pressedCounter >= 0)
+        {
+            // a click on a counter of the player's (0x42C160): in mode 1 with Shift it's dropped from the selection
+            // if it's in it and added if not; in modes 0 and 1 otherwise the selection is just it; in modes 2 and
+            // 3 nothing
+            int counter = pressedCounter;
+            pressedCounter = -1;
+            if (cursorMode == 1 && shift)
+            {
+                if (Selected(counter)) selection.erase(std::remove(selection.begin(), selection.end(), counter), selection.end());
+                else selection.push_back(counter);
+            }
+            else if (cursorMode <= 1) selection = { counter };
+            previewSector = -1;
+            return std::nullopt;
+        }
+        // 0x41D300: a rubber band with counters in it selects them (the player's action 4, then 5 for each, the
+        // sectors told 0x8011, 0x43C340), cursor mode 1
+        if (rubberBand)
+        {
+            rubberBand = false;
+            if (highlighted > 0)
+            {
+                selection.clear();
+                for (size_t i = 0; i < counters.size(); i++)
+                    if (counters[i].inBand) selection.push_back(int(i));
+                cursorMode = 1;
+            }
+            for (Counter& k : counters) k.inBand = false;
+            highlighted = 0;
+            previewSector = -1;
             return std::nullopt;
         }
         int sector = SectorAt(x, y);
-        if (chosen >= 0 && sector) { SendTo(chosen, sector); chosen = -1; return std::nullopt; }
-        if (sector) selected = sector;
+        // in cursor modes 2 and 3 the click goes to the sector (0x43C3F0): in mode 2, with routes heading for it,
+        // the selection is sent there (the player's command 8, then action 2), sound 0x11F
+        if (cursorMode == 2 || cursorMode == 3)
+        {
+            if (cursorMode == 2 && sector && sector == previewSector)
+            {
+                bool sent = false;
+                for (const Preview& p : preview)
+                {
+                    if (p.path.size() < 2) continue;
+                    for (size_t n = 0; n < p.group.size(); n++) StartRoute(p.group[n], p.path, int(n));
+                    sent = true;
+                }
+                if (sent)
+                {
+                    ArriveTogether();
+                    sounds.push_back(0x11F);
+                    ClearSelection();
+                    preview.clear();
+                    cursorMode = 0;
+                    message.clear();
+                }
+            }
+            return std::nullopt;
+        }
+        // otherwise the sector is selected if it's the player's (or with the cheats), and the player's action 2
+        if (sector && sector != selected && owner[size_t(sector)] == 0)
+        {
+            selected = sector;
+            ClearSelection();
+        }
         return std::nullopt;
+    }
+
+    // The cursor (0x4EA438, set by whatever the mouse is over when told 0x20 with the mode): over a counter of
+    // the player's (0x42BEB0) 1, or in mode 1 with Shift 3 if it's selected and 2 if not, and 12 in modes 2 and
+    // 3; over a sector (0x43ADA0) in mode 0 the default if it's the player's and 12 if not, in mode 2 4 to move
+    // into one of the player's or no one's and 5 into the other side's.
+    int WarMap::CursorAt(int x, int y) const
+    {
+        PanelLayout panel = Panel();
+        if (panel.frame.Contains(x, y) || panel.mini.Contains(x, y) || CalendarRect().Contains(x, y)) return 0;
+        int counter = CounterAt(x, y);
+        if (counter >= 0 && counters[size_t(counter)].players)
+        {
+            if (cursorMode == 0) return 1;
+            if (cursorMode == 1) return (SDL_GetModState() & SDL_KMOD_SHIFT) ? (Selected(counter) ? 3 : 2) : 1;
+            return 12;
+        }
+        int sector = SectorAt(x, y);
+        if (!sector) return 0;
+        if (cursorMode == 0) return owner[size_t(sector)] == 0 ? 0 : 12;
+        if (cursorMode == 2) return owner[size_t(sector)] == 1 ? 5 : 4;
+        return 0;
     }
 
     // The calendar ("Calendar View", 0x426C10, drawn by 0x4271E0, frames from 0x427500): GType 0x93 (HU_CALEN.SPR
@@ -1493,7 +1680,7 @@ namespace wow
         return std::find(here.begin(), here.end(), type) != here.end();
     }
 
-    std::vector<int> WarMap::FindRoute(int from, int to, const Counter& k, std::string* why) const
+    std::vector<int> WarMap::FindRoute(int from, int to, const std::vector<int>& group, std::string* why) const
     {
         // The game's route finder: the A* (warmap::AStar; set up by 0x424160) with 0x42ABD0 giving each step's
         // cost, or refusing it, the reason left at 0x4EA198 (by whichever call refused last, the A*'s estimates
@@ -1512,8 +1699,15 @@ namespace wow
         auto cost = [&](int a, int b) -> int {
             if (a == b) return 0;
             int kind = warmap::RouteLinkKind(a, b);
-            if (k.moveClass <= 2 && !(kind & warmap::RouteKind::Land)) { reason = 1; return -1; }
-            if (k.moveClass == 3 && !(kind & warmap::RouteKind::Sea)) { reason = 2; return -1; }
+            // every unit of the group (0x42AC5E): land units need a land link, boats a sea one
+            bool anyLand = false;
+            for (int g : group)
+            {
+                const int mc = counters[size_t(g)].moveClass;
+                if (mc <= 2 || mc == 4) anyLand = true;
+                if (mc <= 2 && !(kind & warmap::RouteKind::Land)) { reason = 1; return -1; }
+                if (mc == 3 && !(kind & warmap::RouteKind::Sea)) { reason = 2; return -1; }
+            }
             if (!HasCommandPost(a) && !HasCommandPost(b)) { reason = 3; return -1; }
             if (b != to)
             {
@@ -1523,10 +1717,13 @@ namespace wow
             if (!HasCommandPost(from) && owner[size_t(b)] != 0) { reason = 6; return -1; }
             if (b == to)
             {
-                int units = k.moveClass != 3 ? k.count : 0, boats = k.moveClass == 3 ? k.count : 0;
+                int mine = 0;
+                for (int g : group) mine += counters[size_t(g)].count;
+                int units = anyLand ? mine : 0, boats = anyLand ? 0 : mine;
+                const bool boatLimit = counters[size_t(group.front())].moveClass == 3; // the first unit's class
                 for (const Counter& c : counters)
                 {
-                    if (c.kind != 0 || &c == &k) continue;
+                    if (c.kind != 0 || std::find(group.begin(), group.end(), int(&c - counters.data())) != group.end()) continue;
                     if (!c.Travelling())
                     {
                         // 0x43D090 / 0x43D0F0: the player's units in the sector, boats (class 3) apart
@@ -1534,8 +1731,8 @@ namespace wow
                     }
                     else if (c.path.back() == to) (c.naval ? boats : units) += c.count;
                 }
-                if (k.moveClass != 3 && units > maxUnits) { reason = 7; return -1; }
-                if (k.moveClass == 3 && boats > maxBoats) { reason = 8; return -1; }
+                if (!boatLimit && units > maxUnits) { reason = 7; return -1; }
+                if (boatLimit && boats > maxBoats) { reason = 8; return -1; }
             }
             auto pa = warmap::Waypoint(a), pb = warmap::Waypoint(b);
             int dx = pa.x - pb.x, dy = pa.y - pb.y;
@@ -1770,23 +1967,37 @@ namespace wow
 
     void WarMap::SendTo(int index, int sector)
     {
-        Counter& k = counters[size_t(index)];
+        const Counter& k = counters[size_t(index)];
         if (sector == k.sector || k.Travelling()) return;
         std::string why;
-        std::vector<int> path = FindRoute(k.sector, sector, k, &why);
+        std::vector<int> path = PlanRoute({ index }, sector, &why);
+        if (path.empty()) { message = why; return; }
+        StartRoute(index, path, 0);
+        ArriveTogether();
+        message.clear();
+    }
+
+    // A route for a group of units from their sector (0x424160): the way (FindRoute, the start first), refused
+    // unless it gets anywhere, and an attack (into a sector the other side holds) only to a neighbouring sector.
+    std::vector<int> WarMap::PlanRoute(const std::vector<int>& group, int sector, std::string* why) const
+    {
+        const Counter& k = counters[size_t(group.front())];
+        std::vector<int> path = FindRoute(k.sector, sector, group, why);
         std::string through;
         for (int s : path) through += " " + std::to_string(s);
-        SDL_Log("War map: route from sector %d to %d for unit class %d: %s", k.sector, sector, k.moveClass,
-                path.empty() ? why.c_str() : ("through" + through).c_str());
-        // an attack (into a sector the other side holds) has to be to a neighbouring sector (0x424160)
-        if (!path.empty() && owner[size_t(sector)] == 1 && path.size() != 1) { path.clear(); why = "An attack has to be on a neighbouring sector"; }
-        if (path.empty()) { message = why; return; }
-        k.moved = true;
-        path.insert(path.begin(), k.sector);
-        k.path = path;
-        k.attack = owner[size_t(sector)] == 1; // +0x5E: not when the goal is the side's own or no one's
-        auto unit = unitData.find(k.type);
-        k.naval = unit != unitData.end() && (unit->second.field52 == 5 || unit->second.field52 == 6);
+        SDL_Log("War map: route from sector %d to %d for %d unit(s): %s", k.sector, sector, int(group.size()),
+                path.empty() ? (why ? why->c_str() : "none") : ("through" + through).c_str());
+        if (!path.empty() && owner[size_t(sector)] == 1 && path.size() != 1)
+        {
+            path.clear();
+            if (why) *why = "An attack has to be on a neighbouring sector";
+        }
+        if (!path.empty()) path.insert(path.begin(), k.sector);
+        return path;
+    }
+
+    std::vector<WarMap::Counter::ArrowPoint> WarMap::RouteCurve(const std::vector<int>& path, bool naval) const
+    {
         // the arrow's control points (0x4244E0): for the start, the point of its link to the next sector where a
         // route over land leaves it (0x4BCEB0); then every sector's waypoint (0x437380). A naval route, or a point
         // that's 0, 0, takes the sector's sea waypoint instead (0x4373A0).
@@ -1799,10 +2010,23 @@ namespace wow
                 const warmap::SectorLink* link = warmap::FindLink(path[0], path[1]);
                 at = link ? warmap::Point{ link->land[0], link->land[1] } : warmap::Point{ 0, 0 };
             }
-            if (k.naval || (at.x == 0 && at.y == 0)) at = warmap::SeaWaypoint(path[n]);
+            if (naval || (at.x == 0 && at.y == 0)) at = warmap::SeaWaypoint(path[n]);
             control.push_back({ float(at.x), float(at.y) });
         }
-        k.arrow = ArrowCurve(control);
+        return ArrowCurve(control);
+    }
+
+    // A unit set off on a route (0x424160 and its RouteEntry 0x42AFE0), the n-th of its group.
+    void WarMap::StartRoute(int index, const std::vector<int>& path, int n)
+    {
+        Counter& k = counters[size_t(index)];
+        const int sector = path.back();
+        k.moved = true;
+        k.path = path;
+        k.attack = owner[size_t(sector)] == 1; // +0x5E: not when the goal is the side's own or no one's
+        auto unit = unitData.find(k.type);
+        k.naval = unit != unitData.end() && (unit->second.field52 == 5 || unit->second.field52 == 6);
+        k.arrow = RouteCurve(path, k.naval);
         // the route's length (+0x68): waypoint to waypoint, whole pixels each; a RouteEntry (0x42AFE0) goes it at
         // its unit's speed (+0x54 x 0.05), so in length / speed hours, starting on the first sector's way, and
         // takes its place in a formation [Tweak] "Route clunting width" (4) wide, "Route clunting spacing" (4)
@@ -1826,12 +2050,9 @@ namespace wow
         k.hoursOn = 0;
         k.interrupted = false;
         k.trim = 0;
-        const int n = 0;
         k.offsetX = (n % clunWidth - clunWidth / 2) * clunSpacing;
         k.offsetY = (n / clunWidth - clunWidth / 2) * clunSpacing;
         k.labelHours = k.hoursLeft;
         for (int i = 0; i < 6; i++) k.labelFrom[i] = game.dateTime[i];
-        ArriveTogether();
-        message.clear();
     }
 }
