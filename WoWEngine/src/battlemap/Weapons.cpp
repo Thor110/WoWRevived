@@ -313,7 +313,7 @@ namespace wow
     // member 0x80B9 again, the target +0x2C and its id +0x30, where it was last aimed (+0x34..+0x3C) -1), +0x1D8
     // bit 0 set (0x480EB0(1)), vt+0x38, and for a player's group (bit 4) whose first member is a vehicle speech
     // 0x10C; then bit 3. The move into range and the aim follow from the group's update (0x4826D0).
-    // *Provisional*: type 0x3DB's case, 0x80B9 and vt+0x38 aren't in.
+    // (Type 0x3DB's case, the reinforcement markers: RetreatToMarker.) *Provisional*: 0x80B9 and vt+0x38 aren't in.
     void BattleMap::AttackObject(int id)
     {
         const Unit* target = UnitById(id);

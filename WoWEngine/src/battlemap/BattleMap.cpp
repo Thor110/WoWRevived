@@ -265,6 +265,14 @@ namespace wow
             return;
         }
         const Unit* best = HotspotAt(x, y);
+        // in mode 1 a reinforcement point's marker is an object too: an attack on it goes through it (0x481F70)
+        if (!best && Mode() == 1)
+            if (const int k = MarkerAt(x, y); k >= 0)
+            {
+                for (size_t g = 0; g < selected.size(); g++)
+                    if (selected[g]) RetreatToMarker(int(g), size_t(k));
+                return;
+            }
         if (!best)
         {
             // cursor mode 1 on the ground (0x485A53): the point the mouse looks at (0x47B3F0), packet 0x0E to the

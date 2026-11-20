@@ -105,8 +105,16 @@ namespace wow
             Speak(0x121, group);
             return;
         }
+        RetreatVia(group, size_t(k));
+    }
+
+    // The going (0x480EF0 / 0x481170 alike): the members told 0x80B9, the target cleared, the guns stood down
+    // (0x805A), bit 0 cleared, each member 0x80B9 again, bit 3 set, bit 0 set, 0x804F to the point, and each member's
+    // war map object 0x80BB with the point's sector.
+    void BattleMap::RetreatVia(int group, size_t k)
+    {
         StopAttacking(group);
-        const ReinforcePoint p = rpoints[size_t(k)];
+        const ReinforcePoint p = rpoints[k];
         groupRetreat[size_t(group)] = p.sector;
         groupBusy[size_t(group)] = true;
         std::vector<size_t> members;
@@ -141,5 +149,39 @@ namespace wow
             if (!still) out.push_back({ setup.groups[g].ref, groupRetreat[g] });
         }
         return out;
+    }
+
+    // An attack (packet 0x10, 0x481F70) on a reinforcement point's marker (type 0x3DB: +0xCC its sector, +0xC8 its
+    // kind): kinds 1 and 7, with +0x1D8 bit 8 clear and room for the group's objects (0x4216D0) as land (0x43AC40);
+    // kind 5, with bit 9 clear and room as boats; then the group goes through it (0x481170: as Retreat, to the
+    // marker's point, +0x78 / +0x7C). Otherwise speech 0x121 in the group's voice (0x449120) and its leader told.
+    // *Provisional*: +0x1D8 bits 8 and 9 are taken as clear; the group's objects as one.
+    void BattleMap::RetreatToMarker(int group, size_t k)
+    {
+        const ReinforcePoint& p = rpoints[k];
+        bool ok = false;
+        if (p.kind == 1 || p.kind == 7) ok = !setup.hasRoom || setup.hasRoom(true, p.sector, 1);
+        else if (p.kind == 5) ok = !setup.hasRoom || setup.hasRoom(false, p.sector, 1);
+        if (!ok) { Speak(0x121, group); return; }
+        RetreatVia(group, k);
+    }
+
+    // The marker under a screen point: its sprite's box (GType 862, less its hot spot) holding it, the frontmost
+    int BattleMap::MarkerAt(int x, int y) const
+    {
+        auto u = setup.units->find(0x3DB);
+        if (u == setup.units->end()) return -1;
+        const int gtype = u->second.field28;
+        const GType* g = res.FindGType(gtype);
+        const IndexedImage* image = res.GetFrame(gtype, 0);
+        if (!g || !image) return -1;
+        int best = -1, bestY = INT32_MIN;
+        for (size_t i = 0; i < rpoints.size(); i++)
+        {
+            const ReinforcePoint& p = rpoints[i];
+            const int sx = p.x - g->hotX - scrollX, sy = land.ProjectY(p.y, land.HeightAt(p.x, p.y)) - g->hotY - scrollY;
+            if (x >= sx && x < sx + image->width && y >= sy && y < sy + image->height && sy > bestY) { best = int(i); bestY = sy; }
+        }
+        return best;
     }
 }

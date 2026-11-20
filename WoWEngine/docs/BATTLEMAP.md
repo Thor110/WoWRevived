@@ -900,12 +900,20 @@ on their way there (0x420060) plus the sector's count from 0x4F86B8 (land) / 0x4
 `Max units in sector` (dword_4EA1B4) / `Max boats in sector` (dword_4EA1CC). The callers: 0x43AC10 (the war map's
 factories, a type and 1), the points' set-up (0x43D150: type 19's move class for kind 5, else type 1's, and 1),
 0x43D3F0 with a count (Retreat: the group's war map objects, 0x4216D0, one here; the flag from the move class, 5
-and 6 not land), and 0x481F70 (an attack on a point's marker, by +0x1D8 bits 8 / 9, not in). In the engine it's
+and 6 not land), and 0x481F70 (an attack on a point's marker, below). In the engine it's
 `WarMap::HasRoom` through the battle's `hasRoom`. 0x4F86B8 / 0x4F76F0 are cleared as the battle map opens and
 closes (0x439770, 0x439ED0) and counted up per sector by a war map object's 0x80B9 once all its battle units have
 had it (0x428D70's case, +0x60 up to 0x4216D0), boats in the second.
 
-*Provisional*: 0x4F86B8 / 0x4F76F0 are taken as 0; the room check isn't exercised by the test save (its battle has
+**An attack on a marker** (packet 0x10 on type 0x3DB, 0x481F70; +0xCC its sector, +0xC8 its kind): kinds 1 and 7
+with +0x1D8 bit 8 clear and room for the group's objects as land (0x43AC40), kind 5 with bit 9 clear and room as
+boats; then 0x481170, Retreat's going (0x80B9, the target cleared, 0x805A, bit 3 and bit 0, 0x804F) to the marker's
+point (+0x78 / +0x7C); otherwise speech 0x121 in the group's voice (0x449120) and its leader told. In the engine a
+click in cursor mode 1 on a marker's sprite (its box less the hot spot, `MarkerAt`) does it for each selected group
+(`RetreatToMarker`, `RetreatVia`, shared with Retreat). In the test a point put 400 west of the lorries was found
+by its screen point (and not 200 to the side), and the attack sent the group off through it to sector 24.
+
+*Provisional*: +0x1D8 bits 8 and 9 are taken as clear; 0x4F86B8 / 0x4F76F0 are taken as 0; the room check isn't exercised by the test save (its battle has
 one side only, so no points are set up); kinds 7 and 1 share 0x436050's first point (the engine's EntryPoint); what 0x80BB does isn't traced: a unit within 256 (|dx| + |dy|) of its point leaves the map (the group
 spreads as it arrives); the retreated object is taken out of its counter into a new one in that sector, arriving
 from the battle's sector (AddCounter, Arrive).

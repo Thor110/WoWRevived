@@ -253,6 +253,9 @@ namespace wow
         std::vector<ReinforcePoint> rpoints;
         void SetUpReinforcements();                             // 0x43D150
         void Retreat(int group);                                // 0x480EF0
+        void RetreatVia(int group, size_t point);               // 0x480EF0's / 0x481170's going
+        void RetreatToMarker(int group, size_t point);          // 0x481F70's type 0x3DB case
+        int MarkerAt(int x, int y) const;                       // a reinforcement point's marker under the screen point
         int NearestPoint(int x, int y, int moveClass, int count = 0) const; // 0x43D3F0
         std::vector<int> groupRetreat;                          // the sector a group's retreating to (0x80BB), 0 none
         std::vector<bool> groupLeft;                            // a group with a unit that left the map
@@ -452,13 +455,13 @@ namespace wow
         // Each group's periodic stance work (0x483B70: +0x58 counting to +0x5C, 90): Roam and Attack (3) wanders to a
         // random point; Attack and Retaliate (2, 1) go back home (+0x60 / +0x64) if more than 400 from it
         std::vector<int> groupTicks, groupHomeX, groupHomeY;
-        std::vector<bool> groupBusy;
+        std::vector<bool> groupBusy;                            // +0x1D8 bit 0 without a target (Avoid's run, Retreat)
         // 0x80F4 posted to an object (0x4355A0 with its delay): the update it arrives, the object, the firer, the level
         struct ControlPost { int at = 0, unit = 0, attacker = 0, level = 0; };
         std::vector<ControlPost> controlPosts;
         int controlLevel = 0;
         bool controlByPlayer = false;
-        void ControlArrives(const ControlPost& p);              // 0x495CB0's case 0x80F4                            // +0x1D8 bit 0 without a target (Avoid's run, Retreat)
+        void ControlArrives(const ControlPost& p);              // 0x495CB0's case 0x80F4
         void GroupTick(int group);
         void GroupGone(int group);                              // its last unit gone: the AI told
     public:
