@@ -167,9 +167,12 @@ namespace wow
             int offset = 0;             // +0x13A, rand() % (0x802E's value + 1): more room at the route's end
         };
         // A gun (WProjectile base 0x4949A0 and its classes): its type, its class's update (0 the shell's 0x4886A0,
-        // 1 the rocket's 0x488830, 2 the mortar's cluster 0x488CA0), the fire cycle's state (+0xD8) and count (+0xD4),
+        // 1 the rocket's 0x488830, 2 the mortar's 0x488CA0, launching shells), the fire cycle's state (+0xD8) and count (+0xD4),
         // armed (+0xD0), +0xF0 (bit 0 aimed, 1 landed), the point aimed at (+0xBC..+0xC4)
-        struct Gun { int type = 0, cls = 0, state = 0, counter = 0; bool armed = false; uint32_t flags = 0; int tx = 0, ty = 0, tz = 0; };
+        // A mortar's (WMortar 0x488930) launch list (+0xB4, from its type's emitters, +0x3C): each entry's count of
+        // shells fired; spent when an entry's passed its limit (the list freed)
+        struct Gun { int type = 0, cls = 0, state = 0, counter = 0; bool armed = false; uint32_t flags = 0; int tx = 0, ty = 0, tz = 0;
+                     std::vector<int> fired; bool spent = false; };
         struct Unit { int type; float x, y; int heading; bool players; int group = 0; bool vehicle = false; Drive drive;
                       WofInstance* wof = nullptr; int engineSound = 0;
                       int health = 0;       // +0xC4: the type's +0x4A (0x47DA20) to start with
@@ -200,6 +203,15 @@ namespace wow
         void Aim(Unit& u, int x, int y, int z);                 // vt+0xC8: 0x491110 -> 0x496200 -> guns 0x494D20
         void GunTick(size_t unit, Gun& g);                      // 0x494DB0 and the class's update
         void Impact(size_t unit, const Gun& g);                 // 0x4886A0's landing: 0x487F50
+        void ImpactAt(int size, int x, int y, int z, int group); // 0x487F50: the effect by size and terrain
+        // A mortar's shell in flight (0x488E80 on 0x487730: the factory's 0x18B-0x196, 713, 714, 1002): its point
+        // (+0x78 / +0x7C), height over the ground (+0x84), velocity (+0x88..+0x90), gravity (+0x94), the updates
+        // left (+0xC2), the impact's size (+0xC0) and the firer (+0xC4, here its group); drawn as an effect
+        struct Shell { int type = 0, effect = -1, count = 0, size = 0, group = -1; float x = 0, y = 0, lift = 0, vx = 0, vy = 0, vz = 0, g = 0;
+                       bool gone = false; };
+        std::vector<Shell> shells;
+        void Launch(size_t unit, Gun& g);                       // 0x4889D0
+        void ShellTick(Shell& s);                               // 0x488F00 -> 0x487890 -> 0x47F770
         // Damage and death (0x48A5A0, 0x48AB20, 0x80A0 in 0x489FA0) and the explosions (WExplosion 0x488180)
         int MaxHealth(int type) const;                          // 0x47DA20: +0x4A with the armour modifiers
         void Damage(size_t unit, int amount);                   // vt+0xE0, 0x48AB20

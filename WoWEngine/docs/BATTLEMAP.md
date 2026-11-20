@@ -498,7 +498,7 @@ types 0x2E6-0x313 and 0x389-0x38C). The factory (0x446B30, its switch on 0x314 o
 0x447C94) makes them as: WShell (0x488410: 700-702, 803-811), WProjectile (0x488460: 0x1AB-0x1B0, 0x1B5-0x1B7, 939)
 and 0x48DBE0 (0x19A-0x19C), all three with the shell's update (0x4886A0); WRocket (0x4887E0: 0x19D-0x1A2, 0x1B8-0x1BB,
 697-699, 800-802, 949-951, update 0x488830); WMortar (0x488930: 0x197-0x199, 0x1A3-0x1AA, 0x1B1-0x1B4, 0x1C9-0x1CB,
-703-708, 938, 1003-1005), a cluster shell (update 0x488CA0, released at state 1 by 0x4889D0). (449 and 450 are no
+703-708, 938, 1003-1005), which lobs shells (update 0x488CA0: the cycle, then 0x4889D0 as it goes to 1; see "Mortars"). (449 and 450 are no
 weapons.) The Armoured Lorry's turret 742 holds a WRocket, 414.
 
 **OBJ.ojd record 12** (0x4F2F10, 16 bytes a type): +0 the range, +2 the wind-up and +4 the reload (each as ftol(the word
@@ -532,6 +532,29 @@ Approach 0x496300). **Force fire**: Ctrl with the left button on the ground (pac
 (0x80ED: mode 1) then a click: speech 0x10C and the target the point at its ground height. A move order clears the
 target and disarms the guns.
 
+**Mortars** (0x4889D0): a mortar's launch list (+0xB4) is its type's emitters (+0x3C, record 29, copied by 0x47EF30 into
+12-byte entries: the emitter, a count, 0): each a shell's type (+4), the spread (+8), a limit (+0xA, 0 for none) and
+the gravity (+0x14). As the cycle goes to 1: h = ftol(its height less the ground's, 0x47B170); the heading and
+length to the aim (0x43FDA0); the reach R = the length less (its height less the aim's), at least 0.1. Each entry
+makes one shell: s = ftol(spread / +0xCC (1.0)); heading rand() % 2s + heading - s, elevation rand() % 2s - s + 0x200
+(45 degrees), as radians x 0.0015339808; the speed v = sqrt(-(R x gravity) / (2 sin a cos a)), split by 0x43FE90 into
+across and up; the updates ftol(length / across - -1.0). The shell (0x446B30) gets the across part along the heading
+and the up part as its velocity (vt+0x80, +0x88..+0x90), the mortar's point (vt+0x40), h (+0x84), the gravity
+(+0x94), record 12's +6 (+0xC0), the updates (vt+0xE0: +0xC2) and the root's id (+0xC4); byte_51A19C of the mortar's
+type is set. The entry's count goes up; past a limit (not 0) the list is freed and the mortar fires no more. The
+mortars' entries are all spread 32, no limit, gravity -0.3: shell 396 for most, 915-917 for 407-409, 1002 for
+1003-1005.
+
+**The shell** (0x488E80 on 0x487730; the factory's 0x18B-0x196, 713, 714 and 1002), each update (0x488F00): first
+0x487890 (its emitters, 0x47F050, its step vt+0x54 = 0x47F770: the point moved by the velocity, the height kept
+level across the ground's change (ftol(+0x80 - +0x84) less the ground at the new point, plus the height and the
+upward speed; with +0xB8 bit 10 just the height plus the speed), then the upward speed plus the gravity; under 0.0
+high it's gone, 0x8057). Then at or under 0.0 high, or with +0xC2 counted out (decremented only while above the
+ground), it lands: 0x487F50 with +0xC0, its point, ftol(the height - -8.0), the firer and its type; with +0xC2 below
+0 it's gone too. With a mortar (706, range 600) given to the five lorries for the test, force fire at a point about
+300 away launched five shells at 8.7-10.6 a step that came down within about 30 of their aims, some on the ground
+and some in the air as their counts ran out. Shell 396's sprite (GType 259) is 5 x 4.
+
 **Attacking an object** (a click on the other side's hotspot in mode 1, packet 0x10 -> 0x4812B0 -> 0x481F70), for each
 selected group: type 0x3DB is a case of its own (0x481170, else speech 0x121); any other: each member 0x80B9, then
 0x482880 (the target +0x2C, its id +0x30, the last aim -1), +0x1D8 bit 0 set (0x480EB0), vt+0x38, and speech 0x10C
@@ -561,7 +584,8 @@ the five lorries' rockets landed round their jittered aims, a few units out, eac
 the tower (278) made the other side's for the test, a click on it set it as the target: the lorries' rockets landed on
 its east side, the side they were on, a few units in from its middle, and took its 18000 health down 16-22 a hit.
 
-*Provisional*: the mortars' cluster shells, type 0x3DB's case, 0x80B9 and vt+0x38, the posts (+0xE4), the battle
+*Provisional*: the shells' emitters (the smoke trail, 367) and their frame (0 is drawn), the mortar's place on its
+unit (the shells start at the unit's point), type 0x3DB's case, 0x80B9 and vt+0x38, the posts (+0xE4), the battle
 told of an unarmed object seen, the turrets' turning and arcs, the guns' place on their unit, the research
 multipliers and the "CAN'T GET TO WITHIN ATTACK DISTANCE!" check aren't in; a target that's gone clears the group's
 target (the game's tidy-up of 0x8057 isn't traced); WProjectile and 0x48DBE0 fly no visible missile.

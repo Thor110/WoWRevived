@@ -107,6 +107,7 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x47E1E0 / 0x47DA80 | Object's orders / special order check | The popup's order items for the selection's first member; `BattleMap::AddOrders` / `CanDo` |
 | 0x488180–0x488350 / 0x48AB20 / 0x48A5A0 | WExplosion, TakeDamage, HitByExplosion | Explosions, splash damage, health and death; `src/battlemap/Combat.cpp` |
 | 0x4949A0–0x495280 / 0x4886A0 / 0x487F50 | Guns | The fire cycle, aim and landing; `src/battlemap/Weapons.cpp` |
+| 0x4889D0 / 0x488E80–0x488FA0 / 0x47F770 | Mortars | The launch from the emitter list and the shells' flight; `src/battlemap/Weapons.cpp` |
 | 0x481F70 / 0x482880 / 0x482960 / 0x496300 / 0x496570 | Targets | Attacking an object, Approach, looking round by stance; `src/battlemap/Weapons.cpp` |
 | 0x499420–0x4998D0 | BatRoute | The battle A*'s cost (line cost 0x4994B0, turn penalty 0x499660, goal 0x499800) and the route container; `BattleMap::LineCost` / `StepCost` |
 | 0x495620–0x496D60 | Puppets | Units' sub-objects |

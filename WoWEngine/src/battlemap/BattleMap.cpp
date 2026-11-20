@@ -1044,6 +1044,27 @@ namespace wow
         // the guns (their own updates, each a child of its unit or its turret)
         for (size_t i = 0; i < units.size(); i++)
             for (Gun& g : units[i].guns) GunTick(i, g);
+        // the mortars' shells in flight: moved, landed, their effects kept at their points (gone ones dropped)
+        for (size_t i = 0; i < shells.size(); i++) ShellTick(shells[i]);
+        for (const Shell& sh : shells)
+        {
+            if (sh.effect < 0) continue;
+            if (sh.gone)
+            {
+                effects[size_t(sh.effect)].alive = false;
+                objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) { return o.effect == sh.effect; }), objects.end());
+                continue;
+            }
+            for (ViewObject& o : objects)
+                if (o.effect == sh.effect)
+                {
+                    o.x = int(sh.x);
+                    o.y = land.ProjectY(int(sh.y), land.HeightAt(int(sh.x), int(sh.y)) + int(sh.lift));
+                    o.key = int(sh.y);
+                }
+            moved = true;
+        }
+        shells.erase(std::remove_if(shells.begin(), shells.end(), [](const Shell& sh) { return sh.gone; }), shells.end());
         if (moved)
         {
             for (ViewObject& o : objects)

@@ -1,6 +1,6 @@
 // The battle map's guns: a unit's weapon children (WProjectile base 0x4949A0: WShell 0x488410, WRocket 0x4887E0,
 // WMortar 0x488930, 0x488460 and 0x48DBE0), their fire cycle (0x494DB0), aim (0x494FD0) and landing (0x4886A0 /
-// 0x488830 -> 0x487F50), and the group's target (0x4826D0) with force fire (packet 0x13). See docs/BATTLEMAP.md
+// 0x488830 -> 0x487F50), the mortars' shells (0x4889D0, 0x488F00), and the group's target (0x4826D0) with force fire (packet 0x13). See docs/BATTLEMAP.md
 // "Weapons".
 #include "battlemap/BattleMap.h"
 #include "core/Bridge.h"
@@ -17,6 +17,14 @@ namespace wow
         {
             const int a = std::abs(x1 - x0), b = std::abs(y1 - y0);
             return b - (std::min(a, b) >> 1) + a;
+        }
+
+        // 0x43FE90: a heading (4096 a turn) and a length to x, y
+        void Polar(int angle, float length, float& x, float& y)
+        {
+            const double a = double(angle) * 0.000244140625 * 6.283185307;
+            x = float(std::cos(a) * length);
+            y = float(std::sin(a) * length);
         }
 
         bool IsTurret(int t) { return (t >= 0x2E6 && t <= 0x313) || (t >= 0x389 && t <= 0x38C); }
@@ -351,7 +359,8 @@ namespace wow
     // +0xC8 (1.0) of it, and within its hardpoint's arc (+0xB0: +4 the middle, +6 the half width). The class's update
     // then lands the shot: the shell's (0x4886A0) once in state 2 when the count is a multiple of 5, the rocket's
     // (0x488830) in state 3.
-    // *Provisional*: the mortars (cluster shells, 0x488CA0 / 0x4889D0) don't fire yet; the arcs (hardpoints) and
+    // The mortar's update (0x488CA0) launches its shells as the cycle goes to 1 (0x4889D0, Launch).
+    // *Provisional*: the arcs (hardpoints) and
     // the research multipliers (+0xC8 / +0xCC, 0x494AF0) aren't in; the gun is at its unit's point.
     void BattleMap::GunTick(size_t index, Gun& g)
     {
@@ -364,7 +373,7 @@ namespace wow
             else if (g.armed && (g.flags & 1))
             {
                 const int mode = u.group >= 0 && size_t(u.group) < groupMode.size() ? groupMode[size_t(u.group)] : 0;
-                if (mode == 0 && g.cls != 2) g.state = 1;
+                if (mode == 0) g.state = 1;
                 else g.flags &= ~1u;
             }
             break;
@@ -409,6 +418,104 @@ namespace wow
             g.flags |= 2;
         }
         else if (g.cls == 1 && g.state == 3) Impact(index, g);
+        else if (g.cls == 2 && g.state == 1) Launch(index, g);
+    }
+
+    // 0x4889D0, the mortar's update (0x488CA0) with its cycle just gone to 1: with its list (+0xB4), h its height
+    // over the ground (ftol(+0x80 less the ground's height, 0x47B170)), the heading and length to the aim point
+    // (0x43FDA0), and the reach R = the length less (its height less the aim's), at least 0.1 (dbl_4AE1B8). For each
+    // entry (the type's emitter: +4 the shell's type, +8 the spread, +0xA the limit, +0x14 the gravity), one shell:
+    // s = ftol(+8 / +0xCC (1.0)); the heading rand() % 2s + heading - s, the elevation rand() % 2s - s + 0x200 (an
+    // eighth of a turn), as radians (x 0.0015339808); the speed v = sqrt(-(R x gravity) / (2 sin a cos a)); its
+    // horizontal and upward parts (0x43FE90), the updates ftol(the length / horizontal - -1.0); the shell (0x446B30)
+    // gets the horizontal part along the heading and the upward as its velocity (vt+0x80), the mortar's point
+    // (vt+0x40), h as its height (+0x84), the gravity (+0x94), record 12's +6 (+0xC0), the updates (vt+0xE0, +0xC2)
+    // and its root's id as the firer (+0xC4); byte_51A19C of the mortar's type set. Then the entry's count goes up;
+    // past a limit that isn't 0 the list is freed and the mortar fires no more.
+    // *Provisional*: the shell starts at the unit's point (the mortar's place on it isn't in).
+    void BattleMap::Launch(size_t index, Gun& g)
+    {
+        if (g.spent) return;
+        const Unit& u = units[index];
+        auto t = setup.units->find(g.type);
+        if (t == setup.units->end() || t->second.emitters.empty()) return;
+        const auto& list = t->second.emitters;
+        if (g.fired.size() != list.size()) g.fired.assign(list.size(), 0);
+        const int ground = land.HeightAt(int(u.x), int(u.y));
+        const float z = float(ground) + u.drive.lift;
+        const int h = int(z - float(land.HeightAt(int(u.x), int(u.y))));
+        int heading = 0;
+        float length = 0;
+        HeadingAndLength(u.x, u.y, float(g.tx), float(g.ty), heading, length);
+        float reach = length - (z - float(g.tz));
+        if (reach < 0.1) reach = 0.1f;
+        const int size = WeaponData(g.type)[3];
+        for (size_t i = 0; i < list.size(); i++)
+        {
+            const auto& e = list[i];
+            const int s = int(float(e.b) / 1.0f);
+            if (s <= 0) continue;
+            const int dir = random::Rand() % (2 * s) + heading - s;
+            const int up = random::Rand() % (2 * s) - s + 0x200;
+            const double a = double(up) * 0.001533980787841797;
+            const float speed = float(std::sqrt(double(-(reach * e.f[2])) / (std::sin(a) * std::cos(a) * 2.0)));
+            float across = 0, upward = 0;
+            Polar(up, speed, across, upward);
+            const int count = int(double(length / across) - -1.0);
+            Shell sh;
+            sh.type = e.a;
+            sh.x = u.x;
+            sh.y = u.y;
+            Polar(dir, across, sh.vx, sh.vy);
+            sh.vz = upward;
+            sh.lift = float(h);
+            sh.g = e.f[2];
+            sh.size = size;
+            sh.count = int16_t(count);
+            sh.group = u.group;
+            // drawn as an effect that doesn't animate (frames 0), moved each update
+            if (auto st = setup.units->find(e.a); st != setup.units->end() && st->second.field28)
+                if (const GType* gt = res.FindGType(st->second.field28))
+                {
+                    Effect ef;
+                    ef.gtype = st->second.field28;
+                    ef.alive = true;
+                    effects.push_back(ef);
+                    sh.effect = int(effects.size()) - 1;
+                    objects.push_back({ int(sh.y), int(sh.x), land.ProjectY(int(sh.y), ground + h), nullptr, nullptr, gt->paletteSlot,
+                                        ef.gtype, -1, -1, 0, sh.effect });
+                }
+            shells.push_back(sh);
+            g.fired[i]++;
+            if (e.c != 0 && g.fired[i] > int16_t(e.c)) { g.spent = true; break; }
+        }
+    }
+
+    // A shell's update (0x488F00): first 0x487890, the flying object's (its emitters, 0x47F050; the step, vt+0x54
+    // 0x47F770: the point moved by the velocity, the height kept over the ground's change (ftol(+0x80 - +0x84) less
+    // the ground's height at the new point, plus the height and the upward speed), then the upward speed plus the
+    // gravity; under 0 high it's gone, 0x8057). Then at or under 0 high, or with its updates (+0xC2) run out, it
+    // lands: 0x487F50 with its size, its point, ftol(the height - -8.0) up, the firer and its type; with the
+    // updates below 0 it's gone.
+    // *Provisional*: its emitters (the smoke trail, 367) aren't in; it's drawn with frame 0.
+    void BattleMap::ShellTick(Shell& s)
+    {
+        const int before = land.HeightAt(int(s.x), int(s.y));
+        s.x += s.vx;
+        s.y += s.vy;
+        const int after = land.HeightAt(int(s.x), int(s.y));
+        s.lift = float(before - after) + s.lift + s.vz;
+        s.vz += s.g;
+        bool gone = s.lift < 0.0f;
+        bool lands = false;
+        if (s.lift <= 0.0f) lands = true;
+        else lands = s.count-- <= 0;
+        if (lands)
+        {
+            ImpactAt(s.size, int(s.x), int(s.y), int(s.lift - -8.0f), s.group);
+            if (s.count < 0) gone = true;
+        }
+        s.gone = gone;
     }
 
     // The landing (0x4886A0 / 0x488830): the spread s = ftol(the octagonal distance from the gun / 32 / +0xCC (1.0)
@@ -427,7 +534,11 @@ namespace wow
         const int y = random::Rand() % span - s + g.ty;
         const int z = random::Rand() % span + g.tz - s;
         const int h = z - land.HeightAtNearest(x, y);
-        const int size = w[3];
+        ImpactAt(w[3], x, y, h, u.group);
+    }
+
+    void BattleMap::ImpactAt(int size, int x, int y, int h, int group)
+    {
         int effect = 0;
         if (size > 64) effect = size - 1 < 67 ? kImpactBig[size - 1] : 0;
         else if (size >= 1)
@@ -437,6 +548,6 @@ namespace wow
             const int terrain = land.At(vx, vy).atm & 15;
             effect = terrain >= 1 && terrain < 4 ? kImpactWater[size - 1] : kImpactLand[size - 1];
         }
-        if (effect) Explode(effect, x, y, std::max(h, 0), u.group);
+        if (effect) Explode(effect, x, y, std::max(h, 0), group);
     }
 }
