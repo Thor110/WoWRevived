@@ -560,6 +560,8 @@ namespace wow
         sound.Update();
         if (!screen) return;
         screen->Update();
+        if (screen->Id() == WarMap::Id)
+            for (int id : static_cast<WarMap*>(screen.get())->TakeSounds()) sound.Play(id);
         if (auto command = screen->TakeCommand()) Execute(*command);
     }
 

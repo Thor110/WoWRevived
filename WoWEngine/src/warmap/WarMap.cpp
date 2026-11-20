@@ -154,8 +154,16 @@ namespace wow
         return k.speed > 0 ? float(k.speed) * 0.05f : cluntingSpeed;
     }
 
+    void WarMap::Log(std::string text)
+    {
+        SDL_Log("War map message: %s", text.c_str());
+        if (log.size() >= 10) log.erase(log.begin());
+        log.push_back({ std::move(text), 5 * 30 });
+    }
+
     void WarMap::Update()
     {
+        for (LogLine& line : log) if (line.life > 0) line.life--;
         if (!map) map = res.GetFrame(warmap::MapGType);
         if (!sectorMap) sectorMap = res.GetFrame(warmap::SectorMapGType);
 
@@ -189,7 +197,11 @@ namespace wow
                 k.routeWaypoint.erase(k.routeWaypoint.begin());
                 if (next != k.sector && owner[size_t(next)] == 1)
                 {
-                    message = "Battle in " + res.String(warmap::NameText(next)) + ": the battle map isn't rebuilt yet";
+                    // BattleInSector (event 0, 0x41E850): "Battle in" and the sector, and the attack sound (0x139,
+                    // or 0x13A for sector 3 or London); defending a sector of ours would be 0x138. The battle itself
+                    // needs the battle map, so the counter stops at the border.
+                    Log(res.String(0x210) + " " + res.String(warmap::NameText(next)));
+                    sounds.push_back(next == 3 || next == 30 ? 0x13A : 0x139);
                     k.route.clear(); k.routeSectors.clear(); k.routeWaypoint.clear();
                     auto cell = FreeCell(k.sector, k.kind, int(i));
                     k.fx = float(cell.first); k.fy = float(cell.second);
@@ -200,7 +212,9 @@ namespace wow
                     if (k.route.empty())
                     {
                         if (owner[size_t(next)] == 2) owner[size_t(next)] = 0;
-                        message = res.String(warmap::NameText(next)) + ": arrived";
+                        // ArrivedInSector (event 3, 0x41EAE0): "Vehicle/s arrived in" and the sector, sound 0x120
+                        Log(res.String(0x211) + " " + res.String(warmap::NameText(next)));
+                        sounds.push_back(0x120);
                     }
                 }
             }
@@ -311,8 +325,15 @@ namespace wow
             for (int y = y0; y <= y1; y++) { plot(x0, y); plot(x1, y); }
         }
 
-        // the sector under the mouse, and the date (provisional placement: the game's own text objects aren't
-        // traced yet)
+        // the message list
+        {
+            int y = 4;
+            for (const LogLine& line : log)
+                if (line.life > 0) { canvas.DrawString(0x72, line.text, { 0x28, y, ScreenW - 0x28, 14 }, 0); y += 16; }
+        }
+
+        // the sector under the mouse or the panel button's name, and the engine's own notes (provisional: the game
+        // shows these its own way, not traced)
         std::string status;
         static constexpr int ButtonText[3] = { 0x47B, 0x47C, 0x47E }; // "Unit View", "Construction view", "Resource view"
         if (!message.empty()) status = message;
@@ -323,14 +344,14 @@ namespace wow
             // a darkened strip behind the text so it reads on either map
             uint32_t* out = canvas.Pixels();
             int rows = status.empty() ? 0 : 16;
-            for (int y = 2; y < 2 + rows; y++)
+            for (int y = ScreenH - 20; y < ScreenH - 20 + rows; y++)
                 for (int x = 4; x < 240; x++)
                 {
                     uint32_t& p = out[size_t(y) * size_t(canvas.Width()) + size_t(x)];
                     p = (p >> 2) & 0x3F3F3F;
                 }
         }
-        if (!status.empty()) canvas.DrawString(0x72, status, { 8, 4, 300, 14 }, 0, colours.items);
+        if (!status.empty()) canvas.DrawString(0x72, status, { 8, ScreenH - 18, 300, 14 }, 0, colours.items);
     }
 
     std::optional<Command> WarMap::OnKey(int key)
@@ -748,6 +769,6 @@ namespace wow
         }
         k.fx = float(k.x);
         k.fy = float(k.y);
-        message = "On the way to " + res.String(warmap::NameText(sector));
+        message.clear();
     }
 }

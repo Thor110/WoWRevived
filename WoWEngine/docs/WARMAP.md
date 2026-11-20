@@ -201,6 +201,29 @@ sector sends it there.
 - Going into a sector the other side holds stops the counter at the border with a message (a battle, which needs
   the battle map), and arriving in a sector no one holds takes it (*provisional*).
 
+## Messages and events
+
+The war map's events (a table at 0x4BA0E8 of handler, "is it critical" test and name, 12 bytes each, raised by
+0x41E5B0): 0 BattleInSector, 1 ConstructionCompleted, 2 UnitCompleted, 3 ArrivedInSector, 4 ResearchCompleted,
+5 ResearchAvailable, 6 ResearchAlert, ConstructorOnline, FacilityOnline, ConstructorIdle, FacilityIdle,
+TravelInterrupted, PodLanded, ResourceWarning, ResourceAlert, CommandCentreBuilt, EnteringNeutralSector,
+UndefendedSectorLost and End Game. A critical event (the Critical Event Options) also opens a dialog (0x41E4E0;
+one at a time, the rest queued; not done); every event writes a line to the message list.
+
+The message list (PopupMessageController 0x420A30, at 0x28, 4) keeps at most 10 lines (0x4BA4FC), each a
+"Message Item" (0x428810, font 0x72) shown for 5 x 30 updates (0x4BA4F8), drawn top down 16 pixels apart
+(0x4BA500). Command 0x80CC shows the latest 2 (0x4BA504) again, 0x6D hides them all (neither done).
+
+So far the engine raises:
+
+| Event | Line | Sound |
+|---|---|---|
+| ArrivedInSector (0x41EAE0) | "Vehicle/s arrived in" (0x211) and the sector | 0x120 |
+| BattleInSector (0x41E850) | "Battle in" (0x210) and the sector | 0x139 attacking (0x13A for sector 3 or London), 0x138 defending |
+
+The sector under the mouse, the panel button's name and a refused route's reason show in a strip at the bottom
+left (*provisional*: the engine's own).
+
 ## The clock
 
 The calendar object (0x41F550) adds `speed / 30` hours to the game time every update (0x41F640, 0x41F6C0; 30 is "Game

@@ -40,6 +40,8 @@ namespace wow
         int HoveredSector() const { return hovered; }
         const SaveInfo& Game() const { return game; }
         void SetSectorLimits(int units, int boats) { maxUnits = units; maxBoats = boats; }
+        // sounds (SFX.ojd ids) the war map wants played, taken by the front end every update
+        std::vector<int> TakeSounds() { return std::exchange(sounds, {}); }
         void SetArrowTypes(std::map<int, ObjOjd::ArrowType> types) { arrowTypes = std::move(types); }
 
     private:
@@ -71,7 +73,14 @@ namespace wow
 
         int chosen = -1;                 // the counter picked to move (drawn with cselecth.spr, GType 0x54)
         float cluntingSpeed = 7.0f;      // [Tweak] "Clunting Speed" (0x428B70, default 7): only for units with no speed
-        std::string message;             // the latest war map message
+        std::string message;             // the engine's own note (a refused route), shown in the status strip
+        // The message list (PopupMessageController 0x420A30 at 0x28, 4; lines added by 0x4191A0 -> 0x420DA0):
+        // at most 10 (0x4BA4FC, the oldest goes), each a "Message Item" (0x428810, font 0x72) shown for 5 x 30
+        // updates (0x4BA4F8 x "Game Frequency"), drawn top down 16 pixels apart (0x4BA500, 0x420C10).
+        struct LogLine { std::string text; int life = 0; };
+        std::vector<LogLine> log;
+        void Log(std::string text);
+        std::vector<int> sounds;
         int animation = 0;               // ticks, for the calendar's pendulum / goo and spinning digits
         Rect CalendarRect() const;
         Rect SpeedRect() const;
