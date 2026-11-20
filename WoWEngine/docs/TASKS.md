@@ -88,13 +88,17 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       handlers for events 0, 3, 11, 12, 13, 14, 17, 18, 19; the rest come with research and production — 03
 - [x] **Battle detection** (0x41AB00): both sides in a sector → BattleInSector, UndefendedSectorLost (0x43C8D0,
       0x43A250) or PodLanded, the pending battle; sectors held by presence (0x43CA40) — 03
-- [ ] **Briefing**: the transition (0x41B210: sound 0x18E, the Insert CD check) and the screen (0x499930 /
+- [x] **Briefing**: the transition (0x41B210: sound 0x18E, the Insert CD check) and the screen (0x499930 /
       0x4999E0): VIEWING / ATTACKING / DEFENDING, the date, Forces Present, the mini battle map (`maps\hmin%02d.spr`),
-      key or click → 0x98, `[Briefing] Delay` 30 → 0x71 — 03, 13
+      key or click → 0x98, `[Briefing] Delay` 30 → 0x71; palette group hb (0x40BE05) — 03, 13
 - [~] **Auto-resolve** of a battle (a stand-in until the battle map exists): more men wins, the loser's objects go,
-      the result announced (0x41AED0); to do: the battle report's counters (0x421210, 0x4212F0) — 03
-- [ ] **Debriefing** (0x49A7B0 / 0x49A820): VICTORY / DEFEAT / RETURNING TO WAR ROOMS, sounds 0x18F / 0x190 /
-      0x18E, Forces lost and Enemy forces destroyed, `[Debriefing] Delay` 300 → 0x8017 — 13
+      the result announced (0x41AED0), the Debriefing's losses; to do: the battle report's own counters (0x421210,
+      0x4212F0) once the battle map fills them — 03
+- [x] **Debriefing** (0x49A7B0 / 0x49A820): VICTORY / DEFEAT / RETURNING TO WAR ROOMS, sounds 0x18F / 0x190 /
+      0x18E, Forces lost and Enemy forces destroyed, `[Debriefing] Delay` 300 → 0x8017, and the way back to the war
+      map (0x419AA2: sounds, music after 30 ticks, the announcement and the queued events) — 13, 03
+- [ ] **Viewing a sector** (0x805C "View map", 0x8133 / 0x8019 from the sector's own button): the Briefing's VIEWING
+      case and the Debriefing's RETURNING TO WAR ROOMS without a battle — 06
 - [x] **End of game**: events 18 / 19, codes 0x80FA-0x80FD sent as 0x80FE (0x41AED0, 0x4212A0) — 03
 - [x] **Game over flow**: the VICTORY / DEFEAT movie for the code, then the credits, then the main menu (0x402B80)
       — 01

@@ -1221,21 +1221,58 @@ namespace wow
 
     void WarMap::OnKeyUp(int) {}
 
-    // A battle (0x8072, the box's Defend / Attack). The game goes to the briefing, the battle map and the
-    // debriefing, and comes back with the battle report (0x418980 -> 0x808D -> 0x41AED0). None of those are in
-    // yet, so the engine settles it here (*provisional*): the side with more men in its units in the sector
-    // wins (the side holding it on a tie), and the loser's units, constructions and resources there go
-    // (0x43A250). Then, as on the war map's return: the sector's battle flag goes and it and its neighbours are
-    // seen (0x418E17), the result is announced, and the queued events come again (0x41E730).
-    void WarMap::ResolveBattle()
+    // A battle (0x8072, the box's Defend / Attack): the world's selected sector becomes the battle's (+0x60 =
+    // sectors[dword_4E9B98]) and it sends itself 0x8133 with 0x8019: the briefing transition (0x41B210) and disc
+    // check, then the Briefing (0x499930). Its 0x71 / 0x98 go to the battle map (0x41A082) and the battle's end
+    // to the Debriefing (0x97), whose 0x99 / 0x8017 come back to the war map (0x419AA2).
+    //
+    // The Briefing's figures (0x4999E0): VIEWING when the sector hasn't both sides in it (0x43D010), else
+    // ATTACKING when it isn't the player's (0x43CA30), else DEFENDING; the calendar; and the player's units
+    // there (+0x4C: the war map objects and, 0x421F90, their battle map units) and constructions (+0x54).
+    BriefingInfo WarMap::Briefing() const
     {
-        const int s = pendingBattle;
-        if (s < 1 || s > warmap::SectorCount) { NextEvent(); return; }
+        BriefingInfo b;
+        const int s = battleSector;
+        b.sector = s;
+        for (int i = 0; i < 6; i++) b.dateTime[i] = game.dateTime[i];
+        b.hours = game.ticks;
+        bool mine = false, theirs = false;
+        for (const Counter& k : counters)
+        {
+            if (k.sector != s || k.Travelling() || k.kind > 1) continue;
+            (k.players ? mine : theirs) = true;
+            if (!k.players) continue;
+            if (k.kind == 0) { b.units += k.count; b.vehicles += CrewOf(k); }
+            else b.facilities += k.count;
+        }
+        b.heading = !(mine && theirs) ? 0x497 : s >= 1 && s <= warmap::SectorCount && owner[size_t(s)] != 0 ? 0x498 : 0x499;
+        return b;
+    }
+
+    // The battle. The battle map isn't in yet, so the engine settles it here (*provisional*): the side with more
+    // men in its units in the sector wins (the side holding it on a tie), and the loser's units, constructions and
+    // resources there go (0x43A250). The battle report (0x421210 at dword_4E9B7C) gets what each side lost for the
+    // Debriefing; the sector's battle flag goes and it and its neighbours are seen (0x418E17).
+    void WarMap::FightBattle()
+    {
+        const int s = battleSector;
+        debriefing = DebriefingInfo{};
+        debriefing.sector = s;
+        if (s < 1 || s > warmap::SectorCount) return;
         int men[2] = { 0, 0 };
+        int units[2] = {}, vehicles[2] = {}, facilities[2] = {};
         for (size_t i = 0; i < counters.size(); i++)
         {
             const Counter& k = counters[i];
-            if (k.sector == s && k.kind == 0 && !k.Travelling()) men[k.players ? 0 : 1] += CrewOf(k);
+            if (k.sector != s || k.Travelling() || k.kind > 1) continue;
+            const int side = k.players ? 0 : 1;
+            if (k.kind == 0)
+            {
+                men[side] += CrewOf(k);
+                units[side] += k.count;
+                vehicles[side] += CrewOf(k);
+            }
+            else facilities[side] += k.count;
         }
         const int holder = owner[size_t(s)] == 0 ? 0 : 1;
         const int winner = men[0] > men[1] ? 0 : men[1] > men[0] ? 1 : holder; // relative: 0 the player
@@ -1245,12 +1282,25 @@ namespace wow
         report.winner = absolute(winner);
         report.loser = absolute(1 - winner);
         report.gameOver = (s == 3 && report.winner == 0) || (s == 30 && report.winner == 1);
+        debriefing.fought = true;
+        debriefing.survivors = winner == 0;
+        const int loser = 1 - winner;
+        (loser == 0 ? debriefing.lostUnits : debriefing.killedUnits) = units[loser];
+        (loser == 0 ? debriefing.lostVehicles : debriefing.killedVehicles) = vehicles[loser];
+        (loser == 0 ? debriefing.lostFacilities : debriefing.killedFacilities) = facilities[loser];
         Log(res.String(0x210) + " " + res.String(warmap::NameText(s)) + (winner == 0 ? ": won" : ": lost")); // the engine's own
         ClearSide(s, winner != 0);
         battle[size_t(s)] = false;
         pendingBattle = 0;
         RevealAfterBattle(s, 0);
-        AnnounceBattleResult();
+    }
+
+    // Back on the war map (0x419AA2, then the view's 0x418980): the result is announced (0x808D -> 0x41AED0) and
+    // the queued events come again (0x41E730).
+    void WarMap::ReturnFromBattle()
+    {
+        if (debriefing.fought) AnnounceBattleResult();
+        battleSector = 0;
         NextEvent();
     }
 
@@ -1554,7 +1604,8 @@ namespace wow
         {
             // the battle: the one waiting, or the box's (a pod in a sector no one holds)
             if (!pendingBattle) pendingBattle = sector;
-            ResolveBattle();
+            battleSector = pendingBattle;
+            sent = Command{ BattleCommand, 0x8019 };
         }
     }
 

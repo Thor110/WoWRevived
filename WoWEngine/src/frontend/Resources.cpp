@@ -64,6 +64,23 @@ namespace wow
         return &(frames[key] = sprite->Decode(frame));
     }
 
+    const IndexedImage* Resources::GetFileImage(const std::string& file)
+    {
+        auto it = fileImages.find(file);
+        if (it == fileImages.end())
+        {
+            std::optional<IndexedImage> image;
+            try
+            {
+                if (auto data = vfs.Load(file)) image = Sprite(std::move(*data)).Decode(0);
+                else Missing(file);
+            }
+            catch (const std::exception& ex) { Missing(file + " (" + ex.what() + ")"); }
+            it = fileImages.emplace(file, std::move(image)).first;
+        }
+        return it->second ? &*it->second : nullptr;
+    }
+
     const std::vector<uint8_t>* Resources::GetRaw(int id)
     {
         auto it = raws.find(id);

@@ -669,6 +669,8 @@ namespace wow
             Execute({ CmdInsertCd, CmdIntro });
             break;
         case CmdInsertCd:
+            // the war map's own 0x8133 (0x41B210) starts the briefing first
+            if (current == WarMap::Id) BriefingTransition();
             // 0x403FA0: with the right disc in, the command goes straight through
             if (CorrectCdInserted()) Execute({ command.param, 0 });
             else Show(InsertCd(command.param));
@@ -710,6 +712,47 @@ namespace wow
             sound.FadeOutAll(60);
             Show(std::make_unique<Credits>(res, command.param ? command.param : current, creditsEasterEgg, sound));
             break;
+        case Briefing::Id:
+            // 0x8019 (0x41A13C): the Briefing for the battle's sector (0x499930)
+            if (WarMap* map = ActiveWarMap())
+            {
+                if (screen && screen->Id() == WarMap::Id) warMap.reset(screen.release());
+                Show(std::make_unique<Briefing>(res, BattleColoursFromIni(), map->Briefing(), ini.GetInt("Briefing", "Delay", 30)));
+            }
+            break;
+        case 0x71:
+        case 0x98:
+            // 0x41A082: on to the battle map (0x98 flushes the queue first, 0x435600, taking the waiting 0x71 with
+            // it). The battle map isn't in yet: the war map settles the battle and its end (0x97, 0x41A0DC) brings
+            // up the Debriefing (0x49A7B0) at once. *Provisional*: the briefing sound is faded out here.
+            if (WarMap* map = ActiveWarMap())
+            {
+                sound.FadeOut(briefingSound, 30);
+                briefingSound = 0;
+                map->FightBattle();
+                auto d = std::make_unique<Debriefing>(res, BattleColoursFromIni(), map->Debriefing(), ini.GetInt("Debriefing", "Delay", 300));
+                const int h = sound.Play(d->Sound());   // +0x98, faded in over 60 ticks (0x464E60)
+                sound.FadeIn(h, 60);
+                Show(std::move(d));
+            }
+            break;
+        case 0x99:
+        case 0x8017:
+            // 0x419AA2: back to the war map. Every sound fades out over 30 ticks, the ambient sound goes, and the
+            // music comes back with 0x8147 30 ticks later (0x41B070); then the view's set-up announces the result
+            // (0x808D) and the events waiting go on (0x41E730)
+            if (warMap)
+            {
+                sound.FadeOutAll(30);
+                warAmbient = clockSound = 0;
+                clockSpeed = -1;
+                inBattle = false;
+                musicTimer = 30;
+                WarMap* map = static_cast<WarMap*>(warMap.get());
+                Show(std::move(warMap));
+                map->ReturnFromBattle();
+            }
+            break;
         case CmdGameOver:
             // 0x80FE (0x402B80): the war map is shut down, then VICTORY for 0x80FA / 0x80FC or DEFEAT for 0x80FB /
             // 0x80FD, then the credits and the main menu
@@ -741,6 +784,8 @@ namespace wow
     void FrontEnd::Dispatch(const Command& command, bool fromControl)
     {
         if (delayed) return; // the view is fading out: it takes no more input
+        // the Briefing and Debriefing post theirs straight to the world (0x49A700 / 0x49B900)
+        if (screen && (screen->Id() == Briefing::Id || screen->Id() == Debriefing::Id)) fromControl = false;
         if (fromControl && screen && Fades(*screen))
         {
             delayed = command;
@@ -773,7 +818,7 @@ namespace wow
         stillTicks++;
         UpdateTooltip();
         for (int id : screen->TakeSounds()) sound.Play(id);
-        if (WarMap* map = ActiveWarMap()) WarMapSounds(*map);
+        if (WarMap* map = ActiveWarMap()) { if (!inBattle) WarMapSounds(*map); }
         else if (musicTimer >= 0) StopWarMapSounds();
         // the credits' own exit is sent straight on (0x4056F0); the rest come from the view's controls
         if (auto command = screen->TakeCommand()) Dispatch(*command, screen->Id() != Credits::Id);
@@ -909,6 +954,29 @@ namespace wow
         warAmbient = sound.Play(0xFD + random::Rand() % 3);
         sound.FadeIn(warAmbient, 60);
         musicTimer = TenSeconds;
+    }
+
+    // 0x41B210 ("Fading up briefing sound over 1 second"): every sound fades out over 30 ticks, the ambient sound
+    // goes, the CD stops and its position is reset (0x412C00, 0x412940), the view gets 0x6E, and the briefing sound
+    // 0x18E starts at the mouse, faded in over 60 ticks (dword_4E9B84). The war map's music waits until it's back.
+    void FrontEnd::BriefingTransition()
+    {
+        if (screen && screen->Id() == WarMap::Id) warMap.reset(screen.release());
+        sound.FadeOutAll(30);
+        warAmbient = clockSound = 0;
+        music.Stop();
+        inBattle = true;
+        briefingSound = sound.Play(0x18E);
+        sound.FadeIn(briefingSound, 60);
+    }
+
+    BattleColours FrontEnd::BattleColoursFromIni() const
+    {
+        BattleColours c;
+        c.sectorName = ini.GetInt("Colours", "Briefing Sector Name", c.sectorName);
+        c.heading = ini.GetInt("Colours", "Briefing Heading", c.heading);
+        c.detail = ini.GetInt("Colours", "Briefing Detail", c.detail);
+        return c;
     }
 
     void FrontEnd::StopWarMapSounds()

@@ -92,7 +92,7 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x489340–0x4916E0 | Vehicles | Steering values (`Vehicles` section), shown on `Fun` / `Debug` toggles |
 | 0x493DF0–0x494370 | WRouteFinder | |
 | 0x495620–0x496E60 | Puppets | Units' sub-objects and hotspots |
-| 0x499850–0x49A820 | Briefing and debriefing | |
+| 0x499850–0x49A820 | Briefing and debriefing | `src/frontend/Briefing` |
 | 0x49B980–0x49BD50 | War map and battle map menus | |
 | 0x49BE70–0x49CD40 | RTypeArrow | |
 | 0x49DE20–0x49E1E0 | RTypeISO | Isometric objects and lighting |

@@ -1,6 +1,7 @@
 // The front end: the screens and the command handling that moves between them (WGame's command handler, vanilla
 // 0x402B80). Commands are the ids the game's buttons send.
 #pragma once
+#include "frontend/Briefing.h"
 #include "frontend/CdPlayer.h"
 #include "frontend/Credits.h"
 #include "frontend/Menu.h"
@@ -134,6 +135,12 @@ namespace wow
         void WarMapSounds(WarMap& map);
         void MusicStep();
         void StopWarMapSounds();
+        // a battle: the briefing transition (0x41B210) and its sound (dword_4E9B84); the war map's music and
+        // clock wait while the Briefing and Debriefing are up
+        void BriefingTransition();
+        BattleColours BattleColoursFromIni() const;
+        int briefingSound = 0;
+        bool inBattle = false;
         int musicTimer = -1;       // ticks until the next music step, -1 with no war map
         int musicTrack = 1;        // dword_4B9DE0: 0 for track 2, 1 for track 3 (the first step goes to track 2)
         int warAmbient = 0;        // world +0x12C

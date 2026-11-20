@@ -9,6 +9,7 @@
 #include "core/SaveFile.h"
 #include "core/SaveGame.h"
 #include "core/ObjOjd.h"
+#include "frontend/Briefing.h"
 #include "frontend/Menu.h"
 #include "warmap/WarMapData.h"
 
@@ -28,6 +29,14 @@ namespace wow
     public:
         static constexpr int Id = 0x8A; // the command that starts it
         static constexpr int ResearchCommand = 0x7D; // the research screen (0x41A450 'R', the Research button)
+
+        // A battle (0x8072 -> 0x41B210 -> 0x8019 -> 0x71 / 0x98 -> 0x97 -> 0x99 / 0x8017; see WARMAP.md "Battles").
+        // The war map sends 0x8133 (the briefing transition and disc check) with 0x8019 (the Briefing) to follow.
+        static constexpr int BattleCommand = 0x8133;
+        BriefingInfo Briefing() const;             // the Briefing's figures (0x4999E0) for the battle's sector
+        void FightBattle();                        // 0x71 / 0x98: the battle (*provisional*: settled here)
+        const DebriefingInfo& Debriefing() const { return debriefing; }
+        void ReturnFromBattle();                   // 0x99 / 0x8017, then the view's 0x418980: 0x808D and 0x41E730
 
         // start: the save it begins from (its WMAP block gives the view and sector)
         // units: each unit type's counter frame (OBJ.ojd record 23) and war map speed (records 37/38)
@@ -263,7 +272,8 @@ namespace wow
         // The battle report (0x421210 at 0x4E9B7C): the sector, the winning and losing sides (0 Human, 1 Martian, 2
         // none) and whether the game is over (+0x55)
         struct BattleReport { int sector = 0, winner = 2, loser = 2; bool gameOver = false; } report;
-        void ResolveBattle();                // a stand-in for the briefing, battle map and debriefing
+        int battleSector = 0;                // the sector the briefing is for (the world's +0x60)
+        DebriefingInfo debriefing;
         void AnnounceBattleResult();         // 0x41AED0
         int EndCode() const;                 // 0x4212A0
         bool ending = false;                 // byte_4D2530: the game is over, the world stands still

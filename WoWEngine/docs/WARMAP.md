@@ -427,15 +427,54 @@ no one holds) has no units there and no class 7 construction (0x43C8D0), it's Un
 then all that side's units, constructions and resources there go (0x43A250, the sector worked out again);
 otherwise it's PodLanded (if a pod came, +0x64) or BattleInSector, and the battle waits there.
 
-**The battle** (0x8072): the game goes to the briefing, the battle map and the debriefing, and comes back with the
-battle report (0x421210 at 0x4E9B7C: sector +0x50, winner +0x68, loser +0x6C, game over +0x55), announced by
-0x41AED0: the player won: EndGameWon (18, with the other side's home sector) if the game is over, else sound 0x13C;
-lost: EndGameLost (19) if over, else 0x140; no winner: 0x13D (the player's report) or 0x13F. The war map's set-up
-then clears the flags, gives the intel (see Counters) and runs the queued events (0x41E730). None of the battle
-screens are in yet, so the engine settles it at once (*provisional*): the side with more men in its units there
-wins (the holder on a tie), the loser's units, constructions and resources there go, and the game is over when
-the Humans win in sector 3 or the Martians in London (30), as 0x4212A0 reads it: 0x80FA Human victory / 0x80FD
-Martian defeat, or 0x80FB Human defeat / 0x80FC Martian victory.
+**The battle** (0x8072, the box's Defend / Attack): the world's selected sector becomes the battle's (+0x60 =
+sectors[dword_4E9B98], or the box's sector when none is waiting) and it sends itself 0x8133 with 0x8019. Its
+commands 0x71, 0x7D, 0x97-0x99, 0x8017 and 0x8019 are deferred: kept in dword_4E9B64 / 4E9B5C and handled one
+queue pass later (0x95, 0x419A24).
+
+1. **The transition** (0x8133 → 0x41B210, "Fading up briefing sound over 1 second"): every sound fades out over 30
+   ticks, the ambient sound goes, the CD stops and its position is reset (0x412C00, 0x412940), the view gets 0x6E,
+   and the briefing sound 0x18E starts at the mouse, faded in over 60 ticks (dword_4E9B84). With the side's disc in
+   (0x408B70) it sends 0x8019, else it opens the Insert CD menu (0x4089D0) with it (the engine's check always
+   passes). The war map's music and clock wait until it's back.
+2. **The Briefing** (0x8019 → 0x41A13C: 0x42DB00(0), the world hidden, `new 0x499930`; layout 0x4999E0, see
+   `src/frontend/Briefing.h`). Palette group 0x2EE (hb: HBHB → slot 8, HBHI → 5, HBGI → 9, HMINIT → 21, 0x40BE05),
+   backdrop 0x91, font 0x73 with lines its height + 2 apart; columns x 55 / 285 (Human) or 85 / 276 (Martian), the
+   first line at y 170 (Human player) or 72 (Martian). The heading (VIEWING 0x497 when the sector hasn't both sides
+   in it, 0x43D010; else ATTACKING 0x498 when it isn't the player's, else DEFENDING 0x499) and the sector's name,
+   "Local Conditions:", "Date/Time:" with the calendar (0x41B440, "hh:mmap dd mmm yyyy", split into time and date
+   lines) or, in Martian games, the game time in days ("%07.2f"), and with the player's forces there "Forces
+   Present:", "Units (Vehicles):" (the war map objects, and their battle map units, 0x421F90) and "Facilities:".
+   The mini battle map (0x4A1F90: `maps\hmin%02d.spr` / `mmin%02d.spr` for the sector, drawn with shade slot 0x15)
+   is centred in x 354-609, y 95-380. Colours: [Colours] "Briefing Sector Name" 17, "Briefing Heading" 17,
+   "Briefing Detail" 18. A key or click sends 0x98 at once (0x49A700); otherwise 0x71 comes after `[Briefing]
+   "Delay"` (30) ticks.
+3. **The battle map** (0x71, or 0x98 after the queue is flushed, 0x435600 → 0x41A082): 0x44E5B0(1), both
+   research objects' vtbl+0x28, 0x42DB00(1), the world hidden, byte_4D2554 = 1, and the sector shown. Its end comes
+   back as 0x97. The battle map isn't in yet, so the engine settles the battle here (*provisional*): the side with
+   more men in its units there wins (the holder on a tie), the loser's units, constructions and resources there go
+   (0x43A250), the sector's flag goes and it and its neighbours are seen (0x418E17), and the game is over when the
+   Humans win in sector 3 or the Martians in London (30). The briefing sound is faded out over 30 ticks
+   (*provisional*), and the Debriefing follows at once.
+4. **The Debriefing** (0x97 → 0x41A0DC: 0x42DB00(0), `new 0x49A7B0`; layout 0x49A820), on the Briefing's screen:
+   "RETURNING TO WAR ROOMS" (0x4A8, sound 0x18E) with no battle fought (the report's +0x54); "DEFEAT" (0x4AA, 0x190)
+   when byte_4E9B94 is set or the player has nothing left there (+0x28 + +0x48), else "VICTORY!" (0x4A9, 0x18F); the
+   sound faded in over 60 ticks. After a battle, 0x4AB ("... were eliminated") or 0x4AC ("... are occupying this
+   sector") wrapped to the columns, three lines on "Forces lost:" (0x4AD: +0x58 (+0x60) and +0x18 − +0x28) and
+   "Enemy forces destroyed:" (0x4AE: +0x5C (+0x64) and +0x1C − +0x2C), each with "Units (Vehicles):" and
+   "Facilities:", and the mini map. A key or click sends 0x99 five ticks later (0x49B900); otherwise 0x8017 comes
+   `[Debriefing] "Delay"` (300) ticks after it's first drawn (0x49B830).
+5. **Back on the war map** (0x99 after a queue flush, or 0x8017 → 0x419AA2): no child view, the world shown again,
+   every sound faded out over 30 ticks, the ambient sound dropped, 0x8147 after 30 ticks (the music again,
+   0x41B070) and, unless the game is over (+0x55), the view sent 0x6E. The view's set-up (0x418980) then sends
+   0x808D, the announcement (0x41AED0) of the battle report (0x421210 at 0x4E9B7C: sector +0x50, winner +0x68,
+   loser +0x6C, game over +0x55): the player won: EndGameWon (18, with the other side's home sector) if the game is
+   over, else sound 0x13C; lost: EndGameLost (19) if over, else 0x140; no winner: 0x13D (the player's report) or
+   0x13F. And the queued events go on (0x41E730). The game's end codes (0x4212A0): 0x80FA Human victory / 0x80FD
+   Martian defeat, or 0x80FB Human defeat / 0x80FC Martian victory.
+
+What the text objects' +0x3C (set on the section titles) does is unknown: the text drawing (0x40F770) doesn't read
+it. The view's 0x6E isn't rebuilt.
 
 **The end** (0x41F400 / 0x41F4B0): byte_4D2530 is set and the world stands still; the game is sent 0x80FE with the
 code after the victory sound's length and 30 ticks (the engine waits 6 seconds), or 30 ticks for a defeat. The

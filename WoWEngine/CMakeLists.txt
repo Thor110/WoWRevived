@@ -83,6 +83,7 @@ if(TARGET SDL3::SDL3)
         src/frontend/Screen.cpp
         src/frontend/Menu.cpp
         src/frontend/CdPlayer.cpp
+        src/frontend/Briefing.cpp
         src/frontend/Credits.cpp
         src/frontend/FrontEnd.cpp
         src/frontend/MovieScreen.cpp
