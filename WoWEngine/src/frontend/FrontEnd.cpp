@@ -557,6 +557,7 @@ namespace wow
         }
         // each object type's class (AI.ojd, 0x441580 -> 0x518B14)
         std::map<int, int> classes, weights;
+        std::map<int, std::vector<WarMap::AiSite>> sites;
         if (auto ai = files.Resolve("AI.ojd"))
         {
             std::ifstream in(*ai, std::ios::binary);
@@ -566,11 +567,20 @@ namespace wow
                                            : ini.GetFloat("Tweak", "AI strength table Martian multiplier", 2.0f);
             try
             {
-                for (const auto& [id, e] : AiTable::Load(aiData).entries)
+                AiTable table = AiTable::Load(aiData);
+                for (const auto& [id, e] : table.entries)
                 {
                     classes[id] = e.value;
                     weights[id] = int(int16_t(int(double(e.weight) * double(mult))));
                 }
+                // the computer player's sites: the side not being played (0x518814)
+                for (const auto& [sector, rules] : table.rules[res.Human() ? 1 : 0])
+                    for (const AiRule& r : rules)
+                    {
+                        WarMap::AiSite site{ int16_t(r.words[0]), int16_t(r.words[1]), int16_t(r.words[2]), 0, 0 };
+                        if (r.count == 5) { site.x2 = int16_t(r.words[3]); site.y2 = int16_t(r.words[4]); }
+                        sites[sector].push_back(site);
+                    }
             }
             catch (const std::exception& e) { SDL_Log("AI.ojd: %s", e.what()); }
         }
@@ -616,7 +626,7 @@ namespace wow
         tweak("AI safe sector repeller Mul", aiTweaks.safeRepeller);
         tweak("AI Minimum Rr", aiTweaks.minimumRr);
         tweak("AI Movement Temperature", aiTweaks.temperature);
-        map->SetAi(aiTweaks, std::move(weights));
+        map->SetAi(aiTweaks, std::move(weights), std::move(sites));
         if (exact) map->UseSave(std::move(*exact));
         ObjOjd::ResearchModifiers modifiers;
         modifiers.humanFriend = ini.GetFloat("Tweak", "HumanFriend Research Modifier", 0.75f);

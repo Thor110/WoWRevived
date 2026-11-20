@@ -314,6 +314,7 @@ namespace wow
         {
             e.target = uint32_t(table[size_t(target)].Id());
             StartConstruction(target, e.hours);
+            if (!players) AiPlaceAtSite(target); // 0x43CD10 -> 0x441420
         }
         else if (k >= 0) { counters[size_t(k)].unfinished = true; counters[size_t(k)].progress = 0.0f; }
         SaveFactory(ref);

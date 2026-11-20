@@ -88,7 +88,14 @@ namespace wow
             float minimumRr = 8.0f;           // "AI Minimum Rr"
             float temperature = 0.25f;        // "AI Movement Temperature"
         };
-        void SetAi(const AiTweaks& tweaks, std::map<int, int> weights) { aiTweaks = tweaks; aiWeights = std::move(weights); }
+        // An AI.ojd build site of the computer player's side (opcodes 5 / 6)
+        struct AiSite { int type = 0, x = 0, y = 0, x2 = 0, y2 = 0; };
+        void SetAi(const AiTweaks& tweaks, std::map<int, int> weights, std::map<int, std::vector<AiSite>> sites)
+        {
+            aiTweaks = tweaks;
+            aiWeights = std::move(weights);
+            aiSites = std::move(sites);
+        }
         void SetPodInterval(int hours) { podInterval = hours; }
         void SetClunting(int res, int adj) { clunRes = std::max(1, res); clunAdj = adj; for (auto& g : grids) g.size = 0; LayoutAll(); }
         // [Tweak] "Route clunting width" and "Route clunting spacing" (0x42AF20 / 0x42AF60, both 4)
@@ -220,6 +227,35 @@ namespace wow
         void AiInvade();                                // 0x444690
         void AiLaunch(int target, float need);          // 0x444990
         void AiProduce();                               // 0x444C10
+        // the building phases (the per-sector records at 0x545BB0, the candidates at 0x545EB0 and priorities at
+        // 0x5460B8)
+        struct AiSector
+        {
+            int factories = 0;                          // +0x00
+            int constructors = 0;                       // +0x04: constructors there or on their way
+            std::array<float, 3> use{};                 // +0x08-0x10: the network's idle factories' work use
+            bool idleFactory = false, resfacBuilding = false, factoryBuilding = false, needsPost = false; // +0x14-0x17
+        };
+        struct AiCandidate { float score; int sector; int k; };
+        std::array<AiSector, warmap::SectorCount + 1> aiSectors{};
+        std::array<std::array<float, 3>, warmap::SectorCount + 1> aiPriority{};
+        std::vector<AiCandidate> aiResource, aiFront;
+        std::map<int, std::vector<AiSite>> aiSites;     // by sector
+        const std::vector<AiSite>& AiSites(int sector) const;
+        int AiSiteObject(int sector, const AiSite& site, int except = -1) const; // 0x440F80
+        bool AiFinished(int ref) const;                 // 0x42AA70
+        bool AiCanBuildHere(int type, int sector) const;// 0x4423D0
+        bool AiCanBuild(int type, int building) const;  // 0x442460
+        int AiFirstBuildableSite(int sector, int cls) const; // 0x441310
+        const AiSite* AiFreeSite(int sector, int type) const; // 0x4411B0 / 0x441290
+        float AiEfficiency(int type, int sector) const; // 0x4607C0
+        bool AiReachable(int from, int to) const;
+        void AiSendToBuild(int counter, int sector, int type); // 0x444510
+        void AiPlaceAtSite(int ref);                    // 0x441420
+        bool AiEconomy();                               // 0x443610
+        bool AiBuilder();                               // 0x443CA0
+        bool AiFrontline();                             // 0x4440B0
+        bool AiDefender();                              // 0x4443D0
         int buildLeft = 0, buildTop = 70;               // [BuildList] "Left" (0) and "Top" (70) (0x460A80 / 0x460AC0)
         struct BuildLayout
         {

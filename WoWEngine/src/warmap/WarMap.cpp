@@ -596,9 +596,25 @@ namespace wow
         {
             const SaveObject* model = nullptr;
             for (const SaveObject& o : table) if (o.list / 2 == kind / 2 && o.Type() == type) { model = &o; break; }
+            // none of the type saved: another of the same kind and category, its type changed (*provisional*: what
+            // the game writes for a new object of the type isn't known; its battle data stays the copy's)
+            bool retype = false;
+            if (!model)
+            {
+                auto want = unitData.find(type);
+                for (const SaveObject& o : table)
+                {
+                    auto u = unitData.find(o.Type());
+                    if (o.list / 2 != kind / 2 || u == unitData.end() || want == unitData.end()) continue;
+                    if (u->second.category != want->second.category) continue;
+                    if (!model || (o.list % 2 == (players ? 0 : 1) && model->list % 2 != (players ? 0 : 1))) model = &o;
+                }
+                retype = model != nullptr;
+            }
             if (model)
             {
                 SaveObject o = *model;
+                if (retype) o.SetType(type);
                 o.list = kind + (players ? 0 : 1);
                 // the ids in use: the sectors' own data as saved, and every object the map has now
                 std::vector<bool> used = save->UsedIds();

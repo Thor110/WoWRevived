@@ -43,6 +43,13 @@ namespace wow
         float Value(int i) const;      // constructions and resources: the two floats after the type
         void SetPosition(int x, int y);
         void SetValue(int i, float v);  // constructions and resources: the two floats after the type
+        // A construction's or resource's place on the battle map (its battle object's +0x78 / +0x7C, read by the
+        // AI's site matching 0x440F80): the two floats 16 and 12 bytes before its last BATP tag. False if it has none.
+        bool BattlePosition(float& x, float& y) const;
+        // The type changed where it's written: at the start, and before each of its battle objects' SELO tags
+        // (the rest, its hit points among them, stay the copied object's)
+        void SetType(int type);
+        void SetBattlePosition(float x, float y);
         void SetSector(int sector);
         bool Kind2() const { return list >= 2; } // a construction or resource (two floats before SELO)
         // every SELO id in it (its own first, then its battle map units')

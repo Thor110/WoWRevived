@@ -595,11 +595,50 @@ sector's waypoint. Its 14 `[Tweak]` values: `AI Frontline Attractor for Defences
 Force` 0.2, `AI Invader NFriend Mul` 3000, `AI safe sector repeller Mul` 2.0, `AI Minimum Rr` 8.0, `AI Movement
 Temperature` 0.25.
 
-Still to do: phases 2-5, building, which go by AI.ojd's build sites (0x440DD0-0x441420) and the sectors' records
-(0x545BB0); for now they pass on as if there were nothing to build (they draw no random numbers, so the other phases
-draw theirs in the game's order). *Provisional*: a sector's objects are taken in counter order (the game's lists keep
-the order objects arrived in); the cool-downs (+0x68) aren't saved; the 0xAD move doesn't stop the object's factory
-(+0x54's vtable +0x18, not traced).
+**Building.** AI.ojd's sites (0x441580, opcodes 5 / 6) are {type, x, y} or a fence's {type, x1, y1, x2, y2}, in
+a list for each side and sector (the side being played at 0x518994, the other at 0x518814: the computer player's).
+A site holds the object of exactly its type standing at its place on the battle map (0x440F80: the battle object's
++0x78 / +0x7C truncated, which in a saved construction are the floats 16 and 12 bytes before its last BATP; a
+command building matches wherever it stands). The game links them at the start (0x441110), when an AI
+construction comes into a sector (0x441420: the first free site of its type takes it and it's moved there, 0x80D1 /
+0x80D2) and on some sector events (0x440EA0); the engine works the link out when it's asked (*provisional*: the
+same while things stay where they're put). Each sector has a record (0x545BB0, 0x18 bytes): +0 finished factories,
++4 constructors there or heading there, +8-0x10 its network's idle factories' work use (record 47), +0x14 an idle
+factory, +0x15 a resource facility going up, +0x16 a factory going up, +0x17 needs its command building. A sector's
+network is the sectors its path reaches (0x43C090: the path has more than its start) and itself.
+  - **Phase 2** (0x443610) clears the records, counts each sector's constructors (class 2 with a factory) and
+    gathers the idle ones that can put up the side's command building (58 or 120, 0x442460). Then for each of
+    the AI's sectors not yet in a network: its network's sites with objects mark finished and idle factories
+    (class 4), factories and resource facilities (class 6) going up, and whether the command building stands; an
+    AI sector without one, finished or on a site, needs it. Each network sector that's the AI's, has its command
+    building and no facility going up gets, per kind, a priority (spread demand + the network's use - spread
+    supply + `AI Build Resfac Eagerness`) x one more facility's gain, and each above 0 is a candidate (scored by
+    the gain), sorted by priority (a bubble sort). Phase 3 follows unless no constructor was gathered.
+  - **Phase 3** (0x443CA0), one constructor: unless a factory is going up where it is, the factory site (class 4,
+    the first buildable, 0x441310: its research done and its prerequisite standing finished, 0x4423D0) with the
+    best efficiency (0x4607C0: 1 / the product of max(1, (spread demand + the type's work use) / spread supply)
+    over the side's kinds) in its network's sectors with a command building; above `AI Eff Threshold` (0.6) it's
+    built there and the network marked. (A "panic" build would follow, but the game compares the best candidate's
+    index with `AI Panic Build Threshold`, 500, so it never happens.) Else a network sector needing its command
+    building, its own or one no constructor is in, if its own type runs better than 0.4 where it is. Else the
+    first resource candidate with a gain above `AI Minimum Rr` (8.0), no facility going up, its own sector or one
+    without a constructor, and a free site for the kind's facility (47-49 Human, 108-110 Martian, dword_4BEDC0).
+  - **Phase 4** (0x4440B0): each AI sector with its command building is a front candidate scored mult / (its
+    defences' strength (class 7) / (enemy neighbours x `AI Frontline Attractor for Defences` + 1) / c + 1), c 1.4 in
+    sector 3 or 30, else 1, and mult 2 on the front (an enemy neighbour) or in sector 3 or 30, 1.5 beside the front,
+    else 1; sorted highest first. The constructors are counted again and the idle ones that can't put up a command
+    building gathered for phase 5.
+  - **Phase 5** (0x4443D0), one of those: down the candidates while they score above 0, the first its path reaches
+    (not its own sector) with no constructor there and a buildable defence site (class 7) gets that defence.
+  - **Sending one** (0x444510): it moves there (0xAD) if it isn't, the constructor counts kept, and is told to build
+    the type at the first free site for its base type (0x4411B0 -> 0x460240); a Communications Centre (120) brings
+    its partner (119) when that has a site.
+
+Not yet: `[Debug] "Enemy Visible"`. *Provisional*: a sector's objects are taken in counter order (the game's
+lists keep the order they arrived in); the invasion cool-downs aren't saved; a move doesn't stop the object's factory
+(+0x54's vtable +0x18, not traced); fences' second point isn't written into a new fence; a new object of a type no
+saved object has is copied from another of its kind and category with its type changed (its battle data stays the
+copy's).
 
 ## Battles
 

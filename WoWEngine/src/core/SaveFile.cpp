@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <string>
 
 namespace wow
 {
@@ -96,6 +97,41 @@ namespace wow
         return f;
     }
     void SaveObject::SetPosition(int x, int y) { Put32(bytes, SeloAt() + 8, uint32_t(x)); Put32(bytes, SeloAt() + 12, uint32_t(y)); }
+    static size_t LastBatp(const std::vector<uint8_t>& b)
+    {
+        size_t at = std::string::npos;
+        for (size_t i = 16; i + 4 <= b.size(); i++)
+            if (std::memcmp(&b[i], "BATP", 4) == 0) at = i;
+        return at;
+    }
+    bool SaveObject::BattlePosition(float& x, float& y) const
+    {
+        const size_t at = LastBatp(bytes);
+        if (at == std::string::npos) return false;
+        uint32_t a = Get32(bytes, at - 16), b = Get32(bytes, at - 12);
+        std::memcpy(&x, &a, 4);
+        std::memcpy(&y, &b, 4);
+        return true;
+    }
+    void SaveObject::SetBattlePosition(float x, float y)
+    {
+        const size_t at = LastBatp(bytes);
+        if (at == std::string::npos) return;
+        uint32_t a, b;
+        std::memcpy(&a, &x, 4);
+        std::memcpy(&b, &y, 4);
+        Put32(bytes, at - 16, a);
+        Put32(bytes, at - 12, b);
+    }
+
+    void SaveObject::SetType(int type)
+    {
+        const uint32_t old = Get32(bytes, 0);
+        Put32(bytes, 0, uint32_t(type));
+        for (size_t i = 4; i + 8 <= bytes.size(); i++)
+            if (Get32(bytes, i) == old && std::memcmp(&bytes[i + 4], "SELO", 4) == 0) Put32(bytes, i, uint32_t(type));
+    }
+
     void SaveObject::SetValue(int i, float v)
     {
         if (!Kind2()) return;
