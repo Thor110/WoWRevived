@@ -487,8 +487,22 @@ power). Then it plays as a WAnimEffect, its sprite if it has one.
 In sector 30, Abandon on the lorry group: each lorry went up (591 and 997), the others nearby losing 5 to 11 of 161 and
 the Parliament 4.
 
-*Provisional*: an object goes at once rather than on the next update, and only units are hit (the scenery's damage
-and the damaged list aren't in); the kind is taken as the sector; the status bars aren't in (the light parts are in: "Lights"). (Their emitters are in: "Flying objects and emitters".)
+**The scenery is damaged too.** WScenery's constructor (0x489380) is on the damageable object 0x489E20, which sets
++0xC4 to the type's health (0x47DA20) and +0xB8 bit 7 (the hit's 0x48A5A0 needs it); the base 0x47D6F0 clears it,
+and the units' 0x495668 and the bridges' 0x48D800 set it too. Its vtable (0x4AE5B0) has the same hit (vt+0xC0),
+damage (vt+0xE0, 0x48AB20), death (0x80A0 in 0x489FA0: gone, its destruction effect, the key buildings' speech) and
+update (+0x10 = 0x48AEF0, the damage smoke: not a vehicle, so every level up to its own). Gone (0x8057), any
+object of category 0, 2 or 3 but the trees frees its footprint (vt+0xE8 = 0x48A9A0: 0x47C3A0 with 2), as it marked
+it added (0x48A950). Here the scenery is a list of its own (`props`, each with its view object and light): every
+explosion's detonation goes over it after the units with the same reach (its radius the type's +0x44 word) and
+hit; of the area blasts only 818-820's hit reaches it (never under the ground or Martian; the statuses' messages
+aren't a WScenery's). Rockets force-fired into the trees west of the start hit them 3 to 9 a time (60 health each)
+and four went in 290 updates.
+
+*Provisional*: an object goes at once rather than on the next update; the scenery is hit after the units (the game
+takes both from one list, 0x47FC50, by its buckets: the `rand()` order of their deaths may differ); the damaged list
+isn't in; the kind is taken as the sector; the status bars aren't in. (The light parts and emitters are in: "Lights",
+"Flying objects and emitters".)
 
 ## Weapons (WProjectile base 0x4949A0 and its classes, 0x494DB0 / 0x494FD0, 0x4886A0 / 0x488830 -> 0x487F50; the group's target 0x4826D0; `battlemap/Weapons.cpp`)
 

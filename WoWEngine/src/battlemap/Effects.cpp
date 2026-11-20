@@ -267,24 +267,42 @@ namespace wow
         if (level <= 0) return;
         level = std::min(level, 4);
         const int top = 0x16F + level - 1;
-        if (random::Rand() < 0xCCC) Puff(index, 1000);
-        if (u.vehicle) Puff(index, top);
+        if (random::Rand() < 0xCCC) Puff(1000, u.type, u.x, u.y, u.drive.lift, u.drive.radius);
+        if (u.vehicle) Puff(top, u.type, u.x, u.y, u.drive.lift, u.drive.radius);
         else
-            for (int t = 0x16F; t <= top; t++) Puff(index, t);
+            for (int t = 0x16F; t <= top; t++) Puff(t, u.type, units[index].x, units[index].y, units[index].drive.lift, units[index].drive.radius);
     }
 
     // 0x48ADD0: the type made at a point r = +0xAC / 3 + 1 about it (rand() % 2r - r each way, as floats on its
     // point, ftol'd) and rand() % r over its height plus its +0x41 byte x 1.414, standing still
-    void BattleMap::Puff(size_t index, int type)
+    void BattleMap::Puff(int type, int ownType, float px, float py, float lift, int radius)
     {
-        const Unit& u = units[index];
-        const int r = u.drive.radius / 3 + 1;
+        const int r = radius / 3 + 1;
         const float fr = float(r);
-        const int x = int(float(random::Rand() % (2 * r)) + u.x - fr);
-        const int y = int(float(random::Rand() % (2 * r)) + u.y - fr);
-        auto t = setup.units->find(u.type);
+        const int x = int(float(random::Rand() % (2 * r)) + px - fr);
+        const int y = int(float(random::Rand() % (2 * r)) + py - fr);
+        auto t = setup.units->find(ownType);
         const int size = t != setup.units->end() ? t->second.size41 : 0;
-        const int z = int(double(float(random::Rand() % r) + u.drive.lift) - double(size) * -1.414);
+        const int z = int(double(float(random::Rand() % r) + lift) - double(size) * -1.414);
         SpawnEffect(type, float(x), float(y), float(z));
+    }
+
+    // WScenery's update (vtable 0x4AE5B0 +0x10) is 0x48AEF0 too: a damaged scenery object (not a vehicle) puffs every
+    // level up to its own
+    void BattleMap::SmoulderProp(size_t index)
+    {
+        if (ticks % 15 != 0 || !setup.showSmoke) return;
+        const Prop& p = props[index];
+        const int max = MaxHealth(p.type);
+        if (max == 0) return;
+        const float fraction = float(p.health) / float(max);
+        int level = int(double(fraction) * -5.0 + double(5.0f));
+        if (level <= 0) return;
+        level = std::min(level, 4);
+        const int top = 0x16F + level - 1;
+        auto t = setup.units->find(p.type);
+        const int radius = t != setup.units->end() ? int16_t(t->second.hitPoints) : 0;
+        if (random::Rand() < 0xCCC) Puff(1000, p.type, props[index].x, props[index].y, props[index].z, radius);
+        for (int k = 0x16F; k <= top; k++) Puff(k, p.type, props[index].x, props[index].y, props[index].z, radius);
     }
 }

@@ -70,6 +70,9 @@ namespace wow
             if (o.unit > int(index)) o.unit--;
         units.erase(units.begin() + std::ptrdiff_t(index));
         if (t == setup.units->end()) return;
+        // vt+0xE8 (0x48A9A0): a category 0, 2 or 3 object, not a tree, frees its footprint (0x47C3A0 with 2)
+        if (const int c = t->second.category; (c == 0 || c == 2 || c == 3) && !(u.type >= 0xCF && u.type <= 0xE5))
+            land.ClearOccupied(int(u.x), int(u.y), int16_t(t->second.currentHitPoints), 2);
         const int z = int(double(u.drive.lift) - double(t->second.size41) * -1.414);
         Explode(t->second.field98, int(u.x), int(u.y), z);
         const bool key = u.type == (setup.sector == 3 ? 0x33E : 0x78) || u.type == (setup.sector == 30 ? 0x116 : 0x13A);
@@ -127,6 +130,19 @@ namespace wow
             const float hit = float((1.0 - double(float(d)) / double(float(reach))) * power);
             Damage(i, int(double(hit) * 1.0));
         }
+        // the scenery within reach too (it has no side to spare)
+        for (size_t i = 0; i < props.size(); i++)
+        {
+            Prop& p = props[i];
+            if (!p.alive || p.health <= 0) continue;
+            auto pt = setup.units->find(p.type);
+            if (pt == setup.units->end() || pt->second.category == 4) continue;
+            const int reach = radius + int16_t(pt->second.hitPoints);
+            const int d = Octagonal(int(p.x), int(p.y), x, y);
+            if (d > reach || reach == 0) continue;
+            const float hit = float((1.0 - double(float(d)) / double(float(reach))) * power);
+            DamageProp(i, int(double(hit) * 1.0));
+        }
         if (z < 64)
         {
             const int vx = std::clamp((int(uint32_t(x) << 16) + land.HalfCell()) / land.Cell(), 0, land.Width() - 1);
@@ -170,6 +186,56 @@ namespace wow
             else if (type >= 818 && type <= 820) { SetStatus(i, 0x80F6, type - 817); hit(); }
             else if (type >= 821 && type <= 823) SetStatus(i, 0x80F7, type - 820);
         }
+        // the scenery: of the cases only 818-820's hit reaches it (it's never under the ground or Martian, and the
+        // statuses' messages aren't a WScenery's)
+        if (type < 818 || type > 820) return;
+        for (size_t i = 0; i < props.size(); i++)
+        {
+            Prop& p = props[i];
+            if (!p.alive || p.health <= 0) continue;
+            auto pt = setup.units->find(p.type);
+            if (pt == setup.units->end() || pt->second.category == 4) continue;
+            const int reach = radius + int16_t(pt->second.hitPoints);
+            const int d = Octagonal(int(p.x), int(p.y), x, y);
+            if (d > reach || reach == 0) continue;
+            const float h = float((1.0 - double(float(d)) / double(float(reach))) * power);
+            DamageProp(i, int(double(h) * 1.0));
+        }
+    }
+
+    // A scenery object hit (0x48AB20, as a unit): its health less the amount; at or under 0 a 0x80A0 is posted to it
+    // 10 + rand() % 20 updates on
+    void BattleMap::DamageProp(size_t index, int amount)
+    {
+        Prop& p = props[index];
+        if (p.health <= 0) return;
+        p.health -= amount;
+        if (p.health <= 0)
+        {
+            const int at = ticks + random::Rand() % 20 + 10;
+            if (p.dieAt < 0 || at < p.dieAt) p.dieAt = at;
+        }
+    }
+
+    // 0x80A0 for a scenery object (0x489FA0, as a unit's): gone (0x8057: its view objects and its light; vt+0xE8,
+    // 0x48A9A0, frees its footprint, 0x47C3A0), its type's destruction effect (+0x98) at its point,
+    // ftol(+0x84 + its +0x41 byte x 1.414) up; the key buildings speak as a unit's do
+    void BattleMap::PropDies(size_t index)
+    {
+        Prop& p = props[index];
+        p.alive = false;
+        objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) {
+            return o.prop == int(index) || (p.light >= 0 && o.light == p.light); }), objects.end());
+        if (p.light >= 0 && size_t(p.light) < lights.size()) lights[size_t(p.light)].alive = false;
+        auto t = setup.units->find(p.type);
+        if (t == setup.units->end()) return;
+        const int c = t->second.category;
+        if ((c == 0 || c == 2 || c == 3) && !(p.type >= 0xCF && p.type <= 0xE5))
+            land.ClearOccupied(int(p.x), int(p.y), int16_t(t->second.currentHitPoints), 2);
+        const int z = int(double(p.z) - double(t->second.size41) * -1.414);
+        Explode(t->second.field98, int(p.x), int(p.y), z);
+        const bool key = p.type == (setup.sector == 3 ? 0x33E : 0x78) || p.type == (setup.sector == 30 ? 0x116 : 0x13A);
+        if (key && setup.sound) setup.sound->Play(0x13B, 1.0f);
     }
 
     // 0x80F5-0x80F7 (0x495CB0): the timer (vt+0x88: +0xDC) (level + 2) x 150 updates and the status (vt+0x90: +0xE0,

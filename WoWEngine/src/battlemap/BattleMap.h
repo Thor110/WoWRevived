@@ -118,7 +118,14 @@ namespace wow
         struct IsoModel { IobModel model; std::vector<uint8_t> lights; int slot = 0; };
         std::map<int, IsoModel> models;
         struct ViewObject { int key; int x, y; const IsoModel* model; const WofInstance* wof = nullptr; int slot = 0; int sprite = 0; int light = -1;
-                            int unit = -1, depth = 0, effect = -1; };
+                            int unit = -1, depth = 0, effect = -1, prop = -1; };
+        // A scenery object (WScenery 0x4895E0 / 0x489380 on the damageable 0x489E20): its type, point and height
+        // (+0x84), its health (+0xC4, the type's +0x4A to start with, bit 7 set), a 0x80A0 on its way, its light
+        struct Prop { int type = 0; float x = 0, y = 0, z = 0; int health = 0, dieAt = -1, light = -1; bool alive = true; };
+        std::vector<Prop> props;
+        void DamageProp(size_t prop, int amount);               // vt+0xE0, 0x48AB20
+        void PropDies(size_t prop);                             // 0x80A0
+        void SmoulderProp(size_t prop);                         // WScenery's update is 0x48AEF0
         // The flying objects (0x487730 and its classes): WAnimEffect (0x488FB0: the factory's 0x15B-0x16E, 0x174-0x17A,
         // 918-920, 952-972, 988-993, 1000, 0x17C) and WExplosion on it (0x488180) animate, the frame counter (8.8, the
         // renderer's +0x38) going on by +0xC0 (0x80) an update (0x40EF20), gone past the last frame (vt+0x78); the
@@ -145,7 +152,7 @@ namespace wow
         void UpdateEffects();                                   // each flying object's update
         void Emit(size_t effect);                               // 0x47F050
         void Smoulder(size_t unit);                             // 0x48AEF0 (from the unit's update 0x4967E0)
-        void Puff(size_t unit, int type);                       // 0x48ADD0
+        void Puff(int type, int ownType, float x, float y, float lift, int radius);   // 0x48ADD0
         void AddLight(int type, int x, int y, int z);           // a light part made (0x48DDC0, 0x48E050, 0x48DE80)
         void UpdateLights();                                    // 0x48E100 for the fading ones
         void Speak(int id, int group);                          // 0x481770 with the group's voice (0x449120)

@@ -841,9 +841,10 @@ namespace wow
                 if (!image) continue;
                 const int ix = int(o.x), iy = int(o.y);
                 const int h = int(float(land.HeightAt(ix, iy)) + o.z);
-                objects.push_back({ iy + 1, ix, land.ProjectY(iy, h), nullptr, nullptr, g->paletteSlot, gtype });
+                props.push_back({ o.type, o.x, o.y, o.z, MaxHealth(o.type) });
+                objects.push_back({ iy + 1, ix, land.ProjectY(iy, h), nullptr, nullptr, g->paletteSlot, gtype, -1, -1, 0, -1, int(props.size()) - 1 });
                 shadows(u->second, o.x, o.y, image->width / 2, 1);
-                addLight(o, u->second);
+                if (const size_t before = lights.size(); addLight(o, u->second), lights.size() > before) props.back().light = int(before);
                 land.SetPointLight(ix, iy, sun);
                 continue;
             }
@@ -873,9 +874,11 @@ namespace wow
             // 0x47F480: the renderer's point, the ground's height there plus the object's own (+0x80)
             const int ix = int(x), iy = int(y);
             const int h = int(float(land.HeightAt(ix, iy)) + o.z);
-            objects.push_back({ iy + IsoObject::Depth(model), ix, land.ProjectY(iy, h), &m->second });
+            props.push_back({ o.type, x, y, o.z, MaxHealth(o.type) });
+            objects.push_back({ iy + IsoObject::Depth(model), ix, land.ProjectY(iy, h), &m->second, nullptr, 0, 0, -1, -1, 0, -1, int(props.size()) - 1 });
             shadows(u->second, x, y, (IsoObject::HalfWidth(model) - -IsoObject::HalfWidth(model)) / 2, IsoObject::Depth(model));
-            addLight(PlacedObject{ o.type, x, y, o.z, {}, o.roll }, u->second);
+            if (const size_t before = lights.size(); addLight(PlacedObject{ o.type, x, y, o.z, {}, o.roll }, u->second), lights.size() > before)
+                props.back().light = int(before);
             land.SetPointLight(ix, iy, sun);
         }
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
@@ -1086,6 +1089,13 @@ namespace wow
             for (Turret& t : units[i].turrets) TurretTick(units[i], t);
             for (Gun& g : units[i].guns) GunTick(i, g);
             PoseParts(units[i]);
+        }
+        // the scenery: 0x80A0 arriving, the damage smoke
+        for (size_t i = 0; i < props.size(); i++)
+        {
+            if (!props[i].alive) continue;
+            if (props[i].dieAt >= 0 && ticks >= props[i].dieAt) { PropDies(i); continue; }
+            SmoulderProp(i);
         }
         // the flying objects (effects, smoke, shells)
         UpdateEffects();
