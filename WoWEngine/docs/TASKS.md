@@ -129,10 +129,12 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 - [x] **Build List window** (`warmap/BuildWindow.cpp`, WARMAP.md "The Build List window"): Build / Suspend /
       Resume in the popup, both panels, items, slots, repeat badges, promote, TTC, tool tips, both sides
       (0x460B00-0x462E50); to do: cursors, the promote button's exact place — 09, 03
-- [ ] **Unit table** (records 18, 52 and 54 in so far): all 65 OBJ.ojd record types and the `[Tweak]` armour / research / manufacture modifiers
+- [ ] **Unit table** (records 15's base type, 18, 19, 20, 52 and 54 in so far): all 65 OBJ.ojd record types and the `[Tweak]` armour / research / manufacture modifiers
       (0x437750) — 06
-- [ ] **War map AI**: the 10-state machine every game hour, its 14 `[Tweak]` values, AI.ojd's sites (0x442890,
-      0x443340-) — 06, 07
+- [~] **War map AI** (`warmap/WarMapAi.cpp`, WARMAP.md "The computer player"): the 10-phase cycle every game hour,
+      the 14 `[Tweak]` values and the strength weights, phases 0 (gather), 1 (moves), 6 (invasions), 8 (factory
+      orders) and its research choice (0x458A60), the world's hourly order (0x419E9D) and the sectors' invasion
+      cool-downs; to do: phases 2-5, building by AI.ojd's sites (0x440DD0-0x441420, 0x443610-0x444680) — 06, 07
 
 ## Milestone 5: the battle map
 

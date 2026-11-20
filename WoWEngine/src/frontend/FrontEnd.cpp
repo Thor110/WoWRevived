@@ -556,12 +556,22 @@ namespace wow
             catch (const std::exception& e) { SDL_Log("OBJ.ojd sector deposits: %s", e.what()); }
         }
         // each object type's class (AI.ojd, 0x441580 -> 0x518B14)
-        std::map<int, int> classes;
+        std::map<int, int> classes, weights;
         if (auto ai = files.Resolve("AI.ojd"))
         {
             std::ifstream in(*ai, std::ios::binary);
             std::vector<uint8_t> aiData((std::istreambuf_iterator<char>(in)), {});
-            try { for (const auto& [id, e] : AiTable::Load(aiData).entries) classes[id] = e.value; }
+            // each weight times the side's multiplier as the file's read (0x441625: fild, fmul, ftol)
+            const float mult = res.Human() ? ini.GetFloat("Tweak", "AI strength table Human multiplier", 1.0f)
+                                           : ini.GetFloat("Tweak", "AI strength table Martian multiplier", 2.0f);
+            try
+            {
+                for (const auto& [id, e] : AiTable::Load(aiData).entries)
+                {
+                    classes[id] = e.value;
+                    weights[id] = int(int16_t(int(double(e.weight) * double(mult))));
+                }
+            }
             catch (const std::exception& e) { SDL_Log("AI.ojd: %s", e.what()); }
         }
         // the save read exactly, so it can be written again; failing that, read as before (and not saved)
@@ -590,6 +600,23 @@ namespace wow
         manufacture.martianEnemy = ini.GetFloat("Tweak", "MartianEnemy Manufacture Modifier", 0.85f);
         map->SetManufacture(manufacture);
         map->SetBuildListPlace(ini.GetInt("BuildList", "Left", 0), ini.GetInt("BuildList", "Top", 70));
+        WarMap::AiTweaks aiTweaks;
+        auto tweak = [&](const char* name, float& v) { v = ini.GetFloat("Tweak", name, v); };
+        tweak("AI Frontline Attractor for Defences", aiTweaks.frontlineDefences);
+        tweak("AI Eff Threshold", aiTweaks.effThreshold);
+        tweak("AI Panic Build Threshold", aiTweaks.panicBuild);
+        tweak("AI Move Threshold", aiTweaks.moveThreshold);
+        tweak("AI Frontline Attractor", aiTweaks.frontlineAttractor);
+        tweak("AI Build Resfac Eagerness", aiTweaks.resfacEagerness);
+        tweak("AI Aggression Value", aiTweaks.aggression);
+        tweak("AI Invasion Threshold PC", aiTweaks.invasionThreshold);
+        tweak("AI Outnumber Force", aiTweaks.outnumberForce);
+        tweak("AI Retain Force", aiTweaks.retainForce);
+        tweak("AI Invader NFriend Mul", aiTweaks.invaderNFriendMul);
+        tweak("AI safe sector repeller Mul", aiTweaks.safeRepeller);
+        tweak("AI Minimum Rr", aiTweaks.minimumRr);
+        tweak("AI Movement Temperature", aiTweaks.temperature);
+        map->SetAi(aiTweaks, std::move(weights));
         if (exact) map->UseSave(std::move(*exact));
         ObjOjd::ResearchModifiers modifiers;
         modifiers.humanFriend = ini.GetFloat("Tweak", "HumanFriend Research Modifier", 0.75f);

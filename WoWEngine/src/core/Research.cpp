@@ -1,4 +1,5 @@
 #include "core/Research.h"
+#include "core/Random.h"
 #include "core/ResearchTrees.h"
 
 #include <cstring>
@@ -317,6 +318,33 @@ namespace wow
         Item& item = items[size_t(number)];
         if (!item.remaining) item.remaining = item.total; // 0x45B850
         idle = 0;
+    }
+
+    int Research::ChooseForAi()
+    {
+        const int count = int(items.size());
+        auto usable = [&](const Item& i) { return i.state == Available && i.kind != TriggerItem; };
+        int pick = -1;
+        for (int n = 0; n < count && pick < 0; n++)
+        {
+            const Item& i = items[size_t(n)];
+            if (!usable(i)) continue;
+            for (int p : i.pre) // 0x45B8B0
+                if (p >= 0 && size_t(p) < items.size() && items[size_t(p)].kind == TriggerItem) { pick = n; break; }
+        }
+        if (pick < 0)
+        {
+            if (count == 0) return -1;
+            int n = random::Rand() % count;
+            for (int left = count; left > 0; left--)
+            {
+                if (usable(items[size_t(n)])) { pick = n; break; }
+                n = (n + 1) % count;
+            }
+            if (pick < 0) return -1;
+        }
+        SetCurrent(pick);
+        return pick;
     }
 
     void Research::Advance(int hours)

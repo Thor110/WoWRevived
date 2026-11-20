@@ -72,7 +72,7 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x43C0A0 | Resources | |
 | 0x43D760–0x43FBE0 | Object type tables | Unit, building, scenery, tree, explosion and smoke names to object types |
 | 0x4401E0–0x4407E0 | WSelectableObject pool | 1024 objects |
-| 0x441500–0x442E80 | AI | Reads `AI.ojd` (0x441580), plus the AI tuning values |
+| 0x441500–0x444FDA | AI | Reads `AI.ojd` (0x441580), the AI tuning values, the computer player (0x442890) and its war map turn (0x442EC0, phases 0x443030-0x444C10). `warmap/WarMapAi.cpp` |
 | 0x445010–0x449840 | WObject, sector stats, Zoomer, WCmdTarget | |
 | 0x44A160–0x44A8D0 | DeePlay | DirectPlay networking: send and receive threads, Human and Martian players |
 | 0x44AE60–0x44E4B0 | DeeDraw | DirectDraw surfaces, flip and blit, the cursor, error strings |

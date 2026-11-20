@@ -481,19 +481,36 @@ namespace wow
 
     // The world's 0x802D, every whole game hour (0x419E9D): the routes, the players, both sides' research, the
     // pods, each sector, then the resource warnings. (The routes, the pods and the warnings are in so far.)
+    // The world's 0x802D (0x419E9D), in its order: the routes, the players (the computer player's turn), both
+    // sides' research (0x458BD0: the local player's, then the other's), the pods (0x41A330), then each sector
+    // (0x43B6C9): its objects (0x446310: their intel 0x429B80, the factories 0x45FB20; by its lists, units then
+    // constructions, home side first) and its day count (+0x6C; each whole day takes one off an invasion
+    // cool-down, +0x68); the resource warnings come in the same loop.
     void WarMap::Hourly(int hours)
     {
-        // each object's intel goes down by the hours, to 0 (0x429B80); one that runs out stays on the map until
-        // the next layout (a new view, or its sector laid out again)
-        for (Counter& k : counters) k.intel = std::max(0, k.intel - hours);
         MoveRoutes(hours);
-        // both sides' research (0x419EE2 / 0x419EEE: the local player's, then the other's, 0x458BD0)
+        AiTurn(hours);
         for (auto& r : research) if (r) r->Advance(hours);
-        // every factory's 0x802D (0x45FB20; where it comes among the world's objects is still to be placed)
-        std::vector<int> refs;
-        for (const auto& [ref, f] : factories) refs.push_back(ref);
-        for (int ref : refs) Produce(ref, hours);
         DropPod(hours);
+        for (Counter& k : counters) k.intel = std::max(0, k.intel - hours);
+        for (int s = 1; s <= warmap::SectorCount; s++)
+        {
+            std::vector<int> refs;
+            for (int list = 0; list < 6; list++)
+                for (const auto& [ref, f] : factories)
+                {
+                    const int at = CounterOf(ref);
+                    const int sector = at >= 0 ? counters[size_t(at)].sector : table[size_t(ref)].Sector();
+                    if (sector == s && table[size_t(ref)].list == list && !(at >= 0 && counters[size_t(at)].Travelling())) refs.push_back(ref);
+                }
+            for (int ref : refs) Produce(ref, hours);
+            sectorHours[size_t(s)] += hours;
+            while (sectorHours[size_t(s)] >= 24)
+            {
+                sectorHours[size_t(s)] -= 24;
+                if (aiCooldown[size_t(s)]) aiCooldown[size_t(s)]--;
+            }
+        }
         ResourceWarnings();
     }
 

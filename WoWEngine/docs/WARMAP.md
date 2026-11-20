@@ -531,6 +531,76 @@ Still to do: the battle map's side (placement modes 4 / 5 / 6, 0x42E790; 0x80A0)
 items, 0xF over slots); 0x8131 (an entry's object gone); 0x440EA0; the counts from 0x4F86B8 / 0x4F76F0 in the
 room check; where among the world's objects the factories' 0x802D comes (after the research here, *provisional*).
 
+## The computer player
+
+The other side is played by the AI player (0x442890, vtable 0x4AA680, handler 0x442AC0; `warmap/WarMapAi.cpp`).
+Every game hour the world's 0x802D (0x419E9D) goes, in order, to the routes, the local player, the AI, both
+sides' research (0x458BD0), the pods (0x41A330), then each sector (0x43B6C9: its objects, the factories among them,
+then its day count +0x6C, each whole day taking one off its invasion cool-down +0x68). `[Tweak] AI Hours Per Turn`
+(5) is read but used nowhere.
+
+On its 0x802D (0x442EC0) the AI adds the hours to its clock (+0x448), lets go of its research item once it's done
+or obsolete, or with none picks one (the other side's research, vtable +0x2C, 0x458A60: the first available item
+that isn't a trigger and has a trigger among its prerequisites; otherwise from rand() % the item count on, the next
+available one that isn't a trigger), then takes **one step** of its cycle (+0x43C):
+
+| Phase | Function | Next |
+|---|---|---|
+| 0 | gather its combat units (0x443030) | 2 if none, else 1 |
+| 1 | the next unit stays or moves (0x443340) | 2 once all have |
+| 2 | constructors and the economy (0x443610) | 4 with no constructor, else 3 |
+| 3 | a constructor sent to build (0x443CA0) | 4 when done |
+| 4 | the front line, defence builders (0x4440B0) | 6 with none, else 5 |
+| 5 | a defence builder sent (0x4443D0) | 6 when done |
+| 6 | an invasion (0x444690) | 7 |
+| 7 | | 8 |
+| 8 | its factories' orders (0x444C10) | 9 |
+| 9 | | 0 |
+
+What it counts: an object's **strength** (0x441E70) is its battle map units (the group at +0x4C, its +0x24; the
+engine counts a saved object's SELO ids after its own) times its type's AI.ojd weight, which is scaled as the file is
+read by `[Tweak] AI strength table Human multiplier` (1.0) in Human games or `... Martian multiplier` (2.0) in
+Martian ones (0x441625, truncated). Its **class** (AI.ojd's value) says what it is: 1 a combat unit, 2 a constructor,
+4 a factory, 6 a resource facility, 7 a defence. F(s) (0x441F00) is the AI's combat units' strength in sector s (with
+a target t, only those that can go there: 0x4419E0 lets a boat, base type 19 or 22, only into a sector that isn't
+landlocked and has room). E(s) (0x442080) is what it would meet: the other side's combat units and defences there,
+and the combat units of every route from or to s, whoever's. Neighbours (0x441AD0 / 0x441B80 / 0x441C50) are
+sectors 1-30 in the route table's list with a land link, all of them, the AI's, or the other side's.
+
+- **Phase 0** puts every combat unit in a binary tree by strength, rooted at the one nearest half-way between the
+  weakest and strongest (swapped to the front), stronger to one side, the rest to the other, and reads it out
+  strongest first: the order they move in.
+- **Phase 1**, one unit: staying is worth (F(here) - S) x (1 + rand() x `AI Movement Temperature` (0.25) / 32768),
+  doubled (`AI safe sector repeller Mul`) when every neighbour is the AI's, x 0.8 in sector 3 or 30. Each of the
+  AI's neighbours it can enter scores that less F(n) / (n's enemy neighbours x `AI Frontline Attractor` (2.0) + 1) x
+  `AI Move Threshold` (1.05); it goes to the best above 0.
+- **Phase 6**: nothing unless the AI's sectors average at least `AI Invasion Threshold PC` (150). Each sector not
+  the AI's is a candidate when what its AI neighbours could send, less `AI Retain Force` (0.2) of it, over its
+  cool-down + 1, beats (rand() % 100 + 50) x 0.01 x E x `AI Outnumber Force` (1.1), the force it then wants. It
+  scores its AI neighbours x `AI Invader NFriend Mul` (3000) plus what its resources are worth (each kind's spread
+  demand - spread supply + `AI Build Resfac Eagerness` (50), times one more facility's gain, at least 0). The best is
+  invaded (0x444990) and its cool-down set to rand() % 8 + 10 days. The invasion takes the combat units of the
+  neighbours with a command building that can go in: all of them if they fall short of the force wanted + 1, else
+  shuffled (4 x their count random swaps) and taken in turn until they make it up.
+- **Phase 8**: each finished factory (class 4) with nothing queued orders one thing from what it can make
+  (0x45F970, each swapped for the type it gives way to, record 19 / 20, when that's offered too, 0x45F900): the
+  first constructor (class 2) of which none is idle or queued in the sectors the factory's sector has a path to;
+  failing that a combat unit at random (rand() % their count); added with 0x4603B0.
+
+A move (0xAD, 0x429E80) isn't a route: the object leaves its sector and is put straight into the next (0x429DB0),
+both sectors' owners worked out again (0x43CA40). `[Debug] "Enemy Visible"` would also put its counter on the
+sector's waypoint. Its 14 `[Tweak]` values: `AI Frontline Attractor for Defences` 2.0, `AI Eff Threshold` 0.6,
+`AI Panic Build Threshold` 500, `AI Move Threshold` 1.05, `AI Frontline Attractor` 2.0, `AI Build Resfac Eagerness`
+50, `AI Aggression Value` 0.5 (used nowhere), `AI Invasion Threshold PC` 150, `AI Outnumber Force` 1.1, `AI Retain
+Force` 0.2, `AI Invader NFriend Mul` 3000, `AI safe sector repeller Mul` 2.0, `AI Minimum Rr` 8.0, `AI Movement
+Temperature` 0.25.
+
+Still to do: phases 2-5, building, which go by AI.ojd's build sites (0x440DD0-0x441420) and the sectors' records
+(0x545BB0); for now they pass on as if there were nothing to build (they draw no random numbers, so the other phases
+draw theirs in the game's order). *Provisional*: a sector's objects are taken in counter order (the game's lists keep
+the order objects arrived in); the cool-downs (+0x68) aren't saved; the 0xAD move doesn't stop the object's factory
+(+0x54's vtable +0x18, not traced).
+
 ## Battles
 
 **Who holds a sector** (0x43CA40, whenever a unit goes in or out, 0x429E80, or objects are taken away): the side

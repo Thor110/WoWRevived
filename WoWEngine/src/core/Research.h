@@ -126,6 +126,10 @@ namespace wow
         void SetCurrent(int number);
         // 0x458BD0
         void Advance(int hours);
+        // 0x458A60, the computer player's pick (its research's vtable +0x2C): the first available item, not a
+        // trigger, with a trigger among its prerequisites; otherwise from a random place (rand() % the item count)
+        // on, the next available item that isn't a trigger. It becomes the research; -1 when there's none.
+        int ChooseForAi();
         // 0x45A1C0 / 0x45B320: the triggers from the types met in battle (the unit table's +0xAC, set by the
         // battle map), an unlock pass, then the improvement multipliers of the finished enhancements
         void UpdateTriggers(const std::set<int>& encountered);

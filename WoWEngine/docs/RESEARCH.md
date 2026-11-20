@@ -166,6 +166,13 @@ again (0x45F710). The overlays are drawn over all of it (0x45E930).
 Not yet: the keyboard (the hotspots' Up / Down / Enter, 0x45ECB0), the tool tips' "Makes Available:" lists
 (0x8114), the speech's delay and fade, the list's own scrolling and colour cycling (0x45F320 / 0x45F3D0).
 
+## The computer player's choice
+
+The AI player (0x442EC0) keeps its research item (+0x454): once it's done or obsolete it lets go of it, and with none
+it asks its research (vtable +0x2C, 0x458A60): the first available item, not a trigger, with a trigger among its
+prerequisites (0x45B8B0); otherwise from rand() % the item count on, round, the first available item that isn't a
+trigger (none: nothing). It becomes the research (as 0x458A00, and 0x80A3 to the screen if it's shown).
+
 ## Still to do
 
 The rest of the screen (above); the AI's choice (0x45A400 / 0x45B4E0, its

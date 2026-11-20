@@ -61,6 +61,8 @@ namespace wow
             int researchDays = 0; // record 39: its research time in days; the table keeps it in hours (+0x08,
                                   // ResearchHours)
             int researchFaction = 2; // the faction as it was when record 39 came, which is what the hours use
+            int baseType = 0;      // +0x00: the type itself (record 15), or the template's (record 18): boats are 19 / 22
+            int upgrade = 0;       // +0x88, records 19 / 20: the type this one gives way to (0x45F900)
             int maxPerSector = 20; // +0x90, record 52: how many a sector can hold (0x43C7F0; 20 from record 15)
             int prerequisite = 0;  // +0x94, record 54: a building that must be finished in the sector first (0x442420)
             int builders[3] = { 0, 0, 0 }; // +0x78-0x80, records 49 / 50 / 51 (one, two or three): what builds it

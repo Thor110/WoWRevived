@@ -125,6 +125,7 @@ namespace wow
                 unit = int16_t(r.U16());
                 bool fresh = units.find(unit) == units.end();
                 if (fresh) units[unit].category = category;
+                if (!units[unit].baseType) units[unit].baseType = unit; // +0x00, when not set yet
                 break;
             }
             case 18: // 0x437DEE: the whole entry copied from a template type, then its parts, emitters and
@@ -136,6 +137,8 @@ namespace wow
                 units[unit] = copy;
                 break;
             }
+            case 19: units[unit].upgrade = int16_t(r.U16()); r.Skip(2); break; // 0x437E4C: +0x88, +0x8C
+            case 20: units[unit].upgrade = int16_t(r.U16()); break;            // 0x437E7A: +0x88, +0x8C = 0
             case 52: units[unit].maxPerSector = int(r.U16()); break;      // 0x438738
             case 54: units[unit].prerequisite = int16_t(r.U16()); break;  // 0x438776
             case 55: units[unit].battleUnits = int16_t(r.U16()); break; // 0x438794

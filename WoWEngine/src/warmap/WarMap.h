@@ -69,6 +69,26 @@ namespace wow
         // [Tweak] "HumanFriend / HumanEnemy / MartianFriend / MartianEnemy Manufacture Modifier" (0x437664-0x437724)
         void SetManufacture(const ObjOjd::ManufactureModifiers& m) { manufacture = m; }
         void SetBuildListPlace(int left, int top) { buildLeft = left; buildTop = top; }
+        // The computer player's [Tweak] values (0x4424D0-0x442850) and AI.ojd's strength weights, scaled by
+        // [Tweak] "AI strength table Human / Martian multiplier" (1.0 / 2.0) as the file is read (0x441625)
+        struct AiTweaks
+        {
+            float frontlineDefences = 2.0f;   // "AI Frontline Attractor for Defences"
+            float effThreshold = 0.6f;        // "AI Eff Threshold"
+            float panicBuild = 500.0f;        // "AI Panic Build Threshold"
+            float moveThreshold = 1.05f;      // "AI Move Threshold"
+            float frontlineAttractor = 2.0f;  // "AI Frontline Attractor"
+            float resfacEagerness = 50.0f;    // "AI Build Resfac Eagerness"
+            float aggression = 0.5f;          // "AI Aggression Value" (read, used nowhere)
+            float invasionThreshold = 150.0f; // "AI Invasion Threshold PC"
+            float outnumberForce = 1.1f;      // "AI Outnumber Force"
+            float retainForce = 0.2f;         // "AI Retain Force"
+            float invaderNFriendMul = 3000.0f;// "AI Invader NFriend Mul"
+            float safeRepeller = 2.0f;        // "AI safe sector repeller Mul"
+            float minimumRr = 8.0f;           // "AI Minimum Rr"
+            float temperature = 0.25f;        // "AI Movement Temperature"
+        };
+        void SetAi(const AiTweaks& tweaks, std::map<int, int> weights) { aiTweaks = tweaks; aiWeights = std::move(weights); }
         void SetPodInterval(int hours) { podInterval = hours; }
         void SetClunting(int res, int adj) { clunRes = std::max(1, res); clunAdj = adj; for (auto& g : grids) g.size = 0; LayoutAll(); }
         // [Tweak] "Route clunting width" and "Route clunting spacing" (0x42AF20 / 0x42AF60, both 4)
@@ -178,6 +198,28 @@ namespace wow
         struct BuildWindowState { int ref = -1; int scroll = 0, queueScroll = 0, hover = -1, pressed = -1; };
         std::optional<BuildWindowState> buildWindow;
         int popupObject = -1;                           // the object whose items the popup has
+        // The computer player (warmap/WarMapAi.cpp): its phase (+0x43C), its units in the order they move
+        // (dword_546230, the cursor +0x440 and count +0x444), its clock (+0x448), its research (+0x454) and the
+        // strength gathered (+0x460)
+        struct AiState { int phase = 0; size_t cursor = 0; std::vector<int> groups; float clock = 0, total = 0; int researchItem = -1; } ai;
+        AiTweaks aiTweaks;
+        std::map<int, int> aiWeights;                   // word_518B10
+        std::array<int, warmap::SectorCount + 1> aiCooldown{}; // each sector's +0x68: days before it's invaded again
+        std::array<int, warmap::SectorCount + 1> sectorHours{}; // +0x6C: hours towards the next day
+        float ObjectStrength(int counter) const;        // 0x441E70
+        int AiClass(int type) const;                    // 0x441EB0
+        std::vector<int> SectorObjects(int sector, bool players, int kind) const;
+        std::vector<int> AiNeighbours(int sector, int which) const; // 0 all, 1 the AI's, 2 the other side's
+        bool AiCanEnter(int sector, int type) const;    // 0x4419E0
+        float AiForce(int sector, int into) const;      // 0x441F00
+        float AiEnemyForce(int sector) const;           // 0x442080
+        void AiMove(int counter, int sector);           // 0xAD
+        void AiTurn(int hours);                         // 0x442EC0
+        bool AiGather();                                // 0x443030
+        bool AiMoveGroup(int counter);                  // 0x443340
+        void AiInvade();                                // 0x444690
+        void AiLaunch(int target, float need);          // 0x444990
+        void AiProduce();                               // 0x444C10
         int buildLeft = 0, buildTop = 70;               // [BuildList] "Left" (0) and "Top" (70) (0x460A80 / 0x460AC0)
         struct BuildLayout
         {
