@@ -1357,7 +1357,27 @@ namespace wow
     // men in its units in the sector wins (the side holding it on a tie), and the loser's units, constructions and
     // resources there go (0x43A250). The battle report (0x421210 at dword_4E9B7C) gets what each side lost for the
     // Debriefing; the sector's battle flag goes and it and its neighbours are seen (0x418E17).
-    void WarMap::FightBattle(const std::vector<int>* lost)
+    // 0x43C990 for every sector: the holder's command building (Human: Parliament 0x116 in London, else 0x13A;
+    // Martian: the base 0x33E in sector 3, else 0x78) among its constructions, finished (0x42AA70)
+    std::vector<WarMap::ReinforcementSource> WarMap::ReinforcementSources() const
+    {
+        std::vector<ReinforcementSource> out;
+        const bool human = res.Human();
+        for (int n = 1; n <= warmap::SectorCount; n++)
+        {
+            const int rel = owner[size_t(n)];
+            if (rel == 2) { out.push_back({ n, false, false }); continue; }
+            const int faction = human ? rel : 1 - rel;   // 0 Human, 1 Martian
+            const int hq = faction == 0 ? (n == 30 ? 0x116 : 0x13A) : (n == 3 ? 0x33E : 0x78);
+            bool found = false;
+            for (const Counter& k : counters)
+                if (k.sector == n && k.kind == 1 && k.type == hq && !k.unfinished && !k.Travelling()) { found = true; break; }
+            out.push_back({ n, rel == 0, found });
+        }
+        return out;
+    }
+
+    void WarMap::FightBattle(const std::vector<int>* lost, const std::vector<std::pair<int, int>>* retreated)
     {
         for (auto& r : research) if (r) r->UpdateTriggers(encountered); // 0x41A094, on the way to the battle map
         const int s = battleSector;
@@ -1386,6 +1406,28 @@ namespace wow
             return;
         }
         const int holder = owner[size_t(s)] == 0 ? 0 : 1;
+        // units that left the battle map by a reinforcement point go to its sector (*provisional*: each object taken
+        // out of its counter into a new one there, arriving as from the battle's sector)
+        if (retreated)
+            for (const auto& [ref, to] : *retreated)
+            {
+                if (to < 1 || to > warmap::SectorCount) continue;
+                for (size_t i = 0; i < counters.size(); i++)
+                {
+                    Counter& k = counters[i];
+                    if (k.sector != s || k.Travelling()) continue;
+                    auto it = std::find(k.refs.begin(), k.refs.end(), ref);
+                    if (it == k.refs.end()) continue;
+                    const int type = k.type, kind = k.kind;
+                    const bool players = k.players;
+                    k.refs.erase(it);
+                    k.count = std::max(0, k.count - 1);
+                    if (k.count == 0) { FreeCounter(int(i)); k.sector = 0; k.refs.clear(); }
+                    const int n = AddCounter(type, to, players, ref, kind);
+                    if (n >= 0) Arrive(n, to, s);
+                    break;
+                }
+            }
         if (lost)
         {
             // fought on the battle map: each object whose battle units are all gone is taken out of its counter (the

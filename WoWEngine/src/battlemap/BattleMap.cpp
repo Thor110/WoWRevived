@@ -63,6 +63,7 @@ namespace wow
         if (s.loadScenery) LoadScenery(sun, letter);
 
         Deploy();
+        SetUpReinforcements();
         for (size_t i = 0; i < units.size(); i++)
         {
             Unit& u = units[i];
@@ -440,6 +441,8 @@ namespace wow
             for (const Unit& u : units) (u.players ? ours : theirs) = true;
             battleOn = ours && theirs;
         }
+        groupRetreat.assign(setup.groups.size(), 0);
+        groupLeft.assign(setup.groups.size(), false);
         if (!setup.units) return;
         auto unit = [&](int type) -> const ObjOjd::UnitData* {
             auto u = setup.units->find(type);
@@ -1090,6 +1093,18 @@ namespace wow
         {
             const float x = units[i].x, y = units[i].y;
             Drive(i);
+            // a retreating unit at its reinforcement point leaves the map (*provisional*: within 256 of it, |dx| + |dy|, the group spreading as it arrives)
+            if (const int g = units[i].group; g >= 0 && size_t(g) < groupRetreat.size() && groupRetreat[size_t(g)])
+            {
+                const int k = NearestPoint(int(units[i].x), int(units[i].y), -1);
+                if (k >= 0 && std::abs(int(units[i].x) - rpoints[size_t(k)].x) + std::abs(int(units[i].y) - rpoints[size_t(k)].y) <= 256 &&
+                    rpoints[size_t(k)].sector == groupRetreat[size_t(g)])
+                {
+                    LeaveMap(i);
+                    i--;
+                    continue;
+                }
+            }
             StatusTick(units[i]);
             LookRound(i);
             Smoulder(i);
@@ -1230,7 +1245,8 @@ namespace wow
             add(0x80CE, 2, 0x34E, 0x473);
             add(0x80CE, 1, 0x34D, 0x472);
         }
-        if (!still) add(0x80CE, 0, 0x34C, 0x471);   // Retreat would follow: no reinforcement points yet
+        if (!still) add(0x80CE, 0, 0x34C, 0x471);
+        if (!still && battleOn && !rpoints.empty()) add(0x80CE, 0x80B7, 0x2D, 0x479);
         add(0x80CE, 0x8067, 0x34B, 0x46F);
         if (armed) add(0x80F3, 0x80ED, 0x1E, 0x48A);
         struct Special { int command, icon, text; };
@@ -1299,6 +1315,13 @@ namespace wow
                     // keeps it at +0x54 and, for Roam and Attack, its centre as home (0x483AE0)
                     for (size_t g = 0; g < selected.size() && g < groupStance.size(); g++)
                         if (selected[g]) SetStance(int(g), param);
+                    return std::nullopt;
+                }
+                if (command == 0x80CE && param == 0x80B7)
+                {
+                    // Retreat (0x4817C0 -> 0x480EF0) for each selected group of the player's
+                    for (size_t g = 0; g < selected.size(); g++)
+                        if (selected[g]) Retreat(int(g));
                     return std::nullopt;
                 }
                 if (command == 0x80CE && param == 0x8067)
@@ -1529,6 +1552,7 @@ namespace wow
         for (size_t g = 0; g < setup.groups.size(); g++)
         {
             if (setup.groups[g].places.empty() || setup.groups[g].ref < 0) continue;
+            if (g < groupLeft.size() && groupLeft[g]) continue;     // it left by a reinforcement point
             bool left = false;
             for (const Unit& u : units) if (u.group == int(g)) { left = true; break; }
             if (!left) out.push_back(setup.groups[g].ref);

@@ -52,6 +52,11 @@ namespace wow
             bool showSmoke = true;      // [Options] "Show Smoke & particles" (byte_4B880C)
             std::vector<BattleGroup> groups; // the sector's war map objects (WarMap::BattleGroups)
             int ownerFaction = 2;       // who holds the sector (0x43CA30): 0 Human, 1 Martian, 2 no one
+            // The sector's neighbours as reinforcement points' sources (0x43D150): each sector, whether the player
+            // holds it (0x4EAE1C against the player's side) and whether its holder's command building is there
+            // finished (0x43C990)
+            struct Source { int sector = 0; bool players = false, hq = false; };
+            std::vector<Source> sources;
             int noBuildBorder = 16;     // [Tweak] "No-build border width (vertices)" (dword_59D93C)
             // [Vehicles] (each setting's value at its object's +0x14)
             struct Vehicles
@@ -234,6 +239,16 @@ namespace wow
                       int stance = 1;       // +0xD8: its type's +0x43 byte (record 56) to start with (0x495740)
                     };
         int nextId = 1;
+        // The reinforcement points (0x43D150: dword_4F7458, 0x18 bytes each, dword_4F76E8 of them): the point, the
+        // sector it leads to, the link kind (7, 5, 1), whether the player holds that sector; each with its marker
+        struct ReinforcePoint { int x = 0, y = 0, sector = 0, kind = 0; bool owned = false; };
+        std::vector<ReinforcePoint> rpoints;
+        void SetUpReinforcements();                             // 0x43D150
+        void Retreat(int group);                                // 0x480EF0
+        int NearestPoint(int x, int y, int moveClass) const;    // 0x43D3F0
+        std::vector<int> groupRetreat;                          // the sector a group's retreating to (0x80BB), 0 none
+        std::vector<bool> groupLeft;                            // a group with a unit that left the map
+        void LeaveMap(size_t unit);
         Unit* UnitById(int id);
         void EngineSound(Unit& u);                              // 0x491450
         // Each group's target (+0x2C, -1 a point: +0x40..+0x48) and where it was last aimed (+0x34..+0x3C), its mode
@@ -395,6 +410,8 @@ namespace wow
     public:
         // The war map objects whose battle units are all gone (each group stands for one), for the war map
         std::vector<int> LostRefs() const;
+        // The war map objects that left by a reinforcement point, and the sector each went to
+        std::vector<std::pair<int, int>> RetreatedRefs() const;
         bool Fought() const { return battleOn; }
     };
 }

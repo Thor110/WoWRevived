@@ -842,8 +842,9 @@ namespace wow
         {
             // what the battle map's fight left (the war map objects whose units all went), when there was one
             std::optional<std::vector<int>> lost;
+            std::vector<std::pair<int, int>> retreated;
             for (Screen* sc : { battleMap.get(), screen.get() })
-                if (auto* bm = dynamic_cast<BattleMap*>(sc); bm && bm->Fought()) { lost = bm->LostRefs(); break; }
+                if (auto* bm = dynamic_cast<BattleMap*>(sc); bm && bm->Fought()) { lost = bm->LostRefs(); retreated = bm->RetreatedRefs(); break; }
             battleMap.reset();
             // 0x97 (0x41A0DC): the battle's end. The battle isn't fought on the battle map yet, so the war map
             // settles it (*provisional*), then the Debriefing (0x49A7B0)
@@ -851,7 +852,7 @@ namespace wow
             {
                 sound.FadeOut(briefingSound, 30);
                 briefingSound = 0;
-                map->FightBattle(lost ? &*lost : nullptr);
+                map->FightBattle(lost ? &*lost : nullptr, lost ? &retreated : nullptr);
                 auto d = std::make_unique<Debriefing>(res, BattleColoursFromIni(), map->Debriefing(), ini.GetInt("Debriefing", "Delay", 300));
                 const int h = sound.Play(d->Sound());   // +0x98, faded in over 60 ticks (0x464E60)
                 sound.FadeIn(h, 60);
@@ -1059,6 +1060,7 @@ namespace wow
         s.showLights = ini.GetBool("Options", "Show lights", true);
         s.showSmoke = ini.GetBool("Options", "Show Smoke & particles", true);
         s.groups = map->BattleGroups(b.sector);
+        for (const WarMap::ReinforcementSource& r : map->ReinforcementSources()) s.sources.push_back({ r.sector, r.players, r.hq });
         // the owner as a faction (0x43CA30): the side being played, the other, or no one
         const int owner = map->SectorOwner(b.sector), played = res.Human() ? 0 : 1;
         s.ownerFaction = owner == 2 ? 2 : owner == 0 ? played : 1 - played;

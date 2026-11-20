@@ -453,7 +453,7 @@ set the group's mode (+0x1DC) for the next click.
 nothing in the game.
 
 *Provisional*: the stances and Abandon act (the stances are kept per group, for the AI and weapons to come); Force
-Fire and the specials are listed but not acted on, and Retreat isn't listed (no reinforcement points, 0x43D150, yet).
+Fire and the specials are listed but not acted on; Retreat is listed with reinforcement points (below).
 
 ## Damage and death (0x48AB20, 0x48A5A0, 0x80A0 in 0x489FA0; WExplosion 0x488180 / 0x488350 / 0x488200; `battlemap/Combat.cpp`)
 
@@ -704,6 +704,35 @@ RETURNING TO WAR ROOMS.
 game's end as sector 3 won by a Human player or 30 by a Martian; the war map's taking of the losses isn't checked
 end to end (no save with a contested sector to hand); 0x80F4's control (+0x128, dword_4E9B60, used by the war
 map's 0x418980 on the research) isn't in.
+
+## Reinforcement points and Retreat (0x43D150, 0x43D3F0, 0x480EF0; `battlemap/Reinforcements.cpp`)
+
+**The points** (0x43D150, from EnterBattleMap with the battle on or the debug flag byte_4D1279; the table at
+dword_4F7458, 0x18 bytes each, dword_4F76E8 of them): for each sector 1-30 with its holder's command building there
+finished (0x43C990: a Human holder's Parliament 0x116 in London or 0x13A elsewhere, a Martian's base 0x33E in sector
+3 or 0x78 elsewhere, in either construction list, 0x42AA70), for each link kind 7, 5 and 1 the point units from it
+come in by (0x436050; none, (0, 0), from a sector that isn't a neighbour). A point nearest an edge is put 100 in
+from it. With the player holding that sector (0x4EAE1C against the player's side; or the debug flag) and room
+there (0x43AC40, by the move class of type 19 for kind 5, else type 1), the point goes in the table (x, y, the
+sector, the kind, held, 0) and a marker of type 0x3DB (a sprite, GType 862; +0xCC the sector, +0xC8 the kind) is
+made there. So only the player has points, and only from a neighbour holding a finished command building.
+
+**Retreat** (in the popup, 0x80CE 0x80B7, for a moving type with the battle on, the sector not quiet and points in
+the table; 0x4817C0 -> 0x480EF0): the nearest point (0x43D3F0) to the first member's whole position whose kind
+suits the type's move class (+0x52: 2-4 and 7 kind 1, 5 and 6 kind 5, 0 and 1 as they are), held, by 0x43FF00;
+with none (or +0x1D8 bits 8 and 9 both set) speech 0x121 and the leader told (0x4842D0). Otherwise the members get
+0x80B9, the target is cleared and the guns stood down (0x805A), +0x1D8 bit 3 and bit 0 set, the group sent there
+(0x804F), and each member's war map object told 0x80BB with the point's sector. A unit there leaves the map; its
+war map object, once none of its units are left, goes to that sector as the war map comes back.
+
+In sector 30, with sector 24 taken to have its command building for the test (none of London's neighbours has one
+in the save, so there are no points), the points were (100, 350), kinds 7 and 1 (24's entry (65, 350) brought in
+from the left edge); Retreat sent the lorries along a 47-node route and all five left there by updates 3164-3236.
+
+*Provisional*: the room checks (0x43AC40) aren't in; kinds 7 and 1 share 0x436050's first point (the engine's
+EntryPoint); what 0x80BB does isn't traced: a unit within 256 (|dx| + |dy|) of its point leaves the map (the group
+spreads as it arrives); the retreated object is taken out of its counter into a new one in that sector, arriving
+from the battle's sector (AddCounter, Arrive).
 
 ## Flying objects and emitters (0x487730, 0x487890, 0x47F050, 0x47F770; 0x48AEF0, 0x48ADD0; `battlemap/Effects.cpp`)
 

@@ -189,8 +189,8 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 - [~] **Unit groups, orders, stances, specials** (Black Dust ... Scan) and the order panel (0x480190, 0x47CCF0-;
       the 0x80A0 stagger 0x47CEE0): the popup's order items as the first selected member gives them (0x47E1E0,
       armed / moving, the special orders' types and research 0x47DA80), the stances (0x80B2) and Abandon; the digits do
-      nothing in the game (packet 0x12 has no handler). Still to do: Retreat and the
-      reinforcement points (0x480EF0, 0x43D150), Force Fire and the specials' modes, the combined panel (0x448500)
+      nothing in the game (packet 0x12 has no handler); Retreat (0x480EF0). Still to do: the specials' modes, the
+      combined panel (0x448500)
       — 07, 10, 11
 - [~] **Weapons and effects**: shots, explosions, gas, area effects; smoke and particle emitters (0x4949A0,
       0x47F050). In: health (0x47DA20), damage and death (0x48AB20, 0x80A0), WExplosion with its parts, splash
@@ -201,7 +201,8 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       their shells in flight (0x4889D0, 0x488F00, 0x47F770); the flying objects' update, emitters (debris, smoke
       trails) and damage smoke (0x487890, 0x47F050, 0x48AEF0, 0x48ADD0). Turrets turning and drawn, and the guns' arcs
       (0x489B40, 0x494FD0). Still to do:
-      0x80F4's control and the reinforcements — 10, 11, 12. (The battle's end, 0x43A980 / 0x43A800, with the
+      0x80F4's control, the room checks (0x43AC40) and the reinforcements arriving — 10, 11, 12. (Reinforcement
+      points and Retreat, 0x43D150 / 0x480EF0, are in.) (The battle's end, 0x43A980 / 0x43A800, with the
       losses taken back to the war map, is in.) (The scenery's damage and death, 0x489E20 / 0x48AB20 / 0x48A9A0,
       lights, 0x48DDC0 / 0x48E100, area blasts
       and the timed statuses with what they do (frozen, stance 0, turned), 0x487B50 / 0x495CB0 / 0x496100, are in.)

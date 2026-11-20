@@ -105,6 +105,7 @@ if(TARGET SDL3::SDL3)
         src/battlemap/Combat.cpp
         src/battlemap/Weapons.cpp
     src/battlemap/Effects.cpp
+    src/battlemap/Reinforcements.cpp
         src/warmap/WarMap.cpp
         src/warmap/Production.cpp
         src/warmap/BuildWindow.cpp

@@ -41,7 +41,11 @@ namespace wow
         BriefingInfo Briefing() const;             // the Briefing's figures (0x4999E0) for the battle's sector
         // 0x71 / 0x98 -> 0x97: the battle's end. With the battle map's losses (the war map objects whose battle units
         // all went), those objects go; without (no battle map), it's settled here (*provisional*)
-        void FightBattle(const std::vector<int>* lost = nullptr);
+        void FightBattle(const std::vector<int>* lost = nullptr, const std::vector<std::pair<int, int>>* retreated = nullptr);
+        // Each sector as a reinforcement points' source for the battle map (0x43D150): whether the player holds it and
+        // whether its holder's command building is there finished (0x43C990)
+        struct ReinforcementSource { int sector = 0; bool players = false, hq = false; };
+        std::vector<ReinforcementSource> ReinforcementSources() const;
         // The other side's units and constructions in a sector (0x43983E: the lists' counts, dword_4F7430)
         int EnemyObjects(int sector) const;
         // The sector's war map objects as the battle map takes them (EnterBattleMap 0x439770): each list in turn
