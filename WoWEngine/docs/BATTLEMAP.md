@@ -171,8 +171,22 @@ on their own may differ from the game's.
 
 Each object's GType (the unit table's +0x28) has a class that picks its renderer (0x47EB10): 0 a sprite, **1
 RTypeISO** (an IOB model), 2 a WOF model, 6 an atlas sprite, 14 a sprite at scale 1. The scenery's trees and
-buildings are IOB models; the engine draws those, and the bridges (below). *Not yet*: the sprites (street lamps),
-the ambient sound scenery (940, 994-996), and the other child parts.
+buildings are IOB models; the engine draws those, the street lamps and the bridges (below). *Not yet*: the
+ambient sound scenery (940, 994-996), and the other child parts (the lamps' 334, below).
+
+**Sprites** (class 0, RType 0x40EC50; in the scenery only the street lamp, type 272, `dat\stlamp.spr`, in sectors
+11, 15 and 30 among others): the renderer's +0x28 / +0x2C are the GType's hot spot negated (0x40EAF0) and +0x2A /
++0x2E the sprite's width and height less it; +0x26 is 1. Drawn (0x40EE10) at its point less the hot spot, frame
++0x38 >> 8 (0), through 0x40B500 with the GType's palette slot (+0x18, the battle map's table for the hour) at
+level 0. Its shadow part takes the half width from +0x28..+0x2A (half the sprite's width) and depth 1. The lamp
+(0x48F290) is WScenery with its own vtable; its other part, 334 (with 335-346 an emitter class, 0x48DD50, whose
+update rolls `rand() % 100` against flt_4DA768), is the light it gives at night: *not yet*.
+
+**The spot under each object** (WScenery's start 0x4896D0, after its parts): an object whose type is category 0,
+2 or 3 (+0x10; 0x47D828 sets +0xB8 bit 1, and the scenery is all category 0) puts the sun's point level on the
+vertex it stands on (SetPointLight 0x47C830), which the ground view takes off: a small dark spot. The tree circles
+(0x48F410) do it at their centres. It's set after the shadows, so it wins on that vertex. *Provisional*: done for
+the drawn objects and the circles; the ambient sound objects' classes aren't checked.
 
 **Shadows** (the buildings' part 331, types 0x14B-0x14D, 0x48E2A0, a class 14 GType whose `.raw` is a 32 x 32 mask
 of 0-63): when one starts (0x48E460) it reads its parent's renderer and lays the mask on the ground's moving light

@@ -164,8 +164,9 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       0x4222C0) — 03
 - [~] **Objects**: the scenery (`dat\<sector>.nsb`: the tree circles, burnt trees, buildings) is placed and its
       IOB models drawn with the ground (RTypeISO 0x49DDA0, ISOLib 0x4113F0 / 0x457C60; docs/BATTLEMAP.md); the
-      bridges are built from their joints and drawn as WOF segments (`core/Bridge`, WBridge 0x497890). Still to
-      do: sprites, other WOF models, child parts and point lights; the factory map, units (WPuppet), vehicles with steering (`[Vehicles]`, 23 settings), tripods,
+      bridges are built from their joints and drawn as WOF segments (`core/Bridge`, WBridge 0x497890); the street
+      lamps are drawn as sprites, and each object's spot (0x4896D0) is set. Still to do: the lamps' night light
+      (emitters 334-346, 0x48DD50), other WOF models, child parts; the factory map, units (WPuppet), vehicles with steering (`[Vehicles]`, 23 settings), tripods,
       fliers, boats, buildings, fences, mines, pods (0x446B30, 0x48A4C0-, 0x4956D0-) — 07, 12, 13
 - [ ] **Unit groups, orders, stances, specials** (Black Dust ... Scan) and the order panel (0x480190, 0x47CCF0-;
       the 0x80A0 stagger 0x47CEE0) — 07, 10, 11

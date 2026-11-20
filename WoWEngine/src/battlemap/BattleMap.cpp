@@ -84,6 +84,46 @@ namespace wow
             return u == setup.units->end() ? 0 : int(int16_t(u->second.hitPoints));
         };
         const int worldW = land.WorldWidth(), worldH = land.Height() * land.Cell() >> 16;
+        // its shadow parts (types 0x14B-0x14D, 0x48E2A0): as one starts (0x48E460) it lays its 32 x 32 mask (the
+        // GType's .raw) on the ground beside the object, away from the sun: 2 x the half width plus 10 x |cos| x
+        // its scale wide, the depth / sqrt 2 either side of y, mirrored when the sun's cos is 0 or less (0x47C900,
+        // the moving light the ground view takes off). The half width and depth are the parent renderer's (+0x28
+        // to +0x2A halved, +0x26).
+        auto shadows = [&](const ObjOjd::UnitData& unit, float x, float y, int halfWidth, int depth) {
+            for (const auto& part : unit.parts)
+            {
+                if (part.a < 0x14B || part.a > 0x14D) continue;
+                auto pu = setup.units->find(part.a);
+                if (pu == setup.units->end()) continue;
+                const GType* pg = res.FindGType(pu->second.field28);
+                if (!pg) continue;
+                auto mask = masks.find(pg->file);
+                if (mask == masks.end())
+                {
+                    auto data = res.LoadFile(pg->file);
+                    mask = masks.emplace(pg->file, data && data->size() >= 1024 ? *data : std::vector<uint8_t>{}).first;
+                }
+                if (mask->second.empty()) continue;
+                const float px = x + float(int16_t(part.b)), py = y + float(int16_t(part.c));
+                const float scale = part.f * pu->second.scale; // the part's, then its type's (0x47EE10)
+                const int hw = halfWidth;
+                const int across = int(double(2 * hw) - double(std::fabs(sun.across)) * double(scale) * -10.0);
+                const int dy = (depth * 362) >> 9;
+                const int y0 = int(py - float(dy)), y1 = int(py + float(dy));
+                int x0, x1;
+                const bool flip = !(sun.across > 0.0f);
+                if (!flip) { x1 = int(px + float(hw)); x0 = x1 - across; }
+                else { x0 = int(px - float(hw)); x1 = x0 + across; }
+                land.ProjectLight(mask->second.data(), x0 - 8, y0 - 8, x1, y1, flip, sun);
+            }
+        };
+        // WScenery's start (0x4896D0): after its parts, every object of a category 0, 2 or 3 type (the scenery is
+        // all category 0, so all of it: 0x47D828 sets +0xB8 bit 1) puts the sun's point level (SetPointLight) on the
+        // vertex it stands on, a dark spot the ground view takes off. The tree circles do too, at their centres.
+        // *Provisional*: done here for the objects drawn (sprites and IOB models) and the circles; the classes of
+        // the others (the ambient sound scenery) aren't checked.
+        for (const SceneryObject& c : list)
+            if (c.type >= 0xCF && c.type <= 0xD4) land.SetPointLight(c.x, c.y, sun);
         for (const PlacedObject& o : PlaceScenery(list, setup.enemyCount, radius))
         {
             auto u = setup.units->find(o.type);
@@ -91,7 +131,21 @@ namespace wow
             if (o.type >= 445 && o.type <= 447) { PlaceBridge(o); continue; }
             const int gtype = u->second.field28;
             const GType* g = res.FindGType(gtype);
-            if (!g || g->gclass != 1) continue;
+            if (!g) continue;
+            if (g->gclass == 0)
+            {
+                // a sprite (RType 0x40EC50, the street lamps): drawn from its hot spot at the renderer's point, its
+                // +0x26 1; the half width its shadow takes is half the sprite's width
+                const IndexedImage* image = res.GetFrame(gtype, 0);
+                if (!image) continue;
+                const int ix = int(o.x), iy = int(o.y);
+                const int h = int(float(land.HeightAt(ix, iy)) + o.z);
+                objects.push_back({ iy + 1, ix, land.ProjectY(iy, h), nullptr, nullptr, g->paletteSlot, gtype });
+                shadows(u->second, o.x, o.y, image->width / 2, 1);
+                land.SetPointLight(ix, iy, sun);
+                continue;
+            }
+            if (g->gclass != 1) continue;
             auto m = models.find(gtype);
             if (m == models.end())
             {
@@ -118,36 +172,8 @@ namespace wow
             const int ix = int(x), iy = int(y);
             const int h = int(float(land.HeightAt(ix, iy)) + o.z);
             objects.push_back({ iy + IsoObject::Depth(model), ix, land.ProjectY(iy, h), &m->second });
-            // its parts (0x47EE10); so far the shadows (types 0x14B-0x14D, 0x48E2A0): as one starts (0x48E460) it
-            // lays its 32 x 32 mask (the GType's .raw) on the ground beside the object, away from the sun: 2 x the
-            // half width plus 10 x |cos| x its scale wide, the depth / sqrt 2 either side of y, mirrored when the
-            // sun's cos is 0 or less (0x47C900, the moving light the ground view takes off)
-            for (const auto& part : u->second.parts)
-            {
-                if (part.a < 0x14B || part.a > 0x14D) continue;
-                auto pu = setup.units->find(part.a);
-                if (pu == setup.units->end()) continue;
-                const GType* pg = res.FindGType(pu->second.field28);
-                if (!pg) continue;
-                auto mask = masks.find(pg->file);
-                if (mask == masks.end())
-                {
-                    auto data = res.LoadFile(pg->file);
-                    mask = masks.emplace(pg->file, data && data->size() >= 1024 ? *data : std::vector<uint8_t>{}).first;
-                }
-                if (mask->second.empty()) continue;
-                const float px = x + float(int16_t(part.b)), py = y + float(int16_t(part.c));
-                const float scale = part.f * pu->second.scale; // the part's, then its type's (0x47EE10)
-                const int hw = (IsoObject::HalfWidth(model) - -IsoObject::HalfWidth(model)) / 2;
-                const int across = int(double(2 * hw) - double(std::fabs(sun.across)) * double(scale) * -10.0);
-                const int dy = (IsoObject::Depth(model) * 362) >> 9;
-                const int y0 = int(py - float(dy)), y1 = int(py + float(dy));
-                int x0, x1;
-                const bool flip = !(sun.across > 0.0f);
-                if (!flip) { x1 = int(px + float(hw)); x0 = x1 - across; }
-                else { x0 = int(px - float(hw)); x1 = x0 + across; }
-                land.ProjectLight(mask->second.data(), x0 - 8, y0 - 8, x1, y1, flip, sun);
-            }
+            shadows(u->second, x, y, (IsoObject::HalfWidth(model) - -IsoObject::HalfWidth(model)) / 2, IsoObject::Depth(model));
+            land.SetPointLight(ix, iy, sun);
         }
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
     }
@@ -355,6 +381,14 @@ namespace wow
                 if (o.wof)
                 {
                     o.wof->Draw(sun, *shade, t, -scrollX, -scrollY);
+                    continue;
+                }
+                if (o.sprite)
+                {
+                    // 0x40EE10: the frame at the point less the hot spot, through the slot's table at level 0
+                    const IndexedImage* image = res.GetFrame(o.sprite, 0);
+                    const GType* g = res.FindGType(o.sprite);
+                    if (image && g) canvas.DrawImage(*image, shade->Level(0), o.x - g->hotX - scrollX, o.y - g->hotY - scrollY);
                     continue;
                 }
                 const IobModel& m = o.model->model;
