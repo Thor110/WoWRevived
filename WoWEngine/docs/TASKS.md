@@ -155,8 +155,9 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       0x49DA50) — 08, 13
 - [~] **Battle map screen**: `src/battlemap/BattleMap` opens after the Briefing with the sector's ground (OBJ.ojd
       record 8, the calendar's hour), with the game's edge scrolling (0x484DF0), scroll keys (0x485610), the battle
-      map menu (0x49BD50) and the popup's Return to Warmap (0x485DE0). Still to do: the start view on the HQ (needs
-      objects), the selection keys, the mouse's orders, the panel and minimap, fog of war (0x484A30, 0x4346C0) —
+      map menu (0x49BD50), the popup's Return to Warmap (0x485DE0), the start view on the HQ and the minimap
+      (0x4868B0: picture, dots, view rectangle, click and drag, Tab). Still to do: the selection keys, the mouse's
+      orders, the panel, fog of war (0x484A30, 0x4346C0) —
       05, 11, 13, 14
 - [~] **Enter / leave a sector**: the landscape, shade tables, briefing sound and enemy count of 0x439770 are in;
       the rest of it (fog, zoomer, objects, battle info), 0x439ED0 and the battle-end dialogs aren't — 03, 06

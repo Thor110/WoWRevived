@@ -95,6 +95,20 @@ namespace wow
         void AddRenderer(int type, float x, float y, int heading);
         double Radius(int type);
         std::map<int, std::vector<uint8_t>> wofFiles;        // each WOF GType's file, loaded once
+        // The minimap ("BattleMap miniMap view" 0x4868B0, RTypeMiniBattleMap 0x4A1F90): the sector's picture at the
+        // bottom right, the objects' dots (0x4A1CD0, made again every 16 frames), the view's rectangle
+        struct Dot { int x, y; uint32_t colour; };
+        const IndexedImage* miniPicture = nullptr;
+        int miniX = 0, miniY = 0, miniW = 0, miniH = 0;
+        int rectW = 0, rectH = 0, rectX = 0, rectY = 0;   // +0x98's size, +0x90 / +0x94
+        std::vector<Dot> dots;
+        int miniFrames = 0;                                 // +0x88
+        bool miniShown = true, miniDrag = false;
+        uint32_t rectColour = 0, vehicleColour = 0, otherColour = 0, enemyColour = 0;
+        void SetUpMinimap();
+        void MakeDots();
+        bool InMinimap(int x, int y) const { return miniShown && miniPicture && x >= miniX && y >= miniY && x < miniX + miniW && y < miniY + miniH; }
+        void MinimapScroll(int x, int y);
         int scrollX = 0, scrollY = 0;
         int mouseX = -1, mouseY = -1;
         int ticks = 0;

@@ -89,7 +89,8 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x421FE0–0x422850 | Deployment | Centres and ring placement; `src/core/Deployment.cpp`, `BattleMap::Deploy` (docs/BATTLEMAP.md) |
 | 0x436050 | Entry points | A pair of points for each pair of neighbouring sectors; `src/core/Deployment.cpp` |
 | 0x480150–0x484A30 | Battle map | Unit groups, routing (`ROUTE FOUND`) |
-| 0x485DE0–0x4862C0 | Battle map menu, music, mini-map | |
+| 0x485DE0–0x4862C0 | Battle map menu, music | |
+| 0x4868B0–0x4873F0 | Battle map minimap | `BattleMap::SetUpMinimap` / `MakeDots` (docs/BATTLEMAP.md) |
 | 0x4862C0–0x4868B0 | Bridge base | The ends (0x80A5 / 0x80A6), grid snap, heading and length; `src/core/Bridge.cpp` |
 | 0x48D050–0x48D580 | Bridge kinds | Load (0x48D0A0) and the joint cross-section (0x48D2F0); `src/core/Bridge.cpp` |
 | 0x486E80–0x487A50 | Renderers, transient and effect objects | 512 of each |
@@ -102,7 +103,7 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x49BE70–0x49CD40 | RTypeArrow | |
 | 0x49DE20–0x49E1E0 | RTypeISO | Isometric objects and lighting |
 | 0x49E330 | WOFLib | 3D models (see `ENGINE_LIMITS.md`) |
-| 0x4A1F90–0x4A20A0 | RTypeMiniBattleMap | `maps\hmin%02d.spr`, `maps\mmin%02d.spr` |
+| 0x4A1CD0–0x4A20A0 | Minimap dots, RTypeMiniBattleMap | `maps\hmin%02d.spr`, `maps\mmin%02d.spr`; `src/battlemap/BattleMap.cpp` |
 | 0x4A3920 | Archive reader | `Unable To Read Header` |
 | 0x4A3E60 | InfoPage | |
 

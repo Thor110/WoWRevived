@@ -345,3 +345,28 @@ landscape's IsAreaPassable; the object check as circles (the unit size against e
 IOB collision radius or its own size), without the scenery; +0x188 / +0x18C aren't read; there are no pods yet;
 the order of the objects in a list is the counters' order; and where these `rand()` calls fall against the
 scenery's isn't checked. The units don't move, fight or hide in the fog yet.
+
+## Minimap ("BattleMap miniMap view" 0x4868B0, RTypeMiniBattleMap 0x4A1F90, dots 0x4A1CD0)
+
+EnterBattleMap makes it with the sector (+0x8C). Its parts:
+- **The picture**: `maps\hmin<sector>.spr` (`mmin` in a Martian game, 0x404BA0), the same file the Briefing shows;
+  drawn (0x4A2100) through the bm group's slot 21, `{S}MINIB` (0x40C436), at level 0. The window is the picture's
+  size at the bottom right of the view, `[Screen] "Scroll Border"` (4) in from each edge.
+- **The view's rectangle** (0x49C740 / 0x49C7C0, an outline, its last row and column inside): the picture's width x
+  640 / the world's width (landscape +0x1C) by its height x 480 / the world's height (+0x20). On every scroll
+  (0x8004, the view's top left) it moves to the scroll's share of the picture, at least 0 and kept inside it.
+- **The dots** (0x4A1CD0: up to 1024 of x, y as bytes and a colour; each drawn 2 x 2, 0x4A1DD0): made again every
+  16 frames (+0x88) by asking every battle object (0x47D480 over the world's +0x118) for its dot (0x8077: x x the
+  picture's width / the world's width, y x its height / the rows' extent), then those of type 987's list
+  (0x487380, colour dword_4DAFB4).
+- **Colours** (system colours 0x40B120, each a 6-bit RGB made by 0x40B3B0: the nearest palette entry in 8-bit,
+  565 or 555 packed twice in 16-bit): the rectangle dword_4DAF9C 47, 0, 0 (Human) or 12, 42, 4 (Martian). A dot
+  (0x480070, every object's): dword_4DAFA0 for a category 1 object (a vehicle) else dword_4DAFA4, and dword_4DAFA8
+  for the other side's (+0x24 not 0): Human 0, 63, 0 / 32, 63, 0 / 0, 0, 63; Martian 63, 0, 0 / 63, 32, 0 /
+  0, 63, 0. Types 694 / 695 (0x48C870) use dword_4DAFAC / 4DAFB0 (Human 0, 48, 0 / 0, 0, 48) and show none while
+  their vtbl+0x9C says so.
+- **Mouse** (0x486E80): the left button down on it scrolls the view to the point's share of the world less half
+  the view (0x7A) and keeps the mouse (0x42E9B0); moving with the button held does the same.
+- **Tab** (0x80C8): hides it, or makes the dots again and shows it.
+
+*Not yet*: the type 987 and 694 / 695 dots, and the fog (every unit shows).

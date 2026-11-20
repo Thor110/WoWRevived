@@ -26,7 +26,7 @@ namespace wow
         // bm, the battle map (0x40C08D): the interface in slot 5, fonts in 9, explosions in 11. *Not yet*: the tables
         // named by the hour's letter and the LANDR digit (BMHB 1, BMHV 2, BMMV 3, BMMB 4, BMR<d>NA 10, the ground's
         // LANDR 20, which the battle map loads itself) and {S}MINIB in 21
-        { 0x2F0, { "BM{S}I", "BMGI", "BMEX" }, { 5, 9, 11 }, 3 },
+        { 0x2F0, { "BM{S}I", "BMGI", "BMEX", "{S}MINIB" }, { 5, 9, 11, 21 }, 4 },
         { 0x2F1, { "F1F1", "F1{S}I", "F1GI" }, { 12, 5, 9 }, 3 },
         { 0x2F2, { "F2F2", "F2{S}I" }, { 13, 5 }, 2 },
         { 0x2F3, { "F3F3", "F3{S}I" }, { 14, 5 }, 2 },

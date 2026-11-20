@@ -6,6 +6,7 @@
 #include <SDL3/SDL.h>
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <stdexcept>
 
 namespace wow
@@ -101,7 +102,73 @@ namespace wow
                 cy = int((int64_t(land.Height()) * land.Cell()) >> 16) / 2;
             }
         }
+        SetUpMinimap();
         ScrollTo(cx - 320, land.ProjectY(cy, land.HeightAt(cx, cy)) - 240);
+    }
+
+    // 0x4868B0: the picture (maps\hmin<sector>.spr, mmin in a Martian game) at the bottom right of the 640 x 480 view,
+    // [Screen] "Scroll Border" (4) in; the view's rectangle its size x 640 / the world's width and x 480 / its height
+    // (+0x1C, +0x20); drawn through the bm group's slot 21 ({S}MINIB) at level 0. The colours are system colours
+    // (0x40B120, 6-bit RGB): the rectangle 47, 0, 0 (Human) or 12, 42, 4 (Martian); a dot (0x480070) the side's
+    // vehicle colour (0, 63, 0 / 63, 0, 0) for a category 1 object of the player's, its other colour (32, 63, 0 /
+    // 63, 32, 0) for the player's others, and the other side's (0, 0, 63 / 0, 63, 0).
+    void BattleMap::SetUpMinimap()
+    {
+        char name[32];
+        std::snprintf(name, sizeof(name), setup.human ? "maps\\hmin%02d.spr" : "maps\\mmin%02d.spr", setup.sector);
+        miniPicture = res.GetFileImage(name);
+        if (!miniPicture) return;
+        miniW = miniPicture->width;
+        miniH = miniPicture->height;
+        const int border = 4;
+        miniX = 640 - miniW - border;
+        miniY = 480 - miniH - border;
+        rectW = miniW * 640 / std::max(1, land.WorldWidth());
+        rectH = miniH * 480 / std::max(1, land.WorldHeight());
+        auto six = [](int r, int g, int b) {
+            auto c = [](int v) { return uint32_t((v * 255 + 31) / 63); };
+            return c(r) << 16 | c(g) << 8 | c(b);
+        };
+        if (setup.human)
+        {
+            rectColour = six(0x2F, 0, 0);
+            vehicleColour = six(0, 0x3F, 0);
+            otherColour = six(0x20, 0x3F, 0);
+            enemyColour = six(0, 0, 0x3F);
+        }
+        else
+        {
+            rectColour = six(0x0C, 0x2A, 4);
+            vehicleColour = six(0x3F, 0, 0);
+            otherColour = six(0x3F, 0x20, 0);
+            enemyColour = six(0, 0x3F, 0);
+        }
+    }
+
+    // 0x486CB0 every 16 frames, and Tab showing it: the dots made again from the battle world's objects (0x8077: x x
+    // the picture's width / the world's width, y x its height / the rows' extent; at most 1024). *Not yet*: the dots
+    // of type 987 (0x487380) and types 694 / 695's own colours (0x48C870); every unit shows, fog or not.
+    void BattleMap::MakeDots()
+    {
+        dots.clear();
+        if (!miniPicture || !setup.units) return;
+        const int W = std::max(1, land.WorldWidth());
+        const int H = std::max(1, int((int64_t(land.Height()) * land.Cell()) >> 16));
+        for (const Unit& u : units)
+        {
+            if (dots.size() >= 0x400) break;
+            auto d = setup.units->find(u.type);
+            const bool vehicle = d != setup.units->end() && d->second.category == 1;
+            const uint32_t colour = !u.players ? enemyColour : vehicle ? vehicleColour : otherColour;
+            const int x = int(int16_t(miniW * int(u.x) / W)), y = int(int16_t(miniH * int(u.y) / H));
+            dots.push_back({ x & 0xFF, y & 0xFF, colour });
+        }
+    }
+
+    // 0x486E80's 0x201 / 0x200: the point under the mouse, as a share of the world, less half the view (0x7A)
+    void BattleMap::MinimapScroll(int x, int y)
+    {
+        ScrollTo(land.WorldWidth() * (x - miniX) / std::max(1, miniW) - 320, land.WorldHeight() * (y - miniY) / std::max(1, miniH) - 240);
     }
 
     // The deployment (0x421FE0 for each list, in EnterBattleMap's order: HCON, HRES, ACON, ARES, HUNI, AUNI). Every
@@ -549,6 +616,14 @@ namespace wow
     {
         scrollX = std::max(0, std::min(x, land.WorldWidth() - 640 - 1));
         scrollY = std::max(0, std::min(y, land.WorldHeight() - 480 - 1));
+        // 0x8004 to the minimap: its rectangle at the scroll's share of the picture, kept inside it
+        if (miniPicture)
+        {
+            rectX = std::max(0, miniW * scrollX / std::max(1, land.WorldWidth()));
+            rectY = std::max(0, miniH * scrollY / std::max(1, land.WorldHeight()));
+            if (rectW + rectX > miniW) rectX = miniW - rectW;
+            if (rectH + rectY > miniH) rectY = miniH - rectH;
+        }
     }
 
     // 0x485610: each press (and repeat) of a key is one step, sent as 0x7A with the view's new top left
@@ -567,6 +642,11 @@ namespace wow
         switch (key)
         {
         case SDLK_ESCAPE: return Command{ MenuCommand, 0 };
+        // Tab (0x80C8): the minimap hidden, or its dots made again and shown
+        case SDLK_TAB:
+            if (miniShown) miniShown = false;
+            else { MakeDots(); miniShown = true; }
+            break;
         case SDLK_PAGEUP: ScrollTo(scrollX, 0); break;
         case SDLK_PAGEDOWN: ScrollTo(scrollX, h); break;
         case SDLK_UP: ScrollTo(scrollX, scrollY - (ctrl ? h / 8 : h / 16)); break;
@@ -577,8 +657,7 @@ namespace wow
         case SDLK_RIGHT:
             ScrollTo(scrollX + (ctrl ? round0(hi(w, 0x55555556)) : round0((hi(w, int32_t(0x92492493)) + w) >> 2)), scrollY);
             break;
-        // *Not yet*: the digits (select group n, packet 0x12), Backspace (halt, 0x11), Tab (0x80C8, the panel)
-        // and Home (centre on the selection, 0x43A480)
+        // *Not yet*: the digits (select group n, packet 0x12), Backspace (halt, 0x11) and Home (centre on the selection, 0x43A480)
         default: break;
         }
         return std::nullopt;
@@ -590,6 +669,7 @@ namespace wow
     {
         mouseX = x;
         mouseY = y;
+        if (miniDrag) MinimapScroll(x, y);
         popupHover = -1;
         for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) popupHover = int(i);
     }
@@ -612,6 +692,8 @@ namespace wow
         if (rightDownAt >= 0 && popup.empty() && ticks - rightDownAt == setup.quickCancelTimeout && mouseX >= 0)
             OpenPopup(mouseX, mouseY);
         EdgeScroll();
+        if (miniShown && (miniFrames & 0xF) == 0) MakeDots();
+        miniFrames++;
     }
 
     // 0x485DE0: "Battlemap menu" (WPopupMenu 0x432C60, font 0x71): Cancel (0x73), and Return to Warmap (0x76, icon
@@ -645,6 +727,13 @@ namespace wow
 
     std::optional<Command> BattleMap::OnMouseButton(int x, int y, bool down)
     {
+        if (!down) miniDrag = false;
+        if (popup.empty() && down && InMinimap(x, y))
+        {
+            miniDrag = true;   // the minimap takes the mouse (0x42E9B0) until the button's let go
+            MinimapScroll(x, y);
+            return std::nullopt;
+        }
         if (popup.empty() || !down) return std::nullopt;
         for (const PopupItem& item : popup)
             if (item.rect.Contains(x, y))
@@ -719,6 +808,21 @@ namespace wow
             }
         };
         TerrainView::Render(land, tiles, table, levels, dither, t, -scrollX, -scrollY, nullptr, between, &window);
+        // the minimap (0x486CB0): the picture, the dots (2 x 2 each, 0x4A1DD0), the view's rectangle (0x49C7C0)
+        if (miniShown && miniPicture)
+            if (const ShadeTable* shade = res.GetShade(21))
+            {
+                canvas.DrawImage(*miniPicture, shade->Level(0), miniX, miniY);
+                uint32_t* px = canvas.Pixels();
+                const int cw = canvas.Width(), ch = canvas.Height();
+                auto plot = [&](int x, int y, uint32_t c) { if (x >= 0 && y >= 0 && x < cw && y < ch) px[size_t(y) * size_t(cw) + size_t(x)] = c; };
+                for (const Dot& d : dots)
+                    for (int j = 0; j < 2; j++)
+                        for (int i = 0; i < 2; i++) plot(miniX + d.x + i, miniY + d.y + j, d.colour);
+                const int x0 = miniX + rectX, y0 = miniY + rectY, x1 = x0 + rectW - 1, y1 = y0 + rectH - 1;
+                for (int x = x0; x <= x1; x++) { plot(x, y0, rectColour); plot(x, y1, rectColour); }
+                for (int y = y0; y <= y1; y++) { plot(x0, y, rectColour); plot(x1, y, rectColour); }
+            }
         // the popup over everything, each item's next frame under the mouse
         for (size_t i = 0; i < popup.size(); i++)
         {
