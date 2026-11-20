@@ -48,6 +48,11 @@ namespace wow
             int warMapSpeed = 0;  // +0x54, record 37 (scaled by record 38): a route covers speed x 0.01 map pixels
                                   // a game hour (0x4257C0: hours = distance / (speed x 0.01), the slowest unit's)
             int field56 = 0;      // +0x56, record 37 (scaled by record 38)
+            // what it takes of the side's three resources each game hour (0x51A150, record 45, scaled by 46): for
+            // each of its crew, half of it while standing (0x429640)
+            float upkeep[3] = { 0, 0, 0 };
+            // more while it works (repairing, building; 0x51A15C, record 47, scaled by 48)
+            float activity[3] = { 0, 0, 0 };
         };
         static std::map<int, UnitData> LoadUnits(std::span<const uint8_t> data);
 

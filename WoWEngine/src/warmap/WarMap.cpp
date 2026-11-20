@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <string>
 
 namespace wow
@@ -74,6 +75,7 @@ namespace wow
             k.speed = unit == units.end() || g.list / 2 != 0 ? 0 : unit->second.warMapSpeed;
             k.moveClass = unit == units.end() ? 0 : unit->second.moveClass;
             k.count = g.count;
+            k.type = g.type;
             k.refs = g.refs;
             k.players = g.list % 2 == 0;
             k.kind = g.list / 2;
@@ -236,6 +238,9 @@ namespace wow
             if (it->life < LogLife) SetLife(*it, it->life + LogLife);
     }
 
+    // The facility types of each resource kind (0x423920): 0-2 Human, 3-5 Martian.
+    static constexpr int FacilityType[6] = { 47, 48, 49, 108, 109, 110 };
+
     // What one more finished facility of a kind would add to a sector's output (0x424000): with B the sector's
     // deposit, n its finished facilities of the kind and r the drop-off rate, output(n) = n r B / (n + r - 1), and
     // the value is output(n + 1) - output(n); B with none yet.
@@ -243,13 +248,185 @@ namespace wow
     {
         auto it = deposits.find(sector);
         float b = it == deposits.end() ? 0.0f : float(it->second[size_t(kind)]);
-        // the facility types of each kind (0x423920)
-        static constexpr int Facility[6] = { 47, 48, 49, 108, 109, 110 };
         int n = 0;
-        for (int type : finished[size_t(sector)]) if (type == Facility[kind]) n++;
+        for (int type : finished[size_t(sector)]) if (type == FacilityType[kind]) n++;
         if (n == 0) return b;
         const float r = resourceDropOff, fn = float(n);
         return (fn + 1.0f) * r * b / (r + fn) - fn * r * b / (r + fn - 1.0f);
+    }
+
+    // What a sector's facilities of a kind make together (0x421D00 over the owner's constructions, each told
+    // 0x803C by phase 0): a finished facility makes int(hp / maxHP) x r B / (n + r - 1), r the drop-off rate,
+    // B the sector's deposit and n its finished facilities of the kind, and nothing while the sector has no
+    // command building. (Facilities aren't damaged on the war map yet, so hp / maxHP is 1.)
+    float WarMap::FacilityOutput(int sector, int kind) const
+    {
+        if (!HasCommandPost(sector)) return 0.0f;
+        bool human = (owner[size_t(sector)] == 0) == res.Human();
+        if ((kind < 3) != human) return 0.0f; // only the owner's constructions are asked
+        int n = 0;
+        for (int type : finished[size_t(sector)]) if (type == FacilityType[kind]) n++;
+        if (n == 0) return 0.0f;
+        auto it = deposits.find(sector);
+        float b = it == deposits.end() ? 0.0f : float(it->second[size_t(kind)]);
+        const float r = resourceDropOff;
+        return float(n) * (r * b / (float(n) + r - 1.0f));
+    }
+
+    // How many men a counter's objects carry (each object's battle map part, 0x4216D0: its BMOL list's count);
+    // one each for objects not read from a save.
+    int WarMap::CrewOf(const Counter& k) const
+    {
+        int crew = 0, counted = 0;
+        for (int ref : k.refs)
+        {
+            if (ref < 0 || size_t(ref) >= table.size()) continue;
+            const SaveObject& o = table[size_t(ref)];
+            size_t at = o.SeloAt() + 24;
+            if (o.bytes.size() >= at + 8 && std::equal(o.bytes.begin() + std::ptrdiff_t(at), o.bytes.begin() + std::ptrdiff_t(at + 4), "BMOL"))
+                crew += int(uint32_t(o.bytes[at + 4]) | uint32_t(o.bytes[at + 5]) << 8 | uint32_t(o.bytes[at + 6]) << 16 | uint32_t(o.bytes[at + 7]) << 24);
+            else crew++;
+            counted++;
+        }
+        return crew + std::max(0, k.count - counted);
+    }
+
+    // The sectors' cached paths (WM_COMMAND 0xB7 to each sector, 0x43AFEF: new WSectorPath(owner, this, n) for
+    // n = 1-30, 0x4A39E0). An A* (0x44EE70, at most 1000 goes, no estimate) over land links only, with the cost
+    // (0x4A3D10): impassable into a sector held by neither the path's side (the start's owner) nor no one, when
+    // neither end has its command building, or into one without it that isn't the goal; otherwise the whole
+    // pixels between the two waypoints. A path keeps its sector count (the start included), or 0 when there's
+    // none or it's only the start. The game sends 0xB7 when a construction is finished or a sector changes
+    // hands (0x418890); here they're rebuilt when either has changed.
+    void WarMap::BuildSectorPaths()
+    {
+        std::array<int, warmap::SectorCount + 1> from{};
+        for (int s = 1; s <= warmap::SectorCount; s++) from[size_t(s)] = owner[size_t(s)] * 2 + (HasCommandPost(s) ? 1 : 0);
+        if (pathsBuilt && from == pathsBuiltFrom) return;
+        pathsBuilt = true;
+        pathsBuiltFrom = from;
+        for (auto& row : pathLength) row.fill(0);
+        for (int start = 1; start <= warmap::SectorCount; start++)
+        {
+            int side = owner[size_t(start)];
+            for (int goal = 1; goal <= warmap::SectorCount; goal++)
+            {
+                if (goal == start) continue;
+                auto cost = [&](int a, int b) {
+                    if (!(warmap::RouteLinkKind(a, b) & 1)) return -1;
+                    if (owner[size_t(b)] != side && owner[size_t(b)] != 2) return -1;
+                    bool ca = HasCommandPost(a), cb = HasCommandPost(b);
+                    if (!ca && !cb) return -1;
+                    if (!cb && b != goal) return -1;
+                    auto pa = warmap::Waypoint(a), pb = warmap::Waypoint(b);
+                    double dx = pb.x - pa.x, dy = pb.y - pa.y;
+                    return int(std::sqrt(dx * dx + dy * dy));
+                };
+                std::array<int, warmap::SectorCount + 1> best, previous;
+                std::array<bool, warmap::SectorCount + 1> done{};
+                best.fill(INT32_MAX);
+                previous.fill(-1);
+                best[size_t(start)] = 0;
+                for (int go = 0; go < 1000; go++)
+                {
+                    int s = -1;
+                    for (int n = 1; n <= warmap::SectorCount; n++)
+                        if (!done[size_t(n)] && best[size_t(n)] != INT32_MAX && (s < 0 || best[size_t(n)] < best[size_t(s)])) s = n;
+                    if (s < 0 || s == goal) break;
+                    done[size_t(s)] = true;
+                    for (int n = 1; n <= warmap::SectorCount; n++)
+                    {
+                        if (done[size_t(n)] || n == s) continue;
+                        int c = cost(s, n);
+                        if (c < 0) continue;
+                        if (best[size_t(s)] + c < best[size_t(n)]) { best[size_t(n)] = best[size_t(s)] + c; previous[size_t(n)] = s; }
+                    }
+                }
+                if (previous[size_t(goal)] < 0) continue;
+                int count = 1;
+                for (int s = goal; s != start; s = previous[size_t(s)]) count++;
+                pathLength[size_t(start)][size_t(goal)] = count;
+            }
+        }
+    }
+
+    // The economy (0x41A760), one phase a tick (the tick count % 5, from 0x41AB00), all five when the war map
+    // starts (0x418BAF). Each sector's figures for the six resource kinds:
+    //   0  supply: what the owner's facilities make (FacilityOutput); 0 in a sector no one holds
+    //   1  spread supply: the sector's own, plus every other sector's over (its path's count x VX + 1), plus the
+    //      Resource Buffer
+    //   2  demand: each object adds its own (0x8143 to the sector's lists, 0x429640): a unit's upkeep (unit
+    //      table records 45/46) for each of its men, halved while it stays put, plus its work (records 47/48)
+    //      while it repairs or builds (neither is in yet); a travelling unit's goes to the sector it's in now
+    //   3  spread demand: the sector's own, plus every other sector's over (its path's count x VY + 1)
+    //   4  ratio: spread demand over spread supply, at least 1; and table 1, the Construction view, from the
+    //      player's three kinds: 1 - 1 / (r0 r1 r2) (byte_58913C, a cheat, makes it 0), with its least and most
+    void WarMap::EconomyPhase(int phase)
+    {
+        constexpr int N = warmap::SectorCount;
+        switch (phase)
+        {
+        case 0:
+            for (int s = 1; s <= N; s++)
+                for (int k = 0; k < 6; k++)
+                    economy[size_t(s)].supply[size_t(k)] = owner[size_t(s)] == 2 ? 0.0f : FacilityOutput(s, k);
+            break;
+        case 1:
+        case 3:
+        {
+            BuildSectorPaths();
+            const bool supply = phase == 1;
+            const float cripple = supply ? crippleX : crippleY;
+            for (int s = 1; s <= N; s++)
+                for (int k = 0; k < 6; k++)
+                {
+                    SectorEconomy& e = economy[size_t(s)];
+                    float sum = supply ? e.supply[size_t(k)] : e.demand[size_t(k)];
+                    for (int j = 1; j <= N; j++)
+                    {
+                        int count = pathLength[size_t(s)][size_t(j)];
+                        if (count == 0) continue;
+                        const SectorEconomy& o = economy[size_t(j)];
+                        sum += (supply ? o.supply[size_t(k)] : o.demand[size_t(k)]) / (float(count) * cripple + 1.0f);
+                    }
+                    if (supply) e.effSupply[size_t(k)] = sum + resourceBuffer;
+                    else e.effDemand[size_t(k)] = sum;
+                }
+            break;
+        }
+        case 2:
+            for (SectorEconomy& e : economy) e.demand.fill(0.0f);
+            for (const Counter& k : counters)
+            {
+                if (k.kind != 0 || k.sector < 1 || k.sector > N) continue;
+                auto unit = unitData.find(k.type);
+                if (unit == unitData.end()) continue;
+                const bool human = k.players == res.Human();
+                const float crew = float(CrewOf(k)), still = k.route.empty() ? 0.5f : 1.0f;
+                for (int i = 0; i < 3; i++)
+                    economy[size_t(k.sector)].demand[size_t((human ? 0 : 3) + i)] += unit->second.upkeep[i] * still * crew;
+            }
+            break;
+        case 4:
+        {
+            const int base = res.Human() ? 0 : 3;
+            float lo = 1e6f, hi = -1e6f;
+            for (int s = 1; s <= N; s++)
+            {
+                SectorEconomy& e = economy[size_t(s)];
+                for (int k = 0; k < 6; k++)
+                    e.ratio[size_t(k)] = std::max(1.0f, (e.effDemand[size_t(k)] - e.effSupply[size_t(k)]) / e.effSupply[size_t(k)] + 1.0f);
+                float product = e.ratio[size_t(base)] * e.ratio[size_t(base + 1)] * e.ratio[size_t(base + 2)];
+                float v = 1.0f - 1.0f / product;
+                if (v > hi) hi = v;
+                if (v < lo) lo = v;
+                efficiency[size_t(s)] = v;
+            }
+            efficiencyMin = lo;
+            efficiencyMax = hi;
+            break;
+        }
+        }
     }
 
     // The sectors' shading (0x4192F0 fills five tables, 0x41D9B0 turns them into levels of the map's shade table).
@@ -258,13 +435,12 @@ namespace wow
     // kind 0-2 would give in every sector, onto 78-88, the top fixed at 80. A sector of ours takes
     // lo + (v - min) / (max - min) x (hi - lo); in the Resource view so does every other; otherwise a sector no one
     // holds is at 11, and the other side's is 11 too except in the Unit view, where it's 0 (dark). Table 1, the
-    // Construction view (67-77, top 1.0), is the sectors' production efficiency from the economy, which isn't in
-    // yet, so that view leaves the sectors at 11.
+    // Construction view, is the economy's strain on each sector (EconomyPhase 4) onto 67-77, from its least to 1.0.
     void WarMap::ShadeSectors()
     {
         levels.fill(warmap::NormalLevel);
-        if (viewMode == 2) { PulseBattles(); return; }
         std::array<float, warmap::SectorCount + 1> v{};
+        if (viewMode == 2) v = efficiency;
         if (viewMode == 1)
             for (const Counter& k : counters)
                 if (k.sector >= 1 && k.sector <= warmap::SectorCount && owner[size_t(k.sector)] == 0) v[size_t(k.sector)] += float(std::max(k.count, 1));
@@ -276,9 +452,10 @@ namespace wow
         float lo = 1e6f, hi = -1e6f;
         for (int s = 1; s <= warmap::SectorCount; s++) { lo = std::min(lo, v[size_t(s)]); hi = std::max(hi, v[size_t(s)]); }
         if (viewMode == 3) hi = 80.0f;
+        if (viewMode == 2) { lo = efficiencyMin; hi = 1.0f; }
         float range = hi - lo;
         if (range == 0.0f) range = 1.0f;
-        const int first = viewMode == 1 ? 17 : 78, last = viewMode == 1 ? 35 : 88;
+        const int first = viewMode == 1 ? 17 : viewMode == 2 ? 67 : 78, last = viewMode == 1 ? 35 : viewMode == 2 ? 77 : 88;
         for (int s = 1; s <= warmap::SectorCount; s++)
         {
             int level;
@@ -313,11 +490,53 @@ namespace wow
         return game.ticks - before;
     }
 
-    // The world's 0x802D, every whole game hour (0x419E9D): the routes, the players, both sides' research, then
-    // the pods. (Only the pods are in so far; the routes move every update in MoveCounters.)
+    // The world's 0x802D, every whole game hour (0x419E9D): the routes, the players, both sides' research, the
+    // pods, each sector, then the resource warnings. (The pods and the warnings are in so far; the routes move
+    // every update in MoveCounters.)
     void WarMap::Hourly(int hours)
     {
         DropPod(hours);
+        ResourceWarnings();
+    }
+
+    // Resource warnings (0x419EFB): for each of the player's three kinds, the least spread supply over spread
+    // demand among the player's sectors (starting from 1, so a sector only counts below that). Under 0.3 a
+    // counter (0x4E9BA0) goes up one a call, and past 336 raises event 14, ResourceAlert, and clears both
+    // counters; otherwise, under 0.8, another (0x4E9BB0) goes up, and past 504 raises event 13,
+    // ResourceWarning, and is cleared. They count calls, not hours. The events (0x41F280 / 0x41F340): "Resource
+    // Warning: <the resource>" (0x41B, 0x214 + kind) in the message list with the kind's sound (0x4BA1D8 /
+    // 0x4BA1F0); with the [Event] option on, the game also opens its event box (not in yet).
+    void WarMap::ResourceWarnings()
+    {
+        static constexpr int WarningSound[6] = { 0x124, 0x122, 0x123, 0x125, 0x126, 0x127 };
+        static constexpr int AlertSound[6] = { 0x12A, 0x128, 0x129, 0x12B, 0x12C, 0x12D };
+        const int base = res.Human() ? 0 : 3;
+        float least[3] = { 1.0f, 1.0f, 1.0f };
+        for (int s = 1; s <= warmap::SectorCount; s++)
+        {
+            if (owner[size_t(s)] != 0) continue;
+            const SectorEconomy& e = economy[size_t(s)];
+            for (int k = 0; k < 3; k++)
+            {
+                float r = e.effSupply[size_t(base + k)] / e.effDemand[size_t(base + k)];
+                if (r < least[k]) least[k] = r;
+            }
+        }
+        for (int k = 0; k < 3; k++)
+        {
+            int sound = 0;
+            if (least[k] < 0.3f)
+            {
+                if (++alertCount[k] > 336) { sound = AlertSound[base + k]; alertCount[k] = 0; warningCount[k] = 0; }
+            }
+            else if (least[k] < 0.8f)
+            {
+                if (++warningCount[k] > 504) { sound = WarningSound[base + k]; warningCount[k] = 0; }
+            }
+            if (!sound) continue;
+            Log(res.String(0x41B) + ": " + res.String(0x214 + base + k));
+            sounds.push_back(sound);
+        }
     }
 
     // Martian pods (0x41A330): while fewer than 8 have come, every [Tweak] "Pod Interval (hours)" (24) one lands in
@@ -396,6 +615,7 @@ namespace wow
         k.speed = unit == unitData.end() ? 0 : unit->second.warMapSpeed;
         k.moveClass = unit == unitData.end() ? 0 : unit->second.moveClass;
         k.count = 1;
+        k.type = type;
         k.players = players;
         k.kind = 0;
         k.sector = sector;
@@ -482,6 +702,20 @@ namespace wow
         {
             int rel = owner[size_t(sector)];
             s.Sector(sector).SetOwner(rel == 2 ? 2 : human ? rel : 1 - rel);
+            // the sector's economy (0x43C5E0): for each kind its spread supply, spread demand, ratio, demand, 0
+            std::vector<uint8_t>& rest = s.Sector(sector).rest;
+            if (rest.size() >= 120)
+            {
+                const SectorEconomy& e = economy[size_t(sector)];
+                size_t at = rest.size() - 120;
+                for (int k = 0; k < 6; k++)
+                    for (float f : { e.effSupply[size_t(k)], e.effDemand[size_t(k)], e.ratio[size_t(k)], e.demand[size_t(k)], 0.0f })
+                    {
+                        uint32_t b;
+                        std::memcpy(&b, &f, 4);
+                        for (int i = 0; i < 4; i++) rest[at++] = uint8_t(b >> (8 * i));
+                    }
+            }
             for (auto& list : s.Sector(sector).lists) list.clear();
         }
         s.routes.clear();
@@ -584,9 +818,15 @@ namespace wow
         if (!map) map = res.GetFrame(warmap::MapGType);
         if (!sectorMap) sectorMap = res.GetFrame(warmap::SectorMapGType);
 
+        if (!economyStarted)
+        {
+            economyStarted = true;
+            for (int phase = 0; phase < 5; phase++) EconomyPhase(phase);
+        }
         animation++;
         MoveCounters(ClockTick());
         if (hoursPassed > 0) Hourly(hoursPassed);
+        EconomyPhase(animation % 5);
         ShadeSectors();
         TurnCalendar();
 

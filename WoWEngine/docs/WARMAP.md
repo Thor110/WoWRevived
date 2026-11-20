@@ -266,12 +266,46 @@ the view (0x41D9B0) turns the one for its mode into levels of the map's shade ta
 | View | Table | Value | Levels |
 |---|---|---|---|
 | Unit | 0 | the objects put in each sector of ours (`dword_4F7650[s]`, one more each time the sector's add method 0x43C790 runs); 0 elsewhere | 17-35 |
-| Construction | 1 | the sector's production efficiency from the economy (top fixed at 1.0); *not in yet* | 67-77 |
+| Construction | 1 | the strain on the sector's economy, 1 - 1 / (r0 r1 r2) from the ratios of the side's three kinds (see "The economy"; top fixed at 1.0) | 67-77 |
 | Resource | 2-4 | for the side's resource kind 0-2 (Human 0-2, Martian 3-5), what one more facility would add (0x424000): output(n + 1) - output(n), with output(n) = n r B / (n + r - 1), B the sector's deposit (OBJ.ojd record 8, the sector table's +0x04) and n its finished facilities of the kind (types 47-49, 108-110); B when there are none (top fixed at 80) | 78-88 |
 
 A sector of ours gets `lo + (v - min) / (max - min) x (hi - lo)` (truncated; a range of 0 counts as 1); in the
 Resource view so does every sector. Otherwise a sector no one holds is at 11, and the other side's is 11 too,
 except in the Unit view, where it's 0.
+
+## The economy
+
+Each sector's record (0x4EAE18 + s x 0xC0) keeps six figures for each of the six resource kinds (0-2 Human: iron,
+coal, oil; 3-5 Martian: human blood, copper, heavy elements; names 0x214-0x219): +0x08 the deposit (OBJ.ojd
+record 8), +0x20 its finished facilities, +0x38 demand, +0x50 spread demand, +0x68 supply, +0x80 spread supply and
++0x98 the ratio. 0x41A760 works them out in five phases, one an update (the tick count % 5, from 0x41AB00), all
+five when the war map starts (0x418BAF):
+
+| Phase | What |
+|---|---|
+| 0 | **Supply**: in a sector someone holds, its owner's constructions (0x446370(3, ...)) are told 0x803C and each kind's output is added up (0x421D00). A finished facility of the kind (types 47-49, 108-110) makes `int(hp / maxHP) x r B / (n + r - 1)` (0x423B00), r the `[Tweak] "Resource Drop Off Rate"` (3), B the deposit and n the sector's finished facilities of the kind; nothing while the sector has no command building. A sector no one holds supplies nothing. |
+| 1 | **Spread supply**: the sector's own, plus every other sector's over `count x VX + 1`, count being the sectors (start included) on the sector's cached path to it, plus the `"Resource Buffer"` (30). Sectors with no path give nothing. |
+| 2 | **Demand**: zeroed, then each sector's four object lists are told 0x8143 (0x429640): a unit adds its upkeep (unit records 45 / 46, three floats for its side's kinds) for each man it carries (its battle map list's count), halved while it stays put, plus its work (records 47 / 48) while it repairs or builds (not in yet). A travelling unit's goes to the sector it's in now (0x424E90). |
+| 3 | **Spread demand**: as phase 1 with VY and no buffer. |
+| 4 | **Ratio**: `max(1, spread demand / spread supply)` (worked as `(D - S) / S + 1`); then table 1 for the Construction view, `1 - 1 / (r0 r1 r2)` over the side's three kinds, its least and most kept (0x4E99A8 / 0x4E99AC). The cheat byte 0x58913C makes it 0. |
+
+VX and VY are `[Tweak] "Distance Crippler VX"` and `"VY"` (0.5 each; 0x43C0A0-0x43C125).
+
+The cached paths: each sector object keeps one to every other sector (+0xA0, `GetPath(n)` 0x43C090), rebuilt when
+it's told 0xB7 (0x43AFEF, after a construction is finished or a sector changes hands; the engine rebuilds them
+when an owner or a command building changes). Each is a `WSectorPath(side, from, to)` (0x4A39E0) for the side
+holding the start: an A* (0x44EE70, at most 1000 goes) over land links only, where a step into a sector held by
+neither that side nor no one is impassable, so is one where neither end has its command building, or into one
+without it that isn't the goal; otherwise it costs the whole pixels between the waypoints. A path of only its
+start (or none) has a count of 0.
+
+The save keeps each sector's figures at the end of its part (0x43C5E0): for each kind its spread supply, spread
+demand, ratio, demand and a 0. The start saves have 30, 0, 1, 0, 0 everywhere.
+
+**Resource warnings** (the hourly step, 0x419EFB): for each of the side's three kinds the least spread supply over
+spread demand among its sectors (from 1). Under 0.3 a counter (0x4E9BA0) goes up one a call and past 336 raises
+event 14, ResourceAlert, clearing both counters; otherwise, under 0.8, another (0x4E9BB0) goes up and past 504
+raises event 13, ResourceWarning. They count calls, not hours.
 
 ## Messages and events
 
@@ -296,6 +330,8 @@ So far the engine raises:
 |---|---|---|
 | ArrivedInSector (0x41EAE0) | "Vehicle/s arrived in" (0x211) and the sector | 0x120 |
 | BattleInSector (0x41E850) | "Battle in" (0x210) and the sector | 0x139 attacking (0x13A for sector 3 or London), 0x138 defending |
+| ResourceWarning (0x41F280) | "Resource Warning: " (0x41B) and the resource (0x214 + kind) | 0x124, 0x122, 0x123 (Human), 0x125-0x127 (Martian) |
+| ResourceAlert (0x41F340) | the same | 0x12A, 0x128, 0x129 (Human), 0x12B-0x12D (Martian) |
 
 The sector under the mouse, the panel button's name and a refused route's reason show in a strip at the bottom
 left (*provisional*: the engine's own).

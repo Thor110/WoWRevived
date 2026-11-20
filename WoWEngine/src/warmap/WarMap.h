@@ -60,6 +60,17 @@ namespace wow
         std::optional<std::vector<uint8_t>> SaveData() const;
         void SetArrowTypes(std::map<int, ObjOjd::ArrowType> types) { arrowTypes = std::move(types); }
         void SetDeposits(std::map<int, std::array<int, 6>> d, float dropOff) { deposits = std::move(d); resourceDropOff = dropOff; }
+        // [Tweak] "Distance Crippler VX" and "VY" (0.5) and "Resource Buffer" (30)
+        void SetEconomy(float vx, float vy, float buffer) { crippleX = vx; crippleY = vy; resourceBuffer = buffer; }
+
+        // The economy (0x41A760; docs/WARMAP.md "The economy"): each sector's figures for the six resource kinds
+        // (0-2 Human, 3-5 Martian), at the sector record's +0x38 demand, +0x50 spread demand, +0x68 supply,
+        // +0x80 spread supply and +0x98 ratio
+        struct SectorEconomy { std::array<float, 6> demand{}, effDemand{}, supply{}, effSupply{}, ratio{}; };
+        const SectorEconomy& Economy(int sector) const { return economy[size_t(sector)]; }
+        float Efficiency(int sector) const { return efficiency[size_t(sector)]; }
+        // the length (sectors, the start included) of the cached land path from one sector to another, 0 for none
+        int SectorPathLength(int from, int to) const { return pathLength[size_t(from)][size_t(to)]; }
 
     private:
         void CentreOn(int mapX, int mapY);
@@ -88,6 +99,8 @@ namespace wow
         int podHours = 0, pods = 0;
         int podInterval = 24;            // [Tweak] "Pod Interval (hours)"
         void DropPod(int hours);
+        int alertCount[3] = {}, warningCount[3] = {}; // 0x4E9BA0 / 0x4E9BB0
+        void ResourceWarnings();
         std::array<bool, warmap::SectorCount + 1> podFlag{}; // a sector's +0x64: a pod landed among the Humans
         std::array<bool, warmap::SectorCount + 1> battle{};  // a sector's +0x124: a battle there
         void AddUnit(int type, int sector, bool players);
@@ -155,6 +168,19 @@ namespace wow
         std::map<int, std::array<int, 6>> deposits;  // each sector's deposit of each resource kind (OBJ.ojd record 8)
         float resourceDropOff = 3.0f;                 // [Tweak] "Resource Drop Off Rate" (0x423F40)
         float ResourceGain(int sector, int kind) const;
+        float crippleX = 0.5f, crippleY = 0.5f, resourceBuffer = 30.0f;
+        std::array<SectorEconomy, warmap::SectorCount + 1> economy{};
+        std::array<float, warmap::SectorCount + 1> efficiency{}; // table 1 (0x4E9930): the Construction view
+        float efficiencyMin = 0, efficiencyMax = 0;               // 0x4E99A8 / 0x4E99AC
+        bool economyStarted = false;
+        void EconomyPhase(int phase);
+        float FacilityOutput(int sector, int kind) const;
+        // the sectors' cached paths (each sector's +0xA0, WSectorPath 0x4A39E0, rebuilt on 0xB7), and what they
+        // were built from: each sector's owner and whether it has its command building
+        std::array<std::array<int, warmap::SectorCount + 1>, warmap::SectorCount + 1> pathLength{};
+        std::array<int, warmap::SectorCount + 1> pathsBuiltFrom{};
+        bool pathsBuilt = false;
+        void BuildSectorPaths();
         void ShadeSectors();
         void PulseBattles();
         // the types of the finished constructions in each sector (both sides')
@@ -168,6 +194,7 @@ namespace wow
             int x = 0, y = 0, frame = 0, count = 0;
             bool players = false;
             int kind = 0;                // 0 units, 1 constructions, 2 resources
+            int type = 0;                // the object type (unit type) it stands for
             int sector = 0;
             int speed = 0;               // the unit type's war map speed (unit +0x54), 0 for constructions and resources
             int moveClass = 0;           // the unit type's +0x4E: 0-2 land, 3 boats, 4 fliers
@@ -185,6 +212,7 @@ namespace wow
             float fx = 0, fy = 0;        // exact position while travelling
         };
         float PixelsPerHour(const Counter& k) const; // how far a counter goes in a game hour
+        int CrewOf(const Counter& k) const;          // the men its objects carry
         std::vector<int> FindRoute(int from, int to, const Counter& k, std::string* why = nullptr) const;
         void DrawRouteArrow(Canvas& canvas, const Counter& k) const;
         static std::vector<Counter::ArrowPoint> ArrowCurve(const std::vector<std::pair<float, float>>& control);

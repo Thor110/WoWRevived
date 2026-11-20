@@ -133,6 +133,10 @@ namespace wow
                 units[unit].field56 = int(float(units[unit].field56) * b);
                 break;
             }
+            case 45: for (float& v : units[unit].upkeep) v = f32(); break;      // 0x4385BA
+            case 46: { float m = f32(); for (float& v : units[unit].upkeep) v *= m; break; }
+            case 47: for (float& v : units[unit].activity) v = f32(); break;    // 0x438634
+            case 48: { float m = f32(); for (float& v : units[unit].activity) v *= m; break; }
             case 2: case 3: case 4: { uint16_t len = r.U16(); r.Skip(size_t(len) + 2); break; }
             default: SkipPayload(r, type);
             }

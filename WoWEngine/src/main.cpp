@@ -49,7 +49,7 @@ namespace
     // --open starts on the screen a menu command opens (0x8E Game Options, 0x6E Save Game...).
     // --ticks N runs N game updates (30 a second) after the keys, before the screenshot.
     // --mouse x,y moves the mouse there first (game coordinates), for screenshots of the cursor and highlights.
-    // --screenshot presses the comma separated keys (up, down, enter, escape), saves the frame and exits.
+    // --screenshot presses the comma separated keys (up, down, enter, escape, f1-f9), saves the frame and exits.
     struct Options
     {
         fs::path gameFolder;
@@ -99,6 +99,7 @@ namespace
                         else if (k == "left") o.keys.push_back(SDLK_LEFT);
                         else if (k == "right") o.keys.push_back(SDLK_RIGHT);
                         else if (k == "backspace") o.keys.push_back(SDLK_BACKSPACE);
+                        else if (k.size() == 2 && k[0] == 'f' && k[1] >= '1' && k[1] <= '9') o.keys.push_back(int(SDLK_F1) + (k[1] - '1'));
                         else if (k == "click") o.keys.push_back(-1); // a left click where --mouse put the mouse
                         else if (k.rfind("click:", 0) == 0)   // click:x:y clicks there
                         {

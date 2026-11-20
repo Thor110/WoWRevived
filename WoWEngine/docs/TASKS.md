@@ -30,25 +30,25 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 - [x] **"Skip" setting**: `[Main] Skip=1` goes straight to Start New Campaign (0x402A30) — 01
 - [ ] **Route progress**: a unit on its way is saved with the route but sent on again from where it set out; the
       route's progress (+0x34) and the units' places along it, as the game keeps them (0x425080, 0x4257C0) — 04
-- [ ] **Sector flags kept**: the battle (+0x124) and pod (+0x64) flags and the economy, which live in the sector's
-      part of the save the engine carries unchanged (0x43C5E0) — 03, 04
+- [~] **Sector flags kept**: the battle (+0x124) and pod (+0x64) flags, which live in the sector's part of the save
+      the engine carries unchanged (0x43C5E0); the economy is written — 03, 04
 - [ ] **Commands one queue pass later** (0x95) where the order matters (comes with the research screen, battles and
       the debriefing it defers) — 01
 
 ## Milestone 2: the war map plays like the original
 
-- [ ] **Hourly step**: 0x802D's whole fan-out (routes, players, both sides' research, pods), and the economy's five
-      phases, one an update (0x41A760, 0x423B00, 0x423F80; the formulas of phases 1, 3 and 4 still to be re-derived)
-      — 03, 04
-- [~] **View shading**: the Construction view's production efficiency (table 1, levels 67-77), which needs the
-      economy (0x4192F0) — 03
-- [ ] **Resource warnings / alerts**: thresholds 0.3 / 0.8, counters 336 / 504, events 13 / 14 with their sounds
-      (0x4198C0 at 0x419EFB) — 03
+- [x] **Economy**: the five phases, one an update, all five at the start (0x41A760); supply from finished
+      facilities, demand from unit upkeep, spread by the sector paths, the ratios; saved with each sector — 03, 04
+- [ ] **Hourly step**: the rest of 0x802D's fan-out (routes, players, both sides' research); and the economy's
+      inputs still to come: damaged facilities (hp / maxHP), the work demand while repairing or building — 03, 04
+- [x] **View shading**: the Construction view from the economy (table 1, levels 67-77) (0x4192F0) — 03
+- [x] **Resource warnings / alerts**: thresholds 0.3 / 0.8, counters 336 / 504, events 13 / 14 with their sounds
+      (0x4198C0 at 0x419EFB); the event box for critical events comes with Milestone 3 — 03
 - [ ] **Travel as the game does it**: formation offsets, per-hour movement along segment lengths, arrival together
       (0x41FCF0), the arrow trimmed behind the leading units, TravelInterrupted, sea waypoints, 0x802C when no
       routes are left (0x425080, 0x42AFE0, 0x4373A0) — 03, 04
 - [ ] **A\* details**: newest-first ties, no re-sort on improvement, the 1000-step limit (0x44EFA0) — 08
-- [ ] **Sector paths cache** (WM_COMMAND 0xB7) for resources and the AI — 14
+- [x] **Sector paths cache** (WM_COMMAND 0xB7, WSectorPath 0x4A39E0) for the economy; the AI will use it too — 14
 - [ ] **Counter cells**: shrink by "WM clunting adj" (4) from "WM clunting res" (36) when a sector is full, sliding
       over 5 ticks; spiral mode 3 for units and constructions, 2 for resources (0x4205F0, 0x4208B0, 0x4209E0) — 03
 - [ ] **Counter decorations**: power bar, production blink, idle and repair icons, counts placed as the game does
