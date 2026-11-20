@@ -85,7 +85,7 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x462EF0–0x466910 | SoundFXSystem | `sfx.ojd`, `SFX\SFX.WoW`, `VOX\HUMAN.WoW`, `VOX\MARTIAN.WoW`, volume groups, 128 sound objects |
 | 0x466E30–0x4783C0 | C runtime and STL | Not rebuilt; replaced by the C++ standard library |
 | 0x4783D0 | Reaper | Fatal error handler |
-| 0x47AF10–0x47FC50 | WLandscape | Terrain from `maps\` (`.ils`, `.cls`, `vertInf`, `atm`), lighting, collisions |
+| 0x47AF10–0x47FC50 | WLandscape | Terrain from `maps\` (`.ils`, `.cls`, `vertInf`, `atm`), lighting, collisions; 0x47AF10-0x47CCF0 in `src/core/Landscape.cpp` (docs/BATTLEMAP.md) |
 | 0x480150–0x484A30 | Battle map | Unit groups, routing (`ROUTE FOUND`) |
 | 0x485DE0–0x4868B0 | Battle map menu, music, mini-map | |
 | 0x486E80–0x487A50 | Renderers, transient and effect objects | 512 of each |

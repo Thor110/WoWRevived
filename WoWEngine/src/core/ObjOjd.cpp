@@ -325,6 +325,19 @@ namespace wow
             case 11: { int a = int16_t(r.U16()); t.eleven[id] = { a, f32() }; break; }                      // 0x437BE6
             case 12: { auto& e = t.twelve[unit]; for (int& v : e) v = r.U16(); break; }                     // 0x437C87
             case 13: { auto& e = t.thirteen[unit]; e.f = f32(); e.a = int16_t(r.U16()); e.b = int16_t(r.U16()); e.c = int16_t(r.U16()); break; } // 0x437D19
+            case 9: // 0x437866
+            {
+                auto& e = t.dayTimes[int16_t(r.U16())];
+                e.angle = int16_t(r.U16());
+                for (auto& set : e.sets)
+                {
+                    uint16_t len = r.U16();
+                    set.name.clear();
+                    for (uint16_t i = 0; i < len; i++) { char c = char(r.U8()); if (c) set.name += c; }
+                    for (float& f : set.f) f = f32();
+                }
+                break;
+            }
             case 2: case 3: case 4: { uint16_t len = r.U16(); r.Skip(size_t(len) + 2); break; }
             default: SkipPayload(r, type);
             }

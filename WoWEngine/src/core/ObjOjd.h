@@ -127,6 +127,16 @@ namespace wow
             std::map<int, std::array<int, 8>> twelve;        // record 12, 0x4F2F10 + type x 16 (read by 0x494CB0)
             struct Thirteen { float f = 0; int a = 0, b = 0, c = 0; };
             std::map<int, Thirteen> thirteen;                // record 13, 0x4EC598 + type x 16 (read by 0x48DDC0)
+            // Record 9 (0x437866): the lighting for each hour of the day, 64 bytes each at 0x4DA828. The sun's angle
+            // in degrees, then three named sets of four floats; the first set lights the landscape (0x40B030) and
+            // the first letter of its name picks the shade table file (0x40B570).
+            struct DayTime
+            {
+                int angle = 0;
+                struct Set { std::string name; float f[4] = {}; };
+                Set sets[3];
+            };
+            std::map<int, DayTime> dayTimes;
         };
         static BattleTables LoadBattleTables(std::span<const uint8_t> data);
         struct ManufactureModifiers { float humanFriend = 1.0f, humanEnemy = 0.85f, martianFriend = 1.0f, martianEnemy = 0.85f; };

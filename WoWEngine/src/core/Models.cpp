@@ -185,7 +185,7 @@ namespace wow
         t.width = S32(cls, 0);
         t.height = S32(cls, 4);
         t.triangles = S32(cls, 0x0C);
-        t.heightScale = U32(cls, 0x3C);
+        t.heightScale = U32(cls, 0x2C); // 0x47BB92 copies it to WLandscape +0x3C
         t.yBase = S32(cls, 0x18) + S32(cls, 0x30);
         if (t.width <= 1 || t.height <= 1 || t.width > 4096 || t.height > 4096) throw FormatError("CLS: bad grid size");
         size_t count = size_t(t.width) * size_t(t.height);

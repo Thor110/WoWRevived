@@ -20,6 +20,7 @@
 #include "core/Ffuh.h"
 #include "core/GameFiles.h"
 #include "core/Models.h"
+#include "core/Landscape.h"
 #include "core/ObjOjd.h"
 #include "core/Research.h"
 #include "core/SaveFile.h"
@@ -62,7 +63,9 @@ static int Usage()
         "       wowdump --save <save file>         print a save's name, date and sections\n"
         "       wowdump --resave <save> [out]      read a save exactly, write it again and compare\n"
         "       wowdump --models <archive>         check and summarise every WOF, IOB and CLS\n"
-        "       wowdump --iob <archive> <name> <palette> <out.bmp>\n");
+        "       wowdump --iob <archive> <name> <palette> <out.bmp>\n"
+        "       wowdump --landscape <map.CLS> <map.ATM> [<OBJ.ojd> <hour> <LANDR.INT> <out.bmp>]\n"
+        "                                          build a battle map's terrain; light it for an hour\n");
     return 2;
 }
 
@@ -254,6 +257,12 @@ int main(int argc, char** argv)
             for (const auto& [id, e] : t.eleven) std::printf("11 id %4d  %d %g\n", id, e.first, double(e.second));
             for (const auto& [ty, e] : t.twelve) { std::printf("12 type %4d", ty); for (int v : e) std::printf(" %d", v); std::printf("\n"); }
             for (const auto& [ty, e] : t.thirteen) std::printf("13 type %4d  %g %d %d %d\n", ty, double(e.f), e.a, e.b, e.c);
+            for (const auto& [h, e] : t.dayTimes)
+            {
+                std::printf("9  hour %2d  angle %3d", h, e.angle);
+                for (const auto& set : e.sets) std::printf("  '%s' %g %g %g %g", set.name.c_str(), double(set.f[0]), double(set.f[1]), double(set.f[2]), double(set.f[3]));
+                std::printf("\n");
+            }
             return 0;
         }
 
@@ -374,6 +383,49 @@ int main(int argc, char** argv)
             }
             std::printf("%d read, %d failed\n", ok, failed);
             return failed ? 1 : 0;
+        }
+        if (first == "--landscape" && (argc == 4 || argc == 8))
+        {
+            wow::Terrain t = wow::Terrain::Load(ReadFile(argv[2]), ReadFile(argv[3]));
+            wow::Landscape l = wow::Landscape::Create(t);
+            int lo = 1 << 30, hi = -(1 << 30), water = 0, passable = 0, build = 0, line = 0;
+            for (int y = 0; y < l.Height(); y++)
+                for (int x = 0; x < l.Width(); x++)
+                {
+                    const auto& v = l.At(x, y);
+                    lo = std::min(lo, int(v.height));
+                    hi = std::max(hi, int(v.height));
+                    water += wow::Landscape::IsWater(v.atm & 15);
+                    passable += l.IsAreaPassable(x, y, x + 1, y + 1);
+                    build += l.CanBuildAt(x, y, x + 2, y + 2, false);
+                    line += l.CanBuildLine(x, y, x + 5, y + 3, false);
+                }
+            std::printf("%dx%d vertices, cell %.3f, world %d wide, top y %d, heights %d to %d\n", l.Width(), l.Height(), l.Cell() / 65536.0, l.WorldWidth(), l.TopY(), lo, hi);
+            std::printf("water vertices %d, passable %d, 2x2 buildable %d, line starts %d\n", water, passable, build, line);
+            int cx = l.WorldWidth() / 2, cy = (l.Height() * (l.Cell() >> 16)) / 2;
+            int n[3];
+            l.NormalAt(cx, cy, n);
+            std::printf("centre (%d, %d): height %d (nearest %d), normal %d %d %d, screen row 100 looks at world y %d\n", cx, cy, l.HeightAt(cx, cy), l.HeightAtNearest(cx, cy), n[0], n[1], n[2], l.ScreenYToWorldY(cx, 100));
+            if (argc == 8)
+            {
+                auto tables = wow::ObjOjd::LoadBattleTables(ReadFile(argv[4]));
+                int hour = std::atoi(argv[5]);
+                auto it = tables.dayTimes.find(hour);
+                if (it == tables.dayTimes.end()) throw std::runtime_error("OBJ.ojd has no lighting for that hour");
+                const auto& set = it->second.sets[0];
+                auto sun = wow::Landscape::SunFor(it->second.angle, set.f);
+                sun.shade = wow::Landscape::ShadeLevel(ReadFile(argv[6]), set.f[2], 0.0f);
+                l.LightTheMap(sun);
+                std::printf("hour %d: angle %d, set '%s' %g %g %g %g, shade level %g, point light %g\n", hour, it->second.angle, set.name.c_str(), double(set.f[0]), double(set.f[1]), double(set.f[2]), double(set.f[3]), double(sun.shade), double(sun.pointLight));
+                std::vector<uint32_t> px(size_t(l.Width()) * size_t(l.Height()));
+                for (size_t i = 0; i < px.size(); i++)
+                {
+                    uint32_t g = l.Vertices()[i].light;
+                    px[i] = (g << 16) | (g << 8) | g;
+                }
+                wow::WriteBmp(argv[7], px.data(), l.Width(), l.Height());
+            }
+            return 0;
         }
         if (first == "--iob" && argc == 6)
         {

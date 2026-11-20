@@ -87,7 +87,7 @@ namespace wow
     {
         int width = 0, height = 0;      // vertices
         int triangles = 0;
-        uint32_t heightScale = 0;       // world y = height x scale >> 16 (header 0x3C)
+        uint32_t heightScale = 0;       // world y = height x scale >> 16 (header 0x2C, WLandscape +0x3C)
         int yBase = 0;                  // header 0x18 + 0x30
         std::vector<uint8_t> heights;   // width x height, 0 is water
         uint32_t header[17] = {};       // the raw header words

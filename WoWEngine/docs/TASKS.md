@@ -140,9 +140,14 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 
 ## Milestone 5: the battle map
 
-- [ ] **Terrain**: fix `core/Models` (height scale from CLS +0x2C, heights × √2) — 10
-- [ ] **Landscape**: lighting, shadows, placement rules, scorch marks (0x47AF10-); shade groups hb / hr / bm and the
-      time-of-day lighting (0x40B6C0, 0x40B030; fix the ShadeGroups.h comment) — 01, 10
+- [x] **Terrain**: `core/Models` takes the height scale from CLS +0x2C; `core/Landscape` keeps the heights × √2
+      (docs/BATTLEMAP.md) — 10
+- [~] **Landscape**: done in `core/Landscape` (0x47AF10-0x47CCF0): vertInf, heights and normals, the placement and
+      passability rules, occupancy, scorch marks, point lights and headlight masks, the time of day (OBJ.ojd
+      record 9, 0x40B030), the shade table level (0x40B570) and LightTheMap with its shadows; checked over the 30
+      maps with `wowdump --landscape`. Still to do: which LANDR digit a battle uses (dword_4F7430 against
+      0x4BD4F8 / 0x4BD4FC, provisional), the shade groups hb / hr / bm (0x40B6C0; fix the ShadeGroups.h comment)
+      and hooking it to the battle map screen — 01, 10
 - [ ] **Renderers**: the blitter modes, triangle spans, WOFLib, RTypeISO, the terrain view (0x44F890-0x457F14,
       0x49DA50) — 08, 13
 - [ ] **Battle map screen**: keys, mouse, the minimap, fog of war, the battle map menu 0x80B8 (0x49BD50: heading
