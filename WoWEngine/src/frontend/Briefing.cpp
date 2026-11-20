@@ -113,11 +113,12 @@ namespace wow
         if (!done && --ticksLeft <= 0) { done = true; sent = Command{ 0x71, 0 }; }
     }
 
+    // The Briefing posts its commands to itself, so they take the Fullscreen View's way (0x4065E0): the fade out
+    // and, 5 ticks later, on to the world (+0x84). Sent from Update so Escape fades like any other key.
     std::optional<Command> Briefing::Leave()
     {
-        if (done) return std::nullopt;
-        done = true;
-        return Command{ 0x98, 0 };
+        if (!done) { done = true; sent = Command{ 0x98, 0 }; }
+        return std::nullopt;
     }
 
     std::optional<Command> Briefing::OnKey(int) { return Leave(); }

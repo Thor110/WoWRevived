@@ -784,8 +784,6 @@ namespace wow
     void FrontEnd::Dispatch(const Command& command, bool fromControl)
     {
         if (delayed) return; // the view is fading out: it takes no more input
-        // the Briefing and Debriefing post theirs straight to the world (0x49A700 / 0x49B900)
-        if (screen && (screen->Id() == Briefing::Id || screen->Id() == Debriefing::Id)) fromControl = false;
         if (fromControl && screen && Fades(*screen))
         {
             delayed = command;

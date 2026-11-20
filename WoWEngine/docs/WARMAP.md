@@ -257,8 +257,13 @@ selection at +0x430, filled by its recorded commands 4 clear, 5 select (Shift ad
   (0x433330). It's shown with its first item centred on the mouse, a quarter of its height above it, kept 3 pixels
   inside the screen (flipped right to left if it hits the right edge), sound 0x193 (0x432FB0); Escape closes it
   with 0x196, a click outside closes it, and an item's command goes to the war map. The engine shows the items'
-  text as their tool tips and the icon's next frame under the mouse (*provisional*), and has only Cancel so far:
-  the sector's Build / Resume building tasks / Cancel Move (0x429A70) and an object's Information (0x440300)
+  text as their tool tips and the icon's next frame under the mouse (*provisional*). After Cancel come the items of
+  whoever answers 0x805C: the active tool if it answers 0x8111, else the player's current object, else the own
+  sector under the mouse (selected first); and when neither a tool nor that sector filled it, the world's selected
+  sector (+0x60). A sector adds **View map** (0x43B9F0: command 0x8133 with 0x8019, icon 0x2E `RBHview`, text
+  0x475, which 0x432D70 / 0x432E90 replace with the hovered sector's name) while its battle map isn't open (+0x18):
+  the briefing transition and the Briefing for that sector, VIEWING it (see Battles). The engine has these two so
+  far: the sector's Build / Resume building tasks / Cancel Move (0x429A70) and an object's Information (0x440300)
   come with construction and the information screen.
 
 - **Routes** (WWarMapRoute 0x4240D0) move on every game hour: the calendar sends 0x802D with the hours gone by and
@@ -355,10 +360,13 @@ selection at +0x430, filled by its recorded commands 4 clear, 5 select (Shift ad
 Every whole game hour the world (0x802D, 0x419E9D) moves the routes, the players and both sides' research on, then
 the pods (0x41A330): while fewer than 8 have come, every `[Tweak] "Pod Interval (hours)"` (24) one lands in sector
 2, 4, 6, 7, 8, 9, 10 or 11 (`byte_4B9DE8[rand() & 7]`) with one of four loads (`off_4B9E28[rand() % 4]`: unit 62,
-ScoutMachineMk1, alone or with 89, HandlingMachineMk1, or 91, DiggingMechanismMk1). In a Human sector the sector is
-marked (+0x64) for the battle check; otherwise it's event 12, PodLanded (0x41F010): in a Martian sector sound
-0x1B2 and "Pod landed: <sector>"; in one no one holds, a battle there (+0x124), sound 0x1B3 and "Pod landed in our
-territory" (0x420, Human) or "Pod landed in enemy sector" (0x41F, Martian), with command 0x8072 to go to it. The
+ScoutMachineMk1, alone or with 89, HandlingMachineMk1, or 91, DiggingMechanismMk1). Each unit added works out who
+holds the sector again (0x43CEB0 -> 0x43CA40), so a sector no one held is the Martians' once the pod is in. Then
+in a Human sector the sector is marked (+0x64) for the battle check; otherwise it's event 12, PodLanded (0x41F010):
+in a Martian sector (so also one no one held) sound 0x1B2 and only the note "Pod landed: <sector>" (0x41E, the
+button 0x8122); in any other, a battle there (+0x124), sound 0x1B3 and "Pod landed in our territory" (0x420, Human)
+or "Pod landed in enemy sector" (0x41F, Martian), with command 0x8072 to go to it: the case of a marked Human
+sector the battle check raises. The
 war map seeds rand() with 1 when it's built (0x417DA3), so the first pod of a new Human campaign lands in sector
 4, Strathmore.
 
@@ -449,9 +457,15 @@ queue pass later (0x95, 0x419A24).
    is centred in x 354-609, y 95-380. Colours: [Colours] "Briefing Sector Name" 17, "Briefing Heading" 17,
    "Briefing Detail" 18. A key or click sends 0x98 at once (0x49A700); otherwise 0x71 comes after `[Briefing]
    "Delay"` (30) ticks.
+   The Briefing posts 0x71 to itself, so like a menu click it goes through the Fullscreen View (0x4065E0): the
+   fade out, then 5 ticks later on to the world (+0x84); the same for 0x98 and the Debriefing's 0x99 / 0x8017. In
+   the game the battle map loads behind the Briefing once 0x71 arrives; the engine has no battle map, so the
+   Debriefing follows the fade at once.
 3. **The battle map** (0x71, or 0x98 after the queue is flushed, 0x435600 → 0x41A082): 0x44E5B0(1), both
    research objects' vtbl+0x28, 0x42DB00(1), the world hidden, byte_4D2554 = 1, and the sector shown. Its end comes
-   back as 0x97. The battle map isn't in yet, so the engine settles the battle here (*provisional*): the side with
+   back as 0x97 (and leaving a viewed sector, 0x76 to the world, flushes the queues and sends 0x97 too). The battle
+   map isn't in yet, so the engine settles the battle here (*provisional*): with only one side in the sector (a
+   sector being viewed) there's none and the Debriefing says RETURNING TO WAR ROOMS; otherwise the side with
    more men in its units there wins (the holder on a tie), the loser's units, constructions and resources there go
    (0x43A250), the sector's flag goes and it and its neighbours are seen (0x418E17), and the game is over when the
    Humans win in sector 3 or the Martians in London (30). The briefing sound is faded out over 30 ticks

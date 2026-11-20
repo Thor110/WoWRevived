@@ -552,7 +552,8 @@ namespace wow
         const bool human = res.Human();
         for (int type : load) AddUnit(type, sector, !human);
         pods++;
-        // who holds it, as Human 0 / Martian 1 / no one 2
+        // who holds it now the pod's units are in (each one added worked it out again, 0x43CEB0 -> 0x43CA40), as
+        // Human 0 / Martian 1 / no one 2: one no one held is the Martians' now, and PodLanded only notes the landing
         int who = owner[size_t(sector)] == 2 ? 2 : (owner[size_t(sector)] == 0) == human ? 0 : 1;
         if (who == 0) { podFlag[size_t(sector)] = true; return; }
         RaiseEvent(PodLanded, sector);
@@ -587,6 +588,7 @@ namespace wow
             else SDL_Log("War map: no saved unit of type %d to copy, so the new one won't be saved", type);
         }
         AddCounter(type, sector, players, ref);
+        RecomputeOwner(sector); // 0x43CEB0 -> 0x43CA40
     }
 
     int WarMap::AddCounter(int type, int sector, bool players, int ref)
@@ -1146,7 +1148,11 @@ namespace wow
         static constexpr int ButtonText[3] = { 0x47B, 0x47C, 0x47E }; // the view buttons' labels (0x433480)
         // a popup item's text (its +0x0C; 0x475 "View map" would be the hovered sector's name)
         if (owner == 99 && infoBox) return res.String(infoBox->cancellable ? 0x480 : 0x47F);
-        if (owner >= 100 && size_t(owner - 100) < popup.size()) return res.String(popup[size_t(owner - 100)].text);
+        if (owner >= 100 && size_t(owner - 100) < popup.size())
+        {
+            const PopupItem& item = popup[size_t(owner - 100)];
+            return item.label.empty() ? res.String(item.text) : item.label;
+        }
         if (owner >= 1000 && size_t(owner - 1000) < counters.size()) return CounterTip(owner - 1000, level);
         if (owner >= 0 && owner < 3) return res.String(ButtonText[owner]);
         // the Research button (0x45BEB0): "View Research" and what's being researched, 0x461 with nothing
@@ -1274,6 +1280,12 @@ namespace wow
             }
             else facilities[side] += k.count;
         }
+        // a sector viewed with only one side in it has no battle: back with RETURNING TO WAR ROOMS
+        if (!(units[0] + facilities[0]) || !(units[1] + facilities[1]))
+        {
+            if (pendingBattle == s) { pendingBattle = 0; battle[size_t(s)] = false; }
+            return;
+        }
         const int holder = owner[size_t(s)] == 0 ? 0 : 1;
         const int winner = men[0] > men[1] ? 0 : men[1] > men[0] ? 1 : holder; // relative: 0 the player
         const bool human = res.Human();
@@ -1291,7 +1303,7 @@ namespace wow
         Log(res.String(0x210) + " " + res.String(warmap::NameText(s)) + (winner == 0 ? ": won" : ": lost")); // the engine's own
         ClearSide(s, winner != 0);
         battle[size_t(s)] = false;
-        pendingBattle = 0;
+        if (pendingBattle == s) pendingBattle = 0;
         RevealAfterBattle(s, 0);
     }
 
@@ -1730,12 +1742,19 @@ namespace wow
         popupHover = -1;
         int sector = SectorAt(x, y);
         if (sector && owner[size_t(sector)] == 0 && selection.empty()) selected = sector;
-        auto add = [&](int command, int icon, int text) {
+        auto add = [&](int command, int param, int icon, int text) {
             Rect r = SpriteRect(icon, 0, 0);
             if (r.w <= 0) r.w = r.h = 32;
-            popup.push_back({ command, icon, text, r });
+            PopupItem item{ command, icon, text, r, param, {} };
+            // 0x432D70 / 0x432E90: "View map" (0x475) takes the hovered sector's name (view +0x5C)
+            if (text == 0x475 && sector) item.label = res.String(warmap::NameText(sector));
+            popup.push_back(std::move(item));
         };
-        add(0x73, 0x1C, 0x476);
+        add(0x73, 0, 0x1C, 0x476);
+        // then the items of whoever answers 0x805C: the current object (not yet), else the own sector under the
+        // mouse, selected, else the world's selected sector (+0x60). A sector adds "View map", 0x8133 with 0x8019
+        // (0x43B9F0), while its battle map isn't open (+0x18)
+        if (selected >= 1 && selected <= warmap::SectorCount) add(0x8133, 0x8019, 0x2E, 0x475);
         int w = 0, h = 0;
         for (const PopupItem& item : popup) { w = std::max(w, item.rect.w); h += item.rect.h; }
         int left = x - popup[0].rect.w / 2, top = y - popup[0].rect.h / 4;
@@ -1754,10 +1773,16 @@ namespace wow
     }
 
     // A popup command reaching the war map (and the sector, 0x43AF47): 0x73, Cancel, is the player's action 2,
-    // the selection dropped.
-    void WarMap::PopupCommand(int command)
+    // the selection dropped. "View map" (0x8133 with 0x8019) is the world's briefing transition for its selected
+    // sector (0x41B210, then the Briefing for +0x60).
+    void WarMap::PopupCommand(int command, int param)
     {
         if (command == 0x73) ClearSelection();
+        if (command == BattleCommand && selected >= 1 && selected <= warmap::SectorCount)
+        {
+            battleSector = selected;
+            sent = Command{ BattleCommand, param };
+        }
     }
 
     void WarMap::OnMouseMove(int x, int y)
@@ -1871,7 +1896,7 @@ namespace wow
         {
             if (!down) return std::nullopt;
             for (const PopupItem& item : popup)
-                if (item.rect.Contains(x, y)) { int command = item.command; ClosePopup(false); PopupCommand(command); return std::nullopt; }
+                if (item.rect.Contains(x, y)) { int command = item.command, param = item.param; ClosePopup(false); PopupCommand(command, param); return std::nullopt; }
             ClosePopup(false);
             return std::nullopt;
         }

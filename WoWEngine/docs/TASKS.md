@@ -97,8 +97,9 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 - [x] **Debriefing** (0x49A7B0 / 0x49A820): VICTORY / DEFEAT / RETURNING TO WAR ROOMS, sounds 0x18F / 0x190 /
       0x18E, Forces lost and Enemy forces destroyed, `[Debriefing] Delay` 300 → 0x8017, and the way back to the war
       map (0x419AA2: sounds, music after 30 ticks, the announcement and the queued events) — 13, 03
-- [ ] **Viewing a sector** (0x805C "View map", 0x8133 / 0x8019 from the sector's own button): the Briefing's VIEWING
-      case and the Debriefing's RETURNING TO WAR ROOMS without a battle — 06
+- [x] **Viewing a sector** (0x805C "View map", 0x8133 / 0x8019 from the sector's own button in the Warmap menu,
+      0x41D120 / 0x43B9F0): the Briefing's VIEWING case and the Debriefing's RETURNING TO WAR ROOMS without a
+      battle — 06, 03
 - [x] **End of game**: events 18 / 19, codes 0x80FA-0x80FD sent as 0x80FE (0x41AED0, 0x4212A0) — 03
 - [x] **Game over flow**: the VICTORY / DEFEAT movie for the code, then the credits, then the main menu (0x402B80)
       — 01

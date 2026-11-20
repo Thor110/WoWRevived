@@ -18,7 +18,11 @@
 // calendar's 0x41B440 "hh:mmap dd mmm yyyy" split after the am/pm) or the day ("%07.2f" of the game time in
 // days, Martian games); and, if the player has units or constructions there, "Forces Present:" (0x4A4),
 // "Units (Vehicles):" (0x4A6) "%d (%d)" and "Facilities:" (0x4A7) "%d". Any key or a click sends 0x98 at once;
-// otherwise 0x71 comes after [Briefing] "Delay" (30) ticks. Both go to the battle (0x41A082).
+// otherwise 0x71 comes after [Briefing] "Delay" (30) ticks, posted when it's made (0x499930). Both go to the
+// battle (0x41A082). In the game the battle map then loads behind the briefing, which stays up until it's ready.
+//
+// Both screens post their commands to themselves, so like a menu's they go through the Fullscreen View
+// (0x4065E0): the fade out, then 5 ticks later on to the world (the view's owner, +0x84).
 //
 // The Debriefing: with no battle fought (the report's +0x54 clear), "RETURNING TO WAR ROOMS" (0x4A8) and the
 // sound 0x18E; with one, "VICTORY!" (0x4A9, sound 0x18F) if the player has anything left there (+0x28 + +0x48),

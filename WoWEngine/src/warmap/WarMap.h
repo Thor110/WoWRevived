@@ -173,12 +173,13 @@ namespace wow
         void UpdateBand();
         // The "Warmap menu" (WPopupMenu 0x432C60, opened by 0x41D120 when the right button is held): a column of
         // icon buttons (WHotButton 0x434300), one row a command
-        struct PopupItem { int command, icon, text; Rect rect; };
+        // an item: its command and parameter, icon and tool tip (text id, or label when set)
+        struct PopupItem { int command, icon, text; Rect rect; int param = 0; std::string label; };
         std::vector<PopupItem> popup;
         int popupHover = -1;
         void OpenWarmapMenu(int x, int y);
         void ClosePopup(bool escape);
-        void PopupCommand(int command);
+        void PopupCommand(int command, int param);
         int clunWidth = 4, clunSpacing = 4;
         float cluntingSpeed = 7.0f;      // [Tweak] "Clunting Speed" (0x428B70, default 7): only for units with no speed
         std::string message;             // the engine's own note (a refused route), shown in the status strip
