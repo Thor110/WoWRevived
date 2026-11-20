@@ -705,6 +705,53 @@ game's end as sector 3 won by a Human player or 30 by a Martian; the war map's t
 end to end (no save with a contested sector to hand); 0x80F4's control (+0x128, dword_4E9B60, used by the war
 map's 0x418980 on the research) isn't in.
 
+## The battle AI (the computer player 0x442890: 0x445210, 0x4455D0, 0x4456B0, 0x445010, 0x445B90; the groups' 0x483B70; `battlemap/BattleAi.cpp`)
+
+The battle's computer side is played by the war map's computer player (vtable 0x4AA680), through its handler
+(0x442AC0): 0x8075 (the battle begun, 0x445210), 0x807F (ended, 0x445620: all cleared), 0x807A (an object gone,
+0x445B90), 0x80B1 (a threat seen, 0x445D60: from the target scan, which never finds one, flt_59E44C being 0).
+
+**Begun** (0x445210): its counts cleared; +0x450, whether it holds the sector. Holding it, every construction in the
+sector, either side's (the sector's lists 2 and 3), becomes a threat (+0x47C, 16; each a war map object and an
+active flag, +0x14 bit 0). Then each of its own units (list 1) is added (0x445500): passed over with no battle
+units; of AI.ojd class 2 (0x441EB0) its group is set to stance 0 and it isn't added; else it goes in its list
+(+0x540, +0x544 the count).
+
+**Each update** (vt+0x10 = 0x4455D0): with no tasks (+0x478) the planner runs; otherwise only a cursor moves round
+the 32 slots (+0x470). A task acts once, as it's made, and stays until an object of it is gone. **The planner**
+(0x4456B0), with its list not empty:
+- holding the sector, the first active threat that's the battle's key building (0x33E / 0x78, 0x116 / 0x13A) is
+  taken (its flag cleared) and the strongest of its own (0x441E70: battle units x AI.ojd's weight, word_518B10) put
+  on it; with none, the flag is set again;
+- r = its own count / the threats' (1.0 with none): over 5.0 a third go to the next active threat and a quarter
+  roam; over 3.0 two thirds go and a third roam; over 0.0 none go and all roam (thresholds flt_4AA714 5.0,
+  flt_4AA718 3.0);
+- the next active threat (flag cleared) gets that many, each the first of its list, while there are slots (32);
+  then as many again from the list's front each get a task with no threat.
+
+**A task** (0x445010, 0x28 bytes: +0x10 the threat, +0x14 the player, +0x18 its own object, +0x1C a second): the
+group is its own object's first battle unit's. No threat: the group's stance is Roam and Attack (0x80B2 with 3).
+A threat of its own side: the group goes to its first battle unit's point (0x482510: a defence). Another side's:
+0x80C0 to the group with that unit (0x4807F0: 0x80B9 to the members, then 0x482880, the target), and the same for
+a second group. **Gone** (0x445B90): its own object, its tasks go and its list loses it; another side's, the
+tasks on it and the threats that were it go. So an attacking computer (holding nothing) has no threats and its
+groups all roam; a defending one sends its strongest to its command building's threat and spreads the rest.
+
+**The groups' periodic work** (0x483B70, every group, the player's too): +0x58 counts past +0x5C (90, from 0x4801E2),
+then Roam and Attack (3), not attacking (+0x1D8 bit 0) with members, goes to x = rand() % (width - 200) + 100, y =
+rand() % (height - 200) + 100 (0x482510); Attack and Retaliate (2, 1), not attacking, take their centre (the
+members' whole positions summed over the count), make it home if there's none (+0x60 / +0x64 both 0), and more than
+400 from home (0x43FF00) set bit 0 and go home (0x804F). Then bit 2 and +0x58 back to 0. The player's orders set the
+home (0x4812B0: a move's point, the packet's case 0x0E, and the attack orders').
+
+With the lorries' group handed to the computer for the test (London not its): no threats, one task, stance 3, and
+every 91 updates a new random point and route (30, 21, 21 nodes...), the group seldom reaching one before the next.
+
+*Provisional*: the strongest is the first of the greatest; class 2's test and the object-gone side test as read;
+the cursor (+0x470) does nothing here; vt+0x38 in the periodic work isn't in; "attacking" is having a target; the
+attack orders' home values aren't traced (the point, or the object's point, is used); the computer's specials
+(0x482570, every 8th update with +0x1D8 bit 7) aren't in.
+
 ## Reinforcement points and Retreat (0x43D150, 0x43D3F0, 0x480EF0; `battlemap/Reinforcements.cpp`)
 
 **The points** (0x43D150, from EnterBattleMap with the battle on or the debug flag byte_4D1279; the table at

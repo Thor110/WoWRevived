@@ -103,6 +103,10 @@ namespace wow
             int& r = groupRange[size_t(u.group)];
             r = std::min({ r, ObjOjd::Vision(t->second, setup.armour), range });
         }
+        groupTicks.assign(setup.groups.size(), 0);
+        groupHomeX.assign(setup.groups.size(), 0);
+        groupHomeY.assign(setup.groups.size(), 0);
+        AiStart();     // the battle begun, told to the computer player (0x8075 -> 0x445210)
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
 
         // The start view (0x439B7E): on the player's HQ (the player's constructions list, HCON, searched for type
@@ -1087,6 +1091,8 @@ namespace wow
             OpenPopup(mouseX, mouseY);
         EdgeScroll();
         CheckBattleEnd();
+        AiUpdate();
+        for (size_t g = 0; g < groupTicks.size(); g++) GroupTick(int(g));
         ChaseTargets();
         bool moved = false;
         for (size_t i = 0; i < units.size(); i++)

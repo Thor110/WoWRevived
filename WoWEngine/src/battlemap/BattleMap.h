@@ -407,6 +407,28 @@ namespace wow
         Rect EndBoxRect() const;
         Rect EndBoxButtonRect() const;
         std::optional<Command> EndBoxCommand();
+        // The battle AI: the computer player's part in a battle (its object 0x442890: the battle begun 0x8075 ->
+        // 0x445210, each update 0x4455D0 -> the planner 0x4456B0, its tasks 0x445010, objects gone 0x807A ->
+        // 0x445B90). A threat (+0x47C, 16) is a war map object (here its group) with an active flag; the AI's own
+        // objects (+0x540 list, +0x544 their count) wait for a task; a task (+0x4BC, 32; +0x478 their count) puts
+        // one of them on a threat (none: Roam and Attack)
+        struct AiThreat { int group = -1; bool active = true; };
+        struct AiTask { int threat = -1, own = -1; };
+        bool aiOn = false, aiHolder = false;                    // +0x450: the AI holds the sector
+        std::vector<AiThreat> aiThreats;
+        std::vector<int> aiOwn;
+        std::vector<AiTask> aiTasks;
+        void AiStart();                                         // 0x445210
+        void AiUpdate();                                        // 0x4455D0
+        void AiPlan();                                          // 0x4456B0
+        void AiRunTask(const AiTask& t);                        // 0x445010
+        void AiObjectGone(int group);                           // 0x445B90
+        int AiValue(int group) const;                           // 0x441E70
+        // Each group's periodic stance work (0x483B70: +0x58 counting to +0x5C, 90): Roam and Attack (3) wanders to a
+        // random point; Attack and Retaliate (2, 1) go back home (+0x60 / +0x64) if more than 400 from it
+        std::vector<int> groupTicks, groupHomeX, groupHomeY;
+        void GroupTick(int group);
+        void GroupGone(int group);                              // its last unit gone: the AI told
     public:
         // The war map objects whose battle units are all gone (each group stands for one), for the war map
         std::vector<int> LostRefs() const;

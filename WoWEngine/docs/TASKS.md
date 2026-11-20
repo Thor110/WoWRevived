@@ -206,7 +206,9 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       losses taken back to the war map, is in.) (The scenery's damage and death, 0x489E20 / 0x48AB20 / 0x48A9A0,
       lights, 0x48DDC0 / 0x48E100, area blasts
       and the timed statuses with what they do (frozen, stance 0, turned), 0x487B50 / 0x495CB0 / 0x496100, are in.)
-- [ ] **Battle AI** (0x445010) — 07
+- [~] **Battle AI** (0x445010): the computer player's battle part (threats, own list, the planner 0x4456B0, tasks,
+      objects gone) and the groups' periodic stance work (0x483B70: roaming, going home) are in; the computer's
+      specials (0x482570) aren't — 07
 - [~] **Battle map music**: CD tracks 4 / 5 (the war map's is done) — 11
 - [x] **Positional sound**: listener at the view centre, inner / outer rects, pan 4·dx (0x464FF0), opcode 18's cull,
       variation groups as voices (platform/Sound); to do: quiet voices let go and taken back, alternate-update volume

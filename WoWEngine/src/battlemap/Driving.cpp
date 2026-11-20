@@ -50,6 +50,8 @@ namespace wow
         {
             if (!selected[g]) continue;
             StopAttacking(int(g));      // a move clears the target (0x481CA0)
+            // and the point is the group's home (0x4812B0's case 0x0E: +0x60 / +0x64)
+            if (g < groupHomeX.size()) { groupHomeX[g] = x; groupHomeY[g] = y; }
             std::vector<size_t> members;
             for (size_t i = 0; i < units.size(); i++)
                 if (units[i].players && units[i].vehicle && units[i].group == int(g)) members.push_back(i);

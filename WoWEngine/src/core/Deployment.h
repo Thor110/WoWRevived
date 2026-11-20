@@ -17,6 +17,8 @@ namespace wow
         int list = 0;
         int previous = 0;
         int ref = -1;           // the war map object (its index in the war map's table) the group stands for
+        int aiWeight = 0;       // AI.ojd's weight of its type (word_518B10)
+        int aiClass = 0;        // AI.ojd's class of its type (0x518B14 via 0x441EB0)
         std::vector<std::pair<float, float>> places;
         bool Players() const { return (list & 1) == 0; }
     };

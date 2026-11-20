@@ -183,6 +183,9 @@ namespace wow
             t.z = land.HeightAt(x, y);
             t.lastX = t.lastY = t.lastZ = -1;
             groupMode[g] = 0;
+            // the group's home becomes the point (0x4812B0's packet cases set +0x60 / +0x64; *provisional*: the
+            // values they store aren't traced)
+            if (g < groupHomeX.size()) { groupHomeX[g] = x; groupHomeY[g] = y; }
             if (!any) Speak(0x10C, int(g));
             any = true;
         }
@@ -217,6 +220,7 @@ namespace wow
             t = GroupTarget{};
             t.target = id;
             groupMode[g] = 0;
+            if (g < groupHomeX.size()) { groupHomeX[g] = int(target->x); groupHomeY[g] = int(target->y); }
             auto ft = setup.units->find(first->type);
             if (!any && ft != setup.units->end() && ft->second.category == 1) Speak(0x10C, int(g));
             any = true;

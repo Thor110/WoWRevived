@@ -117,6 +117,7 @@ namespace wow
         for (ViewObject& o : objects)
             if (o.unit > int(index)) o.unit--;
         units.erase(units.begin() + std::ptrdiff_t(index));
+        if (std::none_of(units.begin(), units.end(), [&](const Unit& o) { return o.group == u.group; })) GroupGone(u.group);
     }
 
     std::vector<std::pair<int, int>> BattleMap::RetreatedRefs() const

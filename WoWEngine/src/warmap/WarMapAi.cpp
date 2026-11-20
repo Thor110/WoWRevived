@@ -73,6 +73,8 @@ namespace wow
                     g.list = list;
                     g.previous = k.previous;
                     g.ref = ref;
+                    if (auto w = aiWeights.find(g.type); w != aiWeights.end()) g.aiWeight = w->second;
+                    g.aiClass = AiClass(g.type);
                     g.places = o.BattlePositions();
                     out.push_back(std::move(g));
                 }
