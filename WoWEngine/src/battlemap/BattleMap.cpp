@@ -70,6 +70,7 @@ namespace wow
             // every object's +0xAC is its type's +0x44 word (the neighbours keep apart by it)
             if (auto d = setup.units->find(u.type); d != setup.units->end()) u.drive.radius = int16_t(d->second.hitPoints);
             u.health = MaxHealth(u.type);
+            SetUpGuns(u);
             if (auto d = setup.units->find(u.type); d != setup.units->end() && d->second.category == 1)
             {
                 u.vehicle = true;
@@ -84,6 +85,21 @@ namespace wow
         for (const Unit& u : units) Occupy(u.type, u.x, u.y);
         SetUpGrounds();
         groupStance.assign(setup.groups.size(), 1);
+        // the groups' targets, modes and engagement ranges (0x4802E0: +0x4E, from 100000 the least of each member's
+        // sight (+0x48) and its vt+0xB0, its guns' longest record 12 +0 range, or 10000 with none (0x495850))
+        groupTargets.assign(setup.groups.size(), GroupTarget{});
+        groupMode.assign(setup.groups.size(), 0);
+        groupRange.assign(setup.groups.size(), 100000);
+        for (const Unit& u : units)
+        {
+            if (u.group < 0 || size_t(u.group) >= groupRange.size()) continue;
+            auto t = setup.units->find(u.type);
+            if (t == setup.units->end()) continue;
+            int range = u.guns.empty() ? 10000 : 0;
+            for (const Gun& g : u.guns) range = std::max(range, WeaponData(g.type)[0]);
+            int& r = groupRange[size_t(u.group)];
+            r = std::min({ r, ObjOjd::Vision(t->second, setup.armour), range });
+        }
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
 
         // The start view (0x439B7E): on the player's HQ (the player's constructions list, HCON, searched for type
@@ -243,12 +259,16 @@ namespace wow
         if (!best)
         {
             // cursor mode 1 on the ground (0x485A53): the point the mouse looks at (0x47B3F0), packet 0x0E to the
-            // selection (with Ctrl it would be force fire there, packet 0x13: *not yet*)
-            if (Mode() == 1 && !(SDL_GetModState() & SDL_KMOD_CTRL))
+            // selection, or with Ctrl force fire there (packet 0x13); mode 1 from the popup's Force Fire (+0x1DC,
+            // 0x481CA0) makes the 0x0E force fire too
+            if (Mode() == 1)
             {
                 const int wx = x + scrollX;
                 const int wy = land.ScreenYToWorldY(wx, y + scrollY);
-                if (wy) OrderMove(wx, wy);
+                const bool force = (SDL_GetModState() & SDL_KMOD_CTRL) || forceFireNext;
+                forceFireNext = false;
+                if (wy && force) ForceFire(wx, wy);
+                else if (wy) OrderMove(wx, wy);
             }
             return;
         }
@@ -1003,6 +1023,7 @@ namespace wow
         if (rightDownAt >= 0 && popup.empty() && ticks - rightDownAt == setup.quickCancelTimeout && mouseX >= 0)
             OpenPopup(mouseX, mouseY);
         EdgeScroll();
+        ChaseTargets();
         bool moved = false;
         for (size_t i = 0; i < units.size(); i++)
         {
@@ -1010,6 +1031,9 @@ namespace wow
             Drive(i);
             moved |= units[i].x != x || units[i].y != y;
         }
+        // the guns (their own updates, each a child of its unit or its turret)
+        for (size_t i = 0; i < units.size(); i++)
+            for (Gun& g : units[i].guns) GunTick(i, g);
         if (moved)
         {
             for (ViewObject& o : objects)
@@ -1200,6 +1224,12 @@ namespace wow
                     for (size_t i = 0; i < units.size();)
                         if (units[i].players && selected[size_t(units[i].group)]) Die(i);
                         else i++;
+                    return std::nullopt;
+                }
+                if (command == 0x80F3 && param == 0x80ED)
+                {
+                    // Force Fire (0x4817C0 -> +0x1DC 1): the next click on the ground fires there
+                    forceFireNext = true;
                     return std::nullopt;
                 }
                 if (command == 0x80CE || command == 0x80F3)

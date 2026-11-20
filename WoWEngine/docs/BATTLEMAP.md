@@ -491,6 +491,54 @@ the Parliament 4.
 and the damaged list aren't in); the kind is taken as the sector; the explosions' light parts (334-346, the fading
 light 0x48E100), their emitters (smoke) and the status bars aren't in.
 
+## Weapons (WProjectile base 0x4949A0 and its classes, 0x494DB0 / 0x494FD0, 0x4886A0 / 0x488830 -> 0x487F50; the group's target 0x4826D0; `battlemap/Weapons.cpp`)
+
+**The guns** are a unit's weapon children (+0xB8 bit 11), its own parts or a turret's (0x489820: a vehicle of its own,
+types 0x2E6-0x313 and 0x389-0x38C). The factory (0x446B30, its switch on 0x314 on decoded from the byte table at
+0x447C94) makes them as: WShell (0x488410: 700-702, 803-811), WProjectile (0x488460: 0x1AB-0x1B0, 0x1B5-0x1B7, 939)
+and 0x48DBE0 (0x19A-0x19C), all three with the shell's update (0x4886A0); WRocket (0x4887E0: 0x19D-0x1A2, 0x1B8-0x1BB,
+697-699, 800-802, 949-951, update 0x488830); WMortar (0x488930: 0x197-0x199, 0x1A3-0x1AA, 0x1B1-0x1B4, 0x1C9-0x1CB,
+703-708, 938, 1003-1005), a cluster shell (update 0x488CA0, released at state 1 by 0x4889D0). (449 and 450 are no
+weapons.) The Armoured Lorry's turret 742 holds a WRocket, 414.
+
+**OBJ.ojd record 12** (0x4F2F10, 16 bytes a type): +0 the range, +2 the wind-up and +4 the reload (each as ftol(the word
+x 30 / 20) updates, dword_4B84C8 = 30), +6 the impact size. 414: range 240, wind-up 1, reload 3, size 2.
+
+**The fire cycle** (0x494DB0, each update; +0xD8 the state, +0xD4 the count): 0 counts down, then, armed (+0xD0) and
+aimed (+0xF0 bit 0), goes to 1 if its owner lets it (vt+0x84, 0x496920: an ordinary gun needs the group's mode +0x1DC
+0; vt+0x108 not frozen), else drops aimed; 1: the count ftol(+2 x 30 / 20) + rand() % 15, its sound (+0xA2) at its
+point, then 2; 2 counts down to 3; 3: its owner told (vt+0xD0, 0x496BC0: the rescan reset, a mode's target cleared),
+then 4; 4: the count ftol(+4 x 30 / 20) + rand() % 15, then 0. Then **aimed** (0x494FD0): the point under its range x
++0xC8 (1.0; research raises it, 0x494AF0) from it, and inside its hardpoint's arc (+0xB0: +4 the middle, +6 the half
+width) if it has one. The **landing**: the shell's update once in state 2 when the count is a multiple of 5 (+0xF0 bit
+1 marks it), the rocket's in state 3: the spread s = ftol(the octagonal distance from the gun / 32 / +0xCC (1.0) + 1),
+x, y and height each moved by rand() % 2s - s, the height less the ground at the vertex there (0x47B120); then
+0x487F50 with +6 as the size: on water (terrain 1-3) 0x4D0340[size - 1], else 0x4D0230[size - 1], over 64 0x4D0450;
+the effect made there with the firer (the gun's root object) and the gun's type. The effects for sizes up to 40 are
+all WExplosions (381-394, 484-589), 41-43 too (715-717), 44-49 and 50-61 area blasts (718-720, 788-790, 812-823), the
+rest WExplosions. An explosion spares the firer's group (0x47EB00) unless the other says otherwise (vt+0xF8).
+
+**Aiming** (vt+0xC8, 0x491110): not under the ground (+0x84 < 0) or on a bridge link, the point kept on the map, then
+0x496200: the goal kept and its children all aimed at one point jittered by up to the distance / 16 + 1 each way
+(drawn once: rand() % twice that, less it, for x, y and height); a turret passes its own jittered point on the same way
+to its guns, whose vt+0xC8 (0x494D20) keeps it and arms them (one in flight, state 2, goes to 3). 0x805A (0x494D80)
+disarms a gun, sends a cycle under way to its reload and sets aimed.
+
+**The group's target** (+0x2C; -1 a point, +0x40..+0x48): each update (0x483B70 -> 0x4826D0), a target that's moved more
+than 80 from where it was last aimed (+0x34..+0x3C, -1 at first) is aimed at again: the group moves there (0x804F, the
+route's radius its engagement range +0x4E in vertices: the least, from 100000, of each member's sight +0x48 and its
+longest gun range, 10000 for none; 240 for the lorries) and each member gets vt+0xC8 (a point) or vt+0xC4 (an object,
+Approach 0x496300). **Force fire**: Ctrl with the left button on the ground (packet 0x13), or the popup's Force Fire
+(0x80ED: mode 1) then a click: speech 0x10C and the target the point at its ground height. A move order clears the
+target and disarms the guns.
+
+In sector 30, Force Fire from the popup on a point west of the start: the group drove into range (a 4-node route) and
+the five lorries' rockets landed round their jittered aims, a few units out, each an effect 382 with a scorch.
+
+*Provisional*: the mortars' cluster shells, object targets (Approach, AttackObject 0x481F70, AutoTarget 0x496570 by
+stance), the turrets' turning and arcs, the guns' place on their unit, the research multipliers and the "CAN'T GET TO
+WITHIN ATTACK DISTANCE!" check aren't in; WProjectile and 0x48DBE0 fly no visible missile.
+
 ## Driving (the ground vehicle 0x490820-0x4935C0; the group's move 0x482E60; `battlemap/Driving.cpp`)
 
 A vehicle (category 1) keeps its driving state at +0x88..+0x18C: the step (+0x88 / +0x8C), the target (+0xF4 / +0xF8)

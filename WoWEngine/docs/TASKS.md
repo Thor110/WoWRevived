@@ -194,8 +194,10 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       — 07, 10, 11
 - [~] **Weapons and effects**: shots, explosions, gas, area effects; smoke and particle emitters (0x4949A0,
       0x47F050). In: health (0x47DA20), damage and death (0x48AB20, 0x80A0), WExplosion with its parts, splash
-      damage and scorch (0x488180, 0x488350, 0x488200, 0x48A5A0), Abandon. Still to do: the shots and turrets,
-      targeting, area blasts (0x487B00), emitters, lights, the scenery's damage — 10, 11, 12
+      damage and scorch (0x488180, 0x488350, 0x488200, 0x48A5A0), Abandon; the guns' fire cycle, aim and landing
+      (0x494DB0, 0x494FD0, 0x4886A0, 0x488830, 0x487F50, record 12) and force fire at a point through the group's
+      target (0x4826D0, 0x496200). Still to do: object targets and AutoTarget by stance, the mortars' cluster shells,
+      turret turning and arcs, area blasts (0x487B00), emitters, lights, the scenery's damage — 10, 11, 12
 - [ ] **Battle AI** (0x445010) — 07
 - [~] **Battle map music**: CD tracks 4 / 5 (the war map's is done) — 11
 - [x] **Positional sound**: listener at the view centre, inner / outer rects, pan 4·dx (0x464FF0), opcode 18's cull,

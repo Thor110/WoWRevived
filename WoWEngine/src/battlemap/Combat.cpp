@@ -19,11 +19,12 @@ namespace wow
         }
     }
 
-    // The types the factory (0x446B30) makes as WExplosion (0x488180, and 0x48CD80 on it): 0x221-0x243, 0x247-0x255,
+    // The types the factory (0x446B30) makes as WExplosion (0x488180, and 0x48CD80 on it): 0x17D-0x18A, 0x1E4-0x1F7,
+    // 0x1FB-0x21D, 0x221-0x243, 0x247-0x255,
     // and its switch's cases 715-717, 946-948, 986, 997-999 and 1006-1008
     bool BattleMap::IsExplosion(int t)
     {
-        return (t >= 0x221 && t <= 0x243) || (t >= 0x247 && t <= 0x255) || (t >= 715 && t <= 717) ||
+        return (t >= 0x17D && t <= 0x18A) || (t >= 0x1E4 && t <= 0x1F7) || (t >= 0x1FB && t <= 0x21D) || (t >= 0x221 && t <= 0x243) || (t >= 0x247 && t <= 0x255) || (t >= 715 && t <= 717) ||
                (t >= 946 && t <= 948) || t == 986 || (t >= 997 && t <= 999) || (t >= 1006 && t <= 1008);
     }
 
@@ -82,9 +83,9 @@ namespace wow
     // vt+0xE0); and under 64 up, not on water (0x47FFE0: terrain 1-3), the ground is scorched (0x804B -> 0x47C4C0
     // with the radius and the power). With its sprite it then plays as a WAnimEffect.
     // *Provisional*: only units are hit (the scenery's damage isn't in); a death explosion's firer (the dying
-    // object's parent) is always none, so both sides are hit; light parts (334-346) and emitters (smoke) aren't
+    // object's parent) is always none, so both sides are hit; a gun's spares its unit's group (0x47EB00); light parts (334-346) and emitters (smoke) aren't
     // made.
-    void BattleMap::Explode(int type, int x, int y, int z)
+    void BattleMap::Explode(int type, int x, int y, int z, int firer)
     {
         auto t = setup.units->find(type);
         if (t == setup.units->end() || !IsExplosion(type)) return;
@@ -96,7 +97,7 @@ namespace wow
         for (const auto& part : t->second.parts)
         {
             const int px = x + int16_t(part.b), py = y + int16_t(part.c), pz = z + int16_t(part.d);
-            if (IsExplosion(part.a)) Explode(part.a, px, py, pz);
+            if (IsExplosion(part.a)) Explode(part.a, px, py, pz, firer);
             else if (auto pt = setup.units->find(part.a); pt != setup.units->end() && pt->second.field28 && !(part.a >= 334 && part.a <= 346))
                 SpawnEffect(part.a, px, py);
         }
@@ -106,6 +107,7 @@ namespace wow
             Unit& u = units[i];
             auto ut = setup.units->find(u.type);
             if (ut == setup.units->end() || ut->second.category == 4) continue;
+            if (firer >= 0 && u.group == firer) continue;   // the firer's own (0x47EB00), unless vt+0xF8 says not
             const int reach = radius + u.drive.radius;
             const int d = Octagonal(int(u.x), int(u.y), x, y);
             if (d > reach || reach == 0) continue;

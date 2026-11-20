@@ -82,7 +82,8 @@ namespace wow
             ObjOjd::ArmourModifiers armour;     // [Tweak] the armour modifiers (0x4373D0-0x437510)
             // a research item's state is 2 (0x45B890), by side and its place in that side's tree (the globals from
             // 0x588C40 Human, 0x588F20 Martian, four bytes each)
-            std::function<bool(bool human, int index)> researchDone;   // the front end's mixer: the battle's speech and engine sounds          // [System] "ZMapRes" (dword_4F7424): the bucket grid's cell size
+            std::function<bool(bool human, int index)> researchDone;
+            const std::map<int, std::array<int, 8>>* weapons = nullptr;     // OBJ.ojd record 12 (0x4F2F10)   // the front end's mixer: the battle's speech and engine sounds          // [System] "ZMapRes" (dword_4F7424): the bucket grid's cell size
         };
 
         // Throws when the map's files can't be read.
@@ -165,17 +166,36 @@ namespace wow
             float lift = 0;             // +0x84, its height over the ground (a bridge's deck)
             int offset = 0;             // +0x13A, rand() % (0x802E's value + 1): more room at the route's end
         };
+        // A gun (WProjectile base 0x4949A0 and its classes): its type, its class's update (0 the shell's 0x4886A0,
+        // 1 the rocket's 0x488830, 2 the mortar's cluster 0x488CA0), the fire cycle's state (+0xD8) and count (+0xD4),
+        // armed (+0xD0), +0xF0 (bit 0 aimed, 1 landed), the point aimed at (+0xBC..+0xC4)
+        struct Gun { int type = 0, cls = 0, state = 0, counter = 0; bool armed = false; uint32_t flags = 0; int tx = 0, ty = 0, tz = 0; };
         struct Unit { int type; float x, y; int heading; bool players; int group = 0; bool vehicle = false; Drive drive;
                       WofInstance* wof = nullptr; int engineSound = 0;
                       int health = 0;       // +0xC4: the type's +0x4A (0x47DA20) to start with
+                      std::vector<Gun> guns;         // its weapon children (and its turrets')
                       int dieAt = -1;       // a 0x80A0 posted to itself (the update it arrives on)
                     };
         void EngineSound(Unit& u);                              // 0x491450
+        // Each group's target (+0x2C, -1 a point: +0x40..+0x48) and where it was last aimed (+0x34..+0x3C), its mode
+        // (+0x1DC) and engagement range (+0x4E)
+        struct GroupTarget { int target = 0; int x = 0, y = 0, z = 0, lastX = -1, lastY = -1, lastZ = -1; };
+        std::vector<GroupTarget> groupTargets;
+        bool forceFireNext = false;                             // the popup's Force Fire waiting for the click
+        std::vector<int> groupMode, groupRange;
+        std::array<int, 8> WeaponData(int type) const;          // OBJ.ojd record 12 (0x4F2F10)
+        void SetUpGuns(Unit& u);
+        void ForceFire(int x, int y);                           // packet 0x13 / mode 1 (0x4812B0, 0x481CA0)
+        void StopAttacking(int group);                          // the target cleared, the guns 0x805A
+        void ChaseTargets();                                    // 0x483B70 -> 0x4826D0
+        void Aim(Unit& u, int x, int y, int z);                 // vt+0xC8: 0x491110 -> 0x496200 -> guns 0x494D20
+        void GunTick(size_t unit, Gun& g);                      // 0x494DB0 and the class's update
+        void Impact(size_t unit, const Gun& g);                 // 0x4886A0's landing: 0x487F50
         // Damage and death (0x48A5A0, 0x48AB20, 0x80A0 in 0x489FA0) and the explosions (WExplosion 0x488180)
         int MaxHealth(int type) const;                          // 0x47DA20: +0x4A with the armour modifiers
         void Damage(size_t unit, int amount);                   // vt+0xE0, 0x48AB20
         void Die(size_t unit);                                  // 0x80A0
-        void Explode(int type, int x, int y, int z);            // 0x488070 + 0x488350 / 0x488200
+        void Explode(int type, int x, int y, int z, int firer = -1);  // 0x488070 + 0x488350 / 0x488200 (firer: a unit's group)
         static bool IsExplosion(int type);
         std::vector<Unit> units;
         int startX = 0, startY = 0;                          // dword_4F742C / 4F7434: the player's deployment centre
@@ -208,7 +228,7 @@ namespace wow
         void SetWaypoint(Unit& u, int index);                                           // 0x491790
         std::vector<MoveOrder> orders;
         void OrderMove(int x, int y);
-        void OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y);
+        void OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y, int radius = 4);
         int NearestPassable(int group, int vx, int vy, int& ox, int& oy) const;   // 0x482B00
         void Halt();
         void Drive(size_t index);

@@ -565,6 +565,7 @@ namespace wow
                 lightTypes = tables.thirteen;
                 moveCosts = tables.ten;
                 moveSlopes = tables.eleven;
+                weaponData = tables.twelve;
             }
             catch (const std::exception& e) { SDL_Log("OBJ.ojd day times: %s", e.what()); }
         }
@@ -1048,6 +1049,7 @@ namespace wow
         s.lights = &lightTypes;
         s.moveCosts = &moveCosts;
         s.moveSlopes = &moveSlopes;
+        s.weapons = &weaponData;
         s.showLights = ini.GetBool("Options", "Show lights", true);
         s.groups = map->BattleGroups(b.sector);
         // the owner as a faction (0x43CA30): the side being played, the other, or no one

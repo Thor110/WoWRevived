@@ -49,6 +49,7 @@ namespace wow
         for (size_t g = 0; g < selected.size(); g++)
         {
             if (!selected[g]) continue;
+            StopAttacking(int(g));      // a move clears the target (0x481CA0)
             std::vector<size_t> members;
             for (size_t i = 0; i < units.size(); i++)
                 if (units[i].players && units[i].vehicle && units[i].group == int(g)) members.push_back(i);
@@ -77,7 +78,7 @@ namespace wow
         return 0;
     }
 
-    void BattleMap::OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y)
+    void BattleMap::OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y, int radius)
     {
         if (members.empty()) return;
         // each member's distance to the point (0x43FF00, +0xD4), the nearest (+0x68) and the farthest (+0x6C),
@@ -123,7 +124,8 @@ namespace wow
         for (size_t i : members) units[i].drive.order = order;
         // a ground vehicle always asks for a route (vt+0x70 and vt+0x118 both no)
         std::vector<int> path;
-        if (RequestRoute(group, ssx, ssy, gx, gy, 4, path))
+        const bool attacking = group >= 0 && size_t(group) < groupTargets.size() && groupTargets[size_t(group)].target != 0;
+        if (RequestRoute(group, ssx, ssy, gx, gy, radius, path))
         {
             if (path.empty())
             {
@@ -145,8 +147,11 @@ namespace wow
             // the flag at the route's last node and the acknowledgement (0x483590)
             {
                 const RouteNode& last = route->nodes.back();
-                SpawnEffect(0x17C, int32_t(int64_t(last.x) * cell - half) >> 16, int32_t(int64_t(last.y) * cell - half) >> 16);
-                Speak(0x10A, group);
+                if (!attacking)
+                {
+                    SpawnEffect(0x17C, int32_t(int64_t(last.x) * cell - half) >> 16, int32_t(int64_t(last.y) * cell - half) >> 16);
+                    Speak(0x10A, group);
+                }
             }
             const int scale = int(std::sqrt(double(n)) - -1.0);
             for (size_t i : members) FollowRoute(units[i], scale * units[i].drive.radius, route);
@@ -155,8 +160,11 @@ namespace wow
         SDL_Log("GOING STRAIGHT THERE! (from vertex %d,%d to %d,%d)", ssx, ssy, gx, gy);
         // 0x483590 at (the goal + 2): a player's move by a player's group (+0x1D8 bits 3 and 4) puts the "_ACK" flag
         // (type 0x17C, a WAnimEffect) there and, with no target (+0x2C), the group speaks 0x10A
-        SpawnEffect(0x17C, int32_t(int64_t(gx + 2) * cell - half) >> 16, int32_t(int64_t(gy + 2) * cell - half) >> 16);
-        Speak(0x10A, group);
+        if (!attacking)
+        {
+            SpawnEffect(0x17C, int32_t(int64_t(gx + 2) * cell - half) >> 16, int32_t(int64_t(gy + 2) * cell - half) >> 16);
+            Speak(0x10A, group);
+        }
         const int dx = int(int32_t(int64_t(gx) * cell - half) >> 16), dy = int(int32_t(int64_t(gy) * cell - half) >> 16);
         // 0x80C2 to each member (0x490A70)
         double speeds = 0;

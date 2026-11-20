@@ -1,0 +1,303 @@
+// The battle map's guns: a unit's weapon children (WProjectile base 0x4949A0: WShell 0x488410, WRocket 0x4887E0,
+// WMortar 0x488930, 0x488460 and 0x48DBE0), their fire cycle (0x494DB0), aim (0x494FD0) and landing (0x4886A0 /
+// 0x488830 -> 0x487F50), and the group's target (0x4826D0) with force fire (packet 0x13). See docs/BATTLEMAP.md
+// "Weapons".
+#include "battlemap/BattleMap.h"
+#include "core/Bridge.h"
+#include "core/Random.h"
+#include "platform/Sound.h"
+#include <SDL3/SDL.h>
+#include <cmath>
+
+namespace wow
+{
+    namespace
+    {
+        int Octagonal(int x0, int y0, int x1, int y1)
+        {
+            const int a = std::abs(x1 - x0), b = std::abs(y1 - y0);
+            return b - (std::min(a, b) >> 1) + a;
+        }
+
+        bool IsTurret(int t) { return (t >= 0x2E6 && t <= 0x313) || (t >= 0x389 && t <= 0x38C); }
+
+        // The factory's weapon classes (0x446B30): -1 for none, 0 the shell's update (WShell 0x488410: 700-702,
+        // 803-811; WProjectile 0x488460: 0x1AB-0x1B0, 0x1B5-0x1B7, 939; 0x48DBE0: 0x19A-0x19C), 1 the rocket's
+        // (WRocket 0x4887E0: 0x19D-0x1A2, 0x1B8-0x1BB, 697-699, 800-802, 949-951), 2 the mortar's (WMortar 0x488930:
+        // 0x197-0x199, 0x1A3-0x1AA, 0x1B1-0x1B4, 0x1C9-0x1CB, 703-708, 938, 1003-1005)
+        int WeaponClass(int t)
+        {
+            if ((t >= 700 && t <= 702) || (t >= 803 && t <= 811) || (t >= 0x1AB && t <= 0x1B0) || (t >= 0x1B5 && t <= 0x1B7) ||
+                t == 939 || (t >= 0x19A && t <= 0x19C))
+                return 0;
+            if ((t >= 0x19D && t <= 0x1A2) || (t >= 0x1B8 && t <= 0x1BB) || (t >= 697 && t <= 699) || (t >= 800 && t <= 802) ||
+                (t >= 949 && t <= 951))
+                return 1;
+            if ((t >= 0x197 && t <= 0x199) || (t >= 0x1A3 && t <= 0x1AA) || (t >= 0x1B1 && t <= 0x1B4) || (t >= 0x1C9 && t <= 0x1CB) ||
+                (t >= 703 && t <= 708) || t == 938 || (t >= 1003 && t <= 1005))
+                return 2;
+            return -1;
+        }
+
+        // 0x487F50's effect tables by size - 1: on land (0x4D0230), on water (terrain 1-3, 0x4D0340), and over 64
+        // (0x4D0450)
+        constexpr int kImpactLand[67] = { 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 484, 485, 486, 487, 488, 489,
+            490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511,
+            512, 513, 715, 716, 717, 718, 719, 720, 788, 789, 790, 812, 813, 814, 815, 816, 817, 818, 819, 820, 821, 822,
+            823, 946, 947, 948, 1006, 1007, 1008 };
+        constexpr int kImpactWater[67] = { 391, 392, 514, 515, 516, 517, 518, 519, 520, 521, 522, 523, 524, 525, 526, 527,
+            528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544, 545, 546, 547, 548, 549,
+            550, 551, 715, 716, 717, 718, 719, 720, 788, 789, 790, 812, 813, 814, 815, 816, 817, 818, 819, 820, 821, 822,
+            823, 946, 947, 948, 520, 521, 522 };
+        constexpr int kImpactBig[67] = { 393, 394, 552, 553, 554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565,
+            566, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587,
+            588, 589, 715, 716, 717, 718, 719, 720, 788, 789, 790, 812, 813, 814, 815, 816, 817, 818, 819, 820, 821, 822,
+            823, 946, 947, 948, 1006, 1007, 1008 };
+
+        // dword_4B84C8 (30) x the word / 20, as 0x494DB0 works it (0x66666667, >> 3)
+        int Ticks(int word) { return int((int64_t(word * 30) * 0x66666667LL >> 32) >> 3) + ((word * 30) < 0 ? 1 : 0); }
+    }
+
+    std::array<int, 8> BattleMap::WeaponData(int type) const
+    {
+        if (setup.weapons)
+            if (auto w = setup.weapons->find(type); w != setup.weapons->end()) return w->second;
+        return {};
+    }
+
+    // The guns as the unit's children start (0x47EF30): its parts that are weapons, and those of its turrets
+    // (0x489820: a vehicle of their own, aiming their own children)
+    void BattleMap::SetUpGuns(Unit& u)
+    {
+        u.guns.clear();
+        auto t = setup.units->find(u.type);
+        if (t == setup.units->end()) return;
+        auto addGun = [&](int type) {
+            const int cls = WeaponClass(type);
+            if (cls < 0) return;
+            Gun g;
+            g.type = type;
+            g.cls = cls;
+            u.guns.push_back(g);
+        };
+        for (const auto& part : t->second.parts)
+        {
+            if (IsTurret(part.a))
+            {
+                if (auto tt = setup.units->find(part.a); tt != setup.units->end())
+                    for (const auto& sub : tt->second.parts) addGun(sub.a);
+            }
+            else addGun(part.a);
+        }
+    }
+
+    // The selection's force fire at a point (packet 0x13, or the next click in mode 1 from the popup's Force Fire,
+    // 0x481CA0): speech 0x10C, the target a point (+0x2C -1) at its ground height (0x47B170), the guns' aim and the
+    // move into range follow from the group's update
+    void BattleMap::ForceFire(int x, int y)
+    {
+        bool any = false;
+        for (size_t g = 0; g < selected.size() && g < groupTargets.size(); g++)
+        {
+            if (!selected[g]) continue;
+            bool members = false;
+            for (const Unit& u : units) if (u.players && u.group == int(g) && !u.guns.empty()) members = true;
+            if (!members) continue;
+            GroupTarget& t = groupTargets[g];
+            t.target = -1;
+            t.x = x;
+            t.y = y;
+            t.z = land.HeightAt(x, y);
+            t.lastX = t.lastY = t.lastZ = -1;
+            groupMode[g] = 0;
+            if (!any) Speak(0x10C, int(g));
+            any = true;
+        }
+    }
+
+    // 0x482880(0) / the guns' 0x805A (0x494D80): not armed; a cycle under way goes to its reload; aimed set
+    void BattleMap::StopAttacking(int group)
+    {
+        if (group < 0 || size_t(group) >= groupTargets.size()) return;
+        groupTargets[size_t(group)] = GroupTarget{};
+        for (Unit& u : units)
+            if (u.group == group)
+                for (Gun& g : u.guns)
+                {
+                    g.armed = false;
+                    if (g.state != 0) g.state = 4;
+                    g.flags |= 1;
+                }
+    }
+
+    // 0x483B70 -> 0x4826D0, each update for a group with a target: a point target that's moved more than 80 (0x43FF00)
+    // from where it was last aimed is aimed at again: the group moves (0x804F) to within its range (+0x4E, in
+    // vertices, as the route's radius) and each member is aimed there (vt+0xC8)
+    // *Provisional*: object targets (vt+0xC4, Approach 0x496300) aren't in; the route's radius is the range snapped
+    // to vertices whatever the goal's snap (the "CAN'T GET TO WITHIN ATTACK DISTANCE!" check isn't in).
+    void BattleMap::ChaseTargets()
+    {
+        for (size_t g = 0; g < groupTargets.size(); g++)
+        {
+            GroupTarget& t = groupTargets[g];
+            if (t.target != -1) continue;
+            if (Octagonal(t.x, t.y, t.lastX, t.lastY) <= 80) continue;
+            t.lastX = t.x;
+            t.lastY = t.y;
+            t.lastZ = t.z;
+            std::vector<size_t> members;
+            for (size_t i = 0; i < units.size(); i++)
+                if (units[i].group == int(g) && units[i].vehicle) members.push_back(i);
+            const int radius = int((int64_t(int32_t(uint32_t(groupRange[g]) << 16)) + land.HalfCell()) / land.Cell());
+            OrderGroupMove(int(g), members, t.x, t.y, radius);
+            for (Unit& u : units)
+                if (u.group == int(g)) Aim(u, t.x, t.y, t.z);
+        }
+    }
+
+    // vt+0xC8 (0x491110): not under the ground (+0x84 under 0) or on a bridge link, the point kept on the map, then
+    // 0x496200: the goal kept and the children all aimed at one point jittered by up to the distance / 16 + 1 each
+    // way (rand() % twice that, less it, for x, y and height, drawn once); a turret (a vehicle) does the same for its guns, whose vt+0xC8
+    // (0x494D20) keeps the point and arms them (a gun in flight, state 2, goes to 3).
+    // *Provisional*: the turret's step is taken at the unit's position (its offset and turning aren't in).
+    void BattleMap::Aim(Unit& u, int x, int y, int z)
+    {
+        if (u.drive.lift < 0.0f || u.drive.link) return;
+        x = std::clamp(x, 0, land.WorldWidth() - 1);
+        y = std::clamp(y, 0, int((int64_t(land.Cell()) * land.Height()) >> 16) - 1);
+        auto jitter = [&](int gx, int gy, int gz, int& ox, int& oy, int& oz) {
+            const double dx = double(gx) - u.x, dy = double(gy) - u.y;
+            const int d = int(std::sqrt(dy * dy + dx * dx) - -1.0);
+            const int s = (d + ((d >> 31) & 0xF)) / 16 + 1;
+            ox = gx + random::Rand() % (2 * s) - s;
+            oy = gy + random::Rand() % (2 * s) - s;
+            oz = gz + random::Rand() % (2 * s) - s;
+        };
+        auto t = setup.units->find(u.type);
+        if (t == setup.units->end()) return;
+        // the unit's 0x496200: one jittered point for all its children
+        int cx = 0, cy = 0, cz = 0;
+        jitter(x, y, z, cx, cy, cz);
+        size_t gun = 0;
+        auto arm = [&](int ax, int ay, int az) {
+            if (gun >= u.guns.size()) return;
+            Gun& g = u.guns[gun++];
+            g.tx = ax;
+            g.ty = ay;
+            g.tz = az;
+            g.armed = true;
+            if (g.state == 2) g.state = 3;
+        };
+        for (const auto& part : t->second.parts)
+        {
+            if (IsTurret(part.a))
+            {
+                // the turret's 0x491110 -> 0x496200: one more jittered point for its guns
+                auto tt = setup.units->find(part.a);
+                if (tt == setup.units->end()) continue;
+                int gx = 0, gy = 0, gz = 0;
+                jitter(cx, cy, cz, gx, gy, gz);
+                for (const auto& sub : tt->second.parts)
+                    if (WeaponClass(sub.a) >= 0) arm(gx, gy, gz);
+            }
+            else if (WeaponClass(part.a) >= 0) arm(cx, cy, cz);
+        }
+    }
+
+    // 0x494DB0, each update: 0 waits out its count, then, armed and aimed (+0xF0 bit 0), goes to 1 if its owner lets
+    // it (vt+0x84: 0x496920, the group's mode 0 for an ordinary gun; not frozen, vt+0x108), else drops aimed; 1 sets
+    // the count to ftol(record 12's +2 x 30 / 20) + rand() % 15 and plays its sound (+0xA2) at its point, then 2;
+    // 2 counts down to 3; 3 tells its owner it fired (vt+0xD0, 0x496BC0) and goes to 4; 4 sets the count to
+    // ftol(+4 x 30 / 20) + rand() % 15 and goes back to 0. Then aimed (0x494FD0): the point within record 12's +0 x
+    // +0xC8 (1.0) of it, and within its hardpoint's arc (+0xB0: +4 the middle, +6 the half width). The class's update
+    // then lands the shot: the shell's (0x4886A0) once in state 2 when the count is a multiple of 5, the rocket's
+    // (0x488830) in state 3.
+    // *Provisional*: the mortars (cluster shells, 0x488CA0 / 0x4889D0) don't fire yet; the arcs (hardpoints) and
+    // the research multipliers (+0xC8 / +0xCC, 0x494AF0) aren't in; the gun is at its unit's point.
+    void BattleMap::GunTick(size_t index, Gun& g)
+    {
+        Unit& u = units[index];
+        const auto w = WeaponData(g.type);
+        switch (g.state)
+        {
+        case 0:
+            if (g.counter > 0) g.counter--;
+            else if (g.armed && (g.flags & 1))
+            {
+                const int mode = u.group >= 0 && size_t(u.group) < groupMode.size() ? groupMode[size_t(u.group)] : 0;
+                if (mode == 0 && g.cls != 2) g.state = 1;
+                else g.flags &= ~1u;
+            }
+            break;
+        case 1:
+        {
+            g.flags &= ~2u;
+            g.state = 2;
+            const int r = random::Rand() % 15;
+            g.counter = Ticks(w[1]) + r;
+            auto t = setup.units->find(g.type);
+            if (t != setup.units->end() && t->second.fieldA2 && setup.sound)
+                setup.sound->Play(t->second.fieldA2, 1.0f, 0, int(u.x), land.ProjectY(int(u.y), land.HeightAt(int(u.x), int(u.y))));
+            break;
+        }
+        case 2:
+            if (g.counter > 0) g.counter--;
+            else g.state = 3;
+            break;
+        case 3:
+            g.state = 4;
+            break;
+        case 4:
+        {
+            const int r = random::Rand() % 15;
+            g.counter = Ticks(w[2]) + r;
+            g.state = 0;
+            break;
+        }
+        default: break;
+        }
+        // 0x494FD0
+        {
+            int heading = 0;
+            float length = 0;
+            HeadingAndLength(u.x, u.y, float(g.tx), float(g.ty), heading, length);
+            const bool inRange = float(w[0]) * 1.0f > length;
+            g.flags = (g.flags & ~1u) | (inRange ? 1u : 0u);
+        }
+        if (g.cls == 0 && g.state == 2 && !(g.flags & 2) && g.counter % 5 == 0)
+        {
+            Impact(index, g);
+            g.flags |= 2;
+        }
+        else if (g.cls == 1 && g.state == 3) Impact(index, g);
+    }
+
+    // The landing (0x4886A0 / 0x488830): the spread s = ftol(the octagonal distance from the gun / 32 / +0xCC (1.0)
+    // + 1); the point's x, y and height each moved by rand() % 2s - s, the height less the ground's at the vertex
+    // there (0x47B120); then 0x487F50 with record 12's +6 as the size: by the terrain there (water, 1-3, or not) and
+    // the size (over 64 its own table), the effect from the tables made at the point with the firer (the gun's root,
+    // the unit) and the gun's type.
+    void BattleMap::Impact(size_t index, const Gun& g)
+    {
+        const Unit& u = units[index];
+        const auto w = WeaponData(g.type);
+        const int d = Octagonal(int(u.x), int(u.y), g.tx, g.ty) >> 5;
+        const int s = int(float(d) / 1.0f - -1.0f);
+        const int span = 2 * s;
+        const int x = random::Rand() % span - s + g.tx;
+        const int y = random::Rand() % span - s + g.ty;
+        const int z = random::Rand() % span + g.tz - s;
+        const int h = z - land.HeightAtNearest(x, y);
+        const int size = w[3];
+        int effect = 0;
+        if (size > 64) effect = size - 1 < 67 ? kImpactBig[size - 1] : 0;
+        else if (size >= 1)
+        {
+            const int vx = std::clamp(int((int64_t(int32_t(uint32_t(x) << 16)) + land.HalfCell()) / land.Cell()), 0, land.Width() - 1);
+            const int vy = std::clamp(int((int64_t(int32_t(uint32_t(y) << 16)) + land.HalfCell()) / land.Cell()), 0, land.Height() - 1);
+            const int terrain = land.At(vx, vy).atm & 15;
+            effect = terrain >= 1 && terrain < 4 ? kImpactWater[size - 1] : kImpactLand[size - 1];
+        }
+        if (effect) Explode(effect, x, y, std::max(h, 0), u.group);
+    }
+}
