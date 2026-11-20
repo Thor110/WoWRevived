@@ -121,8 +121,15 @@ them out. A save that can't be read exactly is still played, but not saved.
 Every object has a counter of its own (GType 0x77; WWarMapObject 0x42B2F0), except objects of class 7 (each type's
 class is AI.ojd's, 0x441580 -> 0x518B14: gun emplacements, heat ray turrets, wire fences, mines), which share one
 counter a type and sector (0x4282A0 / 0x428270) with a count in the counter font (GType 0x6E, right-aligned;
-updated by 0x8145; where the count goes isn't traced). Each view mode shows one kind: Unit View the units,
+0x42B790, updated by 0x8145): "%d" of them finished, or "%d/%d" finished / all while some aren't, always shown
+for such a counter, its bottom right on the counter's. Each view mode shows one kind: Unit View the units,
 Construction View the buildings, Resource View the resources.
+
+A counter's draw (0x42B850): depth 4, or 7 for the picked one (drawn over the rest), the pick ring at depth + 2,
+the count at + 1. The player's unfinished constructions are drawn at 50% (the sprite's +0x14 bit 0); the other
+side's counters are too while the intel on them is old (+0x3C under 168, not in yet). Still to come with the
+systems they show: the power bar, the production blink, the idle icon (GType 0x76 frame 0x94) and the repair
+icon (frame 0x95, while one of the object's units is being repaired, 0x4299C0).
 
 Where they go is the counter placement's ("clunting", 0x420160, world +0x74), not the positions objects are saved
 with:
@@ -173,7 +180,7 @@ pixels in (0x4BA05C): GType 0x93 (HU_CALEN.SPR 121 x 89, MA_CALEN.SPR 123 x 83) 
 | 0x95 | hu_month (60 frames, 5 a month) at 0x15, 0xC | |
 | 0x94 | hu_am_pm (10 frames) at 0x5A, 0x2B | |
 | 0x98, 0x99 | the day and year: six digits (5 frames each) at x 7, 14, 48, 55, 62, 69 (0x4BA688), y 0xC; the first is hu_num03 (0-3) | the days gone by: six digits (ma_spin) at x 32, 41, 50, 59, 74, 83 (0x4BA670), y 0x35: the game time over 24000, 2400, 240, 24, 2.4 and 0.24 hours (0x4BA910), so days to two decimal places ("2341.90" in WoWRevived's screenshot) |
-| 0x9B | hu_pend, the pendulum (41 frames: 0-29 while the clock is stopped, 30-40 while it runs; a frame an update) at 0x54, 0x41 | ma_goo (100 frames, 4 an update while the clock runs, 1 while stopped) at 0x31, 7 |
+| 0x9B | hu_pend, the pendulum (41 frames: 0-29 while the clock is stopped, 30-40 while it runs, drawn at 50% then; a frame an update) at 0x54, 0x41 | ma_goo (100 frames, 4 an update while the clock runs, 1 while stopped) at 0x31, 7 |
 | 0x9A | hu_twirl, just left of the calendar at y 6 | |
 | 0x97 | hu_speed, the speed slider (120 x 58) at 0, 0x1F | ma_speed (65 x 26) at 0x30, 0x16 |
 

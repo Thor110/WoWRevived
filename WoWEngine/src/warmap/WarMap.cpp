@@ -48,7 +48,7 @@ namespace wow
         for (const auto& o : objects)
             if ((o.list == 2 || o.list == 3) && o.sector >= 1 && o.sector <= warmap::SectorCount && o.value[1] >= o.value[0])
                 finished[size_t(o.sector)].push_back(o.unitType);
-        struct Group { int sector, list, type, x, y, count; std::vector<int> refs; };
+        struct Group { int sector, list, type, x, y, count; std::vector<int> refs; bool shared = false; int finished = 0; bool firstUnfinished = false; };
         std::vector<Group> groups;
         for (const auto& o : objects)
         {
@@ -58,8 +58,16 @@ namespace wow
             if (cls != objectClasses.end() && cls->second == 7)
                 for (Group& existing : groups)
                     if (existing.sector == o.sector && existing.list == o.list && existing.type == o.unitType) { g = &existing; break; }
-            if (!g) { groups.push_back({ o.sector, o.list, o.unitType, 0, 0, 0, {} }); g = &groups.back(); }
+            const bool done = !(o.list == 2 || o.list == 3) || o.value[1] >= o.value[0];
+            if (!g)
+            {
+                groups.push_back({ o.sector, o.list, o.unitType, 0, 0, 0, {} });
+                g = &groups.back();
+                g->shared = cls != objectClasses.end() && cls->second == 7;
+                g->firstUnfinished = !done;
+            }
             g->count++;
+            if (done) g->finished++;
             if (o.ref >= 0) g->refs.push_back(o.ref);
             if (!g->x && !g->y) { g->x = o.x; g->y = o.y; }
         }
@@ -72,6 +80,9 @@ namespace wow
             k.speed = unit == units.end() || g.list / 2 != 0 ? 0 : unit->second.warMapSpeed;
             k.moveClass = unit == units.end() ? 0 : unit->second.moveClass;
             k.count = g.count;
+            k.shared = g.shared;
+            k.finishedCount = g.finished;
+            k.unfinished = g.firstUnfinished;
             k.type = g.type;
             k.refs = g.refs;
             k.players = g.list % 2 == 0;
@@ -937,18 +948,32 @@ namespace wow
         for (const Counter& k : counters)
             if (k.Travelling() && k.kind == viewMode - 1) DrawRouteArrow(canvas, k);
 
-        // the counters (GType 0x77, 32 pixels) of the kind the view shows, with how many when there's more than one
-        for (const Counter& k : counters)
-        {
-            if (k.kind != viewMode - 1) continue; // each view shows its own kind
+        // The counters (GType 0x77) of the kind the view shows (WWarMapObject's draw, 0x42B850): at depth 4, or 7
+        // for the one picked, so it's drawn over the rest; the player's unfinished constructions at 50% (the
+        // sprite's +0x14 bit 0; the other side's would go by how old the intel on them is, not in yet); the pick
+        // ring (cselecth.spr, GType 0x54) at depth + 2; and a class 7 counter's count (0x42B790: "%d" finished,
+        // or "%d/%d" finished / all when some aren't) in the counter font (GType 0x6E) at depth + 1, its bottom
+        // right on the counter's.
+        const Font* countFont = res.GetFont(0x6E);
+        auto drawCounter = [&](const Counter& k) {
             int x = k.x - cameraX, y = k.y - cameraY;
-            if (x < -40 || y < -40 || x > canvas.Width() || y > canvas.Height()) continue;
-            canvas.DrawSprite(0x77, k.frame, x, y);
+            if (x < -40 || y < -40 || x > canvas.Width() || y > canvas.Height()) return;
+            const bool dim = k.players && k.kind == 1 && k.unfinished;
+            canvas.DrawSprite(0x77, k.frame, x, y, 0, dim ? Canvas::Blend::Translucent : Canvas::Blend::Opaque);
             if (&k - counters.data() == chosen) canvas.DrawSprite(0x54, 0, x, y); // cselecth.spr
-            // the count, in the counter font (GType 0x6E, hcntfnt.fnt; where the game puts it isn't traced yet)
-            if (k.count > 1) // where the game's text object sits on the counter isn't traced
-                canvas.DrawString(0x6E, std::to_string(k.count), { x, y + 22, 30, 10 }, TextRight);
-        }
+            if (k.shared)
+            {
+                std::string text = k.finishedCount < k.count ? std::to_string(k.finishedCount) + "/" + std::to_string(k.count)
+                                                              : std::to_string(k.finishedCount);
+                const IndexedImage* face = res.GetFrame(0x77, k.frame);
+                int w = face ? face->width : 32, h = face ? face->height : 32, th = countFont ? countFont->Height() : 8;
+                canvas.DrawString(0x6E, text, { x, y + h - th, w, th }, TextRight);
+            }
+        };
+        for (const Counter& k : counters)
+            if (k.kind == viewMode - 1 && &k - counters.data() != chosen) drawCounter(k); // each view shows its own kind
+        if (chosen >= 0 && size_t(chosen) < counters.size() && counters[size_t(chosen)].kind == viewMode - 1)
+            drawCounter(counters[size_t(chosen)]);
 
         // the panel: its frame, the three view buttons (frame 2 for the one that's on, 1 under the mouse; the
         // buttons' frames aren't confirmed), then the mini-map: the whole map at a fifteenth, the sector under the
@@ -1268,9 +1293,10 @@ namespace wow
             canvas.DrawSprite(0x96, FaceStep[s] >= 21 ? 0x60 + w.face / 2 : w.face, c.x + 0x52, c.y + 4);
             canvas.DrawSprite(0x94, w.ampm, c.x + 0x5A, c.y + 0x2B);
             canvas.DrawSprite(0x95, w.month, c.x + 0x15, c.y + 0xC);
-            // the pendulum: frames 0-29 while stopped, 30-40 swinging while the clock runs (the game also sets a
-            // flag on the sprite then, +0x14 bit 0, not worked out)
-            canvas.DrawSprite(0x9B, s ? 30 + w.cycle * 11 / 30 : w.cycle, c.x + 0x54, c.y + 0x41);
+            // the pendulum: frames 0-29 while stopped, 30-40 swinging while the clock runs, then with the sprite's
+            // +0x14 bit 0 set: drawn at 50%
+            canvas.DrawSprite(0x9B, s ? 30 + w.cycle * 11 / 30 : w.cycle, c.x + 0x54, c.y + 0x41, 0,
+                              s ? Canvas::Blend::Translucent : Canvas::Blend::Opaque);
             Rect twirl = SpriteRect(0x9A, 0, 0);
             canvas.DrawSprite(0x9A, 0, c.x - twirl.w, c.y + 6);
             // the day and year (the first digit is hu_num03, 0-3)

@@ -53,8 +53,9 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 - [x] **Counter cells**: the sector grids with their spiral place kept, shrinking by "WM clunting adj" (4) from
       "WM clunting res" (36) when a sector is full with the counters sliding at 5 pixels a tick, mode 3 / mode 2
       (with its row test), re-laid out on a view change and on arrival (0x4205F0, 0x4208B0, 0x4209E0, 0x43CB60) — 03
-- [ ] **Counter decorations**: power bar, production blink, idle and repair icons, counts placed as the game does
-      (0x42B850) — 04
+- [~] **Counter decorations** (0x42B850): done: the class-7 counts ("%d" / "%d/%d") at the bottom right, the
+      picked counter drawn on top, own unfinished buildings at 50%; with their systems: the power bar, production
+      blink, idle and repair icons, old enemy intel at 50% — 04
 - [~] **Mouse**: rubber-band selection (sectors 0x8010 / 0x8011), the sector selection rules (own sectors only,
       cheats aside), the right-hold "Warmap menu" popup with Cancel and the object's or sector's items (0x41D120,
       0x805C), the hover route preview with cursor 2 (0x41D300-0x41D590); the quick cancel is done — 03

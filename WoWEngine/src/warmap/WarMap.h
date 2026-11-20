@@ -215,6 +215,9 @@ namespace wow
             bool players = false;
             int kind = 0;                // 0 units, 1 constructions, 2 resources
             int type = 0;                // the object type (unit type) it stands for
+            bool shared = false;         // class 7: one counter for every object of the type in the sector (+0x8C)
+            int finishedCount = 0;       // of those, the finished ones (0x42AA70)
+            bool unfinished = false;     // a construction not finished yet (drawn at 50% when it's ours)
             int sector = 0;
             int speed = 0;               // the unit type's war map speed (unit +0x54), 0 for constructions and resources
             int moveClass = 0;           // the unit type's +0x4E: 0-2 land, 3 boats, 4 fliers

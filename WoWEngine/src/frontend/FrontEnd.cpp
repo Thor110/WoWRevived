@@ -109,8 +109,9 @@ namespace wow
 
     void FrontEnd::StartAmbient(bool restart)
     {
-        // The main menu (0x405ED0) always starts the menu sound afresh, fading it in over 60 ticks; Game Options
-        // (0x406130) only starts it again if it has stopped.
+        // The main menu (0x405ED0) and Game Options (0x406130) start the menu sound only when it isn't playing (the
+        // handle released once it has played to its end, 0x464E20), fading it in over 60 ticks; while it plays,
+        // going from menu to menu leaves it be.
         if (!restart && sound.Active(ambient)) return;
         sound.Stop(ambient);
         ambient = sound.Play(0x18C);
@@ -211,7 +212,7 @@ namespace wow
     std::unique_ptr<Screen> FrontEnd::MainMenu()
     {
         auto m = NewMenu(CmdMainMenu);
-        StartAmbient(true);
+        StartAmbient(false);
         m->AddHeading(0x3FB);
         if (settings.networkEnabled)
         {
