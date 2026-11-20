@@ -414,14 +414,58 @@ spread demand among its sectors (from 1). Under 0.3 a counter (0x4E9BA0) goes up
 event 14, ResourceAlert, clearing both counters; otherwise, under 0.8, another (0x4E9BB0) goes up and past 504
 raises event 13, ResourceWarning. They count calls, not hours.
 
+## Battles
+
+**Who holds a sector** (0x43CA40, whenever a unit goes in or out, 0x429E80, or objects are taken away): the side
+that alone has units or constructions there (less units counting themselves out with 0x8116); with both, it stays
+as it was; with neither, no one. So a unit setting off can leave its sector to no one, and one arriving where no
+one else is takes it.
+
+**Finding battles** (0x41AB00, every tick while none is waiting, dword_4E9B98): the first sector with both sides'
+units or constructions in it and no battle flagged (+0x124). If its holder's side (the other side's, for a sector
+no one holds) has no units there and no class 7 construction (0x43C8D0), it's UndefendedSectorLost (event 17) and
+then all that side's units, constructions and resources there go (0x43A250, the sector worked out again);
+otherwise it's PodLanded (if a pod came, +0x64) or BattleInSector, and the battle waits there.
+
+**The battle** (0x8072): the game goes to the briefing, the battle map and the debriefing, and comes back with the
+battle report (0x421210 at 0x4E9B7C: sector +0x50, winner +0x68, loser +0x6C, game over +0x55), announced by
+0x41AED0: the player won: EndGameWon (18, with the other side's home sector) if the game is over, else sound 0x13C;
+lost: EndGameLost (19) if over, else 0x140; no winner: 0x13D (the player's report) or 0x13F. The war map's set-up
+then clears the flags, gives the intel (see Counters) and runs the queued events (0x41E730). None of the battle
+screens are in yet, so the engine settles it at once (*provisional*): the side with more men in its units there
+wins (the holder on a tie), the loser's units, constructions and resources there go, and the game is over when
+the Humans win in sector 3 or the Martians in London (30), as 0x4212A0 reads it: 0x80FA Human victory / 0x80FD
+Martian defeat, or 0x80FB Human defeat / 0x80FC Martian victory.
+
+**The end** (0x41F400 / 0x41F4B0): byte_4D2530 is set and the world stands still; the game is sent 0x80FE with the
+code after the victory sound's length and 30 ticks (the engine waits 6 seconds), or 30 ticks for a defeat. The
+front end (0x402B80) shuts the war map down and plays VICTORY (0x80FA / 0x80FC) or DEFEAT, then the credits, then
+the main menu (0x80C9).
+
 ## Messages and events
 
 The war map's events (a table at 0x4BA0E8 of handler, "is it critical" test and name, 12 bytes each, raised by
 0x41E5B0): 0 BattleInSector, 1 ConstructionCompleted, 2 UnitCompleted, 3 ArrivedInSector, 4 ResearchCompleted,
 5 ResearchAvailable, 6 ResearchAlert, ConstructorOnline, FacilityOnline, ConstructorIdle, FacilityIdle,
 TravelInterrupted, PodLanded, ResourceWarning, ResourceAlert, CommandCentreBuilt, EnteringNeutralSector,
-UndefendedSectorLost and End Game. A critical event (the Critical Event Options) also opens a dialog (0x41E4E0;
-one at a time, the rest queued; not done); every event writes a line to the message list.
+UndefendedSectorLost and End Game (won, lost). 0x41E5B0 asks the event's test: a critical one waits in a queue
+(0x4EA064) while a box is up (byte_4EA0A0) and otherwise runs and marks a box up; any other runs at once. When a
+box goes (0x8122 to the war map), 0x41E730 runs the next queued event's handler, or clears the flag. The tests are
+the `[Event]` options (0x41E160-0x41E3E0, the Critical event options menu, plus "Entered Neutral Sector" which isn't
+in it), always for BattleInSector and the endings, and "unless the cheat 0x4D1261" for ResearchAlert, PodLanded and
+UndefendedSectorLost. A handler writes its line to the message list and, if its option is on, opens the box.
+
+**The InfoBox** (0x41E4E0 -> 0x432520, WDialog "InfoBox" 0x801B, z 0x65FE, modal): time stops (0x41A6C0(0)), the
+view goes to the sector (0x41E000, which glides; the engine jumps), sound 0x198. The backdrop (GType 0x68, hu_event
+/ ma_event) is centred 4 pixels above the bottom; in Martian games ma_scrn (0x69) is drawn at 50% at +0x0B, -0x5E and
+the text goes from its corner. The text (font 0x73, wrapped to 320 pixels by 0x4161E0, centred, shade 21) sits
+0x2B (Human) or 0x17 (Martian) down, a second line (shade 22, from the centre) 16 pixels below it. The button
+(WGraphicPushButton, GType 0x6A hu_buton / ma_buton, font 0x73) at +0x52, +0x76 (Human) or +0x87, +0x28 (Martian;
+the offsets come from `and al, 0CBh` / `and eax, 4Eh` on -1 or 0) says "Press button to continue" (0x47F), or
+"... ESC to cancel" (0x480) for a box that can be cancelled. Its button (or Enter / Space) sends the box's command
+(0x432B30): 0x8122 closes it and tells the war map; any other command (0x8072, a battle) goes to the war map and the
+box closes without 0x8122, the queue waiting until the war map comes back (0x418980 -> 0x41E730). Esc on a box that
+can be cancelled is 0x8123, closing it too.
 
 The message list (PopupMessageController 0x420A30, at 0x28, 4) keeps at most 10 lines (0x4BA4FC), each a
 "Message Item" (0x428810, font 0x72) shown for 5 x 30 updates (0x4BA4F8), drawn top down 16 pixels apart
@@ -433,10 +477,15 @@ every line with less than 5 seconds left gets 5 more (0x421150), so the last 10 
 
 So far the engine raises:
 
-| Event | Line | Sound |
-|---|---|---|
-| ArrivedInSector (0x41EAE0) | "Vehicle/s arrived in" (0x211) and the sector | 0x120 |
-| BattleInSector (0x41E850) | "Battle in" (0x210) and the sector | 0x139 attacking (0x13A for sector 3 or London), 0x138 defending |
+| Event | Box (when its option is on) | Line | Sound |
+|---|---|---|---|
+| BattleInSector (0x41E850) | always: ours "Enemy have attacked" (0x4AF) / "Defend" (0x4B2), else "Invasion commencing" (0x4B0) / "Attack" (0x4B1), command 0x8072 | "Battle in" (0x210) and the sector | 0x138 ours; 0x139, or 0x13A for sector 3 or London |
+| ArrivedInSector (0x41EAE0) | "Unit Arrived At Destination": the line, Unit view first | "Vehicle/s arrived in" (0x211) and the sector | 0x120 |
+| TravelInterrupted (0x41EF80) | "Travel Interrupted": "Travel interrupted" (0x419), Unit view first | the same | 0x147 |
+| PodLanded (0x41F010) | Martian games go to the Unit view; in a Martian sector "Pod landed: <sector>" (0x41E); otherwise a battle (+0x124) with "Pod landed in our territory" (0x420, Human) or "Pod landed in enemy sector" (0x41F, Martian) and Defend / Attack, 0x8072 | the same | 0x1B2 / 0x1B3 |
+| UndefendedSectorLost (0x41E960) | "Undefended Sector Lost" (0x49E, ours) or "Undefended sector captured" (0x49F) and the sector, after "Pod landed" on a line of its own if a pod came (clearing the pod flag); Unit view | the same, "Pod landed; " before | 0x1B2 with a pod |
+| EndGameWon (0x41F400) | "Victory is ours!" (0x533), Unit view | the same | 0x13E |
+| EndGameLost (0x41F4B0) | none; Unit view | none | none |
 | ResourceWarning (0x41F280) | "Resource Warning: " (0x41B) and the resource (0x214 + kind) | 0x124, 0x122, 0x123 (Human), 0x125-0x127 (Martian) |
 | ResourceAlert (0x41F340) | the same | 0x12A, 0x128, 0x129 (Human), 0x12B-0x12D (Martian) |
 

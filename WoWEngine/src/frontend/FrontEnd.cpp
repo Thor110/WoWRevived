@@ -45,6 +45,7 @@ namespace wow
         constexpr int CmdRageLogo = 0x8036;       // plays RAGELOGO, then 0x8038 (start-up, after the disc check)
         constexpr int CmdTitle = 0x8038;          // plays TITLE, then the main menu
         constexpr int CmdStartCampaign = 0x8A;    // the war map
+        constexpr int CmdGameOver = 0x80FE;       // the war map's end (lParam the ending, 0x4212A0)
         constexpr int CmdWarMapMenu = 0x80B5;     // the war map's Escape menu
         constexpr int CmdSoundControl = 0x3ED;
         constexpr int CmdDisplaySettings = 0x3EF;
@@ -570,6 +571,7 @@ namespace wow
         auto map = std::make_unique<WarMap>(res, settings.colours, info, std::move(objects), std::move(units), std::move(classes),
             std::move(owners), ini.GetInt("Screen", "Scroll Speed", 40), ini.GetFloat("Tweak", "Clunting Speed", 7.0f));
         map->SetArrowTypes(std::move(arrows));
+        map->SetEventOptions([this](const char* name, bool on) { return ini.GetBool("Event", name, on); });
         map->SetDeposits(std::move(deposits), ini.GetFloat("Tweak", "Resource Drop Off Rate", 3.0f));
         map->SetPodInterval(ini.GetInt("Tweak", "Pod Interval (hours)", 24));
         map->SetClunting(ini.GetInt("Tweak", "WM clunting res", 36), ini.GetInt("Tweak", "WM clunting adj", 4));
@@ -704,9 +706,17 @@ namespace wow
             Show(std::make_unique<CdPlayer>(res, settings.colours, CmdMainMenu, music, files)); break;
         case Credits::Id:
             // the credits fade out every sound over 60 ticks (0x464AB0) before their own music; the menu sound
-            // comes back with the next menu
+            // comes back with the next menu (after the game's end they go back to the main menu, 0x80C9)
             sound.FadeOutAll(60);
-            Show(std::make_unique<Credits>(res, current, creditsEasterEgg, sound));
+            Show(std::make_unique<Credits>(res, command.param ? command.param : current, creditsEasterEgg, sound));
+            break;
+        case CmdGameOver:
+            // 0x80FE (0x402B80): the war map is shut down, then VICTORY for 0x80FA / 0x80FC or DEFEAT for 0x80FB /
+            // 0x80FD, then the credits and the main menu
+            warMap.reset();
+            playingSlot = 0;
+            topMenu = CmdMainMenu;
+            PlayMovie(command.param == 0x80FA || command.param == 0x80FC ? "VICTORY" : "DEFEAT", { Credits::Id, CmdMainMenu });
             break;
         case Commands::Back:
             // on the war map Escape opens its menu, and in that menu it (and Resume Campaign, which sends the same

@@ -40,6 +40,7 @@ namespace wow
         // the war map's numbers start from srand(1) each time (WWarMapWorld 0x417CD0)
         random::Seed(1);
         unitData = units;
+        this->objectClasses = objectClasses;
         // A counter for each object (0x42B2F0, made by 0x4205F0), except that objects of class 7 (AI.ojd's class,
         // 0x518B14: wire fences, mines) share one a type and sector (0x4282A0 / 0x428270), with how many there are
         // in the counter font (GType 0x6E, right-aligned). Where they go is the counter placement's (LayoutAll):
@@ -503,6 +504,7 @@ namespace wow
         static constexpr int AlertSound[6] = { 0x12A, 0x128, 0x129, 0x12B, 0x12C, 0x12D };
         const int base = res.Human() ? 0 : 3;
         float least[3] = { 1.0f, 1.0f, 1.0f };
+        int leastSector[3] = { 0, 0, 0 };
         for (int s = 1; s <= warmap::SectorCount; s++)
         {
             if (owner[size_t(s)] != 0) continue;
@@ -510,7 +512,7 @@ namespace wow
             for (int k = 0; k < 3; k++)
             {
                 float r = e.effSupply[size_t(base + k)] / e.effDemand[size_t(base + k)];
-                if (r < least[k]) least[k] = r;
+                if (r < least[k]) { least[k] = r; leastSector[k] = s; }
             }
         }
         for (int k = 0; k < 3; k++)
@@ -525,8 +527,7 @@ namespace wow
                 if (++warningCount[k] > 504) { sound = WarningSound[base + k]; warningCount[k] = 0; }
             }
             if (!sound) continue;
-            Log(res.String(0x41B) + ": " + res.String(0x214 + base + k));
-            sounds.push_back(sound);
+            RaiseEvent(sound == AlertSound[base + k] ? ResourceAlert : ResourceWarning, leastSector[k] << 16 | k);
         }
     }
 
@@ -554,17 +555,7 @@ namespace wow
         // who holds it, as Human 0 / Martian 1 / no one 2
         int who = owner[size_t(sector)] == 2 ? 2 : (owner[size_t(sector)] == 0) == human ? 0 : 1;
         if (who == 0) { podFlag[size_t(sector)] = true; return; }
-        if (!human) SetView(1);
-        std::string name = res.String(warmap::NameText(sector));
-        if (who == 1)
-        {
-            sounds.push_back(0x1B2);
-            Log(res.String(0x41E) + ": " + name);
-            return;
-        }
-        battle[size_t(sector)] = true;
-        sounds.push_back(0x1B3);
-        Log(res.String(human ? 0x420 : 0x41F) + ": " + name);
+        RaiseEvent(PodLanded, sector);
     }
 
     // A unit put in a sector (0x43CEB0): its own counter in the sector's next free cell. With a save behind the map
@@ -743,7 +734,7 @@ namespace wow
         // anything with no counter (a sector too full to show it) stays where it was
         for (size_t i = 0; i < table.size(); i++)
         {
-            if (written[i]) continue;
+            if (written[i] || std::find(destroyed.begin(), destroyed.end(), int(i)) != destroyed.end()) continue;
             int sector = table[i].Sector();
             if (sector >= 1 && sector <= warmap::SectorCount) s.Sector(sector).lists[size_t(table[i].list)].push_back(table[i]);
         }
@@ -783,8 +774,7 @@ namespace wow
                     if ((battle[size_t(s)] || owner[size_t(s)] == 1) && s != origin)
                     {
                         k.interrupted = true;
-                        Log(res.String(0x419));
-                        sounds.push_back(0x147);
+                        RaiseEvent(TravelInterrupted, int(i));
                         break;
                     }
                 }
@@ -824,33 +814,21 @@ namespace wow
     }
 
     // A counter arriving (0x425471: 0xAD to the group with the sector, +0x58 the one before, then the entry goes),
-    // and the route ending with it (0x4253F9). Going into a sector the other side holds is a battle, which needs
-    // the battle map: "Battle in" and the sector with the attack sound (0x139, or 0x13A for sector 3 or London),
-    // and the counter stays in the sector it came from (provisional). Arriving in a sector no one holds takes it
-    // (provisional).
+    // and the route ending with it (0x4253F9), ArrivedInSector unless it was an attack.
     void WarMap::Arrive(int index, int sector, int previous)
     {
+        (void)previous;
         Counter& k = counters[size_t(index)];
         const bool attack = k.attack;
-        int at = sector;
-        if (owner[size_t(sector)] == 1)
-        {
-            Log(res.String(0x210) + " " + res.String(warmap::NameText(sector)));
-            sounds.push_back(sector == 3 || sector == 30 ? 0x13A : 0x139);
-            at = previous;
-        }
-        else if (owner[size_t(sector)] == 2) owner[size_t(sector)] = 0;
         k.path.clear();
         k.arrow.clear();
-        k.sector = at;
-        // the sector laid out again (0x43CB60), this one with the rest
-        RefreshSector(at);
-        // ArrivedInSector (event 3, 0x41EAE0): "Vehicle/s arrived in" and the sector, sound 0x120
-        if (!attack && at == sector)
-        {
-            Log(res.String(0x211) + " " + res.String(warmap::NameText(sector)));
-            sounds.push_back(0x120);
-        }
+        k.sector = sector;
+        // the unit goes into the sector (0x429E80 -> 0x429DB0), which then belongs to whoever alone is in it
+        // (0x43CA40), and is laid out again (0x43CB60); a battle, if the other side is there, is found by the
+        // next tick's check (0x41AB00)
+        RecomputeOwner(sector);
+        RefreshSector(sector);
+        if (!attack) RaiseEvent(ArrivedInSector, sector);
     }
 
     // Attacks on the same sector arrive together (the route manager's 0x41FCF0, after a route is added): the
@@ -879,6 +857,12 @@ namespace wow
         // the right button held for [Tweak] "Quick Cancel Timeout" updates opens the Warmap menu (0x805B -> 0x41D120)
         if (rightDownAt >= 0 && popup.empty() && animation - rightDownAt == quickCancelTimeout && mouseX >= 0)
             OpenWarmapMenu(mouseX, mouseY);
+        // the game over (byte_4D2530): nothing moves, and the game is told when the time comes
+        if (ending)
+        {
+            if (endingDelay > 0 && --endingDelay == 0) sent = Command{ 0x80FE, endingCode };
+            return;
+        }
         if (!economyStarted)
         {
             economyStarted = true;
@@ -888,6 +872,7 @@ namespace wow
         SlideCounters();
         ClockTick();
         if (hoursPassed > 0) Hourly(hoursPassed);
+        if (!pendingBattle) DetectBattles();
         EconomyPhase(animation % 5);
         ShadeSectors();
         // a waiting calendar is hidden every other pair of updates (0x4271E0: the tick count's bit 1), its wheels
@@ -1068,6 +1053,7 @@ namespace wow
             const IndexedImage* lit = int(i) == popupHover ? res.GetFrame(item.icon, 1) : nullptr;
             canvas.DrawSprite(item.icon, lit ? 1 : 0, item.rect.x, item.rect.y);
         }
+        DrawBox(canvas); // z 0x65FE, over everything
     }
 
     // The keys, as the war map view (0x41C5E0 and 0x41D640) and the world (0x41A450) take them. Each press (and
@@ -1077,7 +1063,7 @@ namespace wow
     // "Warmap menu" popup, 0x41D120, which isn't in yet.) Cancel drops the selection (the player's action 2).
     std::optional<Command> WarMap::OnRightButton(int, int, bool down)
     {
-        if (!popup.empty()) { rightDownAt = -1; return std::nullopt; }
+        if (!popup.empty() || infoBox) { rightDownAt = -1; return std::nullopt; }
         if (down) { SetTimeRunning(false); rightDownAt = animation; return std::nullopt; } // 0x204: 0x41A6C0(0)
         bool quick = rightDownAt >= 0 && animation - rightDownAt <= quickCancelTimeout;
         rightDownAt = -1;
@@ -1170,6 +1156,13 @@ namespace wow
 
     std::optional<Command> WarMap::OnKey(int key)
     {
+        // the box has the keyboard (0x432C0E): Enter or Space presses its button, Esc cancels if it can
+        if (infoBox)
+        {
+            if (key == SDLK_RETURN || key == SDLK_SPACE || key == SDLK_KP_ENTER) BoxCommand(infoBox->command);
+            else if (key == SDLK_ESCAPE && infoBox->cancellable) BoxCommand(0x8123);
+            return std::nullopt;
+        }
         if (!popup.empty())
         {
             if (key == SDLK_ESCAPE) ClosePopup(true);
@@ -1225,6 +1218,408 @@ namespace wow
     }
 
     void WarMap::OnKeyUp(int) {}
+
+    // A battle (0x8072, the box's Defend / Attack). The game goes to the briefing, the battle map and the
+    // debriefing, and comes back with the battle report (0x418980 -> 0x808D -> 0x41AED0). None of those are in
+    // yet, so the engine settles it here (*provisional*): the side with more men in its units in the sector
+    // wins (the side holding it on a tie), and the loser's units, constructions and resources there go
+    // (0x43A250). Then, as on the war map's return: the sector's battle flag goes and it and its neighbours are
+    // seen (0x418E17), the result is announced, and the queued events come again (0x41E730).
+    void WarMap::ResolveBattle()
+    {
+        const int s = pendingBattle;
+        if (s < 1 || s > warmap::SectorCount) { NextEvent(); return; }
+        int men[2] = { 0, 0 };
+        for (size_t i = 0; i < counters.size(); i++)
+        {
+            const Counter& k = counters[i];
+            if (k.sector == s && k.kind == 0 && !k.Travelling()) men[k.players ? 0 : 1] += CrewOf(k);
+        }
+        const int holder = owner[size_t(s)] == 0 ? 0 : 1;
+        const int winner = men[0] > men[1] ? 0 : men[1] > men[0] ? 1 : holder; // relative: 0 the player
+        const bool human = res.Human();
+        auto absolute = [&](int rel) { return human ? rel : 1 - rel; };
+        report.sector = s;
+        report.winner = absolute(winner);
+        report.loser = absolute(1 - winner);
+        report.gameOver = (s == 3 && report.winner == 0) || (s == 30 && report.winner == 1);
+        Log(res.String(0x210) + " " + res.String(warmap::NameText(s)) + (winner == 0 ? ": won" : ": lost")); // the engine's own
+        ClearSide(s, winner != 0);
+        battle[size_t(s)] = false;
+        pendingBattle = 0;
+        RevealAfterBattle(s, 0);
+        AnnounceBattleResult();
+        NextEvent();
+    }
+
+    // 0x41AED0: a winner and a loser: the player won: EndGameWon (event 18, with the other side's home sector)
+    // if the game is over, else sound 0x13C; lost: EndGameLost (19) if over, else 0x140. No winner: 0x13D or
+    // 0x13F.
+    void WarMap::AnnounceBattleResult()
+    {
+        const int player = res.Human() ? 0 : 1;
+        if (report.winner != report.loser)
+        {
+            if (report.winner == player)
+            {
+                if (report.gameOver) RaiseEvent(EndGameWon, res.Human() ? 3 : 30);
+                else sounds.push_back(0x13C);
+            }
+            else
+            {
+                if (report.gameOver) RaiseEvent(EndGameLost, res.Human() ? 30 : 3);
+                else sounds.push_back(0x140);
+            }
+        }
+        else sounds.push_back(report.winner == player ? 0x13D : 0x13F);
+    }
+
+    // 0x4212A0: the game's ending, sent with 0x80FE: the Humans winning at sector 3 is 0x80FA (Human victory) or
+    // 0x80FD (Martian defeat); the Martians winning at London (30) 0x80FB (Human defeat) or 0x80FC (Martian
+    // victory); 0 when it isn't over.
+    int WarMap::EndCode() const
+    {
+        if (!report.gameOver) return 0;
+        const bool human = res.Human();
+        if (report.sector == 3 && report.winner == 0) return human ? 0x80FA : 0x80FD;
+        if (report.sector == 30 && report.winner == 1) return human ? 0x80FB : 0x80FC;
+        return 0;
+    }
+
+    // Who holds a sector (0x43CA40, whenever an object goes in or out): the side that alone has units or
+    // constructions there (less units counting themselves out, 0x8116, none yet); with both, it stays as it was;
+    // with neither, no one.
+    void WarMap::RecomputeOwner(int sector)
+    {
+        if (sector < 1 || sector > warmap::SectorCount) return;
+        int mine = 0, theirs = 0;
+        for (const Counter& k : counters)
+            if (k.sector == sector && k.kind <= 1 && !k.Travelling()) (k.players ? mine : theirs) += k.count;
+        int& o = owner[size_t(sector)];
+        if (mine && theirs) return;
+        o = mine ? 0 : theirs ? 1 : 2;
+    }
+
+    // The tick's check (0x41AB00), while no battle is waiting: the first sector with both sides' units or
+    // constructions in it and no battle flagged (+0x124): undefended, it's UndefendedSectorLost (event 17) and the
+    // holder's objects go (0x43A250); otherwise PodLanded (the pod flag +0x64) or BattleInSector, and the battle
+    // waits there.
+    void WarMap::DetectBattles()
+    {
+        std::array<int, warmap::SectorCount + 1> mine{}, theirs{};
+        for (const Counter& k : counters)
+            if (k.kind <= 1 && !k.Travelling() && k.sector >= 1 && k.sector <= warmap::SectorCount)
+                (k.players ? mine : theirs)[size_t(k.sector)] += k.count;
+        for (int s = 1; s <= warmap::SectorCount; s++)
+        {
+            if (!mine[size_t(s)] || !theirs[size_t(s)] || battle[size_t(s)]) continue;
+            if (Undefended(s))
+            {
+                RaiseEvent(UndefendedSectorLost, s);
+                ClearSide(s, owner[size_t(s)] == 0);
+                return;
+            }
+            RaiseEvent(podFlag[size_t(s)] ? PodLanded : BattleInSector, s);
+            pendingBattle = s;
+            return;
+        }
+    }
+
+    // 0x43C8D0: the holder's side (the other side's for a sector no one holds) has no units there and no class 7
+    // construction (guns, turrets, wire, mines: AI.ojd class 7).
+    bool WarMap::Undefended(int sector) const
+    {
+        const bool players = owner[size_t(sector)] == 0;
+        for (const Counter& k : counters)
+        {
+            if (k.sector != sector || k.players != players || k.Travelling()) continue;
+            if (k.kind == 0) return false;
+            if (k.kind == 1)
+            {
+                auto c = objectClasses.find(k.type);
+                if (c != objectClasses.end() && c->second == 7) return false;
+            }
+        }
+        return true;
+    }
+
+    // 0x43A250: every unit, construction and resource of the side in the sector goes (out of the placement,
+    // 0x420930, and out of the sector, 0x43C7C0); then the sector's holder is worked out again and it's laid out.
+    void WarMap::ClearSide(int sector, bool players)
+    {
+        std::vector<int> gone;
+        for (size_t i = 0; i < counters.size(); i++)
+            if (counters[i].sector == sector && counters[i].players == players && !counters[i].Travelling()) gone.push_back(int(i));
+        for (int i : gone) FreeCounter(i);
+        // the counters are taken out of the sector (index order kept for the rest: they're marked gone)
+        for (int i : gone)
+        {
+            Counter& k = counters[size_t(i)];
+            destroyed.insert(destroyed.end(), k.refs.begin(), k.refs.end());
+            k.sector = 0; k.refs.clear(); k.count = 0;
+        }
+        selection.erase(std::remove_if(selection.begin(), selection.end(), [&](int i) {
+            return std::find(gone.begin(), gone.end(), i) != gone.end(); }), selection.end());
+        RecomputeOwner(sector);
+        RefreshSector(sector);
+    }
+
+    // 0x41E5B0: a critical event (its test, the table's second column) waits while a box is up, or runs and puts
+    // one up; any other runs at once.
+    void WarMap::RaiseEvent(int event, int param)
+    {
+        if (Critical(event))
+        {
+            if (boxUp) { eventQueue.push_back({ event, param }); return; }
+            RunEvent(event, param);
+            boxUp = true;
+            return;
+        }
+        RunEvent(event, param);
+    }
+
+    // The tests (0x41E420-0x41E4C0): the [Event] options (0x41E160-0x41E3E0; "Entered Neutral Sector" isn't in
+    // the menu); BattleInSector and the two endings always; ResearchAlert, PodLanded and UndefendedSectorLost
+    // unless the cheat 0x4D1261 is on; ConstructorOnline / FacilityOnline by 0x48B580 (taken as off).
+    bool WarMap::Critical(int event) const
+    {
+        switch (event)
+        {
+        case BattleInSector: case EndGameWon: case EndGameLost: return true;
+        case ResearchAlert: case PodLanded: case UndefendedSectorLost: return true;
+        case ConstructionCompleted: return Option("Construction Completed", false);
+        case UnitCompleted: return Option("Unit Manufactured", false);
+        case ArrivedInSector: return Option("Unit Arrived At Destination", false);
+        case ResearchCompleted: case ResearchAvailable: return Option("Research Completed", true);
+        case ConstructorIdle: return Option("Constructor Idle", true);
+        case FacilityIdle: return Option("Facility Idle", true);
+        case TravelInterrupted: return Option("Travel Interrupted", true);
+        case ResourceWarning: return Option("Resource Warning", false);
+        case ResourceAlert: return Option("Resource Alert", true);
+        case CommandCentreBuilt: return Option("Command Centre Built", false);
+        case EnteringNeutralSector: return Option("Entered Neutral Sector", false);
+        default: return false;
+        }
+    }
+
+    // The handlers (0x41E850-0x41F4B0) of the events the war map raises so far.
+    void WarMap::RunEvent(int event, int param)
+    {
+        const bool human = res.Human();
+        auto name = [&](int sector) { return res.String(warmap::NameText(sector)); };
+        switch (event)
+        {
+        case BattleInSector: // 0x41E850
+        {
+            const int sector = param;
+            battle[size_t(sector)] = true;
+            if (owner[size_t(sector)] == 0)
+            {
+                OpenBox(res.String(0x4AF), sector, res.String(0x4B2), 0x8072); // "Enemy have attacked" / "Defend"
+                sounds.push_back(0x138);
+            }
+            else
+            {
+                OpenBox(res.String(0x4B0), sector, res.String(0x4B1), 0x8072); // "Invasion commencing" / "Attack"
+                sounds.push_back(sector == 3 || sector == 30 ? 0x13A : 0x139);
+            }
+            Log(res.String(0x210) + " " + name(sector));
+            break;
+        }
+        case ArrivedInSector: // 0x41EAE0
+        {
+            std::string text = res.String(0x211) + " " + name(param);
+            if (Option("Unit Arrived At Destination", false)) { SetView(1); OpenBox(text, param, {}, 0x8122); }
+            Log(text);
+            sounds.push_back(0x120);
+            break;
+        }
+        case TravelInterrupted: // 0x41EF80
+        {
+            int sector = param >= 0 && size_t(param) < counters.size() ? counters[size_t(param)].sector : 0;
+            if (Option("Travel Interrupted", true)) { SetView(1); OpenBox(res.String(0x419), sector, {}, 0x8122); }
+            Log(res.String(0x419));
+            sounds.push_back(0x147);
+            break;
+        }
+        case PodLanded: // 0x41F010: in a Martian sector a note; in one no one holds a battle to come
+        {
+            const int sector = param;
+            if (!human) SetView(1);
+            const bool martians = owner[size_t(sector)] == (human ? 1 : 0);
+            std::string text;
+            if (martians)
+            {
+                sounds.push_back(0x1B2);
+                text = res.String(0x41E) + ": " + name(sector);
+                OpenBox(text, sector, {}, 0x8122);
+            }
+            else
+            {
+                battle[size_t(sector)] = true;
+                sounds.push_back(0x1B3);
+                text = res.String(human ? 0x420 : 0x41F) + ": " + name(sector);
+                OpenBox(text, sector, res.String(human ? 0x4B2 : 0x4B1), 0x8072);
+            }
+            Log(text);
+            break;
+        }
+        case UndefendedSectorLost: // 0x41E960: told before the sector goes over
+        {
+            const int sector = param;
+            const int what = owner[size_t(sector)] == 0 ? 0x49E : 0x49F; // "Undefended Sector Lost" / "... captured"
+            std::string box, line;
+            if (podFlag[size_t(sector)])
+            {
+                box = res.String(0x41E) + "\n";
+                line = res.String(0x41E) + "; ";
+                sounds.push_back(0x1B2);
+            }
+            box += res.String(what) + ": " + name(sector);
+            line += res.String(what) + ": " + name(sector);
+            OpenBox(box, sector, {}, 0x8122);
+            SetView(1);
+            Log(line);
+            podFlag[size_t(sector)] = false;
+            break;
+        }
+        case EndGameWon: // 0x41F400: "Victory is ours!", sound 0x13E; the world stops and the game hears 0x80FE with
+                         // the ending after the sound and 30 ticks more
+            SetView(1);
+            OpenBox(res.String(0x533), param, {}, 0x8122);
+            Log(res.String(0x533));
+            sounds.push_back(0x13E);
+            ending = true;
+            endingCode = EndCode();
+            endingDelay = 30 + 150; // (the sound's length isn't known here: 5 seconds taken)
+            break;
+        case EndGameLost: // 0x41F4B0: the world stops and the game hears 0x80FE after 30 ticks
+            SetView(1);
+            ending = true;
+            endingCode = EndCode();
+            endingDelay = 30;
+            break;
+        case ResourceWarning: case ResourceAlert: // 0x41F280 / 0x41F340
+        {
+            static constexpr int WarningSound[6] = { 0x124, 0x122, 0x123, 0x125, 0x126, 0x127 };
+            static constexpr int AlertSound[6] = { 0x12A, 0x128, 0x129, 0x12B, 0x12C, 0x12D };
+            const int kind = (param & 0xFFFF) + (human ? 0 : 3), sector = param >> 16;
+            std::string text = res.String(0x41B) + ": " + res.String(0x214 + kind);
+            if (event == ResourceAlert ? Option("Resource Alert", true) : Option("Resource Warning", false))
+                OpenBox(text, sector, {}, 0x8122);
+            Log(text);
+            sounds.push_back(event == ResourceAlert ? AlertSound[kind] : WarningSound[kind]);
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    // 0x41E730 (0x8122, a box gone): the next queued event comes (its handler puts its box up), or, with none
+    // left, no box is up any more.
+    void WarMap::NextEvent()
+    {
+        if (eventQueue.empty()) { boxUp = false; return; }
+        auto [event, param] = eventQueue.front();
+        eventQueue.pop_front();
+        RunEvent(event, param);
+    }
+
+    // 0x41E4E0: the InfoBox with the text, the second line and the command; time stops (0x41A6C0(0)), the view
+    // goes to the sector (0x41E000, which the game glides; the engine jumps), sound 0x198.
+    void WarMap::OpenBox(std::string text, int sector, std::string text2, int command)
+    {
+        infoBox = InfoBoxState{ std::move(text), std::move(text2), command, false, sector };
+        SetTimeRunning(false);
+        if (sector >= 1 && sector <= warmap::SectorCount)
+        {
+            const warmap::SectorInfo& r = warmap::Sectors[sector];
+            CentreOn((r.left + r.right) / 2, (r.top + r.bottom) / 2);
+        }
+        sounds.push_back(0x198);
+    }
+
+    // The InfoBox's commands (0x432B30): 0x8122 closes it and tells the war map (the next event); 0x8123 (Esc,
+    // when it can be cancelled) does the same; anything else goes to the war map and the box closes, the queue
+    // waiting (for a battle, until the war map comes back, 0x418980 -> 0x41E730).
+    void WarMap::BoxCommand(int command)
+    {
+        const int sector = infoBox ? infoBox->sector : 0;
+        infoBox.reset();
+        if (command == 0x8122 || command == 0x8123) { NextEvent(); return; }
+        if (command == 0x8072)
+        {
+            // the battle: the one waiting, or the box's (a pod in a sector no one holds)
+            if (!pendingBattle) pendingBattle = sector;
+            ResolveBattle();
+        }
+    }
+
+    // Its layout (0x432520): the backdrop (GType 0x68, hu_event / ma_event) centred, 4 pixels above the bottom; in
+    // Martian games ma_scrn (0x69) at +0x0B, -0x5E drawn at 50%; the text (font 0x73, wrapped to 320 pixels,
+    // centred, level 21) 0x2B below the backdrop's top (Human) or 0x17 below ma_scrn's (Martian), the second line (level 22) 16
+    // below it; the button (GType 0x6A, hu_buton / ma_buton) at +0x52, +0x76 (Human) or +0x87, +0x28 (Martian)
+    // with "Press button to continue" (0x47F), or with "... ESC to cancel" (0x480) when it can be cancelled.
+    Rect WarMap::BoxRect() const
+    {
+        Rect b = SpriteRect(0x68, 0, 0);
+        return { (ScreenW - b.w) / 2, ScreenH - b.h - 4, b.w, b.h };
+    }
+
+    Rect WarMap::BoxButtonRect() const
+    {
+        Rect b = BoxRect();
+        Rect button = SpriteRect(0x6A, 0, 0);
+        bool human = res.Human();
+        return { b.x + (human ? 0x52 : 0x87), b.y + (human ? 0x76 : 0x28), button.w, button.h };
+    }
+
+    void WarMap::DrawBox(Canvas& canvas) const
+    {
+        if (!infoBox) return;
+        const bool human = res.Human();
+        Rect b = BoxRect();
+        canvas.DrawSprite(0x68, 0, b.x, b.y);
+        if (!human) canvas.DrawSprite(0x69, 0, b.x + 0x0B, b.y - 0x5E, 0, Canvas::Blend::Translucent);
+        const Font* font = res.GetFont(0x73);
+        const int lineH = font ? font->Height() : 12;
+        // the text wrapped at 320 pixels (0x4161E0), centred on the backdrop
+        std::vector<std::string> lines;
+        {
+            std::string line, word;
+            auto width = [&](const std::string& t) { return font ? font->Measure(t) : int(t.size()) * 8; };
+            auto flushWord = [&]() {
+                if (word.empty()) return;
+                std::string tryLine = line.empty() ? word : line + " " + word;
+                if (!line.empty() && width(tryLine) > 320) { lines.push_back(line); line = word; }
+                else line = tryLine;
+                word.clear();
+            };
+            for (char c : infoBox->text)
+            {
+                if (c == ' ') flushWord();
+                else if (c == '\n') { flushWord(); lines.push_back(line); line.clear(); }
+                else word += c;
+            }
+            flushWord();
+            if (!line.empty()) lines.push_back(line);
+        }
+        // (in Martian games the text goes from ma_scrn's corner, not the backdrop's)
+        const int ox = human ? b.x : b.x + 0x0B, oy = human ? b.y : b.y - 0x5E;
+        int y = oy + (human ? 0x2B : 0x17);
+        for (const std::string& line : lines)
+        {
+            canvas.DrawString(0x73, line, { ox, y, b.w, lineH }, TextCentreX, 21);
+            y += lineH;
+        }
+        if (!infoBox->text2.empty())
+            canvas.DrawString(0x73, infoBox->text2, { ox + b.w / 2, y + 16, b.w / 2, lineH }, 0, 22);
+        Rect bt = BoxButtonRect();
+        bool over = bt.Contains(mouseX, mouseY);
+        canvas.DrawSprite(0x6A, over && res.GetFrame(0x6A, 1) ? 1 : 0, bt.x, bt.y);
+        canvas.DrawString(0x73, res.String(infoBox->cancellable ? 0x480 : 0x47F), bt, TextCentreX | TextCentreY);
+    }
 
     // 0x41A6C0: a change of the time-running flag goes to both players' command streams (actions 0xA / 0xB for the
     // player; the opponent, 0x442A80 for the computer, answers with 0xC / 0xD), and their commands reach the world
@@ -1410,6 +1805,12 @@ namespace wow
 
     std::optional<Command> WarMap::OnMouseButton(int x, int y, bool down)
     {
+        // the box is modal and has the mouse: only its button answers
+        if (infoBox)
+        {
+            if (!down && BoxButtonRect().Contains(x, y)) BoxCommand(infoBox->command);
+            return std::nullopt;
+        }
         // the popup has the mouse (0x42E9B0): a click on an item sends its command to the war map and closes it
         // (0x4330B0), one anywhere else just closes it
         if (!popup.empty())
@@ -2252,6 +2653,8 @@ namespace wow
         const int sector = path.back();
         k.moved = true;
         k.path = path;
+        // out of its sector and into the route's list: the sector it leaves may change hands (0x43CA40)
+        RecomputeOwner(path.front());
         k.attack = owner[size_t(sector)] == 1; // +0x5E: not when the goal is the side's own or no one's
         auto unit = unitData.find(k.type);
         k.naval = unit != unitData.end() && (unit->second.field52 == 5 || unit->second.field52 == 6);

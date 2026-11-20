@@ -14,6 +14,8 @@
 
 #include <algorithm>
 #include <array>
+#include <functional>
+#include <deque>
 #include <string>
 #include <utility>
 #include <map>
@@ -65,6 +67,8 @@ namespace wow
         // The war map as a save (0x41AD80), or nothing if it didn't come from one read exactly.
         std::optional<std::vector<uint8_t>> SaveData() const;
         void SetArrowTypes(std::map<int, ObjOjd::ArrowType> types) { arrowTypes = std::move(types); }
+        // the [Event] options (the Critical event options menu): the setting's name and its default
+        void SetEventOptions(std::function<bool(const char*, bool)> get) { eventOption = std::move(get); }
         void SetDeposits(std::map<int, std::array<int, 6>> d, float dropOff) { deposits = std::move(d); resourceDropOff = dropOff; }
         // [Tweak] "Distance Crippler VX" and "VY" (0.5) and "Resource Buffer" (30)
         void SetEconomy(float vx, float vy, float buffer) { crippleX = vx; crippleY = vy; resourceBuffer = buffer; }
@@ -124,6 +128,7 @@ namespace wow
         // the save it came from, and its objects (counters hold indices into it)
         std::optional<SaveFile> save;
         std::vector<SaveObject> table;
+        std::vector<int> destroyed;      // refs into the table of objects gone from the map (not written back)
         std::map<int, ObjOjd::UnitData> unitData;
         float ClockTick();
         void MoveRoutes(int hours);      // the routes' 0x802D (0x425080)
@@ -240,6 +245,46 @@ namespace wow
         void RefreshSector(int sector);  // 0x43CB60
         void LayoutAll();                // a view change: 0x4204A0, then 0x43CB20 for every sector
         void SetView(int mode);
+
+        // The war map's events (0x41E5B0, the table at 0x4BA0E8: handler, "is it critical" test, name). A
+        // critical event while a box is up waits in a queue (0x4EA064) and comes when the box goes (0x41E730);
+        // otherwise its handler runs, opening a box if its [Event] option is on.
+        enum Event { BattleInSector = 0, ConstructionCompleted, UnitCompleted, ArrivedInSector, ResearchCompleted,
+                     ResearchAvailable, ResearchAlert, ConstructorOnline, FacilityOnline, ConstructorIdle, FacilityIdle,
+                     TravelInterrupted, PodLanded, ResourceWarning, ResourceAlert, CommandCentreBuilt,
+                     EnteringNeutralSector, UndefendedSectorLost, EndGameWon, EndGameLost };
+        void RaiseEvent(int event, int param);
+        // Battles (0x41AB00): the sector waiting for its battle (dword_4E9B98), 0 for none
+        int pendingBattle = 0;
+        void DetectBattles();
+        bool Undefended(int sector) const;   // 0x43C8D0
+        void ClearSide(int sector, bool players); // 0x43A250
+        void RecomputeOwner(int sector);     // 0x43CA40
+        // The battle report (0x421210 at 0x4E9B7C): the sector, the winning and losing sides (0 Human, 1 Martian, 2
+        // none) and whether the game is over (+0x55)
+        struct BattleReport { int sector = 0, winner = 2, loser = 2; bool gameOver = false; } report;
+        void ResolveBattle();                // a stand-in for the briefing, battle map and debriefing
+        void AnnounceBattleResult();         // 0x41AED0
+        int EndCode() const;                 // 0x4212A0
+        bool ending = false;                 // byte_4D2530: the game is over, the world stands still
+        int endingDelay = 0, endingCode = 0;
+        std::map<int, int> objectClasses;   // AI.ojd's class of each type (0x518B14)
+        bool Critical(int event) const;
+        void RunEvent(int event, int param);
+        void NextEvent();                // 0x41E730
+        std::function<bool(const char*, bool)> eventOption;
+        bool Option(const char* name, bool on) const { return eventOption ? eventOption(name, on) : on; }
+        std::deque<std::pair<int, int>> eventQueue;
+        bool boxUp = false;              // byte_4EA0A0
+        // The InfoBox (0x432520): the event's text, a second line, the command its button sends and whether Esc
+        // cancels it
+        struct InfoBoxState { std::string text, text2; int command = 0; bool cancellable = false; int sector = 0; };
+        std::optional<InfoBoxState> infoBox;
+        void OpenBox(std::string text, int sector, std::string text2, int command); // 0x41E4E0
+        void BoxCommand(int command);    // 0x432B30
+        Rect BoxRect() const;
+        Rect BoxButtonRect() const;
+        void DrawBox(Canvas& canvas) const;
         bool Visible(int counter) const; // 0x421630
         void RevealAfterBattle(int sector, int research);                          // 0x418E17
         void SlideCounters();            // 0x4209E0
