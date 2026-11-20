@@ -72,6 +72,7 @@ namespace wow
                     g.type = o.Type();
                     g.list = list;
                     g.previous = k.previous;
+                    g.ref = ref;
                     g.places = o.BattlePositions();
                     out.push_back(std::move(g));
                 }

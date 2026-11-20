@@ -1357,7 +1357,7 @@ namespace wow
     // men in its units in the sector wins (the side holding it on a tie), and the loser's units, constructions and
     // resources there go (0x43A250). The battle report (0x421210 at dword_4E9B7C) gets what each side lost for the
     // Debriefing; the sector's battle flag goes and it and its neighbours are seen (0x418E17).
-    void WarMap::FightBattle()
+    void WarMap::FightBattle(const std::vector<int>* lost)
     {
         for (auto& r : research) if (r) r->UpdateTriggers(encountered); // 0x41A094, on the way to the battle map
         const int s = battleSector;
@@ -1386,6 +1386,66 @@ namespace wow
             return;
         }
         const int holder = owner[size_t(s)] == 0 ? 0 : 1;
+        if (lost)
+        {
+            // fought on the battle map: each object whose battle units are all gone is taken out of its counter (the
+            // battle map's 0x8057 on its last unit; 0x43A800 counts what's left for the report): a counter left
+            // empty goes from the sector; the side with nothing left lost
+            int gone[2] = { 0, 0 }, goneCrew[2] = { 0, 0 }, goneFacilities[2] = { 0, 0 };
+            std::vector<int> emptied;
+            for (int ref : *lost)
+                for (size_t i = 0; i < counters.size(); i++)
+                {
+                    Counter& k = counters[i];
+                    if (k.sector != s || k.Travelling()) continue;
+                    auto it = std::find(k.refs.begin(), k.refs.end(), ref);
+                    if (it == k.refs.end()) continue;
+                    const int side = k.players ? 0 : 1;
+                    Counter one = k;
+                    one.refs = { ref };
+                    one.count = 1;
+                    if (k.kind == 0) { gone[side]++; goneCrew[side] += CrewOf(one); }
+                    else goneFacilities[side]++;
+                    k.refs.erase(it);
+                    k.count = std::max(0, k.count - 1);
+                    destroyed.push_back(ref);
+                    if (k.count == 0) emptied.push_back(int(i));
+                    break;
+                }
+            for (int i : emptied)
+            {
+                FreeCounter(i);
+                counters[size_t(i)].sector = 0;
+                counters[size_t(i)].refs.clear();
+            }
+            selection.erase(std::remove_if(selection.begin(), selection.end(), [&](int i) {
+                return std::find(emptied.begin(), emptied.end(), i) != emptied.end(); }), selection.end());
+            int left[2] = { 0, 0 };
+            for (const Counter& k : counters)
+                if (k.sector == s && !k.Travelling() && k.kind <= 1) left[k.players ? 0 : 1] += k.count;
+            const int winner = left[0] && !left[1] ? 0 : left[1] && !left[0] ? 1 : holder;   // relative
+            const bool human = res.Human();
+            auto absolute = [&](int rel) { return human ? rel : 1 - rel; };
+            report.sector = s;
+            report.winner = absolute(winner);
+            report.loser = absolute(1 - winner);
+            report.gameOver = (s == 3 && report.winner == 0) || (s == 30 && report.winner == 1);
+            debriefing.fought = true;
+            debriefing.survivors = left[0] != 0;
+            debriefing.lostUnits = gone[0];
+            debriefing.lostVehicles = goneCrew[0];
+            debriefing.lostFacilities = goneFacilities[0];
+            debriefing.killedUnits = gone[1];
+            debriefing.killedVehicles = goneCrew[1];
+            debriefing.killedFacilities = goneFacilities[1];
+            Log(res.String(0x210) + " " + res.String(warmap::NameText(s)) + (winner == 0 ? ": won" : ": lost")); // the engine's own
+            RecomputeOwner(s);
+            RefreshSector(s);
+            battle[size_t(s)] = false;
+            if (pendingBattle == s) pendingBattle = 0;
+            RevealAfterBattle(s, 0);
+            return;
+        }
         const int winner = men[0] > men[1] ? 0 : men[1] > men[0] ? 1 : holder; // relative: 0 the player
         const bool human = res.Human();
         auto absolute = [&](int rel) { return human ? rel : 1 - rel; };

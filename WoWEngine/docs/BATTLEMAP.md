@@ -671,6 +671,40 @@ none doing damage, unit 5 being of the firer's own group (spared unless it's tur
 *Provisional*: 0x80F4 (the battle's control of the sector) isn't in; frozen holds a vehicle still (its steering
 and step not run) rather than as 0x4909D0's callers do.
 
+## The battle's end (the battle world's update 0x43A980, the report 0x43A800; `battlemap/BattleMap.cpp`, `warmap/WarMap.cpp`)
+
+**On the battle map**, each update with the battle on (the report's +0x54: both sides had something there) and no
+box up yet (dword_4F7450): each side's count is its objects in the battle (0x47D610 / 0x47D660: the world's list,
+those whose side, 0x4406E0, is 0 or 1; the player's taken as its own by 0x404BA0) plus its war map objects waiting
+off the map (+0x54 / +0x58, 0x4216D0). The player's at 0: the report is filled (0x43A800) and the InfoBox
+(0x432520) says "Sector Lost" (0x49D) if the player held the sector (the report's +0x6C), else "Attack Failed"
+(0x49B), its button 0x76 (back to the war map). The other side's at 0: the report filled, and "Invaders Repelled!"
+(0x49C) with 0x8024 if the player held it, else "Attack Successful!" (0x49A) with 0x76 if that ends the game (+0x55:
+sector 3 taken by the Humans with no Martian base left, dword_4EB05C, or London by the Martians, dword_4EC49C), else
+0x8024. 0x8024 only closes the box: the battle map goes on, its popup offering Return to Warmap (one side gone).
+(byte_4E9B94, set, sends 0x76 after 150 updates.) **The report** (0x43A800): the sector (+0x50), each side's lists
+counted (0x421740 / 0x4216D0 / 0x421790 / 0x421F90 into +0x10..+0x4C), the winner (+0x68) the sector's holder
+afterwards (0x43CA40, 0x4EAE1C), the losses (0x4212F0: +0x58..+0x64 the counts before less those after), the game's
+end (+0x55); every view told vt+0x78.
+
+**Back on the war map** (0x97), the battle map's losses go to it: each battle group stands for one war map object
+(its index in the save's table), and an object whose battle units are all gone is taken out of its counter (a
+counter left empty goes from the sector); the side with nothing left in the sector lost, the holder winning if
+both or neither have; the Debriefing counts the objects (units and facilities) and the crews lost each side. A
+sector the war map sees with one side only is still no battle ("RETURNING TO WAR ROOMS"); without a battle map
+(no map files) the war map settles it as before.
+
+In sector 30, with the tower made the other side's and at a hundredth of its health for the test: the lorries
+destroyed it, and at update 135 the box said "Invaders Repelled!" (the player holding London), its button closing
+it; the popup then had Return to Warmap, and the war map (seeing only the player's objects there) gave
+RETURNING TO WAR ROOMS.
+
+*Provisional*: the units are what's counted (not every object with a side); the objects waiting off the map
+(reinforcements) aren't in; the report's +0x6C is taken as the side holding the sector as the battle began; the
+game's end as sector 3 won by a Human player or 30 by a Martian; the war map's taking of the losses isn't checked
+end to end (no save with a contested sector to hand); 0x80F4's control (+0x128, dword_4E9B60, used by the war
+map's 0x418980 on the research) isn't in.
+
 ## Flying objects and emitters (0x487730, 0x487890, 0x47F050, 0x47F770; 0x48AEF0, 0x48ADD0; `battlemap/Effects.cpp`)
 
 **The classes** on the flying object 0x487730 (its update 0x487890): WAnimEffect (0x488FB0, update 0x489050: the

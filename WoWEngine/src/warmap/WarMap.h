@@ -39,7 +39,9 @@ namespace wow
         // The war map sends 0x8133 (the briefing transition and disc check) with 0x8019 (the Briefing) to follow.
         static constexpr int BattleCommand = 0x8133;
         BriefingInfo Briefing() const;             // the Briefing's figures (0x4999E0) for the battle's sector
-        void FightBattle();                        // 0x71 / 0x98: the battle (*provisional*: settled here)
+        // 0x71 / 0x98 -> 0x97: the battle's end. With the battle map's losses (the war map objects whose battle units
+        // all went), those objects go; without (no battle map), it's settled here (*provisional*)
+        void FightBattle(const std::vector<int>* lost = nullptr);
         // The other side's units and constructions in a sector (0x43983E: the lists' counts, dword_4F7430)
         int EnemyObjects(int sector) const;
         // The sector's war map objects as the battle map takes them (EnterBattleMap 0x439770): each list in turn

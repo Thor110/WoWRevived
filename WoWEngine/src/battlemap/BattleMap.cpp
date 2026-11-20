@@ -434,6 +434,12 @@ namespace wow
                 units.push_back(u);
             }
         selected.assign(setup.groups.size(), false);
+        // the battle is on (the report's +0x54) when both sides have something here
+        {
+            bool ours = false, theirs = false;
+            for (const Unit& u : units) (u.players ? ours : theirs) = true;
+            battleOn = ours && theirs;
+        }
         if (!setup.units) return;
         auto unit = [&](int type) -> const ObjOjd::UnitData* {
             auto u = setup.units->find(type);
@@ -970,6 +976,11 @@ namespace wow
     // 0x485610: each press (and repeat) of a key is one step, sent as 0x7A with the view's new top left
     std::optional<Command> BattleMap::OnKey(int key)
     {
+        if (endBox)
+        {
+            if (key == SDLK_RETURN || key == SDLK_SPACE || key == SDLK_KP_ENTER) return EndBoxCommand();
+            return std::nullopt;
+        }
         if (!popup.empty())
         {
             if (key == SDLK_ESCAPE) ClosePopup(true);
@@ -1072,6 +1083,7 @@ namespace wow
         if (rightDownAt >= 0 && popup.empty() && ticks - rightDownAt == setup.quickCancelTimeout && mouseX >= 0)
             OpenPopup(mouseX, mouseY);
         EdgeScroll();
+        CheckBattleEnd();
         ChaseTargets();
         bool moved = false;
         for (size_t i = 0; i < units.size(); i++)
@@ -1246,6 +1258,11 @@ namespace wow
 
     std::optional<Command> BattleMap::OnMouseButton(int x, int y, bool down)
     {
+        if (endBox)
+        {
+            if (!down && EndBoxButtonRect().Contains(x, y)) return EndBoxCommand();
+            return std::nullopt;
+        }
         if (!down)
         {
             const bool wasMini = miniDrag;
@@ -1405,5 +1422,117 @@ namespace wow
             bool lit = int(i) == popupHover && res.GetFrame(item.icon, 1);
             canvas.DrawSprite(item.icon, lit ? 1 : 0, item.rect.x, item.rect.y);
         }
+        // the battle's end box (0x432520's layout, as the war map draws it): the backdrop (GType 0x68) centred 4 above
+        // the bottom, in Martian games ma_scrn (0x69) over it at 50%; the text (font 0x73, level 21) wrapped at 320
+        // pixels and centred, 0x2B below the top (0x17 below ma_scrn's in Martian games); the button (0x6A)
+        if (endBox)
+        {
+            const bool human = setup.human;
+            const Rect b = EndBoxRect();
+            canvas.DrawSprite(0x68, 0, b.x, b.y);
+            if (!human) canvas.DrawSprite(0x69, 0, b.x + 0x0B, b.y - 0x5E, 0, Canvas::Blend::Translucent);
+            const Font* font = res.GetFont(0x73);
+            const int lineH = font ? font->Height() : 12;
+            std::vector<std::string> lines;
+            std::string line, word;
+            auto width = [&](const std::string& t) { return font ? font->Measure(t) : int(t.size()) * 8; };
+            auto flush = [&]() {
+                if (word.empty()) return;
+                std::string t = line.empty() ? word : line + " " + word;
+                if (!line.empty() && width(t) > 320) { lines.push_back(line); line = word; }
+                else line = t;
+                word.clear();
+            };
+            for (char c : endBox->text)
+                if (c == ' ') flush();
+                else if (c == '\n') { flush(); lines.push_back(line); line.clear(); }
+                else word += c;
+            flush();
+            if (!line.empty()) lines.push_back(line);
+            const int ox = human ? b.x : b.x + 0x0B;
+            int y = (human ? b.y : b.y - 0x5E) + (human ? 0x2B : 0x17);
+            for (const std::string& l : lines)
+            {
+                canvas.DrawString(0x73, l, { ox, y, b.w, lineH }, TextCentreX, 21);
+                y += lineH;
+            }
+            const Rect bt = EndBoxButtonRect();
+            const bool over = bt.Contains(mouseX, mouseY);
+            canvas.DrawSprite(0x6A, over && res.GetFrame(0x6A, 1) ? 1 : 0, bt.x, bt.y);
+        }
+    }
+
+    Rect BattleMap::EndBoxRect() const
+    {
+        const IndexedImage* f = res.GetFrame(0x68, 0);
+        const int w = f ? f->width : 0, h = f ? f->height : 0;
+        return { (640 - w) / 2, 480 - h - 4, w, h };
+    }
+
+    Rect BattleMap::EndBoxButtonRect() const
+    {
+        const Rect b = EndBoxRect();
+        const IndexedImage* f = res.GetFrame(0x6A, 0);
+        const bool human = setup.human;
+        return { b.x + (human ? 0x52 : 0x87), b.y + (human ? 0x76 : 0x28), f ? f->width : 0, f ? f->height : 0 };
+    }
+
+    // The box's button: 0x76 back to the war map; 0x8024 only closes it, the battle map going on (Return to Warmap
+    // is then in the popup, with one side gone)
+    std::optional<Command> BattleMap::EndBoxCommand()
+    {
+        const int command = endBox ? endBox->command : 0;
+        endBox.reset();
+        if (command == ReturnCommand) return Command{ ReturnCommand, setup.sector };
+        return std::nullopt;
+    }
+
+    // 0x43A980, each update with the battle on (+0x54) and no box up yet (dword_4F7450): each side's objects in the
+    // battle (0x47D610 / 0x47D660: those whose side, 0x4406E0, is 0 / 1), the player's taken as its own, plus its
+    // war map objects waiting off the map (+0x54 / +0x58, 0x4216D0). The player's at 0: the report filled (0x43A800)
+    // and the box "Sector Lost" (0x49D) when the player held the sector (the report's +0x6C), else "Attack Failed"
+    // (0x49B), its button 0x76. The other side's at 0: the report filled, and "Invaders Repelled!" (0x49C) with
+    // 0x8024 when the player held it, else "Attack Successful!" (0x49A), with 0x76 if that ends the game (+0x55:
+    // sector 3 taken by the Humans with no Martian base left, dword_4EB05C, or London by the Martians, dword_4EC49C),
+    // else 0x8024.
+    // *Provisional*: the units are what's counted (the game counts every object with a side in the battle's list);
+    // the objects waiting off the map (reinforcements) aren't in; the report's +0x6C is taken as the side that held
+    // the sector as the battle began; the game's end is taken as sector 3 won by a Human player or 30 by a Martian.
+    void BattleMap::CheckBattleEnd()
+    {
+        if (!battleOn || battleDecided) return;
+        int ours = 0, theirs = 0;
+        for (const Unit& u : units) (u.players ? ours : theirs)++;
+        if (ours != 0 && theirs != 0) return;
+        battleDecided = true;
+        const int playerSide = setup.human ? 0 : 1;
+        const bool held = setup.ownerFaction == playerSide;
+        EndBox box;
+        if (ours == 0)
+        {
+            box.text = res.String(held ? 0x49D : 0x49B);
+            box.command = ReturnCommand;
+        }
+        else
+        {
+            const bool gameOver = (setup.sector == 3 && setup.human) || (setup.sector == 30 && !setup.human);
+            box.text = res.String(held ? 0x49C : 0x49A);
+            box.command = !held && gameOver ? ReturnCommand : 0x8024;
+        }
+        endBox = box;
+        popup.clear();
+    }
+
+    std::vector<int> BattleMap::LostRefs() const
+    {
+        std::vector<int> out;
+        for (size_t g = 0; g < setup.groups.size(); g++)
+        {
+            if (setup.groups[g].places.empty() || setup.groups[g].ref < 0) continue;
+            bool left = false;
+            for (const Unit& u : units) if (u.group == int(g)) { left = true; break; }
+            if (!left) out.push_back(setup.groups[g].ref);
+        }
+        return out;
     }
 }

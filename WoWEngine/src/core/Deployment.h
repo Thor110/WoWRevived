@@ -16,6 +16,7 @@ namespace wow
         int type = 0;
         int list = 0;
         int previous = 0;
+        int ref = -1;           // the war map object (its index in the war map's table) the group stands for
         std::vector<std::pair<float, float>> places;
         bool Players() const { return (list & 1) == 0; }
     };

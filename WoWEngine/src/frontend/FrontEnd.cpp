@@ -839,6 +839,11 @@ namespace wow
             [[fallthrough]];
         case BattleMap::ReturnCommand:  // Return to Warmap: 0x76 to the world flushes the queues and sends 0x97
         case BattleMap::EndCommand:
+        {
+            // what the battle map's fight left (the war map objects whose units all went), when there was one
+            std::optional<std::vector<int>> lost;
+            for (Screen* sc : { battleMap.get(), screen.get() })
+                if (auto* bm = dynamic_cast<BattleMap*>(sc); bm && bm->Fought()) { lost = bm->LostRefs(); break; }
             battleMap.reset();
             // 0x97 (0x41A0DC): the battle's end. The battle isn't fought on the battle map yet, so the war map
             // settles it (*provisional*), then the Debriefing (0x49A7B0)
@@ -846,13 +851,14 @@ namespace wow
             {
                 sound.FadeOut(briefingSound, 30);
                 briefingSound = 0;
-                map->FightBattle();
+                map->FightBattle(lost ? &*lost : nullptr);
                 auto d = std::make_unique<Debriefing>(res, BattleColoursFromIni(), map->Debriefing(), ini.GetInt("Debriefing", "Delay", 300));
                 const int h = sound.Play(d->Sound());   // +0x98, faded in over 60 ticks (0x464E60)
                 sound.FadeIn(h, 60);
                 Show(std::move(d));
             }
             break;
+        }
         case 0x99:
         case 0x8017:
             // 0x419AA2: back to the war map. Every sound fades out over 30 ticks, the ambient sound goes, and the

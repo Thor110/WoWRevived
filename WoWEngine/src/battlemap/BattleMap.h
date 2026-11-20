@@ -18,6 +18,7 @@
 #include <map>
 #include "frontend/Screen.h"
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace wow
@@ -382,5 +383,18 @@ namespace wow
         static bool Armed(const ObjOjd::UnitData& unit); // +0x3C: children with +0xB8 bit 11
         std::vector<int> groupStance;                // each group's +0x54 (WBMGroup 0x480190: 1)
         void EdgeScroll();
+        // The battle's end (0x43A980, the battle world's update): a side with nothing left puts up the InfoBox
+        // (0x432520) with its text and the command its button sends (0x76 back to the war map, 0x8024 just closed)
+        struct EndBox { std::string text; int command = 0; };
+        std::optional<EndBox> endBox;
+        bool battleOn = false, battleDecided = false;   // the report's +0x54; dword_4F7450 (a box was put up)
+        void CheckBattleEnd();
+        Rect EndBoxRect() const;
+        Rect EndBoxButtonRect() const;
+        std::optional<Command> EndBoxCommand();
+    public:
+        // The war map objects whose battle units are all gone (each group stands for one), for the war map
+        std::vector<int> LostRefs() const;
+        bool Fought() const { return battleOn; }
     };
 }
