@@ -26,6 +26,7 @@ namespace wow
         void Update();
         void Draw(Canvas& canvas) const;
         void OnKey(int sdlKey);
+        void OnKeyUp(int sdlKey) { if (screen) screen->OnKeyUp(sdlKey); }
         void OnText(const char* utf8) { if (screen) screen->OnText(utf8); }
         void OnMouseMove(int x, int y);
         void OnMouseLeave() { mouseX = mouseY = -1; }
@@ -61,6 +62,8 @@ namespace wow
         std::unique_ptr<Screen> WaitingForPlayer(int previous); // 0xAC, 0x406B30
         std::unique_ptr<Screen> NetworkSessions(int previous); // 0xA4 (opened by 0xA6), 0x407110
         std::unique_ptr<Screen> NotRebuilt(int command, int previous);
+        std::unique_ptr<Screen> WarMapMenu();                // 0x80B5, 0x49B980
+        void StartWarMap(const std::string& gamePath, const std::string& name);
 
         bool AnySaveGame() const;
         void DrawCursor(Canvas& canvas) const;
@@ -84,6 +87,7 @@ namespace wow
         void ApplyVolumes();
         void StartAmbient(bool restart);
         std::unique_ptr<Screen> screen;
+        std::unique_ptr<Screen> warMap;   // kept while its menus are showing
         int loadedGroup = -1;
         bool quit = false;
         // typed cheat codes (0x401000): "englishrose" shows the hidden end of the credits

@@ -29,6 +29,8 @@ namespace wow
             : pixels(pixels), width(width), height(height), res(resources) {}
 
         int Width() const { return width; }
+        // The frame buffer, for screens that draw their own way (the war map's per-pixel shade levels).
+        uint32_t* Pixels() const { return pixels; }
         int Height() const { return height; }
 
         void Clear(uint32_t colour);

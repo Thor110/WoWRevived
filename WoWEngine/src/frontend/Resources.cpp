@@ -90,7 +90,7 @@ namespace wow
             for (int i = 0; i < group.count; i++)
             {
                 std::string name(group.files[i]);
-                if (auto at = name.find("{S}"); at != std::string::npos) name.replace(at, 3, human ? "H" : "M");
+                for (auto at = name.find("{S}"); at != std::string::npos; at = name.find("{S}")) name.replace(at, 3, human ? "H" : "M");
                 std::string path = "dat\\" + name + ".SHH";
                 std::unique_ptr<ShadeTable> table;
                 try

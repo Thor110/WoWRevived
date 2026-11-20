@@ -83,6 +83,7 @@ if(TARGET SDL3::SDL3)
         src/frontend/CdPlayer.cpp
         src/frontend/Credits.cpp
         src/frontend/FrontEnd.cpp
+        src/warmap/WarMap.cpp
     )
     # IniStore.h is shared with the patch DLLs so the engine reads the same WoWRevived.ini
     target_include_directories(WoWEngine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../WoWPatches/Common)

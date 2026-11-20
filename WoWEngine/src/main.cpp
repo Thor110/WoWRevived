@@ -239,6 +239,7 @@ int main(int argc, char** argv)
                     if (event.key.key == SDLK_RETURN && (event.key.mod & SDL_KMOD_ALT)) { if (!event.key.repeat) video.ToggleFullScreen(); }
                     else frontEnd.OnKey(int(event.key.key));
                     break;
+                case SDL_EVENT_KEY_UP: frontEnd.OnKeyUp(int(event.key.key)); break;
                 case SDL_EVENT_TEXT_INPUT: frontEnd.OnText(event.text.text); break;
                 case SDL_EVENT_MOUSE_MOTION:
                     if (video.ToGame(event.motion.x, event.motion.y, x, y)) frontEnd.OnMouseMove(x, y);

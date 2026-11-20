@@ -126,12 +126,15 @@ int main(int argc, char** argv)
         {
             auto data = ReadFile(argv[2]);
             auto info = wow::SaveInfo::Read(data);
-            std::printf("version %u  \"%s\"  %02d/%02d/%d %02d:%02d (%.1f ticks)  war map %u %u %u %u  date fields %u %u %u\n",
+            std::printf("version %u  \"%s\"  %02d/%02d/%d %02d:%02d (%.2f hours)  war map %u %u %u %u  hours elapsed %u\n",
                 info.version, info.name.c_str(), info.Day(), info.Month(), info.Year(), info.Hour(), info.Minute(), double(info.ticks),
-                info.warMap[0], info.warMap[1], info.warMap[2], info.warMap[3], info.dateTime[0], info.dateTime[1], info.dateTime[2]);
+                info.warMap[0], info.warMap[1], info.warMap[2], info.warMap[3], info.dateTime[0]);
             std::map<std::string, int> counts;
             for (const auto& t : wow::SaveInfo::Tags(data)) counts[t.name]++;
             for (const auto& [n, c] : counts) std::printf("  %s x%d\n", n.c_str(), c);
+            static const char* const Lists[6] = { "HUNI", "AUNI", "HCON", "ACON", "HRES", "ARES" };
+            for (const auto& o : wow::SaveInfo::WarMapObjects(data))
+                std::printf("  sector %2d %s type %3d  id %3d at %d,%d\n", o.sector, Lists[o.list], o.unitType, o.id, o.x, o.y);
             return 0;
         }
         if (first == "--models" && argc == 3)

@@ -4,6 +4,10 @@ This is a map of the original executable, used to plan the rebuild one subsystem
 
 The debug strings show the class names Rage used (WGame, WWarMapWorld, WLandscape, DeeDraw and so on). The compiler kept each source file's functions together, so these strings also mark where one subsystem's code ends and the next begins.
 
+## Hand-written assembly
+
+Parts of the exe were written in assembly rather than compiled C++, the blitters especially (sprite rows 0x451235, the pixel writers around 0x45702D, the IOB patch drawing). They don't follow the compiler's calling conventions or stack frames, so IDA's function boundaries and argument lists there can be wrong, and code can jump into the middle of another routine. The engine doesn't copy them: it reproduces what they draw (checked against the original's output), in plain C++.
+
 ## Sources
 
 - **IDA listing.** The listing is of the patched vanilla build: it imports `_INMM.dll`, so the winmm calls show up as `_imeGetTime`, `_imeSetEvent` and so on. That build was compiled on 13 Nov 1998, with its code (.text) section running 0x401000–0x4A8A92.

@@ -1,5 +1,10 @@
 #include "frontend/FrontEnd.h"
 #include "core/SaveGame.h"
+#include "warmap/WarMap.h"
+#include "core/ObjOjd.h"
+
+#include <fstream>
+#include <iterator>
 
 #include <SDL3/SDL.h>
 
@@ -33,6 +38,7 @@ namespace wow
         constexpr int CmdEditCampaign = 0x8139;   // "Begin Campaign"
         constexpr int CmdIntro = 0x8037;          // plays INTRO, then 0x8A
         constexpr int CmdStartCampaign = 0x8A;    // the war map
+        constexpr int CmdWarMapMenu = 0x80B5;     // the war map's Escape menu
         constexpr int CmdSoundControl = 0x3ED;
         constexpr int CmdDisplaySettings = 0x3EF;
         constexpr int CmdCriticalEvents = 0x8117;
@@ -384,6 +390,57 @@ namespace wow
         return m;
     }
 
+    void FrontEnd::StartWarMap(const std::string& gamePath, const std::string& name)
+    {
+        std::vector<uint8_t> data;
+        if (auto path = files.Resolve(gamePath))
+        {
+            std::ifstream in(*path, std::ios::binary);
+            data.assign(std::istreambuf_iterator<char>(in), {});
+        }
+        SaveInfo info;
+        try { info = SaveInfo::Read(data); }
+        catch (const std::exception& e)
+        {
+            SDL_Log("Can't start the war map from %s: %s", gamePath.c_str(), e.what());
+            Show(NotRebuilt(CmdStartCampaign, CmdMainMenu));
+            return;
+        }
+        if (!name.empty()) info.name = name;
+        SDL_Log("War map from %s: \"%s\", %d/%d/%d, view %u,%u sector %u", gamePath.c_str(), info.name.c_str(), info.Day(), info.Month(),
+            info.Year(), info.warMap[0], info.warMap[1], info.warMap[2]);
+        // WWarMapWorld (0x417CD0) fades every sound out over 30 ticks
+        sound.FadeOutAll(30);
+        ambient = 0;
+        warMap.reset();
+        std::map<int, int> counterFrames;
+        if (auto obj = files.Resolve("OBJ.ojd"))
+        {
+            std::ifstream in(*obj, std::ios::binary);
+            std::vector<uint8_t> objData((std::istreambuf_iterator<char>(in)), {});
+            try { counterFrames = ObjOjd::LoadUnitCounters(objData); }
+            catch (const std::exception& e) { SDL_Log("OBJ.ojd unit counters: %s", e.what()); }
+        }
+        Show(std::make_unique<WarMap>(res, settings.colours, info, SaveInfo::WarMapObjects(data), std::move(counterFrames),
+            ini.GetInt("Screen", "Scroll Speed", 40)));
+    }
+
+    std::unique_ptr<Screen> FrontEnd::WarMapMenu()
+    {
+        // 0x49B980, "Warmap menu": drawn over the map, with the war map's palette group
+        if (screen && screen->Id() == WarMap::Id) warMap.reset(static_cast<WarMap*>(screen.release()));
+        auto m = std::make_unique<Menu>(CmdWarMapMenu, res, settings.colours, 0, warmap::PaletteGroup);
+        m->AddHeading(0x3FC);                          // "Campaign Options"
+        m->AddButton(Commands::Back, 0x405);           // "Resume Campaign (Escape)"
+        m->FocusLast();
+        m->AddButton(CmdMainMenu, 0x40A);              // "Return to Main Menu"
+        m->AddButton(CmdCriticalEvents, 0x412);
+        m->AddButton(CmdSoundControl, 0x411);
+        m->AddBottomButton(CmdQuitMenu, 0x404);        // "Save & Exit Game"
+        m->SetPrevious(WarMap::Id);
+        return m;
+    }
+
     std::unique_ptr<Screen> FrontEnd::NotRebuilt(int command, int previous)
     {
         auto m = NewMenu(command);
@@ -401,7 +458,7 @@ namespace wow
         SDL_Log("Command 0x%X (%d) from screen 0x%X", command.id, command.param, current);
         switch (command.id)
         {
-        case CmdMainMenu: topMenu = CmdMainMenu; Show(MainMenu()); break;
+        case CmdMainMenu: topMenu = CmdMainMenu; warMap.reset(); Show(MainMenu()); break;
         case CmdOptions: Show(GameOptions(current)); break;
         case CmdQuitMenu: Show(QuitGame(current)); break;
         case CmdQuitGame: quit = true; break;
@@ -446,11 +503,17 @@ namespace wow
             SDL_Log("INTRO movie (not rebuilt)");
             Execute({ CmdStartCampaign, 0 });
             break;
-        case CmdLoadSlot:
         case CmdStartCampaign:
+            // a new campaign starts from Human.000 or Martian.000 in the game folder (0x4043D0, slot 0)
+            StartWarMap(res.Human() ? "Human.000" : "Martian.000", campaignName);
+            break;
+        case CmdLoadSlot:
+            StartWarMap(SaveSlot::GamePath(res.Human(), command.param), {});
+            break;
+        case CmdWarMapMenu: Show(WarMapMenu()); break;
         case CmdStartNetworkGame:
         case 0xAB:
-            // TODO: these start the campaign (war map), which isn't rebuilt yet
+            // TODO: network games need network play
             Show(NotRebuilt(command.id, CmdMainMenu));
             break;
         case CdPlayer::Id:
@@ -463,6 +526,10 @@ namespace wow
             Show(std::make_unique<Credits>(res, current, creditsEasterEgg, sound));
             break;
         case Commands::Back:
+            // on the war map Escape opens its menu, and in that menu it (and Resume Campaign, which sends the same
+            // 0x8123) goes back to the map
+            if (current == WarMap::Id) { Execute({ CmdWarMapMenu, 0 }); break; }
+            if (current == CmdWarMapMenu && warMap) { Show(std::move(warMap)); break; }
             // Escape goes back to the menu this one was opened from; the main menu itself ignores it, and so does
             // the Insert CD menu (0x408AB0)
             if (current != CmdMainMenu && current != CmdInsertCd) Execute({ screen->Previous() ? screen->Previous() : CmdMainMenu, 0 });
@@ -483,6 +550,8 @@ namespace wow
     {
         canvas.Clear(0);
         if (!screen) return;
+        // the war map's menus are drawn over the map
+        if (warMap && !screen->Background()) warMap->Draw(canvas);
         if (screen->Background()) canvas.DrawSprite(screen->Background(), 0, 0, 0);
         screen->Draw(canvas);
         DrawCursor(canvas);

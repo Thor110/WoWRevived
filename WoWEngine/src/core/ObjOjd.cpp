@@ -81,4 +81,25 @@ namespace wow
         }
         return table;
     }
+
+    std::map<int, int> ObjOjd::LoadUnitCounters(std::span<const uint8_t> data)
+    {
+        std::map<int, int> counters;
+        ByteReader r(data);
+        int unit = 0;
+        while (r.Remaining() > 0)
+        {
+            if (r.Remaining() < 5) throw FormatError("OBJ.ojd: record header cut short");
+            r.Skip(3);
+            int type = int16_t(r.U16());
+            switch (type)
+            {
+            case 15: unit = int16_t(r.U16()); break;            // starts unit type (the table at 0x51A0F0, 0xB0 bytes each)
+            case 23: counters[unit] = int16_t(r.U16()); break; // its war map counter frame (+0x2C, 0x437EF4)
+            case 2: case 3: case 4: { uint16_t len = r.U16(); r.Skip(size_t(len) + 2); break; } // file registrations
+            default: SkipPayload(r, type);
+            }
+        }
+        return counters;
+    }
 }

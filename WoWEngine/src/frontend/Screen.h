@@ -80,7 +80,8 @@ namespace wow
         virtual int CursorAt(int x, int y) const;
         // Typed text (UTF-8, from SDL's text input), for an Edit control that has the focus.
         void OnText(std::string_view utf8);
-        void OnMouseMove(int x, int y);
+        virtual void OnMouseMove(int x, int y);
+        virtual void OnKeyUp(int) {}
         virtual std::optional<Command> OnMouseButton(int x, int y, bool down);
 
         // A command the screen sends by itself (from Update), picked up by the front end after each update.

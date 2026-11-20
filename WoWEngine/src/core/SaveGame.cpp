@@ -71,4 +71,29 @@ namespace wow
                 if (std::memcmp(&d[i], n, 4) == 0) { tags.push_back({ i, n }); i += 3; break; }
         return tags;
     }
+
+    std::vector<SaveInfo::WarMapObject> SaveInfo::WarMapObjects(std::span<const uint8_t> d)
+    {
+        static const char* const Lists[6] = { "HUNI", "AUNI", "HCON", "ACON", "HRES", "ARES" };
+        auto u32 = [&](size_t o) { return uint32_t(d[o]) | (uint32_t(d[o + 1]) << 8) | (uint32_t(d[o + 2]) << 16) | (uint32_t(d[o + 3]) << 24); };
+        std::vector<WarMapObject> objects;
+        int list = -1;
+        for (size_t i = 0; i + 24 <= d.size(); i++)
+        {
+            for (int l = 0; l < 6; l++)
+                if (std::memcmp(&d[i], Lists[l], 4) == 0 && i + 8 <= d.size() && std::memcmp(&d[i + 4], "WMOB", 4) == 0) list = l;
+            if (list < 0 || std::memcmp(&d[i], "SELO", 4) != 0 || std::memcmp(&d[i + 16], "WMOB", 4) != 0) continue;
+            size_t typeAt = (list == 2 || list == 3) ? i - 12 : i - 4;
+            if (typeAt >= d.size()) continue;
+            WarMapObject o;
+            o.list = list;
+            o.unitType = int(u32(typeAt));
+            o.id = int(u32(i + 4));
+            o.x = int(int32_t(u32(i + 8)));
+            o.y = int(int32_t(u32(i + 12)));
+            o.sector = int(u32(i + 20));
+            objects.push_back(o);
+        }
+        return objects;
+    }
 }

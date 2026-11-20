@@ -33,5 +33,8 @@ namespace wow
     public:
         // Throws FormatError if a record runs past the end of the data.
         static std::map<int, GType> LoadGTypes(std::span<const uint8_t> data, bool human);
+        // Each unit type's frame in the war map counter sprites (HU-CNT24/32/48, GTypes 0x76-0x78): record type 15
+        // starts a unit type, type 23 gives the frame.
+        static std::map<int, int> LoadUnitCounters(std::span<const uint8_t> data);
     };
 }
