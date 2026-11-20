@@ -1050,6 +1050,11 @@ namespace wow
         const int owner = map->SectorOwner(b.sector), played = res.Human() ? 0 : 1;
         s.ownerFaction = owner == 2 ? 2 : owner == 0 ? played : 1 - played;
         s.noBuildBorder = ini.GetInt("Tweak", "No-build border width (vertices)", 16);
+        s.vehicles.maxAcc = ini.GetFloat("Vehicles", "maxAcc", 1.0f);
+        s.vehicles.targAccWeight = ini.GetFloat("Vehicles", "targAccWeight", 0.003f);
+        s.vehicles.targAccMax = ini.GetFloat("Vehicles", "targAccMax", 0.15f);
+        s.vehicles.arrivalRadius = ini.GetFloat("Vehicles", "arrivalRadius", 1.5f);
+        s.vehicles.speedCostDivisor = ini.GetFloat("Vehicles", "speedCostDivisor", 25.0f);
         try
         {
             auto battle = std::make_unique<BattleMap>(res, s);

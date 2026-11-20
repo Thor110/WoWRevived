@@ -61,7 +61,21 @@ namespace wow
         if (s.loadScenery) LoadScenery(sun, letter);
 
         Deploy();
-        for (const Unit& u : units) AddRenderer(u.type, u.x, u.y, u.heading);
+        for (size_t i = 0; i < units.size(); i++)
+        {
+            Unit& u = units[i];
+            // a vehicle (category 1) drives: 0x490820 / 0x490E70 (the turn limit by move class, the phase from rand())
+            if (auto d = setup.units->find(u.type); d != setup.units->end() && d->second.category == 1)
+            {
+                u.vehicle = true;
+                const int mc = d->second.field52;
+                u.drive.turnRate = mc >= 0 && mc <= 4 ? 64 : (mc == 5 || mc == 6) ? 8 : mc == 7 ? 16 : 0;
+                u.drive.radius = int16_t(d->second.hitPoints);
+                u.drive.arrival = float(double(u.drive.radius) * setup.vehicles.arrivalRadius - -20.0);
+                u.drive.phase = int16_t(random::Rand());
+            }
+            AddRenderer(u.type, u.x, u.y, u.heading, int(i));
+        }
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
 
         // The start view (0x439B7E): on the player's HQ (the player's constructions list, HCON, searched for type
@@ -218,7 +232,18 @@ namespace wow
             return;
         }
         const Unit* best = HotspotAt(x, y);
-        if (!best) return;
+        if (!best)
+        {
+            // cursor mode 1 on the ground (0x485A53): the point the mouse looks at (0x47B3F0), packet 0x0E to the
+            // selection (with Ctrl it would be force fire there, packet 0x13: *not yet*)
+            if (Mode() == 1 && !(SDL_GetModState() & SDL_KMOD_CTRL))
+            {
+                const int wx = x + scrollX;
+                const int wy = land.ScreenYToWorldY(wx, y + scrollY);
+                if (wy) OrderMove(wx, wy);
+            }
+            return;
+        }
         const bool ctrl = (SDL_GetModState() & SDL_KMOD_CTRL) != 0;
         if (Mode() == 0)
         {
@@ -358,7 +383,17 @@ namespace wow
     {
         units.clear();
         for (const BattleGroup& g : setup.groups)
-            for (const auto& [x, y] : g.places) units.push_back({ g.type, x, y, 0, g.Players(), int(&g - &setup.groups[0]) });
+            for (const auto& [x, y] : g.places)
+            {
+                Unit u{};
+                u.type = g.type;
+                u.x = x;
+                u.y = y;
+                u.heading = 0;
+                u.players = g.Players();
+                u.group = int(&g - &setup.groups[0]);
+                units.push_back(u);
+            }
         selected.assign(setup.groups.size(), false);
         if (!setup.units) return;
         auto unit = [&](int type) -> const ObjOjd::UnitData* {
@@ -531,7 +566,7 @@ namespace wow
 
     // A battle unit's renderer by its GType's class (0x47EB10): a WOF model (2) posed at its place and heading, an
     // IOB model (1) or a sprite (0). Drawn with the ground like the scenery.
-    void BattleMap::AddRenderer(int type, float x, float y, int heading)
+    void BattleMap::AddRenderer(int type, float x, float y, int heading, int unit)
     {
         if (!setup.units) return;
         auto u = setup.units->find(type);
@@ -562,7 +597,8 @@ namespace wow
             try { w = std::make_unique<WofInstance>(f->second, scale, follow); }
             catch (const std::exception&) { return; }
             w->Transform(land, heading, ix, iy, land.HeightAt(ix, iy));
-            objects.push_back({ iy + depth, 0, 0, nullptr, w.get(), g->paletteSlot });
+            objects.push_back({ iy + depth, 0, 0, nullptr, w.get(), g->paletteSlot, 0, -1, unit, depth });
+            if (unit >= 0) units[size_t(unit)].wof = w.get();
             wofs.push_back(std::move(w));
         }
         else if (g->gclass == 1)
@@ -834,7 +870,8 @@ namespace wow
             ScrollTo(scrollX + (ctrl ? round0(hi(w, 0x55555556)) : round0((hi(w, int32_t(0x92492493)) + w) >> 2)), scrollY);
             break;
         case SDLK_HOME: CentreOnSelection(); break;
-        // *Not yet*: the digits (select group n, packet 0x12) and Backspace (halt, 0x11)
+        case SDLK_BACKSPACE: Halt(); break;
+        // *Not yet*: the digits (select group n, packet 0x12)
         default: break;
         }
         return std::nullopt;
@@ -877,6 +914,19 @@ namespace wow
         if (rightDownAt >= 0 && popup.empty() && ticks - rightDownAt == setup.quickCancelTimeout && mouseX >= 0)
             OpenPopup(mouseX, mouseY);
         EdgeScroll();
+        bool moved = false;
+        for (size_t i = 0; i < units.size(); i++)
+        {
+            const float x = units[i].x, y = units[i].y;
+            Drive(i);
+            moved |= units[i].x != x || units[i].y != y;
+        }
+        if (moved)
+        {
+            for (ViewObject& o : objects)
+                if (o.unit >= 0) o.key = int(units[size_t(o.unit)].y) + o.depth;
+            std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+        }
         if (miniShown && (miniFrames & 0xF) == 0) MakeDots();
         miniFrames++;
     }

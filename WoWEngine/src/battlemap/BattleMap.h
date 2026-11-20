@@ -46,6 +46,15 @@ namespace wow
             std::vector<BattleGroup> groups; // the sector's war map objects (WarMap::BattleGroups)
             int ownerFaction = 2;       // who holds the sector (0x43CA30): 0 Human, 1 Martian, 2 no one
             int noBuildBorder = 16;     // [Tweak] "No-build border width (vertices)" (dword_59D93C)
+            // [Vehicles] (each setting's value at its object's +0x14)
+            struct Vehicles
+            {
+                float maxAcc = 1.0f;                // flt_59E33C
+                float targAccWeight = 0.003f;       // flt_59E30C
+                float targAccMax = 0.15f;           // flt_59E234
+                float arrivalRadius = 1.5f;         // flt_59E294
+                float speedCostDivisor = 25.0f;     // flt_59E2DC
+            } vehicles;
         };
 
         // Throws when the map's files can't be read.
@@ -77,7 +86,8 @@ namespace wow
         // object's screen point and depth, and the time-of-day shade tables of the slots they use
         struct IsoModel { IobModel model; std::vector<uint8_t> lights; int slot = 0; };
         std::map<int, IsoModel> models;
-        struct ViewObject { int key; int x, y; const IsoModel* model; const WofInstance* wof = nullptr; int slot = 0; int sprite = 0; int light = -1; };
+        struct ViewObject { int key; int x, y; const IsoModel* model; const WofInstance* wof = nullptr; int slot = 0; int sprite = 0; int light = -1;
+                            int unit = -1, depth = 0; };
         std::vector<ViewObject> objects;    // sorted by key
         std::map<int, ShadeTable> slotTables;
         std::map<std::string, std::vector<uint8_t>> masks;   // the shadows' .raw masks
@@ -88,12 +98,42 @@ namespace wow
         void LoadScenery(const Landscape::Sun& sun, char letter);
         void PlaceBridge(const PlacedObject& o);
         // The battle units (each war map object's +0x4C list): type, place, heading (4096 a turn), whose
-        struct Unit { int type; float x, y; int heading; bool players; int group = 0; };
+        // A vehicle's driving state (the ground vehicle 0x490820: its fields by their offsets; docs/BATTLEMAP.md
+        // "Driving")
+        struct Drive
+        {
+            uint32_t flags = 0x801;     // +0x188 (0x490E70): bit 0 stopped, 1 arrived, 2 arriving, 13 set when it starts
+            int heading = 0;            // +0x100, 4096 a turn (0 when it's added to the world)
+            float speed = 0;            // +0x104
+            float vx = 0, vy = 0;       // +0x108 / +0x10C, the steering velocity
+            float dx = 0, dy = 0;       // +0x88 / +0x8C, the step it takes
+            int tx = 0, ty = 0;         // +0xF4 / +0xF8, the target
+            int dist = 0;               // +0xFC, to the target
+            float arrival = 0, grow = 0;// +0x118 / +0x11C
+            int phase = 0;              // +0x146 (rand() at first)
+            int turnRate = 64;          // +0x140 by move class: 64, 8 for 5 / 6, 16 for 7
+            int radius = 0;             // +0xAC, the type's +0x44 word
+            int pendingAt = -1, pendingValue = 0; // a 0x808B on its way (0x4355A0)
+            int order = -1;             // the move order it's on (its group's arrival count)
+        };
+        struct Unit { int type; float x, y; int heading; bool players; int group = 0; bool vehicle = false; Drive drive;
+                      WofInstance* wof = nullptr; };
         std::vector<Unit> units;
         int startX = 0, startY = 0;                          // dword_4F742C / 4F7434: the player's deployment centre
         void Deploy();
         void Place(std::vector<size_t> members, int cx, int cy);
-        void AddRenderer(int type, float x, float y, int heading);
+        void AddRenderer(int type, float x, float y, int heading, int unit = -1);
+        // Driving (Driving.cpp): the move order (0x482E60 straight there, 0x80C2), each update's steering and step
+        // (0x4913B0, 0x492F40, 0x492DE0, 0x491870), halt (0x8031)
+        struct MoveOrder { int members = 0, arrived = 0; };
+        std::vector<MoveOrder> orders;
+        void OrderMove(int x, int y);
+        void Halt();
+        void Drive(size_t index);
+        void Steer(Unit& u);
+        void SpeedControl(Unit& u, float wanted);
+        void Advance(Unit& u);
+        void Post808B(Unit& u, int value, int delay);
         double Radius(int type);
         std::map<int, std::vector<uint8_t>> wofFiles;        // each WOF GType's file, loaded once
         // The minimap ("BattleMap miniMap view" 0x4868B0, RTypeMiniBattleMap 0x4A1F90): the sector's picture at the

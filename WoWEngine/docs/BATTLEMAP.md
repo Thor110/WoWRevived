@@ -412,3 +412,50 @@ sends 0x8088 to an object's group (+0x48), which selects all its units.
 (only vehicles count for the box); the frontmost hotspot is the one lowest on screen; no damage yet, so the power
 bar is full. The orders themselves (move, attack, force fire), Shift adding to the selection (packet 5) and the
 group keys aren't in.
+
+## Driving (the ground vehicle 0x490820-0x4935C0; the group's move 0x482E60; `battlemap/Driving.cpp`)
+
+A vehicle (category 1) keeps its driving state at +0x88..+0x18C: the step (+0x88 / +0x8C), the target (+0xF4 / +0xF8)
+and its distance (+0xFC), the heading (+0x100, 4096 a turn), speed (+0x104), the steering velocity (+0x108 /
++0x10C), the arrival radius (+0x118) and its growth (+0x11C), the turn rate (+0x140: 64 for move classes 0-4, 8 for
+5 / 6, 16 for 7), the update phase (+0x146, rand() at first) and the flags (+0x188). Added to the world (0x490E70)
+its flags are 0x801 and its heading 0, whatever the model was turned to.
+
+**Flags**: bit 0 is *stopped* (0x8031 sets it, 0x808B sets it to its lparam; when it goes, bit 1 goes too), 1 arrived,
+2 arriving, 5 and 8 held, 13 the opposite of bit 0. The survey's "moving" for bit 0 is the wrong way round: the
+update (0x4913B0) steers while vt+0x144 (0x4909D0) is true, which it is when bit 0 is clear (or 5 / 8 / a link, or
+vt+0x108), and while the speed is over 0.01.
+
+**The order**: the left button let go in cursor mode 1 on the ground (0x485A53) picks the world point under the
+mouse (0x47B3F0) and sends packet 0x0E; the selection's group (0x4812B0 -> 0x481CA0 -> 0x482510 -> 0x804F, 0x482E60)
+snaps it to a cell and, when it can go straight there, logs "GOING STRAIGHT THERE!" and sends each member 0x80C2
+with it. 0x80C2 (0x490A70): the route goes; the target is the point; the arrival radius the unit's radius (+0xAC, the
+type's +0x44 word) x `arrivalRadius` - -20, its growth the group's average war map speed (+0x1D0) x 0.01 x members
+x 0.5; then 0x808B(0) is posted (0x4355A0's last argument is the delay): at once if the unit is moving (speed over
+0.01), else after ftol(5 x members x (+0xD4 - the group's +0x68) / (+0x6C - +0x68 + 1) + rand() % 8) updates.
+Backspace (packet 0x11) sends the members 0x8031: stopped.
+
+**Steering** (0x492F40), every vt+0x148 (3) updates on the phase:
+- the accelerations, each its force x weight x maxAcc with its length at most max x maxAcc (0x491B20): arrival
+  (0x491FA0: only on a route inside the radius, -velocity), separation, the target (0x491BB0: the target less the
+  position, `targAccWeight` / `targAccMax`), avoidance, braking (0x491C70: with bit 3, -velocity unit, halved
+  without bit 4), velocity matching and attraction to the route, gated as the survey lists;
+- added in that order until their lengths come to maxAcc (the one that crosses it cut to what's left); the sum goes
+  on the steering velocity;
+- within (1 + 0.625 x sqrt(group size)) x the arrival radius of the target, the radius grows by +0x11C.
+
+Every update: the velocity's heading and length (0x43FDA0); the speed (0x492DE0: at most the type's +0x54 word x 0.02
+over the ground's cost / `speedCostDivisor` when that's over 1 and at most the length; going, at least 0.2, rising by
+0.05 x it or falling by 0.1 x it; stopped, falling by 0.1 x it to 0); the velocity made the speed long; the turn
+toward its heading (0x43FF30) at most min(ftol(8 + 120 x maxAcc x speed), +0x140 x speed), a base type 0x13 more
+than 0x400 away turning toward the opposite and driving backwards; the step the speed long along the heading
+(0x43FE90), taken by vt+0x54 (0x47F770: the ground's height at the new point); the model turned to the heading.
+
+**Arriving** (0x491870): +0xFC the distance to the target; with no route it has arrived inside the arrival radius
+(+ +0x13A). Once (bit 1): the group counts it (0x482450) and 0x808B(1) stops it 9 x (members not arrived) + 60
+updates on, so it runs on a little before slowing to a stop.
+
+*Provisional*: only the target behaviour is in (no collision lookahead 0x492350, no neighbours 0x492C00, so
+separation, avoidance and velocity matching are missing and a group bunches up); no route finder (every order goes
+straight, through buildings); the snap, the stagger's distances, the ground's cost (taken as no slowing) and the
+bridges' links are approximations; no destination flag, speech or engine sounds yet.
