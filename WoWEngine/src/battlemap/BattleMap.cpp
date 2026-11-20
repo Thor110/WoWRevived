@@ -58,6 +58,7 @@ namespace wow
             { 10, "BMR" + std::to_string(s.shadeClass) + "NA" + hour } };
         for (const auto& [slot, name] : slots)
             if (auto data = res.LoadFile("dat\\" + name + ".SHH")) slotTables[slot] = ShadeTable::LoadShh(*data);
+        SetUpRouteFinder();     // 0x47AF10, with the landscape, before anything is placed (the bridges add nodes)
         if (s.loadScenery) LoadScenery(sun, letter);
 
         Deploy();
@@ -78,8 +79,8 @@ namespace wow
             }
             AddRenderer(u.type, u.x, u.y, u.heading, int(i));
         }
+        for (const Unit& u : units) Occupy(u.type, u.x, u.y);
         SetUpGrounds();
-        SetUpRouteFinder();
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
 
         // The start view (0x439B7E): on the player's HQ (the player's constructions list, HCON, searched for type
@@ -724,15 +725,16 @@ namespace wow
         {
             auto u = setup.units->find(o.type);
             if (u == setup.units->end()) continue;
-            if (o.type >= 445 && o.type <= 447) { PlaceBridge(o); continue; }
+            if (o.type >= 445 && o.type <= 447) { Occupy(o.type, o.x, o.y); PlaceBridge(o); continue; }
             const int gtype = u->second.field28;
             const GType* g = res.FindGType(gtype);
-            if (!g) continue;
+            if (!g || (g->gclass != 0 && g->gclass != 1)) { Occupy(o.type, o.x, o.y); continue; }
             if (g->gclass == 0)
             {
                 // a sprite (RType 0x40EC50, the street lamps): drawn from its hot spot at the renderer's point, its
                 // +0x26 1; the half width its shadow takes is half the sprite's width
                 const IndexedImage* image = res.GetFrame(gtype, 0);
+                Occupy(o.type, o.x, o.y);
                 if (!image) continue;
                 const int ix = int(o.x), iy = int(o.y);
                 const int h = int(float(land.HeightAt(ix, iy)) + o.z);
@@ -742,20 +744,19 @@ namespace wow
                 land.SetPointLight(ix, iy, sun);
                 continue;
             }
-            if (g->gclass != 1) continue;
             auto m = models.find(gtype);
             if (m == models.end())
             {
                 IsoModel im;
                 auto file = res.LoadFile(g->file);
-                if (!file) { models[gtype]; continue; }
+                if (!file) { models[gtype]; Occupy(o.type, o.x, o.y); continue; }
                 try { im.model = IobModel::Load(*file); }
-                catch (const std::exception&) { models[gtype]; continue; }
+                catch (const std::exception&) { models[gtype]; Occupy(o.type, o.x, o.y); continue; }
                 im.lights = IsoObject::BaseLights(im.model, sun, levels);
                 im.slot = g->paletteSlot;
                 m = models.emplace(gtype, std::move(im)).first;
             }
-            if (m->second.model.patches.empty()) continue;
+            if (m->second.model.patches.empty()) { Occupy(o.type, o.x, o.y); continue; }
             const IobModel& model = m->second.model;
             // 0x47EB10: the collision radius, max(2 x half width, depth) x [Tweak] "ISO obj col rad mul" (0.66);
             // 0x47F960 keeps the object that far inside the map
@@ -765,6 +766,7 @@ namespace wow
             if (float(worldH - r) < y) y = float(worldH - r);
             if (float(r) > x) x = float(r);
             if (float(r) > y) y = float(r);
+            Occupy(o.type, x, y);
             // 0x47F480: the renderer's point, the ground's height there plus the object's own (+0x80)
             const int ix = int(x), iy = int(y);
             const int h = int(float(land.HeightAt(ix, iy)) + o.z);
@@ -774,6 +776,22 @@ namespace wow
             land.SetPointLight(ix, iy, sun);
         }
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+    }
+
+    // vt+0xE4 (0x48A950) as an object is added to the world (0x48A8B0): an object whose type is of class 0, 2 or 3
+    // (+0xB8 bit 1, 0x47D828) and not a tree (0xCF-0xE5, bit 2) marks the vertices within its type's +0x46 word of
+    // it blocked (0x47C280 with 2: QuickDistance from the vertex nearest it, in whole cells), which the ground's
+    // cost (0x480680) then refuses.
+    // *Provisional*: an RTypeISO type's +0x46 is taken from OBJ.ojd (0x47EB10 overwrites it with the model's radius
+    // only for an object with a parent or vt+0xB8); nothing is taken off again yet (vt+0xE8 as it goes).
+    void BattleMap::Occupy(int type, float x, float y)
+    {
+        if (type >= 0xCF && type <= 0xE5) return;
+        auto u = setup.units->find(type);
+        if (u == setup.units->end()) return;
+        const int c = u->second.category;
+        if (c != 0 && c != 2 && c != 3) return;
+        land.MarkOccupied(int(x), int(y), int16_t(u->second.currentHitPoints), 2);
     }
 
     // A bridge (core/Bridge.h): its part, the segment model (Country 445 bridge_1, City 446 bridge_2, Railway 447
@@ -805,6 +823,7 @@ namespace wow
                 depth = 2 * int16_t(six->second.d); // the renderer's +0x26 (0x49DB1C)
             }
         const Bridge bridge = Bridge::Create(land, o.extra[0], o.extra[1], o.extra[2], o.extra[3]);
+        AddBridgeNodes(bridge);
         const size_t first = wofs.size();
         for (int i = 0; i < bridge.Count(); i++)
         {

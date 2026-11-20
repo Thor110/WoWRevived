@@ -181,8 +181,9 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       the groups' ground (0x4802E0, 0x480680: OBJ.ojd records 10 and 11) for the speed, the lookahead's ground check
       and the destination's nearest passable node (0x482B00), the route finder (0x493DF0-0x494960, the BatRoute cost
       0x499420-, the shared A* in core/AStar.h) with route following, arrival and cohesion (docs/BATTLEMAP.md
-      "Driving", "Routes"). Still to do: the search spread over updates, bridges' route nodes and links, buildings'
-      footprints (0x47C280), crushing (0x493DF0-0x494960),
+      "Driving", "Routes"), the bridges' route nodes and links with the deck height (0x4983D0, 0x494220, 0x4984E0),
+      and the objects' footprints (0x48A950 -> 0x47C280). Still to do: the search spread over updates, footprints
+      taken off (vt+0xE8) and node removal, broken bridges, crushing (0x493DF0-0x494960),
       the ground's cost, bridges, the destination flag, speech and engine sounds
 - [ ] **Unit groups, orders, stances, specials** (Black Dust ... Scan) and the order panel (0x480190, 0x47CCF0-;
       the 0x80A0 stagger 0x47CEE0) — 07, 10, 11

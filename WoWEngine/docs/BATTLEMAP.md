@@ -523,8 +523,26 @@ the destination flag (type 0x17C), speech (0x10A, 0x10B) and engine sounds aren'
 
 **The nodes** (0x493DF0, when the landscape is set up): one every 4 vertices from 4 each way, (width - 4) / 4 across
 and (height - 4) / 4 down (62 x 61 for sector 30's 251 x 251), each joined to those round it in the order left,
-right, up, down, up-left, down-right, up-right, down-left. Nothing is checked here; a flag byte each (the link byte,
-for bridges, 0x494220 adds up to 0x400 more nodes) starts at 0.
+right, up, down, up-left, down-right, up-right, down-left. Nothing is checked here; a flag byte each (the link byte)
+starts at 0. The finder is set up with the landscape, before anything is placed.
+
+**More nodes** (0x494220, x, y, link byte; up to 0x400 of them): the new node's own list is the four grid nodes of its
+cell (((v - 4) / 4) kept to 1 .. count - 2: top left, right, below, below right), and it's added to each of theirs:
+each list is cut at its first entry of 0 or less (its -1 end; a list holding node 0 is cut there too) and a -2 leads
+on to a chain of added nodes, the newest first, which the A* walks after the list (0x44EFA0).
+
+**Bridges** (vt+0x104, 0x4983D0, as a bridge starts): a node 48 out beyond each end along the bridge's heading
+(0x43FE90), at the vertex nearest, with the bridge's link number (+0xDC, from dword_59D9B8: 1 for the battle's first
+bridge, counting up as they're made in 0x486490; dword_59D9C0 holds them by it), and the two joined (0x486820 ->
+0x494400: each put in the other's own list after its four). A step between two nodes with the same link byte costs
+the straight distance x the group's +0x5A, the members' record 10 17th values (dword_4F6E78) averaged, -1 once any
+is (so a group that can't use bridges can't take that step). In sector 30, across the Thames from vertex 156,100 to
+144,180: 11 nodes over the second bridge.
+
+**Footprints** (vt+0xE4, 0x48A950, as each object is added to the world, 0x48A8B0): an object whose type is of class
+0, 2 or 3 (+0xB8 bit 1, 0x47D828) and not a tree (0xCF-0xE5, bit 2) marks the vertices within its type's +0x46 word of
+it (0x47C280: QuickDistance in whole cells from the vertex nearest it) with flag 2, which the ground's cost refuses.
+Since buildings and scenery do, an order west from the start in sector 30 now finds a 4-node route round them.
 
 **The nearest node** (0x482B00, both ends of a move): the vertex goes to the node at or before it (((v - 4) / 4) x 4 +
 4) and squares 0, 4, 8 ... under 200 out are tried at 8 points each (right, right-down, down, left-down, left,
@@ -561,6 +579,18 @@ In sector 30, from vertex 152,100 to 80,94 the search ran along the river's nort
 smoothed. With the straight-line check forced off, a group of five followed a 21-node route to the west and stopped
 at its end, 1600 updates on.
 
-*Provisional*: the search is run to its end at once rather than 200 tries an update; the bridges don't add their
-nodes (so nothing crosses the river: "ROUTE NOT FOUND", the whole north bank searched in under a second), nor do the
-buildings mark their ground (0x47C280), so on open ground most orders go straight; the link-byte cost is never used.
+*Provisional*: the search is run to its end at once rather than 200 tries an update; an RTypeISO type's +0x46 is
+taken from OBJ.ojd (0x47EB10 overwrites it with the model's radius only for an object with a parent or vt+0xB8), and
+nothing takes its footprint off again yet (vt+0xE8); node removal (0x494370) isn't in.
+
+**On a bridge** (0x492F40 after the step): on a route whose waypoint has a link byte, the bridge's vt+0x100
+(0x4984E0) is asked and +0x18C becomes the link; else, on a link, it's asked and +0x18C cleared when it says no.
+0x4984E0: within the bridge's length (+0xD8) of both ends the vehicle is on it: at the point on the line its distance
+from the first end along, the deck is the straight line between the ends' heights, or that point's ground when
+higher, + 8; over the first and last segment (+0xF4, the length / the segments) it ramps from that point's ground up
+to it; +0x84 is the deck less the ground under the vehicle (at least 0), which its position's height adds (0x47F770).
+Off it, +0x84 is 0. On a link: the speed is 1 (0x492DE0), the ground check and the skip to a nearer waypoint are off,
+and separation, avoidance, velocity matching and cohesion aren't asked; a broken bridge's link (+0xEC 0) over water
+kills the vehicle (0x80A0) and stops its group. In the test the group crossed 24 over the water at speed 1, then went
+on along the route on the south bank.
+*Provisional*: broken bridges aren't in.

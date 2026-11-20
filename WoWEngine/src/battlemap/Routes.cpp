@@ -53,6 +53,8 @@ namespace wow
         rfY.assign(size_t(count), 0);
         rfFlags.assign(size_t(count), 0);
         rfLinks.assign(size_t(count), {});
+        rfExtra.assign(size_t(count), {});
+        bridgeLinks.clear();
         for (int j = 0; j < rfRows; j++)
             for (int i = 0; i < rfCols; i++)
             {
@@ -70,6 +72,104 @@ namespace wow
                 if (right && up) l.push_back(n - rfCols + 1);
                 if (left && down) l.push_back(n + rfCols - 1);
             }
+    }
+
+    // A node's neighbours as the A* walks them (0x44EFA0): its own list, then (after a -2) the chain of nodes added
+    // round it since, newest first
+    const std::vector<int>& BattleMap::RouteNeighbours(int node) const
+    {
+        static std::vector<int> all;
+        all = rfLinks[size_t(node)];
+        all.insert(all.end(), rfExtra[size_t(node)].begin(), rfExtra[size_t(node)].end());
+        return all;
+    }
+
+    // 0x494220 (vertex x, y, link byte): a new node (up to 0x400 more than the grid), its own list the four grid
+    // nodes round it (the cell's ((v - 4) / 4 kept to 1 .. count - 2) top left, right, below, below right), and it
+    // added to each of theirs: their lists are cut at the first entry of 0 or less (the -1 that ends them, though a
+    // list holding node 0 is cut there too) and it goes first in the chain after.
+    int BattleMap::InsertNode(int x, int y, int link)
+    {
+        if (rfCols < 3 || rfRows < 3) return -1;
+        const int index = int(rfX.size());
+        if (index >= rfCols * rfRows + 0x400) return -1;     // "insertNode: out of extra node space"
+        int i = (x - 4) / 4, j = (y - 4) / 4;
+        if (i < 1) i = 1;
+        if (j < 1) j = 1;
+        if (i > rfCols - 2) i = rfCols - 2;
+        if (j > rfRows - 2) j = rfRows - 2;
+        const int base = j * rfCols + i;
+        rfX.push_back(int16_t(x));
+        rfY.push_back(int16_t(y));
+        rfFlags.push_back(uint8_t(link));
+        rfLinks.push_back({ base, base + 1, base + rfCols, base + rfCols + 1 });
+        rfExtra.push_back({});
+        for (int g : { base, base + 1, base + rfCols, base + rfCols + 1 })
+        {
+            auto& l = rfLinks[size_t(g)];
+            for (size_t k = 0; k < l.size(); k++)
+                if (l[k] <= 0) { l.resize(k); break; }
+            rfExtra[size_t(g)].insert(rfExtra[size_t(g)].begin(), index);
+        }
+        return index;
+    }
+
+    // vt+0x104 (0x4983D0), as a bridge starts: a node 48 out beyond each end along its heading (0x43FE90), each at
+    // the vertex nearest, with the bridge's link number (+0xDC: dword_59D9B8, 1 for the first of the battle, its
+    // place in dword_59D9C0), and the two joined (0x486820 -> 0x494400: each in the other's own list after its four)
+    void BattleMap::AddBridgeNodes(const Bridge& bridge)
+    {
+        BridgeLink b;
+        b.ax = bridge.EndX(0); b.ay = bridge.EndY(0);
+        b.bx = bridge.EndX(1); b.by = bridge.EndY(1);
+        b.length = bridge.Length();
+        b.segment = float(double(b.length) / bridge.Count());   // +0xF4 (0x497900)
+        bridgeLinks.push_back(b);
+        const int link = int(bridgeLinks.size());
+        const double a = double(bridge.Heading()) * 0.000244140625 * 6.283185307;
+        const float ox = float(std::cos(a) * 48.0), oy = float(std::sin(a) * 48.0);
+        const int32_t cell = land.Cell(), half = land.HalfCell();
+        auto vertex = [&](float v) { return int((int64_t(int32_t(uint32_t(int(v)) << 16)) + half) / cell); };
+        const int na = InsertNode(vertex(float(double(b.ax) - ox)), vertex(float(double(b.ay) - oy)), link);
+        const int nb = InsertNode(vertex(float(double(b.bx) + ox)), vertex(float(double(b.by) + oy)), link);
+        if (na < 0 || nb < 0) return;
+        auto& la = rfLinks[size_t(na)];
+        la.insert(la.begin() + std::min<ptrdiff_t>(4, ptrdiff_t(la.size())), nb);
+        auto& lb = rfLinks[size_t(nb)];
+        lb.insert(lb.begin() + std::min<ptrdiff_t>(4, ptrdiff_t(lb.size())), na);
+    }
+
+    // vt+0x100 (0x4984E0, each update a vehicle's waypoint or +0x18C is this link): within the length (+0xD8) of
+    // both ends it's on: the deck there is the straight line between the ends' heights at its distance from the
+    // first end, or the ground at that point on the line when that's higher, + 8; over the first and last segment
+    // (+0xF4) it ramps from that point's ground up to it. +0x84 is that less the ground under the vehicle (at least
+    // 0). Off it, +0x84 is 0 and the answer no.
+    bool BattleMap::OnBridge(Unit& u, int link)
+    {
+        if (link < 1 || link > int(bridgeLinks.size())) { u.drive.lift = 0; return false; }
+        const BridgeLink& b = bridgeLinks[size_t(link - 1)];
+        auto dist = [&](int ex, int ey) {
+            const int dx = int(u.x - float(ex)), dy = int(u.y - float(ey));
+            return std::sqrt(double(dx * dx + dy * dy));
+        };
+        const double toB = dist(b.bx, b.by);
+        const float toA = float(dist(b.ax, b.ay));
+        const float length = float(b.length);
+        if (!(toB <= length) || !(toA <= length)) { u.drive.lift = 0; return false; }
+        const float hA = float(land.HeightAt(b.ax, b.ay));
+        const int hB = land.HeightAt(b.bx, b.by);
+        const double px = double(b.ax) + double(b.bx - b.ax) / length * toA;
+        const double py = double(b.ay) + double(b.by - b.ay) / length * toA;
+        const double ground = land.HeightAt(int(float(px)), int(float(py)));
+        double deck = (double(float(hB)) - hA) * toA / length + hA;
+        if (ground > deck) deck = ground;
+        float top = float(deck - -8.0);
+        if (toA < b.segment) top = float((double(top) - ground) * toA / b.segment + ground);
+        else if (double(length) - b.segment < toA) top = float((double(top) - ground) * (double(length) - toA) / b.segment + ground);
+        float lift = float(double(top) - land.HeightAt(int(u.x), int(u.y)));
+        if (lift < 0.0f) lift = 0.0f;
+        u.drive.lift = lift;
+        return true;
     }
 
     // 0x4994B0 (vertices): Bresenham from the first to the last, each vertex's strict cost (0x480680) added up;
@@ -123,14 +223,19 @@ namespace wow
 
     // 0x499660 (a, b, the goal at +0xC): the line's cost from a to b times (the turn penalty between the way to the
     // goal and the way to b) x 5 / 16 + 1. Nodes sharing a link byte (both set) cost their straight distance x the
-    // group's +0x5A instead.
-    // *Provisional*: no node has a link byte yet (the bridges don't add theirs), so that's never used.
+    // group's +0x5A instead (the bridge's two nodes: a group that can't cross has -1 there).
     int BattleMap::StepCost(int group, int goal, int a, int b) const
     {
         const int axv = rfX[size_t(a)], ayv = rfY[size_t(a)];
         const int toGoal = Direction(rfX[size_t(goal)] - axv, rfY[size_t(goal)] - ayv);
         const int toB = Direction(rfX[size_t(b)] - axv, rfY[size_t(b)] - ayv);
-        const int line = LineCost(group, axv, ayv, rfX[size_t(b)], rfY[size_t(b)]);
+        int line = LineCost(group, axv, ayv, rfX[size_t(b)], rfY[size_t(b)]);
+        const uint8_t region = rfFlags[size_t(a)];
+        if (region && rfFlags[size_t(b)] == region && group >= 0 && size_t(group) < grounds.size())
+        {
+            const int dx = axv - rfX[size_t(b)], dy = ayv - rfY[size_t(b)];
+            line = int(std::sqrt(double(dx * dx + dy * dy)) * grounds[size_t(group)].bridgeFactor);
+        }
         return ((kTurn[toGoal + toB * 8] * 5 >> 4) + 1) * line;
     }
 
@@ -172,7 +277,7 @@ namespace wow
             return false;
         }
         auto cost = [&](int a, int b) { return StepCost(group, goal, a, b); };
-        auto next = [&](int id) -> const std::vector<int>& { return rfLinks[size_t(id)]; };
+        auto next = [&](int id) -> const std::vector<int>& { return RouteNeighbours(id); };
         auto isGoal = [&](int a, int g) {
             return Octagonal(rfX[size_t(a)], rfY[size_t(a)], rfX[size_t(g)], rfY[size_t(g)]) <= radius;
         };

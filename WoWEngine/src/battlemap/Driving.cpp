@@ -89,6 +89,7 @@ namespace wow
         for (size_t i : members)
         {
             Unit& u = units[i];
+            if (u.drive.link) continue;
             const int d = octagonal(int(u.x), int(u.y), x, y);
             u.drive.toPoint = d;
             if (d < nearest) nearest = d;
@@ -209,7 +210,7 @@ namespace wow
             if (!(d.flags & 1)) d.flags &= ~2u;
             d.flags = (d.flags & ~0x2000u) | (!(d.flags & 1) ? 0x2000u : 0u);
         }
-        const bool active = !(d.flags & 1);    // vt+0x144 (0x4909D0): not stopped (bits 5 and 8 and links not in)
+        const bool active = !(d.flags & 1) || d.link;  // vt+0x144 (0x4909D0): not stopped, or on a link (bits 5, 8 not in)
         if (!active && !(double(d.speed) > 0.01)) return;
         Steer(u);
         Advance(u);
@@ -217,7 +218,7 @@ namespace wow
         {
             const int ix = int(u.x), iy = int(u.y);
             u.heading = d.heading & 0xFFF;  // vt+0x30 with +0x100
-            u.wof->Transform(land, u.heading, ix, iy, land.HeightAt(ix, iy));
+            u.wof->Transform(land, u.heading, ix, iy, int(float(land.HeightAt(ix, iy)) + d.lift));  // + +0x84
         }
     }
 
@@ -233,7 +234,10 @@ namespace wow
     // neighbours gathered (0x492C00), arrival (vt+0x168, not arrived and not bit 5), separation (vt+0x154, no link and
     // not bit 5), the target (vt+0x150), avoidance (vt+0x15C, no link), braking (vt+0x160, not bit 5), velocity
     // matching (vt+0x16C, no link and not bit 5) and cohesion (vt+0x164, the same and on a route).
-    // *Provisional*: bit 5 and the bridge links aren't in.
+    // After the step (0x492F40 + 0x408): on a route whose waypoint has a link byte the bridge's vt+0x100 (OnBridge)
+    // is asked and +0x18C becomes the link; else, on a link, it's asked and +0x18C is cleared when it says no (a
+    // broken bridge's link (+0xEC 0) over water kills it: 0x80A0, its group 0x8031).
+    // *Provisional*: bit 5 isn't in, nor broken bridges.
     void BattleMap::Steer(Unit& u)
     {
         auto& d = u.drive;
@@ -269,7 +273,7 @@ namespace wow
                 else d.flags &= ~4u;
             }
             // separation (vt+0x154, 0x4920A0): the neighbours' push x how many there are
-            if (n.count > 0)
+            if (n.count > 0 && !d.link)
                 add(float(double(v.separationAccWeight) * v.maxAcc), float(double(v.separationAccMax) * v.maxAcc),
                     float(double(n.sepX) * n.count), float(double(n.sepY) * n.count));
             // the target (vt+0x150, 0x491BB0)
@@ -278,7 +282,7 @@ namespace wow
                 add(float(double(v.targAccWeight) * v.maxAcc), float(double(v.targAccMax) * v.maxAcc), fx, fy);
             }
             // avoidance (vt+0x15C, 0x491D90): with something ahead, away along the way to it
-            if (d.flags & 8)
+            if ((d.flags & 8) && !d.link)
             {
                 const double len = std::sqrt(double(d.ax) * d.ax + double(d.ay) * d.ay);
                 if (len > 0.0)
@@ -299,12 +303,12 @@ namespace wow
                 }
             }
             // velocity matching (vt+0x16C, 0x492160): the moving group members' average step
-            if (n.matched > 0)
+            if (n.matched > 0 && !d.link)
                 add(float(double(v.velMatchAccWeight) * v.maxAcc), float(double(v.velMatchAccMax) * v.maxAcc),
                     float(double(n.stepX) / n.matched), float(double(n.stepY) / n.matched));
             // cohesion (vt+0x164, 0x492240; with a route): toward the moving group members' average position,
             // attractAcc*
-            if (d.route && n.matched > 0)
+            if (d.route && n.matched > 0 && !d.link)
             {
                 n.posX = float(double(n.posX) / n.matched);
                 n.posY = float(double(n.posY) / n.matched);
@@ -361,6 +365,13 @@ namespace wow
         Polar(int(float(d.heading) + back), d.speed, d.dx, d.dy);
         u.x = float(double(d.dx) + u.x);
         u.y = float(double(d.dy) + u.y);
+        const int waypointLink = d.route && d.waypoint < int(d.route->nodes.size()) ? d.route->nodes[size_t(d.waypoint)].link : 0;
+        if (waypointLink)
+        {
+            OnBridge(u, waypointLink);
+            d.link = waypointLink;
+        }
+        else if (d.link && !OnBridge(u, d.link)) d.link = 0;
     }
 
     // 0x492C00: the objects in the unit's bucket grid cell (ZMapRes square, built by 0x439770 over the map) and the
@@ -496,7 +507,7 @@ namespace wow
             if (CellCost(u.group, vx, vy, false) != 0) return false;
             d.ax = float(double((int32_t(int64_t(land.Cell()) * vx) - land.HalfCell()) >> 16) - px);
             d.ay = float(double((int32_t(int64_t(land.Cell()) * vy) - land.HalfCell()) >> 16) - py);
-            return true;    // and not on a bridge link (+0x18C), which isn't in
+            return !d.link;     // not on a bridge link (+0x18C)
         };
         for (int i = 0; i < 4; i++)
         {
@@ -542,6 +553,7 @@ namespace wow
     {
         grounds.assign(setup.groups.size(), GroundGroup{});
         std::vector<float> best(setup.groups.size(), -1000.0f);
+        std::vector<int> members(setup.groups.size(), 0);
         std::vector<bool> any(setup.groups.size(), false);
         for (const Unit& u : units)
         {
@@ -550,7 +562,15 @@ namespace wow
             auto t = setup.units->find(u.type);
             if (t == setup.units->end()) continue;
             any[size_t(u.group)] = true;
+            members[size_t(u.group)]++;
             const int c = t->second.field52;
+            // +0x5A: record 10's 17th value (dword_4F6E78) added up, -1 for good once one is
+            if (g.bridgeFactor != -1 && setup.moveCosts)
+            {
+                auto m = setup.moveCosts->find(c);
+                const int v = m == setup.moveCosts->end() ? 0 : m->second[16];
+                g.bridgeFactor = v == -1 ? -1 : int16_t(g.bridgeFactor + v);
+            }
             if (c != 7) g.airborne = false;
             const int side = u.players == setup.human ? 0 : 1;
             g.ownSector = side == setup.ownerFaction;
@@ -572,6 +592,7 @@ namespace wow
         for (size_t i = 0; i < grounds.size(); i++)
         {
             if (!any[i]) grounds[i].airborne = true;    // set first, only cleared by a member
+            if (grounds[i].bridgeFactor != -1 && members[i]) grounds[i].bridgeFactor /= members[i];
             for (int c = 0; c < 8; c++)
             {
                 float base = 0;
@@ -622,6 +643,7 @@ namespace wow
             if (over < 1.0f) over = 1.0f;
             top = float(double(top) / over);
         }
+        if (d.link) top = 1.0f;     // on a bridge
         if (!(top <= wanted)) top = wanted;
         if (!(d.flags & 1))
         {
@@ -654,7 +676,7 @@ namespace wow
             const RouteNode& nd = d.route->nodes[size_t(d.waypoint + 1)];
             const int32_t cell = land.Cell(), half = land.HalfCell();
             const int next = distanceTo(int32_t(int64_t(nd.x) * cell - half) >> 16, int32_t(int64_t(nd.y) * cell - half) >> 16);
-            if (next < d.dist) reached = true;     // and not on a bridge link
+            if (next < d.dist && !d.link) reached = true;
             if (float(d.dist) < d.arrival) reached = true;
         }
         else if (float(d.offset) + d.arrival > float(d.dist)) reached = true;

@@ -5,6 +5,7 @@
 // See docs/BATTLEMAP.md.
 #pragma once
 #include <array>
+#include "core/Bridge.h"
 #include "core/Landscape.h"
 #include "core/ObjOjd.h"
 #include "core/TerrainView.h"
@@ -116,6 +117,7 @@ namespace wow
         Landscape::Sun sun;
         void LoadScenery(const Landscape::Sun& sun, char letter);
         void PlaceBridge(const PlacedObject& o);
+        void Occupy(int type, float x, float y);                // vt+0xE4, 0x48A950
         // The battle units (each war map object's +0x4C list): type, place, heading (4096 a turn), whose
         // A route ("BatRoute" 0x499850): its nodes (16 bytes each in the game): x and y in vertices, the heading less
         // 0x400, and the link byte (a bridge)
@@ -143,6 +145,8 @@ namespace wow
             std::shared_ptr<const Route> route; // +0xEC, the route it's following (shared, as the game counts)
             int waypoint = 0;           // +0xF0
             int toPoint = 0;            // +0xD4, from the last order's point (0x43FF00)
+            int link = 0;               // +0x18C, the bridge it's on (dword_59D9C0's index), 0 for none
+            float lift = 0;             // +0x84, its height over the ground (a bridge's deck)
             int offset = 0;             // +0x13A, rand() % (0x802E's value + 1): more room at the route's end
         };
         struct Unit { int type; float x, y; int heading; bool players; int group = 0; bool vehicle = false; Drive drive;
@@ -160,6 +164,15 @@ namespace wow
         std::vector<std::vector<int>> rfLinks;          // each node's neighbours (connDat through connList)
         std::vector<int16_t> rfX, rfY;                  // nodeXCMem / nodeYCMem
         std::vector<uint8_t> rfFlags;                   // nodeFMem: the link byte (bridges)
+        std::vector<std::vector<int>> rfExtra;          // links added later (0x494220's -2 chain), newest first
+        std::vector<int> rfOwn;                         // a node's own list's link to its partner (0x494400), or -1
+        // The bridges as links (dword_59D9C0[1..], counted from 1 by dword_59D9B8 as they're made, 0x486490)
+        struct BridgeLink { int ax = 0, ay = 0, bx = 0, by = 0, length = 0; float segment = 0; };
+        std::vector<BridgeLink> bridgeLinks;
+        int InsertNode(int x, int y, int link);                                         // 0x494220
+        void AddBridgeNodes(const Bridge& bridge);                                      // 0x4983D0
+        bool OnBridge(Unit& u, int link);                                               // 0x4984E0
+        const std::vector<int>& RouteNeighbours(int node) const;
         void SetUpRouteFinder();                                                        // 0x493DF0
         int LineCost(int group, int x0, int y0, int x1, int y1) const;                  // 0x4994B0
         int StepCost(int group, int goal, int a, int b) const;                          // 0x499660
@@ -190,6 +203,7 @@ namespace wow
             bool ownSector = false;     // bit 6: the members' side holds the sector
             int maxSlope = 1000;
             int cls = 0;
+            int bridgeFactor = 0;       // +0x5A: the members' record 10 17th values averaged, -1 if any is
             uint32_t terrain[16] = {};
             int slopeCost[64] = {};
         };
