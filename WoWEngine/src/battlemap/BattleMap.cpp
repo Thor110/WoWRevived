@@ -217,6 +217,29 @@ namespace wow
             for (int g : hits) selected[size_t(g)] = true;
             return;
         }
+        const Unit* best = HotspotAt(x, y);
+        if (!best) return;
+        const bool ctrl = (SDL_GetModState() & SDL_KMOD_CTRL) != 0;
+        if (Mode() == 0)
+        {
+            if (!best->players || selected[size_t(best->group)]) return;
+            if (ctrl && !vehicle(*best)) return;
+            ClearSelection();
+            selected[size_t(best->group)] = true;
+            return;
+        }
+        // mode 1 (0x497794): the player's selects its group (with Ctrl it would be force fire at the ground under it,
+        // packet 0x13); the other side's would be attacked (packet 0x10): *not yet*
+        if (best->players && !ctrl)
+        {
+            ClearSelection();
+            selected[size_t(best->group)] = true;
+        }
+    }
+
+    // The hotspot under a point: the frontmost (lowest on screen) of those whose square holds it
+    const BattleMap::Unit* BattleMap::HotspotAt(int x, int y) const
+    {
         const Unit* best = nullptr;
         int bestY = INT32_MIN;
         for (const Unit& u : units)
@@ -227,10 +250,45 @@ namespace wow
             UnitScreen(u, sx, sy);
             if (x >= sx - half && x < sx + half && y >= sy - half && y < sy + half && sy > bestY) { best = &u; bestY = sy; }
         }
-        if (!best || !best->players || selected[size_t(best->group)]) return;
-        if ((SDL_GetModState() & SDL_KMOD_CTRL) && !vehicle(*best)) return;
-        selected.assign(selected.size(), false);
-        selected[size_t(best->group)] = true;
+        return best;
+    }
+
+    // The cursor (WM_SETCURSOR): over the minimap 0 (0x486E80); over a hotspot (0x497110) in mode 0 1 for the
+    // player's (the other side's leave the view's), in mode 1 5 for the other side's and the player's with Ctrl, else
+    // 1; elsewhere (0x485F60) mode 0 gives 4 with something selected else 0, mode 1 5 with Ctrl else 4. The table
+    // (FrontEnd::DrawCursor) makes 1 hselcurs, 4 h-move and 5 h-attack.
+    int BattleMap::CursorAt(int x, int y) const
+    {
+        if (!popup.empty()) return 0;
+        if (InMinimap(x, y)) return 0;
+        const bool ctrl = (SDL_GetModState() & SDL_KMOD_CTRL) != 0;
+        const int mode = Mode();
+        if (const Unit* u = HotspotAt(x, y))
+        {
+            if (mode == 0 && u->players) return 1;
+            if (mode == 1) return (!u->players || ctrl) ? 5 : 1;
+        }
+        if (mode == 1) return ctrl ? 5 : 4;
+        return 0;
+    }
+
+    // Home (0x43A480): the middle of the selection's extent (its group's bounds, 0x4836A0: each half rounded to 0),
+    // projected with the height of the vertex nearest it (0x47B120), less half the view
+    void BattleMap::CentreOnSelection()
+    {
+        bool any = false;
+        int minX = 0, maxX = 0, minY = 0, maxY = 0;
+        for (const Unit& u : units)
+        {
+            if (!u.players || !selected[size_t(u.group)]) continue;
+            const int x = int(u.x), y = int(u.y);
+            if (!any) { minX = maxX = x; minY = maxY = y; any = true; }
+            minX = std::min(minX, x); maxX = std::max(maxX, x);
+            minY = std::min(minY, y); maxY = std::max(maxY, y);
+        }
+        if (!any) return;
+        const int cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+        ScrollTo(cx - 320, land.ProjectY(cy, land.HeightAtNearest(cx, cy)) - 240);
     }
 
     // The selected units' brackets (0x4972F0 / 0x497000: GType 5, hselec.spr, frames 0-3 at the hotspot's corners 8 in)
@@ -775,7 +833,8 @@ namespace wow
         case SDLK_RIGHT:
             ScrollTo(scrollX + (ctrl ? round0(hi(w, 0x55555556)) : round0((hi(w, int32_t(0x92492493)) + w) >> 2)), scrollY);
             break;
-        // *Not yet*: the digits (select group n, packet 0x12), Backspace (halt, 0x11) and Home (centre on the selection, 0x43A480)
+        case SDLK_HOME: CentreOnSelection(); break;
+        // *Not yet*: the digits (select group n, packet 0x12) and Backspace (halt, 0x11)
         default: break;
         }
         return std::nullopt;
@@ -835,7 +894,11 @@ namespace wow
             popup.push_back({ command, icon, text, r });
         };
         add(0x73, 0x1C, 0x476);
-        add(ReturnCommand, 0x2C, 0x47A); // no objects on the map yet, so one side always has none
+        // Return to Warmap only with nothing selected (0x4391F0) and one side without units on the map (0x47D610 /
+        // 0x47D660 on the battle world's list)
+        bool ours = false, theirs = false;
+        for (const Unit& u : units) (u.players ? ours : theirs) = true;
+        if (Mode() == 0 && (!ours || !theirs)) add(ReturnCommand, 0x2C, 0x47A);
         int w = 0, h = 0;
         for (const PopupItem& item : popup) { w = std::max(w, item.rect.w); h += item.rect.h; }
         int left = std::clamp(x - popup[0].rect.w / 2, 3, 640 - 3 - w);
@@ -882,18 +945,28 @@ namespace wow
                 int command = item.command;
                 ClosePopup(false);
                 if (command == ReturnCommand) return Command{ ReturnCommand, setup.sector };
-                return std::nullopt; // 0x73, Cancel: nothing selected yet
+                ClearSelection(); // 0x73, Cancel
+                return std::nullopt;
             }
         ClosePopup(false);
         return std::nullopt;
     }
 
-    // 0x205: let go quickly it's 0x73, Cancel (nothing to cancel yet)
+    // 0x204 / 0x205: held, the popup (above); let go quickly, 0x73 (Cancel) to the selection
     std::optional<Command> BattleMap::OnRightButton(int, int, bool down)
     {
         if (!popup.empty()) { rightDownAt = -1; return std::nullopt; }
         if (down) rightDownAt = ticks;
-        else rightDownAt = -1;
+        else
+        {
+            // 0x205 let go before the popup came: the drag rectangle goes and 0x73 (Cancel) clears the selection
+            if (rightDownAt >= 0)
+            {
+                dragging = boxActive = false;
+                ClearSelection();
+            }
+            rightDownAt = -1;
+        }
         return std::nullopt;
     }
 

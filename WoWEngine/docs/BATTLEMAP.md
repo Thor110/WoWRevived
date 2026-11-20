@@ -395,6 +395,20 @@ sends 0x8088 to an object's group (+0x48), which selects all its units.
   frames 0-3 at its hotspot's corners 8 in, and GType 7 (`hpower.spr`) at the middle of its bottom edge 8 up, its
   frame ftol(frame count x (1 - damage / maximum)), at most the last (0x497290 keeps it up to date).
 
+- **Cursor mode** (dword_4EA43C, set by 0x42E790): every change of the selection (0x800F to the world and the
+  view, 0x43B682 / 0x4853A0) makes it 1 (orders) when something is selected, else 0. In mode 1 a hotspot of the
+  player's selects its group (with Ctrl: force fire at the ground under it, packet 0x13) and one of the other
+  side's is attacked (packet 0x10).
+- **Cursors** (WM_SETCURSOR, numbers into the cursor table: 1 `hselcurs`, 4 `h-move`, 5 `h-attack`): over the
+  minimap 0; over a hotspot (0x497110) in mode 0 1 for the player's, in mode 1 5 for the other side's or with Ctrl,
+  else 1; elsewhere (0x485F60) mode 0 4 with something selected else 0, mode 1 5 with Ctrl else 4.
+- **Cancel**: the right button let go before the popup comes (0x205) drops the drag rectangle and sends 0x73,
+  which clears the selection, as the popup's Cancel does. The popup only offers Return to Warmap with nothing
+  selected and one side without units on the map.
+- **Home** (0x43A480): the view centred on the selection: the middle of its members' extent (0x4836A0, halves
+  rounded to 0), projected with the nearest vertex's height (0x47B120), less half the view.
+
 *Provisional*: the hotspot is taken as centred on the object's screen point (the ground under it); +0x3C isn't read
 (only vehicles count for the box); the frontmost hotspot is the one lowest on screen; no damage yet, so the power
-bar is full. Orders (cursor mode 1), Shift adding to the selection (packet 5) and the group keys aren't in.
+bar is full. The orders themselves (move, attack, force fire), Shift adding to the selection (packet 5) and the
+group keys aren't in.

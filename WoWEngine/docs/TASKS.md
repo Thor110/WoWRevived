@@ -157,7 +157,8 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       record 8, the calendar's hour), with the game's edge scrolling (0x484DF0), scroll keys (0x485610), the battle
       map menu (0x49BD50), the popup's Return to Warmap (0x485DE0), the start view on the HQ and the minimap
       (0x4868B0: picture, dots, view rectangle, click and drag, Tab), and selecting by box and by click with the
-      brackets and power bars (0x485930, 0x49C080, 0x497110). Still to do: the selection keys, the mouse's orders,
+      brackets and power bars (0x485930, 0x49C080, 0x497110), the cursor modes and cursors, Cancel and Home.
+      Still to do: the group keys, the mouse's orders,
       the panel, fog of war (0x484A30, 0x4346C0) —
       05, 11, 13, 14
 - [~] **Enter / leave a sector**: the landscape, shade tables, briefing sound and enemy count of 0x439770 are in;

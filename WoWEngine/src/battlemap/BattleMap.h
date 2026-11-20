@@ -11,6 +11,7 @@
 #include "core/Scenery.h"
 #include "core/WofView.h"
 #include "core/Deployment.h"
+#include <algorithm>
 #include <map>
 #include "frontend/Screen.h"
 #include <memory>
@@ -57,7 +58,7 @@ namespace wow
         void OnMouseMove(int x, int y) override;
         std::optional<Command> OnMouseButton(int x, int y, bool down) override;
         std::optional<Command> OnRightButton(int x, int y, bool down) override;
-        int CursorAt(int, int) const override { return 0; }
+        int CursorAt(int x, int y) const override;
         int TipOwner(int x, int y) const override;
         std::string TipText(int owner, int level) const override;
 
@@ -118,6 +119,11 @@ namespace wow
         bool UnitScreen(const Unit& u, int& sx, int& sy) const;
         int Selectable(const Unit& u) const;                // its +0x40 byte (half the hotspot), or 0
         void ReleaseLeft(int x, int y);
+        // dword_4EA43C, the cursor mode: 1 (orders) with something selected, else 0 (0x800F, 0x4853A0)
+        int Mode() const { return std::find(selected.begin(), selected.end(), true) != selected.end() ? 1 : 0; }
+        void ClearSelection() { selected.assign(selected.size(), false); }
+        const Unit* HotspotAt(int x, int y) const;
+        void CentreOnSelection();
         void DrawSelection(Canvas& canvas) const;
         int scrollX = 0, scrollY = 0;
         int mouseX = -1, mouseY = -1;
