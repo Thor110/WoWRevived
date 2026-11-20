@@ -3,7 +3,6 @@
 //   wowinstall-cli --drives                                  list the optical drives
 //   wowinstall-cli <game folder> [<disc>] [<disc>] [options] install (no disc: use whatever is in the drives)
 //     <disc> is a drive or mounted disc (D:\, /media/cdrom, /dev/sr0), an .iso, or a .cue (with its .bin)
-//     --martian    start on the Martian side (default: Human)
 //     --no-music   don't rip the music tracks
 // The discs can be given in either order. Both discs in two drives at once: they're found and copied without
 // asking (the same disc twice is only copied once). One drive: after the first disc it asks for the
@@ -24,7 +23,7 @@ static int Usage()
 {
     std::fprintf(stderr,
         "usage: wowinstall-cli --drives\n"
-        "       wowinstall-cli <game folder> [<disc>] [<disc>] [--martian] [--no-music]\n"
+        "       wowinstall-cli <game folder> [<disc>] [<disc>] [--no-music]\n"
         "       <disc>: a drive or mounted disc, an .iso, or a .cue\n");
     return 2;
 }
@@ -58,8 +57,7 @@ int main(int argc, char** argv)
         for (int i = 2; i < argc; i++)
         {
             std::string arg = argv[i];
-            if (arg == "--martian") options.human = false;
-            else if (arg == "--no-music") options.music = false;
+            if (arg == "--no-music") options.music = false;
             else sources.push_back(arg);
         }
 

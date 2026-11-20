@@ -151,8 +151,26 @@ sector sends it there.
   with x 0.01 between its first two points (not yet understood). `[Tweak] "Clunting Speed"` (0x428B70, default 7,
   the same as the fastest Human unit's 140 x 0.05) is only used for a counter with no speed. `wowdump --units`
   prints the table.
-- **The way**: the shortest over land through the links (*provisional*: the game's FindRoute, 0x44EFA0, isn't
-  traced).
+- **The way**: the game's route finder, an A* (FindRoute 0x44EFA0, set up by 0x44EE70 from 0x424160, at most
+  1000 steps) over 31 nodes whose neighbour lists are at 0x4BD260. 0x435710 builds a 32 x 32 table of link kinds at
+  0x4EAA18 from a switch on to x 100 + from (bit 1 widens to 7): 0xF over land, 0x10 by sea, 0x1F both, 0x18 by sea
+  with an unknown 8. The table and the neighbour lists agree exactly (79 links, all both ways); the engine's copy is
+  `warmap::RouteLinks`. Each step's cost (0x42ABD0) is the straight line between the two waypoints (0x437380), in
+  whole pixels; there's no estimate to the goal, so it's the shortest way. A step is refused, with a code left at
+  0x4EA198 that nothing reads:
+  - 0: a unit in the route can't move (unit +0x54's +0x128; not done)
+  - 1 / 2: the link isn't one of the unit's: the unit type's +0x4E (OBJ.ojd record 36) is 0-2 for land units
+    (link bits 1, 2 or 4), 3 for boats (0x10), 4 for fliers (any)
+  - 3: neither end has its owner's command building, finished (0x43C990: a Human sector needs a Command Post, type
+    314, or in London (30) the war room, 278; a Martian one a Communications Centre, 120, or in sector 3 the
+    landing site, 830. Finished is the construction's +0x7C at least its +0x78 (0x42AA70); the engine compares
+    the save's two floats, *provisional* as to which is which)
+  - 4 / 5: a sector passed through (not the goal) has no command building, or isn't the player's
+  - 6: the start has no command building and the step goes into a sector that isn't the player's
+  - 7 / 8: the goal would hold more than `[Tweak] "Max units in sector"` (default 15) units, or `"Max boats in
+    sector"` (5) boats, counting what's there already
+  So at the start of a campaign, with only the war room, moves go from or to London or through it. The text for
+  a refusal is the engine's own. Boats cross at a link's sea points, fliers at its land points if it has them.
 - Going into a sector the other side holds stops the counter at the border with a message (a battle, which needs
   the battle map), and arriving in a sector no one holds takes it (*provisional*).
 
@@ -177,5 +195,5 @@ The engine scrolls with the arrow keys, at the screen edges, and by clicking or 
 ## Still to do
 
 The game's scroll rules, the event messages (top left; the engine shows only the latest), the own sectors' shading,
-the counters' fill order, the route finder and the arrows' drawing, sea routes, construction, research, the AI's turns, saving, and the
+the counters' fill order, the arrows' drawing, a unit that can't move (refusal 0), construction (so command posts can be built), research, the AI's turns, saving, and the
 battle map.

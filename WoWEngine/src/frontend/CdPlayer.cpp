@@ -59,8 +59,9 @@ namespace wow
     std::optional<std::filesystem::path> CdPlayer::TrackFile(int t) const
     {
         char name[64];
-        // the same folder rule as WoWRevived's _inmm: "-Martian" whenever Human.cd is present (UseMartianAssets)
-        std::snprintf(name, sizeof(name), "Music-%s\\%02d Track%02d.wav", res.Human() ? "Martian" : "Human", t, t);
+        // the side's own disc's music: Human.cd means the Human disc is in (0x408B70 checks for Human.cd when the
+        // side flag 0x4B84C4 is set, Martian.cd otherwise), so Music-Human
+        std::snprintf(name, sizeof(name), "Music-%s\\%02d Track%02d.wav", res.Human() ? "Human" : "Martian", t, t);
         return files.Resolve(name);
     }
 

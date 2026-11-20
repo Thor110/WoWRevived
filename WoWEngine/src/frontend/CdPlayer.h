@@ -1,6 +1,6 @@
 // The CD Player (menu 0x803E): constructor 0x407990, message handler 0x4081D0, status 0x4088B0.
 // Opened from the main menu with backdrop GType 0xAF (CD_SEP1.spr) and palette group 0x2F9 ("cd").
-// Music comes from the folder WoWRevived's _inmm uses: Music-Martian when Human.cd is present, else Music-Human.
+// Music comes from the side's own disc: Music-Human when Human.cd is present (a Human game), else Music-Martian.
 //
 // Layout (from the constructor):
 //   heading       plate 0xA5, glass 0xA6, string 0x4B6, font 0x73, at (33, 35)

@@ -161,17 +161,11 @@ namespace wow::install
 
     void Finish(const InstallOptions& options, InstallResult& result)
     {
-        std::error_code ec;
         wow::GameFiles files(options.target);
-        auto human = files.Resolve("Human.cd"), martian = files.Resolve("MARTIAN.cd");
         if (!result.humanDisc) result.warnings.push_back("The Human disc wasn't copied, so its music (Music-Human) is missing.");
         if (!result.martianDisc) result.warnings.push_back("The Martian disc wasn't copied, so its music (Music-Martian) is missing.");
         if (!result.humanDisc || !result.martianDisc) result.musicMissing = true;
-        // one side marker: Human.cd for a Human game, MARTIAN.cd for a Martian one (WoWLauncher renames it to switch)
-        if (options.human && !human && martian) fs::rename(*martian, options.target / "Human.cd", ec);
-        else if (options.human && human && martian) fs::remove(*martian, ec);
-        else if (!options.human && human && !martian) fs::rename(*human, options.target / "MARTIAN.cd", ec);
-        else if (!options.human && human && martian) fs::remove(*human, ec);
+        // no side marker is kept: WoWLauncher tells WoWEngine the side (--human / --martian)
         result.missing = files.Missing();
     }
 

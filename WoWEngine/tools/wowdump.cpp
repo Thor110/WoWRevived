@@ -109,7 +109,7 @@ int main(int argc, char** argv)
         {
             for (const auto& [id, u] : wow::ObjOjd::LoadUnits(ReadFile(argv[2])))
                 if (u.warMapSpeed || u.field52 || u.field56)
-                    std::printf("unit %3d  counter %3d  +52 %3d  speed %4d (%.2f map px/hour)  +56 %4d\n", id, u.counterFrame,
+                    std::printf("unit %3d  counter %3d  class %d  +52 %3d  speed %4d (%.2f map px/hour)  +56 %4d\n", id, u.counterFrame, u.moveClass,
                                 u.field52, u.warMapSpeed, u.warMapSpeed * 0.05, u.field56);
             return 0;
         }
@@ -148,7 +148,11 @@ int main(int argc, char** argv)
             for (int i = 1; i <= 30; i++) std::printf(" %d", owners[size_t(i)]);
             std::printf("\n");
             for (const auto& o : wow::SaveInfo::WarMapObjects(data))
-                std::printf("  sector %2d %s type %3d  id %3d at %d,%d\n", o.sector, Lists[o.list], o.unitType, o.id, o.x, o.y);
+            {
+                std::printf("  sector %2d %s type %3d  id %3d at %d,%d", o.sector, Lists[o.list], o.unitType, o.id, o.x, o.y);
+                if (o.list >= 2) std::printf("  (%g, %g)", o.value[0], o.value[1]);
+                std::printf("\n");
+            }
             return 0;
         }
         if (first == "--models" && argc == 3)

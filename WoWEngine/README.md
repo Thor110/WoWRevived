@@ -94,13 +94,13 @@ Run `WoWLauncher`. It's both the launcher and the installer, laid out like WoWRe
 
 **When the game isn't installed** in its folder, it opens on the install screen, and installs into its own folder unless you choose another with **Choose Install Folder...**. Put either disc in, or both, and it finds them within a couple of seconds; **Install The War Of The Worlds** copies the first disc and rips its music, then waits for the other one, carrying on by itself as soon as it's inserted (**Skip the Other Disc** finishes with what it has). **Use Disc Images...** takes `.iso` or `.cue` files instead of drives. The music is always ripped. When a disc source has none (an `.iso` image holds only the data track, not the CD audio), the disc line says so before you start, and when the install finishes a message lists each problem, why it happened and what it means: no Human or Martian music in the game, and to use the disc or a `.bin/.cue` image to get it.
 
-**When the game is installed**, it opens on the launcher screen: **Start Human Game** and **Start Martian Game** set the side marker (`Human.cd` or `MARTIAN.cd`, as WoWRevived's launcher does) and start WoWEngine; **Install from Discs...** goes back to the install screen. If a side's music is missing it says so under the buttons. WoWEngine also offers to run WoWLauncher if it starts without the game files.
+**When the game is installed**, it opens on the launcher screen: **Start Human Game** and **Start Martian Game** start WoWEngine with `--human` or `--martian` (no `Human.cd` / `MARTIAN.cd` side marker is needed); **Install from Discs...** goes back to the install screen. If a side's music is missing it says so under the buttons. WoWEngine also offers to run WoWLauncher if it starts without the game files.
 
 The command line version:
 
 ```
 wowinstall-cli --drives                                     list the optical drives and the discs in them
-wowinstall-cli [<game folder>] [<disc>] [<disc>] [--martian] [--no-music]
+wowinstall-cli [<game folder>] [<disc>] [<disc>] [--no-music]
 ```
 
 A `<disc>` can be any of:
@@ -109,7 +109,7 @@ A `<disc>` can be any of:
 - an `.iso` image;
 - a `.cue` sheet, with its `.bin` files.
 
-Give it both discs, in either order, or no disc at all to use whatever is in the drives. It works out which is which. Where both discs have a file, the Human disc's copy is kept, so the order makes no difference. Then it copies the game files, rips the music from tracks 2 to 5, writes `language.txt` and leaves the side marker (`Human.cd`, or `MARTIAN.cd` with `--martian`). Finally it checks that every file the engine needs is there. It skips everything WoWLauncher's clean-up deletes, including the original `FMV\*.smk` movies.
+Give it both discs, in either order, or no disc at all to use whatever is in the drives. It works out which is which. Where both discs have a file, the Human disc's copy is kept, so the order makes no difference. Then it copies the game files, rips the music from tracks 2 to 5, writes `language.txt`. Finally it checks that every file the engine needs is there. It skips everything WoWLauncher's clean-up deletes, including the original `FMV\*.smk` movies.
 
 How it handles the different situations:
 - **Both discs in two drives:** both are found and copied without asking.

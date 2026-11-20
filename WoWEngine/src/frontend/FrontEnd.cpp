@@ -421,8 +421,10 @@ namespace wow
             try { units = ObjOjd::LoadUnits(objData); }
             catch (const std::exception& e) { SDL_Log("OBJ.ojd units: %s", e.what()); }
         }
-        Show(std::make_unique<WarMap>(res, settings.colours, info, SaveInfo::WarMapObjects(data), std::move(units),
-            SaveInfo::SectorOwners(data), ini.GetInt("Screen", "Scroll Speed", 40), ini.GetFloat("Tweak", "Clunting Speed", 7.0f)));
+        auto map = std::make_unique<WarMap>(res, settings.colours, info, SaveInfo::WarMapObjects(data), std::move(units),
+            SaveInfo::SectorOwners(data), ini.GetInt("Screen", "Scroll Speed", 40), ini.GetFloat("Tweak", "Clunting Speed", 7.0f));
+        map->SetSectorLimits(ini.GetInt("Tweak", "Max units in sector", 15), ini.GetInt("Tweak", "Max boats in sector", 5));
+        Show(std::move(map));
     }
 
     std::unique_ptr<Screen> FrontEnd::WarMapMenu()

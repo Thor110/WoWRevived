@@ -1,8 +1,8 @@
 // WoWLauncher - the one program players start. Laid out like WoWRevived's WoWLauncher (and the original game's
 // launcher): the fighting machine picture with the controls underneath.
 //
-// If the game folder is complete it offers Start Human Game / Start Martian Game, which set the side marker
-// (Human.cd or MARTIAN.cd, as WoWRevived's launcher does) and run WoWEngine. Otherwise, or with "Install from
+// If the game folder is complete it offers Start Human Game / Start Martian Game, which run WoWEngine with
+// --human or --martian (no Human.cd / MARTIAN.cd side marker is needed). Otherwise, or with "Install from
 // Discs", it's the installer: it watches the drives (and any disc images picked with "Use Disc Images") for
 // the Human and Martian discs, copies whichever are found and rips their music, and if only one is in, asks for
 // the other and carries on by itself when it appears, whichever order they come in and whether they're in one
@@ -115,7 +115,7 @@ namespace
                 s.discs = found;
                 if (phase == Phase::NeedOtherDisc && skip)
                 {
-                    Finish(InstallOptions{ s.target, true, true }, s.result);
+                    Finish(InstallOptions{ s.target, true }, s.result);
                     s.phase = Phase::Done;
                     continue;
                 }
@@ -139,7 +139,7 @@ namespace
                 InstallResult result;
                 {
                     std::lock_guard<std::mutex> l(s.lock);
-                    options = { s.target, true, true };
+                    options = { s.target, true };
                     discs = s.discs;
                     result = s.result;
                 }
@@ -260,17 +260,6 @@ namespace
         std::string which = !human && !martian ? "Human or Martian" : !human ? "Human" : "Martian";
         return "No " + which + " music was found, so the game will play without it. The music needs the real disc "
                "or a .bin/.cue image of it, not an .iso.";
-    }
-
-    // The side marker, as WoWRevived's launcher sets it: Human.cd for a Human game, MARTIAN.cd for a Martian one.
-    void SetSide(const fs::path& target, bool human)
-    {
-        GameFiles files(target);
-        std::error_code ec;
-        auto h = files.Resolve("Human.cd"), m = files.Resolve("MARTIAN.cd");
-        if (human && !h && m) fs::rename(*m, target / "Human.cd", ec);
-        else if (!human && h && !m) fs::rename(*h, target / "MARTIAN.cd", ec);
-        else if (h && m) fs::remove(human ? *m : *h, ec);
     }
 
     bool Installed(const fs::path& target) { return GameFiles(target).IsComplete(); }
@@ -395,9 +384,8 @@ int main(int argc, char** argv)
                     labels = { installLabel, "Use Disc Images...", "Choose Install Folder...", "Back", "Exit" };
                 }
                 auto startGame = [&](bool human) {
-                    SetSide(target, human);
                     std::string engine = EnginePath().string(), folder = target.string();
-                    if (LaunchDetached({ engine, folder })) running = false;
+                    if (LaunchDetached({ engine, folder, human ? "--human" : "--martian" })) running = false;
                     else
                     {
                         std::string text = "WoWEngine couldn't be started:\n" + engine + "\n\n" + SDL_GetError();

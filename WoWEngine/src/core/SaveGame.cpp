@@ -92,6 +92,8 @@ namespace wow
             o.x = int(int32_t(u32(i + 8)));
             o.y = int(int32_t(u32(i + 12)));
             o.sector = int(u32(i + 20));
+            if (list >= 2)
+                for (int f = 0; f < 2; f++) { uint32_t b = u32(typeAt + 4 + size_t(f) * 4); std::memcpy(&o.value[f], &b, 4); }
             objects.push_back(o);
         }
         return objects;

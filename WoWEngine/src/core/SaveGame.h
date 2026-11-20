@@ -71,6 +71,7 @@ namespace wow
             int id = 0;
             int x = 0, y = 0;  // on the war map
             int sector = 0;
+            float value[2] = { 0, 0 }; // constructions and resources: the two floats after the type
             bool PlayersSide() const { return list % 2 == 0; }
         };
         static std::vector<WarMapObject> WarMapObjects(std::span<const uint8_t> data);

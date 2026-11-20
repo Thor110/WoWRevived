@@ -42,7 +42,8 @@ namespace
     constexpr int GameHeight = 480;
     constexpr uint64_t TickNs = 1'000'000'000ull / 30; // "Game Frequency" defaults to 30 updates a second
 
-    // Command line: [game folder] [--open command] [--screenshot file.bmp [keys]]
+    // Command line: [game folder] [--human | --martian] [--open command] [--screenshot file.bmp [keys]]
+    // --human / --martian pick the side (WoWLauncher passes one); without either, Human.cd present means Human.
     // --open starts on the screen a menu command opens (0x8E Game Options, 0x6E Save Game...).
     // --ticks N runs N game updates (30 a second) after the keys, before the screenshot.
     // --mouse x,y moves the mouse there first (game coordinates), for screenshots of the cursor and highlights.
@@ -55,6 +56,7 @@ namespace
         int open = 0;
         int ticks = 0;
         int mouseX = -1, mouseY = -1;
+        int side = -1; // 1 Human, 0 Martian, -1 not given
     };
 
     Options ParseOptions(int argc, char** argv)
@@ -63,7 +65,9 @@ namespace
         for (int i = 1; i < argc; i++)
         {
             std::string arg = argv[i];
-            if (arg == "--open" && i + 1 < argc) o.open = int(std::strtol(argv[++i], nullptr, 0));
+            if (arg == "--human") o.side = 1;
+            else if (arg == "--martian") o.side = 0;
+            else if (arg == "--open" && i + 1 < argc) o.open = int(std::strtol(argv[++i], nullptr, 0));
             else if (arg == "--ticks" && i + 1 < argc) o.ticks = std::atoi(argv[++i]);
             else if (arg == "--mouse" && i + 1 < argc)
             {
@@ -194,8 +198,9 @@ int main(int argc, char** argv)
     int exitCode = 0;
     try
     {
-        // the side is picked the same way as the game (0x402630): Human.cd present means a Human game
-        bool human = files->Resolve("Human.cd").has_value();
+        // the side: as WoWLauncher says (--human / --martian), else the game's own way (0x402630), Human.cd
+        // present meaning a Human game
+        bool human = options.side >= 0 ? options.side == 1 : files->Resolve("Human.cd").has_value();
         wow::Vfs vfs(*files);
         wow::Resources resources(vfs, human);
         wow::Settings ini(vfs.Files());

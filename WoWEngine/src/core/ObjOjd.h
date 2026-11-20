@@ -41,6 +41,8 @@ namespace wow
         struct UnitData
         {
             int counterFrame = 0; // +0x2C, record 23
+            int moveClass = 0;    // +0x4E, record 36: which war map links it may take (0x42ABD0): 0-2 land,
+                                  // 3 sea, 4 anything
             int field52 = 0;      // +0x52, record 37
             int warMapSpeed = 0;  // +0x54, record 37 (scaled by record 38): a route covers speed x 0.01 map pixels
                                   // a game hour (0x4257C0: hours = distance / (speed x 0.01), the slowest unit's)

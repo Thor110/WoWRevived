@@ -39,6 +39,7 @@ namespace wow
         int SectorAt(int screenX, int screenY) const; // 0 off the land
         int HoveredSector() const { return hovered; }
         const SaveInfo& Game() const { return game; }
+        void SetSectorLimits(int units, int boats) { maxUnits = units; maxBoats = boats; }
 
     private:
         void CentreOn(int mapX, int mapY);
@@ -75,7 +76,11 @@ namespace wow
         Rect SpeedRect() const;
         void DrawCalendar(Canvas& canvas) const;
         int CounterAt(int screenX, int screenY) const;
-        std::vector<int> FindRoute(int from, int to) const;
+        bool HasCommandPost(int sector) const;
+        // [Tweak] "Max units in sector" (0x42AAF0, default 15) and "Max boats in sector" (0x42AB30, default 5)
+        int maxUnits = 15, maxBoats = 5;
+        // the types of the finished constructions in each sector (both sides')
+        std::array<std::vector<int>, warmap::SectorCount + 1> finished;
         std::pair<int, int> FreeCell(int sector, int kind, int except) const;
         void SendTo(int counter, int sector);
 
@@ -86,12 +91,14 @@ namespace wow
             int kind = 0;                // 0 units, 1 constructions, 2 resources
             int sector = 0;
             int speed = 0;               // the unit type's war map speed (unit +0x54), 0 for constructions and resources
+            int moveClass = 0;           // the unit type's +0x4E: 0-2 land, 3 boats, 4 fliers
             // travelling: where it's heading, through these points (sector by sector)
             std::vector<std::pair<int, int>> route;
             std::vector<int> routeSectors;
             float fx = 0, fy = 0;        // exact position while travelling
         };
         float PixelsPerHour(const Counter& k) const; // how far a counter goes in a game hour
+        std::vector<int> FindRoute(int from, int to, const Counter& k, std::string* why = nullptr) const;
         std::vector<Counter> counters;   // what's drawn: one per kind of object, with how many there are
     };
 }

@@ -120,6 +120,7 @@ namespace wow
             {
             case 15: unit = int16_t(r.U16()); units[unit]; break;
             case 23: units[unit].counterFrame = int16_t(r.U16()); break;
+            case 36: units[unit].moveClass = int16_t(r.U16()); break; // 0x438332
             case 37: // 0x438351
                 units[unit].field52 = int16_t(r.U16());
                 units[unit].warMapSpeed = int16_t(r.U16());

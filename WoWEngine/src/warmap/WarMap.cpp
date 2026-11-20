@@ -1,9 +1,11 @@
 #include "warmap/WarMap.h"
 
 #include <SDL3/SDL_keycode.h>
+#include <SDL3/SDL_log.h>
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <string>
 
@@ -34,6 +36,12 @@ namespace wow
         // sector's bounds and counts a cell as the sector's when CHI.SPR (GType 0x84, the sectors drawn a little
         // smaller, with the sea areas numbered from 192) has the sector's number at its corner. The order the
         // game fills the cells in (0x4282C0) isn't traced yet; row by row is a stand-in.
+        // a construction counts once it's finished: 0x42AA70 wants its +0x7C at least its +0x78, taken here as the
+        // save's second float against its first (provisional: which float is which isn't traced; at the start
+        // both are 1)
+        for (const auto& o : objects)
+            if ((o.list == 2 || o.list == 3) && o.sector >= 1 && o.sector <= warmap::SectorCount && o.value[1] >= o.value[0])
+                finished[size_t(o.sector)].push_back(o.unitType);
         struct Group { int sector, list, type, x, y, count; };
         std::vector<Group> groups;
         for (const auto& o : objects)
@@ -59,6 +67,7 @@ namespace wow
             k.x = g.x; k.y = g.y;
             k.frame = unit == units.end() ? 0 : unit->second.counterFrame;
             k.speed = unit == units.end() || g.list / 2 != 0 ? 0 : unit->second.warMapSpeed;
+            k.moveClass = unit == units.end() ? 0 : unit->second.moveClass;
             k.count = g.count;
             k.players = g.list % 2 == 0;
             k.kind = g.list / 2;
@@ -489,37 +498,92 @@ namespace wow
         return -1;
     }
 
-    std::vector<int> WarMap::FindRoute(int from, int to) const
+    bool WarMap::HasCommandPost(int sector) const
     {
-        // The shortest way over land, through the sector links (0x4BCEB0). The game's own route finder (FindRoute
-        // 0x44EFA0, WRouteFinder) isn't traced; this is Dijkstra over the links' lengths.
-        std::array<double, warmap::SectorCount + 1> best;
+        // 0x43C990: the sector's owner has its command building there, finished. A Human sector needs a Command
+        // Post (type 314; in London, sector 30, the war room, 278), a Martian one a Communications Centre (120;
+        // in sector 3, where the Martians land, 830). "No further advance or construction can be co-ordinated in
+        // the vicinity until a command post has been built." A sector no one holds never has one.
+        if (sector < 1 || sector > warmap::SectorCount) return false;
+        int who = owner[size_t(sector)];
+        if (who == 2) return false;
+        bool human = (who == 0) == res.Human();
+        int type = human ? (sector == 30 ? 278 : 314) : (sector == 3 ? 830 : 120);
+        const auto& here = finished[size_t(sector)];
+        return std::find(here.begin(), here.end(), type) != here.end();
+    }
+
+    std::vector<int> WarMap::FindRoute(int from, int to, const Counter& k, std::string* why) const
+    {
+        // The game's route finder: an A* (0x44EFA0, set up by 0x44EE70 from 0x424160) over the route links, with
+        // 0x42ABD0 giving each step's cost, or refusing it. The cost is the straight line between the two
+        // sectors' waypoints (0x437380), whole pixels. A step is refused (the reason left at 0x4EA198):
+        //   1/2  the link isn't one the unit can take (land units over land, boats by sea, fliers anywhere)
+        //   3    neither end has its owner's command post
+        //   4/5  a sector passed through (not the goal) has no command post, or isn't the player's
+        //   6    the route's start has no command post and the step goes into a sector that isn't the player's
+        //   7/8  the goal would hold more than "Max units in sector" units, or "Max boats in sector" boats
+        // There's no estimate to the goal, so it finds the shortest way, as Dijkstra does.
+        int reason = -1;
+        auto allowed = [&](int a, int b) {
+            int kind = warmap::RouteLinkKind(a, b);
+            if (!kind) return false;
+            if (k.moveClass <= 2 && !(kind & warmap::RouteKind::Land)) { reason = 1; return false; }
+            if (k.moveClass == 3 && !(kind & warmap::RouteKind::Sea)) { reason = 2; return false; }
+            if (!HasCommandPost(a) && !HasCommandPost(b)) { reason = 3; return false; }
+            if (b != to)
+            {
+                if (!HasCommandPost(b)) { reason = 4; return false; }
+                if (owner[size_t(b)] != 0) { reason = 5; return false; }
+            }
+            if (!HasCommandPost(from) && owner[size_t(b)] != 0) { reason = 6; return false; }
+            if (b == to)
+            {
+                int units = k.count, boats = k.moveClass == 3 ? k.count : 0;
+                for (const Counter& c : counters)
+                    if (c.players && c.kind == 0 && c.sector == to && c.route.empty())
+                        (c.moveClass == 3 ? boats : units) += c.count;
+                if (k.moveClass != 3 && units > maxUnits) { reason = 7; return false; }
+                if (k.moveClass == 3 && boats > maxBoats) { reason = 8; return false; }
+            }
+            return true;
+        };
+        std::array<int, warmap::SectorCount + 1> best;
         std::array<int, warmap::SectorCount + 1> previous;
         std::array<bool, warmap::SectorCount + 1> done{};
-        best.fill(1e18);
+        best.fill(INT32_MAX);
         previous.fill(-1);
         best[size_t(from)] = 0;
         for (;;)
         {
             int s = -1;
             for (int n = 1; n <= warmap::SectorCount; n++)
-                if (!done[size_t(n)] && best[size_t(n)] < 1e17 && (s < 0 || best[size_t(n)] < best[size_t(s)])) s = n;
+                if (!done[size_t(n)] && best[size_t(n)] != INT32_MAX && (s < 0 || best[size_t(n)] < best[size_t(s)])) s = n;
             if (s < 0 || s == to) break;
             done[size_t(s)] = true;
             auto a = warmap::Waypoint(s);
             for (int n = 1; n <= warmap::SectorCount; n++)
             {
-                const warmap::SectorLink* link = done[size_t(n)] ? nullptr : warmap::LandLink(s, n);
-                if (!link) continue;
+                if (done[size_t(n)] || !allowed(s, n)) continue;
                 auto b = warmap::Waypoint(n);
-                // waypoint, out across the border at the link's two points, on to the next waypoint
-                double d = best[size_t(s)] + std::hypot(double(link->land[0] - a.x), double(link->land[1] - a.y)) +
-                           std::hypot(double(link->land[2] - link->land[0]), double(link->land[3] - link->land[1])) +
-                           std::hypot(double(b.x - link->land[2]), double(b.y - link->land[3]));
+                double dx = b.x - a.x, dy = b.y - a.y;
+                int d = best[size_t(s)] + int(std::sqrt(dx * dx + dy * dy));
                 if (d < best[size_t(n)]) { best[size_t(n)] = d; previous[size_t(n)] = s; }
             }
         }
-        if (to != from && previous[size_t(to)] < 0) return {};
+        if (to == from || previous[size_t(to)] < 0)
+        {
+            if (why)
+            {
+                static const char* const Why[] = {
+                    "That unit can't move", "Land units can't cross there", "Boats can't sail there",
+                    "No command post to co-ordinate the move", "A command post is needed on the way",
+                    "The way there isn't through our own sectors", "No command post where the move starts",
+                    "Too many units in that sector", "Too many boats in that sector" };
+                *why = reason >= 0 ? Why[reason] : "No way there";
+            }
+            return {};
+        }
         std::vector<int> path;
         for (int s = to; s != from; s = previous[size_t(s)]) path.insert(path.begin(), s);
         return path;
@@ -547,8 +611,13 @@ namespace wow
     {
         Counter& k = counters[size_t(index)];
         if (sector == k.sector) return;
-        std::vector<int> path = FindRoute(k.sector, sector);
-        if (path.empty()) { message = "No way there over land"; return; }
+        std::string why;
+        std::vector<int> path = FindRoute(k.sector, sector, k, &why);
+        std::string through;
+        for (int s : path) through += " " + std::to_string(s);
+        SDL_Log("War map: route from sector %d to %d for unit class %d: %s", k.sector, sector, k.moveClass,
+                path.empty() ? why.c_str() : ("through" + through).c_str());
+        if (path.empty()) { message = why; return; }
         k.route.clear();
         k.routeSectors.clear();
         // out of each sector across the link's two border points, through the next sector's waypoint (0x437380),
@@ -556,12 +625,16 @@ namespace wow
         int at = k.sector;
         for (size_t i = 0; i < path.size(); i++)
         {
-            const warmap::SectorLink* link = warmap::LandLink(at, path[i]);
+            // land units cross at a link's land points, boats at its sea points, fliers whichever it has
+            int kind = warmap::RouteLinkKind(at, path[i]);
+            bool bySea = k.moveClass == 3 || (k.moveClass == 4 && !(kind & warmap::RouteKind::Land));
+            const warmap::SectorLink* link = bySea ? warmap::SeaLink(at, path[i]) : warmap::LandLink(at, path[i]);
             if (link)
             {
-                k.route.push_back({ link->land[0] - 16, link->land[1] - 16 });
+                const int* p = bySea ? link->sea : link->land;
+                k.route.push_back({ p[0] - 16, p[1] - 16 });
                 k.routeSectors.push_back(at);
-                k.route.push_back({ link->land[2] - 16, link->land[3] - 16 });
+                k.route.push_back({ p[2] - 16, p[3] - 16 });
                 k.routeSectors.push_back(path[i]);
             }
             auto w = warmap::Waypoint(path[i]);

@@ -251,6 +251,44 @@ namespace wow::warmap
         return nullptr;
     }
 
+    // The ways a route can go from sector to sector: the route finder's graph (31 lists at 0x4BD260) with each
+    // pair's kind from the table 0x435710 builds at 0x4EAA18 (a switch on to x 100 + from; bit 1 widens to 7).
+    // 0x42ABD0 lets land units (class 0-2) take 1, 2 or 4, boats (class 3) 0x10, and fliers (4) any of them.
+    // What 8 means isn't known (only two links have it, both by sea).
+    namespace RouteKind { inline constexpr int Land = 0x07, Sea = 0x10; }
+    struct RouteLink { int a, b, kind; };
+    inline constexpr RouteLink RouteLinks[] = {
+        { 1, 2, 0x1f }, { 1, 3, 0xf }, { 1, 4, 0x1f }, { 2, 3, 0xf }, { 2, 6, 0x1f }, { 2, 9, 0x10 },
+        { 3, 4, 0xf }, { 3, 6, 0xf }, { 3, 7, 0xf }, { 4, 7, 0xf }, { 4, 8, 0x1f }, { 4, 11, 0x10 },
+        { 5, 9, 0x18 }, { 5, 12, 0x18 }, { 5, 15, 0x10 }, { 5, 18, 0x10 }, { 5, 22, 0x10 }, { 6, 7, 0xf },
+        { 6, 9, 0x1f }, { 7, 8, 0xf }, { 7, 9, 0xf }, { 7, 10, 0xf }, { 8, 10, 0xf }, { 8, 11, 0x1f },
+        { 8, 14, 0x10 }, { 9, 10, 0xf }, { 9, 12, 0x1f }, { 10, 11, 0xf }, { 10, 12, 0xf }, { 10, 13, 0xf },
+        { 10, 14, 0xf }, { 11, 14, 0x1f }, { 11, 17, 0x10 }, { 12, 13, 0xf }, { 12, 15, 0x1f }, { 12, 18, 0x10 },
+        { 13, 14, 0xf }, { 13, 15, 0xf }, { 13, 16, 0xf }, { 13, 17, 0xf }, { 14, 17, 0x1f }, { 14, 21, 0x10 },
+        { 15, 16, 0xf }, { 15, 18, 0x1f }, { 15, 19, 0xf }, { 16, 17, 0xf }, { 16, 19, 0xf }, { 16, 20, 0xf },
+        { 16, 21, 0xf }, { 17, 21, 0x1f }, { 17, 26, 0x10 }, { 18, 19, 0xf }, { 18, 22, 0x1f }, { 19, 20, 0xf },
+        { 19, 22, 0xf }, { 19, 23, 0xf }, { 19, 24, 0xf }, { 20, 21, 0xf }, { 20, 24, 0xf }, { 20, 25, 0xf },
+        { 21, 25, 0xf }, { 21, 26, 0x1f }, { 22, 23, 0x1f }, { 22, 27, 0x10 }, { 23, 24, 0xf }, { 23, 27, 0x1f },
+        { 23, 28, 0xf }, { 24, 25, 0xf }, { 24, 28, 0xf }, { 24, 30, 0xf }, { 25, 26, 0x1f }, { 25, 29, 0x10 },
+        { 25, 30, 0x1f }, { 26, 29, 0x10 }, { 27, 28, 0x1f }, { 27, 29, 0x10 }, { 28, 29, 0x1f }, { 28, 30, 0xf },
+        { 29, 30, 0x1f },
+    };
+
+    inline int RouteLinkKind(int a, int b)
+    {
+        for (const RouteLink& l : RouteLinks)
+            if ((l.a == a && l.b == b) || (l.a == b && l.b == a)) return l.kind;
+        return 0;
+    }
+
+    // A sea crossing's two points, as LandLink gives a land one
+    inline const SectorLink* SeaLink(int from, int to)
+    {
+        for (const SectorLink& l : SectorLinks)
+            if (l.from == from && l.to == to && (l.sea[0] || l.sea[1])) return &l;
+        return nullptr;
+    }
+
     inline bool Adjacent(int a, int b)
     {
         if (a < 1 || b < 1 || a > SectorCount || b > SectorCount || a == b) return false;
