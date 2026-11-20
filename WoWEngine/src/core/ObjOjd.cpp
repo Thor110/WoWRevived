@@ -109,7 +109,7 @@ namespace wow
     {
         std::map<int, UnitData> units;
         ByteReader r(data);
-        int unit = 0;
+        int unit = 0, category = 0;
         auto f32 = [&]() { uint32_t b = r.U32(); float f; std::memcpy(&f, &b, 4); return f; };
         while (r.Remaining() > 0)
         {
@@ -118,7 +118,15 @@ namespace wow
             int type = int16_t(r.U16());
             switch (type)
             {
-            case 15: unit = int16_t(r.U16()); units[unit]; break;
+            case 17: category = int16_t(r.U16()); break; // 0x437E9E: the class the next unit types get
+            case 15: // 0x437D62: a unit type seen the first time takes the current class (+0x10)
+            {
+                unit = int16_t(r.U16());
+                bool fresh = units.find(unit) == units.end();
+                if (fresh) units[unit].category = category;
+                break;
+            }
+            case 55: units[unit].battleUnits = int16_t(r.U16()); break; // 0x438794
             case 23: units[unit].counterFrame = int16_t(r.U16()); break;
             case 21: units[unit].nameText = int16_t(r.U16()); break;    // 0x437EB2
             case 36: units[unit].moveClass = int16_t(r.U16()); break; // 0x438332

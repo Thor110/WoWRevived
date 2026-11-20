@@ -263,7 +263,8 @@ namespace wow
                      ResearchAvailable, ResearchAlert, ConstructorOnline, FacilityOnline, ConstructorIdle, FacilityIdle,
                      TravelInterrupted, PodLanded, ResourceWarning, ResourceAlert, CommandCentreBuilt,
                      EnteringNeutralSector, UndefendedSectorLost, EndGameWon, EndGameLost };
-        void RaiseEvent(int event, int param);
+        // param: a sector, a counter (the object's), or as each event takes it; text: the research events' name
+        void RaiseEvent(int event, int param, std::string text = {});
         // Battles (0x41AB00): the sector waiting for its battle (dword_4E9B98), 0 for none
         int pendingBattle = 0;
         void DetectBattles();
@@ -281,11 +282,13 @@ namespace wow
         int endingDelay = 0, endingCode = 0;
         std::map<int, int> objectClasses;   // AI.ojd's class of each type (0x518B14)
         bool Critical(int event) const;
-        void RunEvent(int event, int param);
+        void RunEvent(int event, int param, const std::string& text);
+        void ObjectEvent(int counter, int suffix, bool box, int view); // 0x41ECD0 / 0x41EDC0's shared part
         void NextEvent();                // 0x41E730
         std::function<bool(const char*, bool)> eventOption;
         bool Option(const char* name, bool on) const { return eventOption ? eventOption(name, on) : on; }
-        std::deque<std::pair<int, int>> eventQueue;
+        struct QueuedEvent { int event, param; std::string text; };
+        std::deque<QueuedEvent> eventQueue;
         bool boxUp = false;              // byte_4EA0A0
         // The InfoBox (0x432520): the event's text, a second line, the command its button sends and whether Esc
         // cancels it

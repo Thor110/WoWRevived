@@ -54,6 +54,9 @@ namespace wow
             // more while it works (repairing, building; 0x51A15C, record 47, scaled by 48)
             float activity[3] = { 0, 0, 0 };
             int nameText = 0;     // +0x14, record 21: the TEXT.ojd string of its name (0x440720)
+            int category = 0;     // +0x10, the class record 17 set before the type's first record 15: 1 vehicles,
+                                  // 2 and up buildings (also the battle map's placement kind)
+            int battleUnits = 0;  // +0x58, record 55: the battle map units each war map object stands for
         };
         static std::map<int, UnitData> LoadUnits(std::span<const uint8_t> data);
 

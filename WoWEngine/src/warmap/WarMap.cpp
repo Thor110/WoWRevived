@@ -1316,6 +1316,20 @@ namespace wow
         NextEvent();
     }
 
+    // The completed-object events' shared part (0x41ECD0 / 0x41EDC0): "<the object's name> <suffix>" (0x440720:
+    // its type's name, record 21), with the option on the view (0x419810) and a box for the object's sector, and the
+    // text in the messages.
+    void WarMap::ObjectEvent(int counter, int suffix, bool box, int view)
+    {
+        const Counter* k = counter >= 0 && size_t(counter) < counters.size() ? &counters[size_t(counter)] : nullptr;
+        std::string name;
+        if (k)
+            if (auto unit = unitData.find(k->type); unit != unitData.end()) name = res.String(unit->second.nameText);
+        std::string text = name + " " + res.String(suffix);
+        if (box) { SetView(view); OpenBox(text, k ? k->sector : 0, {}, 0x8122); }
+        Log(text);
+    }
+
     // 0x41AED0: a winner and a loser: the player won: EndGameWon (event 18, with the other side's home sector)
     // if the game is over, else sound 0x13C; lost: EndGameLost (19) if over, else 0x140. No winner: 0x13D or
     // 0x13F.
@@ -1430,16 +1444,16 @@ namespace wow
 
     // 0x41E5B0: a critical event (its test, the table's second column) waits while a box is up, or runs and puts
     // one up; any other runs at once.
-    void WarMap::RaiseEvent(int event, int param)
+    void WarMap::RaiseEvent(int event, int param, std::string text)
     {
         if (Critical(event))
         {
-            if (boxUp) { eventQueue.push_back({ event, param }); return; }
-            RunEvent(event, param);
+            if (boxUp) { eventQueue.push_back({ event, param, std::move(text) }); return; }
+            RunEvent(event, param, text);
             boxUp = true;
             return;
         }
-        RunEvent(event, param);
+        RunEvent(event, param, text);
     }
 
     // The tests (0x41E420-0x41E4C0): the [Event] options (0x41E160-0x41E3E0; "Entered Neutral Sector" isn't in
@@ -1467,7 +1481,7 @@ namespace wow
     }
 
     // The handlers (0x41E850-0x41F4B0) of the events the war map raises so far.
-    void WarMap::RunEvent(int event, int param)
+    void WarMap::RunEvent(int event, int param, const std::string& eventText)
     {
         const bool human = res.Human();
         auto name = [&](int sector) { return res.String(warmap::NameText(sector)); };
@@ -1490,6 +1504,57 @@ namespace wow
             Log(res.String(0x210) + " " + name(sector));
             break;
         }
+        case ConstructionCompleted: // 0x41EDC0: "<name> completed."; a box (when the option is on) with the view on
+        {                           // constructions for a building (class 2), resources otherwise; sound 0x12F
+            const Counter* k = param >= 0 && size_t(param) < counters.size() ? &counters[size_t(param)] : nullptr;
+            auto unit = k ? unitData.find(k->type) : unitData.end();
+            const bool building = unit != unitData.end() && unit->second.category == 2;
+            ObjectEvent(param, 0x4B4, Option("Construction Completed", false), building ? 2 : 3);
+            auto cls = k ? objectClasses.find(k->type) : objectClasses.end();
+            if (cls == objectClasses.end() || cls->second != 7) sounds.push_back(0x12F); // not for class 7
+            break;
+        }
+        case UnitCompleted: // 0x41ECD0: "<name> unit completed."; sound 0x131 for a type of one battle unit, 0x1C0
+        {
+            ObjectEvent(param, 0x4B3, Option("Unit Manufactured", false), 1);
+            const Counter* k = param >= 0 && size_t(param) < counters.size() ? &counters[size_t(param)] : nullptr;
+            auto unit = k ? unitData.find(k->type) : unitData.end();
+            sounds.push_back(unit != unitData.end() && unit->second.battleUnits == 1 ? 0x131 : 0x1C0);
+            break;
+        }
+        case ResearchCompleted: // 0x41EB90 / 0x41EC30: "<heading>: <name>" in a box with no sector, "<heading> ..
+        case ResearchAvailable: // <name>" in the messages, and the heading's speech (0x414700)
+        {
+            const int heading = event == ResearchCompleted ? 0x46B : 0x46C;
+            if (Option("Research Completed", true)) OpenBox(res.String(heading) + ": " + eventText, 0, {}, 0x8122);
+            Log(res.String(heading) + " .. " + eventText);
+            if (int speech = res.Text().Extra(heading)) sounds.push_back(speech);
+            break;
+        }
+        case ResearchAlert: // 0x41F220: with no research going (the research object's +0x88, param 1), "No research
+            if (param)      // is currently in progress" and sound 0x135; otherwise nothing (and the queue waits)
+            {
+                OpenBox(res.String(0x421), 0, {}, 0x8122);
+                sounds.push_back(0x135);
+            }
+            break;
+        case ConstructorIdle: // 0x41EEA0 / 0x41EF10: with the option on, the units / constructions view and "Vehicle
+        case FacilityIdle:    // idle" (0x416) / "Facility idle" (0x417) for the object's sector; the message either way
+        {
+            const int text = event == ConstructorIdle ? 0x416 : 0x417;
+            if (Option(event == ConstructorIdle ? "Constructor Idle" : "Facility Idle", true))
+            {
+                SetView(event == ConstructorIdle ? 1 : 2);
+                const int sector = param >= 0 && size_t(param) < counters.size() ? counters[size_t(param)].sector : 0;
+                OpenBox(res.String(text), sector, {}, 0x8122);
+            }
+            Log(res.String(text));
+            break;
+        }
+        case CommandCentreBuilt: // 0x41F1C0: "Command centre built" (0x415) for the sector, on the constructions view
+            if (Option("Command Centre Built", false)) { SetView(2); OpenBox(res.String(0x415), param, {}, 0x8122); }
+            Log(res.String(0x415));
+            break;
         case ArrivedInSector: // 0x41EAE0
         {
             std::string text = res.String(0x211) + " " + name(param);
@@ -1585,9 +1650,9 @@ namespace wow
     void WarMap::NextEvent()
     {
         if (eventQueue.empty()) { boxUp = false; return; }
-        auto [event, param] = eventQueue.front();
+        QueuedEvent e = std::move(eventQueue.front());
         eventQueue.pop_front();
-        RunEvent(event, param);
+        RunEvent(e.event, e.param, e.text);
     }
 
     // 0x41E4E0: the InfoBox with the text, the second line and the command; time stops (0x41A6C0(0)), the view

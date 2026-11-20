@@ -3,7 +3,8 @@
 // Same record stream as OBJ.ojd: 3 header bytes, int16 record type, then:
 //   types 0, 1, 2   uint16 id, uint16 len, string[len]   0 = Martian games only, 1 = Human only, 2 = both
 //   type 3          uint16 a, uint16 b                    string a is the same as string b
-//   type 4          uint16 a, uint16 b                    sets a second value on string a (use not known yet)
+//   type 4          uint16 a, uint16 b                    string a's speech: SFX.ojd sound b (Extra), played by
+//                                                         PlayTextSpeech (0x414700) at the listener
 // "\n" and "\t" in the text are escapes. The game also runs every character through Latin1ToFont (Charset.h)
 // at load time; here the text stays Latin-1 and the font code does that conversion when drawing.
 #pragma once

@@ -84,8 +84,9 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 ## Milestone 3: events, battles announced, the game won and lost
 
 - [x] **InfoBox dialog** (0x432520): the critical-event box with its button, both sides' layouts — 05, 03
-- [~] **Critical events**: the queue (0x41E5B0 / 0x41E730, command 0x8122), the tests and `[Event]` options, the
-      handlers for events 0, 3, 11, 12, 13, 14, 17, 18, 19; the rest come with research and production — 03
+- [x] **Critical events**: the queue (0x41E5B0 / 0x41E730, command 0x8122), the tests and `[Event]` options, every
+      handler (0x41E850-0x41F4B0; 7, 8 and 16 are empty in the game); events 1, 2, 4-6, 9, 10 and 15 are raised by
+      construction, production and research (Milestone 4) — 03
 - [x] **Battle detection** (0x41AB00): both sides in a sector → BattleInSector, UndefendedSectorLost (0x43C8D0,
       0x43A250) or PodLanded, the pending battle; sectors held by presence (0x43CA40) — 03
 - [x] **Briefing**: the transition (0x41B210: sound 0x18E, the Insert CD check) and the screen (0x499930 /

@@ -506,7 +506,12 @@ UndefendedSectorLost and End Game (won, lost). 0x41E5B0 asks the event's test: a
 box goes (0x8122 to the war map), 0x41E730 runs the next queued event's handler, or clears the flag. The tests are
 the `[Event]` options (0x41E160-0x41E3E0, the Critical event options menu, plus "Entered Neutral Sector" which isn't
 in it), always for BattleInSector and the endings, and "unless the cheat 0x4D1261" for ResearchAlert, PodLanded and
-UndefendedSectorLost. A handler writes its line to the message list and, if its option is on, opens the box.
+UndefendedSectorLost. A handler writes its line to the message list and, if its option is on, opens the box. The
+flag is set after any critical handler, box or not, so a critical event that puts nothing up (ResearchAlert while
+research is going) leaves the queue waiting until a box does go: kept as the game has it. ConstructorOnline,
+FacilityOnline and EnteringNeutralSector have empty handlers (nullsub_3), and nothing in the game raises 1, 7, 8, 9
+or 16 with a constant id (0x41E5B0's callers raise 0, 2-6, 10-15 and 17-19 that way, and one, in production at
+0x45FD91, with a computed one).
 
 **The InfoBox** (0x41E4E0 -> 0x432520, WDialog "InfoBox" 0x801B, z 0x65FE, modal): time stops (0x41A6C0(0)), the
 view goes to the sector (0x41E000, which glides; the engine jumps), sound 0x198. The backdrop (GType 0x68, hu_event
@@ -529,7 +534,8 @@ goes on scrolling while more have run out. M (world 0x6C, a toggle on +0x6C) ope
 every line with less than 5 seconds left gets 5 more (0x421150), so the last 10 show; closing it (0x6D, sound
 0x196) takes the 5 seconds off them all. Command 0x80CC gives the last 2 (0x4BA504) another 5 seconds.
 
-So far the engine raises:
+The handlers (each event the engine raises so far, and the ones waiting on production and research, which run the
+same way once those raise them; their parameter is the object's counter, or the research's name):
 
 | Event | Box (when its option is on) | Line | Sound |
 |---|---|---|---|
@@ -542,6 +548,12 @@ So far the engine raises:
 | EndGameLost (0x41F4B0) | none; Unit view | none | none |
 | ResourceWarning (0x41F280) | "Resource Warning: " (0x41B) and the resource (0x214 + kind) | 0x124, 0x122, 0x123 (Human), 0x125-0x127 (Martian) |
 | ResourceAlert (0x41F340) | the same | 0x12A, 0x128, 0x129 (Human), 0x12B-0x12D (Martian) |
+| ConstructionCompleted (0x41EDC0) | "Construction Completed": "<name> completed." (the type's name 0x440720, 0x4B4) for its sector, the Construction view for a type of class 2 (unit table +0x10, OBJ.ojd record 17 before its record 15), else the Resource view | the same | 0x12F, not for AI class 7 |
+| UnitCompleted (0x41ECD0) | "Unit Manufactured": "<name> unit completed." (0x4B3), Unit view | the same | 0x131 for a type of one battle unit (+0x58, record 55), else 0x1C0 |
+| ResearchCompleted (0x41EB90) / ResearchAvailable (0x41EC30) | "Research Completed": "Research completed: <name>" (0x46B) / "New research available: <name>" (0x46C), no sector | "<heading> .. <name>" | the heading's speech (0x414700: TEXT.ojd's record type 4 for it) |
+| ResearchAlert (0x41F220) | with no research going (the research object's +0x88): always, "No research is currently in progress" (0x421) | none | 0x135 |
+| ConstructorIdle (0x41EEA0) / FacilityIdle (0x41EF10) | "Constructor Idle" / "Facility Idle": "Vehicle idle" (0x416) / "Facility idle" (0x417) for the object's sector, Unit / Construction view first | the same | none |
+| CommandCentreBuilt (0x41F1C0) | "Command Centre Built": "Command centre built" (0x415) for the sector, Construction view | the same | none |
 
 The sector under the mouse, the panel button's name and a refused route's reason show in a strip at the bottom
 left (*provisional*: the engine's own).
