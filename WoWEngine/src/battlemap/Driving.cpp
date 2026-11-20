@@ -130,7 +130,7 @@ namespace wow
         NearestPassable(group, svx, svy, ssx, ssy);
         NearestPassable(group, dvx, dvy, gx, gy);
         const int n = int(members.size());
-        orders.push_back({ n, 0, nearest, farthest });
+        orders.push_back({ n, 0, nearest, farthest, group });
         const int order = int(orders.size()) - 1;
         for (size_t i : members) units[i].drive.order = order;
         // a ground vehicle always asks for a route (vt+0x70 and vt+0x118 both no)
@@ -771,6 +771,8 @@ namespace wow
             MoveOrder& o = orders[size_t(d.order)];
             o.arrived++;
             left = o.members - o.arrived;
+            // 0x8081 to the group: +0x56 counts its members' arrivals; with all of them in, bit 0 cleared (0x480EB0)
+            if (left == 0 && o.group >= 0 && size_t(o.group) < groupBusy.size()) groupBusy[size_t(o.group)] = false;
         }
         Post808B(u, 1, 9 * left + 60);
     }

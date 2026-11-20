@@ -738,13 +738,46 @@ by 0x43FF00 from whole positions, itself too) and sets its group's mode 0 (0x480
 class of 0x273-0x276 (0x48C8E0 on the unit base 0x495660, handler 0x48C9B0): damage of the level x 50 (vt+0xE0) and
 smoke 0x16F a quarter of its radius + 1 about it. **0x80F9** (0x495CB0): types 7-9 and 0x16-0x18 unless byte_589134,
 and 0x273-0x276 unless byte_589130, take the status 0x80F9 for 240 updates (vt+0x88 with 0xF0, vt+0x90); it's what
-vt+0x10C (0x4898A0) tests: 0x273-0x276's update (0x48CC00) with its second renderer (+0xE8), and the bridges
-(0x498110, 0x498F20, 0x4993F0). 0x80EE / 0x80EF to the members are taken by one class only (0x498E90: unless its
+vt+0x10C (0x4898A0) tests (below). (0x498110's vt+0x10C calls are another class's slot, with three arguments.) 0x80EE / 0x80EF to the members are taken by one class only (0x498E90: unless its
 vt+0x118, vt+0x184(1)). In the test the lorries' 0x80E2 and 0x80F0 each reached the six objects in their sight
 (none of those types: nothing changed) and the group's mode went back to 0.
 
-*Provisional*: byte_589130 / byte_589134 are taken as the Martian research items 132 / 133 done; what the status
-0x80F9 does and 0x498E90's class (0x80EE / 0x80EF) aren't in.
+**What 0x80F9 does: detection.** Types 0x273-0x276 are the mines. vt+0x6C, whether an object can be targeted
+(0x496570's look round, 0x483880's retaliation, the cursor's 0x44B800-0x44E5C0), is yes for the unit base (0x496C30,
+`mov al, 1`); the mines' (0x48CCB0) is yes only with the status 0x80F9 on (vt+0x10C, 0x4898A0: +0xDC not 0 and +0xE0
+0x80F9). The mines' update (0x48CC00) runs the status timer itself (vt+0x8C, +0xDC down, at 0 vt+0x90 with 0) and,
+with 0x80F9 on a mine that isn't the player's (+0x24 not 0): at its last update (vt+0x8C = 1) its second renderer
+(+0xE8) goes; else, with none, 0x48CCD0 makes one, GType 0x359 (0x40EC50, its +0x26 set to 0x20): the marker over a
+detected mine. So 0x80F0 is the mine detector and 0x80E1-0x80E3 sweep (0x80F8 damages only mines).
+0x498E90's class does the same for a unit that sinks and rises: its update (0x498F20) runs +0x194 down, its height
+(+0x84) following ((+0x194 - 0x40) x 3 going down with +0x190 bit 0 clear, -(+0x194 x 3) coming up), vt+0x188 at
+the end; its vt+0x6C (0x4993F0) is no while +0x190 bit 1 is set unless 0x80F9 is on; with 0x80F9 on, not the
+player's, vt+0x178 at the last update, else vt+0x174 with no +0x19C. Its 0x80EE / 0x80EF (0x498E90) start it
+(vt+0x184 with 1) unless vt+0x118; its hits (0x498EE0) with +0x190 bit 0 set are taken only from 0x2CE-0x2D0.
+In `Weapons.cpp`: `Targetable` (the look round and retaliation use it) and `MineTick` (the marker). GType 0x359 is
+in the game's graphics (checked); no mines were on the test map, so the marker hasn't been seen drawn.
+
+*Provisional*: byte_589130 / byte_589134 are taken as the Martian research items 132 / 133 done; the renderer's +0x26
+(0x20) isn't known (the marker is frame 0 of the sprite, one row nearer than the mine); 0x498E90's class (which
+types, vt+0x174-0x188) isn't in; the cursor's use of vt+0x6C isn't in.
+
+**Hits and retaliation.** An explosion's +0xCC is the object that fired it (0x488070's fifth argument: a shell's
++0xC4, a gun's unit), carried here as `attacker` through Impact, the shells' landings, Explode and AreaDetonate.
+A vehicle's hit (vt+0xC0 = 0x491020) first, for the player's when rand() is under 2000 and there's a firer, says
+0x110 with its type's voice (byte_51A190); then tells its group 0x8085 with itself and the hit (0x4807F0 ->
+0x483880); then the damage (0x4958B0 -> 0x48A5A0). **0x483880**: with no object targeted (+0x2C 0): nothing if
++0x1D8 bit 0 is set and bit 2 clear; on Avoid (stance 0) the group runs, 0x43FE90 with rand() & 0xFFF and 400.0
+from the member's point, bit 0 set, 0x804F there; on stances 1-3, with a firer (0x440110) of another side
+(0x4406E0) that can be targeted, each member 0x80B9, the firer the target (0x482880), bit 0 set (0x480EB0(1)),
+vt+0x38. With one targeted: a computer's group (bit 7) whose target is unarmed (+0x3C 0), hit by an armed firer,
+stands its guns down (0x805A to each member) and clears bit 0. Bit 0 is cleared again when all the members of the
+group's move have arrived (0x8081: +0x56 counts them up to the count, 0x480EB0(0)); Retreat sets it. In the test a
+lorry hit on Avoid sent its group 400 off ("GOING STRAIGHT THERE!"), and hit on Attack by the other side's object
+took it as the group's target and drove at it.
+
+*Provisional*: bit 0 without a target is kept as `groupBusy` (set by the run and Retreat, cleared on arrival); a
+point target (force fire) is taken as bit 0 set; the second case drops the target (StopAttacking) where the game
+leaves +0x2C; 0x80B9 and vt+0x38 aren't in.
 
 ## The battle AI (the computer player 0x442890: 0x445210, 0x4455D0, 0x4456B0, 0x445010, 0x445B90; the groups' 0x483B70; `battlemap/BattleAi.cpp`)
 

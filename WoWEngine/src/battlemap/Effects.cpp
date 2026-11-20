@@ -132,7 +132,7 @@ namespace wow
         // the shells' landings, made once the list is walked (they add effects)
         std::vector<Landing> now;
         now.swap(landings);
-        for (const Landing& l : now) ImpactAt(l.size, l.x, l.y, l.z, l.group);
+        for (const Landing& l : now) ImpactAt(l.size, l.x, l.y, l.z, l.group, l.attacker);
     }
 
     // 0x47F050, with "Show Smoke & particles" on and a list: for each entry (its type's emitter, record 29: +4 the

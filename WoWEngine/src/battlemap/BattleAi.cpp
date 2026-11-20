@@ -176,7 +176,7 @@ namespace wow
     //    over the count); with no home yet (+0x60 / +0x64 both 0) the centre is home; more than 400 from home
     //    (0x43FF00), bit 0 set and 0x804F home;
     // then bit 2 set; and +0x58 back to 0.
-    // *Provisional*: vt+0x38 isn't in; "attacking" is taken as having a target.
+    // *Provisional*: vt+0x38 isn't in; "attacking" is taken as having a target or bit 0 set without one.
     void BattleMap::GroupTick(int g)
     {
         if (size_t(g) >= groupTicks.size()) return;
@@ -184,7 +184,7 @@ namespace wow
         if (count <= 90) return;
         groupTicks[size_t(g)] = 0;
         const int stance = groupStance[size_t(g)];
-        const bool attacking = groupTargets[size_t(g)].target != 0;
+        const bool attacking = groupTargets[size_t(g)].target != 0 || groupBusy[size_t(g)];
         std::vector<size_t> members;
         for (size_t i = 0; i < units.size(); i++)
             if (units[i].group == g && units[i].vehicle) members.push_back(i);

@@ -149,6 +149,7 @@ namespace wow
             std::vector<int> emitted;
             bool emitDone = false;                  // the list freed
             int count = 0, size = 0, group = -1;    // a shell's updates left (+0xC2), impact size (+0xC0), firer (+0xC4)
+            int attacker = 0;                       // the firing unit's id (passed to its explosion's +0xCC)
             int depth = 0;                          // its view object's key over its y
             int born = -1;                          // the update it was made on
         };
@@ -236,6 +237,8 @@ namespace wow
                       int statusTime = 0, status = 0; // +0xDC / +0xE0: a timed status (0x80F5 frozen, 0x80F6, 0x80F7)
                       bool Frozen() const { return statusTime != 0 && status == 0x80F5; }  // vt+0x108, 0x489860
                       bool Turned() const { return statusTime != 0 && status == 0x80F7; }  // vt+0xF8, 0x489880
+                      bool Detected() const { return statusTime != 0 && status == 0x80F9; }  // vt+0x10C, 0x4898A0
+                      bool marked = false;  // a mine's second renderer (+0xE8, GType 0x359) made
                       int stance = 1;       // +0xD8: its type's +0x43 byte (record 56) to start with (0x495740)
                     };
         int nextId = 1;
@@ -279,22 +282,26 @@ namespace wow
         void AddPartRenderers(size_t unit);
         void PoseParts(Unit& u);
         void Impact(size_t unit, const Gun& g);                 // 0x4886A0's landing: 0x487F50
-        void ImpactAt(int size, int x, int y, int z, int group); // 0x487F50: the effect by size and terrain
+        void ImpactAt(int size, int x, int y, int z, int group, int attacker = 0); // 0x487F50: the effect by size and terrain
         void Launch(size_t unit, Gun& g);                       // 0x4889D0
         bool ShellLands(size_t effect);                         // 0x488F00 after the step: gone?
-        struct Landing { int size, x, y, z, group; };
+        struct Landing { int size, x, y, z, group, attacker; };
         std::vector<Landing> landings;                          // made after the flying objects' updates
         // Damage and death (0x48A5A0, 0x48AB20, 0x80A0 in 0x489FA0) and the explosions (WExplosion 0x488180)
         int MaxHealth(int type) const;                          // 0x47DA20: +0x4A with the armour modifiers
         void Damage(size_t unit, int amount);                   // vt+0xE0, 0x48AB20
         void Die(size_t unit);                                  // 0x80A0
-        void Explode(int type, int x, int y, int z, int firer = -1);  // 0x488070 + 0x488350 / 0x488200 (firer: a unit's group)
+        void Explode(int type, int x, int y, int z, int firer = -1, int attacker = 0);  // 0x488070 + 0x488350 / 0x488200 (firer: a unit's group)
         static bool IsExplosion(int type);
         static bool IsAreaBlast(int type);
-        void AreaDetonate(int type, int x, int y, int radius, int power, int firer);   // 0x487B50
+        void AreaDetonate(int type, int x, int y, int radius, int power, int firer, int attacker = 0);   // 0x487B50
         void SetStatus(size_t unit, int status, int level);     // 0x80F5-0x80F7 (0x495CB0)
         void ChangeStatus(Unit& u, int status);                 // vt+0x90, 0x496760
-        void StatusTick(Unit& u);                               // 0x4967E0's timer
+        void StatusTick(Unit& u);
+        bool Targetable(const Unit& u) const;                   // vt+0x6C
+        void MineTick(size_t unit);                             // 0x48CC00's second renderer
+        void Hit(size_t unit, int amount, int attacker);        // vt+0xC0's 0x491020 for a vehicle, then the damage
+        void Retaliate(int group, size_t member, int attacker); // 0x8085 to the group, 0x483880                               // 0x4967E0's timer
         void SetStance(int group, int stance);                  // 0x80B2 to the group: it and each member (+0xD8)
         void TurnOnOwn(Unit& u);                                // 0x496100
         std::vector<Unit> units;
@@ -304,7 +311,7 @@ namespace wow
         void AddRenderer(int type, float x, float y, int heading, int unit = -1);
         // Driving (Driving.cpp): the move order (0x482E60 straight there, 0x80C2), each update's steering and step
         // (0x4913B0, 0x492F40, 0x492DE0, 0x491870), halt (0x8031)
-        struct MoveOrder { int members = 0, arrived = 0, nearest = 0, farthest = 0; };  // +0x56, +0x68 / +0x6C
+        struct MoveOrder { int members = 0, arrived = 0, nearest = 0, farthest = 0, group = -1; };  // +0x56, +0x68 / +0x6C
         // The route finder (WRouteFinder 0x493DF0-0x494960, BatRoute 0x499420-0x4998D0; Routes.cpp)
         int rfCols = 0, rfRows = 0;                     // +0x30 / +0x34
         std::vector<std::vector<int>> rfLinks;          // each node's neighbours (connDat through connList)
@@ -432,6 +439,7 @@ namespace wow
         // Each group's periodic stance work (0x483B70: +0x58 counting to +0x5C, 90): Roam and Attack (3) wanders to a
         // random point; Attack and Retaliate (2, 1) go back home (+0x60 / +0x64) if more than 400 from it
         std::vector<int> groupTicks, groupHomeX, groupHomeY;
+        std::vector<bool> groupBusy;                            // +0x1D8 bit 0 without a target (Avoid's run, Retreat)
         void GroupTick(int group);
         void GroupGone(int group);                              // its last unit gone: the AI told
     public:

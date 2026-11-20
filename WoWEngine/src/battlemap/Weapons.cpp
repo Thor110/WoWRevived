@@ -383,7 +383,7 @@ namespace wow
         const int count = u.scanCount++;
         if (count <= int16_t(t->second.field92)) return;
         const int stance = u.stance;
-        if (stance >= 2 && stance <= 3 && size_t(u.group) < groupTargets.size() && groupTargets[size_t(u.group)].target == 0)
+        if (stance >= 2 && stance <= 3 && size_t(u.group) < groupTargets.size() && groupTargets[size_t(u.group)].target == 0 && !groupBusy[size_t(u.group)])
             AutoTarget(u);
         u.scanCount = 0;
     }
@@ -405,7 +405,7 @@ namespace wow
         for (const Unit& o : units)
         {
             if (Octagonal(int(u.x), int(u.y), int(o.x), int(o.y)) >= sight) continue;
-            if (o.health <= 0 || o.players == u.players) continue;
+            if (o.health <= 0 || o.players == u.players || !Targetable(o)) continue;
             if (!o.guns.empty()) { pick = &o; break; }
             last = &o;
             if (o.type == (setup.sector == 3 ? 0x33E : 0x78) || o.type == (setup.sector == 30 ? 0x116 : 0x13A)) key = &o;
@@ -419,6 +419,106 @@ namespace wow
         GroupTarget& gt = groupTargets[size_t(g)];
         gt = GroupTarget{};
         gt.target = pick->id;
+    }
+
+    // vt+0x6C, whether an object can be targeted (0x496570's look round, 0x483880's retaliation, the cursor's
+    // 0x44B800-0x44E5C0): the unit base's is yes (0x496C30: mov al, 1); the mines' (0x273-0x276, 0x48CCB0) only with
+    // the status 0x80F9 (vt+0x10C); 0x4993F0's class (0x498E90's) not while +0x190 bit 1 is set unless with it.
+    // *Provisional*: 0x498E90's class isn't in (its +0x190 is never set here).
+    bool BattleMap::Targetable(const Unit& u) const
+    {
+        if (u.type >= 0x273 && u.type <= 0x276) return u.Detected();
+        return true;
+    }
+
+    // The mines' update (0x48CC00, in place of the unit's timer): the status time (+0xDC) down, at 0 the status
+    // cleared (vt+0x90 with 0); then with the status 0x80F9 (vt+0x10C) on one that isn't the player's (+0x24 not 0):
+    // at its last update (vt+0x8C = 1) the second renderer (+0xE8) goes; else, with none, 0x48CCD0 makes one,
+    // GType 0x359 (0x40EC50, its +0x26 set to 0x20).
+    // *Provisional*: the renderer's +0x26 (0x20) isn't known: the marker is drawn as a sprite's frame 0 over the
+    // mine, one row nearer.
+    void BattleMap::MineTick(size_t index)
+    {
+        Unit& u = units[index];
+        if (u.type < 0x273 || u.type > 0x276) return;
+        const bool want = u.Detected() && !u.players && u.statusTime != 1;
+        if (want == u.marked) return;
+        u.marked = want;
+        if (!want)
+        {
+            objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) { return o.unit == int(index) && o.sprite == 0x359; }), objects.end());
+            return;
+        }
+        const GType* g = res.FindGType(0x359);
+        if (!g || !res.GetFrame(0x359, 0)) return;
+        int depth = 1;
+        for (const ViewObject& o : objects)
+            if (o.unit == int(index)) { depth = o.depth + 1; break; }
+        const int ix = int(u.x), iy = int(u.y);
+        ViewObject v{ iy + depth, ix, land.ProjectY(iy, land.HeightAt(ix, iy) + int(u.drive.lift)), nullptr, nullptr, g->paletteSlot, 0x359 };
+        v.unit = int(index);
+        v.depth = depth;
+        objects.push_back(v);
+        std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+    }
+
+    // vt+0xC0 on a vehicle (0x491020; the damage itself 0x4958B0 -> 0x48A5A0): the player's (+0x24 0), when rand()
+    // is under 2000 and the hit has a firer (+0xCC, the object that fired it), says 0x110 with its type's voice
+    // (byte_51A190); then its group is told 0x8085 with it and the hit (0x483880). Other objects just take the damage.
+    void BattleMap::Hit(size_t index, int amount, int attacker)
+    {
+        Unit& u = units[index];
+        if (u.vehicle)
+        {
+            if (u.players && random::Rand() < 2000 && attacker != 0) Speak(0x110, u.group);
+            Retaliate(u.group, index, attacker);
+        }
+        Damage(index, amount);
+    }
+
+    // 0x8085 to a group (0x4807F0 -> 0x483880) with the member hit and the hit (its firer +0xCC):
+    //  - with no object targeted (+0x2C 0): nothing if +0x1D8 bit 0 is set and bit 2 clear; on Avoid (stance 0) the
+    //    group runs: 0x43FE90 with rand() & 0xFFF and 400.0 from the member's point, bit 0 set (bit 2 cleared), 0x804F
+    //    there; on stances 1-3, with a firer (0x440110) of another side (0x4406E0) that can be targeted (vt+0x6C), each
+    //    member 0x80B9, the firer the target (0x482880), bit 0 set (0x480EB0) and vt+0x38;
+    //  - with one targeted: a computer's group (bit 7) whose target is unarmed (+0x3C 0), hit by an armed firer, stands
+    //    its guns down (0x805A to each member) and clears bit 0 (and bit 2), so it's free to pick again.
+    // *Provisional*: a point target (force fire) is taken as bit 0 set; the second case drops the target outright
+    // (StopAttacking) where the game leaves +0x2C; 0x80B9 and vt+0x38 aren't in.
+    void BattleMap::Retaliate(int g, size_t member, int attacker)
+    {
+        if (g < 0 || size_t(g) >= groupTargets.size()) return;
+        GroupTarget& gt = groupTargets[size_t(g)];
+        const Unit& m = units[member];
+        if (gt.target <= 0)
+        {
+            if (gt.target < 0 || groupBusy[size_t(g)]) return;
+            const int stance = groupStance[size_t(g)];
+            if (stance == 0)
+            {
+                float dx = 0, dy = 0;
+                Polar(random::Rand() & 0xFFF, 400.0f, dx, dy);
+                const int y = int(m.y + dy), x = int(m.x + dx);
+                groupBusy[size_t(g)] = true;
+                std::vector<size_t> members;
+                for (size_t i = 0; i < units.size(); i++)
+                    if (units[i].group == g && units[i].vehicle) members.push_back(i);
+                OrderGroupMove(g, members, int(int16_t(x)), int(int16_t(y)));
+                return;
+            }
+            if (stance < 1 || stance > 3 || attacker == 0) return;
+            const Unit* a = UnitById(attacker);
+            if (!a || a->players == m.players || !Targetable(*a)) return;
+            gt = GroupTarget{};
+            gt.target = attacker;
+            return;
+        }
+        if (g >= int(setup.groups.size()) || setup.groups[size_t(g)].Players() || attacker == 0) return;
+        const Unit* current = UnitById(gt.target);
+        const Unit* a = UnitById(attacker);
+        if (!current || !current->guns.empty() || !a || a->guns.empty()) return;
+        StopAttacking(g);
+        groupBusy[size_t(g)] = false;
     }
 
     // 0x482880(0) / the guns' 0x805A (0x494D80): not armed; a cycle under way goes to its reload; aimed set
@@ -681,6 +781,7 @@ namespace wow
                 sh.size = size;
                 sh.count = int16_t(count);
                 sh.group = u.group;
+                sh.attacker = u.id;
             }
             g.fired[i]++;
             if (e.c != 0 && g.fired[i] > int16_t(e.c)) { g.spent = true; break; }
@@ -698,7 +799,7 @@ namespace wow
         if (s.lift <= 0.0f) lands = true;
         else lands = s.count-- <= 0;
         if (!lands) return false;
-        landings.push_back({ s.size, int(s.x), int(s.y), int(s.lift - -8.0f), s.group });
+        landings.push_back({ s.size, int(s.x), int(s.y), int(s.lift - -8.0f), s.group, s.attacker });
         return s.count < 0;
     }
 
@@ -718,10 +819,10 @@ namespace wow
         const int y = random::Rand() % span - s + g.ty;
         const int z = random::Rand() % span + g.tz - s;
         const int h = z - land.HeightAtNearest(x, y);
-        ImpactAt(w[3], x, y, h, u.group);
+        ImpactAt(w[3], x, y, h, u.group, u.id);
     }
 
-    void BattleMap::ImpactAt(int size, int x, int y, int h, int group)
+    void BattleMap::ImpactAt(int size, int x, int y, int h, int group, int attacker)
     {
         int effect = 0;
         if (size > 64) effect = size - 1 < 67 ? kImpactBig[size - 1] : 0;
@@ -732,6 +833,6 @@ namespace wow
             const int terrain = land.At(vx, vy).atm & 15;
             effect = terrain >= 1 && terrain < 4 ? kImpactWater[size - 1] : kImpactLand[size - 1];
         }
-        if (effect) Explode(effect, x, y, std::max(h, 0), group);
+        if (effect) Explode(effect, x, y, std::max(h, 0), group, attacker);
     }
 }

@@ -99,6 +99,7 @@ namespace wow
         StopAttacking(group);
         const ReinforcePoint p = rpoints[size_t(k)];
         groupRetreat[size_t(group)] = p.sector;
+        groupBusy[size_t(group)] = true;
         std::vector<size_t> members;
         for (size_t i = 0; i < units.size(); i++)
             if (units[i].group == group && units[i].vehicle) members.push_back(i);

@@ -94,7 +94,7 @@ namespace wow
     // The area blasts (0x487B00 on WExplosion: the factory's 718-720, 788-790, 812-823)
     bool BattleMap::IsAreaBlast(int t) { return (t >= 718 && t <= 720) || (t >= 788 && t <= 790) || (t >= 812 && t <= 823); }
 
-    void BattleMap::Explode(int type, int x, int y, int z, int firer)
+    void BattleMap::Explode(int type, int x, int y, int z, int firer, int attacker)
     {
         auto t = setup.units->find(type);
         const bool area = IsAreaBlast(type);
@@ -107,13 +107,13 @@ namespace wow
         for (const auto& part : t->second.parts)
         {
             const int px = x + int16_t(part.b), py = y + int16_t(part.c), pz = z + int16_t(part.d);
-            if (IsExplosion(part.a) || IsAreaBlast(part.a)) Explode(part.a, px, py, pz, firer);
+            if (IsExplosion(part.a) || IsAreaBlast(part.a)) Explode(part.a, px, py, pz, firer, attacker);
             else if (part.a >= 334 && part.a <= 346) AddLight(part.a, px, py, land.HeightAt(px, py) + pz);
             else SpawnEffect(part.a, float(px), float(py), float(pz));
         }
         if (area)
         {
-            AreaDetonate(type, x, y, radius, power, firer);
+            AreaDetonate(type, x, y, radius, power, firer, attacker);
             SpawnEffect(type, float(x), float(y), float(std::max(z, 0)));
             return;
         }
@@ -129,7 +129,7 @@ namespace wow
             if (d > reach || reach == 0) continue;
             if (u.health <= 0) continue;
             const float hit = float((1.0 - double(float(d)) / double(float(reach))) * power);
-            Damage(i, int(double(hit) * 1.0));
+            Hit(i, int(double(hit) * 1.0), attacker);
         }
         // the scenery within reach too (it has no side to spare)
         for (size_t i = 0; i < props.size(); i++)
@@ -165,7 +165,7 @@ namespace wow
     // *Provisional*: 0x80F4 isn't in: its key building case (0x495CB0: the Martian base 0x33E or the Communications
     // Centre 0x78, Parliament 0x116 or 0x13A, by the kind) passes it to the battle (0x43B920: +0x128 the time,
     // dword_4E9B60 the firer's side) and speaks 0x115, which is the battle's end, not in yet.
-    void BattleMap::AreaDetonate(int type, int x, int y, int radius, int power, int firer)
+    void BattleMap::AreaDetonate(int type, int x, int y, int radius, int power, int firer, int attacker)
     {
         for (size_t i = 0; i < units.size(); i++)
         {
@@ -179,7 +179,7 @@ namespace wow
             auto hit = [&]() {
                 if (units[i].health <= 0) return;
                 const float h = float((1.0 - double(float(d)) / double(float(reach))) * power);
-                Damage(i, int(double(h) * 1.0));
+                Hit(i, int(double(h) * 1.0), attacker);
             };
             if (type >= 718 && type <= 720) { if (u.drive.lift < 0.0f) hit(); }
             else if (type >= 788 && type <= 790) { if (ut->second.faction == 1) hit(); }

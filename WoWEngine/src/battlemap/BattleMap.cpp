@@ -106,6 +106,7 @@ namespace wow
         groupTicks.assign(setup.groups.size(), 0);
         groupHomeX.assign(setup.groups.size(), 0);
         groupHomeY.assign(setup.groups.size(), 0);
+        groupBusy.assign(setup.groups.size(), false);
         AiStart();     // the battle begun, told to the computer player (0x8075 -> 0x445210)
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
 
@@ -1110,6 +1111,7 @@ namespace wow
                 }
             }
             StatusTick(units[i]);
+            MineTick(i);
             LookRound(i);
             Smoulder(i);
             moved |= units[i].x != x || units[i].y != y;
