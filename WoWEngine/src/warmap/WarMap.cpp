@@ -46,7 +46,7 @@ namespace wow
         for (const auto& o : objects)
             if ((o.list == 2 || o.list == 3) && o.sector >= 1 && o.sector <= warmap::SectorCount && o.value[1] >= o.value[0])
                 finished[size_t(o.sector)].push_back(o.unitType);
-        struct Group { int sector, list, type, x, y, count; };
+        struct Group { int sector, list, type, x, y, count; std::vector<int> refs; };
         std::vector<Group> groups;
         for (const auto& o : objects)
         {
@@ -56,8 +56,9 @@ namespace wow
             if (cls != objectClasses.end() && cls->second == 7)
                 for (Group& existing : groups)
                     if (existing.sector == o.sector && existing.list == o.list && existing.type == o.unitType) { g = &existing; break; }
-            if (!g) { groups.push_back({ o.sector, o.list, o.unitType, 0, 0, 0 }); g = &groups.back(); }
+            if (!g) { groups.push_back({ o.sector, o.list, o.unitType, 0, 0, 0, {} }); g = &groups.back(); }
             g->count++;
+            if (o.ref >= 0) g->refs.push_back(o.ref);
             if (!g->x && !g->y) { g->x = o.x; g->y = o.y; }
         }
         auto taken = [&](int x, int y, int kind) {
@@ -73,6 +74,7 @@ namespace wow
             k.speed = unit == units.end() || g.list / 2 != 0 ? 0 : unit->second.warMapSpeed;
             k.moveClass = unit == units.end() ? 0 : unit->second.moveClass;
             k.count = g.count;
+            k.refs = g.refs;
             k.players = g.list % 2 == 0;
             k.kind = g.list / 2;
             k.sector = g.sector;
@@ -181,7 +183,7 @@ namespace wow
             if (log.front().state == 1 && --logPending <= 0) { logPending = 0; logScrolling = false; logScroll = 0; }
             log.erase(log.begin());
         }
-        log.push_back({ std::move(text), LogLife, 0 });
+        log.push_back({ std::move(text), LogLife, 0, uint32_t(game.ticks) });
     }
 
     // The message list's tick (0x420CD0): live lines age (0x428A00); one that runs out starts the list scrolling up a
@@ -355,8 +357,38 @@ namespace wow
         Log(res.String(human ? 0x420 : 0x41F) + ": " + name);
     }
 
-    // A unit put in a sector (0x43CEB0): its own counter in the sector's next free cell
+    // A unit put in a sector (0x43CEB0): its own counter in the sector's next free cell. With a save behind the map
+    // it also gets a saved record: a copy of one of the same type (its battle map units with it), with new ids
+    // (the lowest free ones, as the game hands them out).
     void WarMap::AddUnit(int type, int sector, bool players)
+    {
+        int ref = -1;
+        if (save)
+        {
+            const SaveObject* model = nullptr;
+            for (const SaveObject& o : table) if (o.list < 2 && o.Type() == type) { model = &o; break; }
+            if (model)
+            {
+                SaveObject o = *model;
+                o.list = players ? 0 : 1;
+                // the ids in use: the sectors' own data as saved, and every object the map has now
+                std::vector<bool> used = save->UsedIds();
+                for (const SaveObject& t : table) SaveFile::MarkIds(t.bytes, used);
+                for (size_t at : o.IdOffsets())
+                {
+                    int id = SaveFile::TakeId(used);
+                    for (int b = 0; b < 4; b++) o.bytes[at + size_t(b)] = uint8_t(uint32_t(id) >> (8 * b));
+                }
+                o.SetSector(sector);
+                table.push_back(std::move(o));
+                ref = int(table.size()) - 1;
+            }
+            else SDL_Log("War map: no saved unit of type %d to copy, so the new one won't be saved", type);
+        }
+        AddCounter(type, sector, players, ref);
+    }
+
+    int WarMap::AddCounter(int type, int sector, bool players, int ref)
     {
         auto unit = unitData.find(type);
         Counter k;
@@ -367,6 +399,7 @@ namespace wow
         k.players = players;
         k.kind = 0;
         k.sector = sector;
+        if (ref >= 0) k.refs.push_back(ref);
         for (const auto& [x, y] : SectorCells(sector))
         {
             bool taken = false;
@@ -374,8 +407,126 @@ namespace wow
             if (taken) continue;
             k.x = x; k.y = y; k.fx = float(x); k.fy = float(y);
             counters.push_back(k);
-            return;
+            return int(counters.size()) - 1;
         }
+        return -1;
+    }
+
+    std::vector<SaveInfo::WarMapObject> WarMap::ObjectsOf(const SaveFile& save)
+    {
+        std::vector<SaveInfo::WarMapObject> objects;
+        int ref = 0;
+        for (int sector = 1; sector <= warmap::SectorCount; sector++)
+            for (const auto& list : save.Sector(sector).lists)
+                for (const SaveObject& o : list)
+                {
+                    SaveInfo::WarMapObject w;
+                    w.list = o.list;
+                    w.unitType = o.Type();
+                    w.id = o.Id();
+                    w.x = o.X();
+                    w.y = o.Y();
+                    w.sector = o.Sector();
+                    w.value[0] = o.Value(0);
+                    w.value[1] = o.Value(1);
+                    w.ref = ref++;
+                    objects.push_back(w);
+                }
+        return objects;
+    }
+
+    void WarMap::UseSave(SaveFile from)
+    {
+        table.clear();
+        for (int sector = 1; sector <= warmap::SectorCount; sector++)
+            for (const auto& list : from.Sector(sector).lists)
+                for (const SaveObject& o : list) table.push_back(o);
+        // the message list as it was (0x420EE0)
+        log.clear();
+        for (const SaveMessage& m : from.messages) log.push_back({ m.text, int(m.life), int(m.state), m.hour });
+        podHours = int(from.podHours);
+        pods = int(from.pods);
+        // units that were on their way: back on the map where they set out from, and sent on again
+        std::vector<SaveRoute> routes = std::move(from.routes);
+        from.routes.clear();
+        save = std::move(from);
+        for (const SaveRoute& route : routes)
+            for (const SaveObject& o : route.objects)
+            {
+                table.push_back(o);
+                int k = AddCounter(o.Type(), int(route.origin), o.list == 0, int(table.size()) - 1);
+                if (k >= 0 && route.destination >= 1 && int(route.destination) <= warmap::SectorCount) SendTo(k, int(route.destination));
+            }
+    }
+
+    // The war map written back into the save it came from (0x41AD80): the view, the clock and date, the message
+    // list, the pods, who holds each sector, and every object in the sector it's in now (the first of a counter
+    // that stands for several at the counter's place, the rest at 0, 0, as the game keeps them); units on their way
+    // go in a route each (origin, destination, the sectors between, and the attack flag), as 0x425A60 writes them.
+    std::optional<std::vector<uint8_t>> WarMap::SaveData() const
+    {
+        if (!save) return std::nullopt;
+        SaveFile s = *save;
+        s.warMap[0] = uint32_t(cameraX);
+        s.warMap[1] = uint32_t(cameraY);
+        s.warMap[2] = uint32_t(selected);
+        s.warMap[3] = uint32_t(viewMode);
+        s.hours = game.ticks;
+        for (int i = 0; i < 6; i++) s.dateTime[i] = game.dateTime[i];
+        s.messages.clear();
+        for (const LogLine& line : log) s.messages.push_back({ line.text, uint32_t(line.life), uint32_t(line.state), line.hour });
+        s.podHours = uint32_t(podHours);
+        s.pods = uint32_t(pods);
+        const bool human = res.Human();
+        for (int sector = 1; sector <= warmap::SectorCount; sector++)
+        {
+            int rel = owner[size_t(sector)];
+            s.Sector(sector).SetOwner(rel == 2 ? 2 : human ? rel : 1 - rel);
+            for (auto& list : s.Sector(sector).lists) list.clear();
+        }
+        s.routes.clear();
+        std::vector<bool> written(table.size(), false);
+        for (const Counter& k : counters)
+        {
+            if (k.sector < 1 || k.sector > warmap::SectorCount) continue;
+            SaveRoute* route = nullptr;
+            if (!k.route.empty() && !k.routeSectors.empty())
+            {
+                SaveRoute r;
+                r.origin = uint32_t(k.sector);
+                r.destination = uint32_t(k.routeSectors.back());
+                for (int sector : k.routeSectors)
+                    if (sector != k.sector && (r.path.empty() || r.path.back() != uint32_t(sector))) r.path.push_back(uint32_t(sector));
+                r.field50 = k.attack ? 1 : 0;
+                s.routes.push_back(std::move(r));
+                route = &s.routes.back();
+            }
+            for (size_t i = 0; i < k.refs.size(); i++)
+            {
+                int ref = k.refs[i];
+                if (ref < 0 || size_t(ref) >= table.size() || written[size_t(ref)]) continue;
+                written[size_t(ref)] = true;
+                SaveObject o = table[size_t(ref)];
+                // an object keeps the place it was saved with (0, 0 for most: the game finds them a cell) unless
+                // its counter has moved; then the first takes the counter's place and the rest 0, 0
+                if (k.moved || route)
+                {
+                    o.SetSector(k.sector);
+                    if (k.refs.size() > 1 && i > 0) o.SetPosition(0, 0);
+                    else o.SetPosition(k.x, k.y);
+                }
+                if (route) route->objects.push_back(std::move(o));
+                else s.Sector(k.sector).lists[size_t(o.list)].push_back(std::move(o));
+            }
+        }
+        // anything with no counter (a sector too full to show it) stays where it was
+        for (size_t i = 0; i < table.size(); i++)
+        {
+            if (written[i]) continue;
+            int sector = table[i].Sector();
+            if (sector >= 1 && sector <= warmap::SectorCount) s.Sector(sector).lists[size_t(table[i].list)].push_back(table[i]);
+        }
+        return s.Write();
     }
 
     void WarMap::MoveCounters(float hours)
@@ -1168,6 +1319,7 @@ namespace wow
     {
         Counter& k = counters[size_t(index)];
         if (sector == k.sector) return;
+        k.moved = true;
         std::string why;
         std::vector<int> path = FindRoute(k.sector, sector, k, &why);
         std::string through;

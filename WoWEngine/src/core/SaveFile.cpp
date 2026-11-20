@@ -1,0 +1,325 @@
+#include "core/SaveFile.h"
+#include "core/Bytes.h"
+
+#include <algorithm>
+#include <cstring>
+
+namespace wow
+{
+    namespace
+    {
+        constexpr const char* ListTags[6] = { "HUNI", "AUNI", "HCON", "ACON", "HRES", "ARES" };
+
+        uint32_t Get32(const std::vector<uint8_t>& b, size_t at)
+        {
+            if (at + 4 > b.size()) return 0;
+            return uint32_t(b[at]) | uint32_t(b[at + 1]) << 8 | uint32_t(b[at + 2]) << 16 | uint32_t(b[at + 3]) << 24;
+        }
+        void Put32(std::vector<uint8_t>& b, size_t at, uint32_t v)
+        {
+            if (at + 4 > b.size()) return;
+            for (int i = 0; i < 4; i++) b[at + size_t(i)] = uint8_t(v >> (8 * i));
+        }
+
+        struct Reader
+        {
+            std::span<const uint8_t> d;
+            size_t p = 0;
+            void Need(size_t n) const { if (p + n > d.size()) throw FormatError("save: ends early"); }
+            uint32_t U32() { Need(4); uint32_t v = uint32_t(d[p]) | uint32_t(d[p + 1]) << 8 | uint32_t(d[p + 2]) << 16 | uint32_t(d[p + 3]) << 24; p += 4; return v; }
+            uint16_t U16() { Need(2); uint16_t v = uint16_t(d[p] | d[p + 1] << 8); p += 2; return v; }
+            uint8_t U8() { Need(1); return d[p++]; }
+            float F32() { uint32_t b = U32(); float f; std::memcpy(&f, &b, 4); return f; }
+            bool At(const char* tag, size_t at) const { return at + 4 <= d.size() && std::memcmp(&d[at], tag, 4) == 0; }
+            void Tag(const char* tag)
+            {
+                if (!At(tag, p)) throw FormatError(std::string("save: expected ") + tag + " at " + std::to_string(p));
+                p += 4;
+            }
+            size_t Find(const char* tag, size_t from) const
+            {
+                for (size_t i = from; i + 4 <= d.size(); i++) if (std::memcmp(&d[i], tag, 4) == 0) return i;
+                return std::string::npos;
+            }
+            // count objects of a list from p up to end: each starts `pre` bytes before a SELO that has its WMOB 16
+            // bytes on (a battle map unit's SELO doesn't)
+            std::vector<SaveObject> Objects(int list, uint32_t count, size_t end, size_t pre)
+            {
+                std::vector<size_t> begins;
+                for (size_t i = p; i + 20 <= end; i++)
+                    if (std::memcmp(&d[i], "SELO", 4) == 0 && std::memcmp(&d[i + 16], "WMOB", 4) == 0) begins.push_back(i - pre);
+                if (begins.size() != count || (count && begins[0] != p))
+                    throw FormatError("save: a list of " + std::to_string(count) + " objects at " + std::to_string(p) + " doesn't read");
+                std::vector<SaveObject> objects;
+                for (size_t k = 0; k < begins.size(); k++)
+                {
+                    size_t b = k + 1 < begins.size() ? begins[k + 1] : end;
+                    SaveObject o;
+                    o.list = list;
+                    o.bytes.assign(d.begin() + std::ptrdiff_t(begins[k]), d.begin() + std::ptrdiff_t(b));
+                    objects.push_back(std::move(o));
+                }
+                p = end;
+                return objects;
+            }
+        };
+
+        struct Writer
+        {
+            std::vector<uint8_t> o;
+            void U32(uint32_t v) { for (int i = 0; i < 4; i++) o.push_back(uint8_t(v >> (8 * i))); }
+            void U16(uint16_t v) { o.push_back(uint8_t(v)); o.push_back(uint8_t(v >> 8)); }
+            void U8(uint8_t v) { o.push_back(v); }
+            void F32(float f) { uint32_t b; std::memcpy(&b, &f, 4); U32(b); }
+            void Tag(const char* t) { o.insert(o.end(), t, t + 4); }
+            void Bytes(const std::vector<uint8_t>& b) { o.insert(o.end(), b.begin(), b.end()); }
+            void List(const std::vector<SaveObject>& objects)
+            {
+                Tag("WMOB");
+                U32(uint32_t(objects.size()));
+                for (const SaveObject& ob : objects) Bytes(ob.bytes);
+            }
+        };
+    }
+
+    int SaveObject::Type() const { return int(Get32(bytes, 0)); }
+    int SaveObject::Id() const { return int(Get32(bytes, SeloAt() + 4)); }
+    int SaveObject::X() const { return int(int32_t(Get32(bytes, SeloAt() + 8))); }
+    int SaveObject::Y() const { return int(int32_t(Get32(bytes, SeloAt() + 12))); }
+    int SaveObject::Sector() const { return int(Get32(bytes, SeloAt() + 20)); }
+    float SaveObject::Value(int i) const
+    {
+        if (!Kind2()) return 0;
+        uint32_t b = Get32(bytes, 4 + size_t(i) * 4);
+        float f;
+        std::memcpy(&f, &b, 4);
+        return f;
+    }
+    void SaveObject::SetPosition(int x, int y) { Put32(bytes, SeloAt() + 8, uint32_t(x)); Put32(bytes, SeloAt() + 12, uint32_t(y)); }
+    void SaveObject::SetSector(int sector) { Put32(bytes, SeloAt() + 20, uint32_t(sector)); }
+    std::vector<size_t> SaveObject::IdOffsets() const
+    {
+        std::vector<size_t> at;
+        for (size_t i = 0; i + 8 <= bytes.size(); i++)
+            if (std::memcmp(&bytes[i], "SELO", 4) == 0) at.push_back(i + 4);
+        return at;
+    }
+
+    int SaveSector::Owner() const { return int(Get32(rest, 0)); }
+    void SaveSector::SetOwner(int owner) { Put32(rest, 0, uint32_t(owner)); }
+
+    SaveFile SaveFile::Parse(std::span<const uint8_t> data)
+    {
+        Reader r{ data };
+        SaveFile s;
+        s.version = r.U32();
+        r.Tag("GAME");
+        uint32_t length = r.U32();
+        r.Need(length);
+        s.game.assign(data.begin() + std::ptrdiff_t(r.p), data.begin() + std::ptrdiff_t(r.p + length));
+        r.p += length;
+        r.Tag("WMAP");
+        for (uint32_t& w : s.warMap) w = r.U32();
+        r.Tag("CALN");
+        s.hours = r.F32();
+        r.Tag("DtTm");
+        for (uint16_t& v : s.dateTime) v = r.U16();
+        size_t mpad = r.Find("MPAD", r.p);
+        if (mpad == std::string::npos) throw FormatError("save: no MPAD");
+        s.research.assign(data.begin() + std::ptrdiff_t(r.p), data.begin() + std::ptrdiff_t(mpad));
+        r.p = mpad;
+        r.Tag("MPAD");
+        for (uint32_t n = r.U32(); n > 0; n--)
+        {
+            SaveMessage m;
+            uint32_t len = r.U32();
+            r.Need(len);
+            size_t textLength = 0;
+            while (textLength < len && data[r.p + textLength]) textLength++;
+            m.text.assign(reinterpret_cast<const char*>(&data[r.p]), textLength);
+            r.p += len;
+            m.life = r.U32();
+            m.state = r.U32();
+            m.hour = r.U32();
+            s.messages.push_back(std::move(m));
+        }
+        // the routes: where the last one's objects end is where the pods' two u32s are, just before sector 0
+        uint32_t routeCount = r.U32();
+        size_t sector0At = r.Find("DMGL", r.p);
+        if (sector0At == std::string::npos || sector0At < r.p + 12) throw FormatError("save: no sector 0");
+        sector0At -= 4;
+        for (uint32_t k = 0; k < routeCount; k++)
+        {
+            SaveRoute route;
+            route.origin = r.U32();
+            route.destination = r.U32();
+            route.flag5F = r.U32();
+            route.flag5E = r.U32();
+            route.field44 = r.U32();
+            uint32_t n = r.U32();
+            if (n > 64) throw FormatError("save: a route of " + std::to_string(n) + " sectors");
+            route.progress = r.F32();
+            for (uint32_t i = 0; i < n; i++) route.path.push_back(r.U32());
+            route.field50 = r.U8();
+            r.Tag("WMOB");
+            uint32_t count = r.U32();
+            size_t end = sector0At - 8;
+            if (k + 1 < routeCount)
+            {
+                // the next route's WMOB list (one with no SELO 16 bytes before it), then back over its header
+                end = std::string::npos;
+                for (size_t q = r.Find("WMOB", r.p); q != std::string::npos && end == std::string::npos; q = r.Find("WMOB", q + 4))
+                {
+                    if (q >= 16 && std::memcmp(&data[q - 16], "SELO", 4) == 0) continue;
+                    for (uint32_t m = 0; m <= 64 && end == std::string::npos; m++)
+                    {
+                        size_t h = q - 29 - 4 * size_t(m);
+                        if (q < 29 + 4 * size_t(m) || h < r.p) break;
+                        Reader peek{ data, h + 20 };
+                        if (peek.U32() == m) end = h;
+                    }
+                }
+                if (end == std::string::npos) throw FormatError("save: a route's end not found");
+            }
+            route.objects = r.Objects(0, count, end, 4);
+            s.routes.push_back(std::move(route));
+        }
+        s.podHours = r.U32();
+        s.pods = r.U32();
+        if (r.p != sector0At) throw FormatError("save: sector 0 isn't where it should be");
+        size_t first = r.Find("SECT", r.p);
+        if (first == std::string::npos) throw FormatError("save: no sectors");
+        s.sector0.rest.assign(data.begin() + std::ptrdiff_t(r.p), data.begin() + std::ptrdiff_t(first));
+        r.p = first;
+        for (int sector = 1; sector <= 30; sector++)
+        {
+            SaveSector& sec = s.sectors[size_t(sector - 1)];
+            r.Tag("SECT");
+            for (int l = 0; l < 6; l++)
+            {
+                r.Tag(ListTags[l]);
+                r.Tag("WMOB");
+                uint32_t count = r.U32();
+                size_t end;
+                if (l < 5)
+                {
+                    end = std::string::npos;
+                    for (size_t q = r.Find(ListTags[l + 1], r.p); q != std::string::npos; q = r.Find(ListTags[l + 1], q + 4))
+                        if (r.At("WMOB", q + 4)) { end = q; break; }
+                }
+                else
+                {
+                    end = r.Find("DMGL", r.p);
+                    if (end != std::string::npos) end -= 4;
+                }
+                if (end == std::string::npos || end < r.p) throw FormatError("save: sector " + std::to_string(sector) + " doesn't read");
+                sec.lists[size_t(l)] = r.Objects(l, count, end, l >= 2 ? 12 : 4);
+            }
+            size_t next = sector < 30 ? r.Find("SECT", r.p) : data.size();
+            if (next == std::string::npos) throw FormatError("save: sector " + std::to_string(sector + 1) + " missing");
+            sec.rest.assign(data.begin() + std::ptrdiff_t(r.p), data.begin() + std::ptrdiff_t(next));
+            r.p = next;
+        }
+        return s;
+    }
+
+    std::vector<uint8_t> SaveFile::Write() const
+    {
+        Writer w;
+        w.U32(version);
+        w.Tag("GAME");
+        w.U32(uint32_t(game.size()));
+        w.Bytes(game);
+        w.Tag("WMAP");
+        for (uint32_t v : warMap) w.U32(v);
+        w.Tag("CALN");
+        w.F32(hours);
+        w.Tag("DtTm");
+        for (uint16_t v : dateTime) w.U16(v);
+        w.Bytes(research);
+        w.Tag("MPAD");
+        w.U32(uint32_t(messages.size()));
+        for (const SaveMessage& m : messages)
+        {
+            w.U32(uint32_t(m.text.size() + 1));
+            w.o.insert(w.o.end(), m.text.begin(), m.text.end());
+            w.U8(0);
+            w.U32(m.life);
+            w.U32(m.state);
+            w.U32(m.hour);
+        }
+        w.U32(uint32_t(routes.size()));
+        for (const SaveRoute& route : routes)
+        {
+            w.U32(route.origin);
+            w.U32(route.destination);
+            w.U32(route.flag5F);
+            w.U32(route.flag5E);
+            w.U32(route.field44);
+            w.U32(uint32_t(route.path.size()));
+            w.F32(route.progress);
+            for (uint32_t sector : route.path) w.U32(sector);
+            w.U8(route.field50);
+            w.List(route.objects);
+        }
+        w.U32(podHours);
+        w.U32(pods);
+        w.Bytes(sector0.rest);
+        for (const SaveSector& sec : sectors)
+        {
+            w.Tag("SECT");
+            for (int l = 0; l < 6; l++)
+            {
+                w.Tag(ListTags[l]);
+                w.List(sec.lists[size_t(l)]);
+            }
+            w.Bytes(sec.rest);
+        }
+        return std::move(w.o);
+    }
+
+    std::string SaveFile::Name() const
+    {
+        size_t n = 0;
+        while (n < game.size() && n < 36 && game[n]) n++;
+        return std::string(reinterpret_cast<const char*>(game.data()), n);
+    }
+
+    void SaveFile::SetName(const std::string& latin1)
+    {
+        if (game.size() < 36) game.resize(0x28, 0);
+        for (size_t i = 0; i < 36; i++) game[i] = i < latin1.size() ? uint8_t(latin1[i]) : 0;
+    }
+
+    void SaveFile::MarkIds(const std::vector<uint8_t>& bytes, std::vector<bool>& used)
+    {
+        for (size_t i = 0; i + 8 <= bytes.size(); i++)
+            if (std::memcmp(&bytes[i], "SELO", 4) == 0)
+            {
+                uint32_t id = Get32(bytes, i + 4);
+                if (id < used.size()) used[id] = true;
+            }
+    }
+
+    std::vector<bool> SaveFile::UsedIds() const
+    {
+        // every SELO id anywhere: the objects, the routes' units, and what each sector carries (its own data can
+        // hold battle map objects too)
+        std::vector<bool> used(32768, false);
+        for (const SaveRoute& route : routes) for (const SaveObject& o : route.objects) MarkIds(o.bytes, used);
+        for (const SaveSector& sec : sectors)
+        {
+            for (const auto& list : sec.lists) for (const SaveObject& o : list) MarkIds(o.bytes, used);
+            MarkIds(sec.rest, used);
+        }
+        MarkIds(sector0.rest, used);
+        return used;
+    }
+
+    int SaveFile::TakeId(std::vector<bool>& used)
+    {
+        for (size_t i = 0; i < used.size(); i++)
+            if (!used[i]) { used[i] = true; return int(i); }
+        return -1;
+    }
+}

@@ -90,9 +90,10 @@ namespace wow
         : res(r), settings(s), ini(i), files(f), sound(f, r.Human())
     {
         ApplyVolumes();
-        // start-up (WGame::Start 0x402A30 sends 0x74): the legal splash screens, then the disc check, RAGELOGO,
-        // TITLE and the main menu
-        Show(std::make_unique<SplashScreen>(res, Command{ CmdInsertCd, CmdRageLogo }));
+        // start-up (WGame::Start 0x402A30): with "Skip" ([Main], byte_4D1361) set, straight to Start New Campaign;
+        // otherwise 0x74, the legal splash screens, then the disc check, RAGELOGO, TITLE and the main menu
+        if (ini.GetBool("Main", "Skip", false)) Execute({ CmdNewCampaign, 0 });
+        else Show(std::make_unique<SplashScreen>(res, Command{ CmdInsertCd, CmdRageLogo }));
     }
 
     void FrontEnd::ApplyVolumes()
@@ -421,7 +422,75 @@ namespace wow
         return m;
     }
 
-    void FrontEnd::StartWarMap(const std::string& gamePath, const std::string& name)
+    std::filesystem::path FrontEnd::SlotFile(int slot) const
+    {
+        char name[32];
+        std::snprintf(name, sizeof(name), "%s.%03d", res.Human() ? "Human" : "Martian", slot);
+        // the SaveGame folder as it is on disk (any case), else a new one (WinMain makes it, 0x401940)
+        std::filesystem::path folder = files.Root() / "SaveGame";
+        if (auto existing = files.Resolve("SaveGame")) folder = *existing;
+        if (auto existing = files.Resolve(std::string("SaveGame\\") + name)) return *existing;
+        return folder / name;
+    }
+
+    // A save written whole to a file beside it, then put in its place, so a failed write leaves the old one
+    bool FrontEnd::WriteSaveFile(const std::filesystem::path& path, const std::vector<uint8_t>& data)
+    {
+        std::error_code ec;
+        std::filesystem::create_directories(path.parent_path(), ec);
+        std::filesystem::path temp = path;
+        temp += ".new";
+        {
+            std::ofstream out(temp, std::ios::binary | std::ios::trunc);
+            out.write(reinterpret_cast<const char*>(data.data()), std::streamsize(data.size()));
+            out.flush();
+            if (!out) { std::filesystem::remove(temp, ec); return false; }
+        }
+        std::filesystem::rename(temp, path, ec);
+        if (ec)
+        {
+            // some systems won't rename over a file: replace it
+            std::filesystem::remove(path, ec);
+            std::filesystem::rename(temp, path, ec);
+        }
+        return !ec;
+    }
+
+    bool FrontEnd::NewCampaignFile(int slot, const std::string& name)
+    {
+        auto start = files.Resolve(res.Human() ? "Human.000" : "Martian.000");
+        if (!start || slot < SaveSlot::First || slot > SaveSlot::Last) return false;
+        std::ifstream in(*start, std::ios::binary);
+        std::vector<uint8_t> data((std::istreambuf_iterator<char>(in)), {});
+        try
+        {
+            // a new GAME header with the name, then the start file's body as it is (0x44EBB0)
+            SaveFile save = SaveFile::Parse(data);
+            save.SetName(name);
+            data = save.Write();
+        }
+        catch (const std::exception& e)
+        {
+            SDL_Log("New campaign: %s: %s", start->string().c_str(), e.what());
+            return false;
+        }
+        std::filesystem::path path = SlotFile(slot);
+        if (!WriteSaveFile(path, data)) { SDL_Log("New campaign: can't write %s", path.string().c_str()); return false; }
+        SDL_Log("New campaign \"%s\" in %s", name.c_str(), path.string().c_str());
+        return true;
+    }
+
+    void FrontEnd::SaveCampaign()
+    {
+        WarMap* map = ActiveWarMap();
+        if (!map || playingSlot < SaveSlot::First || playingSlot > SaveSlot::Last) return;
+        auto data = map->SaveData();
+        if (!data) { SDL_Log("The war map didn't come from a save it can write, so it isn't saved"); return; }
+        bool ok = WriteSaveFile(SlotFile(playingSlot), *data);
+        SDL_Log(ok ? "Saving game to slot %d" : "Saving game to slot %d failed", playingSlot);
+    }
+
+    void FrontEnd::StartWarMap(const std::string& gamePath, const std::string& name, int slot, bool loaded)
     {
         std::vector<uint8_t> data;
         if (auto path = files.Resolve(gamePath))
@@ -471,13 +540,22 @@ namespace wow
             try { for (const auto& [id, e] : AiTable::Load(aiData).entries) classes[id] = e.value; }
             catch (const std::exception& e) { SDL_Log("AI.ojd: %s", e.what()); }
         }
-        auto map = std::make_unique<WarMap>(res, settings.colours, info, SaveInfo::WarMapObjects(data), std::move(units), std::move(classes),
-            SaveInfo::SectorOwners(data), ini.GetInt("Screen", "Scroll Speed", 40), ini.GetFloat("Tweak", "Clunting Speed", 7.0f));
+        // the save read exactly, so it can be written again; failing that, read as before (and not saved)
+        std::optional<SaveFile> exact;
+        try { exact = SaveFile::Parse(data); }
+        catch (const std::exception& e) { SDL_Log("%s can't be read exactly (%s), so the campaign won't be saved", gamePath.c_str(), e.what()); }
+        std::vector<SaveInfo::WarMapObject> objects = exact ? WarMap::ObjectsOf(*exact) : SaveInfo::WarMapObjects(data);
+        std::vector<int> owners = SaveInfo::SectorOwners(data);
+        playingSlot = slot;
+        auto map = std::make_unique<WarMap>(res, settings.colours, info, std::move(objects), std::move(units), std::move(classes),
+            std::move(owners), ini.GetInt("Screen", "Scroll Speed", 40), ini.GetFloat("Tweak", "Clunting Speed", 7.0f));
         map->SetArrowTypes(std::move(arrows));
         map->SetDeposits(std::move(deposits), ini.GetFloat("Tweak", "Resource Drop Off Rate", 3.0f));
         map->SetPodInterval(ini.GetInt("Tweak", "Pod Interval (hours)", 24));
         map->SetQuickCancelTimeout(ini.GetInt("Tweak", "Quick Cancel Timeout", 5));
         map->SetSectorLimits(ini.GetInt("Tweak", "Max units in sector", 15), ini.GetInt("Tweak", "Max boats in sector", 5));
+        if (exact) map->UseSave(std::move(*exact));
+        if (loaded) map->Message(res.String(0x465)); // 0x80B3: "Game Loaded"
         Show(std::move(map));
     }
 
@@ -530,10 +608,13 @@ namespace wow
         SDL_Log("Command 0x%X (%d) from screen 0x%X", command.id, command.param, current);
         switch (command.id)
         {
-        case CmdMainMenu: topMenu = CmdMainMenu; warMap.reset(); Show(MainMenu()); break;
+        case CmdMainMenu:
+            // leaving the war map saves the campaign in its slot first (0x41CD50: 0x90 -> 0x80B4)
+            SaveCampaign();
+            topMenu = CmdMainMenu; warMap.reset(); playingSlot = 0; Show(MainMenu()); break;
         case CmdOptions: Show(GameOptions(current)); break;
         case CmdQuitMenu: Show(QuitGame(current)); break;
-        case CmdQuitGame: quit = true; break;
+        case CmdQuitGame: SaveCampaign(); quit = true; break; // 0x70 -> 0x80B4 as well
         case CmdSoundControl: Show(SoundControl(current)); break;
         case CmdDisplaySettings: Show(DisplaySettings(current)); break;
         case CmdCriticalEvents: Show(CriticalEvents(current)); break;
@@ -557,9 +638,8 @@ namespace wow
             break;
         case CmdReplaceCampaign: Show(EditCampaign(CmdNewCampaign)); break;
         case CmdEditCampaign:
-            // 0x404660 sets up the new campaign in the slot (TODO, with the war map), then on to the disc check
-            // and the intro
-            SDL_Log("New campaign \"%s\" in slot %d", campaignName.c_str(), campaignSlot);
+            // 0x404660 sets up the new campaign in the slot, then on to the disc check and the intro
+            if (!NewCampaignFile(campaignSlot, campaignName)) campaignSlot = 0;
             Execute({ CmdInsertCd, CmdIntro });
             break;
         case CmdInsertCd:
@@ -575,11 +655,14 @@ namespace wow
         case CmdTitle: PlayMovie("TITLE", { CmdMainMenu, 0 }); break;
         case CmdIntro: PlayMovie("INTRO", { CmdStartCampaign, 0 }); break;
         case CmdStartCampaign:
-            // a new campaign starts from Human.000 or Martian.000 in the game folder (0x4043D0, slot 0)
-            StartWarMap(res.Human() ? "Human.000" : "Martian.000", campaignName);
+            // a new campaign plays from its slot, set up from Human.000 or Martian.000 (0x404660); if that
+            // couldn't be written, from the start file itself, unsaved
+            if (campaignSlot >= SaveSlot::First && SaveSlot::Exists(files, res.Human(), campaignSlot))
+                StartWarMap(SaveSlot::GamePath(res.Human(), campaignSlot), {}, campaignSlot);
+            else StartWarMap(res.Human() ? "Human.000" : "Martian.000", campaignName);
             break;
         case CmdLoadSlot:
-            StartWarMap(SaveSlot::GamePath(res.Human(), command.param), {});
+            StartWarMap(SaveSlot::GamePath(res.Human(), command.param), {}, command.param, true);
             break;
         case CmdWarMapMenu: Show(WarMapMenu()); break;
         case WarMap::ResearchCommand:

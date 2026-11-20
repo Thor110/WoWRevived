@@ -32,6 +32,7 @@ add_library(wowcore STATIC
     src/core/Bmp.cpp
     src/core/ShadeTable.cpp
     src/core/SaveGame.cpp
+    src/core/SaveFile.cpp
     src/core/SoundTable.cpp
     src/core/Models.cpp
     src/core/AiTable.cpp

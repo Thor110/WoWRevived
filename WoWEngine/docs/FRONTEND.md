@@ -122,7 +122,8 @@ screen is scaled down to fit.
   the first and, past the end, before the last (0x4313F0). Keys (0x431730): Up the control before, Down and Enter
   the one after, Delete the character after the caret, Backspace the one before, Home, End, Left and Right a
   character or with Ctrl a word.
-- Setting up the campaign (0x404660), loading a save (0x80B3) and starting the war map (0x8A, 0xA5, 0xAB) wait for the campaign to be rebuilt, and show a "not rebuilt yet" placeholder.
+- Setting up the campaign (0x404660) writes the side's start file to the slot under the new name; loading a save (0x80B3) and starting the war map (0x8A) play the slot's file, and leaving the war map saves it (see WARMAP.md, Saving). Network games (0xA5, 0xAB) show a "not rebuilt yet" placeholder.
+- "Skip" (`[Main] Skip=1`, byte_4D1361): WGame::Start (0x402A30) goes straight to Start New Campaign instead of the legal screens and the movies.
 - There's no network play yet, so Select Service Provider lists no providers and the session menu always says it's waiting. The Network Host and Waiting for Player menus can be opened with `--open 0x9F` and `--open 0xA1`.
 
 ## Sound
@@ -158,7 +159,7 @@ The menus use cursor 0; the text field (0x431500) asks for 0x11. Each side has i
   - how a slider reacts to clicks and drags (0x431EF0);
   - the event menu's check boxes, which sit about 14 pixels left of the original's while the labels line up.
 - **Display Settings.** The engine still draws at 640 × 480 and in true colour. The resolution and colour depth are saved for the launcher, but the engine doesn't use them yet.
-- **Loading and saving.** Picking a save in the Load or Save menu needs the campaign (the war map), which isn't rebuilt yet.
+- **Loading and saving** work for the war map (see WARMAP.md); battles, research and the economy aren't saved yet beyond what the save already held.
 - **Sound for the credits.** The credits music (sound 0x191) isn't played yet. The game also waits for it to finish before leaving the credits.
 - **Other cheat codes.** 0x401000 recognises more typed codes than "englishrose", but they aren't decoded yet.
 - **Tooltips.** Done for the front end's controls (the CD Player's transport buttons 0x4BC / 0x4B9 / 0x4BA / 0x4BD /

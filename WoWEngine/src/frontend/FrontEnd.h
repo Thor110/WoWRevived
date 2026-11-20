@@ -41,7 +41,7 @@ namespace wow
         void SetPaused(bool paused);
 
         // Opens a screen by its command id, as if a button had sent it (the --open start option).
-        void Open(int command) { Execute({ command, 0 }); }
+        void Open(int command, int param = 0) { Execute({ command, param }); }
 
         bool QuitRequested() const { return quit; }
         int CurrentScreen() const { return screen ? screen->Id() : 0; }
@@ -70,7 +70,16 @@ namespace wow
         std::unique_ptr<Screen> NotRebuilt(int command, int previous);
         void PlayMovie(const std::string& name, Command next);
         std::unique_ptr<Screen> WarMapMenu();                // 0x80B5, 0x49B980
-        void StartWarMap(const std::string& gamePath, const std::string& name);
+        // slot: the campaign's save slot (1-5) it's saved to when left, 0 for none
+        void StartWarMap(const std::string& gamePath, const std::string& name, int slot = 0, bool loaded = false);
+        // 0x404660: a new campaign's save: the side's start file (Human.000 / Martian.000) under the new name in
+        // its slot. False if it couldn't be written.
+        bool NewCampaignFile(int slot, const std::string& name);
+        // 0x80B4 -> 0x4042D0: the war map written to its campaign's slot ("Saving game to slot %d")
+        void SaveCampaign();
+        std::filesystem::path SlotFile(int slot) const;
+        static bool WriteSaveFile(const std::filesystem::path& path, const std::vector<uint8_t>& data);
+        int playingSlot = 0;       // the slot the war map's campaign is saved in (world +0x128)
 
         bool AnySaveGame() const;
         void DrawCursor(Canvas& canvas) const;

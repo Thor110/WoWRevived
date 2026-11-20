@@ -33,8 +33,8 @@ namespace wow
     // and then the research (HRSH 0x45A190, MRSH 0x45B2F0), the message pad (MPAD 0x420FD0), the damage map (DMGL
     // 0x405100) and the 30 sectors (SECT 0x4465B0, each with HUNI / AUNI / HCON / ACON / HRES / ARES lists of WMOB
     // war map objects 0x421B80, and battle map objects BMOL 0x47D360, BAMO 0x489F30, VEHI 0x490A40, BATP 0x495710,
-    // VEHU 0x4A3C80, SELO 0x440550). Those aren't read yet; Tags() finds them by searching for their names, which
-    // is fine for looking at a save but not a substitute for reading it object by object.
+    // VEHU 0x4A3C80, SELO 0x440550). core/SaveFile reads and writes the whole save exactly; Tags() and
+    // WarMapObjects() here find things by searching for their names, the fallback for a save SaveFile can't read.
     // Human.000 and Martian.000 in the game folder are the new campaigns the game starts from (0x4043D0, slot 0).
     struct SaveInfo
     {
@@ -72,6 +72,7 @@ namespace wow
             int x = 0, y = 0;  // on the war map
             int sector = 0;
             float value[2] = { 0, 0 }; // constructions and resources: the two floats after the type
+            int ref = -1;      // the object in the war map's table of saved objects (-1: read without one)
             bool PlayersSide() const { return list % 2 == 0; }
         };
         static std::vector<WarMapObject> WarMapObjects(std::span<const uint8_t> data);

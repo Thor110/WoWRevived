@@ -56,6 +56,8 @@ namespace
         fs::path screenshot;
         std::vector<int> keys;
         int open = 0;
+        int openParam = 0;   // --load: the slot
+        int then = 0;        // --then: a command after the ticks (before the screenshot)
         int ticks = 0;
         int mouseX = -1, mouseY = -1;
         int side = -1; // 1 Human, 0 Martian, -1 not given
@@ -71,6 +73,8 @@ namespace
             else if (arg == "--martian") o.side = 0;
             else if (arg == "--open" && i + 1 < argc) o.open = int(std::strtol(argv[++i], nullptr, 0));
             else if (arg == "--ticks" && i + 1 < argc) o.ticks = std::atoi(argv[++i]);
+            else if (arg == "--load" && i + 1 < argc) { o.open = 0x80B3; o.openParam = std::atoi(argv[++i]); }
+            else if (arg == "--then" && i + 1 < argc) o.then = int(std::strtol(argv[++i], nullptr, 0));
             else if (arg == "--mouse" && i + 1 < argc)
             {
                 std::string at = argv[++i];
@@ -246,7 +250,7 @@ int main(int argc, char** argv)
         SDL_StartTextInput(video.Window());
         // the game draws its own cursor over the picture
         if (frontEnd.GameCursor()) SDL_HideCursor();
-        if (options.open) frontEnd.Open(options.open);
+        if (options.open) frontEnd.Open(options.open, options.openParam);
         bool done = false;
         if (!options.screenshot.empty())
         {
@@ -267,6 +271,7 @@ int main(int argc, char** argv)
                 if (key >= int(SDLK_A) && key <= int(SDLK_Z)) { char text[2] = { char('a' + (key - int(SDLK_A))), 0 }; frontEnd.OnText(text); }
             }
             for (int t = 0; t < options.ticks; t++) frontEnd.Update();
+            if (options.then) { frontEnd.Open(options.then); for (int t = 0; t < 10; t++) frontEnd.Update(); }
             frontEnd.Draw(canvas);
             wow::WriteBmp(options.screenshot, video.Pixels(), video.Width(), video.Height());
             SDL_Log("Saved %s", options.screenshot.string().c_str());

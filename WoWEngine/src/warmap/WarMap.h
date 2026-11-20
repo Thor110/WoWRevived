@@ -6,6 +6,7 @@
 // with a shade level for every sector map value. Not yet: the exact scroll rules, the HUD's own controls, the
 // units, the clock running, and everything the war map does.
 #pragma once
+#include "core/SaveFile.h"
 #include "core/SaveGame.h"
 #include "core/ObjOjd.h"
 #include "frontend/Menu.h"
@@ -48,6 +49,15 @@ namespace wow
         int Speed() const { return speed; }  // the clock's speed, 0-10
         void SetSectorLimits(int units, int boats) { maxUnits = units; maxBoats = boats; }
         void SetPodInterval(int hours) { podInterval = hours; }
+        // The war map's objects from a save read exactly (each with its ref into that save's objects, in order).
+        static std::vector<SaveInfo::WarMapObject> ObjectsOf(const SaveFile& save);
+        // Keeps the save the war map came from, so it can be written again: its objects (in ObjectsOf's order),
+        // the travelling ones (sent on again from where they were), the message list and the pods.
+        void UseSave(SaveFile save);
+        bool CanSave() const { return save.has_value(); }
+        void Message(std::string text) { Log(std::move(text)); }
+        // The war map as a save (0x41AD80), or nothing if it didn't come from one read exactly.
+        std::optional<std::vector<uint8_t>> SaveData() const;
         void SetArrowTypes(std::map<int, ObjOjd::ArrowType> types) { arrowTypes = std::move(types); }
         void SetDeposits(std::map<int, std::array<int, 6>> d, float dropOff) { deposits = std::move(d); resourceDropOff = dropOff; }
 
@@ -81,6 +91,10 @@ namespace wow
         std::array<bool, warmap::SectorCount + 1> podFlag{}; // a sector's +0x64: a pod landed among the Humans
         std::array<bool, warmap::SectorCount + 1> battle{};  // a sector's +0x124: a battle there
         void AddUnit(int type, int sector, bool players);
+        int AddCounter(int type, int sector, bool players, int ref);
+        // the save it came from, and its objects (counters hold indices into it)
+        std::optional<SaveFile> save;
+        std::vector<SaveObject> table;
         std::map<int, ObjOjd::UnitData> unitData;
         float ClockTick();
         void MoveCounters(float hours);
@@ -104,7 +118,7 @@ namespace wow
         // at most 10 (0x4BA4FC, the oldest goes), each a "Message Item" (0x428810, font 0x72) shown for 5 x 30
         // updates (0x4BA4F8 x "Game Frequency"), drawn top down 16 pixels apart (0x4BA500, 0x420C10).
         // state: 0 live, 1 run out (scrolling away), 2 gone (kept for the history)
-        struct LogLine { std::string text; int life = 0; int state = 0; };
+        struct LogLine { std::string text; int life = 0; int state = 0; uint32_t hour = 0; };
         static constexpr int LogLife = 5 * 30; // 0x4BA4F8 x "Game Frequency"
         std::vector<LogLine> log;
         int logScroll = 0;               // +0x1C: 0 to -16
@@ -166,6 +180,8 @@ namespace wow
             struct ArrowPoint { float x, y; int heading; };
             std::vector<ArrowPoint> arrow;
             bool attack = false;
+            std::vector<int> refs;       // its objects in the save's table
+            bool moved = false;          // sent somewhere since it was read (its objects then take its place)
             float fx = 0, fy = 0;        // exact position while travelling
         };
         float PixelsPerHour(const Counter& k) const; // how far a counter goes in a game hour

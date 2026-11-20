@@ -89,6 +89,33 @@ Sector n's name is TEXT.ojd string 0x002 + n (0x002 is "The Sea", 0x003 "North W
 - A unit type's counter frame is OBJ.ojd record type 23, after record 15 picks the unit type (0x437D62,
   0x437EF4).
 
+The whole save is read and written exactly by `core/SaveFile` (the layout is in SaveFile.h): the war map's own
+parts field by field (WMAP, CALN, DtTm, MPAD, the routes, the pods, each sector's lists and owner) and the rest as it
+was (the research, each sector's economy and damage map, each object's battle map units). Objects don't say how long
+they are: an object starts 4 bytes (a unit) or 12 (a building or resource) before a `SELO` whose `WMOB` follows 16
+bytes on, and each list's count must match. Human.000 and Martian.000 read and write back byte for byte
+(`wowdump --resave`).
+
+After the WMAP values come the calendar, Human then Martian research, the message list (MPAD: each line's text, life,
+state and the game hour it came), the route list (each route: origin, destination, two flags, 5, the path's length,
+its progress, the path's sectors, a byte, then its units as a WMOB list: units on their way aren't in any sector), the
+pods' hours and count (world +0x48 / +0x4C), then sector 0 (owner and DMGL only, no SECT, no lists) and sectors 1-30.
+
+## Saving
+
+The campaign lives in its slot (world +0x128): a new one is the side's start file (Human.000 / Martian.000) written
+to `SaveGame\Human.00N` under the new name (0x404660), and the war map plays from that file. Leaving it saves it there
+(0x80B4 → 0x4042D0): Return to Main Menu (0x90) and Save & Exit (0x80B6 → 0x70), and in the game also coming back from
+a battle (0x6E). Loading a slot (0x80B3) writes "Game Loaded" (0x465) to the message list.
+
+The engine writes the save it read with the war map's state put back: the view's top-left, the selected sector and
+the view mode; the hours and date; the message list; the pods; each sector's owner; and every object in the list of
+the sector it's in now. An object keeps the position it was saved with unless its counter has moved (then the first
+object of the counter takes the counter's place and the rest 0, 0). Units on their way are written as a route each;
+loaded again, they're sent on from where they set out. A unit the engine adds (a pod's) is saved as a copy of a saved
+unit of the same type, with its battle map units, under new ids: the lowest free ones of the 32768, as the game hands
+them out. A save that can't be read exactly is still played, but not saved.
+
 ## Counters
 
 The world's constructor makes 30 sector objects (0x420160 -> 0x428110), each laying a grid of 36 pixel cells

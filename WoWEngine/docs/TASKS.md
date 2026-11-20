@@ -13,20 +13,27 @@ listed at the end.
 
 The war map runs from a save but nothing is kept: these make it a real game state.
 
-- [ ] **WMOB object model**: one object per war map object (units, constructions, resources) with its own fields
-      (type, side, sector, position, hit points, orders, construction progress), loaded from the save, in place of
-      the counters-only model (0x428BB0, 0x42A190, 0x421B80) — 04
-- [ ] **Object ids**: 32768, lowest free first then LIFO; the `VEHU` tag — 14
-- [ ] **Save the war map**: WMAP, CALN/DtTm, research ×2, MPAD (the message list), route lists, WMOB lists, the 31
-      sectors, in 0x41AD80's order (0x41AC40, 0x421B80, 0x420FD0, 0x41FEC0) — 03, 04, 07
-- [ ] **Huffman encoder** for the save files, the reverse of the decoder already in `core` — 08
-- [ ] **New campaign in its save slot**: copy Human.000 / Martian.000 with the campaign's name (0x404660) — 01
-- [ ] **Saving and loading from the menus**: 0x80B4 → 0x4042D0, Load Game from the war map menu (0x6F), "Game
-      Loaded" (0x465) after a load (0x80B3), routes rebuilt from units' orders (0x4217E0) — 01, 02, 03
-- [ ] **War map menu items**: Load, Sound Control, Event Menu (0x3EF / 0x8117), Quit (0x80B6), Return to Main Menu
-      (0x90 / 0x70), with the pause (`+0x44`) and the 0.25 time scale while it's open (0x41CD50) — 03
-- [ ] **"Skip" setting**: straight to Start New Campaign (0x402A30) — 01
-- [ ] **Commands one queue pass later** (0x95) where the order matters — 01
+- [x] **Saves read and written exactly** (`core/SaveFile`): the war map's chunks field by field, the rest carried
+      as it was; Human.000 and Martian.000 round-trip byte for byte (`wowdump --resave`) — 01, 03, 04, 08
+- [~] **WMOB object model**: the war map keeps every saved object (its record, battle map units and all) and the
+      counters point at them; units added on the map (pods) get a copy of a saved unit of their type with new ids,
+      the lowest free (object ids, 32768). Still to come: the objects' own fields (hit points, orders, construction
+      progress) read and used, which the systems that use them (Milestone 2) will bring (0x428BB0, 0x42A190) — 04, 14
+- [x] **Save the war map**: WMAP, CALN / DtTm, MPAD, routes (units on their way), the pods, owners and every object
+      in its sector, in 0x41AD80's order — 03, 04, 07
+- [x] **New campaign in its save slot**: the start file under the campaign's name in `SaveGame\<side>.00N`
+      (0x404660), played from there — 01
+- [x] **Saving and loading**: Return to Main Menu and Save & Exit save to the slot (0x80B4 → 0x4042D0); a loaded
+      slot plays with "Game Loaded" (0x465) in the message list — 01, 02, 03
+- [x] **War map menu**: the original's items (Resume, Return to Main Menu, Critical event options, Sound Control,
+      Save & Exit), the war map paused while it's open (0x49B980, 0x41CD50) — 03, 13
+- [x] **"Skip" setting**: `[Main] Skip=1` goes straight to Start New Campaign (0x402A30) — 01
+- [ ] **Route progress**: a unit on its way is saved with the route but sent on again from where it set out; the
+      route's progress (+0x34) and the units' places along it, as the game keeps them (0x425080, 0x4257C0) — 04
+- [ ] **Sector flags kept**: the battle (+0x124) and pod (+0x64) flags and the economy, which live in the sector's
+      part of the save the engine carries unchanged (0x43C5E0) — 03, 04
+- [ ] **Commands one queue pass later** (0x95) where the order matters (comes with the research screen, battles and
+      the debriefing it defers) — 01
 
 ## Milestone 2: the war map plays like the original
 

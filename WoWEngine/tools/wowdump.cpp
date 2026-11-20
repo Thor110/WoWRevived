@@ -10,6 +10,7 @@
 //   wowdump --sfx <SFX.ojd> [martian]      print the sound table (id, type, volume, flags, samples)
 //   wowdump --ai <AI.ojd>                  print the AI table (entries, then each side's rule lists)
 //   wowdump --save <save file>             print a save's name, date and time, and where its sections are
+//   wowdump --resave <save file> [out]     read a save exactly and write it again (checks the reader and writer)
 //   wowdump --models <archive>             read every WOF, IOB and CLS/ATM in an archive and summarise them
 //   wowdump --iob <archive> <name> <palette> <out.bmp>  save a building's pre-rendered picture
 #include "core/AiTable.h"
@@ -19,6 +20,7 @@
 #include "core/GameFiles.h"
 #include "core/Models.h"
 #include "core/ObjOjd.h"
+#include "core/SaveFile.h"
 #include "core/SaveGame.h"
 #include "core/Smacker.h"
 #include "core/Palette.h"
@@ -56,6 +58,7 @@ static int Usage()
         "       wowdump --arrows <OBJ.ojd>         print the route arrow styles\n"
         "       wowdump --smk <movie.smk> <outdir> [every]  decode a Smacker movie: frames as BMPs, sound as a WAV\n"
         "       wowdump --save <save file>         print a save's name, date and sections\n"
+        "       wowdump --resave <save> [out]      read a save exactly, write it again and compare\n"
         "       wowdump --models <archive>         check and summarise every WOF, IOB and CLS\n"
         "       wowdump --iob <archive> <name> <palette> <out.bmp>\n");
     return 2;
@@ -193,6 +196,23 @@ int main(int argc, char** argv)
                 }
             std::printf("%zu entries\n", table.entries.size());
             return 0;
+        }
+        if (first == "--resave" && (argc == 3 || argc == 4))
+        {
+            auto data = ReadFile(argv[2]);
+            auto save = wow::SaveFile::Parse(data);
+            auto written = save.Write();
+            size_t objects = 0;
+            for (const auto& sec : save.sectors) for (const auto& list : sec.lists) objects += list.size();
+            std::printf("\"%s\": %zu objects, %zu routes, %zu messages, pods %u (%u h); written %s the original\n",
+                save.Name().c_str(), objects, save.routes.size(), save.messages.size(), save.pods, save.podHours,
+                written == data ? "the same as" : "DIFFERENT from");
+            if (argc == 4)
+            {
+                std::ofstream out(argv[3], std::ios::binary);
+                out.write(reinterpret_cast<const char*>(written.data()), std::streamsize(written.size()));
+            }
+            return written == data ? 0 : 1;
         }
         if (first == "--save" && argc == 3)
         {
