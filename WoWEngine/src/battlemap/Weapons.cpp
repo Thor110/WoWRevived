@@ -218,7 +218,7 @@ namespace wow
     // cleared, mode 2; 0x80EF mode 3; 0x80D5-0x80DD modes 4-12; 0x80DE-0x80E0 13-15; 0x80E4-0x80EC 16-24; 0x80E1-0x80E3
     // each member 0x80E1-0x80E3 with 1-3, and 0x80F0 each member 0x80F0, at once.
     // 0x80EE / 0x80EF to the members are taken by one class only (0x498E90: unless vt+0x118, vt+0x184(1)).
-    // *Provisional*: 0x80EE / 0x80EF to the members (that class) aren't in.
+    // (The members get 0x80EE / 0x80EF on the next click, OrderMove; the class is in Sinking.cpp.)
     void BattleMap::GroupOrder(int g, int command)
     {
         if (g < 0 || size_t(g) >= groupMode.size()) return;
@@ -424,10 +424,10 @@ namespace wow
     // vt+0x6C, whether an object can be targeted (0x496570's look round, 0x483880's retaliation, the cursor's
     // 0x44B800-0x44E5C0): the unit base's is yes (0x496C30: mov al, 1); the mines' (0x273-0x276, 0x48CCB0) only with
     // the status 0x80F9 (vt+0x10C); 0x4993F0's class (0x498E90's) not while +0x190 bit 1 is set unless with it.
-    // *Provisional*: 0x498E90's class isn't in (its +0x190 is never set here).
     bool BattleMap::Targetable(const Unit& u) const
     {
         if (u.type >= 0x273 && u.type <= 0x276) return u.Detected();
+        if (Sinker(u.type)) return !u.hidden || u.Detected();
         return true;
     }
 
@@ -435,13 +435,17 @@ namespace wow
     // cleared (vt+0x90 with 0); then with the status 0x80F9 (vt+0x10C) on one that isn't the player's (+0x24 not 0):
     // at its last update (vt+0x8C = 1) the second renderer (+0xE8) goes; else, with none, 0x48CCD0 makes one,
     // GType 0x359 (0x40EC50, its +0x26 set to 0x20).
+    // The sinkers (0x498F20) keep theirs at +0x19C the same way, and the player's has one while it's under
+    // (vt+0x188, Sinking.cpp).
     // *Provisional*: the renderer's +0x26 (0x20) isn't known: the marker is drawn as a sprite's frame 0 over the
-    // mine, one row nearer.
-    void BattleMap::MineTick(size_t index)
+    // unit, one row nearer, following it.
+    void BattleMap::MarkerTick(size_t index)
     {
         Unit& u = units[index];
-        if (u.type < 0x273 || u.type > 0x276) return;
-        const bool want = u.Detected() && !u.players && u.statusTime != 1;
+        const bool mine = u.type >= 0x273 && u.type <= 0x276;
+        if (!mine && !Sinker(u.type)) return;
+        const bool detected = u.Detected() && !u.players && u.statusTime != 1;
+        const bool want = detected || (!mine && u.players && u.under);
         if (want == u.marked) return;
         u.marked = want;
         if (!want)
@@ -455,7 +459,7 @@ namespace wow
         for (const ViewObject& o : objects)
             if (o.unit == int(index)) { depth = o.depth + 1; break; }
         const int ix = int(u.x), iy = int(u.y);
-        ViewObject v{ iy + depth, ix, land.ProjectY(iy, land.HeightAt(ix, iy) + int(u.drive.lift)), nullptr, nullptr, g->paletteSlot, 0x359 };
+        ViewObject v{ iy + depth, ix, land.ProjectY(iy, land.HeightAt(ix, iy) + std::max(0, int(u.drive.lift))), nullptr, nullptr, g->paletteSlot, 0x359 };
         v.unit = int(index);
         v.depth = depth;
         objects.push_back(v);
@@ -465,9 +469,11 @@ namespace wow
     // vt+0xC0 on a vehicle (0x491020; the damage itself 0x4958B0 -> 0x48A5A0): the player's (+0x24 0), when rand()
     // is under 2000 and the hit has a firer (+0xCC, the object that fired it), says 0x110 with its type's voice
     // (byte_51A190); then its group is told 0x8085 with it and the hit (0x483880). Other objects just take the damage.
-    void BattleMap::Hit(size_t index, int amount, int attacker)
+    // The sinkers' vt+0xC0 (0x498EE0) first: under (+0x190 bit 0), only a hit from 0x2CE-0x2D0 (718-720) reaches it.
+    void BattleMap::Hit(size_t index, int amount, int attacker, int by)
     {
         Unit& u = units[index];
+        if (Sinker(u.type) && u.under && (by < 718 || by > 720)) return;
         if (u.vehicle)
         {
             if (u.players && random::Rand() < 2000 && attacker != 0) Speak(0x110, u.group);

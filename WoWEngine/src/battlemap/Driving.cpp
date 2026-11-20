@@ -50,12 +50,22 @@ namespace wow
         {
             if (!selected[g]) continue;
             // 0x481CA0 by the group's mode: 1 (Force Fire from the popup) fires at the point instead (0x481E78);
-            // 2 and 3 tell the members 0x80EE / 0x80EF first (*not in*); then the mode 0 and the move
+            // 2 and 3 tell the members 0x80EE / 0x80EF first (2 only if none is on a bridge link; only the sinkers take
+            // them, 0x498E90: Sinking.cpp); then the mode 0 and the move
             if (g < groupMode.size() && groupMode[g] == 1)
             {
                 ForceFireGroup(int(g), x, y);
                 groupMode[g] = 0;
                 continue;
+            }
+            if (g < groupMode.size() && (groupMode[g] == 2 || groupMode[g] == 3))
+            {
+                bool onLink = false;
+                for (const Unit& u : units)
+                    if (u.group == int(g) && u.drive.link) onLink = true;
+                if (groupMode[g] == 3 || !onLink)
+                    for (size_t i = 0; i < units.size(); i++)
+                        if (units[i].group == int(g)) GoUnder(i);
             }
             if (g < groupMode.size()) groupMode[g] = 0;
             StopAttacking(int(g));      // a move clears the target (0x481CA0)
@@ -269,6 +279,7 @@ namespace wow
             if (d.flags & 0x400)
             {
                 d.flags &= ~0x400u;
+                Surface(index);         // the sinkers' vt+0x124 (0x499120)
                 EngineSound(u);
             }
             return;

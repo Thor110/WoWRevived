@@ -1111,7 +1111,9 @@ namespace wow
                 }
             }
             StatusTick(units[i]);
-            MineTick(i);
+            if (SinkTick(i)) { i--; moved = true; continue; }
+            moved |= units[i].sink != 0;
+            MarkerTick(i);
             LookRound(i);
             Smoulder(i);
             moved |= units[i].x != x || units[i].y != y;
@@ -1136,7 +1138,18 @@ namespace wow
         if (moved)
         {
             for (ViewObject& o : objects)
-                if (o.unit >= 0) o.key = int(units[size_t(o.unit)].y) + o.depth;
+                if (o.unit >= 0)
+                {
+                    const Unit& u = units[size_t(o.unit)];
+                    o.key = int(u.y) + o.depth;
+                    if (o.sprite == 0x359)
+                    {
+                        // a marker follows its unit
+                        const int ix = int(u.x), iy = int(u.y);
+                        o.x = ix;
+                        o.y = land.ProjectY(iy, land.HeightAt(ix, iy) + std::max(0, int(u.drive.lift)));
+                    }
+                }
             std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
         }
         if (miniShown && (miniFrames & 0xF) == 0) MakeDots();

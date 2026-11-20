@@ -129,7 +129,7 @@ namespace wow
             if (d > reach || reach == 0) continue;
             if (u.health <= 0) continue;
             const float hit = float((1.0 - double(float(d)) / double(float(reach))) * power);
-            Hit(i, int(double(hit) * 1.0), attacker);
+            Hit(i, int(double(hit) * 1.0), attacker, type);
         }
         // the scenery within reach too (it has no side to spare)
         for (size_t i = 0; i < props.size(); i++)
@@ -179,7 +179,7 @@ namespace wow
             auto hit = [&]() {
                 if (units[i].health <= 0) return;
                 const float h = float((1.0 - double(float(d)) / double(float(reach))) * power);
-                Hit(i, int(double(h) * 1.0), attacker);
+                Hit(i, int(double(h) * 1.0), attacker, type);
             };
             if (type >= 718 && type <= 720) { if (u.drive.lift < 0.0f) hit(); }
             else if (type >= 788 && type <= 790) { if (ut->second.faction == 1) hit(); }

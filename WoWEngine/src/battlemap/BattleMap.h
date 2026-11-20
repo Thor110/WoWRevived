@@ -238,7 +238,9 @@ namespace wow
                       bool Frozen() const { return statusTime != 0 && status == 0x80F5; }  // vt+0x108, 0x489860
                       bool Turned() const { return statusTime != 0 && status == 0x80F7; }  // vt+0xF8, 0x489880
                       bool Detected() const { return statusTime != 0 && status == 0x80F9; }  // vt+0x10C, 0x4898A0
-                      bool marked = false;  // a mine's second renderer (+0xE8, GType 0x359) made
+                      bool marked = false;  // its marker made (GType 0x359: a mine's +0xE8, a sinker's +0x19C)
+                      int sink = 0;         // +0x194: the updates left going down or coming up
+                      bool under = false, hidden = false;   // +0x190 bits 0 and 1
                       int stance = 1;       // +0xD8: its type's +0x43 byte (record 56) to start with (0x495740)
                     };
         int nextId = 1;
@@ -299,8 +301,16 @@ namespace wow
         void ChangeStatus(Unit& u, int status);                 // vt+0x90, 0x496760
         void StatusTick(Unit& u);
         bool Targetable(const Unit& u) const;                   // vt+0x6C
-        void MineTick(size_t unit);                             // 0x48CC00's second renderer
-        void Hit(size_t unit, int amount, int attacker);        // vt+0xC0's 0x491020 for a vehicle, then the damage
+        void MarkerTick(size_t unit);                           // 0x48CC00's / 0x498F20's marker (GType 0x359)
+        static bool Sinker(int type);                           // 0x498D40's class: 7-9, 0x16-0x18
+        bool OnWater(const Unit& u) const;                      // 0x47FFE0
+        void StartSink(size_t unit, bool down);                 // vt+0x184, 0x4990D0
+        void EndSink(size_t unit, bool under);                  // vt+0x188, 0x499150
+        bool SinkTick(size_t unit);                             // 0x498F20 and its classes' updates
+        void Surface(size_t unit);                              // vt+0x124, 0x499120
+        void GoUnder(size_t unit);                              // 0x80EE / 0x80EF to a member, 0x498E90
+        void Vanish(size_t unit);                               // vt+0x78, 0x495BB0
+        void Hit(size_t unit, int amount, int attacker, int by); // vt+0xC0 (0x498EE0, 0x491020), then the damage
         void Retaliate(int group, size_t member, int attacker); // 0x8085 to the group, 0x483880                               // 0x4967E0's timer
         void SetStance(int group, int stance);                  // 0x80B2 to the group: it and each member (+0xD8)
         void TurnOnOwn(Unit& u);                                // 0x496100

@@ -117,6 +117,7 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x487730–0x487890 / 0x47F050 / 0x48AEF0 / 0x48ADD0 | Flying objects | Effects' update, emitters, damage smoke; `src/battlemap/Effects.cpp` |
 | 0x4889D0 / 0x488E80–0x488FA0 / 0x47F770 | Mortars | The launch from the emitter list and the shells' flight; `src/battlemap/Weapons.cpp` |
 | 0x481F70 / 0x482880 / 0x482960 / 0x496300 / 0x496570 | Targets | Attacking an object, Approach, looking round by stance; `src/battlemap/Weapons.cpp` |
+| 0x498D40–0x4993F0 / 0x493600–0x493C80 | Going under | Tunnel and Submerge: the sinkers' height, hiding, marker, surfacing, hit filter; `src/battlemap/Sinking.cpp` |
 | 0x491020 / 0x483880 / 0x48CC00 / 0x48CCB0 / 0x4898A0 | Hits and detection | A vehicle's hit told to its group (retaliation, Avoid's run), what can be targeted, the mines' marker; `src/battlemap/Weapons.cpp` |
 | 0x499420–0x4998D0 | BatRoute | The battle A*'s cost (line cost 0x4994B0, turn penalty 0x499660, goal 0x499800) and the route container; `BattleMap::LineCost` / `StepCost` |
 | 0x495620–0x496D60 | Puppets | Units' sub-objects |

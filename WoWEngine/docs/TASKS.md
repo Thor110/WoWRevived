@@ -192,7 +192,8 @@ The war map runs from a save but nothing is kept: these make it a real game stat
       nothing in the game (packet 0x12 has no handler); Retreat (0x480EF0); the specials' modes and the special
       weapons' firing (0x4817C0, 0x496920). The members' 0x80E1-0x80E3 / 0x80F0 (0x80F8 / 0x80F9 sent round, 0x495C10) are in; 0x80F9 detects mines
       (vt+0x6C, the marker 0x359); hits tell the group (0x491020 -> 0x483880: Avoid runs, stances 1-3 retaliate).
-      Still to do: 0x498E90's sinking class (0x80EE / 0x80EF), the cursor's vt+0x6C, the combined panel (0x448500)
+      Tunnel and Submerge (0x498D40's class: going under and up, the marker, the hit filter) are in. Still to do:
+      the cursor's vt+0x6C, the label 0x6F, the combined panel (0x448500)
       — 07, 10, 11
 - [~] **Weapons and effects**: shots, explosions, gas, area effects; smoke and particle emitters (0x4949A0,
       0x47F050). In: health (0x47DA20), damage and death (0x48AB20, 0x80A0), WExplosion with its parts, splash

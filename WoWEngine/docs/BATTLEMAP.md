@@ -749,17 +749,14 @@ vt+0x118, vt+0x184(1)). In the test the lorries' 0x80E2 and 0x80F0 each reached 
 with 0x80F9 on a mine that isn't the player's (+0x24 not 0): at its last update (vt+0x8C = 1) its second renderer
 (+0xE8) goes; else, with none, 0x48CCD0 makes one, GType 0x359 (0x40EC50, its +0x26 set to 0x20): the marker over a
 detected mine. So 0x80F0 is the mine detector and 0x80E1-0x80E3 sweep (0x80F8 damages only mines).
-0x498E90's class does the same for a unit that sinks and rises: its update (0x498F20) runs +0x194 down, its height
-(+0x84) following ((+0x194 - 0x40) x 3 going down with +0x190 bit 0 clear, -(+0x194 x 3) coming up), vt+0x188 at
-the end; its vt+0x6C (0x4993F0) is no while +0x190 bit 1 is set unless 0x80F9 is on; with 0x80F9 on, not the
-player's, vt+0x178 at the last update, else vt+0x174 with no +0x19C. Its 0x80EE / 0x80EF (0x498E90) start it
-(vt+0x184 with 1) unless vt+0x118; its hits (0x498EE0) with +0x190 bit 0 set are taken only from 0x2CE-0x2D0.
+0x498E90's class (the units that go under, below) has the same test and marker, and can't be targeted while
+hidden unless 0x80F9 is on.
 In `Weapons.cpp`: `Targetable` (the look round and retaliation use it) and `MineTick` (the marker). GType 0x359 is
 in the game's graphics (checked); no mines were on the test map, so the marker hasn't been seen drawn.
 
 *Provisional*: byte_589130 / byte_589134 are taken as the Martian research items 132 / 133 done; the renderer's +0x26
-(0x20) isn't known (the marker is frame 0 of the sprite, one row nearer than the mine); 0x498E90's class (which
-types, vt+0x174-0x188) isn't in; the cursor's use of vt+0x6C isn't in.
+(0x20) isn't known (the marker is frame 0 of the sprite, one row nearer than the unit, at ground level); the
+cursor's use of vt+0x6C isn't in.
 
 **Hits and retaliation.** An explosion's +0xCC is the object that fired it (0x488070's fifth argument: a shell's
 +0xC4, a gun's unit), carried here as `attacker` through Impact, the shells' landings, Explode and AreaDetonate.
@@ -778,6 +775,40 @@ took it as the group's target and drove at it.
 *Provisional*: bit 0 without a target is kept as `groupBusy` (set by the run and Retreat, cleared on arrival); a
 point target (force fire) is taken as bit 0 set; the second case drops the target (StopAttacking) where the game
 leaves +0x2C; 0x80B9 and vt+0x38 aren't in.
+
+## Going under (0x498D40's class: 0x498E90-0x4993F0; `battlemap/Sinking.cpp`)
+
+The factory (0x446B30) makes types 7-9, the Tunnelling Track Layers, with 0x493B90 (vtable 0x4B06F0) and 0x16-0x18,
+the Submersibles, with 0x4935E0 (0x4B03C8), both on 0x498D40 (0x4B0D50) on the vehicle. Their specials are Tunnel
+(0x80EE, mode 2) and Submerge (0x80EF, mode 3); the next click on the ground (0x481CA0) tells the members 0x80EE /
+0x80EF (mode 2 only if none is on a bridge link) before the move. Taken only by this class (0x498E90): unless hidden
+(vt+0x118 = 0x493600, +0x190 bit 1), **vt+0x184(1)** (0x4990D0).
+
+- **vt+0x184(down)**: down sets bit 1 at once; up with bit 0 (under) clear calls vt+0x188(1) first. Then +0x194 =
+  64 and vt+0x170: the Tunnelling Track Layers make 0x3DE at their point (0x493C80), the Submersibles 0x3DC
+  (0x493680), and unless +0xB8 bit 3 (vt+0x9C) sound 0x1B8 / 0x1B9 there (0x4883E0).
+- **The update** (0x498F20, after the vehicle's 0x4913B0): +0x194 counts down; going down (bit 0 clear) the height
+  +0x84 = (+0x194 - 0x40) x 3, so 0 to -192, at 0 **vt+0x188(1)**; coming up -(+0x194 x 3), at 0 **vt+0x188(0)**.
+  Then the detected marker as the mines' (the other side's, with 0x80F9: +0x19C, GType 0x359).
+- **vt+0x188(under)** (0x499150): down, the player's gets a label (vt+0x17C, 0x4991D0: string 0x6F, a text object
+  at +0x198) and the marker (vt+0x174, 0x4992D0: GType 0x359 at +0x19C, +0x26 0x20); up, both go (vt+0x180,
+  vt+0x178), the group's mode is 0 (0x4807E0) and bit 1 cleared. Bit 0 is set to under.
+- **Coming up**: as the unit stops (0x4913B0's edge, from drive flag bit 10) vt+0x124 is called: this class's
+  (0x499120) brings it up when hidden (vt+0x184(0)), then the vehicle's 0x491590.
+- **Hits** (vt+0xC0 = 0x498EE0): under (bit 0), only a hit by 0x2CE-0x2D0 (718-720, the area blasts for things
+  under the ground) gets through; vt+0x6C (0x4993F0) is no while hidden unless 0x80F9 is on.
+- **The Tunnelling Track Layers' update** (0x493C20): their renderer's +0x74 follows +0x194 (-x16 going down, x16
+  coming up, 0 at rest); coming up on water (0x47FFE0: terrain 1-3) they're gone (vt+0x78 = 0x495BB0: 0x807B to both
+  players, out of the world, no death).
+- **The Submersibles' update** (0x493640): off water, when rand() % 2 is 0, 10 damage (vt+0xE0) every update.
+
+In the test (the lorries taken as Tunnelling Track Layers for it, then put back) the group's mode 2 move sent all
+five down over 64 updates to -192, each with the marker (a down arrow, drawn over the unit at ground level); they
+drove there under and each came up over 64 more as it stopped, the marker going and the mode 0.
+
+*Provisional*: the label (vt+0x17C) and the renderer's +0x74 aren't drawn; +0xB8 bit 3 is taken as clear; the
+marker is drawn at ground level (at -192 the later terrain rows covered it); 0x493A40 (the Submersibles' arrival,
+vt+0x168) isn't in.
 
 ## The battle AI (the computer player 0x442890: 0x445210, 0x4455D0, 0x4456B0, 0x445010, 0x445B90; the groups' 0x483B70; `battlemap/BattleAi.cpp`)
 
