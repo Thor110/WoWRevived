@@ -557,7 +557,12 @@ namespace wow
             catch (const std::exception& e) { SDL_Log("OBJ.ojd sector deposits: %s", e.what()); }
             try { sectorMaps = ObjOjd::LoadSectorMaps(objData); }
             catch (const std::exception& e) { SDL_Log("OBJ.ojd sector maps: %s", e.what()); }
-            try { dayTimes = ObjOjd::LoadBattleTables(objData).dayTimes; }
+            try
+            {
+                auto tables = ObjOjd::LoadBattleTables(objData);
+                dayTimes = tables.dayTimes;
+                wofTypes = tables.six;
+            }
             catch (const std::exception& e) { SDL_Log("OBJ.ojd day times: %s", e.what()); }
         }
         // each object type's class (AI.ojd, 0x441580 -> 0x518B14)
@@ -1036,6 +1041,7 @@ namespace wow
         s.enemyCount = map->EnemyObjects(b.sector);
         s.loadScenery = ini.GetBool("Debug", "Load scenery", true);
         s.units = &map->Units();
+        s.six = &wofTypes;
         try
         {
             auto battle = std::make_unique<BattleMap>(res, s);

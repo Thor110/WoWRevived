@@ -164,6 +164,8 @@ namespace wow
         const int32_t d = (Mul(t[1], sy) >> 16) + (Mul(t[2], sz) >> 16);
         Walk(root, x, y - d, z - d);
         const int16_t sy0 = ProjectY(topY, y, z);
+        anchorX = x;
+        anchorY = sy0;
         boundMin[0] -= x; boundMax[0] -= x;
         boundMin[2] -= y; boundMax[2] -= y;
         boundMin[1] -= sy0; boundMax[1] -= sy0;
@@ -210,6 +212,38 @@ namespace wow
             std::copy(saveM, saveM + 9, m);
             std::copy(saveT, saveT + 3, t);
         }
+    }
+
+    void WofInstance::Stitch(const BridgeJoint& joint, bool end)
+    {
+        // {piece, point, joint point}: the deck (0) between the two decks' edges, the sides (1, 2 and 6, 7) from
+        // the ground up to them, the rails (3, 4 and 5, 8) from the deck to the rail's top
+        struct Copy { int piece, point, from; };
+        static const Copy Start[] = {
+            { 0, 0, 1 }, { 0, 1, 4 }, { 1, 0, 3 }, { 1, 3, 4 }, { 2, 0, 3 }, { 2, 3, 4 }, { 3, 0, 1 }, { 3, 3, 2 },
+            { 4, 0, 1 }, { 4, 3, 2 }, { 5, 0, 4 }, { 5, 3, 5 }, { 6, 0, 0 }, { 6, 3, 1 }, { 7, 0, 0 }, { 7, 3, 1 },
+            { 8, 0, 4 }, { 8, 3, 5 } };
+        static const Copy End[] = {
+            { 0, 2, 4 }, { 0, 3, 1 }, { 1, 1, 3 }, { 1, 2, 4 }, { 2, 1, 3 }, { 2, 2, 4 }, { 3, 1, 1 }, { 3, 2, 2 },
+            { 4, 1, 1 }, { 4, 2, 2 }, { 5, 1, 4 }, { 5, 2, 5 }, { 6, 1, 0 }, { 6, 2, 1 }, { 7, 1, 0 }, { 7, 2, 1 },
+            { 8, 1, 4 }, { 8, 2, 5 } };
+        for (const Copy& c : end ? std::span<const Copy>(End) : std::span<const Copy>(Start))
+        {
+            if (size_t(c.piece) >= pieces.size() || size_t(c.point) >= world[size_t(c.piece)].size()) continue;
+            for (int k = 0; k < 3; k++)
+            {
+                world[size_t(c.piece)][size_t(c.point)][size_t(k)] = joint.world[c.from][k];
+                screen[size_t(c.piece)][size_t(c.point)][size_t(k)] = joint.screen[c.from][k];
+            }
+        }
+        // 0x498110: the first four points of the nine pieces widen the bounds, from the anchor
+        for (size_t p = 0; p < 9 && p < pieces.size(); p++)
+            for (size_t i = 0; i < 4 && i < screen[p].size(); i++)
+            {
+                const int16_t x = int16_t(screen[p][i][0] - anchorX), y = int16_t(screen[p][i][1] - anchorY);
+                boundMin[0] = std::min<int>(boundMin[0], x); boundMax[0] = std::max<int>(boundMax[0], x);
+                boundMin[1] = std::min<int>(boundMin[1], y); boundMax[1] = std::max<int>(boundMax[1], y);
+            }
     }
 
     // 0x49ED90: the face's normal from its three world points, lit by the sun, x the set's third float x 256

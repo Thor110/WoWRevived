@@ -9,6 +9,7 @@
 #include "core/TerrainView.h"
 #include "core/IsoObject.h"
 #include "core/Scenery.h"
+#include "core/WofView.h"
 #include <map>
 #include "frontend/Screen.h"
 #include <memory>
@@ -37,6 +38,7 @@ namespace wow
             int enemyCount = 0;         // dword_4F7430 for this battle (the scenery's burnt trees)
             bool loadScenery = true;    // [Debug] "Load scenery" (0x4F73F1)
             const std::map<int, ObjOjd::UnitData>* units = nullptr;
+            const std::map<int, ObjOjd::BattleTables::Six>* six = nullptr;  // OBJ.ojd record 6 (the WOF GTypes)
         };
 
         // Throws when the map's files can't be read.
@@ -68,11 +70,14 @@ namespace wow
         // object's screen point and depth, and the time-of-day shade tables of the slots they use
         struct IsoModel { IobModel model; std::vector<uint8_t> lights; int slot = 0; };
         std::map<int, IsoModel> models;
-        struct ViewObject { int key; int x, y; const IsoModel* model; };
+        struct ViewObject { int key; int x, y; const IsoModel* model; const WofInstance* wof = nullptr; int slot = 0; };
         std::vector<ViewObject> objects;    // sorted by key
         std::map<int, ShadeTable> slotTables;
         std::map<std::string, std::vector<uint8_t>> masks;   // the shadows' .raw masks
+        std::vector<std::unique_ptr<WofInstance>> wofs;      // the bridges' segments, posed once
+        Landscape::Sun sun;
         void LoadScenery(const Landscape::Sun& sun, char letter);
+        void PlaceBridge(const PlacedObject& o);
         int scrollX = 0, scrollY = 0;
         int mouseX = -1, mouseY = -1;
         int ticks = 0;

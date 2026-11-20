@@ -87,11 +87,14 @@ The rebuild runs everything on one thread at a fixed 30 updates per second. That
 | 0x4783D0 | Reaper | Fatal error handler |
 | 0x47AF10–0x47FC50 | WLandscape | Terrain from `maps\` (`.ils`, `.cls`, `vertInf`, `atm`), lighting, collisions; 0x47AF10-0x47CCF0 in `src/core/Landscape.cpp` (docs/BATTLEMAP.md) |
 | 0x480150–0x484A30 | Battle map | Unit groups, routing (`ROUTE FOUND`) |
-| 0x485DE0–0x4868B0 | Battle map menu, music, mini-map | |
+| 0x485DE0–0x4862C0 | Battle map menu, music, mini-map | |
+| 0x4862C0–0x4868B0 | Bridge base | The ends (0x80A5 / 0x80A6), grid snap, heading and length; `src/core/Bridge.cpp` |
+| 0x48D050–0x48D580 | Bridge kinds | Load (0x48D0A0) and the joint cross-section (0x48D2F0); `src/core/Bridge.cpp` |
 | 0x486E80–0x487A50 | Renderers, transient and effect objects | 512 of each |
 | 0x489340–0x4916E0 | Vehicles | Steering values (`Vehicles` section), shown on `Fun` / `Debug` toggles |
 | 0x493DF0–0x494370 | WRouteFinder | |
 | 0x495620–0x496E60 | Puppets | Units' sub-objects and hotspots |
+| 0x497890–0x498750 | WBridge | Segments (0x497900) and their stitching (0x497AC0, 0x497E00, 0x498110); `src/core/Bridge.cpp`, `WofInstance::Stitch` (docs/BATTLEMAP.md) |
 | 0x499850–0x49A820 | Briefing and debriefing | `src/frontend/Briefing` |
 | 0x49B980–0x49BD50 | War map and battle map menus | |
 | 0x49BE70–0x49CD40 | RTypeArrow | |

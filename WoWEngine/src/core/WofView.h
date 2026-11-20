@@ -2,6 +2,7 @@
 // and heading, its pieces walked down from the root with 4.12 fixed-point matrices, the points projected like the
 // rest of the battle map, the pieces drawn back to front with each face lit by the sun. See docs/BATTLEMAP.md.
 #pragma once
+#include "core/Bridge.h"
 #include "core/Landscape.h"
 #include "core/ShadeTable.h"
 #include "core/TerrainView.h"
@@ -28,6 +29,11 @@ namespace wow
 
         // Damage variants: a piece whose flags' low two bits are neither 0 nor this is hidden (+0x5E, 1 at first)
         void SetVariant(int v);
+
+        // A bridge segment's ends (0x497E00 its start, 0x497AC0 its end): the nine pieces' four points each set from
+        // the joint's six, world and screen alike, then the bounds widened to them (0x498110). The pieces' depth
+        // order stays as Transform left it.
+        void Stitch(const BridgeJoint& joint, bool end);
 
         // The projected bounds after Transform (+0x68..+0x72), relative to the anchor
         int MinX() const { return boundMin[0]; }
@@ -57,6 +63,7 @@ namespace wow
         int32_t m[9] = {};                   // unk_59FD70
         int32_t t[3] = {};                   // dword_59FD94..9C
         int topY = 0;
+        int anchorX = 0, anchorY = 0;        // the screen point bounds are kept from (+0x1A, +0x1C)
 
         void Walk(int piece, int ox, int oy, int oz);
         int FaceLight(const std::array<int32_t, 3>& a, const std::array<int32_t, 3>& b, const std::array<int32_t, 3>& c,

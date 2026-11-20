@@ -145,6 +145,7 @@ namespace wow
         int briefingSound = 0;
         std::map<int, std::string> sectorMaps;                  // OBJ.ojd record 8
         std::map<int, ObjOjd::BattleTables::DayTime> dayTimes;   // OBJ.ojd record 9
+        std::map<int, ObjOjd::BattleTables::Six> wofTypes;       // OBJ.ojd record 6
         int lastEnemyCount = 0;                                 // dword_4F7430 from the battle before
         bool StartBattleMap();
         bool inBattle = false;

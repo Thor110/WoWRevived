@@ -152,8 +152,8 @@ view's place in the battle map screen.
 With `[Debug] "Load scenery"` on (the default, 0x4F73F1), EnterBattleMap loads `dat\<sector>.nsb` into the world's
 +0x11C list. It's that list's save (WObjectList 0x47D240 / 0x47D360): u32 0, the tag `BMOL`, a count, and each
 object as its u32 type and its class's Load (vtbl+8), without the save file's tags. The classes the 30 files use:
-scenery (WScenery 0x4895E0) x, y (kept on the map); tree circles 0xCF-0xD4 (0x48F3B0) x, y and a seed; fences and
-walls 445-447 (0x48D0A0) six dwords. `wowdump --scenery <nsb> <OBJ.ojd>` lists a file's types, GTypes and parts;
+scenery (WScenery 0x4895E0) x, y (kept on the map); tree circles 0xCF-0xD4 (0x48F3B0) x, y and a seed; bridges
+445-447 (0x48D0A0) six dwords: x, y, then the two ends. `wowdump --scenery <nsb> <OBJ.ojd>` lists a file's types, GTypes and parts;
 all 30 read to their ends.
 
 Placing them (`PlaceScenery`), with the game's `rand()`:
@@ -171,8 +171,8 @@ on their own may differ from the game's.
 
 Each object's GType (the unit table's +0x28) has a class that picks its renderer (0x47EB10): 0 a sprite, **1
 RTypeISO** (an IOB model), 2 a WOF model, 6 an atlas sprite, 14 a sprite at scale 1. The scenery's trees and
-buildings are IOB models; the engine draws those. *Not yet*: the sprites (street lamps), the WOF bridges of the
-walls, the ambient sound scenery (940, 994-996), and the other child parts.
+buildings are IOB models; the engine draws those, and the bridges (below). *Not yet*: the sprites (street lamps),
+the ambient sound scenery (940, 994-996), and the other child parts.
 
 **Shadows** (the buildings' part 331, types 0x14B-0x14D, 0x48E2A0, a class 14 GType whose `.raw` is a 32 x 32 mask
 of 0-63): when one starts (0x48E460) it reads its parent's renderer and lays the mask on the ground's moving light
@@ -235,4 +235,37 @@ first, third, second, and flat when its three lights agree or the piece isn't sm
 `shade[level x 256 + texel]`, the level the light's top six bits) isn't traced; the engine fills an affine
 textured triangle shaded the same way, refusing ones taller than 250 rows as the game does. The rotation is
 computed in doubles; the game keeps a few of its values as floats.
+
+**With the ground**: a WOF object's +0x26 (0x49DB1C) is twice the second word of its GType's record 6 entry
+(0x4F0532: the record is read as two floats then two words, kept as word, word, float, float), so it is drawn
+after the row past its y plus that.
+
+## Bridges (WBridge 0x497890-0x498750 on 0x4862C0-0x4868A0; `core/Bridge`)
+
+Scenery types 445 (Country), 446 (City) and 447 (Railway) are bridges (0x48D050, 0x48D510 and their neighbour; the
+three differ only in their part: 461 bridge_1.WOF, 462 bridge_2.WOF, 448 bridge_4.WOF). The sector files have one
+to four each in 21 of the 30 sectors.
+
+- **Load** (0x48D0A0): x, y (the position), then end A's x, y and end B's x, y. An end at or past the map's width
+  or the rows' extent becomes one less than it; one under 0 becomes 0; if any end moved, the position is (0, 0).
+  The ends go to the object as 0x80A5 / 0x80A6 (x and y as words), the position through vtbl+0x40.
+- **Start** (0x486490): each end is moved onto the nearest vertex (((v << 16) + half a cell) / cell x cell >> 16);
+  0x43FDA0 gives the heading and length from A to B: asin(dy / length) as 4096 a turn, 2048 less it when dx is
+  negative, kept to -2048..2047. Then (0x497900) the segment count is `ftol(length x 1/64 - -3.0)` (the constant
+  is -3.0 and it's subtracted, so three more, not fewer); the bridge's one part is the first segment and count - 1
+  more of its type are made; segment i stands at A + (i + 1/2) steps (a step being (B - A) / count), kept as
+  floats relative to the position.
+- **Joints** (0x48D2F0, vtbl+0x10C, every update from 0x498110): joint i lies at i x (length / count) along the
+  line (the distance added up as a float). Its point P on the line, and the ground's height there; the deck is the
+  straight line between the ends' ground heights or that ground, whichever is higher. Six points, 40 either side
+  of P across the line: the ground, the deck (deck + 8) and the rail's top (deck + 16); at the two end joints (0 and
+  count) the deck is the ground and the rail's top 4 above it. Each is projected (0x498300 / 0x49E630).
+- **Stitching**: every segment model has nine pieces of four points (the deck, its two sides from the ground up,
+  the rails), and all 36 are set from the joints: joint i is segment i's start (0x497E00) and segment i - 1's end
+  (0x497AC0), world and screen points alike; the segment's bounds widen to them. So the segments' own geometry
+  only gives the faces and textures, and the posed points only give the pieces' depth order.
+
+The engine builds the joints once, as the battle map loads; the game redoes them every update (they only change
+when the ground does). *Provisional*: the segments' place among the view's objects (each by its own y plus the
+GType's +0x26), not checked against the game.
 

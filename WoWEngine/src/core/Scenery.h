@@ -4,13 +4,14 @@
 // as its u32 type and its class's own Load (vtbl+8) without tags. For the classes the files use:
 //   scenery (WScenery 0x4895E0): x, y (clamped to the map)
 //   trees, types 0xCF-0xD4 (0x48F3B0): x, y, then a value at +0xC8
-//   fences and walls, types 445-447 (0x48D0A0): six dwords, x, y and the two ends
+//   bridges, types 445-447 (0x48D0A0): six dwords, x, y and the two ends
 // See docs/BATTLEMAP.md.
 #pragma once
 #include <cstdint>
 #include <span>
 #include <vector>
 #include "core/Random.h"
+#include <algorithm>
 #include <cmath>
 
 namespace wow
@@ -19,7 +20,7 @@ namespace wow
     {
         int type = 0;
         int x = 0, y = 0;
-        int extra[4] = {};      // a tree's +0xC8; a wall's two ends (x1, y1, x2, y2)
+        int extra[4] = {};      // a tree's +0xC8; a bridge's two ends (x1, y1, x2, y2)
     };
 
     // Throws FormatError when the data isn't a BMOL list or runs short.
@@ -30,6 +31,7 @@ namespace wow
     {
         int type = 0;
         float x = 0, y = 0, z = 0;
+        int extra[4] = {};      // a bridge's two ends (x1, y1, x2, y2)
     };
 
     // What the battle map makes of the list (0x47D240 then ActivateAll 0x47D030), with the game's rand():
@@ -71,7 +73,9 @@ namespace wow
                 circles.push_back(&o);
                 continue;
             }
-            out.push_back({ type, float(o.x), float(o.y), 0.0f });
+            PlacedObject p{ type, float(o.x), float(o.y), 0.0f };
+            if (o.type >= 445 && o.type <= 447) std::copy(o.extra, o.extra + 4, p.extra);
+            out.push_back(p);
         }
         for (const SceneryObject* c : circles)
         {

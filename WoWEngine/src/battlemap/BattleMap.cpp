@@ -46,7 +46,7 @@ namespace wow
         std::string tail = std::to_string(s.shadeClass) + letter;
         levels = Need(res, "dat\\LANDR" + tail + ".int");
         table = ShadeTable::LoadShh(Need(res, "dat\\LANDR" + tail + ".SHH"));
-        Landscape::Sun sun = Landscape::SunFor(angle, set);
+        sun = Landscape::SunFor(angle, set);
         sun.shade = Landscape::ShadeLevel(levels, set[2], 0.0f);
         land.LightTheMap(sun);
         dither = DitherTables::Build(Need(res, "dat\\dith.dat"));
@@ -70,8 +70,8 @@ namespace wow
     }
 
     // EnterBattleMap's scenery (0x439770 with [Debug] "Load scenery"): dat\<sector>.nsb, placed as the game does
-    // (core/Scenery.h). The objects with an RTypeISO model (GType class 1) are drawn; *not yet*: the sprites (class
-    // 0, 14: lamps, the buildings' shadows), the WOF bridges, and the ambient sound scenery.
+    // (core/Scenery.h). The objects with an RTypeISO model (GType class 1) and the bridges (core/Bridge.h) are drawn;
+    // *not yet*: the sprites (class 0, 14: lamps, the buildings' shadows) and the ambient sound scenery.
     void BattleMap::LoadScenery(const Landscape::Sun& sun, char)
     {
         auto data = res.LoadFile("dat\\" + std::to_string(setup.sector) + ".nsb");
@@ -88,6 +88,7 @@ namespace wow
         {
             auto u = setup.units->find(o.type);
             if (u == setup.units->end()) continue;
+            if (o.type >= 445 && o.type <= 447) { PlaceBridge(o); continue; }
             const int gtype = u->second.field28;
             const GType* g = res.FindGType(gtype);
             if (!g || g->gclass != 1) continue;
@@ -149,6 +150,56 @@ namespace wow
             }
         }
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+    }
+
+    // A bridge (core/Bridge.h): its part, the segment model (Country 445 bridge_1, City 446 bridge_2, Railway 447
+    // bridge_4), once for each segment, each posed at its point with the bridge's heading (0x497900), then its ends
+    // rebuilt from the joints either side (0x498110): joint i is segment i's start and segment i - 1's end. The game
+    // redoes the joints every update; the ground under a bridge doesn't change yet, so here it's done once.
+    void BattleMap::PlaceBridge(const PlacedObject& o)
+    {
+        auto u = setup.units->find(o.type);
+        const GType* g = nullptr;
+        int gtype = 0;
+        for (const auto& part : u->second.parts)
+        {
+            auto pu = setup.units->find(part.a);
+            if (pu == setup.units->end()) continue;
+            const GType* pg = res.FindGType(pu->second.field28);
+            if (pg && pg->gclass == 2) { g = pg; gtype = pu->second.field28; break; }
+        }
+        if (!g) return;
+        auto file = res.LoadFile(g->file);
+        if (!file) return;
+        float scale = 65536.0f;
+        int follow = 0, depth = 0;
+        if (setup.six)
+            if (auto six = setup.six->find(gtype); six != setup.six->end())
+            {
+                scale = six->second.a;
+                follow = six->second.c;
+                depth = 2 * int16_t(six->second.d); // the renderer's +0x26 (0x49DB1C)
+            }
+        const Bridge bridge = Bridge::Create(land, o.extra[0], o.extra[1], o.extra[2], o.extra[3]);
+        const size_t first = wofs.size();
+        for (int i = 0; i < bridge.Count(); i++)
+        {
+            int x = 0, y = 0;
+            bridge.SegmentAt(i, o.x, o.y, x, y);
+            std::unique_ptr<WofInstance> w;
+            try { w = std::make_unique<WofInstance>(*file, scale, follow); }
+            catch (const std::exception&) { break; }
+            w->Transform(land, bridge.Heading(), x, y, land.HeightAt(x, y));
+            objects.push_back({ y + depth, 0, 0, nullptr, w.get(), g->paletteSlot });
+            wofs.push_back(std::move(w));
+        }
+        const int made = int(wofs.size() - first);
+        for (int i = 0; i <= made; i++)
+        {
+            const BridgeJoint j = bridge.Joint(land, bridge.JointDistance(i), i);
+            if (i > 0) wofs[first + size_t(i) - 1]->Stitch(j, true);
+            if (i < made) wofs[first + size_t(i)]->Stitch(j, false);
+        }
     }
 
     // The view's scroll (0x42F6F0 through the camera, 0x40E5A0): 0 to the world's size (the landscape's +0x1C and
@@ -297,9 +348,15 @@ namespace wow
             for (; next < objects.size() && objects[next].key < limit; next++)
             {
                 const ViewObject& o = objects[next];
-                auto st = slotTables.find(o.model->slot);
-                const ShadeTable* shade = st != slotTables.end() ? &st->second : res.GetShade(o.model->slot);
+                const int slot = o.model ? o.model->slot : o.slot;
+                auto st = slotTables.find(slot);
+                const ShadeTable* shade = st != slotTables.end() ? &st->second : res.GetShade(slot);
                 if (!shade) continue;
+                if (o.wof)
+                {
+                    o.wof->Draw(sun, *shade, t, -scrollX, -scrollY);
+                    continue;
+                }
                 const IobModel& m = o.model->model;
                 IsoObject::Draw(m, o.model->lights, o.x - IsoObject::HalfWidth(m) - scrollX, o.y + IsoObject::OffsetY(m) - scrollY,
                                 *shade, dither, t);
