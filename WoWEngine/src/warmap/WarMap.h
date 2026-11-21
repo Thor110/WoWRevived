@@ -70,6 +70,7 @@ namespace wow
         std::optional<Command> OnMouseButton(int x, int y, bool down) override;
         std::optional<Command> OnRightButton(int x, int y, bool down) override;
         void SetQuickCancelTimeout(int ticks) { quickCancelTimeout = ticks; }
+        void Encounter(const std::set<int>& types) { encountered.insert(types.begin(), types.end()); } // byte_51A19C from the battle map
         void OnMouseMove(int x, int y) override;
         void OnKeyUp(int sdlKey) override;
         // tool tips: 0-2 the view buttons, 3 the Research button, 4 the calendar
@@ -233,6 +234,7 @@ namespace wow
         std::array<int, warmap::SectorCount + 1> sectorHours{}; // +0x6C: hours towards the next day
         float ObjectStrength(int counter) const;        // 0x441E70
         int AiClass(int type) const;                    // 0x441EB0
+        void AiApplyUpgrade(int type);                  // 0x442D80
         std::vector<int> SectorObjects(int sector, bool players, int kind) const;
         std::vector<int> AiNeighbours(int sector, int which) const; // 0 all, 1 the AI's, 2 the other side's
         bool AiCanEnter(int sector, int type) const;    // 0x4419E0
@@ -289,6 +291,7 @@ namespace wow
         int BuildWindowHit(int x, int y) const;
         bool BuildWindowClick(int x, int y, bool down);
         std::string BuildWindowTip(int hit) const;
+        void CancelAll(int ref);                  // 0x460140, BuildList::CancelAll
         bool Working(int ref) const;              // 0x42A410: its factory has something queued
         std::vector<int> BuildOptions(int ref) const; // 0x45F970
         int RefOfId(uint32_t id) const;

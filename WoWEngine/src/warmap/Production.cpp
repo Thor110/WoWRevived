@@ -363,6 +363,31 @@ namespace wow
         SaveFactory(ref);
     }
 
+    // 0x460140 (0x813D to a war map object, 0x428F75): for a vehicle (its type's +0x10, 0x440700, 1) each entry of
+    // a copy of its queue cancelled (0x462120: a construction being worked on goes from the sector, then the entry),
+    // then the window refreshed
+    void WarMap::CancelAll(int ref)
+    {
+        auto it = factories.find(ref);
+        if (it == factories.end()) return;
+        const int k = CounterOf(ref);
+        if (k < 0) return;
+        auto unit = unitData.find(counters[size_t(k)].type);
+        if (unit == unitData.end() || unit->second.category != 1) return;
+        while (!factories[ref].queue.entries.empty())
+        {
+            const uint32_t target = factories[ref].queue.entries.front().target;
+            if (target != 0xDEADDEAD)
+            {
+                const int t = RefOfId(target);
+                if (t >= 0)
+                    if (int c = CounterOf(t); c >= 0) RemoveObject(c, t);
+            }
+            if (factories.find(ref) == factories.end()) break;
+            RemoveEntry(ref, 0);
+        }
+    }
+
     // 0x4605A0, "promote" (a queue slot's 0x2FC button): the entry to the front, the factory made busy
     void WarMap::PromoteEntry(int ref, int index)
     {

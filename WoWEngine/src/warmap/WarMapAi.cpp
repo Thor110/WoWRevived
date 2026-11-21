@@ -827,4 +827,30 @@ namespace wow
         }
         return done();
     }
+
+    // 0x442D80 (0x111 / 0xB9 to the AI player, 0x442AC0: its research finished a type): for a building (+0x10, 2),
+    // in each sector 1-30 that's the AI's with its command building finished (0x441A80: 0x43CA30, 0x43C990), every
+    // construction (the sector's +0x58 list) whose type's +0x84 or +0x88 (the type it gives way to, records 19 / 20)
+    // is the new type takes it (+0x20). byte_56625C is set meanwhile. (+0x84 isn't written by any record.)
+    void WarMap::AiApplyUpgrade(int type)
+    {
+        auto t = unitData.find(type);
+        if (t == unitData.end() || t->second.category != 2) return;
+        for (int s = 1; s <= warmap::SectorCount; s++)
+        {
+            if (owner[size_t(s)] != 1 || !HasCommandPost(s)) continue;
+            for (size_t i = 0; i < counters.size(); i++)
+            {
+                Counter& k = counters[i];
+                if (k.sector != s || k.Travelling() || k.kind != 1 || k.players) continue;
+                auto u = unitData.find(k.type);
+                if (u == unitData.end() || u->second.upgrade != type) continue;
+                k.type = type;
+                k.frame = t->second.counterFrame;
+                for (int ref : k.refs)
+                    if (ref >= 0 && size_t(ref) < table.size()) table[size_t(ref)].SetType(type);
+            }
+            RefreshSector(s);
+        }
+    }
 }

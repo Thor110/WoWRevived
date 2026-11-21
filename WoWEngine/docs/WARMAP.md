@@ -507,6 +507,12 @@ the factory's 0x8026, 0x45FB20):
     sector, and the entry with it; on the battle map the object hears 0x80A0), any other just goes (0x460080,
     the factory not busy any more once it's empty)
   - a slot's promote button (0x2FC -> 0x4605A0): the entry to the front, the factory made busy
+  - cancel all (0x460140, `WarMap::CancelAll`, 0x813D to the object, 0x428F75): for a vehicle (its type's +0x10,
+    0x440700, 1) each entry of a copy of its queue cancelled as above (0x462120). Leaving the battle map (0x439ED0)
+    sends it to the holder's objects in a sector that had its command building before the owner was worked out
+    again (0x43C990, then 0x43CA40) and hasn't after, when the sector's battle flag (+0x124) is set and the
+    report's +0x6C is its +0x68 (`WarMap::FightBattle`, after a battle fought on the battle map). Then every sound
+    fades over 30 (0x464AB0). *Provisional*: the report's +0x6C / +0x68 test isn't known and is taken as passed
 
 **Can it be ordered** (0x462DC0, an item drawn greyed when not): the sector allows another (0x43C7F0: the type's
 faction, record 26, is the sector owner's side, and the side's objects of its kind and type there, plus for a
@@ -550,6 +556,12 @@ Every game hour the world's 0x802D (0x419E9D) goes, in order, to the routes, the
 sides' research (0x458BD0), the pods (0x41A330), then each sector (0x43B6C9: its objects, the factories among them,
 then its day count +0x6C, each whole day taking one off its invasion cool-down +0x68). `[Tweak] AI Hours Per Turn`
 (5) is read but used nowhere.
+
+**Its building upgrades** (0x111 / 0xB9 from its research finishing a type, 0x442AC0 -> 0x442D80,
+`WarMap::AiApplyUpgrade`): for a building type (+0x10, 2), in each sector 1-30 that's the AI's with its command
+building finished (0x441A80), every construction there whose type's +0x84 or +0x88 (the type it gives way to,
+records 19 / 20; +0x84 is never set) is the new type is retyped in place (+0x20; the saved record with it).
+byte_56625C is set while it runs.
 
 On its 0x802D (0x442EC0) the AI adds the hours to its clock (+0x448), lets go of its research item once it's done
 or obsolete, or with none picks one (the other side's research, vtable +0x2C, 0x458A60: the first available item

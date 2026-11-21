@@ -531,7 +531,7 @@ aimed (+0xF0 bit 0), goes to 1 if its owner lets it (vt+0x84, 0x496920: an ordin
 0; vt+0x108 not frozen), else drops aimed; 1: the count ftol(+2 x 30 / 20) + rand() % 15, its sound (+0xA2) at its
 point, then 2; 2 counts down to 3; 3: its owner told (vt+0xD0, 0x496BC0: the rescan reset, a mode's target cleared),
 then 4; 4: the count ftol(+4 x 30 / 20) + rand() % 15, then 0. Then **aimed** (0x494FD0): the point under its range x
-+0xC8 (1.0; research raises it, 0x494AF0) from it, and inside its hardpoint's arc (+0xB0: +4 the middle, +6 the half
++0xC8 (1.0; research raises it, 0x494AF0, below) from it, and inside its hardpoint's arc (+0xB0: +4 the middle, +6 the half
 width) if it has one. The **landing**: the shell's update once in state 2 when the count is a multiple of 5 (+0xF0 bit
 1 marks it), the rocket's in state 3: the spread s = ftol(the octagonal distance from the gun / 32 / +0xCC (1.0) + 1),
 x, y and height each moved by rand() % 2s - s, the height less the ground at the vertex there (0x47B120); then
@@ -793,6 +793,18 @@ in the game's graphics (checked); no mines were on the test map, so the marker h
 *Provisional*: byte_589130 / byte_589134 are taken as the Martian research items 132 / 133 done; the renderer's +0x26
 (0x20) isn't known (the marker is frame 0 of the sprite, one row nearer than the unit, at ground level); the
 cursor's use of vt+0x6C isn't in.
+
+**Research in the fighting.** As a gun starts (vt+0x14 = 0x494AF0) its owner's side (vt+0xDC, 0x4406E0) picks
+the enhancements that set its +0xC8 (the range's multiplier) and +0xCC (the spread's divisor), each one done
+(0x45B890) setting the field to its value, a later one overriding: the Humans' items 78 (0x25A) then 79 (0x25B) the
+range, 82 (0x25E) the spread; the Martians', for the Heat-Rays (0x1AB-0x1B0), 77 (0x27D) then 78 (0x27E) the range,
+then for all 33 (0x289) the range and 80 (0x280) the spread (`BattleMap::Upgrade`). The damage (0x4958B0) is
+multiplied by the target's side (0x4406E0) and the type that made the hit (the explosion's +0xC4: the gun's or the
+shell's, carried as `weapon`), each enhancement 1.0 until it's done (`Setup::researchMultiplier`, from the war map's
+`Research::Multiplier`): a Human vehicle by 0x256 for 0x1AB-0x1B0, 0x257 for those and 0x1B5-0x1B7, 0x25C and 0x25D
+for 915-917, 0x266 for 712-714, and the Martians' 0x27F for 0x1AB-0x1B0; a Martian by its side's 0x27B and 0x27C if
+a vehicle, and always by the Humans' 0x259, while 0x393-0x395 (the gas) leave it unhurt; a Human non-vehicle as it
+is. Death explosions carry no type.
 
 **Hits and retaliation.** An explosion's +0xCC is the object that fired it (0x488070's fifth argument: a shell's
 +0xC4, a gun's unit), carried here as `attacker` through Impact, the shells' landings, Explode and AreaDetonate.

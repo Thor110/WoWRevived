@@ -131,7 +131,7 @@ namespace wow
     // The area blasts (0x487B00 on WExplosion: the factory's 718-720, 788-790, 812-823)
     bool BattleMap::IsAreaBlast(int t) { return (t >= 718 && t <= 720) || (t >= 788 && t <= 790) || (t >= 812 && t <= 823); }
 
-    void BattleMap::Explode(int type, int x, int y, int z, int firer, int attacker)
+    void BattleMap::Explode(int type, int x, int y, int z, int firer, int attacker, int weapon)
     {
         auto t = setup.units->find(type);
         const bool area = IsAreaBlast(type);
@@ -144,13 +144,13 @@ namespace wow
         for (const auto& part : t->second.parts)
         {
             const int px = x + int16_t(part.b), py = y + int16_t(part.c), pz = z + int16_t(part.d);
-            if (IsExplosion(part.a) || IsAreaBlast(part.a)) Explode(part.a, px, py, pz, firer, attacker);
+            if (IsExplosion(part.a) || IsAreaBlast(part.a)) Explode(part.a, px, py, pz, firer, attacker, weapon);
             else if (part.a >= 334 && part.a <= 346) AddLight(part.a, px, py, land.HeightAt(px, py) + pz);
             else SpawnEffect(part.a, float(px), float(py), float(pz));
         }
         if (area)
         {
-            AreaDetonate(type, x, y, radius, power, firer, attacker);
+            AreaDetonate(type, x, y, radius, power, firer, attacker, weapon);
             SpawnEffect(type, float(x), float(y), float(std::max(z, 0)));
             return;
         }
@@ -166,7 +166,7 @@ namespace wow
             if (d > reach || reach == 0) continue;
             if (u.health <= 0) continue;
             const float hit = float((1.0 - double(float(d)) / double(float(reach))) * power);
-            Hit(i, int(double(hit) * 1.0), attacker, type);
+            Hit(i, int(double(hit) * 1.0), attacker, type, weapon);
         }
         // the scenery within reach too (it has no side to spare)
         for (size_t i = 0; i < props.size(); i++)
@@ -201,7 +201,7 @@ namespace wow
     // turned, vt+0xF8.)
     // 812-814 post 0x80F4 (0x4355A0) with the firer (+0xCC) and the level 1-3, arriving 120 / 240 / 360 updates on
     // (ControlArrives).
-    void BattleMap::AreaDetonate(int type, int x, int y, int radius, int power, int firer, int attacker)
+    void BattleMap::AreaDetonate(int type, int x, int y, int radius, int power, int firer, int attacker, int weapon)
     {
         for (size_t i = 0; i < units.size(); i++)
         {
@@ -215,7 +215,7 @@ namespace wow
             auto hit = [&]() {
                 if (units[i].health <= 0) return;
                 const float h = float((1.0 - double(float(d)) / double(float(reach))) * power);
-                Hit(i, int(double(h) * 1.0), attacker, type);
+                Hit(i, int(double(h) * 1.0), attacker, type, weapon);
             };
             if (type >= 718 && type <= 720) { if (u.drive.lift < 0.0f) hit(); }
             else if (type >= 788 && type <= 790) { if (ut->second.faction == 1) hit(); }

@@ -16,6 +16,7 @@
 #include "core/Deployment.h"
 #include <algorithm>
 #include <map>
+#include <set>
 #include "frontend/Screen.h"
 #include <memory>
 #include <optional>
@@ -93,6 +94,8 @@ namespace wow
             // a research item's state is 2 (0x45B890), by side and its place in that side's tree (the globals from
             // 0x588C40 Human, 0x588F20 Martian, four bytes each)
             std::function<bool(bool human, int index)> researchDone;
+            // a side's improvement multiplier by its enhancement's type (Research::Multiplier: 1.0 until it's done)
+            std::function<float(bool human, int type)> researchMultiplier;
             const std::map<int, std::array<int, 8>>* weapons = nullptr;     // OBJ.ojd record 12 (0x4F2F10)   // the front end's mixer: the battle's speech and engine sounds          // [System] "ZMapRes" (dword_4F7424): the bucket grid's cell size
         };
 
@@ -223,7 +226,8 @@ namespace wow
         // width, against its own heading (+0x40: its parent's); its turret (-1 on the unit itself)
         struct Gun { int type = 0, cls = 0, state = 0, counter = 0; bool armed = false; uint32_t flags = 0; int tx = 0, ty = 0, tz = 0;
                      std::vector<int> fired; bool spent = false;
-                     int turret = -1; bool hardpoint = false; int middle = 0, half = 0; };
+                     int turret = -1; bool hardpoint = false; int middle = 0, half = 0;
+                     float range = 1.0f, accuracy = 1.0f; };   // +0xC8 / +0xCC, by research (0x494AF0)
         // A turret (0x489820 on the vehicle 0x490820: 0x2E6-0x313, 0x389-0x38C): its type, its part's offset, its turn
         // from its unit (+0x190), the point it's aiming at (+0xC8 / +0xCC, +0xE4 bit 1), its hardpoint and its turning
         // sound (+0xE8)
@@ -293,10 +297,10 @@ namespace wow
         void AddPartRenderers(size_t unit);
         void PoseParts(Unit& u);
         void Impact(size_t unit, const Gun& g);                 // 0x4886A0's landing: 0x487F50
-        void ImpactAt(int size, int x, int y, int z, int group, int attacker = 0); // 0x487F50: the effect by size and terrain
+        void ImpactAt(int size, int x, int y, int z, int group, int attacker = 0, int weapon = 0); // 0x487F50: the effect by size and terrain
         void Launch(size_t unit, Gun& g);                       // 0x4889D0
         bool ShellLands(size_t effect);                         // 0x488F00 after the step: gone?
-        struct Landing { int size, x, y, z, group, attacker; };
+        struct Landing { int size, x, y, z, group, attacker, weapon; };
         std::vector<Landing> landings;                          // made after the flying objects' updates
         // Damage and death (0x48A5A0, 0x48AB20, 0x80A0 in 0x489FA0) and the explosions (WExplosion 0x488180)
         int MaxHealth(int type) const;                          // 0x47DA20: +0x4A with the armour modifiers
@@ -305,10 +309,10 @@ namespace wow
         void KeyBuildingLost(bool players);                     // 0x48AC50's key building case
         void StaggerDeaths(int group, int at);                  // 0x47CEE0's 0x80A0
         bool forfeit = false;                                   // byte_4E9B94: the key building lost with no battle on
-        void Explode(int type, int x, int y, int z, int firer = -1, int attacker = 0);  // 0x488070 + 0x488350 / 0x488200 (firer: a unit's group)
+        void Explode(int type, int x, int y, int z, int firer = -1, int attacker = 0, int weapon = 0);  // 0x488070 + 0x488350 / 0x488200 (firer: a unit's group)
         static bool IsExplosion(int type);
         static bool IsAreaBlast(int type);
-        void AreaDetonate(int type, int x, int y, int radius, int power, int firer, int attacker = 0);   // 0x487B50
+        void AreaDetonate(int type, int x, int y, int radius, int power, int firer, int attacker = 0, int weapon = 0);   // 0x487B50
         void SetStatus(size_t unit, int status, int level);     // 0x80F5-0x80F7 (0x495CB0)
         void ChangeStatus(Unit& u, int status);                 // vt+0x90, 0x496760
         void StatusTick(Unit& u);
@@ -322,7 +326,8 @@ namespace wow
         void Surface(size_t unit);                              // vt+0x124, 0x499120
         void GoUnder(size_t unit);                              // 0x80EE / 0x80EF to a member, 0x498E90
         void Vanish(size_t unit);                               // vt+0x78, 0x495BB0
-        void Hit(size_t unit, int amount, int attacker, int by); // vt+0xC0 (0x498EE0, 0x491020), then the damage
+        void Upgrade(Gun& g, int side) const;          // 0x494AF0's research upgrades
+        void Hit(size_t unit, int amount, int attacker, int by, int weapon = 0); // vt+0xC0 (0x498EE0, 0x491020, 0x4958B0), then the damage
         void Retaliate(int group, size_t member, int attacker); // 0x8085 to the group, 0x483880                               // 0x4967E0's timer
         void SetStance(int group, int stance);                  // 0x80B2 to the group: it and each member (+0xD8)
         void TurnOnOwn(Unit& u);                                // 0x496100
@@ -420,6 +425,7 @@ namespace wow
         int scrollX = 0, scrollY = 0;
         int mouseX = -1, mouseY = -1;
         int ticks = 0;
+        std::set<int> encountered;      // byte_51A19C by type: 0x47F630, 0x488C00
         int rightDownAt = -1;
         struct PopupItem { int command, icon, text; Rect rect; int param = 0; };
         std::vector<PopupItem> popup;       // "Battlemap menu" (WPopupMenu 0x432C60, 0x485DE0)
@@ -479,7 +485,9 @@ namespace wow
         // The war map objects that left by a reinforcement point, and the sector each went to
         std::vector<std::pair<int, int>> RetreatedRefs() const;
         bool Fought() const { return battleOn; }
-        bool Forfeited() const { return forfeit; }               // byte_4E9B94 (0x48ACEF)
+        bool Forfeited() const { return forfeit; }
+        // the unit table's +0xAC (byte_51A19C), the types met in this battle, for the research triggers
+        const std::set<int>& Encountered() const { return encountered; }               // byte_4E9B94 (0x48ACEF)
         // 0x80F4 taken by the other side's key building (0x495CB0 -> the sector, 0x43B920): the level (+0x128, 1-3;
         // 0 for none) and whether the player's side fired it (dword_4E9B60)
         int ControlLevel() const { return controlLevel; }

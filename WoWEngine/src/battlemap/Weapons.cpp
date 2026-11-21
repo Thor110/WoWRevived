@@ -73,6 +73,33 @@ namespace wow
         return {};
     }
 
+    // 0x494AF0, as a gun starts (vt+0x14): by its owner's side (vt+0xDC, 0x4406E0), each enhancement done (0x45B890)
+    // sets +0xC8 (its range's multiplier) or +0xCC (its spread's divisor) to that enhancement's value, the later
+    // overriding the earlier. The Humans': Improved Powder Charge (item 78, 0x25A) then 79 (0x25B) the range, 82
+    // (0x25E) the spread. The Martians': for the Heat-Rays (0x1AB-0x1B0) items 77 (0x27D) then 78 (0x27E) the range;
+    // for all, 33 (0x289) the range and 80 (0x280) the spread.
+    void BattleMap::Upgrade(Gun& g, int side) const
+    {
+        if (!setup.researchDone || !setup.researchMultiplier) return;
+        auto set = [&](float& v, bool human, int item, int type) { if (setup.researchDone(human, item)) v = setup.researchMultiplier(human, type); };
+        if (side == 0)
+        {
+            set(g.range, true, 78, 0x25A);
+            set(g.range, true, 79, 0x25B);
+            set(g.accuracy, true, 82, 0x25E);
+        }
+        else if (side == 1)
+        {
+            if (g.type >= 0x1AB && g.type <= 0x1B0)
+            {
+                set(g.range, false, 77, 0x27D);
+                set(g.range, false, 78, 0x27E);
+            }
+            set(g.range, false, 33, 0x289);
+            set(g.accuracy, false, 80, 0x280);
+        }
+    }
+
     // The guns as the unit's children start (0x47EF30): its parts that are weapons, and those of its turrets
     // (0x489820: a vehicle of their own, aiming their own children)
     void BattleMap::SetUpGuns(Unit& u)
@@ -91,6 +118,7 @@ namespace wow
             g.hardpoint = part.box[0] >= 0;
             g.middle = uint16_t(part.box[2]);
             g.half = uint16_t(part.box[3]);
+            Upgrade(g, t->second.faction);
             u.guns.push_back(g);
         };
         for (const auto& part : t->second.parts)
@@ -471,7 +499,7 @@ namespace wow
     // is under 2000 and the hit has a firer (+0xCC, the object that fired it), says 0x110 with its type's voice
     // (byte_51A190); then its group is told 0x8085 with it and the hit (0x483880). Other objects just take the damage.
     // The sinkers' vt+0xC0 (0x498EE0) first: under (+0x190 bit 0), only a hit from 0x2CE-0x2D0 (718-720) reaches it.
-    void BattleMap::Hit(size_t index, int amount, int attacker, int by)
+    void BattleMap::Hit(size_t index, int amount, int attacker, int by, int weapon)
     {
         Unit& u = units[index];
         if (Sinker(u.type) && u.under && (by < 718 || by > 720)) return;
@@ -479,6 +507,31 @@ namespace wow
         {
             if (u.players && random::Rand() < 2000 && attacker != 0) Speak(0x110, u.group);
             Retaliate(u.group, index, attacker);
+        }
+        // 0x4958B0, the damage by research: by the target's side (0x4406E0) and the type that made the hit (the hit's
+        // +0xC4, the gun's or shell's), each multiplier 1.0 until its enhancement is done (0x45A1C0 / 0x45B320)
+        if (setup.researchMultiplier)
+        {
+            auto ut = setup.units->find(u.type);
+            const int side = ut == setup.units->end() ? 2 : ut->second.faction;
+            float f = float(amount);
+            auto mulf = [&](bool human, int type) { f *= setup.researchMultiplier(human, type); };
+            const bool a = weapon >= 0x1AB && weapon <= 0x1B0, b = weapon >= 0x1B5 && weapon <= 0x1B7;
+            if (side == 0 && u.vehicle)
+            {
+                if (a) mulf(true, 0x256);                       // HeatResistantArmour
+                if (a || b) mulf(true, 0x257);                  // InsulatedHighEnergyResistantArmour
+                if (weapon >= 915 && weapon <= 917) { mulf(true, 0x25C); mulf(true, 0x25D); }   // FineAirFilters, ChemicalFilters
+                if (weapon >= 712 && weapon <= 714) mulf(true, 0x266);                          // TunnelReinforcementApparatus
+                if (a) mulf(false, 0x27F);                      // the Martians' SecondaryBeamAmplifiers
+            }
+            else if (side == 1)
+            {
+                if (u.vehicle) { mulf(false, 0x27B); mulf(false, 0x27C); }   // ShockResistant, ImpactReflecting Armour
+                mulf(true, 0x259);                              // the Humans' HighExplosiveRounds
+                if (weapon >= 0x393 && weapon <= 0x395) return; // gas doesn't hurt the Martians (0x495A97)
+            }
+            amount = int(f);
         }
         Damage(index, amount);
     }
@@ -671,7 +724,7 @@ namespace wow
     // The mortar's update (0x488CA0) launches its shells as the cycle goes to 1 (0x4889D0, Launch).
     // The arc (0x494FD0, with a hardpoint): |0x43FF30(ftol(vt+0x2C (its own +0x40) + the middle), the heading to the
     // point)| under the half width (vt+0x2C leaves its argument on the stack: that's 0x43FF30's second).
-    // *Provisional*: the research multipliers (+0xC8 / +0xCC, 0x494AF0) aren't in; the gun is at its unit's point.
+    // *Provisional*: the gun is at its unit's point.
     void BattleMap::GunTick(size_t index, Gun& g)
     {
         Unit& u = units[index];
@@ -727,7 +780,7 @@ namespace wow
                 while (d > 2047) d -= 4096;
                 inArc = std::abs(d) < g.half;
             }
-            const bool inRange = float(w[0]) * 1.0f > length;
+            const bool inRange = float(w[0]) * g.range > length;
             g.flags = (g.flags & ~1u) | (inRange && inArc ? 1u : 0u);
         }
         if (g.cls == 0 && g.state == 2 && !(g.flags & 2) && g.counter % 5 == 0)
@@ -791,6 +844,7 @@ namespace wow
                 sh.group = u.group;
                 sh.attacker = u.id;
             }
+            encountered.insert(g.type);     // 0x488C00: the gun's type met, for each shell
             g.fired[i]++;
             if (e.c != 0 && g.fired[i] > int16_t(e.c)) { g.spent = true; break; }
         }
@@ -807,7 +861,7 @@ namespace wow
         if (s.lift <= 0.0f) lands = true;
         else lands = s.count-- <= 0;
         if (!lands) return false;
-        landings.push_back({ s.size, int(s.x), int(s.y), int(s.lift - -8.0f), s.group, s.attacker });
+        landings.push_back({ s.size, int(s.x), int(s.y), int(s.lift - -8.0f), s.group, s.attacker, s.type });
         return s.count < 0;
     }
 
@@ -821,16 +875,16 @@ namespace wow
         const Unit& u = units[index];
         const auto w = WeaponData(g.type);
         const int d = Octagonal(int(u.x), int(u.y), g.tx, g.ty) >> 5;
-        const int s = int(float(d) / 1.0f - -1.0f);
+        const int s = int(float(d) / g.accuracy - -1.0f);
         const int span = 2 * s;
         const int x = random::Rand() % span - s + g.tx;
         const int y = random::Rand() % span - s + g.ty;
         const int z = random::Rand() % span + g.tz - s;
         const int h = z - land.HeightAtNearest(x, y);
-        ImpactAt(w[3], x, y, h, u.group, u.id);
+        ImpactAt(w[3], x, y, h, u.group, u.id, g.type);
     }
 
-    void BattleMap::ImpactAt(int size, int x, int y, int h, int group, int attacker)
+    void BattleMap::ImpactAt(int size, int x, int y, int h, int group, int attacker, int weapon)
     {
         int effect = 0;
         if (size > 64) effect = size - 1 < 67 ? kImpactBig[size - 1] : 0;
@@ -841,6 +895,6 @@ namespace wow
             const int terrain = land.At(vx, vy).atm & 15;
             effect = terrain >= 1 && terrain < 4 ? kImpactWater[size - 1] : kImpactLand[size - 1];
         }
-        if (effect) Explode(effect, x, y, std::max(h, 0), group, attacker);
+        if (effect) Explode(effect, x, y, std::max(h, 0), group, attacker, weapon);   // (+0xC4 the weapon's type)
     }
 }

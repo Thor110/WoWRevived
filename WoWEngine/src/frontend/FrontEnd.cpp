@@ -853,7 +853,11 @@ namespace wow
             int controlLevel = 0;
             bool controlByPlayer = false, forfeit = false;
             for (Screen* sc : { battleMap.get(), screen.get() })
-                if (auto* bm = dynamic_cast<BattleMap*>(sc); bm && bm->Forfeited()) forfeit = true;
+                if (auto* bm = dynamic_cast<BattleMap*>(sc))
+                {
+                    if (bm->Forfeited()) forfeit = true;
+                    if (WarMap* map = ActiveWarMap()) map->Encounter(bm->Encountered());
+                }
             for (Screen* sc : { battleMap.get(), screen.get() })
                 if (auto* bm = dynamic_cast<BattleMap*>(sc); bm && bm->Fought())
                 {
@@ -868,7 +872,7 @@ namespace wow
             // settles it (*provisional*), then the Debriefing (0x49A7B0)
             if (WarMap* map = ActiveWarMap())
             {
-                sound.FadeOut(briefingSound, 30);
+                sound.FadeOutAll(30);   // 0x43A13F: leaving the battle map (0x439ED0) every sound fades over 30
                 briefingSound = 0;
                 map->FightBattle(lost ? &*lost : nullptr, lost ? &retreated : nullptr, controlLevel, controlByPlayer, forfeit);
                 auto d = std::make_unique<Debriefing>(res, BattleColoursFromIni(), map->Debriefing(), ini.GetInt("Debriefing", "Delay", 300));
@@ -1118,6 +1122,11 @@ namespace wow
             Research* r = side == human ? wm->LocalResearch() : wm->OtherResearch();
             if (!r || index < 0 || size_t(index) >= r->Items().size()) return false;
             return r->Items()[size_t(index)].state == 2;
+        };
+        s.researchMultiplier = [this, human = res.Human()](bool side, int type) {
+            WarMap* wm = ActiveWarMap();
+            Research* r = wm ? (side == human ? wm->LocalResearch() : wm->OtherResearch()) : nullptr;
+            return r ? r->Multiplier(type) : 1.0f;
         };
         if (s.zMapRes < 1) s.zMapRes = 400;
         try

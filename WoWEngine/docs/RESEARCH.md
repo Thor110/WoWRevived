@@ -41,11 +41,15 @@ unknown) and the war map gets ResearchAvailable (event 5) with its name. One tha
 unit table's +0x00 matches, which is the type itself, so in practice never ("%s Makes %s Obsolete"). With
 notifications on, the local player's research hears 0xB9 (the idle count reset, and the current item dropped at the
 end of the hour, whichever item it was) and the war map gets ResearchCompleted (event 4). The other side's research
-tells its player instead (0xB9 with the type to dword_4E9B78, the AI; *not yet*), notifications or not.
+tells its player instead (0x111 / 0xB9 with the type to dword_4E9B78, the AI's 0x442AC0: its building upgrades,
+0x442D80, docs/WARMAP.md), notifications or not.
 
 **Triggers** stand for things met in battle: UpdateTriggers (0x45A1C0 / 0x45B320, at the war map view's set-up
 0x418D17 and on the way to a battle 0x41A094) marks one done once any of its types has the unit table's +0xAC flag,
-which the battle map sets (0x47F630, 0x488C00, 0x492931; so none yet):
+which the battle map sets (`BattleMap::Encountered`, handed to `WarMap::Encounter` as the battle map closes): each
+update, every object with a renderer (+0x4C) not hidden (+0xB8 bits 3 and 5; 0x47F630, from 0x48B3D0), each mortar
+shell's gun as it's launched (0x488C00), and a crushed object (0x492931; the crushing isn't in). The flag isn't
+saved. *Provisional*: a unit gone under (+0x190 bit 1) is taken as hidden:
 
 | Side | Trigger | Types |
 |---|---|---|

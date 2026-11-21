@@ -694,9 +694,11 @@ namespace wow
         const bool human = res.Human();
         Research::Listener local;
         local.event = [this](int event, const std::string& name) { RaiseEvent(event, event == ResearchAlert ? 1 : 0, name); };
-        // the other side's finished items go to its player (0xB9 to dword_4E9B78): the AI, not in yet
+        // the other side's finished items go to its player (0x111 / 0xB9 to dword_4E9B78): the AI's 0x442AC0
+        Research::Listener other;
+        other.otherSideCompleted = [this](int type) { AiApplyUpgrade(type); };
         research[0] = std::make_unique<Research>(human, true, unitData, res.Text(), modifiers, human, local);
-        research[1] = std::make_unique<Research>(!human, false, unitData, res.Text(), modifiers, human, Research::Listener{});
+        research[1] = std::make_unique<Research>(!human, false, unitData, res.Text(), modifiers, human, other);
         if (save && !save->research.empty())
         {
             // 0x41AC40: HRSH then MRSH (0x45A160 reads the tag, then 0x4584C0)
@@ -1397,6 +1399,7 @@ namespace wow
         if (forfeit) forfeited = true;
         for (auto& r : research) if (r) r->UpdateTriggers(encountered); // 0x41A094, on the way to the battle map
         const int s = battleSector;
+        const bool hadPost = s >= 1 && s <= warmap::SectorCount && HasCommandPost(s);   // 0x43A0AD, before 0x43CA40
         debriefing = DebriefingInfo{};
         debriefing.sector = s;
         if (s < 1 || s > warmap::SectorCount) return;
@@ -1498,6 +1501,16 @@ namespace wow
             debriefing.killedFacilities = goneFacilities[1];
             Log(res.String(0x210) + " " + res.String(warmap::NameText(s)) + (winner == 0 ? ": won" : ": lost")); // the engine's own
             RecomputeOwner(s);
+            // 0x43A0D3: the sector had its command building and hasn't now: 0x813D to its holder's objects there
+            // (0x43A101-0x43A13A), each vehicle's factory (0x428F75) cancelling everything (0x460140)
+            if (hadPost && !HasCommandPost(s) && owner[size_t(s)] != 2)
+                for (size_t i = 0; i < counters.size(); i++)
+                {
+                    const Counter& k = counters[i];
+                    if (k.sector != s || k.Travelling() || k.players != (owner[size_t(s)] == 0)) continue;
+                    const std::vector<int> refs = k.refs;
+                    for (int ref : refs) CancelAll(ref);
+                }
             RefreshSector(s);
             battle[size_t(s)] = false;
             if (pendingBattle == s) pendingBattle = 0;

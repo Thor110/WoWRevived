@@ -1181,6 +1181,9 @@ namespace wow
         // the guns (their own updates, each a child of its unit or its turret)
         for (size_t i = 0; i < units.size(); i++)
         {
+            // 0x47F630 from the object's update (0x48B3D0), unless +0xB8 bit 3 (vt+0x9C): with a renderer (+0x4C)
+            // and +0xB8 bit 5 clear, its type is met (byte_51A19C, the research triggers' 0x45B9D0)
+            if (!units[i].hidden) encountered.insert(units[i].type);   // (*provisional*: bit 5 taken as hidden)
             for (Turret& t : units[i].turrets) TurretTick(units[i], t);
             for (Gun& g : units[i].guns) GunTick(i, g);
             PoseParts(units[i]);

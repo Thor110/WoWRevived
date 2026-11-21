@@ -83,13 +83,15 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
 - [x] **Destroying the key building** (update 104; the victory delay's sound length still 150 assumed) ends the battle and the game (0x48AC50: 0x80AA to the owner; kinds 3 / 0x1E
       set `byte_4E9B94` and send 0x8136 "DESTROYING VEHICLES"); the war map's forfeit (0x41AED0 / 0x41F4B0: event 19
       with sector 30 / 3, codes 0x80FB / 0x80FD; the victory delay is sound 0x13E's length + 30).
-- [ ] **Leaving a battle** (0x439ED0): a holder that lost its command building has its units' factory tasks cancelled
-      (0x813D -> 0x428F75 -> 0x460140 BuildList::CancelAll); every sound fades over 30.
-- [ ] **Research multipliers in damage** (0x4958B0: armour and weapon by weapon type and target side; 0x494AF0
-      upgrading shots).
-- [ ] **Research triggers**: the battle map marks the unit table's +0xAC "encountered" (0x47F630, 0x488C00,
-      0x492931) so `UpdateTriggers` sees it; the other side's research-done message (0xB9) reaches the AI.
-- [ ] **The AI's building upgrades** (0x442D80: retypes its buildings when research finishes a mark).
+- [x] **Leaving a battle** (0x439ED0): a holder that lost its command building has its units' factory tasks cancelled
+      (0x813D -> 0x428F75 -> 0x460140 BuildList::CancelAll); every sound fades over 30. *Update 105.*
+- [x] **Research multipliers in damage** (0x4958B0: armour and weapon by weapon type and target side; 0x494AF0
+      upgrading shots). *Update 105.*
+- [x] **Research triggers**: the battle map marks the unit table's +0xAC "encountered" (0x47F630, 0x488C00,
+      0x492931) so `UpdateTriggers` sees it. *Update 105* (the crushing's mark waits on the crushing). The other
+      side's research-done message (0xB9) reaching the AI goes with the next item.
+- [x] **The AI's building upgrades** (0x442D80: retypes its buildings when research finishes a mark). *Update 105*
+      (with the other side's 0xB9 reaching it).
 - [ ] **The war map economy's "working" demand** (0x429640: record 47/48 while a factory works or repairs).
 - [ ] **Repair** on the war map (0x422AB0, 0x4297C0, 0x4299C0, 0x429B80's repair part).
 - [ ] **Retreat on the war map** (0x424F50 0x80A9, the +0x44 stop-at-next-node flag, the Retreat item in 0x429A70).
