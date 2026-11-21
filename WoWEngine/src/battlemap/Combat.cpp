@@ -199,7 +199,7 @@ namespace wow
         int delay = 30;
         for (Unit& m : units)
         {
-            if (m.ref != group || m.health <= 0) continue;     // a war map object's units (its list's, 0x47CEE0)
+            if (m.ref != group) continue;     // a war map object's units (its list's, 0x47CEE0), dying or not
             const int when = at + delay;
             if (m.dieAt < 0 || when < m.dieAt) m.dieAt = when;
             delay += random::Rand() % 30 + 30;
@@ -239,6 +239,7 @@ namespace wow
         {
             effects[size_t(self)].group = firer;        // +0xCC / +0xC4, which the cascade passes on (0x48CDE0)
             effects[size_t(self)].attacker = attacker;
+            effects[size_t(self)].weapon = weapon;
         }
         for (const auto& part : t->second.parts)
         {
@@ -252,19 +253,24 @@ namespace wow
             AreaDetonate(type, x, y, radius, power, firer, attacker, weapon);
             return;
         }
-        // Detonate
+        // Detonate (0x488200): the firer (+0xCC) spared only while it still exists (0x440110): the object itself
+        // always, its group's unless turned (vt+0xF8); a dying object (health 0 or less) is still told vt+0xC0, so it
+        // speaks and retaliates, and only the damage (0x48A5A0) wants health over 0
+        // (*provisional*: with no attacker id, the firer group is taken as there)
+        const Unit* firerObject = attacker ? UnitById(attacker) : nullptr;
+        const bool firerThere = attacker ? firerObject != nullptr : firer >= 0;
         for (size_t i = 0; i < units.size(); i++)
         {
             Unit& u = units[i];
             auto ut = setup.units->find(u.type);
             if (ut == setup.units->end() || ut->second.category == 4) continue;
-            if (firer >= 0 && u.group == firer && !u.Turned()) continue;   // the firer's own (0x47EB00), unless turned (vt+0xF8)
+            if (firerObject && u.id == firerObject->id) continue;
+            if (firerThere && firer >= 0 && u.group == firer && !u.Turned()) continue;
             const int reach = radius + u.drive.radius;
             const int d = Octagonal(int(u.x), int(u.y), x, y);
             if (d > reach || reach == 0) continue;
-            if (u.health <= 0) continue;
             // (1 - d / reach) x power, truncated once with the research scale in Hit (0x48A5A0)
-            Hit(i, (1.0 - double(float(d)) / double(float(reach))) * power, attacker, type, weapon);
+            Hit(i, (1.0 - double(d) / double(reach)) * power, attacker, type, weapon);
         }
         // the scenery within reach too (it has no side to spare)
         for (size_t i = 0; i < props.size(); i++)
@@ -276,8 +282,7 @@ namespace wow
             const int reach = radius + int16_t(pt->second.hitPoints);
             const int d = Octagonal(int(p.x), int(p.y), x, y);
             if (d > reach || reach == 0) continue;
-            const float hit = float((1.0 - double(float(d)) / double(float(reach))) * power);
-            DamageProp(i, int(double(hit) * 1.0));
+            DamageProp(i, int((1.0 - double(d) / double(reach)) * power));   // one truncation (0x48A5A0, x87)
         }
         if (z < 64)
         {
@@ -300,18 +305,19 @@ namespace wow
     // (ControlArrives).
     void BattleMap::AreaDetonate(int type, int x, int y, int radius, int power, int firer, int attacker, int weapon)
     {
+        // 0x487B50: the firer's group spared outright while the firer exists; the dying are still told (as Detonate)
+        const bool firerThere = attacker ? UnitById(attacker) != nullptr : firer >= 0;
         for (size_t i = 0; i < units.size(); i++)
         {
             Unit& u = units[i];
             auto ut = setup.units->find(u.type);
             if (ut == setup.units->end() || ut->second.category == 4) continue;
-            if (firer >= 0 && u.group == firer) continue;
+            if (firerThere && firer >= 0 && u.group == firer) continue;
             const int reach = radius + u.drive.radius;
             const int d = Octagonal(int(u.x), int(u.y), x, y);
             if (d > reach || reach == 0) continue;
             auto hit = [&]() {
-                if (units[i].health <= 0) return;
-                Hit(i, (1.0 - double(float(d)) / double(float(reach))) * power, attacker, type, weapon);
+                Hit(i, (1.0 - double(d) / double(reach)) * power, attacker, type, weapon);
             };
             if (type >= 718 && type <= 720) { if (u.drive.lift < 0.0f) hit(); }
             else if (type >= 788 && type <= 790) { if (ut->second.faction == 1) hit(); }
@@ -332,8 +338,7 @@ namespace wow
             const int reach = radius + int16_t(pt->second.hitPoints);
             const int d = Octagonal(int(p.x), int(p.y), x, y);
             if (d > reach || reach == 0) continue;
-            const float h = float((1.0 - double(float(d)) / double(float(reach))) * power);
-            DamageProp(i, int(double(h) * 1.0));
+            DamageProp(i, int((1.0 - double(d) / double(reach)) * power));
         }
     }
 

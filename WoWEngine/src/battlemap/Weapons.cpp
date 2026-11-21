@@ -62,8 +62,8 @@ namespace wow
             588, 589, 715, 716, 717, 718, 719, 720, 788, 789, 790, 812, 813, 814, 815, 816, 817, 818, 819, 820, 821, 822,
             823, 946, 947, 948, 1006, 1007, 1008 };
 
-        // dword_4B84C8 (30) x the word / 20, as 0x494DB0 works it (0x66666667, >> 3)
-        int Ticks(int word) { return int((int64_t(word * 30) * 0x66666667LL >> 32) >> 3) + ((word * 30) < 0 ? 1 : 0); }
+        // dword_4B84C8 ("Game Frequency", 30) x the word / 20 (0x66666667, >> 3)
+        int Ticks(int word, int freq) { return int((int64_t(word * freq) * 0x66666667LL >> 32) >> 3) + ((word * freq) < 0 ? 1 : 0); }
     }
 
     std::array<int, 8> BattleMap::WeaponData(int type) const
@@ -497,6 +497,9 @@ namespace wow
                     }
                 }
         }
+        // 0x48F8A0: an emplacement that isn't aiming (+0xE4 bit 1 clear) frees its group (0x480EB0(0): bit 0)
+        else if (IsEmplacement(u.type) && !u.aiming && hasGroup && size_t(u.group) < groupBusy.size())
+            groupBusy[size_t(u.group)] = false;
         u.halted = false;   // vt+0xAC(0)
         if (u.aiming && hasGroup && u.vehicle)
         {
@@ -751,6 +754,9 @@ namespace wow
                                 if (gun.state != 0) gun.state = 4;
                                 gun.flags |= 1;
                             }
+                    // and +0x1D8 bit 0 cleared and +0x56 0 (0x4826D0); the target and its point are kept
+                    if (g < groupBusy.size()) groupBusy[g] = false;
+                    if (g < groupArrived.size()) groupArrived[g] = 0;
                     return;
                 }
                 t.x = int(object->x);
@@ -811,6 +817,7 @@ namespace wow
             g.tz = az;
             g.armed = true;
             if (g.state == 2) g.state = 3;
+            AimFlag(u, g);  // 0x494D20 (vt+0xC8) runs 0x494FD0 at once, so state 0 can go to 1 on the next cycle
         };
         for (const auto& part : t->second.parts)
         {
@@ -848,6 +855,26 @@ namespace wow
     // The mortar's update (0x488CA0) launches its shells as the cycle goes to 1 (0x4889D0, Launch).
     // The arc (0x494FD0, with a hardpoint): |0x43FF30(ftol(vt+0x2C (its own +0x40) + the middle), the heading to the
     // point)| under the half width (vt+0x2C leaves its argument on the stack: that's 0x43FF30's second).
+    // 0x494FD0: +0xF0 bit 0, the aim point in range (record 12's +0 x the range scale over the length from the gun's
+    // point) and, on a hardpoint, within its arc
+    void BattleMap::AimFlag(const Unit& u, Gun& g) const
+    {
+        const auto w = WeaponData(g.type);
+        int heading = 0;
+        float length = 0;
+        HeadingAndLength(float(g.x), float(g.y), float(g.tx), float(g.ty), heading, length);    // from the gun's point
+        bool inArc = true;
+        if (g.hardpoint)
+        {
+            int d = (heading & 0xFFF) - ((GunHeading(u, g) + g.middle) & 0xFFF);
+            while (d < -2048) d += 4096;
+            while (d > 2047) d -= 4096;
+            inArc = std::abs(d) < g.half;
+        }
+        const bool inRange = float(w[0]) * g.range > length;
+        g.flags = (g.flags & ~1u) | (inRange && inArc ? 1u : 0u);
+    }
+
     void BattleMap::GunTick(size_t index, Gun& g)
     {
         Unit& u = units[index];
@@ -868,7 +895,7 @@ namespace wow
             g.flags &= ~2u;
             g.state = 2;
             const int r = random::Rand() % 15;
-            g.counter = Ticks(w[1]) + r;
+            g.counter = Ticks(w[1], setup.gameFrequency) + r;
             auto t = setup.units->find(g.type);
             if (t != setup.units->end() && t->second.fieldA2 && setup.sound)
                 setup.sound->Play(t->second.fieldA2, 1.0f, 0, int(u.x), land.ProjectY(int(u.y), land.HeightAt(int(u.x), int(u.y))));
@@ -884,28 +911,13 @@ namespace wow
         case 4:
         {
             const int r = random::Rand() % 15;
-            g.counter = Ticks(w[2]) + r;
+            g.counter = Ticks(w[2], setup.gameFrequency) + r;
             g.state = 0;
             break;
         }
         default: break;
         }
-        // 0x494FD0
-        {
-            int heading = 0;
-            float length = 0;
-            HeadingAndLength(float(g.x), float(g.y), float(g.tx), float(g.ty), heading, length);    // from the gun's point
-            bool inArc = true;
-            if (g.hardpoint)
-            {
-                int d = (heading & 0xFFF) - ((GunHeading(u, g) + g.middle) & 0xFFF);
-                while (d < -2048) d += 4096;
-                while (d > 2047) d -= 4096;
-                inArc = std::abs(d) < g.half;
-            }
-            const bool inRange = float(w[0]) * g.range > length;
-            g.flags = (g.flags & ~1u) | (inRange && inArc ? 1u : 0u);
-        }
+        AimFlag(u, g);
         if (g.cls == 0 && g.state == 2 && !(g.flags & 2) && g.counter % 5 == 0)
         {
             Impact(index, g);

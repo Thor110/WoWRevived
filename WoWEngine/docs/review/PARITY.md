@@ -197,15 +197,22 @@ settled: battle-ui 8, combat 4 and 9, movement 15, 16 and 24, battle-setup 4, 11
 - [x] `Finished()` (update 131) now counts the facilities, which are resources: a regression found while doing
       warmap 1.
 
+**Update 134** (the battle's low items; details in BATTLEMAP.md, "Parity fixes in update 134")
+- [x] battle-ui 10 / 11: a ground click with no point is still sent; mode 0's cursor over the other side stays.
+- [x] combat 10, 13-22: the glow's frame, the light roll, the dying hit, the firer's sparing, the one-update delay,
+      the underground target, the idle emplacement, the gun's aim flag, damage precision, the cascade's weapon,
+      "Game Frequency" (read from [System], *provisional*: it's a registry value).
+- [x] battle-setup 7, 12 (part), 13, 16: the planner's worth over 0, the first decay after the reveals, vehicles only
+      for a group's range and grounds, every member's staggered death.
+
 **Still to do**
+- [ ] battle-ui 9 (the window's 32-pixel scroll border: the engine has no windowed flag), 12 (the editor's cursor
+      modes 2-7).
+- [ ] movement 17 (the route search held off for 10 updates while another group's runs), 19 (the second target),
+      20 (Muster's first step: the engine's units aren't started when deployment musters them), 21 (broken bridges).
+- [ ] battle-setup 12 (part: the fog by the game's global frame counter), 18 (the counts' lists).
 - [ ] warmap 2 (repair icon and bar), 14 (transit after a load: the save's route entry bytes untraced), 20 (the
       pulse's counter; the same at a steady 30 fps).
-- [ ] battle-ui 9-12 (edge-scroll margin in a window, a ground click with no point, the cursor's modes).
-- [ ] combat 10, 13-22 (the beam glow's frame, light rolls, dying units, the firer's sparing, removal timing,
-      underground targets, emplacements, gun timing, precision, cascades, fire timings).
-- [ ] movement 17, 19-21 (the route search held off, the second target, Muster's first step, broken bridges).
-- [ ] battle-setup 7, 12, 13, 16, 18 (the planner's strongest object, fog timing, group costs from all members, the
-      staggered deaths, the counts' lists).
 - [ ] rendering 9, 12, 13 (the gun flash level, a WOF's piece order, view list ties).
 - [ ] frontend 9 and behaviour 1-8; data 4-13; the architecture items.
 

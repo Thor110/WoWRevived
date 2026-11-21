@@ -142,6 +142,9 @@ namespace wow
             for (Unit& u : units)
                 if (!u.players) u.fogged = !(FogLevel(u) > fog.darkness);
         }
+        // the first decay last (0x439D95, after the deployment's reveals), so the revealed start at 255 less the
+        // return rate
+        FogDecay();
         SetUpGrounds();
         // the group's stance (+0x54, 0x4802E0) is its members' +0xD8 averaged (ftol(sum + 0.5) / n), but the game makes
         // the groups (0x4216E0, from 0x439A8D) before deployment starts the members (0x4222C0's vt+0x14 = 0x495740,
@@ -344,8 +347,9 @@ namespace wow
                 const int wx = x + scrollX;
                 const int wy = land.ScreenYToWorldY(wx, y + scrollY);
                 const bool force = (SDL_GetModState() & SDL_KMOD_CTRL) != 0;
-                if (wy && force) ForceFire(wx, wy);
-                else if (wy) OrderMove(wx, wy);     // (a group in mode 1 fires there instead, 0x481CA0)
+                // (0x485C5F-0x485CD5: sent with 0x47B3F0's y even when it found none, 0)
+                if (force) ForceFire(wx, wy);
+                else OrderMove(wx, wy);     // (a group in mode 1 fires there instead, 0x481CA0)
             }
             return;
         }
@@ -368,7 +372,7 @@ namespace wow
         {
             const int wx = x + scrollX;
             const int wy = land.ScreenYToWorldY(wx, y + scrollY);
-            if (wy) ForceFire(wx, wy);
+            ForceFire(wx, wy);
         }
         else if (best->players)
         {
@@ -408,13 +412,16 @@ namespace wow
         if (InMinimap(x, y)) return 0;
         const bool ctrl = (SDL_GetModState() & SDL_KMOD_CTRL) != 0;
         const int mode = Mode();
+        int cursor = mode == 1 ? (ctrl ? 5 : 4) : 0;
         if (const Unit* u = HotspotAt(x, y))
         {
-            if (mode == 0 && u->players) return 1;
-            if (mode == 1) return (!u->players || ctrl) ? 5 : 1;
+            // mode 0 over the other side's (0x4971B7-0x4971C3): handled with no cursor set, so the last one stays
+            if (mode == 0 && !u->players) return lastCursor;
+            if (mode == 0) cursor = 1;
+            if (mode == 1) cursor = (!u->players || ctrl) ? 5 : 1;
         }
-        if (mode == 1) return ctrl ? 5 : 4;
-        return 0;
+        lastCursor = cursor;
+        return cursor;
     }
 
     // Home (0x43A480): the middle of the selection's extent (its group's bounds, 0x4836A0: each half rounded to 0),
@@ -831,10 +838,14 @@ namespace wow
                 // a light part (0x48DE80): under a parent of category 0-3 it stays when rand() % 100 is at most 100 x
                 // the hour's fourth float and the parent isn't Martian; then only with "Show lights" (AddLight). It
                 // goes with its unit, at the part's offset (PoseParts).
-                const int roll = random::Rand() % 100;
+                // (the rand() only under a parent of category 0-3, 0x48DE80)
                 const float chance = setup.dayTime ? setup.dayTime->sets[0].f[3] : 0.0f;
                 const int category = t->second.category;
-                if (category >= 0 && category <= 3 && (double(chance) * 100.0 < double(roll) || t->second.faction == 1)) continue;
+                if (category >= 0 && category <= 3)
+                {
+                    const int roll = random::Rand() % 100;
+                    if (double(chance) * 100.0 < double(roll) || t->second.faction == 1) continue;
+                }
                 const int x = int(u.x) + int16_t(part.b), y = int(u.y) + int16_t(part.c);
                 const int li = AddLight(part.a, x, y, land.HeightAt(x, y) + int(u.drive.lift) + int16_t(part.d));
                 if (li < 0) continue;
@@ -953,6 +964,15 @@ namespace wow
             if (u.fogged || u.hidden) continue;
             for (const Gun& g : u.guns)
             {
+                // the shells' class's draw (0x4885C0) steps its sprite (0x40EFB0 with 0x100) on every draw, firing or
+                // not; 0x495180 shows it only in state 2
+                int flash = 0;
+                if (g.cls == 0)
+                    if (const Sprite* sp = res.GetSprite(0xFF); sp && sp->FrameCount() > 0)
+                    {
+                        flash = g.flashFrame % sp->FrameCount();
+                        g.flashFrame = (g.flashFrame + 1) % sp->FrameCount();
+                    }
                 if (g.state != 2) continue;
                 auto gt = setup.units->find(g.type);
                 if (gt == setup.units->end() || !gt->second.field28) continue;
@@ -1019,8 +1039,7 @@ namespace wow
                         BeamItem b;
                         b.key = key - 4;
                         b.sprite = 0xFF;
-                        b.frame = g.flashFrame % sp->FrameCount();
-                        g.flashFrame = (g.flashFrame + 1) % sp->FrameCount();
+                        b.frame = flash;
                         b.x = x1;
                         b.y = y1;
                         b.level = level;
@@ -1330,14 +1349,18 @@ namespace wow
             if (u.group != group) continue;
             auto t = setup.units->find(u.type);
             if (t == setup.units->end()) continue;
-            int r = u.guns.empty() ? 10000 : 0;
-            for (const Gun& g : u.guns) r = std::max(r, WeaponData(g.type)[0]);
-            range = std::min({ range, ObjOjd::Vision(t->second, setup.armour), r });
+            // the range only from the vehicle members (+0xB8 bit 0, 0x48043A-0x48050E)
+            if (u.vehicle)
+            {
+                int r = u.guns.empty() ? 10000 : 0;
+                for (const Gun& g : u.guns) r = std::max(r, WeaponData(g.type)[0]);
+                range = std::min({ range, ObjOjd::Vision(t->second, setup.armour), r });
+            }
             sum += int16_t(t->second.field92);
             stances += u.stance;
             n++;
         }
-        groupRange[size_t(group)] = range;
+        groupRange[size_t(group)] = int16_t(range);    // a word (+0x4E): a group with no vehicle keeps 100000 as 0x86A0
         if (n) groupInterval[size_t(group)] = sum / n;
         if (n && size_t(group) >= setup.groups.size()) groupStance[size_t(group)] = int(double(stances) + 0.5) / n;
     }

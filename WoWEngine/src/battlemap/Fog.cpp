@@ -29,7 +29,6 @@ namespace wow
                     s[at++] = uint8_t(int(v));
                 }
         }
-        FogDecay();   // 0x439D95 (0x434DF0 at EnterBattleMap +0x625)
     }
 
     // 0x434DF0: every byte that isn't 0 less "Fog return rate" (+0x94), at least 0

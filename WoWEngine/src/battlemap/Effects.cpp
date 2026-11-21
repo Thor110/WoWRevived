@@ -148,6 +148,17 @@ namespace wow
         for (size_t i = 0; i < effects.size(); i++)
         {
             if (!effects[i].alive || effects[i].born == ticks) continue;
+            // under the ground, or a shell landed, it posted itself 0x8057 a tick on (0x4355A0 with 1): it's drawn
+            // once more and goes as the queued messages are taken, before its next update
+            if (effects[i].dieAt >= 0)
+            {
+                if (ticks >= effects[i].dieAt)
+                {
+                    effects[i].alive = false;
+                    objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) { return o.effect == int(i); }), objects.end());
+                }
+                continue;
+            }
             if (effects[i].kind == EffectKind::Smoke) effects[i].lift = float(double(effects[i].lift) - -1.5);
             bool gone = false;
             if (effects[i].gtype && effects[i].kind != EffectKind::Shell && effects[i].kind != EffectKind::Plain && effects[i].frames >= 3)
@@ -169,9 +180,10 @@ namespace wow
                 const int after = absolute ? land.HeightAt(int(e.x), int(e.y)) : 0;
                 e.lift = float(before - after) + e.lift + e.vz;
                 e.vz += e.g;
-                gone = e.lift < 0.0f;
+                bool later = e.lift < 0.0f;
                 moved |= e.vx != 0 || e.vy != 0 || e.vz != 0 || e.kind == EffectKind::Smoke;
-                if (e.kind == EffectKind::Shell) gone = ShellLands(i) || gone;
+                if (e.kind == EffectKind::Shell) later = ShellLands(i) || later;
+                if (later) e.dieAt = ticks + 1;
                 if (IsGas(e.type) && GasTick(i)) gone = true;
                 // *Provisional*: one with nothing to draw goes once its emitters are spent (in the game it stays,
                 // 0x489050 with no renderer only taking its step); the cascading ones (0x253-0x255, no sprite) not
@@ -186,7 +198,7 @@ namespace wow
             if (e.type >= 0x253 && e.type <= 0x255 && e.age++ == 11)
             {
                 const int dy = random::Random(8), dx = random::Random(8);
-                cascades.push_back({ e.type - 1, int(float(dx) + e.x - 4.0f), int(float(dy) + e.y - 4.0f), int(e.lift), e.group, e.attacker });
+                cascades.push_back({ e.type - 1, int(float(dx) + e.x - 4.0f), int(float(dy) + e.y - 4.0f), int(e.lift), e.group, e.attacker, e.weapon });
             }
             if (gone)
             {
@@ -261,8 +273,8 @@ namespace wow
         }
     }
 
-    // dword_4B84C8 (30) x the word / 20 (0x66666667, >> 3)
-    static int Ticks(int word) { return int((int64_t(word * 30) * 0x66666667LL >> 32) >> 3) + ((word * 30) < 0 ? 1 : 0); }
+    // dword_4B84C8 ("Game Frequency", 30) x the word / 20 (0x66666667, >> 3)
+    static int Ticks(int word, int freq) { return int((int64_t(word * freq) * 0x66666667LL >> 32) >> 3) + ((word * freq) < 0 ? 1 : 0); }
 
     // A light part made at a point (z its height): with "Show lights" on (0x48DE80: otherwise it goes; a parent of
     // category 0-3 also rolls against the hour, done for the scenery's in LoadScenery), raised 16 (+0xA0 less -16).
@@ -282,7 +294,7 @@ namespace wow
         if (t.a != 0 || t.b != 0 || t.c != 0)
         {
             l.fading = true;
-            l.count = Ticks(t.a);
+            l.count = Ticks(t.a, setup.gameFrequency);
             l.step = t.f / float(l.count);
             l.phase = 0;
         }
@@ -315,8 +327,8 @@ namespace wow
                 ObjOjd::BattleTables::Thirteen t;
                 if (setup.lights)
                     if (auto it = setup.lights->find(l.type); it != setup.lights->end()) t = it->second;
-                if (l.phase == 0) { l.step = 0; l.count = Ticks(t.b); l.phase = 1; }
-                else if (l.phase == 1) { l.phase = 2; l.count = Ticks(t.c); l.step = -(l.current / float(l.count)); }
+                if (l.phase == 0) { l.step = 0; l.count = Ticks(t.b, setup.gameFrequency); l.phase = 1; }
+                else if (l.phase == 1) { l.phase = 2; l.count = Ticks(t.c, setup.gameFrequency); l.step = -(l.current / float(l.count)); }
                 else
                 {
                     l.alive = false;

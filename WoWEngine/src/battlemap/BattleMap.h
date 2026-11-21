@@ -53,10 +53,11 @@ namespace wow
             bool showLights = true;     // [Options] "Show lights" (byte_4B8808)
             bool showShadows = true;    // [Options] "Show vehicle shadows" (byte_4B8814)
             float wofBrightness = 2.5f; // [Game] "WOF Brightness" (flt_59F364): the point lights on the models
-            float isoBrightness = 0.5f;
-            float zoomerSpeed = 2.5f;
+            float isoBrightness = 0.5f; // [Game] "ISO Brightness" (flt_4E8C04): the point lights on the IOB objects
+            float zoomerSpeed = 2.5f;   // [Tweak] "Battlemap Zoomer Speed" (dword_4F744C, 0x43A440): Home's and '.''s glide
             float lookScale = 1.0f;     // [Tweak] "Audible radius multiplier" (flt_59E44C): the look round's sight x it
-            int waterTwinkles = 20;     // [Tweak] "Water twinkles per frame" (dword_4F76E4, 0x439400)   // [Tweak] "Battlemap Zoomer Speed" (dword_4F744C, 0x43A440): Home's and '.''s glide // [Game] "ISO Brightness" (flt_4E8C04): the point lights on the IOB objects
+            int gameFrequency = 30;     // "Game Frequency" (dword_4B84C8, 0x401770): the gun cycle's and the lights' timings
+            int waterTwinkles = 20;     // [Tweak] "Water twinkles per frame" (dword_4F76E4, 0x439400)
             bool showSmoke = true;      // [Options] "Show Smoke & particles" (byte_4B880C)
             std::vector<BattleGroup> groups; // the sector's war map objects (WarMap::BattleGroups)
             int ownerFaction = 2;       // who holds the sector (0x43CA30): 0 Human, 1 Martian, 2 no one
@@ -187,8 +188,10 @@ namespace wow
             bool emitDone = false;                  // the list freed
             int count = 0, size = 0, group = -1;    // a shell's updates left (+0xC2), impact size (+0xC0), firer (+0xC4)
             int attacker = 0;                       // the firing unit's id (passed to its explosion's +0xCC)
+            int weapon = 0;                         // +0xC4, the type that made it (passed on by the cascade, 0x48CDE0)
             int depth = 0;                          // its view object's key over its y
             int born = -1;                          // the update it was made on
+            int dieAt = -1;                         // its 0x8057, posted with a delay of 1 (0x487890 / 0x488F00)
             int age = 0;                            // +0xD0: the cascading explosions' updates (0x48CDE0)
         };
         std::vector<Effect> effects;
@@ -371,6 +374,7 @@ namespace wow
         void ChaseTarget(size_t group);                         // 0x483B70 -> 0x4826D0, first in GroupTick
         void Aim(Unit& u, int x, int y, int z);                 // vt+0xC8: 0x491110 -> 0x496200 -> guns 0x494D20
         void GunTick(size_t unit, Gun& g);                      // 0x494DB0 and the class's update
+        void AimFlag(const Unit& u, Gun& g) const;              // 0x494FD0: +0xF0 bit 0, in range and arc
         void TurretTick(Unit& u, Turret& t);                    // 0x489B40
         int GunHeading(const Unit& u, const Gun& g) const;      // its +0x40: its turret's or its unit's
         void AddPartRenderers(size_t unit);
@@ -611,7 +615,8 @@ namespace wow
         struct PopupItem { int command, icon, text; Rect rect; int param = 0; int row = 0, col = 0; };
         std::vector<PopupItem> popup;       // "Battlemap menu" (WPopupMenu 0x432C60, 0x485DE0)
         int popupHover = -1;
-        int popupOpenRow = -1;              // the row opened out (0x433330 with the hovered item's command)
+        int popupOpenRow = -1;
+        mutable int lastCursor = 0;         // the cursor last set (kept where the game sets none)              // the row opened out (0x433330 with the hovered item's command)
         bool PopupShown(size_t i) const { return popup[i].col == 0 || popup[i].row == popupOpenRow; }
         void LayOutPopup(int x, int y);
         void OpenPopup(int x, int y);

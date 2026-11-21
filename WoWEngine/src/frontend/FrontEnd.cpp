@@ -1152,6 +1152,9 @@ namespace wow
         s.wofBrightness = ini.GetFloat("Game", "WOF Brightness", 2.5f);
         s.zoomerSpeed = ini.GetFloat("Tweak", "Battlemap Zoomer Speed", 2.5f);
         s.lookScale = ini.GetFloat("Tweak", "Audible radius multiplier", 1.0f);
+        // "Game Frequency" is a registry value at the game key's root (0x401770 -> 0x411810 / 0x4119A0, default 30);
+        // *provisional*: the engine reads it from the ini's [System]
+        s.gameFrequency = std::max(1, ini.GetInt("System", "Game Frequency", 30));
         s.waterTwinkles = ini.GetInt("Tweak", "Water twinkles per frame", 20);
         s.isoBrightness = ini.GetFloat("Game", "ISO Brightness", 0.5f);
         s.showSmoke = ini.GetBool("Options", "Show Smoke & particles", true);

@@ -138,7 +138,8 @@ namespace wow
                 aiThreats[size_t(key)].active = false;
                 int best = -1, bestValue = 0;
                 for (int g : aiOwn)
-                    if (const int v = AiValue(g); best < 0 || v > bestValue) { best = g; bestValue = v; }
+                    // (0x44578B-0x4457EE: best from 0, taken only when worth more, so one worth 0 is never chosen)
+                    if (const int v = AiValue(g); v > bestValue) { best = g; bestValue = v; }
                 if (best >= 0)
                 {
                     takeOwn(best);

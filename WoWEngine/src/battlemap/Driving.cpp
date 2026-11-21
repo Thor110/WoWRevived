@@ -1018,7 +1018,7 @@ namespace wow
     // the terrain costs each the largest (as unsigned, so -1, can't cross, wins) of record 10's for c, the max slope
     // the smallest of record 11's (from 1000), and +0x52 the class whose record 11 slope base is the largest (over
     // -1000). The slope costs (+0xB4) are ftol(pow(base, s)) for s 1 to 8 for each of the 8 classes.
-    // *Provisional*: every member counts as +0xB8 bit 0; the groups are set up once, at the start.
+    // (Only the vehicle members count, update 134.)
     void BattleMap::SetUpGrounds()
     {
         const size_t count = std::max(setup.groups.size(), groupTargets.size());
@@ -1028,7 +1028,7 @@ namespace wow
         std::vector<bool> any(count, false);
         for (const Unit& u : units)
         {
-            if (u.group < 0 || size_t(u.group) >= grounds.size()) continue;
+            if (u.group < 0 || size_t(u.group) >= grounds.size() || !u.vehicle) continue;
             GroundGroup& g = grounds[size_t(u.group)];
             auto t = setup.units->find(u.type);
             if (t == setup.units->end()) continue;

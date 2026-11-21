@@ -1623,3 +1623,30 @@ vehicle first moves.
 
 *Provisional*: the engine sound stays where it started; vt+0x110 / vt+0x114 (the ground patch +0x13C / +0x13E) and
 the selection voice (0x109, 0x439000) aren't in; a quiet positional voice isn't let go.
+
+## Parity fixes in update 134
+
+- **The beam's glow** at the target (GType 0xFF) steps its frame on every draw of the shells' class, firing or not
+  (0x4885C0); it's only shown in state 2.
+- **A light part** rolls rand() % 100 only under a parent of category 0-3 (0x48DE80), so the shared stream isn't
+  moved for the others.
+- **Explosions** (0x488200 / 0x487B50) tell the dying too (health 0 or less still speak and retaliate; only the
+  damage wants health over 0); the firer is spared only while it still exists: the object itself always, its group
+  unless turned (Detonate) or outright (the area blasts). *Provisional*: with no attacker id the firer group is
+  taken as there.
+- **Flying objects** under the ground and shells that have landed post their 0x8057 a tick on (0x487890 / 0x488F00):
+  drawn once more, gone before their next update.
+- **An underground target** also clears the group's bit 0 and +0x56 (0x4826D0); an emplacement not aiming frees its
+  group (0x48F8A0).
+- **A gun aimed** works out its in-range flag at once (0x494D20 -> 0x494FD0), so it can fire on the next cycle.
+- **The cascade** (0x48CDE0) passes its weapon type on.
+- **"Game Frequency"** (dword_4B84C8, a registry value, default 30) scales the gun cycle and the lights' fades.
+  *Provisional*: the engine reads it from the ini's [System].
+- **Damage** is worked in double and truncated once (0x48A5A0), the scenery's too.
+- **A ground click** with no point found is still sent with y 0 (0x485C5F); in mode 0 the cursor over the other
+  side's unit stays as it was (0x4971B7).
+- **The planner** takes an object for the key building only when it's worth more than 0 (0x44578B).
+- **The first fog decay** comes after the deployment's reveals (0x439D95). *Not yet*: the fog's timing by the game's
+  global frame counter (dword_4D2558).
+- **A group's range and ground costs** come from its vehicle members only (0x4802E0), the range kept as a word.
+- **Staggered deaths** (0x47CEE0) post to every member, dying or not, with a rand() each.
