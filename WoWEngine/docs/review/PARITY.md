@@ -281,6 +281,13 @@ settled: battle-ui 8, combat 4 and 9, movement 15, 16 and 24, battle-setup 4, 11
       0x492F40; the walkers' and fliers' with it), after setting +0xB8 bit 9 (0x47F320(1), *provisional*: what
       the bit is for isn't traced).
 
+**Update 139**
+- [x] Loose files as the game takes them (0x414DE0 / 0x415030): an archive entry is marked when a loose file of
+      its name exists as the archives are opened, and a marked entry is read as a file. Dat.wow's are looked for
+      in `dat\`; MAPS.WoW's in `Map\` (0x414FAB, a folder the game doesn't have), then read from `maps\`. The
+      engine let any loose `maps\` file win; now it's the game's rule, slip and all. Tested with the owner's
+      `dat` files loose, and with a loose map file with and without a `Map` folder.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

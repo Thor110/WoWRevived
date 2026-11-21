@@ -4,6 +4,9 @@
 //   - archive names are compared without regard to case
 //   - a loose file with the same name next to the archive (DAT\name) replaces the archive copy; the game marks
 //     those entries when it opens Dat.wow (0x414DE0), which is how the Enhanced Assets swap works
+//   - for MAPS.WoW the game looks for the loose file in a folder "Map" (0x414FAB), not "MAPS", and then reads the
+//     one in MAPS: so a loose map file is only used when one of its name is in "Map" too (the original's slip,
+//     kept; see docs/MODERN.md for making every folder overridable)
 //   - anything else, or anything not in an archive, is read as a loose file from the game folder
 // FFUH compressed data is decompressed either way.
 #pragma once
@@ -36,5 +39,6 @@ namespace wow
         GameFiles files;
         std::unique_ptr<Archive> dat;
         std::unique_ptr<Archive> maps;
+        std::vector<bool> datLoose, mapsLoose;   // each archive entry's mark (0x414DE0): read as a loose file
     };
 }

@@ -134,6 +134,8 @@ The modern options, after the fixes:
       smokestacks, the Airship model's name, the hole in sector 22, the restored sprite pixels), offered from
       the owner's edited files.
 - [ ] 6.10 Game modes, the editors, the players' ideas (MODERN.md).
+- [ ] 6.11 Files (MODERN.md "Files"): every data folder overridable by loose files, modern formats for them, the
+      owner's `dat` / `maps` fixes repacked by the installer, the war map background chosen by resolution.
 
 ## Tooling
 

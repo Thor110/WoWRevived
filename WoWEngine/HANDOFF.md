@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 138
+# Handoff: WoWEngine after update 139
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -32,7 +32,11 @@ These were in the previous session's scratch space, not in the repository. Ask t
    The item's `WOW_CD1.zip` and `WOW_CD2.zip` are `.bin/.cue` images of the Italian discs (the other languages'
    releases, linked in the repository's main readme, are `.iso`). The engine's own installer makes the game
    folder from them, music included: `wowinstall-cli <game folder> "Wow Human.cue" "WoW Martian.cue"`. A folder
-   made this way has no `SaveGame`; use `--human --open 0x8A` in place of `--load 1` (a new Human campaign gives
+   The owner has also supplied the English `TEXT.ojd` (drop it over the folder's `Text.ojd`: English menus and
+   messages in the screenshots). `WoWEngine/dat` and `WoWEngine/maps` in the repository are the owner's fixed
+   files for this version (docs/MODERN.md, "Files"): the `dat` ones can be copied into the game's `DAT` folder
+   and are picked up as loose files; the `maps` ones wait for the installer to repack them.
+   A folder made this way has no `SaveGame`; use `--human --open 0x8A` in place of `--load 1` (a new Human campaign gives
    the same London battle).
 
 ## Building
@@ -100,7 +104,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 138
+## State after update 139
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -135,7 +139,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **139**.
+  - The next number is **140**.
   - Work only in `WoWEngine/`. For a file format, `WoWViewer/` has the owner's own readers in C#.
   - Commit locally but don't push unless asked; a stop hook may ask to push, and the owner's answer has been no.
 - At the start of each update, merge `origin/main` (the owner's merged copy) first.

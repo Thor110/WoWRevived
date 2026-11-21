@@ -41,6 +41,23 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
 - **Scroll-wheel zoom** on the war map and the battle map: the mouse wheel zooms in and out, by 1x a step by
   default (`.ini` sets the step and the limits).
 
+### Files
+
+- **Every data folder overridable**: a loose file in `DAT`, `MAPS`, `SFX` or `VOX` replacing the copy in that
+  folder's archive. The original does this for `DAT` only (a loose `dat\<name>` replaces Dat.wow's entry,
+  0x414DE0). For `MAPS` it looks in a folder `Map` that doesn't exist (0x414FAB), so loose map files are ignored;
+  the sound libraries have no such rule. The engine keeps the original's behaviour, slip included
+  (`core/Vfs`); this option would make all four work the same way.
+- **Modern formats** accepted for the overriding files (PNG for sprites, WAV / OGG for sounds, and so on), so a
+  fix or a mod needn't be encoded in the game's own formats.
+- **The owner's fixed files** (`WoWEngine/dat`, `WoWEngine/maps`: the WoWRevived patches for this version of the
+  game): `dat` holds re-encoded sprites (the owner's RLE encoder packs them better than the original tool did),
+  the Cotton Factory and Airship model fixes and the alternative war map backgrounds; `maps` holds the sector 22
+  terrain fix (`LAND22.CLS`) and re-encoded minimaps. The `dat` ones work today as loose files in the game's
+  `DAT` folder. The `maps` ones can't be loose files in the original's scheme and are to be **repacked into
+  MAPS.WoW by the installer**; that waits for this stage, as does choosing between the original and the
+  extended war map background by resolution (`TEMP-HWM` / `TEMP-MWM` and their `HI` versions).
+
 ### Controls
 
 - **Keyboard bindings**: every key the game uses can be rebound (the scroll keys, Tab for the minimap, Home,
