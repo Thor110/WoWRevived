@@ -274,8 +274,9 @@ namespace wow
                       int dieAt = -1;       // a 0x80A0 posted to itself (the update it arrives on)
                       int shoreAt = -1;     // an Ironclad's 0x80C1 (10 damage) posted to itself, off water
                       int aimX = 0, aimY = 0;   // +0xC8 / +0xCC: the point last aimed at (0x496200)
+                      bool leaving = false;     // arrived with steering bit 9 (retreating): off the map (0x491A96)
                       bool aiming = false;      // +0xE4 bit 1: aimed (0x496200), till stood down (0x496440)
-                      bool offScreen = false;   // +0xE4 bit 0 (vt+0xA4 / vt+0xA8): outside the view at its last draw (0x47F570)
+                      bool halted = false;      // +0xE4 bit 0 (vt+0xAC sets, vt+0xA8 reads): stopped by 0x8031 (0x496BC0)
                       int partsLeft = 0;    // a building's children (+0x50's count, 0x4216D0): its parts not yet lost
                       int id = 0;           // +0x08, the object's id (kept by a group's target, +0x30)
                       int scanCount = 0;    // +0xDA, updates since its last look round (0x4967E0)
@@ -338,7 +339,9 @@ namespace wow
         float Progress(const Unit& u) const;                    // its war map object's +0x7C / +0x78 (1 for none)
         void BuildingSound(Unit& u);                            // its own sound (+0xA2) at its point, 0x4883E0
         void BuildingTick(Unit& u);                             // 0x48F130
-        void LoseParts(size_t unit);                            // 0x48EF80's part after 0x48AB20
+        void LoseParts(size_t unit);
+        void Stop8031(Unit& u);                                 // 0x8031 to a vehicle: 0x4910C0 -> 0x496BC0
+        void StandDown(Unit& u);                                // 0x805A to a unit (its guns aside): vt+0xCC, vt+0xAC(0)                            // 0x48EF80's part after 0x48AB20
         const IsoModel* LoadIob(int gtype);                     // an IOB model and its lights, loaded once
         void StopUnitSounds(Unit& u);
         void ClearFootprint(Unit& u);                           // vt+0x114, 0x491630
@@ -567,7 +570,7 @@ namespace wow
         // random point; Attack and Retaliate (2, 1) go back home (+0x60 / +0x64) if more than 400 from it
         std::vector<int> groupTicks, groupHomeX, groupHomeY;
         std::vector<int> groupInterval;                         // +0x5C, the think interval (the members' +0x92 averaged)
-        std::vector<bool> groupOffScreen;                       // +0x1D8 bit 1: most of it off screen (0x483760)
+        std::vector<bool> groupHalted;                          // +0x1D8 bit 1: most of it halted (0x483760)
         std::vector<bool> groupBusy;                            // +0x1D8 bit 0 without a target: moving (an order, Avoid's run, Retreat)
         std::vector<bool> groupSelfMove;                        // +0x1D8 bit 2: that move is the group's own (0x483B70's roam / home)
         // 0x80F4 posted to an object (0x4355A0 with its delay): the update it arrives, the object, the firer, the level

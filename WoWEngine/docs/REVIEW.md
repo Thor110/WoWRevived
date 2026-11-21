@@ -179,13 +179,17 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       Brightness"), and the vehicles' own light parts (headlights) going with them. (Reported in play: the lorries
       looked malformed and had no turret; the turret was standing inside the body, now held to its model point.)
       *Update 119*: the IOB objects lit by the two nearest point lights (0x4113F0 / 0x4111B0, ISO Brightness 0.5).
-- [~] **Group behaviour**: target-gone speech 0x10E / 0x10D (0x4821F0), the group's re-engage (vt+0x38, 0x483760),
+- [x] **Group behaviour**: target-gone speech 0x10E / 0x10D (0x4821F0), the group's re-engage (vt+0x38, 0x483760),
       messages 0x80C3 (rally), 0x808A (halt), 0x80B9 in 0x490A70. *Update 109*: 0x4821F0 and vt+0x38 in (0x80C3 in
       106); 0x808A waits on the gun emplacements (its only sender, 0x496890), 0x80B9's bit 9 on what reads it.
       *Update 122*: 0x496890 is every unit's look round, not only the emplacements': aiming (+0xE4 bit 1) with its
       group mostly on screen (+0x1D8 bit 1 clear, set by 0x483760 from the members' off-screen bit 0) a unit holds
       (0x808A, steering bit 5: going, no arrival / separation / braking / matching / cohesion), else stops (0x8031);
       the emplacements first stand their group's guns down. Left: 0x80B9's bit 9, 0x496890's vt+0xAC.
+      *Update 123*: correction: +0xE4 bit 0 is *halted* (0x8031 sets it through vt+0xAC; 0x805A and each look round
+      clear it), not off screen, so a group mostly halted keeps its aiming members stopped, else they hold. A vehicle's
+      stand-down (0x805A, 0x491180) stops it. Bit 9 is the retreat: set by Retreat's second 0x80B9, it makes a unit
+      leave the map at its route's end (0x491A96) in place of the engine's "within 256 of the point".
 
 ## 4. Interface missing
 

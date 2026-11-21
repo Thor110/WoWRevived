@@ -211,7 +211,12 @@ namespace wow
         };
         const int svx = toVertex(sx, land.Width()), svy = toVertex(sy, land.Height());
         const int dvx = toVertex(x, land.Width()), dvy = toVertex(y, land.Height());
-        if (octagonal(svx, svy, dvx, dvy) <= 3)
+        // (0x483062: only when the group's first member is a vehicle, +0xB8 bit 0, without steering bit 9, the
+        // retreat: a group retreating from beside its point still goes, to leave there)
+        const Unit* first = nullptr;
+        for (const Unit& o : units)
+            if (o.group == group) { first = &o; break; }
+        if (octagonal(svx, svy, dvx, dvy) <= 3 && first && first->vehicle && !(first->drive.flags & 0x200))
         {
             SDL_Log("ALREADY AT DESTINATION");
             return;
@@ -233,13 +238,7 @@ namespace wow
                 // 0x4833F0: "ROUTE NOT FOUND": the members get 0x8031 and the group stops
                 SDL_Log("ROUTE NOT FOUND");
                 Speak(0x10B, group);    // a player's move (bits 3 and 4)
-                for (size_t i : members)
-                {
-                    auto& d = units[i].drive;
-                    d.flags |= 1;
-                    d.flags &= ~0x2020u;
-                    d.pendingAt = -1;
-                }
+                for (size_t i : members) Stop8031(units[i]);
                 return;
             }
             // 0x483270: "ROUTE FOUND": each member gets 0x802E(ftol(sqrt(members) + 1) x its radius, the route)
@@ -304,10 +303,32 @@ namespace wow
         for (Unit& u : units)
         {
             if (!u.players || !u.vehicle || !selected[size_t(u.group)]) continue;
-            u.drive.flags |= 1;
-            u.drive.flags &= ~0x2020u;
-            u.drive.pendingAt = -1;
+            Stop8031(u);
         }
+    }
+
+    // 0x805A to a unit (0x495CB0's case): vt+0xCC, a vehicle's 0x491180 (steering bit 5 cleared, bit 0 set: it stops)
+    // then 0x496440 (its goal cleared, +0xE4 bit 1: not aiming); then vt+0xAC(0), +0xE4 bit 0: not halted
+    void BattleMap::StandDown(Unit& u)
+    {
+        if (u.vehicle)
+        {
+            u.drive.flags &= ~0x20u;
+            u.drive.flags |= 1;
+        }
+        u.aiming = false;
+        u.halted = false;
+    }
+
+    // 0x8031 to a vehicle (0x4910C0): bit 5 cleared, bit 0 (stopped) set, bit 13 cleared (an 0x808B still to come
+    // dropped); then 0x496BC0: +0xDA (the look round's count) 0 and vt+0xAC(1), +0xE4 bit 0: halted
+    void BattleMap::Stop8031(Unit& u)
+    {
+        u.drive.flags |= 1;
+        u.drive.flags &= ~0x2020u;
+        u.drive.pendingAt = -1;
+        u.scanCount = 0;
+        u.halted = true;
     }
 
     // 0x808B, posted to arrive after delay updates (an earlier one dropped, 0x435620): bit 0 its value (stopped), and
@@ -1029,8 +1050,8 @@ namespace wow
     // node, or with no route, it has arrived inside the arrival radius + the offset (+0x13A), and the route is let
     // go. On arriving (once: bit 1): its group counts it (0x482450) and 0x808B(1) stops it 9 x (members not yet
     // arrived) + 60 updates on.
-    // *Provisional*: the second target (+0xC8 / +0xCC) taken first when set, 0x80B9 to the group, the sector stats and
-    // the selection refresh aren't in.
+    // *Provisional*: the second target (+0xC8 / +0xCC) taken first when set, the sector stats and the selection
+    // refresh aren't in.
     void BattleMap::Advance(Unit& u)
     {
         auto& d = u.drive;
@@ -1061,8 +1082,15 @@ namespace wow
             d.waypoint = 0;
             d.route.reset();
         }
+        // (0x491A96, after the 0x808B below) with bit 9 (retreating, 0x80B9 with 1): its war map object (+0x48) told
+        // 0x80B9 (the sector's room count), bit 9 cleared, and it's taken off the map (vt+0x18): LeaveMap
         if (d.flags & 2) return;
         d.flags |= 2;
+        if (d.flags & 0x200)
+        {
+            d.flags &= ~0x200u;
+            u.leaving = true;
+        }
         int left = 0;
         if (d.order >= 0)
         {

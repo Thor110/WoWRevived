@@ -88,8 +88,9 @@ namespace wow
     // 0x80B9 (0x4821A0), the target cleared (+0x2C / +0x30 0, +0x34..+0x3C -1), the guns stood down (0x805A), +0x1D8
     // bit 0 cleared (0x480EB0), each member 0x80B9 again, bit 3 set, bit 0 set, the group sent to the point (0x804F
     // with its x and y), and each member's war map object (+0x48) told 0x80BB with the point's sector.
-    // *Provisional*: what 0x80BB does to the war map object isn't traced: here a member within 64 of the point
-    // leaves the map, and its object goes to that sector when the battle map closes.
+    // Each member's second 0x80B9 has 1: its steering's bit 9, so at its route's end it leaves the map (0x491A96).
+    // *Provisional*: what 0x80BB does to the war map object isn't traced: its object goes to that sector when the
+    // battle map closes.
     void BattleMap::Retreat(int group)
     {
         if (group < 0 || size_t(group) >= groupRetreat.size()) return;
@@ -120,6 +121,8 @@ namespace wow
         std::vector<size_t> members;
         for (size_t i = 0; i < units.size(); i++)
             if (units[i].group == group && units[i].vehicle) members.push_back(i);
+        // each member's second 0x80B9, with 1 (0x4810B4 / 0x4811DA): +0x188 bit 9, retreating, before the move
+        for (size_t i : members) units[i].drive.flags |= 0x200;
         OrderGroupMove(group, members, p.x, p.y);
     }
 

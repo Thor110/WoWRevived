@@ -399,11 +399,11 @@ namespace wow
                 if (id == -1) Aim(u, x, y, z);
                 else if (const Unit* o = UnitById(id)) Approach(u, *o);
             }
-        // bit 1: more than 10, or more than half the members (+0x24, halved unsigned), off screen (vt+0xA8)
-        int off = 0, members = 0;
+        // bit 1: more than 10, or more than half the members (+0x24, halved unsigned), halted (vt+0xA8, +0xE4 bit 0)
+        int halted = 0, members = 0;
         for (const Unit& u : units)
-            if (u.group == g) { members++; if (u.offScreen) off++; }
-        if (size_t(g) < groupOffScreen.size()) groupOffScreen[size_t(g)] = off > 10 || off > (members >> 1);
+            if (u.group == g) { members++; if (u.halted) halted++; }
+        if (size_t(g) < groupHalted.size()) groupHalted[size_t(g)] = halted > 10 || halted > (members >> 1);
     }
 
     // vt+0xC4 (0x491100 -> 0x496300): unless it says not (vt+0xF8), at another object: d = ftol(the distance - -1.0),
@@ -481,8 +481,7 @@ namespace wow
             for (Unit& m : units)
                 if (m.group == u.group)
                 {
-                    m.aiming = false;
-                    m.drive.flags &= ~0x20u;
+                    StandDown(m);
                     for (Turret& tr : m.turrets) tr.aiming = false;
                     for (Gun& gn : m.guns)
                     {
@@ -492,10 +491,11 @@ namespace wow
                     }
                 }
         }
+        u.halted = false;   // vt+0xAC(0)
         if (u.aiming && hasGroup && u.vehicle)
         {
-            if (!groupOffScreen[size_t(u.group)]) u.drive.flags |= 0x20;
-            else { u.drive.flags |= 1; u.drive.flags &= ~0x2020u; u.drive.pendingAt = -1; }
+            if (!groupHalted[size_t(u.group)]) u.drive.flags |= 0x20;
+            else Stop8031(u);
         }
         const int stance = u.stance;
         if (stance >= 2 && stance <= 3 && size_t(u.group) < groupTargets.size() && groupTargets[size_t(u.group)].target == 0 &&
@@ -693,10 +693,12 @@ namespace wow
         for (Unit& u : units)
             if (u.group == group)
             {
-                u.aiming = false;   // each member's 0x805A (0x496440): +0xE4 bit 1 cleared
-                // a vehicle's (vt+0xCC, 0x491180) first clears bit 5 (held) of its steering. *Provisional*: it also
-                // sets bit 0 (stopped), which isn't done here: which of the vehicle's entries 0x805A reaches isn't sure
-                u.drive.flags &= ~0x20u;
+                // each member's 0x805A (0x495CB0's case): vt+0xCC, for a vehicle 0x491180: steering bit 5 cleared
+                // and bit 0 (stopped) set, then 0x496440: aiming (+0xE4 bit 1) cleared; then vt+0xAC(0): not halted
+                StandDown(u);
+                // 0x80B9 (0x490CD5) with 0 goes with the stand-down in each sender (0x4821A0, 0x482880, 0x481CA0,
+                // the retreat's first): +0x188 bit 9 cleared
+                u.drive.flags &= ~0x200u;
                 for (Turret& t : u.turrets) t.aiming = false;
             }
         for (Unit& u : units)
