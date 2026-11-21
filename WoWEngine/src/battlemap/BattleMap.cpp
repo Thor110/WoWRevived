@@ -124,6 +124,15 @@ namespace wow
             if (IsBuilding(u) && unfinished && u.players) AddCorners(i);
         }
         for (const Unit& u : units) Occupy(u.type, u.x, u.y);
+        // each object's start (0x495740) ends, for the player's (+0x24 0), in vt+0x100: the fog lifted round it at
+        // once, not at the first "Fog update freq" tick (which left the map dark for its first moments); and the
+        // other side's hidden or shown by it
+        if (fog.enabled)
+        {
+            FogRevealOwn();
+            for (Unit& u : units)
+                if (!u.players) u.fogged = !(FogLevel(u) > fog.darkness);
+        }
         SetUpGrounds();
         // the group's stance (+0x54, 0x4802E0) is its members' +0xD8 averaged (ftol(sum + 0.5) / n), but the game makes
         // the groups (0x4216E0, from 0x439A8D) before deployment starts the members (0x4222C0's vt+0x14 = 0x495740,

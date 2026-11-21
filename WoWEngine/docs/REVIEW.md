@@ -194,6 +194,8 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
 - [x] **The battle map built behind the Briefing** (reported in play: it was seen being put together, the ground,
       then the buildings, then the units). *Update 124*: built while the Briefing's up, shown at once on leaving it;
       the buildings' sounds and the pod's landing wait for it to be shown.
+      *Update 125*: what was seen was the fog: the player's objects lift it as they start (0x495740's vt+0x100),
+      not at the first fog tick, so the map no longer starts dark and lights up a moment later.
 
 ## 4. Interface missing
 

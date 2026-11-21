@@ -532,6 +532,7 @@ namespace wow
         void FogReveal(int vx, int vy, int range);      // 0x434A80
         float FogLevel(const Unit& u);                  // 0x48B050
         void FogTick();
+        void FogRevealOwn();                            // each of the player's objects' vt+0x100 (0x4964B0 / 0x48C570)
         std::set<int> encountered;      // byte_51A19C by type: 0x47F630, 0x488C00
         int rightDownAt = -1;
         struct PopupItem { int command, icon, text; Rect rect; int param = 0; };

@@ -93,19 +93,24 @@ namespace wow
         if (fog.updateFreq > 0 && ticks % fog.updateFreq == 0)
         {
             FogDecay();
-            const int64_t cell = land.Cell(), half = land.HalfCell();
-            auto vertex = [&](int v) { return int((int64_t(int32_t(uint32_t(v) << 16)) + half) / cell); };
-            for (const Unit& u : units)
-            {
-                if (!u.players) continue;
-                auto t = setup.units->find(u.type);
-                if (t == setup.units->end()) continue;
-                const int sight = ObjOjd::Vision(t->second, setup.armour);
-                if (!u.vehicle && sight == 0) continue;
-                FogReveal(vertex(int(u.x)), vertex(int(u.y)), vertex(sight));
-            }
+            FogRevealOwn();
         }
         for (Unit& u : units)
             if (!u.players) u.fogged = !(FogLevel(u) > fog.darkness);
+    }
+
+    void BattleMap::FogRevealOwn()
+    {
+        const int64_t cell = land.Cell(), half = land.HalfCell();
+        auto vertex = [&](int v) { return int((int64_t(int32_t(uint32_t(v) << 16)) + half) / cell); };
+        for (const Unit& u : units)
+        {
+            if (!u.players) continue;
+            auto t = setup.units->find(u.type);
+            if (t == setup.units->end()) continue;
+            const int sight = ObjOjd::Vision(t->second, setup.armour);
+            if (!u.vehicle && sight == 0) continue;
+            FogReveal(vertex(int(u.x)), vertex(int(u.y)), vertex(sight));
+        }
     }
 }

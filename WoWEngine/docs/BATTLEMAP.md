@@ -434,6 +434,12 @@ the `datsun` cheat clears, +0x8C), `Fog darkness` (0.7, +0x90), `Fog return rate
 (15, +0x98), `Fog smooth index` (128, +0x9C), `Fog vert dropoff` (3, +0xA0), `Fog damage delta` (0, +0xA4, read,
 not used) and `Fog vert damage radius` (16, +0xA8, the margin of the screen rectangle a changed vertex redraws).
 
+**At the start**: each object's start (0x495740, as deployment places it) ends, for the player's (+0x24 0), in
+vt+0x100 (0x4964B0 for a vehicle, 0x48C570 for the rest), which lifts the fog round it at once. The engine had
+waited for the first `Fog update freq` tick, so the map showed dark for its first moments and then lit up (reported
+in play: the lighting came on a moment after loading in). `BattleMap::FogRevealOwn`, from the constructor and each
+fog tick.
+
 - **Made** (0x4346C0, EnterBattleMap +0x1A8): FogMap (+0x18) and OldFog (+0x1C), a byte for each landscape vertex,
   all 0, or all 0xFF with the fog off; and 19 round stamps (+0x20 + 4i, i 1-19) of radius 5i (+0x70 + i): 2r x 2r
   bytes from (-r, -r), each 0 at r or further, 255 within r less the dropoff, (r - d) x 255 / dropoff between
