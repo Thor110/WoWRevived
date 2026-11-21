@@ -56,7 +56,11 @@ Each item has a plate, drawn solid, and a glass panel, drawn at 50%. Both have t
 | 1 | 0x3E / 0x3F | 0x43 / 0x44 | 0x38 / 0x3A |
 | 2 | 0x40 / 0x41 | 0x3B / 0x3C | 0x3B / 0x3D |
 
-Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 0x8123 (back). WGame's handler (0x402B80) opens the next menu.
+Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 0x8123 (back), then the previous command, which the menu hands its Fullscreen View, so it fades out as a click does (0x40A1B0 -> 0x4065E0). WGame's handler (0x402B80) opens the next menu. A screen's own command (the credits' exit, 0x405689) fades the same way, and a right click skips the Splash and the credits as a left one does (0x405E6E, 0x405672).
+
+Word wrap (0x416250) sums each character's width (glyph + spacing, 0 below 0x20) and breaks at a character over ' ' once the sum reaches the width (or after a '\n'): the line ends before the word, less the spaces before it, and the next starts at the word with the sum at 0. Runs of spaces inside a line are kept.
+
+Palette groups free all 33 shade slots before loading theirs (0x40B6C0); the CD Player's (0x2F9) also loads the research screen's interface and fonts, `{S}R{S}I` into slot 5 and `{S}RGI` into 9.
 
 ### Menus rebuilt so far
 

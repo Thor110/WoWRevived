@@ -31,6 +31,7 @@ namespace wow
         void Draw(Canvas& canvas) const override;
         std::optional<Command> OnKey(int sdlKey) override;
         std::optional<Command> OnMouseButton(int x, int y, bool down) override;
+        std::optional<Command> OnRightButton(int x, int y, bool down) override { return OnMouseButton(x, y, down); } // 0x405672
 
     private:
         std::optional<Command> Leave();

@@ -41,8 +41,8 @@ namespace wow
     // Both ends go to their vertices and then the nearest node the group can stand on (0x482B00), and the route
     // finder is asked (0x494440, Routes.cpp): going straight, the members get 0x80C2 to where it says; with a
     // route, 0x802E. The group's members are its vehicles (+0xB8 bit 0) not on a bridge link or with bit 8.
-    // *Provisional*: the attack range (+0x2C's target, "CAN'T GET TO WITHIN ATTACK DISTANCE!"), the destination flag
-    // (type 0x17C), the speech (0x10A, 0x10B) and the re-post while another group's search runs aren't in.
+    // *Provisional*: the attack range (+0x2C's target, "CAN'T GET TO WITHIN ATTACK DISTANCE!") and the re-post while
+    // another group's search runs aren't in (the destination flag and the speech are, below).
     void BattleMap::OrderMove(int x, int y)
     {
         // each selected group gets the order (0x804F to the group)
@@ -715,6 +715,7 @@ namespace wow
     // 0x492DE0: the speed it may go is the type's +0x54 word x 0.02 (vt+0x12C, 0x492DB0), over the ground's cost there
     // / speedCostDivisor when that's more than 1, and no more than the velocity's length. Going, it's at least 0.2,
     // and the speed rises by 0.05 x it toward it or falls by 0.1 x it above it; stopped, it falls by 0.1 x it to 0.
+    // Going is vt+0x144's test (a stopped vehicle on a bridge link still goes, at 0.2 or more).
     // The ground's cost is its group's (0x480680, not strict) at the vertex nearest the unit.
     void BattleMap::SpeedControl(Unit& u, float wanted)
     {
@@ -730,7 +731,9 @@ namespace wow
         }
         if (d.link) top = 1.0f;     // on a bridge
         if (!(top <= wanted)) top = wanted;
-        if (!(d.flags & 1))
+        // going is vt+0x144 (0x4909D0, at 0x492E8E): not stopped, or on a bridge link (bits 5 and 8 not in), and not
+        // frozen
+        if ((!(d.flags & 1) || d.link) && !u.Frozen())
         {
             if (double(top) < 0.2) top = 0.2f;
             if (d.speed < top) d.speed = float(double(d.speed) - double(top) * -0.050000001);

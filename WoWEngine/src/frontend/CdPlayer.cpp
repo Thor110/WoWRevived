@@ -98,8 +98,22 @@ namespace wow
         if (command.id != CmdTransport) return false;
         switch (command.param)
         {
-        case PrevTrack: Select(track - 1, playing); break;
-        case NextTrack: Select(track + 1, playing); break;
+        // Next / Prev (0x413220 / 0x4134B0, from 0x4081D0) wrap round the ends: past the last, the first music track
+        // (2); before the first, the last; and a wrap stops play (+0xC4 0, 0x4083BF / 0x408351)
+        case PrevTrack:
+        case NextTrack:
+        {
+            const int to = command.param == NextTrack ? track + 1 : track - 1;
+            if (to > LastTrack || to < FirstTrack)
+            {
+                music.Stop();
+                music.SetPaused(false);
+                playing = false;
+                Select(to > LastTrack ? FirstTrack : LastTrack, false);
+            }
+            else Select(to, playing);
+            break;
+        }
         // Play (0x408328) resumes a paused track, otherwise starts it; Pause (0x40833B) pauses the CD and counts
         // as not playing, so Play comes back in Stop's place
         case Play:

@@ -130,6 +130,11 @@ namespace wow
         // trigger, with a trigger among its prerequisites; otherwise from a random place (rand() % the item count)
         // on, the next available item that isn't a trigger. It becomes the research; -1 when there's none.
         int ChooseForAi();
+        // The computer player's pick, its research's vtable +0x2C (0x45A400 Human, 0x45B4E0 Martian): the first time,
+        // one of the side's two plans by rand() % 2 (kept for the rest of the run, dword_4CA1A8 / dword_4CA364); then
+        // the first item of the plan that's available (0x45B860: state 1) becomes the research (0x458A00); with none,
+        // 0x458A60 (ChooseForAi). -1 when there's nothing.
+        int ChooseFromPlan();
         // 0x45A1C0 / 0x45B320: the triggers from the types met in battle (the unit table's +0xAC, set by the
         // battle map), an unlock pass, then the improvement multipliers of the finished enhancements
         void UpdateTriggers(const std::set<int>& encountered);

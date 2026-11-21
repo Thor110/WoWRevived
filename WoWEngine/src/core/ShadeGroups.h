@@ -10,8 +10,8 @@ namespace wow
     struct ShadeGroup
     {
         int paletteGType;
-        std::string_view files[12];
-        int slots[12];
+        std::string_view files[14];
+        int slots[14];
         int count;
     };
 
@@ -35,7 +35,9 @@ namespace wow
         { 0x2F6, { "F6F6", "F6{S}I", "F6GI" }, { 17, 5, 9 }, 3 },
         { 0x2F7, { "F7F7", "F7{S}I", "F7GI" }, { 18, 5, 9 }, 3 },
         { 0x2F8, { "SESE", "SE{S}I", "SEGI" }, { 19, 5, 9 }, 3 },
-        { 0x2F9, { "cdsepia", "cd1", "cd2", "cd3", "cd4", "cd5", "cd6", "cd7", "cd8", "cd9", "cd10" },
-                 { 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 }, 11 },
+        // cd, the CD Player (0x40BC4E-0x40BCB3, the shared tail 0x40C54F): its sepia and ten track tables, and the
+        // research screen's interface and fonts in slots 5 and 9
+        { 0x2F9, { "cdsepia", "cd1", "cd2", "cd3", "cd4", "cd5", "cd6", "cd7", "cd8", "cd9", "cd10", "{S}R{S}I", "{S}RGI" },
+                 { 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 5, 9 }, 13 },
     };
 }

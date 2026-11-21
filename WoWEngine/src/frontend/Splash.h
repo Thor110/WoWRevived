@@ -22,6 +22,8 @@ namespace wow
         void Draw(Canvas&) const override {}
         std::optional<Command> OnKey(int sdlKey) override;
         std::optional<Command> OnMouseButton(int, int, bool down) override { if (down) Skip(); return std::nullopt; }
+        // a right click skips as a left one does (0x405E6E: 0x204 with 0x201)
+        std::optional<Command> OnRightButton(int x, int y, bool down) override { return OnMouseButton(x, y, down); }
         int CursorAt(int, int) const override { return 0; }
 
     private:

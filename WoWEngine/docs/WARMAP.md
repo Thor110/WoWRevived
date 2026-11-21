@@ -40,7 +40,8 @@ colours are each side's own: in the Human table 63 is dark red and 64 green, in 
 round, so each side sees its own frontier in its own colour.
 
 **Borders** are coloured by 0x41D9B0 from the two sectors either side (a coastline has the sea, no one, on its
-other side), through 0x49C050:
+other side), each counted as no one's unless its holder has its command building there finished (0x41DC1A-0x41DC47,
+0x43C990; until update 103 the engine took the holder alone), through 0x49C050:
 
 | Border | Level |
 |---|---|

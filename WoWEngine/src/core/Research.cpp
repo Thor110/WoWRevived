@@ -320,6 +320,36 @@ namespace wow
         idle = 0;
     }
 
+    namespace
+    {
+        // The plans (off_4CA600 Human: off_4CA4F8, off_4CA580; off_4CA740 Martian: off_4CA610, off_4CA6B0), each a list
+        // of the side's research globals (0x588C40 Human, 0x588F20 Martian, four bytes an item), as item numbers
+        const std::vector<std::vector<int>> HumanPlans = {
+            { 65, 72, 28, 20, 40, 36, 69, 11, 55, 29, 61, 75, 68, 37, 78, 70, 62, 12, 30, 44, 71, 38, 41, 77, 42, 66, 82, 76, 79, 26, 73, 27, 74 },
+            { 72, 15, 46, 69, 65, 17, 28, 58, 61, 75, 11, 73, 26, 55, 70, 77, 74, 16, 47, 26, 59, 82, 44, 68, 66, 78, 12, 27, 60, 79, 71 },
+        };
+        const std::vector<std::vector<int>> MartianPlans = {
+            { 37, 32, 33, 16, 29, 69, 8, 34, 6, 24, 65, 72, 26, 75, 61, 30, 70, 58, 79, 60, 35, 73, 66, 27, 77, 7, 25, 80, 62, 31, 76, 68, 21, 36, 28, 78, 71, 74 },
+            { 37, 9, 72, 75, 65, 8, 34, 69, 12, 51, 10, 39, 6, 58, 79, 73, 35, 21, 77, 60, 13, 52, 11, 40, 74, 78, 66, 7, 36, 14, 53, 68, 80, 22, 76 },
+        };
+        int humanPlan = -1, martianPlan = -1;   // dword_4CA1A8 / dword_4CA364: chosen once, for the whole run
+    }
+
+    int Research::ChooseFromPlan()
+    {
+        const auto& plans = human ? HumanPlans : MartianPlans;
+        int& chosen = human ? humanPlan : martianPlan;
+        if (chosen == -1 && !plans.empty()) chosen = random::Rand() % int(plans.size());
+        if (chosen >= 0)
+            for (int number : plans[size_t(chosen)])
+                if (number >= 0 && size_t(number) < items.size() && items[size_t(number)].state == Available)
+                {
+                    SetCurrent(number);
+                    return number;
+                }
+        return ChooseForAi();
+    }
+
     int Research::ChooseForAi()
     {
         const int count = int(items.size());

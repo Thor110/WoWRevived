@@ -969,8 +969,8 @@ namespace wow
         }
         if (WarMap* map = ActiveWarMap()) { if (!inBattle) WarMapSounds(*map); }
         else if (musicTimer >= 0) StopWarMapSounds();
-        // the credits' own exit is sent straight on (0x4056F0); the rest come from the view's controls
-        if (auto command = screen->TakeCommand()) Dispatch(*command, screen->Id() != Credits::Id);
+        // a screen's own commands fade out as a click's do; the credits' exit too (0x405689 -> 0x4065E0)
+        if (auto command = screen->TakeCommand()) Dispatch(*command, true);
     }
 
     // The tool-tip manager (WDesktop 0x433870), every update: with a tip up for the part of the screen under the
@@ -1274,8 +1274,9 @@ namespace wow
             }
         }
         if (!screen) return;
-        // Escape's back (0x40A1B0 sends 0x8123 itself) goes straight on; a control's command fades out first
-        if (auto command = screen->OnKey(key)) Dispatch(*command, key != SDLK_ESCAPE);
+        // a key's command fades out as a click does: Escape's back too (0x40A1B0 sends 0x8123, then the previous
+        // command, which the menu hands its Fullscreen View, 0x40A1ED -> 0x40A272 -> 0x40A245 -> 0x4065E0)
+        if (auto command = screen->OnKey(key)) Dispatch(*command, true);
     }
 
     void FrontEnd::OnMouseMove(int x, int y)

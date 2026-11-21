@@ -114,24 +114,45 @@ namespace wow
         }
     }
 
+    // 0x416250: each character's width (0x40FB60: its glyph's plus the spacing, 0 below 0x20) is added as it goes;
+    // a word starts at a character over ' ' after one that isn't. At a character over ' ' with the sum at the width or
+    // more, or after a '\n', the line ends: the text from the line's start to just before the word, less the spaces
+    // (and line breaks) before it, then a '\n'; the next line starts at the word, and the sum goes back to 0 as the
+    // scan goes on from there. Runs of spaces inside a line are kept.
     std::string WrapText(const Font& font, std::string_view text, int width)
     {
-        std::string out, line;
-        auto flushWord = [&](std::string_view word) {
-            std::string candidate = line.empty() ? std::string(word) : line + " " + std::string(word);
-            if (!line.empty() && font.Measure(candidate) > width) { out += line + "\n"; line = std::string(word); }
-            else line = candidate;
-        };
-        size_t start = 0;
-        while (start <= text.size())
+        auto charWidth = [&](unsigned char c) { return c <= 0x1F ? 0 : font.Measure(std::string_view(reinterpret_cast<const char*>(&c), 1)); };
+        std::string out;
+        size_t p = 0, lineStart = 0, wordStart = 0;
+        unsigned char prev = ' ';
+        int sum = 0;
+        for (;;)
         {
-            size_t end = text.find_first_of(" \n", start);
-            if (end == std::string_view::npos) end = text.size();
-            if (end > start) flushWord(text.substr(start, end - start));
-            if (end < text.size() && text[end] == '\n') { out += line + "\n"; line.clear(); }
-            start = end + 1;
+            const unsigned char c = p < text.size() ? static_cast<unsigned char>(text[p]) : 0;
+            sum += charWidth(c);
+            if (c > ' ' && prev <= ' ') wordStart = p;
+            p++;
+            if (c == 0)
+            {
+                if (lineStart < text.size()) out.append(text.substr(lineStart));
+                break;
+            }
+            // (a word as wide as the line on its own would start the line again for ever, in the game too: the engine
+            // lets it run over instead)
+            if (((c > ' ' && sum >= width) || prev == '\n') && wordStart > lineStart)
+            {
+                // back over the spaces before the word (0x4162EB-0x416301)
+                size_t end = wordStart;     // one past the line's last character
+                while (end > lineStart && static_cast<unsigned char>(text[end - 1]) <= ' ') end--;
+                if (end > lineStart) out.append(text.substr(lineStart, end - lineStart));
+                out += '\n';
+                lineStart = wordStart;
+                p = wordStart;
+                sum = 0;
+            }
+            prev = c;
         }
-        return out + line;
+        return out;
     }
 
     std::string Canvas::Wrap(int fontGType, std::string_view text, int width) const

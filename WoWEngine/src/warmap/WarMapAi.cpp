@@ -173,7 +173,8 @@ namespace wow
     void WarMap::AiTurn(int hours)
     {
         ai.clock += float(hours);
-        // its research (+0x454): an item done or made obsolete is let go; with none, one is picked (0x458A60)
+        // its research (+0x454): an item done or made obsolete is let go; with none, one is picked (vtable +0x2C:
+        // the side's plan, 0x45A400 / 0x45B4E0, falling back to 0x458A60)
         if (Research* r = research[1].get())
         {
             if (ai.researchItem >= 0)
@@ -183,7 +184,7 @@ namespace wow
             }
             else
             {
-                ai.researchItem = r->ChooseForAi();
+                ai.researchItem = r->ChooseFromPlan();
                 if (ai.researchItem >= 0) SDL_Log("War map AI: researching %s", r->Items()[size_t(ai.researchItem)].name.c_str());
             }
         }

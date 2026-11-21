@@ -1016,7 +1016,9 @@ namespace wow
                 else if (hovered && (a == hovered || b == hovered)) level = HoverBorderLevel;
                 else
                 {
-                    int oa = owner[size_t(a)], ob = b ? owner[size_t(b)] : 2;
+                    // each side's holder (0x43CA30), no one unless it has its command building there finished
+                    // (0x41DC1A-0x41DC47, 0x43C990), the sea no one
+                    int oa = a && HasCommandPost(a) ? owner[size_t(a)] : 2, ob = b && HasCommandPost(b) ? owner[size_t(b)] : 2;
                     if (oa != ob)
                     {
                         if (oa == 2 || ob == 2) level = (oa == 0 || ob == 0) ? OwnBorderLevel : EnemyBorderLevel;

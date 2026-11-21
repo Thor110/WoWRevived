@@ -179,9 +179,21 @@ is left at `"Menu Items"` (4), not its own colour, until the detail is built aga
 ## The computer player's choice
 
 The AI player (0x442EC0) keeps its research item (+0x454): once it's done or obsolete it lets go of it, and with none
-it asks its research (vtable +0x2C, 0x458A60): the first available item, not a trigger, with a trigger among its
-prerequisites (0x45B8B0); otherwise from rand() % the item count on, round, the first available item that isn't a
-trigger (none: nothing). It becomes the research (as 0x458A00, and 0x80A3 to the screen if it's shown).
+it asks its research (vtable +0x2C: 0x45A400 for the Humans, 0x45B4E0 for the Martians). The first time, that picks one
+of the side's two plans by rand() % 2 and keeps it for the rest of the run (dword_4CA1A8 / dword_4CA364, -1 until
+then; never reset). Each plan is a list of the side's research items (off_4CA4F8 / off_4CA580 Human, off_4CA610 /
+off_4CA6B0 Martian, as globals at 0x588C40 / 0x588F20, four bytes an item); the first one that's available (0x45B860:
+state 1) becomes the research (0x458A00). With none of them available it falls back on 0x458A60: the first available
+item, not a trigger, with a trigger among its prerequisites (0x45B8B0); otherwise from rand() % the item count on,
+round, the first available item that isn't a trigger (none: nothing). (`Research::ChooseFromPlan`; until update 103
+the engine called 0x458A60 straight away, which also left one rand() out of the stream.)
+
+The plans as item numbers: Human 1: 65, 72, 28, 20, 40, 36, 69, 11, 55, 29, 61, 75, 68, 37, 78, 70, 62, 12, 30, 44, 71,
+38, 41, 77, 42, 66, 82, 76, 79, 26, 73, 27, 74; Human 2: 72, 15, 46, 69, 65, 17, 28, 58, 61, 75, 11, 73, 26, 55, 70, 77,
+74, 16, 47, 26, 59, 82, 44, 68, 66, 78, 12, 27, 60, 79, 71; Martian 1: 37, 32, 33, 16, 29, 69, 8, 34, 6, 24, 65, 72, 26,
+75, 61, 30, 70, 58, 79, 60, 35, 73, 66, 27, 77, 7, 25, 80, 62, 31, 76, 68, 21, 36, 28, 78, 71, 74; Martian 2: 37, 9, 72,
+75, 65, 8, 34, 69, 12, 51, 10, 39, 6, 58, 79, 73, 35, 21, 77, 60, 13, 52, 11, 40, 74, 78, 66, 7, 36, 14, 53, 68, 80,
+22, 76. *Provisional*: the item numbers assume the globals are the side's tree in order, as elsewhere.
 
 ## Still to do
 

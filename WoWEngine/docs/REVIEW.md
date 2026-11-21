@@ -43,25 +43,25 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       bit 0, only 0x483B70's own moves set bit 2). `Retaliate` / `OrderMove`.
 - [x] **Click-select narrows the selection**: 0x497680 always clears (packet 4) before reselecting; the engine keeps
       every group when one already selected is clicked. Shift (packet 5) adds.
-- [ ] **Speed control's going test** is vt+0x144 (0x4909D0: not stopped, or bits 5 / 8 or the link byte, and not
+- [x] **Speed control's going test** is vt+0x144 (0x4909D0: not stopped, or bits 5 / 8 or the link byte, and not
       frozen), not bit 0 alone (0x492E8E; `Driving.cpp`).
 - [x] **Flat-shaded WOF faces**: the flat level comes from vertex 0 as passed, before the sort (0x456DF5);
       `WofView.cpp` takes the top vertex after sorting.
-- [ ] **The computer's research choice** is the side's plan picker, 0x45A400 / 0x45B4E0 (two hard-coded plans by
+- [x] **The computer's research choice** is the side's plan picker, 0x45A400 / 0x45B4E0 (two hard-coded plans by
       rand(), falling back to 0x458A60), not 0x458A60 directly; it also shifts the rand() stream (RESEARCH.md too).
-- [~] **Enemy sector shade in the Construction view** (shade and pulse done in update 102; the borders still to do) is 11, not 0 (0x41DAB6-0x41DAEF); only the Unit view darkens
+- [x] **Enemy sector shade in the Construction view** (shade and pulse update 102, borders 103) is 11, not 0 (0x41DAB6-0x41DAEF); only the Unit view darkens
       it. Battle sectors pulse only in the Unit view (0x41DD35). Borders count a sector without a finished command
       building as no one's (0x41DC1A, 0x43C990).
 - [x] **Slider frames truncate** (0x4320B6 `div`): `value * 10 / max`, not rounded (`Screen.cpp`).
-- [ ] **Word wrap** breaks at width or more, resets the run to 0, keeps runs of spaces and sums per-character widths
+- [x] **Word wrap** breaks at width or more, resets the run to 0, keeps runs of spaces and sums per-character widths
       (0x416250; `Canvas.cpp`).
-- [ ] **CD Next / Prev wrap round and stop play** (0x413220 / 0x4134B0, caller 0x4083E4); the engine clamps 2-5.
+- [x] **CD Next / Prev wrap round and stop play** (0x413220 / 0x4134B0, caller 0x4083E4); the engine clamps 2-5.
 - [x] **The war map message list** draws at `[Colours] "Message Text"` 19 with flags 1 (0x4288A3); the engine uses 0.
-- [ ] **The CD Player's palette group 0x2F9** also loads `{S}R{S}I` into slot 5 and `{S}RGI` into slot 9
+- [x] **The CD Player's palette group 0x2F9** also loads `{S}R{S}I` into slot 5 and `{S}RGI` into slot 9
       (0x40BCB3, 0x40C54F), and the loader frees all 33 slots first (0x40B6C0).
-- [~] **Credits** (the hold, the music wait and its fade done in update 102; the exit's fade still to do): the easter egg holds 300 ticks, not 600 (0x40577C); waits for the music first; the music fades
+- [x] **Credits** (update 102, the exit's fade 103): the easter egg holds 300 ticks, not 600 (0x40577C); waits for the music first; the music fades
       over 60 (0x405415); the exit fades (0x405689 -> 0x4065E0).
-- [ ] **Escape in the front-end menus fades** like a click (0x40A1B0 -> 0x4065E0); Splash and Credits take a right
+- [x] **Escape in the front-end menus fades** like a click (0x40A1B0 -> 0x4065E0); Splash and Credits take a right
       click as a skip (0x405E6E, 0x405672).
 - [ ] **The route save format** (probable; check with a save holding a unit in transit): +0x34 is a u32 entry count,
       the entries follow untagged, each with segment, index, five floats and a byte (0x425A60 / 0x427F70 /
@@ -74,7 +74,7 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       order them differently.
 - [ ] Debug only: the reinforcement table with `byte_4D1279` (0x43D16D).
 - [ ] Docs: `docs/survey/part11.md` §2.9 (0x487F50's tables), part08 §2.6 (the 0xFBEF mask), part06 (+0x55 reading),
-      part03 (0x41EDC0's view choice); the stale *Provisional* at `Driving.cpp:44`.
+      part03 (0x41EDC0's view choice). (The stale *Provisional* at `Driving.cpp:44` is fixed, update 103.)
 
 ## 2. Game rules missing (they change how a game plays)
 

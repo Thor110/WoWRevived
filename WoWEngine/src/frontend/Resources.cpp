@@ -121,6 +121,8 @@ namespace wow
         for (const ShadeGroup& group : ShadeGroups)
         {
             if (group.paletteGType != paletteGType) continue;
+            // 0x40B6C0 frees all 33 slots first, so a group's screen never draws with another group's tables
+            shades.clear();
             for (int i = 0; i < group.count; i++)
             {
                 std::string name(group.files[i]);
