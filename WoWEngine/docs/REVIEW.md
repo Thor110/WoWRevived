@@ -118,6 +118,10 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
 - [~] **Buildings** (0x48E8A0-0x48F1C0: ground flattening, corner objects, ambient loop, damage frames, hit sound
       0x111) and **gun emplacements** (0x48F7C0: no guns on a damaged building); turret attach (0x489980).
       *Update 110*: the ambient loop and the hit sound 0x111.
+      *Update 120*: the buildings' IOB parts drawn (the Factory had no roofs or chimneys), standing on the
+      building's ground, and lost one a hit from the last as the health falls (0x48EF80 / 0x48A7D0, the "damage
+      frames"). There's no ground flattening in 0x48E9D0: it only sets the parts' heights from the building's ground.
+      The corner objects are for a building under construction, so they wait on construction placement.
 - [x] **Walkers / tripods** (0x48FC70-0x48FDD0, 0x490030-0x490070: legs, footprints, `startTurnRate` / `turnAnimRate`).
       (Reported in play: units' animations don't play; the models' pieces aren't animated yet. Comes with this.)
       *Update 113*: the WOF animation keys (every animated model, not just the walkers), the frame advance (0x493490

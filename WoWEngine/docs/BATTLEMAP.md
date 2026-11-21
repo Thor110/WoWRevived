@@ -968,8 +968,24 @@ building's hidden (vt+0x9C, the fog), played again; then the puppet's update (0x
 player's (+0x24 0), when rand() is under 500 or it's still at full health (0x47DA20), by an object of the other side
 (0x440110, 0x4406E0), cuts off its last 0x111 if that's still playing (+0xEC) and plays 0x111 at the listener; then
 the damage (0x4958B0). Going (0x48EEE0) stops both, and for type 0x77 with +0xC0 bit 0 takes one off dword_59E174.
-*Not yet*: the ground flattened and sampled under it, the four 0x17B corner objects, its health from the
-construction's state, the damage frames (0x48A7D0, 0x48EF80) and the gun emplacements on it (0x48F7C0).
+
+**Its parts** (0x47EE10 makes every record 28 part a child, added at the tail of its +0x50 list with 0x47D190):
+the Factory's roofs, wings and chimneys (F_1r, Vf_2, Vf_2r, OR_Chim), the Martian buildings' end pieces, are IOB
+models at the building's point plus the part's offset. As the building's added (0x48E9D0) each child is put at its
+own height (+0xA0) plus the building's ground less the child's: all of them stand on the building's ground. The
+building's own model and its parts go with it when it's destroyed.
+
+**Losing them** (vt+0xE0, 0x48EF80, after 0x48AB20): with +0xB8 bit 8 (set on every object, 0x47D7D4) and more than
+one child, 0x48A7D0 (with the part count less 1) gives how many to lose: the children less 1, less ftol(the part
+count x the health / its most), at most the part count less 1. For each, while it has more than one child, its
+last child, if its health is over 0, is sent 0x80A0 (its destruction effect, type +0x98, at its point). The dying
+child is still on the list until it's gone, so each hit takes at most one part, the last made: the Factory loses
+its chimneys first, then its wings. *Provisional*: a lost part's light (a light part) stays on the ground; the
+IOB parts' offsets aren't turned with a heading (buildings don't turn).
+
+*Not yet*: the four 0x17B corner objects (0x48E9D0: put at ±the type's +0x46 word round a Human building that isn't
+finished, +0xC0 bit 0 clear, which waits on construction placement), its health from the construction's state,
+the objects within reach re-seated (vt+0x78), and the gun emplacements on it (0x48F7C0).
 
 ## The guns' beams (update 118; `BattleMap::DrawBeams`, `DrawAtlasQuad` in core/WofView)
 

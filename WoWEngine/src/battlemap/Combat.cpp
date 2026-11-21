@@ -50,6 +50,40 @@ namespace wow
             const int at = ticks + random::Rand() % 20 + 10;
             if (u.dieAt < 0 || at < u.dieAt) u.dieAt = at;
         }
+        if (IsBuilding(u)) LoseParts(index);
+    }
+
+    // A building's vt+0xE0 (0x48EF80), after 0x48AB20: with +0xB8 bit 8 (set on every object, 0x47D7D4) and more
+    // than one child, 0x48A7D0 with its part count less 1 gives how many to lose: the children less 1, less
+    // ftol(the part count x the health / its most, 0x47DA20), at most the part count less 1. For each, while it
+    // has more than one child, the last child (+0x70's tail), if its health is over 0, is sent 0x80A0. The child
+    // isn't off the list until it's gone, so a hit takes one part, the last made: the Factory's chimneys first.
+    // A part's 0x80A0 (0x489FA0) makes its type's destruction effect (+0x98) at its point.
+    // *Provisional*: the part's light (a light part) stays on the ground.
+    void BattleMap::LoseParts(size_t index)
+    {
+        Unit& u = units[index];
+        auto t = setup.units->find(u.type);
+        if (t == setup.units->end() || u.partsLeft <= 1) return;
+        const int parts = int(t->second.parts.size());
+        const int most = MaxHealth(u.type);
+        if (parts <= 0 || most <= 0) return;
+        const float ratio = float(std::max(0, u.health)) / float(most);
+        int lose = (u.partsLeft - 1) - int(float(parts) * ratio);
+        if (lose >= parts) lose = parts - 1;
+        if (lose <= 0) return;
+        const int last = u.partsLeft - 1;
+        u.partsLeft--;
+        const auto& part = t->second.parts[size_t(last)];
+        objects.erase(std::remove_if(objects.begin(), objects.end(),
+                                     [&](const ViewObject& o) { return o.unit == int(index) && o.part == last; }), objects.end());
+        u.attached.erase(std::remove_if(u.attached.begin(), u.attached.end(), [&](const Attached& a) { return a.part == last; }),
+                         u.attached.end());
+        auto pt = setup.units->find(part.a);
+        if (pt == setup.units->end()) return;
+        const int x = int(u.x) + int16_t(part.b), y = int(u.y) + int16_t(part.c);
+        const int z = int(double(int16_t(part.d)) - double(pt->second.size41) * -1.414);
+        Explode(pt->second.field98, x, y, z);
     }
 
     // 0x80A0 (0x489FA0): the object posts itself 0x8057 (gone) and makes its type's destruction effect (+0x98,

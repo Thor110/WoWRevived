@@ -148,7 +148,8 @@ namespace wow
         struct IsoModel { IobModel model; std::vector<uint8_t> lights; int slot = 0; };
         std::map<int, IsoModel> models;
         struct ViewObject { int key; int x, y; const IsoModel* model; const WofInstance* wof = nullptr; int slot = 0; int sprite = 0; int light = -1;
-                            int unit = -1, depth = 0, effect = -1, prop = -1; };
+                            int unit = -1, depth = 0, effect = -1, prop = -1;
+                            int part = -1; };   // part: which of its unit's parts (the type's record 28s) it draws
         // A scenery object (WScenery 0x4895E0 / 0x489380 on the damageable 0x489E20): its type, point and height
         // (+0x84), its health (+0xC4, the type's +0x4A to start with, bit 7 set), a 0x80A0 on its way, its light
         struct Prop { int type = 0; float x = 0, y = 0, z = 0; int health = 0, dieAt = -1, light = -1; bool alive = true; };
@@ -262,7 +263,8 @@ namespace wow
         // a part's model; piece / vertex: the point of its unit's model it's held to (the part's record 27 box, the
         // child's +0xB0), -1 for none
         struct Attached { WofInstance* wof = nullptr; int ox = 0, oy = 0, oz = 0, turret = -1; bool shadow = false;
-                          int piece = -1, vertex = 0; int light = -1; };    // light: a light part's index in lights
+                          int piece = -1, vertex = 0; int light = -1;       // light: a light part's index in lights
+                          int part = -1; };                                 // which of the type's parts it is
         struct Unit { int type; float x, y; int heading; bool players; int group = 0; bool vehicle = false; Drive drive;
                       WofInstance* wof = nullptr; int engineSound = 0;
                       int health = 0;       // +0xC4: the type's +0x4A (0x47DA20) to start with
@@ -271,6 +273,7 @@ namespace wow
                       std::vector<Attached> attached;
                       int dieAt = -1;       // a 0x80A0 posted to itself (the update it arrives on)
                       int shoreAt = -1;     // an Ironclad's 0x80C1 (10 damage) posted to itself, off water
+                      int partsLeft = 0;    // a building's children (+0x50's count, 0x4216D0): its parts not yet lost
                       int id = 0;           // +0x08, the object's id (kept by a group's target, +0x30)
                       int scanCount = 0;    // +0xDA, updates since its last look round (0x4967E0)
                       int statusTime = 0, status = 0; // +0xDC / +0xE0: a timed status (0x80F5 frozen, 0x80F6, 0x80F7)
@@ -327,6 +330,8 @@ namespace wow
         bool IsBuilding(const Unit& u) const;                   // the building class (0x48E8A0)
         void BuildingSound(Unit& u);                            // its own sound (+0xA2) at its point, 0x4883E0
         void BuildingTick(Unit& u);                             // 0x48F130
+        void LoseParts(size_t unit);                            // 0x48EF80's part after 0x48AB20
+        const IsoModel* LoadIob(int gtype);                     // an IOB model and its lights, loaded once
         void StopUnitSounds(Unit& u);
         void ClearFootprint(Unit& u);                           // vt+0x114, 0x491630
         static bool IsGas(int type);                            // 0x393-0x395, WGasCloud

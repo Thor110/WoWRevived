@@ -709,8 +709,12 @@ namespace wow
         auto t = setup.units->find(u.type);
         if (t == setup.units->end()) return;
         int turret = 0;
-        for (const auto& part : t->second.parts)
+        // every part is a child (0x47EE10 -> 0x47D190, added at the tail of +0x50): a building loses them from the
+        // last (LoseParts)
+        u.partsLeft = int(t->second.parts.size());
+        for (size_t pi = 0; pi < t->second.parts.size(); pi++)
         {
+            const auto& part = t->second.parts[pi];
             const bool isTurret = (part.a >= 0x2E6 && part.a <= 0x313) || (part.a >= 0x389 && part.a <= 0x38C);
             const int thisTurret = isTurret ? turret++ : -1;
             // the vehicles' shadows (0x13B-0x14A, WShadow 0x48E680): gone as they start without "Show vehicle
@@ -733,6 +737,7 @@ namespace wow
                 for (ViewObject& o : objects)
                     if (o.light == li) o.unit = int(index);
                 Attached a;
+                a.part = int(pi);
                 a.light = li;
                 a.ox = int16_t(part.b);
                 a.oy = int16_t(part.c);
@@ -744,6 +749,29 @@ namespace wow
             if (pt == setup.units->end()) continue;
             const int gtype = pt->second.field28;
             const GType* g = res.FindGType(gtype);
+            if (g && g->gclass == 1)
+            {
+                // an IOB part (a building's roofs, walls and chimneys: the Factory's F_1r, Vf_2, OR_Chim): at the
+                // unit's point plus its offset, on the unit's ground (0x48E9D0 puts each child at its own +0xA0 plus
+                // the building's ground less the child's: the building's ground, flat under all its parts).
+                // *Provisional*: the offset isn't turned with a unit's heading (the buildings don't turn).
+                const IsoModel* m = LoadIob(gtype);
+                if (!m) continue;
+                const int x = int(u.x) + int16_t(part.b), y = int(u.y) + int16_t(part.c);
+                const int depth = int16_t(part.c) + IsoObject::Depth(m->model);
+                ViewObject v{ int(u.y) + depth, x, land.ProjectY(y, land.HeightAt(int(u.x), int(u.y)) + int16_t(part.d)), m };
+                v.unit = int(index);
+                v.depth = depth;
+                v.part = int(pi);
+                objects.push_back(v);
+                Attached a;
+                a.part = int(pi);
+                a.ox = int16_t(part.b);
+                a.oy = int16_t(part.c);
+                a.oz = int16_t(part.d);
+                u.attached.push_back(a);
+                continue;
+            }
             if (!g || g->gclass != 2 || !(isTurret || isShadow)) continue;
             auto f = wofFiles.find(gtype);
             if (f == wofFiles.end())
@@ -769,6 +797,7 @@ namespace wow
             try { w = std::make_unique<WofInstance>(f->second, scale, follow); }
             catch (const std::exception&) { continue; }
             Attached a;
+            a.part = int(pi);
             a.wof = w.get();
             a.ox = int16_t(part.b);
             a.oy = int16_t(part.c);
@@ -787,7 +816,7 @@ namespace wow
                     if (o.unit == int(index) && o.light < 0 && (!o.wof || o.wof == u.wof)) { depth = o.depth - 1; break; }
             }
             u.attached.push_back(a);
-            objects.push_back({ int(u.y) + depth, 0, 0, nullptr, w.get(), g->paletteSlot, 0, -1, int(index), depth });
+            objects.push_back({ int(u.y) + depth, 0, 0, nullptr, w.get(), g->paletteSlot, 0, -1, int(index), depth, -1, -1, int(pi) });
             wofs.push_back(std::move(w));
         }
         PoseParts(u);
@@ -948,6 +977,7 @@ namespace wow
                     if (o.light == p.light) { o.x = l.x; o.y = l.y; o.key = l.y + (-32 - l.range); }
                 continue;
             }
+            if (!p.wof) continue;   // an IOB part stays where it was put (a building's)
             if (p.shadow)
             {
                 // 0x48E750: its height offset (+0xA0) takes it down to the ground (0 on a bridge link), and its x
@@ -1012,23 +1042,36 @@ namespace wow
         }
         else if (g->gclass == 1)
         {
-            auto m = models.find(gtype);
-            if (m == models.end())
-            {
-                IsoModel im;
-                auto file = res.LoadFile(g->file);
-                if (!file) { models[gtype]; return; }
-                try { im.model = IobModel::Load(*file); }
-                catch (const std::exception&) { models[gtype]; return; }
-                im.lights = IsoObject::BaseLights(im.model, sun, levels);
-                im.slot = g->paletteSlot;
-                m = models.emplace(gtype, std::move(im)).first;
-            }
-            if (m->second.model.patches.empty()) return;
-            objects.push_back({ iy + IsoObject::Depth(m->second.model), ix, land.ProjectY(iy, land.HeightAt(ix, iy)), &m->second });
+            const IsoModel* m = LoadIob(gtype);
+            if (!m) return;
+            // with its unit, so it goes as the unit does
+            ViewObject v{ iy + IsoObject::Depth(m->model), ix, land.ProjectY(iy, land.HeightAt(ix, iy)), m };
+            v.unit = unit;
+            v.depth = IsoObject::Depth(m->model);
+            objects.push_back(v);
         }
         else if (g->gclass == 0 && res.GetFrame(gtype, 0))
             objects.push_back({ iy + 1, ix, land.ProjectY(iy, land.HeightAt(ix, iy)), nullptr, nullptr, g->paletteSlot, gtype });
+    }
+
+    const BattleMap::IsoModel* BattleMap::LoadIob(int gtype)
+    {
+        auto m = models.find(gtype);
+        if (m == models.end())
+        {
+            IsoModel im;
+            if (const GType* g = res.FindGType(gtype))
+            {
+                if (auto file = res.LoadFile(g->file))
+                {
+                    try { im.model = IobModel::Load(*file); } catch (const std::exception&) { im.model = {}; }
+                    if (!im.model.patches.empty()) im.lights = IsoObject::BaseLights(im.model, sun, levels);
+                }
+                im.slot = g->paletteSlot;
+            }
+            m = models.emplace(gtype, std::move(im)).first;
+        }
+        return m->second.model.patches.empty() ? nullptr : &m->second;
     }
 
     // A pod landed since the last battle (the sector's +0x64, set by 0x41A330 when it came down among the Humans):
