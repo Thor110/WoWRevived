@@ -14,13 +14,14 @@ namespace wow
         if (auto mapsPath = files.Resolve("MAPS\\MAPS.WoW")) maps = std::make_unique<Archive>(*mapsPath);
         // 0x414DE0, as the archives are opened: each entry with a loose file of its name is marked (its first
         // dword set to 1), and a marked entry is then never found in the archive (0x4150F2), so the loose file is
-        // read. Dat.wow's entries are looked for as "dat\<name>". MAPS.WoW's are looked for as "Map\<name>"
-        // (0x414FAB; a folder the game doesn't have: the original's slip), and what is then read is the name that
-        // was asked for, "maps\<name>": a loose map file only replaces the archive's when a file of its name is in
-        // a "Map" folder as well. Kept as the game has it. The marks are made once, here.
+        // read. Dat.wow's entries are looked for as "dat\<name>". The marks are made once, here.
+        // MODERN FIX (the owner's decision, update 140; docs/MODERN.md "Modern fixes"): the game looks for
+        // MAPS.WoW's loose files as "Map\<name>" (0x414FAB), a folder it doesn't have, and then reads
+        // "maps\<name>", so a loose map file is never used. The engine looks in "maps\", where the file is read
+        // from, so loose map files work as loose dat files do. Do not change this back to "Map\".
         for (const ArchiveEntry& e : dat->Entries()) datLoose.push_back(files.Resolve("dat\\" + e.name).has_value());
         if (maps)
-            for (const ArchiveEntry& e : maps->Entries()) mapsLoose.push_back(files.Resolve("Map\\" + e.name).has_value());
+            for (const ArchiveEntry& e : maps->Entries()) mapsLoose.push_back(files.Resolve("maps\\" + e.name).has_value());
     }
 
     std::optional<std::vector<uint8_t>> Vfs::LoadLoose(std::string_view gamePath) const

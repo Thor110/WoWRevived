@@ -458,8 +458,11 @@ answers vt+0x64 (vt+0x78, no explosion): for WScenery, the street lamp, the pod'
 is 0x489750, the sector's Damage Layer (the world's +0x8C) not 0 at the vertex nearest it, so scenery on ground
 earlier battles scorched doesn't come back; for the other classes it's never (0x48B580).
 
-*Provisional*: whether a building's parts are in the grid; a building's scenery clearing leaves the bridges and
-the pod; +0x188 / +0x18C aren't read; the order of the objects in a list is the counters' order; the order of the
+Update 140: an object is put in the grid as its position is set (vt+0x40, 0x48AA80), children never (they are
+placed by vt+0x7C, 0x47F960), so a building's parts and a tree circle's trees aren't in it; the circle is, and
+is what an explosion hits (radius 48 / 24 / 12, health 120), its trees going with it.
+
+*Provisional*: a building's scenery clearing leaves the bridges and the pod; +0x188 / +0x18C aren't read; the order of the objects in a list is the counters' order; the order of the
 `rand()` calls inside one object's start is the engine's.
 
 ## Fog of war (WFogOfWar 0x4344C0-0x434DF0; 0x48B050 / 0x48B2D0; `battlemap/Fog.cpp`)

@@ -285,13 +285,28 @@ namespace wow
         for (size_t i = 0; i < props.size(); i++)
         {
             Prop& p = props[i];
-            if (!p.alive || p.health <= 0) continue;
+            if (!p.alive || p.health <= 0 || p.circle >= 0) continue;    // a circle's tree isn't in the grid
             auto pt = setup.units->find(p.type);
             if (pt == setup.units->end() || pt->second.category == 4) continue;
             const int reach = radius + Radius44(p.type);
             const int d = Octagonal(int(p.x), int(p.y), x, y);
             if (d > reach || reach == 0) continue;
             DamageProp(i, int((1.0 - double(d) / double(reach)) * power));   // one truncation (0x48A5A0, x87)
+        }
+        // the tree circles, each one object (its trees its children)
+        for (Circle& c : circles)
+        {
+            if (!c.alive || c.health <= 0) continue;
+            const int reach = radius + Radius44(c.type);
+            const int d = Octagonal(c.x, c.y, x, y);
+            if (d > reach || reach == 0) continue;
+            c.health -= int((1.0 - double(d) / double(reach)) * power);
+            // 0x48AB20: dead, its 0x80A0 posted rand() % 20 + 10 updates on, as any damageable object's
+            if (c.health <= 0)
+            {
+                const int at = ticks + random::Rand() % 20 + 10;
+                if (c.dieAt < 0 || at < c.dieAt) c.dieAt = at;
+            }
         }
         if (z < 64)
         {
@@ -341,7 +356,7 @@ namespace wow
         for (size_t i = 0; i < props.size(); i++)
         {
             Prop& p = props[i];
-            if (!p.alive || p.health <= 0) continue;
+            if (!p.alive || p.health <= 0 || p.circle >= 0) continue;    // a circle's tree isn't in the grid
             auto pt = setup.units->find(p.type);
             if (pt == setup.units->end() || pt->second.category == 4) continue;
             const int reach = radius + Radius44(p.type);
@@ -385,6 +400,24 @@ namespace wow
         Explode(t->second.field98, int(p.x), int(p.y), z);
         const bool key = p.type == (setup.sector == 3 ? 0x33E : 0x78) || p.type == (setup.sector == 30 ? 0x116 : 0x3A);
         if (key && setup.sound) setup.sound->Play(0x13B, 1.0f);
+    }
+
+    // A tree circle's 0x80A0 (0x489FA0): its type's destruction effect (+0x98, 591) at its centre, and it's gone
+    // with its children, the trees (0x47EAA0).
+    // *Provisional*: the trees go without effects of their own (what 0x47EAA0 does for each child beyond taking it
+    // out isn't traced).
+    void BattleMap::CircleDies(size_t index)
+    {
+        Circle& c = circles[index];
+        if (!c.alive) return;
+        c.alive = false;
+        c.dieAt = -1;
+        for (size_t i = 0; i < props.size(); i++)
+            if (props[i].alive && props[i].circle == int(index)) RemoveProp(i);
+        auto t = setup.units->find(c.type);
+        if (t == setup.units->end()) return;
+        const int z = int(0.0 - double(t->second.size41) * -1.414);
+        Explode(t->second.field98, c.x, c.y, z);
     }
 
     // vt+0x78 for a scenery object (0x4895A0: 0x48AC50, then out of the world's list, 0x43C710): gone, with its view

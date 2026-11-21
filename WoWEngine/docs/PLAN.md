@@ -12,7 +12,7 @@ original's own faults, which the owner already fixed in WoWRevived; on by defaul
 fix is to be marked `MODERN FIX` in the code and is listed in MODERN.md, so a later parity pass doesn't undo it.
 Until Stage 6 the settings menus stay as they are; nothing there is to be changed early.
 
-## Stage 1: the open parity items (next)
+## Stage 1: the open parity items (done but for what's noted, updates 137-140)
 
 Small and independent; most need one routine traced.
 
@@ -26,23 +26,22 @@ Small and independent; most need one routine traced.
       route's +0x64 list, vt+8) traced to find each entry's +0x24 / +0x38 / +0x3C in the save, then saved and
       restored without planning again.
 - [ ] 1.2 Deployment's leftovers (update 136's provisional points). Done in 137: what ActivateAll takes out again
-      (scenery on scorched ground) and the grid 0x47FE10 searches (the scenery counts). Left: a building's parts in
-      the grid; the bridges and the pod in a building's scenery clearing;
+      (scenery on scorched ground) and the grid 0x47FE10 searches (the scenery counts). Done in 140: a building's parts aren't in
+      the grid. Left: a bridge under a starting building (it goes too, 0x48D2E0; with 2.2);
       the order of the rand() calls inside one start; the start order kept for the update order (the world
       list is HUNI, HCON, HRES, AUNI, ACON, ARES).
-- [ ] 1.3 Tree circles hit by weapons (S6's last open point).
+- [x] 1.3 Tree circles hit by weapons (S6's last open point).
 - [x] 1.4 Muster's first step and the start order of 0x495740 (movement 20).
 - [x] 1.5 The fog's timing by the global frame counter, dword_4D2558 (battle-setup 12).
-- [ ] 1.6 The end-of-battle counts' lists (battle-setup 18).
-- [ ] 1.7 The second target, +0xC8 / +0xCC (movement 19).
-- [ ] 1.8 The window's 32-pixel scroll border and the game's windowed flag, dword_4EA364 (battle-ui 9); the
+- [x] 1.6 The end-of-battle counts' lists (battle-setup 18).
+- [x] 1.7 The second target, +0xC8 / +0xCC (movement 19).
+- [x] 1.8 The window's 32-pixel scroll border and the game's windowed flag, dword_4EA364 (battle-ui 9); the
       resolution itself is Stage 6.
-- [ ] 1.9 Front end: what 0x80CF answers per control; the CD Player's live time and starting track, and its
+- [x] 1.9 Front end: what 0x80CF answers per control; the CD Player's live time and starting track, and its
       +/- 5 s seek; Debriefing's delay from its second draw.
-- [ ] 1.10 The war map battle pulse's own draw counter (warmap 20).
+- [x] 1.10 The war map battle pulse's own draw counter (warmap 20).
 - [x] 1.11 The latent data items (data 6, 8, 13).
-- [ ] 1.12 New war map objects made as the game makes them (0x43CD10 / 0x42A030), not copied from a saved one of
-      the type.
+
 
 ## Stage 2: the battle map's missing pieces
 
@@ -74,6 +73,8 @@ Small and independent; most need one routine traced.
 
 ## Stage 4: saving a battle, and the rest of the original
 
+- [ ] 4.0 New war map objects made as the game makes them (0x43CD10 / 0x42A030), not copied from a saved one of
+      the type (was 1.12: it needs the whole object written field by field, which 4.1 brings).
 - [ ] 4.1 Battle saving and loading: each object's BAMO / BATP and class tags written and read (today carried as
       blobs), the battle's own state, the sector's battle and pod flags.
 - [ ] 4.2 The players: local / AI / network player objects and the command records (0x4460A0); playback

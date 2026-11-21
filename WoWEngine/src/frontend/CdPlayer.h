@@ -46,6 +46,7 @@ namespace wow
         bool anyMusic = false;
         int track = FirstTrack;
         bool playing = false;
+        mutable uint32_t lastSeconds = 0;   // +0xE8: the position last read
         size_t playButton = 0, stopButton = 0;
         Rect status;
         std::string title, credits;

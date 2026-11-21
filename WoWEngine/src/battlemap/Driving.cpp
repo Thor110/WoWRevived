@@ -394,6 +394,7 @@ namespace wow
             u.drive.flags |= 1;
         }
         u.aiming = false;
+        u.aimX = u.aimY = 0;    // 0x49648B: +0xC8 / +0xCC cleared with the goal
         u.halted = false;
     }
 
@@ -1150,8 +1151,7 @@ namespace wow
     // node, or with no route, it has arrived inside the arrival radius + the offset (+0x13A), and the route is let
     // go. On arriving (once: bit 1): its group counts it (0x482450) and 0x808B(1) stops it 9 x (members not yet
     // arrived) + 60 updates on.
-    // *Provisional*: the second target (+0xC8 / +0xCC) taken first when set, the sector stats and the selection
-    // refresh aren't in.
+    // *Provisional*: the sector stats and the selection refresh aren't in.
     void BattleMap::Advance(Unit& u)
     {
         auto& d = u.drive;
@@ -1185,6 +1185,14 @@ namespace wow
         // (0x491A96, after the 0x808B below) with bit 9 (retreating, 0x80B9 with 1): its war map object (+0x48) told
         // 0x80B9 (the sector's room count), bit 9 cleared, and it's taken off the map (vt+0x18): LeaveMap
         if (d.flags & 2) return;
+        // 0x491A0C: with a point aimed at (+0xC8 and +0xCC both set, 0x496200) that isn't its target, that point
+        // becomes the target and it hasn't arrived: it drives on toward what it's aiming at
+        if (u.aimX && u.aimY && (d.tx != u.aimX || d.ty != u.aimY))
+        {
+            d.tx = u.aimX;
+            d.ty = u.aimY;
+            return;
+        }
         d.flags |= 2;
         if (d.flags & 0x200)
         {

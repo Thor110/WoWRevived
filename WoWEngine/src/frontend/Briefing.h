@@ -127,6 +127,7 @@ namespace wow
         int ticksLeft;
         int leaveIn = -1;
         bool done = false;
+        bool drawn = false;     // +0x120: its first draw is behind it (0x49B830)
         void Leave();
     };
 }

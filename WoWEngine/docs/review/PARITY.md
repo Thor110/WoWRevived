@@ -86,9 +86,8 @@ Tick each item here with the update that fixes it.
       from them, and the beams start there. A lost part's light goes with it (0x47EAA0). The explosion's own object
       is made before its parts (0x488070 then 0x488350).
       *Update 136*: a circle under a starting building goes with its trees (0x48EB3A, `ClearScenery`).
-      Open: tree circles (0xCF-0xD4, no graphics, +0x44 48 / 24 / 12) keep their trees as children (0x48F410); whether
-      a circle can be destroyed and take its trees with it needs the children's lifetime traced (0x47EAA0 and the
-      circle class's vt+0x78) before the engine models it.
+      *Update 140*: a circle is the explosion's target, not its trees, and dies with them (`CircleDies`). Open:
+      what 0x47EAA0 does for each child as its parent dies beyond taking it out.
 
 ## Phase 2: high-severity behaviour (small, independent)
 
@@ -288,24 +287,45 @@ settled: battle-ui 8, combat 4 and 9, movement 15, 16 and 24, battle-setup 4, 11
       engine let any loose `maps\` file win; now it's the game's rule, slip and all. Tested with the owner's
       `dat` files loose, and with a loose map file with and without a `Map` folder.
 
+**Update 140**
+- [x] What is in the world's grid (PLAN 1.2 / 1.3, S6's last point): an object goes in as its position is set
+      (vt+0x40, 0x48AA80), unless it's a child with +0xB8 bit 2 (a circle's tree); children are placed by
+      vt+0x7C (0x47F960), which doesn't touch the grid. So a building's parts and a circle's trees aren't in it:
+      the deployment's check and an explosion (0x47FC50) never meet them. A tree circle is in it: radius 48 / 24
+      / 12, health 120. The engine hit each tree; now it hits the circle, and a dead circle (0x80A0, its effect
+      591) takes its trees with it (`CircleDies`). Not seen running (no combat in the test battles).
+- [x] movement 19 (PLAN 1.7): on arriving, a vehicle with a point aimed at (+0xC8 and +0xCC set, 0x496200) that
+      isn't its target takes it as its target and hasn't arrived (0x491A0C); standing down clears the point
+      (0x49648B).
+- [x] battle-setup 18 (PLAN 1.6): nothing to change. The list the counts walk (the world's +0x118) holds only
+      the war map objects' battle units (0x4216E0 -> 0x43C770 is all that adds to it), which is what the engine
+      counts.
+- [x] warmap 20 (PLAN 1.10): the battle pulse goes by its own counter, put back to 0 when it has passed 22 while a
+      battle is pulsed (0x41DED1).
+- [x] frontend behaviour 2, 6, 8 (PLAN 1.9): a held button hides the tool tip only of a window that answers 0x80CF
+      (the controls, 0x42E2EC / 0x434465; the war map's counters keep theirs); the CD Player opens on the track
+      that's playing (0x413D30) and a stopped track shows where it stopped; Debriefing's delay runs from its
+      second draw. The CD Player's +/- 5 s seek was already in.
+- [x] A pod under a starting building is taken out like the rest of the scenery (PLAN 1.2).
+- [x] battle-ui 9 (PLAN 1.8): the game's display flag (byte dword_4EA364, 0x42CA28) as `Screen::windowed`, kept by
+      main as Alt+Enter changes the window; the battle map's and war map's edge scrolling take 32 pixels in a
+      window and 4 full screen (0x484E2C). The mouse owner's part (dword_4EA444) is still only the popup's.
+- Loose map files: a **modern fix**, not parity (MODERN.md). The engine marks MAPS.WoW's entries from `maps\`,
+  not the game's `Map\` (0x414FAB), so they work. Leave it.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
 known visible bug in the two test battles.
-- battle-ui 9: the window's 32-pixel scroll border (the engine has no windowed / full-screen flag of the game's,
-  dword_4EA364). battle-ui 12: cursor modes 2-7 (the editor / placement tools, not in the engine).
-- deployment: whether a building's parts are in the grid 0x47FE10 searches; the bridges and the pod in a
-  building's scenery clearing; the order of the rand() calls inside one object's start; the update order as the
+- battle-ui 12: cursor modes 2-7 (the editor / placement tools, not in the engine).
+- deployment: a bridge under a starting building is taken out too (0x48D2E0), which needs bridges that can go
+  (movement 21); the order of the rand() calls inside one object's start; the update order as the
   world list's (HUNI, HCON, HRES, AUNI, ACON, ARES).
 - movement 17: the route search held off 10 updates while another group's runs (needs the route finder to become a
-  stateful object, movement A3). movement 19: the second target (+0xC8 / +0xCC, nothing sets it yet).
-  movement 21: broken bridges (bridges can't break yet, movement A5).
-- battle-setup 18: the end-of-battle counts' lists (+0x118 holds what with a side, unverified).
+  stateful object, movement A3). movement 21: broken bridges (bridges can't break yet, movement A5).
 - warmap 2 (part): the repair icon and power bar (repair isn't in). warmap 14: units on a route restart after a load
   (done, update 137). warmap 20: the battle pulse's own draw
   counter (the same at a steady 30 fps).
-- frontend behaviour 2 (what 0x80CF answers per control), 6 (the CD Player's live time and starting track: needs
-  the music's track kept in `Music`), 8 (Debriefing's delay from its second draw: one frame).
 
 The architecture items, by report:
 - Settled by Phase 1: rendering A1-A3, battle-ui A / B, movement A1 / A2 / A4, combat A1-A3 / A5, battle-setup A-C,

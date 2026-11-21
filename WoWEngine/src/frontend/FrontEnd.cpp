@@ -1046,12 +1046,14 @@ namespace wow
                   slow = ini.GetInt("Screen", "Slow Tool Tip Delay", 150);
         int owner = screen->TipOwner(mouseX, mouseY);
         const bool held = mouseHeld || rightHeld; // GetAsyncKeyState(1) / (2)
+        // 0x433916 / 0x433943: the buttons are only asked about for a window that answers 0x80CF
+        const bool hides = held && screen->TipHidesOnPress(owner);
         if (tip && owner == hoverOwner && stillTicks < normal)
         {
-            if (held) tip.reset();
+            if (hides) tip.reset();
             return;
         }
-        if (held) { tip.reset(); return; }
+        if (hides) { tip.reset(); return; }
         if (owner != hoverOwner) { hoverX = mouseX; hoverY = mouseY; }
         hoverOwner = owner;
         int level = stillTicks > slow ? 3 : stillTicks > normal ? 2 : stillTicks > quick ? 1 : 0;
@@ -1287,6 +1289,7 @@ namespace wow
             auto path = files.Resolve(name);
             if (path && music.Play(*path) && music.LengthMs() / 1000 > 10)
             {
+                music.SetTrack(track);
                 SDL_Log("Playing track %d for %u seconds", track, unsigned(music.LengthMs() / 1000));
                 musicTimer = int(music.LengthMs() / 1000) * 30;
                 return;

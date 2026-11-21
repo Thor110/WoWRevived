@@ -27,6 +27,10 @@ namespace wow
         void SetPaused(bool paused);
         void SetVolume(float volume); // 0-1, kept across tracks
 
+        // the CD track this is (2-5), for the CD Player to pick up (the CD's current track, 0x413D30); 0: none
+        void SetTrack(int t) { track = t; }
+        int Track() const { return track; }
+
         bool Playing() const { return stream != nullptr; }
         bool Paused() const { return paused; }
         bool Finished() const;          // played to the end
@@ -47,5 +51,6 @@ namespace wow
         uint32_t fed = 0;               // bytes of the data handed to the stream so far
         bool paused = false;
         float volume = 1.0f;
+        int track = 0;
     };
 }

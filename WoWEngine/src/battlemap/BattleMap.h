@@ -171,7 +171,12 @@ namespace wow
                       int circle = -1; };   // circle: the tree circle (circles' index) a tree is a child of
         // The tree circles (0xCF-0xD4, 0x48F330): objects of the scenery list with no picture, their trees their
         // children. One taken out (vt+0x78, 0x4895A0, by a building starting over it) takes its trees with it.
-        struct Circle { int type = 0, x = 0, y = 0; bool alive = true; };
+        // A circle is in the world's grid (its vt+0x40, 0x48AA80, as it's loaded), its trees aren't (a child with
+        // +0xB8 bit 2 is left out, 0x48AAA0; children are placed by vt+0x7C, which doesn't touch the grid): so an
+        // explosion (0x47FC50) finds the circle, radius its type's +0x44 (48 / 24 / 12), health its +0x4A (120), and
+        // never a tree of one. Dead (0x80A0), its trees go with it.
+        struct Circle { int type = 0, x = 0, y = 0; bool alive = true; int health = 0, dieAt = -1; };
+        void CircleDies(size_t circle);
         std::vector<Circle> circles;
         void RemoveProp(size_t prop);                           // vt+0x78, 0x4895A0: gone, with no explosion
         void ClearScenery(size_t building);                     // 0x48EB3A-0x48EBD0

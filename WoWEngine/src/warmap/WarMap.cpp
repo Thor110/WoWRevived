@@ -22,7 +22,8 @@ namespace wow
     namespace
     {
         constexpr int ScreenW = 640, ScreenH = 480;
-        constexpr int EdgeZone = 4;           // [Screen] "Scroll Border" (dword_4BA05C) full screen; 32 in a window
+        // [Screen] "Scroll Border" (dword_4BA05C) full screen; 32 in a window (byte dword_4EA364 clear)
+        inline int EdgeZoneNow() { return Screen::windowed ? 32 : 4; }
         // The map's shade table has 89 levels: ramps of tints either side of the normal 11, then solid colours at
         // 59-66. 0x41D9B0 colours each border by the sectors either side of it:
         constexpr int SelectedBorderLevel = 66; // white: the selected sector's ([+0x84]+0x60)
@@ -501,8 +502,16 @@ namespace wow
     // 36 for ours and 47 for the rest.
     void WarMap::PulseBattles()
     {
+        // the counter (0x41DCD0 / 0x41DED1): one more each time the view is done, and put back to 0 only when it
+        // has passed 22 while a battle's sector is being pulsed, so a battle's first pulse starts from 0 however
+        // long the map has been up. *Provisional*: counted where the engine shades the sectors, once an update.
+        pulse++;
         if (viewMode != 1) return;     // only in the Unit view (0x41DD35)
-        int frame = animation % 23, ramp = frame > 11 ? 22 - frame : frame;
+        bool any = false;
+        for (int s = 1; s <= warmap::SectorCount; s++) any = any || battle[size_t(s)];
+        if (!any) return;
+        if (pulse > 22) pulse = 0;
+        const int frame = pulse, ramp = frame > 11 ? 22 - frame : frame;
         for (int s = 1; s <= warmap::SectorCount; s++)
             if (battle[size_t(s)]) levels[size_t(s)] = 36 + (owner[size_t(s)] != 0 ? 11 : 0) + ramp;
     }
@@ -1129,7 +1138,7 @@ namespace wow
         // mouse's distance from the centre over (half the width / Scroll Speed), both ways at once (0x7A)
         // *Provisional*: the border is the full-screen one (4); in a window the game uses 32
         if (mouseX >= 0 && !dragging &&
-            !(mouseX > EdgeZone && mouseX < ScreenW - EdgeZone && mouseY > EdgeZone && mouseY < ScreenH - EdgeZone))
+            !(mouseX > EdgeZoneNow() && mouseX < ScreenW - EdgeZoneNow() && mouseY > EdgeZoneNow() && mouseY < ScreenH - EdgeZoneNow()))
         {
             const int div = std::max(1, (ScreenW / 2) / scrollStep);
             cameraX -= (ScreenW / 2 - mouseX) / div;

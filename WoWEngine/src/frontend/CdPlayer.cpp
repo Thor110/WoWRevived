@@ -56,6 +56,9 @@ namespace wow
 
         for (int t = FirstTrack; t <= LastTrack && !anyMusic; t++) anyMusic = TrackFile(t).has_value();
         playing = music.Playing() && !music.Finished();
+        // the constructor reads the CD's current track (0x413D30 -> +0xDC) and only falls back to 2: music carried
+        // on from the game shows as the track it is
+        if (playing && music.Track() >= FirstTrack && music.Track() <= LastTrack) track = music.Track();
         Refresh();
         // the constructor focuses Play (0x407ED4, 0x42EBE0 on +0xAC), or Stop where Stop is the one shown
         Focus(playing ? stopButton : playButton);
@@ -78,7 +81,9 @@ namespace wow
         {
             auto file = TrackFile(track);
             playing = file && music.Play(*file);
+            if (playing) music.SetTrack(track);
         }
+        lastSeconds = 0;
         Refresh();
     }
 
@@ -156,7 +161,11 @@ namespace wow
         if (!anyMusic) line = res.String(0x4CC);
         else
         {
-            uint32_t seconds = playing || music.Paused() ? music.PositionMs() / 1000 : 0;
+            // 0x4088B0: while playing the position read last (+0xE8) plus the clock since, at most the track's
+            // length; otherwise that last position, so a stopped track shows where it stopped
+            // (*provisional*: what the position reads as after a stop, taken as where it was)
+            if (playing || music.Paused()) lastSeconds = std::min(music.PositionMs(), music.LengthMs()) / 1000;
+            const uint32_t seconds = lastSeconds;
             char text[32];
             std::snprintf(text, sizeof(text), "[%d]<%02u:%02u>", track - 1, seconds / 60, seconds % 60);
             line = text;

@@ -83,6 +83,8 @@ namespace wow
         void OnKeyUp(int sdlKey) override;
         // tool tips: 0-2 the view buttons, 3 the Research button, 4 the calendar
         int TipOwner(int x, int y) const override;
+        // the counters aren't controls: they don't answer 0x80CF (*provisional*: the calendar taken as one)
+        bool TipHidesOnPress(int owner) const override { return !(owner >= 1000 && owner < 10000); }
         int CursorAt(int x, int y) const override;
         std::string CounterTip(int counter, int level) const;
         std::string TipText(int owner, int level) const override;
@@ -384,6 +386,7 @@ namespace wow
         void ToggleHistory();
         void ReshowLastMessages();
         int animation = 0;               // ticks
+        int pulse = 0;                   // the view's own draw counter (+0x8C), which the battle pulse goes by
         // The calendar's moving parts (Calendar View 0x426C10): each wheel's frame and the frame it's heading for
         // (0x427500 sets the targets, 0x427710 turns the wheels, both every update)
         struct CalendarWheels

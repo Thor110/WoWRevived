@@ -20,6 +20,7 @@ code each is to be marked `MODERN FIX`. A parity pass must leave them alone. The
 | Resolution applied at once | The slider only takes effect after a restart | *To do*: the engine saves `[Screen] Size` but always draws 640 x 480 |
 | Desktop resolution on the first start | (no such thing) | *To do*: with no `[Screen] Size` yet, the desktop's is taken; afterwards the player's choice stands |
 | No 8 / 16-bit colour choice | Two radios in Display Settings; 8-bit doesn't work on modern systems | *To do*: the radios taken out (WoWRevived skips their creation) |
+| Loose map files | The game marks MAPS.WoW's entries by looking for `Map\<name>` (0x414FAB), a folder it doesn't have, then reads `maps\<name>`: a loose map file is never used | **In** (update 140): `core/Vfs` looks in `maps\`, so a loose file in `MAPS` replaces the archive's, as in `DAT` |
 | No "Lights" toggle, lights always on | With lights off, Infiltrate, which makes a light, crashes the game | *To do*: the toggle taken out and `[Options] "Show lights"` forced on at start-up (WoWRevived does both) |
 
 Other changes WoWRevived made to the executable, for reference when reading the listing (`IDA-Output.txt` was made
@@ -46,16 +47,16 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
 - **Every data folder overridable**: a loose file in `DAT`, `MAPS`, `SFX` or `VOX` replacing the copy in that
   folder's archive. The original does this for `DAT` only (a loose `dat\<name>` replaces Dat.wow's entry,
   0x414DE0). For `MAPS` it looks in a folder `Map` that doesn't exist (0x414FAB), so loose map files are ignored;
-  the sound libraries have no such rule. The engine keeps the original's behaviour, slip included
-  (`core/Vfs`); this option would make all four work the same way.
+  the engine has that one fixed already (a modern fix, above). The sound libraries have no such rule; this
+  option would give `SFX` and `VOX` the same.
 - **Modern formats** accepted for the overriding files (PNG for sprites, WAV / OGG for sounds, and so on), so a
   fix or a mod needn't be encoded in the game's own formats.
 - **The owner's fixed files** (`WoWEngine/dat`, `WoWEngine/maps`: the WoWRevived patches for this version of the
   game): `dat` holds re-encoded sprites (the owner's RLE encoder packs them better than the original tool did),
   the Cotton Factory and Airship model fixes and the alternative war map backgrounds; `maps` holds the sector 22
   terrain fix (`LAND22.CLS`) and re-encoded minimaps. The `dat` ones work today as loose files in the game's
-  `DAT` folder. The `maps` ones can't be loose files in the original's scheme and are to be **repacked into
-  MAPS.WoW by the installer**; that waits for this stage, as does choosing between the original and the
+  `DAT` folder, and since update 140 the `maps` ones as loose files in `MAPS`. They are still to be **repacked
+  into the archives by the installer**; that waits for this stage, as does choosing between the original and the
   extended war map background by resolution (`TEMP-HWM` / `TEMP-MWM` and their `HI` versions).
 
 ### Controls

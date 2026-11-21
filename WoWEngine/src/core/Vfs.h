@@ -4,9 +4,8 @@
 //   - archive names are compared without regard to case
 //   - a loose file with the same name next to the archive (DAT\name) replaces the archive copy; the game marks
 //     those entries when it opens Dat.wow (0x414DE0), which is how the Enhanced Assets swap works
-//   - for MAPS.WoW the game looks for the loose file in a folder "Map" (0x414FAB), not "MAPS", and then reads the
-//     one in MAPS: so a loose map file is only used when one of its name is in "Map" too (the original's slip,
-//     kept; see docs/MODERN.md for making every folder overridable)
+//   - MODERN FIX: for MAPS.WoW the game looks for the loose file in a folder "Map" (0x414FAB), not "MAPS", and
+//     then reads the one in MAPS, so its loose map files never work. The engine looks in MAPS (docs/MODERN.md)
 //   - anything else, or anything not in an archive, is read as a loose file from the game folder
 // FFUH compressed data is decompressed either way.
 #pragma once

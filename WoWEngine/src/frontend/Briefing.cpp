@@ -159,6 +159,9 @@ namespace wow
     void Debriefing::Update()
     {
         if (leaveIn > 0 && --leaveIn == 0) { sent = Command{ 0x99, 0 }; return; }
+        // 0x49B830: the 0x8017 is posted, "Debriefing Delay" on, by a draw after the first, not as the screen is
+        // made: the count starts an update later
+        if (!drawn) { drawn = true; return; }
         if (!done && --ticksLeft <= 0) { done = true; sent = Command{ 0x8017, 0 }; }
     }
 

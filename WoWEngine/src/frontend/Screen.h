@@ -65,6 +65,11 @@ namespace wow
             : id(id), background(background), paletteGroup(paletteGroup), res(res) {}
         virtual ~Screen() = default;
 
+        // The game's display flag (byte dword_4EA364, set as the display is made, 0x42CA28): clear in a window, set
+        // full screen. The views' edge scrolling takes a 32-pixel border in a window and [Screen] "Scroll Border"
+        // (4) full screen (0x484E2C). Kept by main as the window changes.
+        static inline bool windowed = true;
+
         int Id() const { return id; }
         int Background() const { return background; }
         int PaletteGroup() const { return paletteGroup; }
@@ -96,6 +101,10 @@ namespace wow
         // under the mouse (a control's index, or -1), and that part's text at a detail level of 1-3 (0x807C), empty
         // if it has none at that level.
         virtual int TipOwner(int x, int y) const { return HitTest(x, y); }
+        // What the window under the mouse answers 0x80CF (0x4338E5): whether a held mouse button hides its tool
+        // tip. The controls answer 1 (the button base 0x42E2EC, the check / radio class 0x434465); a window that
+        // doesn't handle it answers 0 and keeps its tip while a button is held.
+        virtual bool TipHidesOnPress(int owner) const { (void)owner; return true; }
         virtual std::string TipText(int owner, int level) const;
 
         // A command the screen sends by itself (from Update), picked up by the front end after each update.

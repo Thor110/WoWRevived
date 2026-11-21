@@ -338,7 +338,7 @@ int main(int argc, char** argv)
                 {
                 case SDL_EVENT_QUIT: closed = true; break;
                 case SDL_EVENT_KEY_DOWN:
-                    if (event.key.key == SDLK_RETURN && (event.key.mod & SDL_KMOD_ALT)) { if (!event.key.repeat) video.ToggleFullScreen(); }
+                    if (event.key.key == SDLK_RETURN && (event.key.mod & SDL_KMOD_ALT)) { if (!event.key.repeat) { video.ToggleFullScreen(); wow::Screen::windowed = !(SDL_GetWindowFlags(video.Window()) & SDL_WINDOW_FULLSCREEN); } }
                     else if (event.key.key == SDLK_PAUSE) { if (!event.key.repeat) setActive(!active); }
                     else if (active) frontEnd.OnKey(int(event.key.key));
                     break;

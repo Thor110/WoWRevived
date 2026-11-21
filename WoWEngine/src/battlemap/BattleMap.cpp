@@ -870,7 +870,9 @@ namespace wow
     // A building's start (0x48E9D0 at 0x48EB3A-0x48EBD0): every object of the scenery list (the world's +0x11C)
     // nearer (octagonal, whole positions) than its radius (+0xAC) + the building's type's +0x46 word is taken out
     // (vt+0x78, 0x4895A0: no explosion). A tree circle goes with its trees, its children.
-    // *Provisional*: the bridges and the pod, which are in that list too, are left.
+    // A pod is taken out the same way (its vt+0x78 is 0x4895A0 too).
+    // *Provisional*: a bridge within reach would go as well (0x48D2E0 -> 0x4895A0); bridges can't be taken out
+    // yet, so they're left.
     void BattleMap::ClearScenery(size_t building)
     {
         const Unit& b = units[building];
@@ -887,7 +889,7 @@ namespace wow
         for (size_t i = 0; i < props.size(); i++)
         {
             const Prop& p = props[i];
-            if (!p.alive || p.circle >= 0 || p.type == 0xB3) continue;
+            if (!p.alive || p.circle >= 0) continue;
             if (Octagonal(bx, by, int(p.x), int(p.y)) < Radius44(p.type) + reach) RemoveProp(i);
         }
     }
@@ -1676,7 +1678,7 @@ namespace wow
             if (c.type >= 0xCF && c.type <= 0xD4)
             {
                 land.SetPointLight(c.x, c.y, sun);
-                circles.push_back({ c.type, c.x, c.y });
+                circles.push_back({ c.type, c.x, c.y, true, MaxHealth(c.type) });
             }
         // the light parts (types 334-346, 0x48DD50) and which types have one
         auto lightPart = [&](int type) -> const ObjOjd::UnitData::Part* {
@@ -1975,7 +1977,7 @@ namespace wow
     void BattleMap::EdgeScroll()
     {
         if (mouseX < 0 || !popup.empty()) return;
-        const int margin = 4, W = 640, H = 480;
+        const int margin = Screen::windowed ? 32 : 4, W = 640, H = 480;    // 0x484E2C
         if (mouseX > margin && mouseX < W - margin && mouseY > margin && mouseY < H - margin) return;
         const int div = (W / 2) / 40;
         ScrollTo(scrollX - (W / 2 - mouseX) / div, scrollY - (H / 2 - mouseY) / div);
@@ -2096,6 +2098,8 @@ namespace wow
             for (Gun& g : units[i].guns) GunTick(i, g);
             PoseParts(units[i]);
         }
+        for (size_t c = 0; c < circles.size(); c++)
+            if (circles[c].alive && circles[c].dieAt >= 0 && ticks >= circles[c].dieAt) CircleDies(c);
         // the scenery: 0x80A0 arriving, the damage smoke
         for (size_t i = 0; i < props.size(); i++)
         {
