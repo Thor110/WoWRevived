@@ -1495,6 +1495,19 @@ namespace wow
         if (!(units[0] + facilities[0]) || !(units[1] + facilities[1]))
         {
             if (pendingBattle == s) { pendingBattle = 0; battle[size_t(s)] = false; }
+            // what died on the battle map all the same (the battle units' deaths reach their war map objects as they
+            // happen, 0x8057 / 0x80A0 -> 0x428D70, whether or not a battle was on): taken out of their counters
+            if (lost)
+                for (int ref : *lost)
+                    for (size_t i = 0; i < counters.size(); i++)
+                    {
+                        Counter& k = counters[i];
+                        if (k.sector != s || k.Travelling()) continue;
+                        auto it = std::find(k.refs.begin(), k.refs.end(), ref);
+                        if (it == k.refs.end()) continue;
+                        RemoveObject(int(i), ref);
+                        break;
+                    }
             return;
         }
         const int holder = owner[size_t(s)] == 0 ? 0 : 1;

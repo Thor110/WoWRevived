@@ -59,6 +59,7 @@ namespace wow
         void AddEventCheck(int textId, bool value, OnChange changed);
         void NextColumn();
 
+
     protected:
         void Changed(size_t index) override;
         void TextChanged(size_t index) override;

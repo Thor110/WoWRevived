@@ -803,9 +803,11 @@ its east side, the side they were on, a few units in from its middle, and took i
 
 *Provisional*: the shells' frame (0 is drawn), the mortar's place on its
 unit (the shells start at the unit's point), type 0x3DB's case, 0x80B9 and vt+0x38, the posts (+0xE4), the battle
-told of an unarmed object seen, the guns' place on their unit, the research
-multipliers and the "CAN'T GET TO WITHIN ATTACK DISTANCE!" check aren't in; a target that's gone clears the group's
+told of an unarmed object seen, the guns' place on their unit and the research
+multipliers aren't in; a target that's gone clears the group's
 target (the game's tidy-up of 0x8057 isn't traced); WProjectile and 0x48DBE0 fly no visible missile.
+Update 132: the route's radius is the group's range in vertices whenever it has a target (0x4830FD), and a goal moved
+further out than that is "CAN'T GET TO WITHIN ATTACK DISTANCE!" and route not found (0x4833F0).
 
 **Turrets** (0x489820 on the vehicle 0x490820: 0x2E6-0x313 and 0x389-0x38C; update 0x489B40). Each part may have a
 **hardpoint** (+0xB0, made by 0x47EE10 from the part's record 27 box when box[0] is 0 or more: four words, +4 the

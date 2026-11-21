@@ -146,8 +146,9 @@ namespace wow
         delayed.reset();
         overlay = 0;
         fadeIn = 0;
-        // a Fullscreen View fades in from black (0x406310 sends 0x811D), except Display Settings (+0x94, 0x409713)
-        if (Fades(*screen) && screen->Id() != CmdDisplaySettings) { fadeIn = 2; overlay = 2; }
+        // a Fullscreen View fades in from black (0x406310 sends 0x811D). (0x409713's +0x94 is the menu's style, not
+        // the view's no-fade byte, so Display Settings fades in as the rest do.)
+        if (Fades(*screen)) { fadeIn = 2; overlay = 2; }
         // the "not rebuilt" placeholder returns to the menu it was opened from
         if (!screen->Previous() && screen->Id() != CmdMainMenu)
             screen->SetPrevious(from == CmdOptions || from == CmdLoadGame || from == CmdSaveMenu ? from : CmdMainMenu);
@@ -886,7 +887,8 @@ namespace wow
                     }
                 }
             for (Screen* sc : { battleMap.get(), screen.get() })
-                if (auto* bm = dynamic_cast<BattleMap*>(sc); bm && bm->Fought())
+                // the losses and retreats whether or not a battle was on (0x428D70 takes each death as it happens)
+                if (auto* bm = dynamic_cast<BattleMap*>(sc))
                 {
                     lost = bm->LostRefs();
                     retreated = bm->RetreatedRefs();
@@ -964,7 +966,9 @@ namespace wow
     {
         // every front-end screen derives from the Fullscreen View (0x4061B0), the war map menu included; the
         // war map itself and the movie player don't
-        return s.Id() != WarMap::Id && s.Id() != MovieScreen::Id && s.Id() != BattleMap::Id; // nor the battle map (a WView, 0x484A30)
+        // nor the battle map (a WView, 0x484A30); the research view sets the view's +0x94 (0x45E6B8, its only writer),
+        // which skips both the fade-in (0x40632E) and the fade-out (0x4065FB)
+        return s.Id() != WarMap::Id && s.Id() != MovieScreen::Id && s.Id() != BattleMap::Id && s.Id() != ResearchScreen::Id;
     }
 
     void FrontEnd::Dispatch(const Command& command, bool fromControl)
@@ -974,7 +978,7 @@ namespace wow
         {
             delayed = command;
             delayTicks = 0;
-            overlay = 1;
+            overlay = 0;    // nothing yet: 0x811C(1) arrives one tick on (0x4065E0)
             return;
         }
         Execute(command);
@@ -986,9 +990,10 @@ namespace wow
         if (!screen) return;
         if (delayed)
         {
-            // 0x811C: 50% black, then black; 0x811B: the command 5 ticks after the click
+            // 0x811C(1) one tick after the click: bigBlack at 50% (0x406860), and 0x811C(2) a tick after that: black;
+            // 0x811B: the command 5 ticks after the click
             delayTicks++;
-            overlay = 2;
+            overlay = delayTicks >= 2 ? 2 : 1;
             if (delayTicks >= 5)
             {
                 Command c = *delayed;

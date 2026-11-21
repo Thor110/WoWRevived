@@ -115,7 +115,7 @@ namespace wow
     // key building (the Martian Base 0x33E where the kind is 3, else the Communications Centre 0x78; Parliament
     // 0x116 where it's 0x1E, else the Command Post 0x3A) going, with a battle on, speaks 0x112 if it was the player's, else 0x13B.
     // *Provisional*: gone at once rather than on the next update; the kind is taken as the sector.
-    void BattleMap::Die(size_t index)
+    void BattleMap::Die(size_t index, bool quietly)
     {
         ClearFootprint(units[index]);   // 0x490F10's vt+0x114
         StopUnitSounds(units[index]);
@@ -140,6 +140,7 @@ namespace wow
         // vt+0xE8 (0x48A9A0): a category 0, 2 or 3 object, not a tree, frees its footprint (0x47C3A0 with 2)
         if (const int c = t->second.category; (c == 0 || c == 2 || c == 3) && !(u.type >= 0xCF && u.type <= 0xE5))
             land.ClearOccupied(int(u.x), int(u.y), int16_t(t->second.currentHitPoints), 2);
+        if (quietly) return;    // 0x495BB0: 0x807B to both players, off its list and out of the world, nothing more
         const int z = int(double(u.drive.lift) - double(t->second.size41) * -1.414);
         Explode(t->second.field98, int(u.x), int(u.y), z);
         const bool key = u.type == (setup.sector == 3 ? 0x33E : 0x78) || u.type == (setup.sector == 30 ? 0x116 : 0x3A);
@@ -262,8 +263,8 @@ namespace wow
             const int d = Octagonal(int(u.x), int(u.y), x, y);
             if (d > reach || reach == 0) continue;
             if (u.health <= 0) continue;
-            const float hit = float((1.0 - double(float(d)) / double(float(reach))) * power);
-            Hit(i, int(double(hit) * 1.0), attacker, type, weapon);
+            // (1 - d / reach) x power, truncated once with the research scale in Hit (0x48A5A0)
+            Hit(i, (1.0 - double(float(d)) / double(float(reach))) * power, attacker, type, weapon);
         }
         // the scenery within reach too (it has no side to spare)
         for (size_t i = 0; i < props.size(); i++)
@@ -310,8 +311,7 @@ namespace wow
             if (d > reach || reach == 0) continue;
             auto hit = [&]() {
                 if (units[i].health <= 0) return;
-                const float h = float((1.0 - double(float(d)) / double(float(reach))) * power);
-                Hit(i, int(double(h) * 1.0), attacker, type, weapon);
+                Hit(i, (1.0 - double(float(d)) / double(float(reach))) * power, attacker, type, weapon);
             };
             if (type >= 718 && type <= 720) { if (u.drive.lift < 0.0f) hit(); }
             else if (type >= 788 && type <= 790) { if (ut->second.faction == 1) hit(); }
@@ -343,12 +343,19 @@ namespace wow
     {
         Prop& p = props[index];
         if (p.health <= 0) return;
+        const int before = p.health;
         p.health -= amount;
         if (p.health <= 0)
         {
             const int at = ticks + random::Rand() % 20 + 10;
             if (p.dieAt < 0 || at < p.dieAt) p.dieAt = at;
+            return;
         }
+        // 0x48ABD1: crossing from over 40% of the most (max x 4 / 10) to under it, an object not on a list (+0x10)
+        // goes on the world's update list (0x440060), so the scenery smoulders only from then on (WScenery isn't on
+        // it from the start: 0x489170 adds only one with a looping sound, none of which the engine has yet)
+        const int mark = MaxHealth(p.type) * 4 / 10;
+        if (before > mark && p.health < mark) p.updating = true;
     }
 
     // 0x80A0 for a scenery object (0x489FA0, as a unit's): gone (0x8057: its view objects and its light; vt+0xE8,

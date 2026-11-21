@@ -130,11 +130,67 @@ Tick each item here with the update that fixes it.
 
 ## Phase 3: the rest
 
-Every other item in the eight reports, by severity, area by area: the popup's rows (battle-ui 6-7), fogged enemies
-not clickable (battle-ui 5), the war map's resource view, counter icons and mini-map (warmap 1, 2, 4-12), the menus'
-layout and fades (frontend 2-9), effects hugging the ground (combat 5), smoke timing and fog (combat 6-7), route
-handling (movement 9-23), the reinforcement checks (battle-setup 8-10), the sound variations and bridge rand()
-(data 1-2), and the latent data items.
+Every other item in the eight reports, a batch at a time, the medium ones first. Items the earlier phases already
+settled: battle-ui 8, combat 4 and 9, movement 15, 16 and 24, battle-setup 4, 11, 14 and 15.
+
+**Update 132**
+- [x] battle-ui 5: the other side's units in the fog have no hotspot (0x48B2D0), so they can't be hovered or clicked.
+- [x] battle-ui 6: the popup's rows: items with the same command share a row (0x432D70 / 0x432E90, 10 rows of 8),
+      laid out left to right or right to left off the right edge (0x433220), each row closed to its first item
+      (0x433330(-1)) and opened by hovering it (0x80F1). The placement already used the first item's size (0x432FB0
+      reads `[esi+7Ch]`, item 0, not the menu); the menu's own size for the edge test is *provisional* (the laid-out
+      extent). Tested: a walker's stances row opens out on hover. The war map's popup still has one column.
+- [x] battle-ui 7: a mixed selection gets only the orders every type of its members has (0x448500; "one kind" taken
+      as one type, *provisional*).
+- [x] combat 5: only shells and gas keep their absolute height as they fly; the rest follow the ground (0x47F770 with
+      +0xB8 bit 10).
+- [x] combat 6: scenery smoulders only once a hit has taken it from over 40% to under (0x48AB20 -> 0x440060).
+- [x] combat 7: no smoke and no turret sound from a unit in the fog (0x48AEF0, 0x489B40).
+- [x] combat 8: a vehicle whose look round finds its health under 0 vanishes with no explosion (0x4967E0 -> vt+0x78
+      0x495BB0), and that update has no smoulder.
+- [x] combat 11: the rocket's landing takes two rand() calls and the target's height (0x488830).
+- [x] combat 12: the research multipliers scale the raw hit, truncated once (0x48A5A0); gas spares the Martians
+      whatever the research.
+- [x] movement 7 / 23: the engine sound follows the vehicle (0x49330A, `Sound::Move`) and is placed with the lift.
+- [x] movement 10: no member off a bridge link: the move does nothing (0x482F98).
+- [x] movement 14: steering's neighbours and the object ahead compare heights with the lift (+0x80).
+- [x] movement 18: "CAN'T GET TO WITHIN ATTACK DISTANCE!": with a target the route's radius is the range in vertices,
+      and a goal moved further out than that is route not found (0x4830FD).
+- [x] movement 22: every vehicle member's footprint is cleared before the link test (0x482F17).
+- [x] battle-setup 5: battle on from the lists' numbers of war map objects: (HUNI and (AUNI + ACON)) or ((HUNI + HCON)
+      and AUNI) (0x439D22).
+- [x] battle-setup 6: the computer player starts (0x8075) only when both sides have vehicles or buildings
+      (0x439DF4).
+- [x] battle-setup 8 (part): Retreat and the markers ask room for the group's battle units (0x480F22), not one. The
+      stale slot's sector (an original bug) isn't reproduced.
+- [x] battle-setup 9: the war map objects that have left by each sector count against its room (dword_4F86B8 /
+      dword_4F76F0, 0x429453).
+- [x] battle-setup 10: +0x1D8 bits 8 and 9 from the members' move classes: land markers refuse boats, boat markers
+      land units, Retreat refuses a group with both (0x4802E0, 0x481F70).
+- [x] battle-setup 17: the losses reach the war map whether or not a battle was on.
+- [x] data 1: no burnt roll for the types the factory doesn't build on WScenery (the bridges 445-447 and the others
+      0x446B30 sends elsewhere).
+- [x] data 2 / 3: a sound's variations move on before use (1, 2, 0 ...), and an empty group falls back to the first
+      (0x466BC0).
+- [x] frontend 2: the wide menus centre each control (0x42F020 with 0x10), the event columns placed by hand, then the
+      union (0x40ABDA).
+- [x] frontend 3 / 4: the research screen neither fades in nor out (0x45E6B8); Display Settings fades in.
+- [x] frontend 5 / 6: the CD Player's time panel is solid; Play is focused, and the focus follows Play / Stop.
+- [x] frontend 7: radio buttons take the right button (checkboxes *provisional*, untraced).
+- [x] frontend 8: the click fade: 50% one tick after, black the tick after that.
+
+**Still to do**
+- [ ] warmap 1, 2, 4-12, 14-20 (the resource view, counter icons, the mini-map, edge scrolling, the rubber band,
+      route arrows, messages, the status strip, dimming, hover, transit after a load, the saved view mode, the menu's
+      View map, the ending, unit view shading, the first-hour jump, the battle pulse).
+- [ ] battle-ui 9-12 (edge-scroll margin in a window, a ground click with no point, the cursor's modes).
+- [ ] combat 10, 13-22 (the beam glow's frame, light rolls, dying units, the firer's sparing, removal timing,
+      underground targets, emplacements, gun timing, precision, cascades, fire timings).
+- [ ] movement 17, 19-21 (the route search held off, the second target, Muster's first step, broken bridges).
+- [ ] battle-setup 7, 12, 13, 16, 18 (the planner's strongest object, fog timing, group costs from all members, the
+      staggered deaths, the counts' lists).
+- [ ] rendering 9, 12, 13 (the gun flash level, a WOF's piece order, view list ties).
+- [ ] frontend 9 and behaviour 1-8; data 4-13; the architecture items.
 
 ## Original bugs to keep
 

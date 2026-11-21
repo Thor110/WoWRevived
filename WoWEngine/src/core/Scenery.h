@@ -70,6 +70,16 @@ namespace wow
             if ((type >= 0x2B1 && type <= 0x2B4) || type == 940 || type == 994) return 940;
             return type;
         }
+
+        // Whether the factory (0x446B30) builds the type on WScenery, whose constructor makes the roll above: not the
+        // bridges (445-447: 0x48D050 -> 0x489E20, the plain base) nor the other types it builds elsewhere
+        inline bool RollsBurnt(int type)
+        {
+            if (type >= 445 && type <= 447) return false;
+            if (type == 0x116 || (type >= 0x118 && type <= 0x121)) return false;
+            if ((type >= 824 && type <= 844) || (type >= 905 && type <= 914)) return false;
+            return true;
+        }
     }
 
     template <typename Radius, typename Rolls>
@@ -79,7 +89,7 @@ namespace wow
         std::vector<std::pair<const SceneryObject*, size_t>> starts; // in the list's order: a circle, or an object's index
         for (const SceneryObject& o : objects)
         {
-            int type = scenery::Burnt(o.type, enemyCount);
+            int type = scenery::RollsBurnt(o.type) ? scenery::Burnt(o.type, enemyCount) : o.type;
             if (o.type >= 0xCF && o.type <= 0xD4)
             {
                 random::Rand(); // the circle's own seed (0x48F343), replaced by the saved one

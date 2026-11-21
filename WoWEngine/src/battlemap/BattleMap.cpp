@@ -385,6 +385,9 @@ namespace wow
         int bestY = INT32_MIN;
         for (const Unit& u : units)
         {
+            // the other side's in the fog have no hotspot (0x48B2D0: 0x4405C0(0) as it goes in, 0x48A660 as it
+            // comes out), so they can't be hovered or clicked
+            if (u.fogged) continue;
             const int half = Selectable(u);
             if (!half) continue;
             int sx, sy;
@@ -601,11 +604,14 @@ namespace wow
         selected.assign(setup.groups.size(), false);
         groupPlayers.clear();
         for (const BattleGroup& g : setup.groups) groupPlayers.push_back(g.Players());
-        // the battle is on (the report's +0x54) when both sides have something here
+        // the battle is on (the report's +0x54, 0x439D22-0x439D83) by the lists' numbers of war map objects (0x4216D0):
+        // (HUNI and (AUNI + ACON)) or ((HUNI + HCON) and AUNI); resources never count, and buildings alone on both
+        // sides are no battle
         {
-            bool ours = false, theirs = false;
-            for (const Unit& u : units) (u.players ? ours : theirs) = true;
-            battleOn = ours && theirs;
+            int count[6] = {};
+            for (const BattleGroup& g : setup.groups)
+                if (g.list >= 0 && g.list < 6) count[g.list]++;
+            battleOn = (count[0] && count[1] + count[3]) || (count[0] + count[2] && count[1]);
         }
         groupRetreat.assign(setup.groups.size(), 0);
         groupLeft.assign(setup.groups.size(), false);
@@ -1795,9 +1801,10 @@ namespace wow
         }
         // a WHotButton (0x434390): the mouse coming onto an item (0x20) plays 0x194
         const int was = popupHover;
-        popupHover = -1;
-        for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) popupHover = int(i);
+        popupHover = PopupItemAt(x, y);
         if (popupHover >= 0 && popupHover != was) sounds.push_back(0x194);
+        // 0x80F1 with the item's command (0x433330): its row opened out, the others closed
+        if (popupHover >= 0) popupOpenRow = popup[size_t(popupHover)].row;
     }
 
     // 0x484DF0: with the mouse within 4 pixels of an edge (32 in a window), the view moves by the mouse's distance
@@ -1903,8 +1910,21 @@ namespace wow
             if (SinkTick(i)) { i--; moved = true; continue; }
             moved |= units[i].sink != 0;
             MarkerTick(i);
-            LookRound(i);
-            Smoulder(i);
+            // 0x496862: after the look round, health under 0 calls vt+0x78 and the update ends there (no smoulder): for
+            // a vehicle 0x495BB0 takes it off the map with no explosion, so a kill whose look round comes before its
+            // delayed 0x80A0 (10-29 updates) vanishes quietly; for anything else 0x48AC50 (the key building's message,
+            // which the engine sends from Die)
+            if (LookRound(i) && units[i].health < 0)
+            {
+                if (units[i].vehicle)
+                {
+                    Die(i, true);
+                    i--;
+                    moved = true;
+                    continue;
+                }
+            }
+            else Smoulder(i);
             moved |= units[i].x != x || units[i].y != y;
             // 0x47F630 from the object's update (0x48B3D0), unless +0xB8 bit 3 (vt+0x9C): with a renderer (+0x4C)
             // and +0xB8 bit 5 clear, its type is met (byte_51A19C, the research triggers' 0x45B9D0)
@@ -1918,7 +1938,7 @@ namespace wow
         {
             if (!props[i].alive) continue;
             if (props[i].dieAt >= 0 && ticks >= props[i].dieAt) { PropDies(i); continue; }
-            SmoulderProp(i);
+            if (props[i].updating) SmoulderProp(i);
         }
         UpdateEffects();
         UpdateLights();
@@ -1936,6 +1956,7 @@ namespace wow
     {
         popup.clear();
         popupHover = -1;
+        popupOpenRow = -1;
         auto add = [&](int command, int icon, int text) {
             Rect r = SpriteRect(icon, 0, 0);
             if (r.w <= 0) r.w = r.h = 32;
@@ -1947,15 +1968,98 @@ namespace wow
         bool ours = false, theirs = false;
         for (const Unit& u : units) (u.players ? ours : theirs) = true;
         if (Mode() == 0 && (!ours || !theirs)) add(ReturnCommand, 0x2C, 0x47A);
-        // then the selection's: its first member's orders
+        // then the selection's (0x805C, 0x4482D0): all of one kind, its first member's orders; else only the orders
+        // every member answers (0x448500: each asked 0x8130 / 0x8131 / 0x8132)
+        // *Provisional*: "one kind" taken as one type; the world's own items (0x485EFD) aren't traced
+        std::vector<const Unit*> members;
         for (const Unit& u : units)
-            if (u.players && selected[size_t(u.group)]) { AddOrders(u); break; }
-        int w = 0, h = 0;
-        for (const PopupItem& item : popup) { w = std::max(w, item.rect.w); h += item.rect.h; }
-        int left = std::clamp(x - popup[0].rect.w / 2, 3, 640 - 3 - w);
-        int top = std::clamp(y - popup[0].rect.h / 4, 3, 480 - 3 - h);
-        for (PopupItem& item : popup) { item.rect.x = left; item.rect.y = top; top += item.rect.h; }
+            if (u.players && selected[size_t(u.group)]) members.push_back(&u);
+        if (!members.empty())
+        {
+            const size_t base = popup.size();
+            AddOrders(*members[0]);
+            std::vector<int> seen{ members[0]->type };
+            for (const Unit* m : members)
+            {
+                if (std::find(seen.begin(), seen.end(), m->type) != seen.end()) continue;
+                seen.push_back(m->type);
+                const std::vector<PopupItem> mine(popup.begin() + std::ptrdiff_t(base), popup.end());
+                popup.resize(base);
+                AddOrders(*m);
+                std::vector<PopupItem> theirs(popup.begin() + std::ptrdiff_t(base), popup.end());
+                popup.resize(base);
+                for (const PopupItem& item : mine)
+                    if (std::any_of(theirs.begin(), theirs.end(), [&](const PopupItem& o) { return o.command == item.command && o.param == item.param; }))
+                        popup.push_back(item);
+            }
+        }
+        LayOutPopup(x, y);
         sounds.push_back(0x193);
+    }
+
+    // WPopupMenu's rows (0x432D70 / 0x432E90 / 0x4331C0): each item goes in the row whose first item has its command,
+    // else starts a row, at most 10 rows of 8. Laid out (0x433220) each row left to right from 0, or right to left
+    // from the menu's width when it was kept off the right edge (+0x1BC), the rows down by their first items'
+    // heights. Placed (0x432FB0) at the point less the first item's half size, kept 3 inside the screen (0x42F130;
+    // bit 8: off the right edge), laid out, then moved to the point less the first item's width / 2 and its place
+    // in the row, and its height / 4 (rounded toward 0), kept inside again; then every row closed to its first item
+    // (0x433330(-1)). An item under the mouse (0x80F1 with its command) opens its row and closes the rest.
+    // *Provisional*: the menu's own size (+0x34 / +0x38, for the edge test) is taken as the laid-out items' extent.
+    void BattleMap::LayOutPopup(int x, int y)
+    {
+        if (popup.empty()) return;
+        std::vector<int> rowCommand;
+        std::vector<int> rowCount;
+        std::vector<PopupItem> kept;
+        for (PopupItem item : popup)
+        {
+            int r = int(std::find(rowCommand.begin(), rowCommand.end(), item.command) - rowCommand.begin());
+            if (r == int(rowCommand.size()))
+            {
+                if (r >= 10) continue;
+                rowCommand.push_back(item.command);
+                rowCount.push_back(0);
+            }
+            if (rowCount[size_t(r)] >= 8) continue;
+            item.row = r;
+            item.col = rowCount[size_t(r)]++;
+            kept.push_back(item);
+        }
+        popup = std::move(kept);
+        // the menu's extent
+        std::vector<int> rowW(rowCommand.size(), 0), rowH(rowCommand.size(), 0);
+        for (const PopupItem& item : popup)
+        {
+            rowW[size_t(item.row)] += item.rect.w;
+            if (item.col == 0) rowH[size_t(item.row)] = item.rect.h;
+        }
+        int menuW = 0, menuH = 0;
+        for (size_t r = 0; r < rowW.size(); r++) { menuW = std::max(menuW, rowW[r]); menuH += rowH[r]; }
+        const Rect first = popup[0].rect;
+        auto keep = [&](int& mx, int& my, bool* right) {
+            if (right) *right = mx + menuW > 640 - 3;
+            mx = std::max(3, std::min(mx, 640 - 3 - menuW));
+            my = std::max(3, std::min(my, 480 - 3 - menuH));
+        };
+        int mx = x - first.w / 2, my = y - first.h / 2;
+        bool rtl = false;
+        keep(mx, my, &rtl);
+        // the layout, relative to the menu
+        std::vector<int> along(rowCommand.size(), rtl ? menuW : 0);
+        std::vector<int> down(rowCommand.size(), 0);
+        for (size_t r = 1; r < rowH.size(); r++) down[r] = down[r - 1] + rowH[r - 1];
+        for (PopupItem& item : popup)
+        {
+            int& a = along[size_t(item.row)];
+            if (rtl) { a -= item.rect.w; item.rect.x = a; }
+            else { item.rect.x = a; a += item.rect.w; }
+            item.rect.y = down[size_t(item.row)];
+        }
+        mx = x - first.w / 2 - popup[0].rect.x;
+        my = y - first.h / 4;
+        keep(mx, my, nullptr);
+        for (PopupItem& item : popup) { item.rect.x += mx; item.rect.y += my; }
+        popupOpenRow = -1;
     }
 
     // +0x3C (0x47EF30): how many of its children are weapons (+0xB8 bit 11): the turrets (0x489820, types
@@ -2061,6 +2165,7 @@ namespace wow
     {
         popup.clear();
         popupHover = -1;
+        popupOpenRow = -1;
         if (escape) sounds.push_back(0x196);
     }
 
@@ -2160,7 +2265,7 @@ namespace wow
 
     int BattleMap::PopupItemAt(int x, int y) const
     {
-        for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) return int(i);
+        for (size_t i = 0; i < popup.size(); i++) if (PopupShown(i) && popup[i].rect.Contains(x, y)) return int(i);
         return -1;
     }
 
@@ -2193,7 +2298,7 @@ namespace wow
 
     int BattleMap::TipOwner(int x, int y) const
     {
-        for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) return 100 + int(i);
+        if (const int i = PopupItemAt(x, y); i >= 0) return 100 + i;
         return -1;
     }
 
@@ -2344,6 +2449,7 @@ namespace wow
         // the popup over everything, each item's next frame under the mouse
         for (size_t i = 0; i < popup.size(); i++)
         {
+            if (!PopupShown(i)) continue;
             const PopupItem& item = popup[i];
             bool lit = int(i) == popupHover && res.GetFrame(item.icon, 1);
             canvas.DrawSprite(item.icon, lit ? 1 : 0, item.rect.x, item.rect.y);

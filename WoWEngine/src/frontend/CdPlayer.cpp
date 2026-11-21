@@ -57,6 +57,8 @@ namespace wow
         for (int t = FirstTrack; t <= LastTrack && !anyMusic; t++) anyMusic = TrackFile(t).has_value();
         playing = music.Playing() && !music.Finished();
         Refresh();
+        // the constructor focuses Play (0x407ED4, 0x42EBE0 on +0xAC), or Stop where Stop is the one shown
+        Focus(playing ? stopButton : playButton);
     }
 
     std::optional<std::filesystem::path> CdPlayer::TrackFile(int t) const
@@ -85,6 +87,8 @@ namespace wow
         // play and stop share a place: whichever doesn't apply is hidden (0x4081D0, command 0x80A3)
         buttons[playButton].visible = !playing;
         buttons[stopButton].visible = playing;
+        // 0x408533-0x4085E4: if Play or Stop had the focus, the one now shown takes it
+        if (selected == int(playButton) || selected == int(stopButton)) selected = int(playing ? stopButton : playButton);
 
         const std::string& text = res.String(TrackText[track]);
         size_t lineEnd = text.find('\n');
@@ -147,7 +151,7 @@ namespace wow
         canvas.DrawSprite(0xA9 + track, 0, 295, 26);
         Screen::Draw(canvas);
 
-        canvas.DrawSprite(0xAA, 0, status.x, status.y, 0, Canvas::Blend::Translucent);
+        canvas.DrawSprite(0xAA, 0, status.x, status.y);   // solid: only its +0x14 bit 4 (0x430454), not bit 0's 50%
         std::string line;
         if (!anyMusic) line = res.String(0x4CC);
         else

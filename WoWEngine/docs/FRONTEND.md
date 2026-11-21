@@ -56,7 +56,7 @@ Each item has a plate, drawn solid, and a glass panel, drawn at 50%. Both have t
 | 1 | 0x3E / 0x3F | 0x43 / 0x44 | 0x38 / 0x3A |
 | 2 | 0x40 / 0x41 | 0x3B / 0x3C | 0x3B / 0x3D |
 
-Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 0x8123 (back), then the previous command, which the menu hands its Fullscreen View, so it fades out as a click does (0x40A1B0 -> 0x4065E0). WGame's handler (0x402B80) opens the next menu. A screen's own command (the credits' exit, 0x405689) fades the same way, and a right click skips the Splash and the credits as a left one does (0x405E6E, 0x405672).
+Buttons send WM_COMMAND with their command id to the menu's owner. Escape sends 0x8123 (back), then the previous command, which the menu hands its Fullscreen View, so it fades out as a click does (0x40A1B0 -> 0x4065E0). WGame's handler (0x402B80) opens the next menu. A screen's own command (the credits' exit, 0x405689) fades the same way, and a right click skips the Splash and the credits as a left one does (0x405E6E, 0x405672). The fade (0x4065E0): 50% black one tick after the click (0x811C(1), 0x406860), black the tick after (0x811C(2)), the command five ticks after the click (0x811B); every Fullscreen View fades in (0x406310, 0x811D), Display Settings too (its 0x409713 is the menu's style, +0x94), except the research view, whose +0x94 byte (0x45E6B8, the only writer) skips both fades (update 132). Radio buttons take a right click as a left one (0x430E90); the CD Player's time panel is solid (0x430454) and it opens with Play focused (0x407ED4), the focus moving between Play and Stop as they swap (0x408533).
 
 Word wrap (0x416250) sums each character's width (glyph + spacing, 0 below 0x20) and breaks at a character over ' ' once the sum reaches the width (or after a '\n'): the line ends before the word, less the spaces before it, and the next starts at the word with the sum at 0. Runs of spaces inside a line are kept.
 
@@ -162,7 +162,10 @@ The menus use cursor 0; the text field (0x431500) asks for 0x11. Each side has i
 - **Button frames.** It isn't checked yet which states use which frame (WGraphicPushButton, 0x42FC20). The engine uses 0 = normal, 1 = highlighted, 2 = pressed. The glow animation ("Menu Glow First" / "Menu Glow Last") isn't done.
 - **Option controls.** The slider uses sprites 0x345/0x346 (0x347/0x348 in style 2), with 22 frames: 11 knob positions, then the same 11 highlighted. Checkboxes and radio buttons use 0x4D/0x4E (0x4B/0x4C in style 2), with frames for cross, cross highlighted, tick highlighted and tick. Not yet checked against the game:
   - how a slider reacts to clicks and drags (0x431EF0);
-  - the event menu's check boxes, which sit about 14 pixels left of the original's while the labels line up.
+  - the event menu's check boxes were 14 pixels off until update 132: the wide menus now centre each heading,
+    row and bottom button across the screen (0x42F020 with 0x10), the event columns at W / 2 less the check
+    control's width and W / 2 (0x40A54A-0x40A580), then the union is centred (0x40ABDA). The other styles keep
+    their left edges together (*provisional*: the engine's check and slider controls are only their box's width).
 - **Display Settings.** The engine still draws at 640 × 480 and in true colour. The resolution and colour depth are saved for the launcher, but the engine doesn't use them yet.
 - **Loading and saving** work for the war map (see WARMAP.md); battles, research and the economy aren't saved yet beyond what the save already held.
 - **Sound for the credits.** The credits music (sound 0x191) isn't played yet. The game also waits for it to finish before leaving the credits.

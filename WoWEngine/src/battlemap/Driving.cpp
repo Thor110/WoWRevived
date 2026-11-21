@@ -117,8 +117,8 @@ namespace wow
     // Both ends go to their vertices and then the nearest node the group can stand on (0x482B00), and the route
     // finder is asked (0x494440, Routes.cpp): going straight, the members get 0x80C2 to where it says; with a
     // route, 0x802E. The group's members are its vehicles (+0xB8 bit 0) not on a bridge link or with bit 8.
-    // *Provisional*: the attack range (+0x2C's target, "CAN'T GET TO WITHIN ATTACK DISTANCE!") and the re-post while
-    // another group's search runs aren't in (the destination flag and the speech are, below).
+    // *Provisional*: the re-post while another group's search runs isn't in (the destination flag, the speech and
+    // the attack range's check are, below).
     void BattleMap::OrderMove(int x, int y)
     {
         // each selected group gets the order (0x804F to the group)
@@ -190,7 +190,7 @@ namespace wow
         return 0;
     }
 
-    void BattleMap::OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y, int radius)
+    void BattleMap::OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y)
     {
         if (members.empty()) return;
         // a move order (0x482510 / 0x480EB0) sets +0x1D8 bit 0 and clears bit 2 (the group's own periodic moves set
@@ -206,9 +206,11 @@ namespace wow
         for (size_t i : members)
         {
             Unit& u = units[i];
+            // 0x482F17: vt+0x114 for every vehicle member (its own footprint off the ground it routes over), before
+            // the link test
+            if (u.vehicle) ClearFootprint(u);
             if (u.drive.link) continue;
             const int d = octagonal(int(u.x), int(u.y), x, y);
-            if (u.vehicle) ClearFootprint(u);   // 0x482F17: vt+0x114 (its own footprint off the ground it routes over)
             u.drive.toPoint = d;
             if (d < nearest) nearest = d;
             if (d > farthest)
@@ -218,6 +220,8 @@ namespace wow
                 sy = int(u.y);
             }
         }
+        // 0x482F98: no member off a bridge link counted, nothing more is done
+        if (farthest == -1000000) return;
         // both ends to vertices, kept on the map; "ALREADY AT DESTINATION" within 3; then each to the nearest node
         // the group can stand on (0x482B00)
         const int32_t cell = land.Cell(), half = land.HalfCell();
@@ -238,7 +242,33 @@ namespace wow
         }
         int ssx = 0, ssy = 0, gx = 0, gy = 0;
         NearestPassable(group, svx, svy, ssx, ssy);
-        NearestPassable(group, dvx, dvy, gx, gy);
+        const int goalOut = NearestPassable(group, dvx, dvy, gx, gy);
+        const bool attacking = group >= 0 && size_t(group) < groupTargets.size() && groupTargets[size_t(group)].target != 0;
+        // 0x4830FD: the route's radius is 4, or with a target (+0x2C) the group's range (+0x4E) in vertices; when the
+        // goal had to be moved further out than that, "CAN'T GET TO WITHIN ATTACK DISTANCE!" and route not found
+        // (0x4833F0)
+        auto notFound = [&]() {
+            // 0x4833F0: the members 0x8031, the target dropped (0x80B9, 0x805A, +0x2C..+0x3C cleared), bit 0 cleared;
+            // the speech and the portrait only for a player's order to a player's group, then bit 3 cleared
+            for (size_t i : members) Stop8031(units[i]);
+            const bool spoken = PlayersOrder(group);
+            StopAttacking(group);
+            if (group >= 0 && size_t(group) < groupBusy.size()) groupBusy[size_t(group)] = false;
+            if (spoken) Speak(0x10B, group);
+            if (group >= 0 && size_t(group) < groupOrdered.size()) groupOrdered[size_t(group)] = false;
+        };
+        int radius = 4;
+        if (attacking)
+        {
+            const int range = int((int64_t(int32_t(uint32_t(groupRange[size_t(group)]) << 16)) + land.HalfCell()) / land.Cell());
+            if (range < goalOut)
+            {
+                SDL_Log("CAN'T GET TO WITHIN ATTACK DISTANCE!");
+                notFound();
+                return;
+            }
+            radius = range;
+        }
         // the counts the move uses are the group list's (0x4216D0), not just the members ordered
         const int n = std::max(1, GroupCount(group));
         orders.push_back({ n, 0, nearest, farthest, group });
@@ -260,22 +290,13 @@ namespace wow
         const bool tunnelling = firstMember && ClassOf(firstMember->type) == VehicleClass::Tunneller;
         if (tunnelling && anyUnder && !allUnder) return;
         std::vector<int> path;
-        const bool attacking = group >= 0 && size_t(group) < groupTargets.size() && groupTargets[size_t(group)].target != 0;
         if (!(tunnelling && anyUnder && allUnder) && RequestRoute(group, ssx, ssy, gx, gy, radius, path))
         {
             if (path.empty())
             {
                 // 0x4833F0: "ROUTE NOT FOUND": the members get 0x8031 and the group stops
-                // (0x4833F0: the members 0x8031, the target dropped (0x80B9, 0x805A, +0x2C..+0x3C cleared), bit 0
-                // cleared; the speech and the portrait only for a player's order to a player's group, then bit 3
-                // cleared)
                 SDL_Log("ROUTE NOT FOUND");
-                for (size_t i : members) Stop8031(units[i]);
-                const bool spoken = PlayersOrder(group);
-                StopAttacking(group);
-                if (group >= 0 && size_t(group) < groupBusy.size()) groupBusy[size_t(group)] = false;
-                if (spoken) Speak(0x10B, group);
-                if (group >= 0 && size_t(group) < groupOrdered.size()) groupOrdered[size_t(group)] = false;
+                notFound();
                 return;
             }
             // 0x483270: "ROUTE FOUND": each member gets 0x802E(ftol(sqrt(members) + 1) x its radius, the route)
@@ -391,8 +412,7 @@ namespace wow
 
     // 0x491450 (vt+0x138): the engine sound (+0xE8) stopped (vt+0x13C), then, unless it's dead (vt+0x9C), its type's
     // +0xA2 while it's going (vt+0x144) or +0xA4 while not, at its screen point (+0x2C / +0x30)
-    // *Provisional*: the sound stays at the point it started from (the game's may follow the vehicle); vt+0x110 /
-    // vt+0x114 (the ground patch it holds, +0x13C / +0x13E) aren't in.
+    // and each step moves it with the vehicle (0x49330A, Sound::Move).
     void BattleMap::EngineSound(Unit& u)
     {
         if (!setup.sound) return;
@@ -403,7 +423,8 @@ namespace wow
         const bool going = !(u.drive.flags & 1) || (u.drive.flags & 0x20) || u.drive.link;
         const int id = going ? t->second.fieldA2 : t->second.fieldA4;
         if (id == 0) return;
-        const int x = int(u.x), y = land.ProjectY(int(u.y), land.HeightAt(int(u.x), int(u.y)));
+        // at the posed object's screen point (+0x2C / +0x30, 0x491450): the lift in
+        const int x = int(u.x), y = land.ProjectY(int(u.y), land.HeightAt(int(u.x), int(u.y)) + int(u.drive.lift));
         u.engineSound = setup.sound->Play(id, 1.0f, 0, x, y);
     }
 
@@ -451,6 +472,9 @@ namespace wow
             if (!d.link) Paddle(u);     // the walkers' step (0x490040)
             Hover(u);                   // the fliers' (0x490170)
             Advance(u);
+            // 0x49330A: with a sound in +0xE8, 0x489290 moves it to the object's screen point, so it follows
+            if (u.engineSound && setup.sound)
+                setup.sound->Move(u.engineSound, int(u.x), land.ProjectY(int(u.y), land.HeightAt(int(u.x), int(u.y)) + int(d.lift)));
         }
         if (u.wof)
         {
@@ -811,14 +835,16 @@ namespace wow
         auto clampTo = [](int v, int count) { return v < 0 ? 0 : v >= count ? count - 1 : v; };
         const int px = int(u.x), py = int(u.y);
         const auto cells = BucketCells(px, py);
-        const int z = land.HeightAt(px, py);
+        // 0x492A90: the heights compared are the objects' own (+0x80, the ground plus the lift), so a deck and what's
+        // under it don't steer round each other
+        const int z = land.HeightAt(px, py) + int(u.drive.lift);
         for (auto [gx, gy] : cells)
             for (const Unit& o : units)
             {
                 if (&o == &u || !Collides(u, o)) continue;
                 const int ox = int(o.x), oy = int(o.y);
                 if (clampTo(ox / size, cols) != gx || clampTo(oy / size, rows) != gy) continue;
-                if (std::abs(land.HeightAt(ox, oy) - z) > 64) continue;
+                if (std::abs(land.HeightAt(ox, oy) + int(o.drive.lift) - z) > 64) continue;
                 if (o.type >= 0x273 && o.type <= 0x276) continue;
                 const float ddx = float(double(u.x) - o.x), ddy = float(double(u.y) - o.y);
                 double gap = std::sqrt(double(ddx) * ddx + double(ddy) * ddy) - u.drive.radius - o.drive.radius;
@@ -921,7 +947,7 @@ namespace wow
         Polar(d.heading, float(d.radius), fx, fy);
         float px = u.x, py = u.y;
         d.flags &= ~8u;
-        const int z = land.HeightAt(int(u.x), int(u.y));
+        const int z = land.HeightAt(int(u.x), int(u.y)) + int(d.lift);    // +0x80 (0x492350)
         auto t = setup.units->find(u.type);
         const int moveClass = t == setup.units->end() ? 0 : t->second.field52;
         // a probe point onto the nearest vertex, kept on the map (0x492950); ground it can't cross sets +0x110
@@ -946,7 +972,7 @@ namespace wow
                 if (i == 0 && (moveClass == 5 || moveClass == 6)) return true;
             }
             const Unit* o = ObjectAt(u, int(px), int(py), d.radius);
-            if (o && std::abs(land.HeightAt(int(o->x), int(o->y)) - z) > 64) o = nullptr;
+            if (o && std::abs(land.HeightAt(int(o->x), int(o->y)) + int(o->drive.lift) - z) > 64) o = nullptr;
             if (o)
             {
                 d.ax = float(double(o->x) - px);

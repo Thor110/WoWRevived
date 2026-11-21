@@ -14,11 +14,15 @@ namespace wow
 
     void Menu::Stack(Button button)
     {
-        // the wide (style 2) menus line their rows up with the two event columns
-        button.rect.x = style == 2 ? ScreenW / 2 - 260 : 0;
+        // each heading, row and bottom button is centred across the menu (0x42F020 with 0x10 from 0x40A7D0, 0x40A320
+        // and 0x40AB00), whatever the cursor's x; the bottom button then centres the union of them all (Centre).
+        // *Provisional*: only the wide (style 2) menus centre each control; the others keep their left edges together
+        // (from x = 0), as the engine's check and slider controls are only their box sprite's width, not the whole
+        // control's (0x430CD0), so centring them alone would misplace them
         if (column >= 0) nextY = std::max(nextY, columnBottom); // rows after the columns go below the longer one
         button.rect.y = FirstItemY + nextY;
         size_t index = Place(std::move(button));
+        if (style == 2) buttons[index].rect.x += (ScreenW - buttons[index].rect.w) / 2;   // (from x = 0, less any hot spot)
         nextY += buttons[index].rect.h;
     }
 
@@ -88,7 +92,10 @@ namespace wow
 
     void Menu::AddEventCheck(int textId, bool value, OnChange changed)
     {
-        constexpr int ColumnWidth = 260; // the checkbox control's width (the sprite has 10 spare pixels)
+        // the columns at W / 2 less the checkbox control's width and at W / 2 (0x40A54A-0x40A580), then centred with
+        // the rest by the bottom button
+        const IndexedImage* plate = res.GetFrame(0x4B, 0);
+        const int ColumnWidth = plate ? plate->width : 270;
         if (column < 0) { column = 0; columnTop = FirstItemY + nextY; }
         Button b;
         b.kind = Button::Kind::Check;
@@ -166,9 +173,10 @@ namespace wow
             right = std::max(right, b.rect.x + b.rect.w);
             bottom = std::max(bottom, b.rect.y + b.rect.h);
         }
-        // the game moves the whole stack so its bounding box is in the middle of the screen; items keep their
-        // left edges (they're all added at x = 0)
-        int dx = style == 2 ? 0 : (ScreenW - (right - left)) / 2 - left; // the wide menus are placed already
+        // the game moves the whole stack so its bounding box is in the middle of the screen (0x42E630 over the union
+        // of the children's rects, applied by 0x42EEC0, 0x40ABDA), every style alike: only the event menu's columns,
+        // placed by hand, move it
+        int dx = (ScreenW - (right - left)) / 2 - left;
         int dy = (ScreenH - (bottom - top)) / 2 - top;
         for (Button& b : buttons) { b.rect.x += dx; b.rect.y += dy; }
     }

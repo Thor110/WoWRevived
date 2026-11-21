@@ -270,7 +270,10 @@ namespace wow
     std::optional<Command> Screen::OnRightButton(int x, int y, bool down)
     {
         int hit = HitTest(x, y);
-        bool push = hit >= 0 && (buttons[size_t(hit)].kind == Button::Kind::Push || buttons[size_t(hit)].kind == Button::Kind::Graphic);
+        // push buttons (0x42FEF0's jump table 0x4301A0) and radio buttons (0x430E90, 0x430F07) take 0x204 / 0x205 as
+        // 0x201 / 0x202. (*Provisional*: checkboxes inherit the push base, but that isn't traced, so they don't.)
+        bool push = hit >= 0 && (buttons[size_t(hit)].kind == Button::Kind::Push || buttons[size_t(hit)].kind == Button::Kind::Graphic ||
+                                 buttons[size_t(hit)].kind == Button::Kind::Radio);
         if (down) { if (push) pressed = hit; return std::nullopt; }
         int was = pressed;
         pressed = -1;

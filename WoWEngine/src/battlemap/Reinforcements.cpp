@@ -80,9 +80,31 @@ namespace wow
             const int d = b - (std::min(a, b) >> 1) + a;
             if (d < bestD) { bestD = d; best = int(i); }
         }
-        if (best >= 0 && count && setup.hasRoom && !setup.hasRoom(!(moveClass == 5 || moveClass == 6), rpoints[size_t(best)].sector, count))
+        if (best >= 0 && count && !HasRoom(!(moveClass == 5 || moveClass == 6), rpoints[size_t(best)].sector, count))
             return -1;
         return best;
+    }
+
+    bool BattleMap::HasRoom(bool land, int sector, int count) const
+    {
+        if (!setup.hasRoom) return true;
+        const auto& left = land ? leftLand : leftBoats;
+        const auto it = left.find(sector);
+        return setup.hasRoom(land, sector, count + (it == left.end() ? 0 : it->second));
+    }
+
+    uint32_t BattleMap::GroupBits(int group) const
+    {
+        uint32_t bits = 0;
+        for (const Unit& u : units)
+        {
+            if (u.group != group) continue;
+            auto t = setup.units->find(u.type);
+            const int mc = t == setup.units->end() ? 0 : t->second.field52;
+            if (mc == 5 || mc == 6) bits |= 0x100;
+            if (mc >= 1 && mc <= 4) bits |= 0x200;
+        }
+        return bits;
     }
 
     // Retreat (0x480EF0) for a group: the nearest point (0x43D3F0) to its first member's whole position for its type's
@@ -103,7 +125,9 @@ namespace wow
         if (!first || !first->players) return;
         auto t = setup.units->find(first->type);
         if (t == setup.units->end()) return;
-        const int k = NearestPoint(int(first->x), int(first->y), t->second.field52, 1);
+        // with both +0x1D8 bits 8 and 9 (boats and land vehicles together) it can't; the room for the group's battle
+        // units (0x4216D0, 0x480F22)
+        const int k = (GroupBits(group) & 0x300) == 0x300 ? -1 : NearestPoint(int(first->x), int(first->y), t->second.field52, GroupCount(group));
         if (k < 0)
         {
             Speak(0x121, group);
@@ -146,6 +170,14 @@ namespace wow
             if (o.unit > int(index)) o.unit--;
         units.erase(units.begin() + std::ptrdiff_t(index));
         if (std::none_of(units.begin(), units.end(), [&](const Unit& o) { return o.group == u.group; })) GroupGone(u.group);
+        // its war map object's last gone (0x429453: +0x60 up to its count): one more left for the sector it went to,
+        // as a boat when its type's +0x4E (word_51A13E) is 3 (the war map's move class)
+        if (u.ref >= 0 && size_t(u.ref) < groupRetreat.size() && std::none_of(units.begin(), units.end(), [&](const Unit& o) { return o.ref == u.ref; }))
+        {
+            auto t = setup.units->find(u.type);
+            const bool boat = t != setup.units->end() && t->second.moveClass == 3;
+            (boat ? leftBoats : leftLand)[groupRetreat[size_t(u.ref)]]++;
+        }
     }
 
     std::vector<std::pair<int, int>> BattleMap::RetreatedRefs() const
@@ -165,13 +197,14 @@ namespace wow
     // kind): kinds 1 and 7, with +0x1D8 bit 8 clear and room for the group's objects (0x4216D0) as land (0x43AC40);
     // kind 5, with bit 9 clear and room as boats; then the group goes through it (0x481170: as Retreat, to the
     // marker's point, +0x78 / +0x7C). Otherwise speech 0x121 in the group's voice (0x449120) and its leader told.
-    // *Provisional*: +0x1D8 bits 8 and 9 are taken as clear; the group's objects as one.
     void BattleMap::RetreatToMarker(int group, size_t k)
     {
         const ReinforcePoint& p = rpoints[k];
         bool ok = false;
-        if (p.kind == 1 || p.kind == 7) ok = !setup.hasRoom || setup.hasRoom(true, p.sector, 1);
-        else if (p.kind == 5) ok = !setup.hasRoom || setup.hasRoom(false, p.sector, 1);
+        const uint32_t bits = GroupBits(group);
+        const int count = GroupCount(group);
+        if (p.kind == 1 || p.kind == 7) ok = !(bits & 0x100) && HasRoom(true, p.sector, count);
+        else if (p.kind == 5) ok = !(bits & 0x200) && HasRoom(false, p.sector, count);
         if (!ok) { Speak(0x121, group); return; }
         RetreatVia(group, k);
     }

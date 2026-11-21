@@ -34,7 +34,19 @@ namespace wow
         aiThreats.clear();
         aiOwn.clear();
         aiTasks.clear();
-        aiOn = battleOn;
+        // 0x439DF4-0x439E8D: 0x8075 goes only when both sides have something: each side's vehicles in its unit list
+        // (0x422860, category 1) and buildings in its construction list (0x4228B0, category 2 or 3), by war map object
+        {
+            int side[2] = {};
+            for (const BattleGroup& g : setup.groups)
+            {
+                auto t = setup.units->find(g.type);
+                const int category = t == setup.units->end() ? -1 : t->second.category;
+                if ((g.list <= 1 && category == 1) || ((g.list == 2 || g.list == 3) && (category == 2 || category == 3)))
+                    side[g.Players() ? 0 : 1]++;
+            }
+            aiOn = side[0] != 0 && side[1] != 0;
+        }
         if (!aiOn) return;
         const int aiFaction = setup.human ? 1 : 0;
         aiHolder = setup.ownerFaction == aiFaction;

@@ -188,7 +188,8 @@ namespace wow
         if (step != 0)
         {
             auto tt = setup.units->find(t.type);
-            if (!t.sound && tt != setup.units->end() && tt->second.fieldA2 && setup.sound)
+            // 0x489B40: the turning sound only out of the fog (vt+0x9C clear)
+            if (!t.sound && !u.fogged && tt != setup.units->end() && tt->second.fieldA2 && setup.sound)
                 t.sound = setup.sound->Play(tt->second.fieldA2, 1.0f, 0, t.x, land.ProjectY(t.y, t.z));
         }
         else if (t.sound && setup.sound)
@@ -472,13 +473,13 @@ namespace wow
     // aiming and further from its aim point (+0xC8 / +0xCC) than its sight x the scale (1.0), stands its group's
     // guns down (0x805A to the group), which clears its aiming.
     // *Provisional*: the group's 0x805A is taken as each member's (no target cleared).
-    void BattleMap::LookRound(size_t index)
+    bool BattleMap::LookRound(size_t index)
     {
         Unit& u = units[index];
         auto t = setup.units->find(u.type);
-        if (t == setup.units->end()) return;
+        if (t == setup.units->end()) return false;
         const int count = u.scanCount++;
-        if (count <= int16_t(t->second.field92)) return;
+        if (count <= int16_t(t->second.field92)) return false;
         const bool hasGroup = u.group >= 0 && size_t(u.group) < groupTargets.size();
         if (IsEmplacement(u.type) && u.aiming && hasGroup &&
             Octagonal(int(u.x), int(u.y), u.aimX, u.aimY) > int(float(ObjOjd::Vision(t->second, setup.armour)) * setup.lookScale))
@@ -507,6 +508,7 @@ namespace wow
             (!groupBusy[size_t(u.group)] || groupSelfMove[size_t(u.group)]))
             AutoTarget(u);
         u.scanCount = 0;
+        return true;
     }
 
     // 0x496570: within its sight (+0x48) x the scale (octagonal, whole positions), with it not under the ground,
@@ -593,7 +595,7 @@ namespace wow
     // is under 2000 and the hit has a firer (+0xCC, the object that fired it), says 0x110 with its type's voice
     // (byte_51A190); then its group is told 0x8085 with it and the hit (0x483880). Other objects just take the damage.
     // The sinkers' vt+0xC0 (0x498EE0) first: under (+0x190 bit 0), only a hit from 0x2CE-0x2D0 (718-720) reaches it.
-    void BattleMap::Hit(size_t index, int amount, int attacker, int by, int weapon)
+    void BattleMap::Hit(size_t index, double raw, int attacker, int by, int weapon)
     {
         Unit& u = units[index];
         if (Sinker(u.type) && u.under && (by < 718 || by > 720)) return;
@@ -616,11 +618,15 @@ namespace wow
         }
         // 0x4958B0, the damage by research: by the target's side (0x4406E0) and the type that made the hit (the hit's
         // +0xC4, the gun's or shell's), each multiplier 1.0 until its enhancement is done (0x45A1C0 / 0x45B320)
+        // the multipliers scale the hit's scale (arg_4, 1.0), and 0x48A5A0 truncates (1 - d / reach) x power x scale
+        // once (ftol, x87); gas never hurts the Martians (0x495A97), whatever the research
+        auto ut = setup.units->find(u.type);
+        const int side = ut == setup.units->end() ? 2 : ut->second.faction;
+        if (side == 1 && weapon >= 0x393 && weapon <= 0x395) return;
+        int amount = int(raw);
         if (setup.researchMultiplier)
         {
-            auto ut = setup.units->find(u.type);
-            const int side = ut == setup.units->end() ? 2 : ut->second.faction;
-            float f = float(amount);
+            double f = raw;
             auto mulf = [&](bool human, int type) { f *= setup.researchMultiplier(human, type); };
             const bool a = weapon >= 0x1AB && weapon <= 0x1B0, b = weapon >= 0x1B5 && weapon <= 0x1B7;
             if (side == 0 && u.vehicle)
@@ -635,7 +641,6 @@ namespace wow
             {
                 if (u.vehicle) { mulf(false, 0x27B); mulf(false, 0x27C); }   // ShockResistant, ImpactReflecting Armour
                 mulf(true, 0x259);                              // the Humans' HighExplosiveRounds
-                if (weapon >= 0x393 && weapon <= 0x395) return; // gas doesn't hurt the Martians (0x495A97)
             }
             amount = int(f);
         }
@@ -719,8 +724,7 @@ namespace wow
     // from where it was last aimed is aimed at again: the group moves (0x804F) to within its range (+0x4E, in
     // vertices, as the route's radius) and each member is aimed there (vt+0xC8, a point) or at it (vt+0xC4, an
     // object). An object's target follows it (+0x78..+0x80 each update); under the ground its guns are stood down.
-    // *Provisional*: a target that's gone (0x8057's tidy-up) clears the group's target; the route's radius is the range snapped
-    // to vertices whatever the goal's snap (the "CAN'T GET TO WITHIN ATTACK DISTANCE!" check isn't in).
+    // *Provisional*: a target that's gone (0x8057's tidy-up) clears the group's target.
     void BattleMap::ChaseTarget(size_t g)
     {
         if (g >= groupTargets.size()) return;
@@ -760,8 +764,7 @@ namespace wow
             std::vector<size_t> members;
             for (size_t i = 0; i < units.size(); i++)
                 if (units[i].group == int(g) && units[i].vehicle) members.push_back(i);
-            const int radius = int((int64_t(int32_t(uint32_t(groupRange[g]) << 16)) + land.HalfCell()) / land.Cell());
-            OrderGroupMove(int(g), members, t.x, t.y, radius);
+            OrderGroupMove(int(g), members, t.x, t.y);  // the range as the route's radius (0x4830FD)
             const int id = t.target;
             for (Unit& u : units)
                 if (u.group == int(g))
@@ -999,7 +1002,9 @@ namespace wow
         const int span = 2 * s;
         const int x = random::Rand() % span - s + g.tx;
         const int y = random::Rand() % span - s + g.ty;
-        const int z = random::Rand() % span + g.tz - s;
+        // the shell (0x4886A0) jitters its height with a third rand(); the rocket (0x488830) takes two and lands at
+        // the target's height (+0xC4)
+        const int z = g.cls == 1 ? g.tz : random::Rand() % span + g.tz - s;
         const int h = z - land.HeightAtNearest(x, y);
         ImpactAt(w[3], x, y, h, u.group, u.id, g.type);
     }

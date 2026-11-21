@@ -102,6 +102,8 @@ namespace wow
             speechQueue.insert(speechQueue.begin(), { id, volume, groupIndex, x, y });
             return 0;
         }
+        // an empty group past the first falls back to the first (0x466BC0)
+        if (def->groups[groupIndex].empty() && groupIndex > 0 && !def->groups[0].empty()) groupIndex = 0;
         const auto& group = def->groups[groupIndex];
         if (group.empty()) return 0;
         const bool placed = x != 0 || y != 0;
@@ -111,9 +113,11 @@ namespace wow
             const bool ambient = def->type == SoundDef::Ambient;
             if (std::abs(x - listenerX) >= (ambient ? 960 : 640) || std::abs(y - listenerY) >= (ambient ? 600 : 400)) return 0;
         }
-        // the sound's samples are taken in turn, not at random (0x466BC0)
+        // the sound's samples are taken in turn, not at random (0x466BC0): the group's cursor (+0x4C, 0 at load)
+        // moves on before it's used, so a three-sample sound plays 1, 2, 0, 1 ...
         size_t& cursor = nextVariation[{ id, groupIndex }];
-        const SoundSample& sample = group[cursor++ % group.size()];
+        cursor = cursor + 1 < group.size() ? cursor + 1 : 0;
+        const SoundSample& sample = group[cursor];
         auto pcm = Sample(sample);
         if (!pcm || pcm->empty()) return 0;
 
@@ -183,6 +187,13 @@ namespace wow
     {
         std::lock_guard<std::mutex> l(lock);
         voices.erase(std::remove_if(voices.begin(), voices.end(), [&](const Voice& v) { return v.handle == handle; }), voices.end());
+    }
+
+    void Sound::Move(int handle, int x, int y)
+    {
+        std::lock_guard<std::mutex> l(lock);
+        for (Voice& v : voices)
+            if (v.handle == handle && v.placed) { v.x = x; v.y = y; }
     }
 
     void Sound::FadeIn(int handle, int ticks)

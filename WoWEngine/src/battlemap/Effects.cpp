@@ -159,10 +159,14 @@ namespace wow
             {
                 Emit(i);
                 Effect& e = effects[i];
-                const int before = land.HeightAt(int(e.x), int(e.y));
+                // 0x47F770: every object has +0xB8 bit 10 (0x47D6F0), which keeps its height over the ground as it
+                // moves; only the mortar shells' class (0x488E80, the gas clouds on it too) clears it and keeps its
+                // absolute height, ftol(+0x80 - +0x84) less the new ground
+                const bool absolute = e.kind == EffectKind::Shell || IsGas(e.type);
+                const int before = absolute ? land.HeightAt(int(e.x), int(e.y)) : 0;
                 e.x += e.vx;
                 e.y += e.vy;
-                const int after = land.HeightAt(int(e.x), int(e.y));
+                const int after = absolute ? land.HeightAt(int(e.x), int(e.y)) : 0;
                 e.lift = float(before - after) + e.lift + e.vz;
                 e.vz += e.g;
                 gone = e.lift < 0.0f;
@@ -335,6 +339,7 @@ namespace wow
     {
         if (ticks % 15 != 0 || !setup.showSmoke) return;
         const Unit& u = units[index];
+        if (u.fogged) return;   // 0x48AEF0: no smoke while vt+0x9C (in the fog)
         const int max = MaxHealth(u.type);
         if (max == 0) return;
         const float fraction = float(u.health) / float(max);

@@ -162,7 +162,8 @@ namespace wow
                             int bright = 255; };
         // A scenery object (WScenery 0x4895E0 / 0x489380 on the damageable 0x489E20): its type, point and height
         // (+0x84), its health (+0xC4, the type's +0x4A to start with, bit 7 set), a 0x80A0 on its way, its light
-        struct Prop { int type = 0; float x = 0, y = 0, z = 0; int health = 0, dieAt = -1, light = -1; bool alive = true; };
+        // updating: on the world's update list (dword_4D2550 +0x20), so its update (the smoulder, 0x48AEF0) runs
+        struct Prop { int type = 0; float x = 0, y = 0, z = 0; int health = 0, dieAt = -1, light = -1; bool alive = true; bool updating = false; };
         std::vector<Prop> props;
         void DamageProp(size_t prop, int amount);               // vt+0xE0, 0x48AB20
         void PropDies(size_t prop);                             // 0x80A0
@@ -365,7 +366,7 @@ namespace wow
         void ClearFootprint(Unit& u);                           // vt+0x114, 0x491630
         static bool IsGas(int type);                            // 0x393-0x395, WGasCloud
         bool GasTick(size_t effect);                            // 0x488D70
-        void LookRound(size_t unit);                            // 0x4967E0's count -> vt+0x104 (0x48F8A0, 0x496890)
+        bool LookRound(size_t unit);                            // 0x4967E0's count -> vt+0x104 (0x48F8A0, 0x496890); true when it looked
         void AutoTarget(const Unit& u);                         // 0x496570 -> the group's 0x80B1 (0x482960)
         void ChaseTarget(size_t group);                         // 0x483B70 -> 0x4826D0, first in GroupTick
         void Aim(Unit& u, int x, int y, int z);                 // vt+0xC8: 0x491110 -> 0x496200 -> guns 0x494D20
@@ -390,7 +391,7 @@ namespace wow
         // Damage and death (0x48A5A0, 0x48AB20, 0x80A0 in 0x489FA0) and the explosions (WExplosion 0x488180)
         int MaxHealth(int type) const;                          // 0x47DA20: +0x4A with the armour modifiers
         void Damage(size_t unit, int amount);                   // vt+0xE0, 0x48AB20
-        void Die(size_t unit);                                  // 0x80A0
+        void Die(size_t unit, bool quietly = false);            // 0x80A0; quietly: vt+0x78 0x495BB0, no explosion
         void KeyBuildingLost(bool players);                     // 0x48AC50's key building case
         void StaggerDeaths(int group, int at);                  // 0x47CEE0's 0x80A0
         bool forfeit = false;                                   // byte_4E9B94: the key building lost with no battle on
@@ -399,6 +400,11 @@ namespace wow
         // +0xCA) in place of the type's
         void Explode(int type, int x, int y, int z, int firer = -1, int attacker = 0, int weapon = 0, int radiusAs = 0, int powerAs = 0);
         void LandPod(const Landscape::Sun& sun);
+        // the war map objects that have left by each sector this battle (dword_4F86B8 land, dword_4F76F0 boats: the
+        // war map object's 0x80B9 case, 0x429453, once its last unit has gone), which the room check adds (0x43AC40)
+        std::map<int, int> leftLand, leftBoats;
+        bool HasRoom(bool land, int sector, int count) const;
+        uint32_t GroupBits(int group) const;     // +0x1D8 bits 8 (a member of move class 5 / 6) and 9 (1-4), 0x4802E0
         bool begun = false;
         std::vector<std::array<int, 3>> heldSounds;             // sounds made before Begin (the pod's blasts): id, x, y
         int podX = -1, podY = -1;                               // where this battle's pod landed
@@ -424,7 +430,7 @@ namespace wow
         void GoUnder(size_t unit);                              // 0x80EE / 0x80EF to a member, 0x498E90
         void Vanish(size_t unit);                               // vt+0x78, 0x495BB0
         void Upgrade(Gun& g, int side) const;          // 0x494AF0's research upgrades
-        void Hit(size_t unit, int amount, int attacker, int by, int weapon = 0); // vt+0xC0 (0x498EE0, 0x491020, 0x4958B0), then the damage
+        void Hit(size_t unit, double amount, int attacker, int by, int weapon = 0); // vt+0xC0 (0x498EE0, 0x491020, 0x4958B0), then the damage
         void Retaliate(int group, size_t member, int attacker); // 0x8085 to the group, 0x483880                               // 0x4967E0's timer
         void SetStance(int group, int stance);                  // 0x80B2 to the group: it and each member (+0xD8)
         void TurnOnOwn(Unit& u);                                // 0x496100
@@ -460,7 +466,7 @@ namespace wow
         void SetWaypoint(Unit& u, int index);                                           // 0x491790
         std::vector<MoveOrder> orders;
         void OrderMove(int x, int y);
-        void OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y, int radius = 4);
+        void OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y);
         int NearestPassable(int group, int vx, int vy, int& ox, int& oy) const;   // 0x482B00
         void Halt();
         void Drive(size_t index);
@@ -601,9 +607,13 @@ namespace wow
         void FogRevealOwn();                            // each of the player's objects' vt+0x100 (0x4964B0 / 0x48C570)
         std::set<int> encountered;      // byte_51A19C by type: 0x47F630, 0x488C00
         int rightDownAt = -1;
-        struct PopupItem { int command, icon, text; Rect rect; int param = 0; };
+        // an item's row and place in it (0x432D70 / 0x432E90: the row whose first item has its command, +0x28)
+        struct PopupItem { int command, icon, text; Rect rect; int param = 0; int row = 0, col = 0; };
         std::vector<PopupItem> popup;       // "Battlemap menu" (WPopupMenu 0x432C60, 0x485DE0)
         int popupHover = -1;
+        int popupOpenRow = -1;              // the row opened out (0x433330 with the hovered item's command)
+        bool PopupShown(size_t i) const { return popup[i].col == 0 || popup[i].row == popupOpenRow; }
+        void LayOutPopup(int x, int y);
         void OpenPopup(int x, int y);
         void ClosePopup(bool escape);
         // The selection's items (0x805C: the selection 0x4482D0 asks its first member, 0x47DF20 -> 0x47E1E0)
