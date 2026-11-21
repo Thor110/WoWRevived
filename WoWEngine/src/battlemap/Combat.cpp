@@ -104,6 +104,8 @@ namespace wow
                              u.attached.end());
             auto pt = setup.units->find(type);
             if (pt == setup.units->end()) continue;
+            // vt+0xE8 (0x48A9A0): its footprint taken off
+            if (modelFootprint.count(type)) land.ClearOccupied(int(u.x) + ox, int(u.y) + oy, Radius46(type), 2);
             const int z = int(double(oz) - double(pt->second.size41) * -1.414);
             // 0x489FA0: the part's parent is its explosion's firer (+0xCC its id, the group spared by 0x488200)
             Explode(pt->second.field98, int(u.x) + ox, int(u.y) + oy, z, u.group, u.id);
@@ -139,7 +141,14 @@ namespace wow
         if (t == setup.units->end()) return;
         // vt+0xE8 (0x48A9A0): a category 0, 2 or 3 object, not a tree, frees its footprint (0x47C3A0 with 2)
         if (const int c = t->second.category; (c == 0 || c == 2 || c == 3) && !(u.type >= 0xCF && u.type <= 0xE5))
-            land.ClearOccupied(int(u.x), int(u.y), int16_t(t->second.currentHitPoints), 2);
+            land.ClearOccupied(int(u.x), int(u.y), Radius46(u.type), 2);
+        // and its parts still standing theirs (its children go with it, 0x47EAA0)
+        for (const Attached& a : u.attached)
+            if (a.part >= 0 && size_t(a.part) < t->second.parts.size() && a.light < 0 && !a.wof)
+            {
+                const int pt = t->second.parts[size_t(a.part)].a;
+                if (modelFootprint.count(pt)) land.ClearOccupied(int(u.x) + a.ox, int(u.y) + a.oy, Radius46(pt), 2);
+            }
         if (quietly) return;    // 0x495BB0: 0x807B to both players, off its list and out of the world, nothing more
         const int z = int(double(u.drive.lift) - double(t->second.size41) * -1.414);
         Explode(t->second.field98, int(u.x), int(u.y), z);
@@ -279,7 +288,7 @@ namespace wow
             if (!p.alive || p.health <= 0) continue;
             auto pt = setup.units->find(p.type);
             if (pt == setup.units->end() || pt->second.category == 4) continue;
-            const int reach = radius + int16_t(pt->second.hitPoints);
+            const int reach = radius + Radius44(p.type);
             const int d = Octagonal(int(p.x), int(p.y), x, y);
             if (d > reach || reach == 0) continue;
             DamageProp(i, int((1.0 - double(d) / double(reach)) * power));   // one truncation (0x48A5A0, x87)
@@ -335,7 +344,7 @@ namespace wow
             if (!p.alive || p.health <= 0) continue;
             auto pt = setup.units->find(p.type);
             if (pt == setup.units->end() || pt->second.category == 4) continue;
-            const int reach = radius + int16_t(pt->second.hitPoints);
+            const int reach = radius + Radius44(p.type);
             const int d = Octagonal(int(p.x), int(p.y), x, y);
             if (d > reach || reach == 0) continue;
             DamageProp(i, int((1.0 - double(d) / double(reach)) * power));
@@ -368,6 +377,20 @@ namespace wow
     // ftol(+0x84 + its +0x41 byte x 1.414) up; the key buildings speak as a unit's do
     void BattleMap::PropDies(size_t index)
     {
+        const Prop p = props[index];
+        RemoveProp(index);
+        auto t = setup.units->find(p.type);
+        if (t == setup.units->end()) return;
+        const int z = int(double(p.z) - double(t->second.size41) * -1.414);
+        Explode(t->second.field98, int(p.x), int(p.y), z);
+        const bool key = p.type == (setup.sector == 3 ? 0x33E : 0x78) || p.type == (setup.sector == 30 ? 0x116 : 0x3A);
+        if (key && setup.sound) setup.sound->Play(0x13B, 1.0f);
+    }
+
+    // vt+0x78 for a scenery object (0x4895A0: 0x48AC50, then out of the world's list, 0x43C710): gone, with its view
+    // objects, its light and its footprint (vt+0xE8), and nothing else
+    void BattleMap::RemoveProp(size_t index)
+    {
         Prop& p = props[index];
         p.alive = false;
         objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) {
@@ -377,11 +400,7 @@ namespace wow
         if (t == setup.units->end()) return;
         const int c = t->second.category;
         if ((c == 0 || c == 2 || c == 3) && !(p.type >= 0xCF && p.type <= 0xE5))
-            land.ClearOccupied(int(p.x), int(p.y), int16_t(t->second.currentHitPoints), 2);
-        const int z = int(double(p.z) - double(t->second.size41) * -1.414);
-        Explode(t->second.field98, int(p.x), int(p.y), z);
-        const bool key = p.type == (setup.sector == 3 ? 0x33E : 0x78) || p.type == (setup.sector == 30 ? 0x116 : 0x3A);
-        if (key && setup.sound) setup.sound->Play(0x13B, 1.0f);
+            land.ClearOccupied(int(p.x), int(p.y), Radius46(p.type), 2);
     }
 
     // 0x80F5-0x80F7 (0x495CB0): the timer (vt+0x88: +0xDC) (level + 2) x 150 updates and the status (vt+0x90: +0xE0,

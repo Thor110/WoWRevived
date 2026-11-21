@@ -393,7 +393,7 @@ namespace wow
         level = std::min(level, 4);
         const int top = 0x16F + level - 1;
         auto t = setup.units->find(p.type);
-        const int radius = t != setup.units->end() ? int16_t(t->second.hitPoints) : 0;
+        const int radius = t != setup.units->end() ? Radius44(p.type) : 0;
         if (random::Rand() < 0xCCC) Puff(1000, p.type, props[index].x, props[index].y, props[index].z, radius);
         for (int k = 0x16F; k <= top; k++) Puff(k, p.type, props[index].x, props[index].y, props[index].z, radius);
     }

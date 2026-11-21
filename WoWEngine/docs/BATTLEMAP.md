@@ -426,11 +426,35 @@ sum is 0; else the map's middle.
 The units are drawn by their GType's class like the scenery: a WOF model (2) posed at its place and heading, an IOB
 model (1) or a sprite (0).
 
-*Provisional*: the vehicles' ground check (each vertex through the unit's mover, 0x480740) is taken as the
-landscape's IsAreaPassable; the object check as circles (the unit size against each unit already placed, at its
-IOB collision radius or its own size), without the scenery; +0x188 / +0x18C aren't read; there are no pods yet;
-the order of the objects in a list is the counters' order; and where these `rand()` calls fall against the
-scenery's isn't checked.
+**Starting** (update 136). Before the six deployments the battle world's list (+0x118, the lists as 0x4216E0 added
+them: HUNI, HCON, HRES, AUNI, ACON, ARES) is activated (0x439AC0: vt+0x14, 0x47D030): every object whose saved
+place isn't nothing (+0x78 + +0x7C + +0x84 not 0.0) gets vt+0x24 (its renderer and parts, 0x47EE10) and vt+0x14
+(its start). Then the pod lands (0x439ADE). Then, in 0x4222C0, each object placed that hasn't started (+0x18 0)
+gets the same two calls before its 0x80C3 (0x422756). So a start campaign's buildings, which have saved places,
+stand before any vehicle is placed, and each vehicle placed is in the world for the next one's checks.
+
+An object's start puts its footprint down (vt+0xE4, 0x48A950: the vertices within its type's +0x46 word, flag bit
+1), and its parent's start starts its children (0x47EF30), whose footprints go down round their own points. The
+radius words come from 0x47EB10: an IOB object's +0xAC and its type's +0x44 are ftol(max(2 x the model's half
+width, its depth) x 0.66); for a child, or a class whose vt+0xB8 is true (WScenery 0x489380, 0x48B480, 0x4873F0),
+its type's +0x46 is that too. The Martian command building (830): +0x44 110 (OBJ.ojd says 50), +0x46 250 (OBJ.ojd's,
+unchanged: it has no parent and its vt+0xB8 is false), and its fourteen parts (831-844) 21 to 128 each round their
+offsets.
+
+A building's start (0x48E9D0) also takes out every object of the scenery list (the world's +0x11C) nearer
+(octagonal) than that object's +0xAC + the building's +0x46 (vt+0x78, 0x4895A0: 0x48AC50 and off the world's list,
+no explosion). A tree circle (0xCF-0xD4) is one object there; its trees are its children and go with it.
+
+The vehicles' ground check (0x47EB00 -> 0x480740) asks the first unit's group's cost (0x480680, not strict) of
+every vertex of the area, and fails outright for an area off the map; the group's grounds exist by then (0x4802E0
+as the group is made, from its vehicle members' types). The object check (0x47FE10 -> 0x47FD40) refuses a place
+nearer (octagonal, whole positions) than an object's +0xAC + the size to any object the first unit's vt+0xBC says
+gets in its way.
+
+*Provisional*: the world's grid in 0x47FE10 is taken as the units started so far; ActivateAll's vt+0x64 / vt+0x78
+(an object taken out again after its start) isn't traced; a building's scenery clearing leaves the bridges and
+the pod; +0x188 / +0x18C aren't read; the order of the objects in a list is the counters' order; the order of the
+`rand()` calls inside one object's start is the engine's.
 
 ## Fog of war (WFogOfWar 0x4344C0-0x434DF0; 0x48B050 / 0x48B2D0; `battlemap/Fog.cpp`)
 

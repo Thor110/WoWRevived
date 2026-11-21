@@ -70,8 +70,7 @@ namespace wow
         const int w = land.Width(), h = land.Height();
         const int64_t cell = land.Cell(), half = land.HalfCell();
         auto vertex = [&](int v) { return int((int64_t(int32_t(uint32_t(v) << 16)) + half) / cell); };
-        int radius = 0;
-        if (auto t = setup.units->find(type); t != setup.units->end()) radius = int16_t(t->second.hitPoints);
+        const int radius = Radius44(type);
         const int r = vertex(radius);
         const int cx = vertex(int(x)), cy = vertex(int(y));
         float sum = 0;

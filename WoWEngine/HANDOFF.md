@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 135
+# Handoff: WoWEngine after update 136
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -19,6 +19,9 @@ These were in the previous session's scratch space, not in the repository. Ask t
 
 1. **The IDA listing of the original executable**, `IDA-Output.txt` (about 52 MB, the full disassembly with IDA's
    names: `sub_XXXXXX`, `dword_XXXXXX`, `loc_...`). Every address in the docs and code comments refers to it.
+   It was made from `WoW_patched.exe`, which the owner says is the retail executable but for loading `_inmm.dll`
+   in place of `winmm.dll`; the copy listed is the Italian release, so its messages and characters are that
+   release's.
    `docs/ida/functions.tsv` and `docs/ida/strings.tsv` are an index of it (`tools/ida_index.py` regenerates them),
    handy for finding a routine without opening the whole file.
 2. **The game's files**: the copy used so far came from https://archive.org/details/wow-cd-1 (fetched at the
@@ -26,6 +29,11 @@ These were in the previous session's scratch space, not in the repository. Ask t
    `SFX/`, `VOX/`, `FMV/`, `OBJ.ojd`, `AI.ojd`, `SFX.ojd`, `TEXT.ojd`, `Human.000`, `Martian.000`, ...). The tests below were run on
    such a folder, with one saved game in `SaveGame/Human.001` (a Human campaign; loading it and opening London gives
    a battle with lorries by Big Ben and a bridge).
+   The item's `WOW_CD1.zip` and `WOW_CD2.zip` are `.bin/.cue` images of the Italian discs (the other languages'
+   releases, linked in the repository's main readme, are `.iso`). The engine's own installer makes the game
+   folder from them, music included: `wowinstall-cli <game folder> "Wow Human.cue" "WoW Martian.cue"`. A folder
+   made this way has no `SaveGame`; use `--human --open 0x8A` in place of `--load 1` (a new Human campaign gives
+   the same London battle).
 
 ## Building
 
@@ -56,14 +64,17 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Two recipes used for every update:
   - **London battle:**
     `--load 1 --ticks 500 --screenshot a.bmp "click:300:250,wait:5,rdown:300:250,wait:20,click:300:292,wait:400"`
+    (with no save: `--human --open 0x8A` and `wait:10,` before the first click)
   - **Martian battle:**
     `--martian --open 0x8A --ticks 500 --screenshot b.bmp "wait:10,click:280:320,wait:5,rdown:280:320,wait:20,click:280:362,wait:60"`
-  - In the Martian battle, add `down:100:60,move:300:260,move:480:460,up:480:460,wait:3,click:400:120,wait:300` to
-    box-select the walkers and send them off. `ROUTE FOUND` in the log is the move working.
+  - In the Martian battle, add `down:2:2,move:100:100,move:250:300,up:250:300,wait:3,click:420:420,wait:400` to
+    box-select the walkers (since update 136 they deploy to the upper left of the command building, clear of it)
+    and send them across it. `ROUTE FOUND` in the log is the move working; the route goes round the building.
 - For a check the scripts can't reach, add temporary code in a copy of the file, rebuild, run and restore the file.
   Examples: forcing the pod with `s.pod = ... || true`, or printing a value with `SDL_Log`.
 - Neither test battle has an enemy in range. So combat, retaliation, deaths and the AI's attacks have mostly been
-  checked against the disassembly, not seen running.
+  checked against the disassembly, not seen running. The owner's word on it: combat needs the game played, or
+  waited through, until the two sides meet; there's no shortcut in the data.
 
 ## Where the knowledge is
 
@@ -80,7 +91,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 135
+## State after update 136
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -111,8 +122,12 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   - deleted files left out
   - no `<<<<<<<` markers
 
-  Send it over and describe what changed.
-  - The next number is **136**.
+  - the zip is made to be extracted over the repository's main directory: its paths start `WoWEngine/`
+    (`WoWEngine-update-136.zip/WoWEngine/src/...`)
+
+  Send it over and describe what changed. No patches, no pushing.
+  - The next number is **137**.
+  - Work only in `WoWEngine/`. For a file format, `WoWViewer/` has the owner's own readers in C#.
   - Commit locally but don't push unless asked; a stop hook may ask to push, and the owner's answer has been no.
 - At the start of each update, merge `origin/main` (the owner's merged copy) first.
 - Each update:

@@ -515,7 +515,7 @@ namespace wow
     }
 
     // 0x496570: within its sight (+0x48) x the scale (octagonal, whole positions), with it not under the ground,
-    // every other side's object that can be targeted (vt+0x6C, +0xC0 bit 0): an armed one (+0x3C) is the target
+    // every other side's object that can be targeted (vt+0x6C) and is finished (+0xC0 bit 0): an armed one (+0x3C) is the target
     // at once; else the battle's key building (0x33E / 0x78, 0x116 / 0x3A by the kind) if seen, else the last seen.
     // The group gets 0x80B1 with it: for a player's group (+0x1D8 bit 4) and a vehicle target (+0xB8 bit 0), if
     // rand() is under 5000 speech 0x10F; then 0x482960: as 0x482880, the target set and bit 0 set.
@@ -531,7 +531,10 @@ namespace wow
         for (const Unit& o : units)
         {
             if (Octagonal(int(u.x), int(u.y), int(o.x), int(o.y)) >= sight) continue;
-            if (o.health <= 0 || o.players == u.players || !Targetable(o)) continue;
+            // +0xC0 bit 0 (0x496616): set as an object is made (0x489E20), cleared by a building's start while its
+            // construction isn't done (0x48E9D0), so a building site isn't picked; its health isn't asked
+            if (IsBuilding(o) && double(Progress(o)) <= 0.9999) continue;
+            if (o.players == u.players || !Targetable(o)) continue;
             if (!o.guns.empty()) { pick = &o; break; }
             last = &o;
             if (o.type == (setup.sector == 3 ? 0x33E : 0x78) || o.type == (setup.sector == 30 ? 0x116 : 0x3A)) key = &o;

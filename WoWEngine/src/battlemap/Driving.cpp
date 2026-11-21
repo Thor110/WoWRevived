@@ -1028,10 +1028,11 @@ namespace wow
         std::vector<bool> any(count, false);
         for (const Unit& u : units)
         {
-            if (u.group < 0 || size_t(u.group) >= grounds.size() || !u.vehicle) continue;
+            if (u.group < 0 || size_t(u.group) >= grounds.size()) continue;
             GroundGroup& g = grounds[size_t(u.group)];
             auto t = setup.units->find(u.type);
-            if (t == setup.units->end()) continue;
+            // the vehicles (+0xB8 bit 0: category 1, set as the object's made, so before it starts)
+            if (t == setup.units->end() || t->second.category != 1) continue;
             any[size_t(u.group)] = true;
             members[size_t(u.group)]++;
             const int c = t->second.field52;

@@ -164,7 +164,14 @@ namespace wow
         // A scenery object (WScenery 0x4895E0 / 0x489380 on the damageable 0x489E20): its type, point and height
         // (+0x84), its health (+0xC4, the type's +0x4A to start with, bit 7 set), a 0x80A0 on its way, its light
         // updating: on the world's update list (dword_4D2550 +0x20), so its update (the smoulder, 0x48AEF0) runs
-        struct Prop { int type = 0; float x = 0, y = 0, z = 0; int health = 0, dieAt = -1, light = -1; bool alive = true; bool updating = false; };
+        struct Prop { int type = 0; float x = 0, y = 0, z = 0; int health = 0, dieAt = -1, light = -1; bool alive = true; bool updating = false;
+                      int circle = -1; };   // circle: the tree circle (circles' index) a tree is a child of
+        // The tree circles (0xCF-0xD4, 0x48F330): objects of the scenery list with no picture, their trees their
+        // children. One taken out (vt+0x78, 0x4895A0, by a building starting over it) takes its trees with it.
+        struct Circle { int type = 0, x = 0, y = 0; bool alive = true; };
+        std::vector<Circle> circles;
+        void RemoveProp(size_t prop);                           // vt+0x78, 0x4895A0: gone, with no explosion
+        void ClearScenery(size_t building);                     // 0x48EB3A-0x48EBD0
         std::vector<Prop> props;
         void DamageProp(size_t prop, int amount);               // vt+0xE0, 0x48AB20
         void PropDies(size_t prop);                             // 0x80A0
@@ -222,6 +229,17 @@ namespace wow
         void LoadScenery(const Landscape::Sun& sun, char letter);
         void PlaceBridge(const PlacedObject& o);
         void Occupy(int type, float x, float y);                // vt+0xE4, 0x48A950
+        // 0x47EB10, as an object's renderer is made: an IOB model's radius, ftol(max(2 x its half width, its depth) x
+        // [Tweak] "ISO obj col rad mul" (0.66)), is the object's +0xAC and is written over its type's +0x44 word in
+        // the unit table; for an object with a parent, or of a class whose vt+0xB8 says so (WScenery 0x489380 and
+        // the classes of 0x48B480 and 0x4873F0), over its +0x46 word (the footprint's radius) too.
+        std::map<int, int> modelRadius;     // type -> that radius, for each type an IOB object has been made of
+        std::set<int> modelFootprint;       // the types whose +0x46 took it as well
+        void NoteModel(int type, bool footprint);
+        int Radius44(int type) const;       // the unit table's +0x44 word as the game has it by then
+        int Radius46(int type) const;       // and its +0x46 word
+        static bool SceneryClass(int type); // the types the factory (0x446B30) builds on a vt+0xB8 class
+        void StartUnit(size_t index);       // vt+0x24 and vt+0x14, as it's placed (0x422756-0x422775)
         // The battle units (each war map object's +0x4C list): type, place, heading (4096 a turn), whose
         // A route ("BatRoute" 0x499850): its nodes (16 bytes each in the game): x and y in vertices, the heading less
         // 0x400, and the link byte (a bridge)
@@ -311,6 +329,7 @@ namespace wow
                       int ambientSound = 0, alertSound = 0; // a building's +0xE8 (its own loop) and +0xEC (0x111)
                       int footX = 0, footY = 0; // +0x13C / +0x13E: where its footprint is marked (both 0: none)
                       int droneTarget = 0;  // +0x190: a drone's object to run into (vt+0xC4 = 0x48FA80)
+                      bool started = false; // +0x18: vt+0x14 has run (StartUnit)
                       bool fogged = false;  // +0xB8 bit 3 (vt+0x9C / vt+0xA0): the other side's, hidden by the fog
                       int stance = 1;       // +0xD8: its type's +0x43 byte (record 56) to start with (0x495740)
                     };
@@ -536,7 +555,6 @@ namespace wow
         void SetUpGrounds();
         int CellCost(int group, int vx, int vy, bool strict) const;          // 0x480680
         void Post808B(Unit& u, int value, int delay);
-        double Radius(int type);
         std::map<int, std::vector<uint8_t>> wofFiles;        // each WOF GType's file, loaded once
         // The minimap ("BattleMap miniMap view" 0x4868B0, RTypeMiniBattleMap 0x4A1F90): the sector's picture at the
         // bottom right, the objects' dots (0x4A1CD0, made again every 16 frames), the view's rectangle

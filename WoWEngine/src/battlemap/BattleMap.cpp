@@ -85,10 +85,8 @@ namespace wow
         slotTables[20] = table;
         SetUpRouteFinder();     // 0x47AF10, with the landscape, before anything is placed (the bridges add nodes)
         if (s.loadScenery) LoadScenery(sun, letter);
-        // the pod (0x439ADE-0x439B20): made, added and started before the six deployments (0x439B24), so its blasts
-        // go off before any unit stands and the Martians deploy round it
-        if (s.pod) LandPod(sun);
-
+        // the units with saved places start, then the pod lands (0x439ADE-0x439B20: made, added and started before
+        // the six deployments, 0x439B24, so the Martians deploy round it), in Deploy
         Deploy();
         SetUpReinforcements();
         // the fog (0x4346C0 at EnterBattleMap +0x1A8, its first decay at +0x625)
@@ -101,38 +99,8 @@ namespace wow
         fog.damageDelta = s.fogDamageDelta;
         fog.damageRadius = s.fogDamageRadius;
         FogStart();
-        for (size_t i = 0; i < units.size(); i++)
-        {
-            Unit& u = units[i];
-            // a vehicle (category 1) drives: 0x490820 / 0x490E70 (the turn limit by move class, the phase from rand())
-            // every object's +0xAC is its type's +0x44 word (the neighbours keep apart by it)
-            if (auto d = setup.units->find(u.type); d != setup.units->end()) u.drive.radius = int16_t(d->second.hitPoints);
-            u.health = MaxHealth(u.type);
-            // 0x48E9D0: a building whose construction isn't done (+0x7C / +0x78 at most 0.9999; +0xC0 bit 0 clear)
-            // starts with that much of its health, at least 1
-            const float progress = Progress(u);
-            const bool unfinished = double(progress) <= 0.9999;
-            if (IsBuilding(u) && unfinished) u.health = std::max(1, int(float(u.health) * progress));
-            if (auto d = setup.units->find(u.type); d != setup.units->end()) u.stance = d->second.field43;   // 0x495740
-            // and the look round's count (+0xDA) rand() % 30 (0x4957A2), so the units don't all look on one update
-            u.scanCount = random::Rand() % 30;
-            SetUpGuns(u);
-            // 0x48F7C0: an emplacement not on a vehicle whose construction is under 1.0 has no guns (+0x3C 0)
-            if (IsEmplacement(u.type) && progress < 1.0f) u.guns.clear();
-            if (auto d = setup.units->find(u.type); d != setup.units->end() && d->second.category == 1)
-            {
-                u.vehicle = true;
-                const int mc = d->second.field52;
-                u.drive.turnRate = mc >= 0 && mc <= 4 ? 64 : (mc == 5 || mc == 6) ? 8 : mc == 7 ? 16 : 0;
-                u.drive.radius = int16_t(d->second.hitPoints);
-                u.drive.arrival = float(double(u.drive.radius) * setup.vehicles.arrivalRadius - -20.0);
-                u.drive.phase = int16_t(random::Rand());
-            }
-            AddRenderer(u.type, u.x, u.y, u.heading, int(i));
-            AddPartRenderers(i);
-            if (IsBuilding(u) && unfinished && u.players) AddCorners(i);
-        }
-        for (const Unit& u : units) Occupy(u.type, u.x, u.y);
+        // the objects the deployment left where they were saved start now, in their order
+        for (size_t i = 0; i < units.size(); i++) StartUnit(i);
         // each object's start (0x495740) ends, for the player's (+0x24 0), in vt+0x100: the fog lifted round it at
         // once, not at the first "Fog update freq" tick (which left the map dark for its first moments); and the
         // other side's hidden or shown by it
@@ -624,6 +592,25 @@ namespace wow
         groupRetreat.assign(setup.groups.size(), 0);
         groupLeft.assign(setup.groups.size(), false);
         if (!setup.units) return;
+        // the groups are made, with their grounds (0x4216E0 from 0x439A8D -> 0x4802E0), before the deployment asks
+        // them where their vehicles can stand (0x480740)
+        SetUpGrounds();
+        // 0x439AC0: the battle world's list (+0x118: HUNI, HCON, HRES, AUNI, ACON, ARES as 0x4216E0 added them) is
+        // activated (vt+0x14, 0x47D030): every object whose saved place isn't nothing (+0x78 + +0x7C + +0x84 not
+        // 0.0) gets vt+0x24 and vt+0x14, so the buildings stand, their footprints down, before anything is placed.
+        // *Provisional*: one that then answers vt+0x64 is taken out again (vt+0x78); not traced.
+        {
+            static const int Added[6] = { 0, 2, 4, 1, 3, 5 };
+            size_t at = 0;
+            std::vector<size_t> first;
+            for (const BattleGroup& g : setup.groups) { first.push_back(at); at += g.places.size(); }
+            for (int list : Added)
+                for (size_t gi = 0; gi < setup.groups.size(); gi++)
+                    if (setup.groups[gi].list == list)
+                        for (size_t i = 0; i < setup.groups[gi].places.size(); i++)
+                            if (const Unit& u = units[first[gi] + i]; u.x + u.y != 0.0f) StartUnit(first[gi] + i);
+        }
+        if (setup.pod) LandPod(sun);
         auto unit = [&](int type) -> const ObjOjd::UnitData* {
             auto u = setup.units->find(type);
             return u == setup.units->end() ? nullptr : &u->second;
@@ -679,6 +666,49 @@ namespace wow
         }
     }
 
+    // An object's start as the deployment places it (0x422756-0x422775: with +0x18 clear, vt+0x24, which makes its
+    // renderer and its parts, 0x47EE10, then vt+0x14), so each one is in the world, its footprint down (vt+0xE4,
+    // 0x48A950, its parts' with it as 0x47EF30 starts them), before the next is placed. A building's start
+    // (0x48E9D0) first takes out the scenery standing on it (ClearScenery).
+    // *Provisional*: the order of the rand() calls inside one object's start (its look round's count, its phase, its
+    // light parts' rolls) is the engine's own.
+    void BattleMap::StartUnit(size_t index)
+    {
+        if (units[index].started) return;
+        units[index].started = true;
+        NoteModel(units[index].type, false);
+        if (IsBuilding(units[index])) ClearScenery(index);
+        Unit& u = units[index];
+        // a vehicle (category 1) drives: 0x490820 / 0x490E70 (the turn limit by move class, the phase from rand())
+        // every object's +0xAC is its type's +0x44 word (the neighbours keep apart by it); an IOB object's is its
+        // model's radius (0x47EB10)
+        u.drive.radius = Radius44(u.type);
+        u.health = MaxHealth(u.type);
+        // 0x48E9D0: a building whose construction isn't done (+0x7C / +0x78 at most 0.9999; +0xC0 bit 0 clear)
+        // starts with that much of its health, at least 1
+        const float progress = Progress(u);
+        const bool unfinished = double(progress) <= 0.9999;
+        if (IsBuilding(u) && unfinished) u.health = std::max(1, int(float(u.health) * progress));
+        if (auto d = setup.units->find(u.type); d != setup.units->end()) u.stance = d->second.field43;   // 0x495740
+        // and the look round's count (+0xDA) rand() % 30 (0x4957A2), so the units don't all look on one update
+        u.scanCount = random::Rand() % 30;
+        SetUpGuns(u);
+        // 0x48F7C0: an emplacement not on a vehicle whose construction is under 1.0 has no guns (+0x3C 0)
+        if (IsEmplacement(u.type) && progress < 1.0f) u.guns.clear();
+        if (auto d = setup.units->find(u.type); d != setup.units->end() && d->second.category == 1)
+        {
+            u.vehicle = true;
+            const int mc = d->second.field52;
+            u.drive.turnRate = mc >= 0 && mc <= 4 ? 64 : (mc == 5 || mc == 6) ? 8 : mc == 7 ? 16 : 0;
+            u.drive.arrival = float(double(u.drive.radius) * setup.vehicles.arrivalRadius - -20.0);
+            u.drive.phase = int16_t(random::Rand());
+        }
+        AddRenderer(u.type, u.x, u.y, u.heading, int(index));
+        AddPartRenderers(index);
+        if (IsBuilding(u) && unfinished && u.players) AddCorners(index);
+        Occupy(u.type, u.x, u.y);
+    }
+
     // 0x4222C0: a war map object's units. They keep their saved places unless the first stands at (0, 0), or is a
     // vehicle (category 1) and either the computer's or within the no-build border of the map's edge. Otherwise a
     // spot is looked for round the centre, ring by ring: the k x k block they stand in (k = ftol(sqrt(n) + 0.5),
@@ -687,10 +717,15 @@ namespace wow
     // building could go for the rest (0x47B610). The rings are 0.7075 x k x size apart, each with ftol(radius / step)
     // + 1 spots from angle 0; past the map's width and height the middle is used. Each unit then takes its place in
     // the block, row by row, and a heading of rand() & 0xFFF.
-    // *Provisional*: the vehicles' ground check (0x47EB00 -> 0x480740, each vertex through the unit's own mover) is
-    // taken as IsAreaPassable, and the other objects' (0x47FE10, the battle world's grid, 0x47FD40 for each of its
-    // four layers) as circles: the size against each unit placed so far at its collision radius (Radius); the
-    // scenery isn't counted; +0x188 bit 13 (a fixed place) and +0x18C aren't read.
+    // The vehicles' ground check (0x47EB00 -> 0x480740): every vertex of the area through the first unit's group's
+    // cost (0x480680, not strict), which refuses ground the group can't cross and vertices an object stands on
+    // (flag bit 1: the footprints of the buildings and scenery started so far, their parts' among them); an area
+    // off the map fails. Then each place in the block against the world's objects (0x47FE10 -> 0x47FD40, the
+    // buckets round the place): one that gets in the first unit's way (vt+0xBC) nearer (octagonal, whole
+    // positions) than its radius (+0xAC) + the size refuses the spot. Each unit placed is started at once
+    // (StartUnit), so the next object's checks see it.
+    // *Provisional*: the world's objects are taken as the units started so far (the grid's four layers aren't
+    // traced); +0x188 bit 13 (a fixed place) and +0x18C aren't read.
     void BattleMap::Place(std::vector<size_t> members, int cx, int cy)
     {
         if (members.empty()) return;
@@ -698,7 +733,7 @@ namespace wow
         auto u = setup.units->find(head.type);
         if (u == setup.units->end()) return;
         const int n = int(members.size());
-        const int size = int(int16_t(u->second.currentHitPoints));
+        const int size = Radius46(head.type);
         const int k = int(std::sqrt(double(n)) - -0.5);
         const int span = k * size;
         const int32_t cell = land.Cell();
@@ -741,17 +776,21 @@ namespace wow
                 bool ok;
                 if (vehicle)
                 {
-                    ok = land.IsAreaPassable(vx - e, vy - e, vx + e + 1, vy + e + 1);
-                    // each member's place in the block, against the units placed so far
+                    // 0x480740: off the map fails; else every vertex's cost for the group
+                    const int x0 = vx - e, y0 = vy - e, x1 = vx + e + 1, y1 = vy + e + 1;
+                    ok = x0 >= 0 && y0 >= 0 && x1 <= land.Width() && y1 <= land.Height();
+                    for (int y = y0; y < y1 && ok; y++)
+                        for (int x = x0; x < x1 && ok; x++)
+                            if (CellCost(head.group, x, y, false) == 0) ok = false;
+                    // each member's place in the block, against the objects in the world so far (0x47FE10)
                     int bx = size + tx - span, by = size + ty - span, col = 0;
                     for (int j = 0; j < n && ok; j++)
                     {
                         for (size_t oi = 0; oi < units.size(); oi++)
                         {
-                            if (std::find(members.begin(), members.end(), oi) != members.end()) continue;
                             const Unit& other = units[oi];
-                            const double dx = double(other.x) - bx, dy = double(other.y) - by, reach = double(size) + Radius(other.type);
-                            if (dx * dx + dy * dy < reach * reach) { ok = false; break; }
+                            if (!other.started || oi == members[0] || !Collides(head, other)) continue;
+                            if (Octagonal(bx, by, int(other.x), int(other.y)) < other.drive.radius + size) { ok = false; break; }
                         }
                         bx += 2 * size;
                         if (++col == k) { col = 0; by += 2 * size; bx = size + tx - span; }
@@ -774,35 +813,73 @@ namespace wow
             m.x = float(x);
             m.y = float(y);
             m.heading = random::Rand() & 0xFFF;
+            StartUnit(idx);          // 0x422756: not yet started (+0x18), vt+0x24 and vt+0x14
             Muster(idx, px, py);     // 0x422787: 0x80C3 with the spot
             x += 2 * size;
             if (++col == k) { col = 0; y += 2 * size; x = x0; }
         }
     }
 
-    // A unit's collision radius: an IOB model's max(2 x half width, depth) x 0.66 (0x47EB10), else its type's +0x46
-    double BattleMap::Radius(int type)
+    // 0x47EB10 (see BattleMap.h): the radius an IOB object takes from its model, kept by type as the game's write
+    // over the unit table keeps it
+    void BattleMap::NoteModel(int type, bool footprint)
     {
         auto u = setup.units->find(type);
-        if (u == setup.units->end()) return 0;
-        if (const GType* g = res.FindGType(u->second.field28); g && g->gclass == 1)
+        if (u == setup.units->end()) return;
+        const GType* g = res.FindGType(u->second.field28);
+        if (!g || g->gclass != 1) return;
+        const IsoModel* m = LoadIob(u->second.field28);
+        if (!m) return;
+        modelRadius[type] = int(float(std::max(2 * IsoObject::HalfWidth(m->model), IsoObject::Depth(m->model))) * 0.66f);
+        if (footprint) modelFootprint.insert(type);
+    }
+
+    int BattleMap::Radius44(int type) const
+    {
+        if (auto m = modelRadius.find(type); m != modelRadius.end()) return m->second;
+        auto u = setup.units->find(type);
+        return u == setup.units->end() ? 0 : int(int16_t(u->second.hitPoints));
+    }
+
+    int BattleMap::Radius46(int type) const
+    {
+        if (modelFootprint.count(type))
+            if (auto m = modelRadius.find(type); m != modelRadius.end()) return m->second;
+        auto u = setup.units->find(type);
+        return u == setup.units->end() ? 0 : int(int16_t(u->second.currentHitPoints));
+    }
+
+    // The factory's (0x446B30) types built on a class whose vt+0xB8 is true: WScenery (0x489380: 0xD5-0x10F,
+    // 0x111-0x115, 721-741, 845-904, 973-985), 0x48B480 (696) and 0x4873F0 (987)
+    bool BattleMap::SceneryClass(int type)
+    {
+        return (type >= 0xD5 && type <= 0x10F) || (type >= 0x111 && type <= 0x115) || (type >= 721 && type <= 741) ||
+               (type >= 845 && type <= 904) || (type >= 973 && type <= 985) || type == 696 || type == 987;
+    }
+
+    // A building's start (0x48E9D0 at 0x48EB3A-0x48EBD0): every object of the scenery list (the world's +0x11C)
+    // nearer (octagonal, whole positions) than its radius (+0xAC) + the building's type's +0x46 word is taken out
+    // (vt+0x78, 0x4895A0: no explosion). A tree circle goes with its trees, its children.
+    // *Provisional*: the bridges and the pod, which are in that list too, are left.
+    void BattleMap::ClearScenery(size_t building)
+    {
+        const Unit& b = units[building];
+        const int reach = Radius46(b.type);
+        const int bx = int(b.x), by = int(b.y);
+        for (size_t c = 0; c < circles.size(); c++)
         {
-            auto m = models.find(u->second.field28);
-            if (m == models.end())
-            {
-                IsoModel im;
-                if (auto file = res.LoadFile(g->file))
-                {
-                    try { im.model = IobModel::Load(*file); } catch (const std::exception&) {}
-                    if (!im.model.patches.empty()) im.lights = IsoObject::BaseLights(im.model, sun, levels);
-                }
-                im.slot = g->paletteSlot;
-                m = models.emplace(u->second.field28, std::move(im)).first;
-            }
-            if (!m->second.model.patches.empty())
-                return double(int(float(std::max(2 * IsoObject::HalfWidth(m->second.model), IsoObject::Depth(m->second.model))) * 0.66f));
+            Circle& circle = circles[c];
+            if (!circle.alive || Octagonal(bx, by, circle.x, circle.y) >= Radius44(circle.type) + reach) continue;
+            circle.alive = false;
+            for (size_t i = 0; i < props.size(); i++)
+                if (props[i].alive && props[i].circle == int(c)) RemoveProp(i);
         }
-        return double(int16_t(u->second.currentHitPoints));
+        for (size_t i = 0; i < props.size(); i++)
+        {
+            const Prop& p = props[i];
+            if (!p.alive || p.circle >= 0 || p.type == 0xB3) continue;
+            if (Octagonal(bx, by, int(p.x), int(p.y)) < Radius44(p.type) + reach) RemoveProp(i);
+        }
     }
 
     // A battle unit's renderer by its GType's class (0x47EB10): a WOF model (2) posed at its place and heading, an
@@ -874,6 +951,11 @@ namespace wow
                 const IsoModel* m = LoadIob(gtype);
                 if (!m) continue;
                 const int x = int(u.x) + int16_t(part.b), y = int(u.y) + int16_t(part.c);
+                // a child (+0x44 set before its vt+0x24, 0x47EE89): its model's radius is its type's +0x46 too
+                // (0x47EB10), and as its parent starts it (0x47EF30 -> its vt+0x14, 0x48A8B0) its footprint goes
+                // down round its own point (vt+0xE4)
+                NoteModel(part.a, true);
+                Occupy(part.a, float(x), float(y));
                 const int depth = int16_t(part.c) + IsoObject::Depth(m->model);
                 ViewObject v{ int(u.y) + depth, x, land.ProjectY(y, land.HeightAt(int(u.x), int(u.y)) + int16_t(part.d)), m };
                 v.unit = int(index);
@@ -1399,7 +1481,7 @@ namespace wow
         Unit& u = units[index];
         auto t = setup.units->find(u.type);
         if (t == setup.units->end()) return;
-        const int h = int16_t(t->second.currentHitPoints);
+        const int h = Radius46(u.type);
         const int at[4][2] = { { -h, -h }, { h, -h }, { -h, h }, { h, h } };
         const int first = int(t->second.parts.size());
         for (int k = 0; k < 4; k++)
@@ -1469,7 +1551,8 @@ namespace wow
         constexpr int Pod = 0xB3;
         auto u = setup.units->find(Pod);
         if (u == setup.units->end()) return;
-        const int radius = int16_t(u->second.hitPoints);
+        NoteModel(Pod, false);      // Pod.iob: its +0xAC is its model's radius (0x47EB10)
+        const int radius = Radius44(Pod);
         const int r = (int(uint32_t(radius) << 16) + land.HalfCell()) / land.Cell();
         const int worldH = int((int64_t(land.Cell()) * land.Height()) >> 16);
         float x = 0, y = 0;
@@ -1578,8 +1661,13 @@ namespace wow
         // vertex it stands on, a dark spot the ground view takes off. The tree circles do too, at their centres.
         // *Provisional*: done here for the objects drawn (sprites and IOB models) and the circles; the classes of
         // the others (the ambient sound scenery) aren't checked.
+        circles.clear();
         for (const SceneryObject& c : list)
-            if (c.type >= 0xCF && c.type <= 0xD4) land.SetPointLight(c.x, c.y, sun);
+            if (c.type >= 0xCF && c.type <= 0xD4)
+            {
+                land.SetPointLight(c.x, c.y, sun);
+                circles.push_back({ c.type, c.x, c.y });
+            }
         // the light parts (types 334-346, 0x48DD50) and which types have one
         auto lightPart = [&](int type) -> const ObjOjd::UnitData::Part* {
             auto u = setup.units->find(type);
@@ -1637,6 +1725,7 @@ namespace wow
                 const int ix = int(o.x), iy = int(o.y);
                 const int h = int(float(land.HeightAt(ix, iy)) + o.z);
                 props.push_back({ o.type, o.x, o.y, o.z, MaxHealth(o.type) });
+                props.back().circle = o.circle;
                 objects.push_back({ iy + 1, ix, land.ProjectY(iy, h), nullptr, nullptr, g->paletteSlot, gtype, -1, -1, 0, -1, int(props.size()) - 1 });
                 // its level (+0x34, the sprite's vt+0x18 0x40F040 keeps the argument >> 2): WScenery's 0x4897D0 gives
                 // ftol(255 x the fog level), a street lamp's (type 0x110, 0x48F2E0) and type 0x1C0's (0x48D000)
@@ -1664,6 +1753,8 @@ namespace wow
             // 0x47EB10: the collision radius, max(2 x half width, depth) x [Tweak] "ISO obj col rad mul" (0.66);
             // 0x47F960 keeps the object that far inside the map
             const int r = int(float(std::max(2 * IsoObject::HalfWidth(model), IsoObject::Depth(model))) * 0.66f);
+            // its type's +0x44 from then on, and its +0x46 for the scenery classes (vt+0xB8)
+            NoteModel(o.type, SceneryClass(o.type));
             float x = o.x, y = o.y;
             if (float(worldW - r) < x) x = float(worldW - r);
             if (float(worldH - r) < y) y = float(worldH - r);
@@ -1674,6 +1765,7 @@ namespace wow
             const int ix = int(x), iy = int(y);
             const int h = int(float(land.HeightAt(ix, iy)) + o.z);
             props.push_back({ o.type, x, y, o.z, MaxHealth(o.type) });
+            props.back().circle = o.circle;
             objects.push_back({ iy + IsoObject::Depth(model), ix, land.ProjectY(iy, h), &m->second, nullptr, 0, 0, -1, -1, 0, -1, int(props.size()) - 1 });
             shadows(u->second, x, y, (IsoObject::HalfWidth(model) - -IsoObject::HalfWidth(model)) / 2, IsoObject::Depth(model));
             if (const size_t before = lights.size(); addLight(PlacedObject{ o.type, x, y, o.z, {}, o.roll }, u->second), lights.size() > before)
@@ -1687,8 +1779,8 @@ namespace wow
     // (+0xB8 bit 1, 0x47D828) and not a tree (0xCF-0xE5, bit 2) marks the vertices within its type's +0x46 word of
     // it blocked (0x47C280 with 2: QuickDistance from the vertex nearest it, in whole cells), which the ground's
     // cost (0x480680) then refuses.
-    // *Provisional*: an RTypeISO type's +0x46 is taken from OBJ.ojd (0x47EB10 overwrites it with the model's radius
-    // only for an object with a parent or vt+0xB8); nothing is taken off again yet (vt+0xE8 as it goes).
+    // An IOB object's +0x46 is its model's radius when it has a parent or is of a scenery class (Radius46); taken
+    // off again as it goes (vt+0xE8, 0x48A9A0).
     void BattleMap::Occupy(int type, float x, float y)
     {
         if (type >= 0xCF && type <= 0xE5) return;
@@ -1696,7 +1788,7 @@ namespace wow
         if (u == setup.units->end()) return;
         const int c = u->second.category;
         if (c != 0 && c != 2 && c != 3) return;
-        land.MarkOccupied(int(x), int(y), int16_t(u->second.currentHitPoints), 2);
+        land.MarkOccupied(int(x), int(y), Radius46(type), 2);
     }
 
     // A bridge (core/Bridge.h): its part, the segment model (Country 445 bridge_1, City 446 bridge_2, Railway 447
@@ -2372,7 +2464,7 @@ namespace wow
                     }
                     if (type >= 0)
                     {
-                        if (auto ut = setup.units->find(type); ut != setup.units->end()) radius = int16_t(ut->second.hitPoints);
+                        radius = Radius44(type);
                         int last = -1;
                         for (int n = 0; n < 2; n++)
                         {

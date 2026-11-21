@@ -33,6 +33,7 @@ namespace wow
         float x = 0, y = 0, z = 0;
         int extra[4] = {};      // a bridge's two ends (x1, y1, x2, y2)
         int roll = -1;          // the rand() % 100 its light part took as it started (0x48DE80), or -1
+        int circle = -1;        // a circle's tree: which circle (counted in the list's order), its parent
     };
 
     // What the battle map makes of the list (0x47D240 then ActivateAll 0x47D030), with the game's rand():
@@ -101,6 +102,7 @@ namespace wow
             if (rolls(type)) starts.push_back({ nullptr, out.size() });
             out.push_back(p);
         }
+        int circle = -1;
         for (const auto& [c, index] : starts)
         {
             if (!c)
@@ -108,6 +110,7 @@ namespace wow
                 out[index].roll = random::Rand() % 100;
                 continue;
             }
+            circle++;
             random::Seed(uint32_t(c->extra[0]));
             static const int Counts[6] = { 8, 4, 2, 8, 4, 2 };
             const int n = Counts[c->type - 0xCF];
@@ -125,7 +128,9 @@ namespace wow
                 angle += step;
                 int type = random::Rand() % kinds + first;
                 type = scenery::Burnt(type, enemyCount);
-                out.push_back({ type, float(c->x) + dx, float(c->y) + dy, 0.0f });
+                PlacedObject tree{ type, float(c->x) + dx, float(c->y) + dy, 0.0f };
+                tree.circle = circle;
+                out.push_back(tree);
             }
         }
         return out;

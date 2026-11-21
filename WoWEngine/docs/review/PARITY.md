@@ -85,6 +85,7 @@ Tick each item here with the update that fixes it.
       turn, the aim's jitter (each 0x496200 from its own object), the mortar's launch and the landing spread measure
       from them, and the beams start there. A lost part's light goes with it (0x47EAA0). The explosion's own object
       is made before its parts (0x488070 then 0x488350).
+      *Update 136*: a circle under a starting building goes with its trees (0x48EB3A, `ClearScenery`).
       Open: tree circles (0xCF-0xD4, no graphics, +0x44 48 / 24 / 12) keep their trees as children (0x48F410); whether
       a circle can be destroyed and take its trees with it needs the children's lifetime traced (0x47EAA0 and the
       circle class's vt+0x78) before the engine models it.
@@ -222,12 +223,38 @@ settled: battle-ui 8, combat 4 and 9, movement 15, 16 and 24, battle-setup 4, 11
       record 34; record 6's first word and record 12's words signed; [Tweak] "VisRadMul" read; an off-map scenery
       object at (0, 0).
 
+**Update 136** (reported in play: walkers drawn behind the Martian command building; details in BATTLEMAP.md,
+"Deployment")
+- [x] The view list's order was right (0x40D750's key, checked again); the walkers stood inside the building. The
+      deployment now goes as 0x439AC0 / 0x4222C0 have it: the objects with saved places start first (the world
+      list's vt+0x14, 0x47D030), then the pod, then each placed object starts as it's placed, so its footprint is
+      down before the next one's checks; vehicles are placed through their group's cost (0x480740 -> 0x480680),
+      which refuses occupied vertices, and against the started objects (0x47FE10: octagonal, the other's +0xAC).
+      Tested: the Martian battle's walkers deploy clear of the command building, and a move ordered across it
+      routes round it.
+- [x] An IOB object's radius is its model's (0x47EB10: max(2 x half width, depth) x 0.66 to +0xAC and the type's
+      +0x44), and its footprint's (+0x46) too for a child or a scenery class (vt+0xB8). The engine read both words
+      from OBJ.ojd: the Martian command building's radius was 50, not 110, and its fourteen parts had no footprint.
+      Explosion reach, the fog's sample, smoke, point lights and the footprints now take them (`Radius44` /
+      `Radius46`).
+- [x] A building's start takes out the scenery standing on it (0x48EB3A: the scenery list's objects nearer than
+      their +0xAC + its +0x46, vt+0x78 0x4895A0, no explosion). This is where a tree circle goes, its trees with
+      it (S6's open point, in part: a circle hit by weapons is still untraced).
+- [x] The look round (0x496570) asks the target's +0xC0 bit 0, which a building's start clears while its
+      construction isn't done (0x48E9D0); the engine asked for health over 0 instead. A building site isn't picked.
+- [x] The log no longer reports IOB and WOF models as missing sprites.
+- Checked and matching, nothing to change: 0x48A5A0 (splash damage), 0x4025F0 (Random), 0x41A330 (pods), the
+  route record's header (0x425A60 / 0x4257C0), flt_59E44C as the "Audible radius multiplier" setting (0x495620).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
 known visible bug in the two test battles.
 - battle-ui 9: the window's 32-pixel scroll border (the engine has no windowed / full-screen flag of the game's,
   dword_4EA364). battle-ui 12: cursor modes 2-7 (the editor / placement tools, not in the engine).
+- deployment: which objects ActivateAll takes out again (vt+0x64 after the start, 0x47D07E); the world grid's four
+  layers in 0x47FE10 (taken as the started units); the bridges and the pod in a building's scenery clearing; the
+  order of the rand() calls inside one object's start.
 - movement 17: the route search held off 10 updates while another group's runs (needs the route finder to become a
   stateful object, movement A3). movement 19: the second target (+0xC8 / +0xCC, nothing sets it yet). movement 20:
   Muster's first step (deployment musters units before the engine starts them; needs the start order of 0x495740).
