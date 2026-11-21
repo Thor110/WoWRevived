@@ -124,12 +124,12 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       research speed and mound (0x493D00 / 0x493D70).
 - [ ] **Stop / start footprints** (0x4915B0 / 0x491630) and **the collision filter** (0x4929A0: walkers ignore small
       crushable objects, bridges ignored on a link); crushing.
-- [ ] **Drones** exploding on contact (0x48F9D0-0x48FAC0).
+- [x] **Drones** exploding on contact (0x48F9D0-0x48FAC0). *Update 108.*
 - [ ] **Pods** (0x48F5F0 / 0x48F620).
 - [ ] **Fences and walls** (0x48D780-0x48DB80, WFence 0x4987F0-0x498D30) with route blocking and node removal
       (0x494370); line-linked objects (0x48B590-0x48C650); two-point structure build-up (0x4865A0 / 0x4866E0).
-- [ ] **Gas clouds / Black Dust** (0x488CC0-0x488D70).
-- [ ] **Cascading death explosions** 0x255 -> 0x252 (0x48CDE0).
+- [x] **Gas clouds / Black Dust** (0x488CC0-0x488D70). *Update 108.*
+- [x] **Cascading death explosions** 0x255 -> 0x252 (0x48CDE0). *Update 108.*
 - [ ] **Shadows**: vehicles (0x48E6D0-0x48E850) and shells (0x4884C0-0x4885F0).
 - [ ] **Ambient-sound scenery** (0x4890A0-0x4892C0, with its 0x3AC substitution that shifts the scenery's rand()).
 - [ ] **Shots' own visuals** (0x4950D0 / 0x495180 / 0x495280, the atlas sprite 0x49D710, the textured quad 0x49D820).

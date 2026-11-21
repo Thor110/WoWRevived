@@ -557,6 +557,20 @@ takes both from one list, 0x47FC50, by its buckets: the `rand()` order of their 
 isn't in; the kind is taken as the sector; the status bars aren't in. (The light parts and emitters are in: "Lights",
 "Flying objects and emitters".)
 
+**Gas clouds** (WGasCloud 0x488CC0, a mortar shell's class 0x488E80; 0x393-0x395, the Black Dust; `BattleMap::GasTick`):
+started (0x488D20) with +0xC2 240, 480 or 720 updates. Each update (0x488D70), after the shell's (0x488F00): at or
+under 10.0 high, over water (0x47FFE0) it's gone, else it's put at 10.0 and its velocity x 0.65 (flt 0.65), the
+upward one turned round, and a bounce under 1 (|ftol| under 0.25) stops it dead. Every 15th of +0xC2 its puff (the
+type's +0x98: 501-503) goes off (0x488070) at its point, ftol(its height) up, with its firer (+0xC4) and its own
+type as the hit's weapon (so the filters' research and the Martians' immunity apply, 0x4958B0). As a shell, it
+lands (its impact by size) when +0xC2 runs out and is gone after.
+
+**Cascading explosions** (0x48CDE0, the update of 0x253-0x255; `BattleMap::UpdateEffects`): each counts its
+updates (+0xD0); at the 11th the next smaller goes off (0x488070: 0x255 -> 0x254 -> 0x253 -> 0x252) at its point, y
+then x each moved Random(8) - 4.0 (0x4025F0), at ftol(its height), with its +0xCC and +0xC4 (the firer and the
+attacker). They have no sprite, so they'd otherwise go as their emitters finish (*provisional* in the engine: the
+game keeps a renderer-less object, 0x489050 only taking its step); these stay until that 11th update.
+
 ## Weapons (WProjectile base 0x4949A0 and its classes, 0x494DB0 / 0x494FD0, 0x4886A0 / 0x488830 -> 0x487F50; the group's target 0x4826D0; `battlemap/Weapons.cpp`)
 
 **The guns** are a unit's weapon children (+0xB8 bit 11), its own parts or a turret's (0x489820: a vehicle of its own,
@@ -873,6 +887,15 @@ set. (Fixed in update 102: a player's move set neither, so a moving group turned
 *Provisional*: a
 point target (force fire) is taken as bit 0 set; the second case drops the target (StopAttacking) where the game
 leaves +0x2C; 0x80B9 and vt+0x38 aren't in.
+
+## Drones (0x5D-0x5F: 0x48F9D0-0x48FAC0; `BattleMap::DroneTick`)
+
+A drone is a vehicle (0x48F9D0: 0x490E70, +0x3C 1) that blows itself up on reaching what it's sent at. Each update
+(0x48FAC0), with its group's target a point (+0x2C -1), within 64.0 (flt_4AFEA0) of the group's point (+0x40 /
++0x44; 0x43FF00 from whole positions) it posts itself 0x80A0 an update on (0x4355A0), then the vehicle's update
+(0x4913B0). vt+0xC4 (0x48FA80) keeps the object it's sent at (+0x190) before the vehicle's 0x491100; its look
+ahead's object test (vt+0xBC, 0x48F9F0), when the object found is that one within 64.0, does the same, then the
+vehicle's test (0x4929A0). *Provisional*: the engine makes the target's test every update from the distance alone.
 
 ## Going under (0x498D40's class: 0x498E90-0x4993F0; `battlemap/Sinking.cpp`)
 

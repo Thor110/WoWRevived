@@ -377,8 +377,35 @@ namespace wow
     // vt+0xC4 (0x491100 -> 0x496300): unless it says not (vt+0xF8), at another object: d = ftol(the distance - -1.0),
     // r its radius (+0xAC) / 3 for a category 0, 2 or 3 object (+0xB8 bit 1), else 0; the point aimed at is the
     // object's less (it - this) x r / d across and down, its height plus its +0x41 byte x 1.414 (vt+0xC8)
+    // The drones (0x5D-0x5F; class 0x48F9D0: 0x490E70 and +0x3C 1): each update (0x48FAC0), with its group's target a
+    // point (+0x2C -1), within 64.0 of it (0x43FF00 from whole positions) it posts itself 0x80A0 an update on, then
+    // the vehicle's update (0x4913B0). Its look ahead's object test (vt+0xBC, 0x48F9F0): the object found being its
+    // target (+0x190, set by vt+0xC4) within 64.0, the same; then the vehicle's test (0x4929A0).
+    // *Provisional*: the target's test is made each update from the distance alone, not only when the look ahead
+    // (0x492350) finds it.
+    void BattleMap::DroneTick(size_t index)
+    {
+        Unit& u = units[index];
+        if (u.type < 0x5D || u.type > 0x5F || u.dieAt >= 0) return;
+        auto octagonal = [](int x0, int y0, int x1, int y1) {
+            const int a = std::abs(x1 - x0), b = std::abs(y1 - y0);
+            return b - (std::min(a, b) >> 1) + a;
+        };
+        bool hit = false;
+        if (u.group >= 0 && size_t(u.group) < groupTargets.size() && groupTargets[size_t(u.group)].target == -1)
+        {
+            const GroupTarget& g = groupTargets[size_t(u.group)];
+            hit = float(octagonal(int(u.x), int(u.y), g.x, g.y)) < 64.0f;
+        }
+        if (!hit && u.droneTarget)
+            if (const Unit* t = UnitById(u.droneTarget))
+                hit = float(octagonal(int(u.x), int(u.y), int(t->x), int(t->y))) < 64.0f;
+        if (hit) u.dieAt = ticks + 1;
+    }
+
     void BattleMap::Approach(Unit& u, const Unit& target)
     {
+        if (u.type >= 0x5D && u.type <= 0x5F) u.droneTarget = target.id;   // 0x48FA80: +0x190, then 0x491100
         if (u.Turned() || &u == &target) return;
         auto t = setup.units->find(target.type);
         if (t == setup.units->end()) return;
@@ -843,6 +870,7 @@ namespace wow
                 sh.count = int16_t(count);
                 sh.group = u.group;
                 sh.attacker = u.id;
+                if (IsGas(e.a)) sh.count = int16_t(e.a == 0x393 ? 240 : e.a == 0x394 ? 480 : 720);   // 0x488D20
             }
             encountered.insert(g.type);     // 0x488C00: the gun's type met, for each shell
             g.fired[i]++;

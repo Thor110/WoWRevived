@@ -24,8 +24,38 @@ namespace wow
     {
         if (t >= 0x16F && t <= 0x173) return EffectKind::Smoke;
         if ((t >= 0x18B && t <= 0x196) || t == 713 || t == 714 || t == 1002) return EffectKind::Shell;
+        if (t >= 0x393 && t <= 0x395) return EffectKind::Shell;     // the gas clouds (WGasCloud 0x488CC0, a shell's class)
         if (t == 0x17B) return EffectKind::Plain;
         return EffectKind::Animated;
+    }
+
+    bool BattleMap::IsGas(int type) { return type >= 0x393 && type <= 0x395; }
+
+    // The gas clouds (WGasCloud, 0x488CC0 on the mortar shell 0x488E80; types 0x393-0x395, Black Dust): started
+    // (0x488D20) with +0xC2 240, 480 or 720 updates; each update (0x488D70), after the shell's (0x488F00): at or under
+    // 10.0 high, over water (0x47FFE0) it's gone (vt+0x78), else it's put at 10.0 and its velocity x 0.65, the
+    // upward one turned round; a bounce under 1 (|ftol| under 0.25) stops it. Every 15th of +0xC2 its puff (the
+    // type's +0x98: 501-503) goes off (0x488070) at its point, ftol(its height), with its firer (+0xC4) and its own
+    // type as the weapon. True when it's gone.
+    bool BattleMap::GasTick(size_t index)
+    {
+        Effect& e = effects[index];
+        if (e.lift <= 10.0f)
+        {
+            const int vx = std::clamp(int((int64_t(int32_t(uint32_t(int(e.x)) << 16)) + land.HalfCell()) / land.Cell()), 0, land.Width() - 1);
+            const int vy = std::clamp(int((int64_t(int32_t(uint32_t(int(e.y)) << 16)) + land.HalfCell()) / land.Cell()), 0, land.Height() - 1);
+            const int terrain = land.At(vx, vy).atm & 15;
+            if (terrain >= 1 && terrain <= 3) return true;
+            e.vz = float(double(-e.vz) * 0.65);
+            e.vx = float(double(e.vx) * 0.65);
+            e.vy = float(double(e.vy) * 0.65);
+            e.lift = 10.0f;
+            if (double(std::abs(int(e.vz))) < 0.25) e.vx = e.vy = e.vz = 0;
+        }
+        if (e.count % 15 == 0)
+            if (auto t = setup.units->find(e.type); t != setup.units->end())
+                cascades.push_back({ t->second.field98, int(e.x), int(e.y), int(e.lift), e.group, e.attacker, e.type });
+        return false;
     }
 
     // An object made (0x446B30), given its velocity (vt+0x80), its point and height (vt+0x40) and its gravity (+0x94),
@@ -109,10 +139,22 @@ namespace wow
                 gone = e.lift < 0.0f;
                 moved |= e.vx != 0 || e.vy != 0 || e.vz != 0 || e.kind == EffectKind::Smoke;
                 if (e.kind == EffectKind::Shell) gone = ShellLands(i) || gone;
-                // *Provisional*: one with nothing to draw goes once its emitters are spent
-                gone = gone || (!e.gtype && e.emitDone);
+                if (IsGas(e.type) && GasTick(i)) gone = true;
+                // *Provisional*: one with nothing to draw goes once its emitters are spent (in the game it stays,
+                // 0x489050 with no renderer only taking its step); the cascading ones (0x253-0x255, no sprite) not
+                // before their 11th update has set off the next (0x48CDE0)
+                const bool cascading = e.type >= 0x253 && e.type <= 0x255 && e.age <= 11;
+                gone = gone || (!e.gtype && e.emitDone && !cascading);
             }
             Effect& e = effects[i];
+            // 0x48CDE0 (the update of 0x253-0x255): at its 11th update (+0xD0) the next smaller (0x255 -> 0x254 ->
+            // 0x253 -> 0x252) goes off (0x488070) at its point, y then x each moved Random(8) - 4.0, at ftol(its
+            // height), with its +0xCC and +0xC4
+            if (e.type >= 0x253 && e.type <= 0x255 && e.age++ == 11)
+            {
+                const int dy = random::Random(8), dx = random::Random(8);
+                cascades.push_back({ e.type - 1, int(float(dx) + e.x - 4.0f), int(float(dy) + e.y - 4.0f), int(e.lift), e.group, e.attacker });
+            }
             if (gone)
             {
                 e.alive = false;
@@ -133,6 +175,9 @@ namespace wow
         std::vector<Landing> now;
         now.swap(landings);
         for (const Landing& l : now) ImpactAt(l.size, l.x, l.y, l.z, l.group, l.attacker, l.weapon);
+        std::vector<Cascade> next;
+        next.swap(cascades);
+        for (const Cascade& c : next) Explode(c.type, c.x, c.y, c.z, c.firer, c.attacker, c.weapon);
     }
 
     // 0x47F050, with "Show Smoke & particles" on and a list: for each entry (its type's emitter, record 29: +4 the

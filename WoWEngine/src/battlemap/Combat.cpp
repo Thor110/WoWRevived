@@ -188,7 +188,11 @@ namespace wow
             const int terrain = land.At(vx, vy).atm & 15;
             if (terrain < 1 || terrain > 3) land.Scorch(x, y, radius, power);
         }
-        SpawnEffect(type, float(x), float(y), float(std::max(z, 0)));
+        if (const int k = SpawnEffect(type, float(x), float(y), float(std::max(z, 0))); k >= 0)
+        {
+            effects[size_t(k)].group = firer;        // +0xCC / +0xC4, which the cascade passes on (0x48CDE0)
+            effects[size_t(k)].attacker = attacker;
+        }
     }
 
     // An area blast's detonation (vt+0xE0 = 0x487B50, in place of WExplosion's 0x488200: no splash for all, no

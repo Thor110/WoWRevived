@@ -1199,6 +1199,7 @@ namespace wow
                 }
             }
             StatusTick(units[i]);
+            DroneTick(i);
             if (SinkTick(i)) { i--; moved = true; continue; }
             moved |= units[i].sink != 0;
             MarkerTick(i);

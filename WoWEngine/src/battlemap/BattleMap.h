@@ -169,6 +169,7 @@ namespace wow
             int attacker = 0;                       // the firing unit's id (passed to its explosion's +0xCC)
             int depth = 0;                          // its view object's key over its y
             int born = -1;                          // the update it was made on
+            int age = 0;                            // +0xD0: the cascading explosions' updates (0x48CDE0)
         };
         std::vector<Effect> effects;
         int SpawnEffect(int type, float x, float y, float lift = 0, float vx = 0, float vy = 0, float vz = 0, float g = 0);
@@ -260,6 +261,7 @@ namespace wow
                       bool marked = false;  // its marker made (GType 0x359: a mine's +0xE8, a sinker's +0x19C)
                       int sink = 0;         // +0x194: the updates left going down or coming up
                       bool under = false, hidden = false;   // +0x190 bits 0 and 1
+                      int droneTarget = 0;  // +0x190: a drone's object to run into (vt+0xC4 = 0x48FA80)
                       bool fogged = false;  // +0xB8 bit 3 (vt+0x9C / vt+0xA0): the other side's, hidden by the fog
                       int stance = 1;       // +0xD8: its type's +0x43 byte (record 56) to start with (0x495740)
                     };
@@ -297,6 +299,9 @@ namespace wow
         void StopAttacking(int group);                          // the target cleared, the guns 0x805A
         void AttackObject(int id);                              // packet 0x10 (0x4812B0 -> 0x481F70 -> 0x482880)
         void Approach(Unit& u, const Unit& target);             // vt+0xC4: 0x491100 -> 0x496300
+        void DroneTick(size_t unit);                            // 0x48FAC0 / 0x48F9F0
+        static bool IsGas(int type);                            // 0x393-0x395, WGasCloud
+        bool GasTick(size_t effect);                            // 0x488D70
         void LookRound(size_t unit);                            // 0x4967E0's count -> vt+0x104 (0x48F8A0, 0x496890)
         void AutoTarget(const Unit& u);                         // 0x496570 -> the group's 0x80B1 (0x482960)
         void ChaseTargets();                                    // 0x483B70 -> 0x4826D0
@@ -311,6 +316,8 @@ namespace wow
         void Launch(size_t unit, Gun& g);                       // 0x4889D0
         bool ShellLands(size_t effect);                         // 0x488F00 after the step: gone?
         struct Landing { int size, x, y, z, group, attacker, weapon; };
+        struct Cascade { int type, x, y, z, firer, attacker, weapon = 0; };
+        std::vector<Cascade> cascades;      // 0x48CDE0's next explosions, made once the effects are walked
         std::vector<Landing> landings;                          // made after the flying objects' updates
         // Damage and death (0x48A5A0, 0x48AB20, 0x80A0 in 0x489FA0) and the explosions (WExplosion 0x488180)
         int MaxHealth(int type) const;                          // 0x47DA20: +0x4A with the armour modifiers
