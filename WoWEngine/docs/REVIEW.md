@@ -157,7 +157,13 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
 - [x] **Ambient-sound scenery** (0x4890A0-0x4892C0, with its 0x3AC substitution that shifts the scenery's rand()).
       *Update 109*: the 0x3AC substitution; its rand() was already drawn (`scenery::Burnt` for every object). The
       types (0x2AE-0x2B5, 940, 994-996; about 1,800 in the .nsb files) aren't in OBJ.ojd, so they've no sound.
-- [ ] **Shots' own visuals** (0x4950D0 / 0x495180 / 0x495280, the atlas sprite 0x49D710, the textured quad 0x49D820).
+- [~] **Shots' own visuals** (0x4950D0 / 0x495180 / 0x495280, the atlas sprite 0x49D710, the textured quad 0x49D820).
+      *Update 118*: the beams: four atlas quads (heatray.raw, gunshot.raw) from the gun's model point to its target
+      while it fires, animated, widening by record 12's +0xA / +0xC, at the type's +0xA1 / 4 level. Found with it:
+      every flying object's sprite (explosions, smoke, shells) draws at its type's +0xA1 / 4 level (48 of BMEX's 64,
+      0x487846 -> 0x40F040), where the engine had used level 0 (about a sixth as bright). Still to do: drawing them
+      at their depths, and the shell guns' extra sprite (GType 0xFF, BOTTOM2.SPR, 0x4884C0), the "shell shadow" of
+      the Shadows item.
 - [~] **Lights on models**: point lights on WOF pieces (0x49EC00 / 0x49ED90), relighting IOB objects (0x49E2C0) and
       ISOLib's two nearest lights at `[Game] "ISO Brightness"` (0x4111B0 / 0x4113F0 / 0x410E00); the units'
       headlights (light parts 334-346).

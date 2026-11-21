@@ -963,6 +963,37 @@ the damage (0x4958B0). Going (0x48EEE0) stops both, and for type 0x77 with +0xC0
 *Not yet*: the ground flattened and sampled under it, the four 0x17B corner objects, its health from the
 construction's state, the damage frames (0x48A7D0, 0x48EF80) and the gun emplacements on it (0x48F7C0).
 
+## The guns' beams (update 118; `BattleMap::DrawBeams`, `DrawAtlasQuad` in core/WofView)
+
+Every gun class but the base's own update draws four atlas quads while it fires: the shells' (0x4ADE08 / 0x4ADEF0 /
+0x4AF2E8: 0x4884C0, which also adds a GType 0xFF sprite, BOTTOM2.SPR), the rockets' (0x4ADFE0), the mortars'
+(0x4AE0D0) and WProjectile's (0x4B0890).
+- **Made** (vt+0xE0, 0x4950D0): four atlas RTypes (0x49D710: the gun type's GType, 16-pixel cells, the atlas 256
+  wide), each at level +0xA1 / 4 (vt+0x18 = 0x40F040) and +0x26 0x40. The GTypes are class 6 raw images:
+  heatray.raw (0x100) for the Martians' heat rays, gunshot.raw (0x101) for the lorries' guns.
+- **Animated** (vt+0x4C, 0x495180), while the fire cycle (+0xD8) is 2 and the type has a GType: quad i shows cell
+  (the type's +0x2C x 16 + i + the phase), the phase (+0xA8) going on by 4 each draw and back to 0 at 16 (0x49D7E0:
+  the cell's offset is (f / 16) x 16 x 256 + (f % 16) x 16); then vt+0xE4.
+- **Laid out** (vt+0xE4, 0x495280) from the gun's point (+0x78..+0x80) to its target (+0xBC..+0xC4), both
+  projected (x; the iso y less the height's share, plus the top), the length optionally cut to a cap (0 here): in
+  four steps of a quarter of the way, the half width along the screen normal (uy, -ux) going from record 12's +0xA
+  to +0xC a quarter of the difference a step. Quad i's corners (0x49D820) are (X' - p', Y' - q'), (X' + p',
+  Y' + q'), (X + p, Y + q), (X - p, Y - q), X / Y the near end, X' / Y' the far; each put in the view a quarter
+  further back (+0x1E from the gun's y + 40).
+- **Drawn** (0x49D930 -> 0x410090): two triangles (q0 q2 q1, q0 q3 q2), the cell's (size-1, size-1) corner at q0,
+  (size-1, 0) at q1, (0, 0) at q2, (0, size-1) at q3, so the cell's far edge is at the target; masked and flat
+  (flags 6, | 8 with +0x14 bit 0), through the GType's slot table at the quad's level.
+- **The gun's point**: a gun part with a record 27 box is held to that point of its parent's model (its turret's
+  or its unit's, +0xB0 as the other parts, 0x47F340): the tripods' heat rays come from their heads.
+
+**Sprite levels.** A flying object's start (0x487800) passes its type's +0xA1 to its renderer's vt+0x18; for a
+sprite (0x40EC50, vtable 0x4A9988) that's 0x40F040, which sets +0x34, the shade table level, to it / 4: 48 for the
+usual 192. (Until update 118 the engine drew them at level 0.)
+
+*Provisional*: the quads are drawn over the view after the ground and its objects rather than at their depths; a
+gun not held to a point is taken at its unit's place; the shells' extra sprite isn't drawn. Tested with every
+gun forced to fire at a point beside it (no battle at hand has a fight).
+
 ## Parts held to a model point, and the vehicles' lights (update 117)
 
 **Held parts.** A part record (record 28) with a record 27 box before it (+0x12 not -1) gives its child +0xB0 =

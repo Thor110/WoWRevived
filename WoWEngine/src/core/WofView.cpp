@@ -370,6 +370,20 @@ namespace wow
         }
     }
 
+    void DrawAtlasQuad(const TerrainView::Target& target, const ShadeTable& table, const std::vector<uint8_t>& atlas,
+                       size_t cell, int size, const int q[4][2], int level)
+    {
+        if (cell >= atlas.size() || size <= 0) return;
+        const int e = size - 1;
+        const uint8_t* tex = &atlas[cell];
+        const size_t texSize = atlas.size() - cell;
+        const int sh = level << 2;      // the filler's flat level is the first point's shade >> 2
+        PolyPoint a[3] = { { q[0][0], q[0][1], e, e, sh }, { q[2][0], q[2][1], 0, 0, sh }, { q[1][0], q[1][1], e, 0, sh } };
+        FillTriangle(a, tex, texSize, true, true, table, target);
+        PolyPoint b[3] = { { q[0][0], q[0][1], e, e, sh }, { q[3][0], q[3][1], 0, e, sh }, { q[2][0], q[2][1], 0, 0, sh } };
+        FillTriangle(b, tex, texSize, true, true, table, target);
+    }
+
     // 0x49EC00: the pieces by depth (flag 8 first, 0x10 last, the rest by their nearest point), then 0x49EEF0
     void WofInstance::Draw(const Landscape::Sun& sun, const ShadeTable& table, const TerrainView::Target& target, int ox, int oy,
                            std::span<const PointSource> lights, float wofBrightness) const

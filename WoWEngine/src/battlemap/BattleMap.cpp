@@ -785,6 +785,88 @@ namespace wow
         PoseParts(u);
     }
 
+    // The guns' own visuals (vt+0x4C 0x495180 and vt+0xE4 0x495280, the quads made at the gun's start, vt+0xE0
+    // 0x4950D0: four atlas quads of the gun type's GType, 16-pixel cells, +0x26 0x40). While the fire cycle is in 2
+    // (firing) and the type has a GType (0x4950D0 also sets each quad's level, vt+0x18 = 0x40F040, to the type's +0xA1
+    // / 4): quad i shows cell (the type's +0x2C x 16 + i + the phase), the phase (+0xA8)
+    // going on by 4 each draw and back to 0 at 16; then the quads are laid from the gun's point (+0x78..+0x80) to
+    // its target's (+0xBC..+0xC4), both projected (x, the iso y less the height x 0x2C3E63FB >> 14, plus the top),
+    // in four steps of a quarter of the way, each one's half width (along the screen normal) going from the type's
+    // record 12 +0xA to +0xC by a quarter of the difference a step; a quad's near corners are (X +- p, Y +- q) and
+    // its far ones (X' +- p', Y' +- q'), the texture's far end at the target. Each is put in the view a quarter of
+    // the way further back (its +0x1E from the gun's y + 40).
+    // *Provisional*: drawn over the whole view after the ground and its objects rather than at their depths; a gun
+    // not held to a point is taken at its unit's place and height; the shells' class's extra sprite (0x4884C0: GType 0xFF, BOTTOM2.SPR)
+    // isn't drawn.
+    void BattleMap::DrawBeams(const TerrainView::Target& t) const
+    {
+        if (!setup.units || !setup.weapons) return;
+        auto project = [&](int x, int y, int z, int& sx, int& sy) {
+            sx = x - scrollX;
+            sy = land.ProjectY(y, z) - scrollY;
+        };
+        for (const Unit& u : units)
+        {
+            if (u.fogged || u.hidden) continue;
+            for (const Gun& g : u.guns)
+            {
+                if (g.state != 2) continue;
+                auto gt = setup.units->find(g.type);
+                if (gt == setup.units->end() || !gt->second.field28) continue;
+                const GType* gg = res.FindGType(gt->second.field28);
+                if (!gg || gg->gclass != 6) continue;
+                const std::vector<uint8_t>* atlas = res.GetRaw(gt->second.field28);
+                if (!atlas || atlas->empty()) continue;
+                auto st = slotTables.find(gg->paletteSlot);
+                const ShadeTable* shade = st != slotTables.end() ? &st->second : res.GetShade(gg->paletteSlot);
+                if (!shade) continue;
+                auto w = setup.weapons->find(g.type);
+                const int w1 = w != setup.weapons->end() ? int16_t(w->second[5]) : 0;
+                const int w2 = w != setup.weapons->end() ? int16_t(w->second[6]) : 0;
+                // 0x495180: the frames
+                int frames[4];
+                for (int i = 0; i < 4; i++) frames[i] = int(double(int64_t(gt->second.counterFrame) * 16 + i) + g.beamPhase);
+                g.beamPhase = float(g.beamPhase - -4.0f);
+                if (g.beamPhase == 16.0f) g.beamPhase = 0;
+                // 0x495280: the quads
+                // the gun's point: the point of its parent's model it's held to (+0xB0, 0x47F340; the parent its turret
+                // or its unit), else its unit's place at its height
+                int gx = int(u.x), gy = int(u.y), gz = land.HeightAt(gx, gy) + int(u.drive.lift);
+                const WofInstance* parent = u.wof;
+                if (g.turret >= 0)
+                    for (const Attached& a : u.attached)
+                        if (a.turret == g.turret) parent = a.wof;
+                if (int at[3]; g.piece >= 0 && parent && parent->WorldPoint(g.piece, g.vertex, at)) { gx = at[0]; gy = at[1]; gz = at[2]; }
+                int x0, y0, x1, y1;
+                project(gx, gy, gz, x0, y0);
+                project(g.tx, g.ty, g.tz, x1, y1);
+                const double len = std::sqrt(double(x0 - x1) * (x0 - x1) + double(y0 - y1) * (y0 - y1));
+                if (!(len > 0.0)) continue;
+                const float dx = float(x1 - x0), dy = float(y1 - y0);
+                const float ux = float(dx / len), uy = float(dy / len);
+                const float stepX = dx * 0.25f, stepY = dy * 0.25f;
+                float px = uy * float(w1), py = -ux * float(w1);
+                const float pxg = uy * float(w2 - w1) * 0.25f, pyg = -ux * float(w2 - w1) * 0.25f;
+                float X = float(x0), Y = float(y0);
+                for (int i = 0; i < 4; i++)
+                {
+                    const float X1 = X + stepX, Y1 = Y + stepY;
+                    const float pn = px + pxg, qn = py + pyg;
+                    const int q[4][2] = { { int(X1 - pn), int(Y1 - qn) }, { int(X1 + pn), int(Y1 + qn) },
+                                          { int(X + px), int(Y + py) }, { int(X - px), int(Y - py) } };
+                    // 0x49D7E0: the cell's place in the 256-wide atlas
+                    const int f = frames[i];
+                    const size_t cell = size_t(f / 16) * 16 * 256 + size_t(f % 16) * 16;
+                    DrawAtlasQuad(t, *shade, *atlas, cell, 16, q, (gt->second.fieldA1 & 0xFFFF) >> 2);
+                    px = pn;
+                    py = qn;
+                    X = X1;
+                    Y = Y1;
+                }
+            }
+        }
+    }
+
     // dat\b16.hsh, loaded once (PolyLib's set-up 0x40FEA0 reads it for a 16-bit screen; b15.hsm and b8.shl are the
     // other depths')
     const std::vector<uint16_t>& BattleMap::ShadowBlend()
@@ -1724,7 +1806,12 @@ namespace wow
                     const int frame = o.effect >= 0 ? effects[size_t(o.effect)].counter >> 8 : 0;
                     const IndexedImage* image = res.GetFrame(o.sprite, frame);
                     const GType* g = res.FindGType(o.sprite);
-                    if (image && g) canvas.DrawImage(*image, shade->Level(0), o.x - g->hotX - scrollX, o.y - g->hotY - scrollY);
+                    // a flying object's sprite is at its type's +0xA1 / 4 (0x487846: its renderer's vt+0x18, the
+                    // sprite's 0x40F040, sets +0x34, the table's level); the others at 0
+                    int level = 0;
+                    if (o.effect >= 0 && size_t(o.effect) < effects.size())
+                        if (auto et = setup.units->find(effects[size_t(o.effect)].type); et != setup.units->end()) level = (et->second.fieldA1 & 0xFFFF) >> 2;
+                    if (image && g) canvas.DrawImage(*image, shade->Level(level), o.x - g->hotX - scrollX, o.y - g->hotY - scrollY);
                     continue;
                 }
                 const IobModel& m = o.model->model;
@@ -1736,6 +1823,7 @@ namespace wow
         // darkness +0x90)
         TerrainView::Fog fogView{ fog.map.empty() ? nullptr : fog.map.data(), land.Width(), fog.smooth, fog.darkness };
         TerrainView::Render(land, tiles, table, levels, dither, t, -scrollX, -scrollY, fog.enabled ? &fogView : nullptr, between, &window);
+        DrawBeams(t);
         DrawSelection(canvas);
         // the minimap (0x486CB0): the picture, the dots (2 x 2 each, 0x4A1DD0), the view's rectangle (0x49C7C0)
         if (miniShown && miniPicture)

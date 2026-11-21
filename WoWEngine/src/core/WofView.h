@@ -13,6 +13,13 @@
 
 namespace wow
 {
+    // The atlas quad (RType 0x4B1150: 0x49D710 / 0x49D7E0 / 0x49D820, drawn by 0x49D930 -> 0x410090): one cell of a
+    // 256-wide 8-bit atlas (the cell at `cell` bytes in, `size` square) on the screen quad q0..q3, its texture's
+    // (size-1, size-1) corner at q0, (size-1, 0) at q1, (0, 0) at q2 and (0, size-1) at q3: two triangles (q0 q2 q1,
+    // q0 q3 q2) through the triangle filler, masked and flat (flags 6) at the table's level (its +0x34).
+    void DrawAtlasQuad(const TerrainView::Target& target, const ShadeTable& table, const std::vector<uint8_t>& atlas,
+                       size_t cell, int size, const int q[4][2], int level);
+
     class WofInstance
     {
     public:

@@ -248,7 +248,9 @@ namespace wow
         struct Gun { int type = 0, cls = 0, state = 0, counter = 0; bool armed = false; uint32_t flags = 0; int tx = 0, ty = 0, tz = 0;
                      std::vector<int> fired; bool spent = false;
                      int turret = -1; bool hardpoint = false; int middle = 0, half = 0;
-                     float range = 1.0f, accuracy = 1.0f; };   // +0xC8 / +0xCC, by research (0x494AF0)
+                     float range = 1.0f, accuracy = 1.0f;   // +0xC8 / +0xCC, by research (0x494AF0)
+                     mutable float beamPhase = 0;           // +0xA8: the beam quads' frame step (0x495180), stepped as drawn
+                     int piece = -1, vertex = 0; };         // +0xB0: the point of its parent's model it's held to
         // A turret (0x489820 on the vehicle 0x490820: 0x2E6-0x313, 0x389-0x38C): its type, its part's offset, its turn
         // from its unit (+0x190), the point it's aiming at (+0xC8 / +0xCC, +0xE4 bit 1), its hardpoint and its turning
         // sound (+0xE8)
@@ -418,6 +420,7 @@ namespace wow
         void Hover(Unit& u);                            // 0x490170
         void Wake(Unit& u);                             // vt+0x134, 0x4934F0
         void LowEffect(int type, float x, float y);
+        void DrawBeams(const TerrainView::Target& t) const;  // the guns' own visuals, 0x495180 / 0x495280
         void ShipTick(size_t index);
         bool Crushable(const Unit& o) const;            // vt+0xD8
         bool Collides(const Unit& u, const Unit& o) const;  // the vehicles' vt+0xBC, 0x4929A0                    // the Ironclads' update, 0x493B50

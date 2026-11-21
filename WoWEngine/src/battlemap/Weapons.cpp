@@ -116,6 +116,8 @@ namespace wow
             g.cls = cls;
             g.turret = turret;
             g.hardpoint = part.box[0] >= 0;
+            g.piece = part.box[0];          // +0xB0's first two: held to that point of its parent's model
+            g.vertex = part.box[1];
             g.middle = uint16_t(part.box[2]);
             g.half = uint16_t(part.box[3]);
             Upgrade(g, t->second.faction);
