@@ -85,6 +85,8 @@ namespace wow
                 float arrivalAccMax = 0.2f;         // flt_59E3CC
                 float attractAccWeight = 0.001f;    // flt_59E36C
                 float attractAccMax = 0.1f;         // flt_59E2F4
+                int startTurnRate = 12;             // dword_59E1BC: the walkers' turn that animates them
+                float turnAnimRate = 0.02f;         // flt_59E1A4
             } vehicles;
             const std::map<int, std::array<int, 17>>* moveCosts = nullptr;      // OBJ.ojd record 10 (0x4F6E38)
             const std::map<int, std::pair<int, float>>* moveSlopes = nullptr;   // record 11 (0x4F04C0 / 0x4F0510)
@@ -227,6 +229,8 @@ namespace wow
             int link = 0;               // +0x18C, the bridge it's on (dword_59D9C0's index), 0 for none
             float lift = 0;             // +0x84, its height over the ground (a bridge's deck)
             int offset = 0;             // +0x13A, rand() % (0x802E's value + 1): more room at the route's end
+            float frame = 2.0f;         // +0xA8, its model's animation frame (0x490E70)
+            float smoothTurn = 0;       // +0x190, the walkers' turn, smoothed
         };
         // A gun (WProjectile base 0x4949A0 and its classes): its type, its class's update (0 the shell's 0x4886A0,
         // 1 the rocket's 0x488830, 2 the mortar's 0x488CA0, launching shells), the fire cycle's state (+0xD8) and count (+0xD4),
@@ -396,6 +400,8 @@ namespace wow
         void Halt();
         void Drive(size_t index);
         void Steer(Unit& u);
+        void Animate(Unit& u, float moved, int turn);   // vt+0x130
+        void Paddle(Unit& u);                           // 0x48FDD0
         void SpeedControl(Unit& u, float wanted);
         void Advance(Unit& u);
         // 0x492C00 / 0x492A90: what a unit's neighbours add up to (+0x120..+0x144)

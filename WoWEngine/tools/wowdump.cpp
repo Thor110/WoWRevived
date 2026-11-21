@@ -489,9 +489,9 @@ int main(int argc, char** argv)
             }
             return 0;
         }
-        if (first == "--wof" && (argc == 8 || argc == 9))
+        if (first == "--wof" && (argc >= 8 && argc <= 10))
         {
-            // --wof <OBJ.ojd> <gtype> <dat folder> <map.CLS> <map.ATM> <out.bmp> [heading]: the model at the map's
+            // --wof <OBJ.ojd> <gtype> <dat folder> <map.CLS> <map.ATM> <out.bmp> [heading [frame]]: the model at the map's
             // middle at noon, through the noon table of its slot
             auto obj = ReadFile(argv[2]);
             int gtype = int(std::strtol(argv[3], nullptr, 0));
@@ -516,7 +516,8 @@ int main(int argc, char** argv)
             auto day = tables.dayTimes.find(12);
             const float noon[4] = { 0.9f, 0.1f, 0.75f, 0.0f };
             auto sun = wow::Landscape::SunFor(90, day != tables.dayTimes.end() ? day->second.sets[0].f : noon);
-            int heading = argc == 9 ? std::atoi(argv[8]) : 512;
+            int heading = argc >= 9 ? std::atoi(argv[8]) : 512;
+            if (argc == 10) model.SetFrame(std::atoi(argv[9]));
             int x = land.WorldWidth() / 2, y = land.Height() * (land.Cell() >> 16) / 2;
             model.Transform(land, heading, x, y, land.HeightAt(x, y), true);
             const int W = 320, H = 240;

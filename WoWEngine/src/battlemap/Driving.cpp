@@ -376,12 +376,14 @@ namespace wow
         if (!u.Frozen())
         {
             Steer(u);
+            if (!d.link) Paddle(u);     // the walkers' step (0x490040)
             Advance(u);
         }
         if (u.wof)
         {
             const int ix = int(u.x), iy = int(u.y);
             u.heading = d.heading & 0xFFF;  // vt+0x30 with +0x100
+            u.wof->SetFrame(int(d.frame));  // 0x47F677
             u.wof->Transform(land, u.heading, ix, iy, int(float(land.HeightAt(ix, iy)) + d.lift));  // + +0x84
         }
     }
@@ -527,6 +529,7 @@ namespace wow
         if (turn > limit) turn = limit;
         d.heading += turn;
         Polar(int(float(d.heading) + back), d.speed, d.dx, d.dy);
+        const float fromX = u.x, fromY = u.y;
         u.x = float(double(d.dx) + u.x);
         u.y = float(double(d.dy) + u.y);
         const int waypointLink = d.route && d.waypoint < int(d.route->nodes.size()) ? d.route->nodes[size_t(d.waypoint)].link : 0;
@@ -536,6 +539,77 @@ namespace wow
             d.link = waypointLink;
         }
         else if (d.link && !OnBridge(u, d.link)) d.link = 0;
+        // 0x49342C: the length of the step (0x43FDA0) and the turn animate the model
+        const double mx = double(u.x) - fromX, my = double(u.y) - fromY;
+        Animate(u, float(std::sqrt(mx * mx + my * my)), turn);
+    }
+
+    // vt+0x130 after each step. Most vehicles (0x493490, the fliers' class 0x490120 too): the frame (+0xA8, 2.0 as it starts) goes on by the length
+    // of the step x its model GType's OBJ.ojd record 6 second float (0x4F0538, read by 0x437A52). The walkers'
+    // class (0x48FC20, vtable 0x4AFEA8, its vt+0x130 0x490070: the factory's types 0x3E-0x4C) first smooths the turn, +0x190 = (turn + 2 x
+    // +0x190) / 3, and while it's at least [Vehicles] startTurnRate either way the frame goes on by |it| x
+    // turnAnimRate + 0.2 instead. Either way a frame at or past the model's count has count - 1 taken off, so the
+    // loop comes back round to frame 1 (frame 0 is the model at rest). The renderer (0x47F630) poses the model at
+    // ftol(the frame).
+    // *Provisional*: the frame isn't kept in saves, and every vehicle class but the walkers' is taken to be 0x493490's.
+    // The walkers' step (0x490040): after the steering, off a link (and vt+0x9C false), 0x48FDD0 checks the feet, the
+    // pieces listed by type. A foot (0x48FCB0) whose first point (from the last pose) is on a water cell (types 1-3) is
+    // hidden (WorldPts' byte) and, every third update of the look-round count (+0xDA), makes a splash 0x3C7 there
+    // at height 0 (vt+0x14 with dword_4D2550's +0x90, its renderer's +0x26 8); one on land is shown again.
+    // *Provisional*: vt+0x9C isn't known (taken as false) and the splash's vt+0x14 value isn't in.
+    void BattleMap::Paddle(Unit& u)
+    {
+        if (!u.wof || u.type < 0x3E || u.type > 0x4C) return;
+        static const std::vector<int> Feet[] = {
+            { 1, 2, 3 },                // 0x3E-0x40
+            { 2, 3, 4 },                // 0x41-0x43
+            { 4, 5, 6, 7 },             // 0x44-0x46
+            { 9, 6 },                   // 0x47-0x49
+            { 9, 10, 11, 12, 13, 14 },  // 0x4A-0x4C
+        };
+        for (int piece : Feet[(u.type - 0x3E) / 3])
+        {
+            int x = 0, y = 0;
+            if (!u.wof->FirstPoint(piece, x, y)) continue;
+            const int vx = std::clamp(int((int64_t(int32_t(uint32_t(x) << 16)) + land.HalfCell()) / land.Cell()), 0, land.Width() - 1);
+            const int vy = std::clamp(int((int64_t(int32_t(uint32_t(y) << 16)) + land.HalfCell()) / land.Cell()), 0, land.Height() - 1);
+            const int terrain = land.At(vx, vy).atm & 15;
+            const bool wet = terrain > 0 && terrain < 4;
+            u.wof->SetHidden(piece, wet);
+            if (wet && int16_t(u.scanCount) % 3 == 0)
+                if (const int k = SpawnEffect(0x3C7, float(x), float(y)); k >= 0)
+                {
+                    Effect& e = effects[size_t(k)];
+                    for (ViewObject& o : objects)
+                        if (o.effect == k) o.key += 8 - e.depth;
+                    e.depth = 8;
+                    std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+                }
+        }
+    }
+
+    void BattleMap::Animate(Unit& u, float moved, int turn)
+    {
+        auto& d = u.drive;
+        if (!u.wof || u.wof->Frames() <= 0) return;
+        float rate = 0;
+        if (auto t = setup.units->find(u.type); t != setup.units->end() && setup.six)
+            if (auto six = setup.six->find(t->second.field28); six != setup.six->end()) rate = six->second.b;
+        const bool walker = u.type >= 0x3E && u.type <= 0x4C;
+        bool turning = false;
+        if (walker)
+        {
+            d.smoothTurn = float((float(turn) - d.smoothTurn * -2.0f) * 0.33333334f);
+            const int t = std::abs(int(d.smoothTurn));
+            if (t >= setup.vehicles.startTurnRate)
+            {
+                d.frame = float(double(float(t) * setup.vehicles.turnAnimRate + d.frame) - -0.2);
+                turning = true;
+            }
+        }
+        if (!turning) d.frame = rate * moved + d.frame;
+        const int frames = u.wof->Frames();
+        if (!(float(frames) > d.frame)) d.frame -= float(frames - 1);
     }
 
     // 0x492C00: the objects in the unit's bucket grid cell (ZMapRes square, built by 0x439770 over the map) and the

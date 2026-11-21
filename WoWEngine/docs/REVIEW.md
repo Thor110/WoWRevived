@@ -118,10 +118,13 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
 - [~] **Buildings** (0x48E8A0-0x48F1C0: ground flattening, corner objects, ambient loop, damage frames, hit sound
       0x111) and **gun emplacements** (0x48F7C0: no guns on a damaged building); turret attach (0x489980).
       *Update 110*: the ambient loop and the hit sound 0x111.
-- [ ] **Walkers / tripods** (0x48FC70-0x48FDD0, 0x490030-0x490070: legs, footprints, `startTurnRate` / `turnAnimRate`).
+- [x] **Walkers / tripods** (0x48FC70-0x48FDD0, 0x490030-0x490070: legs, footprints, `startTurnRate` / `turnAnimRate`).
       (Reported in play: units' animations don't play; the models' pieces aren't animated yet. Comes with this.)
+      *Update 113*: the WOF animation keys (every animated model, not just the walkers), the frame advance (0x493490
+      by distance, the walkers' 0x490070 by turn), and the walkers' feet hidden and splashing in water (0x48FCB0).
+      The walker class is types 0x3E-0x4C; 0x19-0x1B / 0x4D-0x4F are the fliers.
 - [ ] **Fliers** (0x490120-0x490170: height keeping and bob); wobble and dust / wake trail 0x3C8 (0x493490 /
-      0x4934F0).
+      0x4934F0). *Update 113*: their frame advance (0x493490) is in, with every vehicle's.
 - [ ] **Ironclads and Submersibles' own steering** (0x493870-0x493B50, 0x493A40 arrival); the Tunnelling Track Layer's
       research speed and mound (0x493D00 / 0x493D70).
 - [~] **Stop / start footprints** (0x4915B0 / 0x491630) and **the collision filter** (0x4929A0: walkers ignore small

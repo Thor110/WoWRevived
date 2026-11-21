@@ -1158,6 +1158,8 @@ namespace wow
         s.vehicles.arrivalAccMax = ini.GetFloat("Vehicles", "arrivalAccMax", 0.2f);
         s.vehicles.attractAccWeight = ini.GetFloat("Vehicles", "attractAccWeight", 0.001f);
         s.vehicles.attractAccMax = ini.GetFloat("Vehicles", "attractAccMax", 0.1f);
+        s.vehicles.startTurnRate = ini.GetInt("Vehicles", "startTurnRate", 12);
+        s.vehicles.turnAnimRate = ini.GetFloat("Vehicles", "turnAnimRate", 0.02f);
         s.zMapRes = ini.GetInt("System", "ZMapRes", 400);
         s.sound = &sound;
         s.armour.scenery = ini.GetFloat("Tweak", "Scenery Armour Modifier", 1.2f);

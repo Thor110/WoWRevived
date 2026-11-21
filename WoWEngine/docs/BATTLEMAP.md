@@ -247,8 +247,8 @@ whose depth + its +0x26 is under the next row's world y is drawn, and the rest a
 
 ## 3D models (WOF; RTypeWOF 0x49DA50, WOFLib 0x49E330-0x49F230; `core/WofView`)
 
-`wowdump --wof <OBJ.ojd> <gtype> <dat folder> <map.CLS> <map.ATM> <out.bmp> [heading]` poses a model at a map's
-middle at noon and draws it.
+`wowdump --wof <OBJ.ojd> <gtype> <dat folder> <map.CLS> <map.ATM> <out.bmp> [heading [frame]]` poses a model at a
+map's middle at noon, at an animation frame, and draws it.
 
 **Set-up** (0x49DCA0 / 0x49E330): the scales start at 1 and are multiplied by the GType's OBJ.ojd record 6 float
 (an ironclad's is 750, so a point is (p x 750) >> 16); the record's first word (+0x60) says whether the model tilts
@@ -273,6 +273,32 @@ piece (0x49E900) takes every point through the matrix plus the translation, scal
 the anchor: its world point; its screen point is (x, the iso projection of y with z as height, y as depth); the
 nearest depth is the piece's. Each child adds its pivot (as it is, not negated) through the matrix to the
 translation, and the walk goes on down.
+
+**Animation** (update 113). A model is animated when its header 0x1C, the frame count, isn't 0 (0x49E330 sets
++0x62; 34 of the 144 WOFs: the airships and zeppelins with 5 frames, most Martian machines 17, the Fighting
+Machines 30, the Scouts 31, the Tempest 32). Header 0x20 is the key block (+0x30): six u32s (the piece count, the
+frame count twice, 0s), then from 0x18 (+0x34) a u32 offset for each piece, from the block's start, to that piece's
+keys, one per frame. A key is nine s16s, the piece's 4.12 3 x 3 turn; the root's keys are 32 bytes, with its place
+as three s32s at 0x14, the others 20. Header 0x14 (+0x38, as a float) is the place's divisor.
+- Posing (0x49E734): an animated model's root place is (ftol(x x 16384 / div), ftol(y x -16384 / div),
+  ftol(z x 16384 / div)), each kept to a word, in place of the root's pivot (x, -y, z).
+- The walk (0x49E93C, 0x4A2A90): before a piece's points, its key for the frame (+0x5C) is put before the matrix
+  (m = key x m), so its children's pivots and keys turn with it.
+- The frame (0x47F630): ftol(the object's +0xA8) whenever the renderer poses it.
+- The advance, vt+0x130 after each step of the steering (0x49342C, with the step's length from 0x43FDA0 and the
+  turn): most vehicles (0x493490, the fliers' class too) add the length x the model GType's OBJ.ojd record 6 second
+  float (0x4F0538, filled by 0x437A52). The walkers (class 0x48FC20, types 0x3E-0x4C; 0x490070) first smooth the
+  turn, +0x190 = (turn + 2 x +0x190) / 3, and while |ftol(it)| is at least `[Vehicles] startTurnRate` (12) add
+  |it| x `turnAnimRate` (0.02) + 0.2 instead. A frame at or past the count has count - 1 taken off, so the loop
+  comes round to 1 (frame 0 is the model at rest). +0xA8 is 2.0 as a vehicle starts (0x490E70).
+- The walkers' feet (0x490040 -> 0x48FDD0): after the steering, off a link and with vt+0x9C false, each listed
+  foot piece (0x3E-0x40: 1-3; 0x41-0x43: 2-4; 0x44-0x46: 4-7; 0x47-0x49: 9, 6; 0x4A-0x4C: 9-14) whose first world
+  point (from the last pose) is on a water cell (types 1-3) is hidden (WorldPts' byte) and, when the look-round
+  count (+0xDA) is a multiple of 3, makes a splash 0x3C7 there at height 0 with its renderer's +0x26 8 (0x48FCB0);
+  on land it's shown again.
+
+*Provisional*: the frame isn't kept in saves; every vehicle class but the walkers' is taken to use 0x493490;
+vt+0x9C is taken as false and the splash's vt+0x14 value (dword_4D2550's +0x90) isn't in.
 
 **Drawing** (0x49EC00): the pieces in depth order (qsort), flag 8 first, 0x10 last. For each piece (0x49EEF0) each
 face's light (0x49ED90) comes from the normal of its three world points (cross product), lit as the ground

@@ -133,6 +133,19 @@ namespace wow
             }
         }
         if (root < 0 || root >= count) root = 0;
+        // 0x49E330: the animation, checked here so a bad table just leaves the model still
+        frames = int(U32At(file, 0x1C));
+        keys = U32At(file, 0x20);
+        keyScale = float(int32_t(U32At(file, 0x14)));
+        if (frames > 0 && frames < 1000 && keyScale != 0.0f && size_t(keys) + 0x18 + size_t(count) * 4 <= file.size())
+        {
+            for (int p = 0; p < count && frames; p++)
+            {
+                const size_t start = size_t(keys) + U32At(file, size_t(keys) + 0x18 + size_t(p) * 4);
+                if (start + size_t(frames) * (p == root ? 32 : 20) > file.size()) frames = 0;
+            }
+        }
+        else frames = 0;
         world.resize(pieces.size());
         screen.resize(pieces.size());
         nearest.assign(pieces.size(), 0);
@@ -158,7 +171,14 @@ namespace wow
         // the camera's angles: -110, 0x400 less the heading, 0x800
         Rotation(int16_t(0xFF92), 0x400 - heading, 0x800, m);
         const Piece& r = pieces[size_t(root)];
-        Apply(m, r.pivot[0], -r.pivot[1], r.pivot[2], t);
+        if (frames)
+        {
+            // 0x49E734: the root's place from its key, kept to words as the game's are
+            const size_t k = Key(root);
+            const auto place = [&](size_t o, float sign) { return int16_t(int32_t(float(int32_t(U32At(file, k + o))) * sign * 16384.0f / keyScale)); };
+            Apply(m, place(0x14, 1.0f), place(0x18, -1.0f), place(0x1C, 1.0f), t);
+        }
+        else Apply(m, r.pivot[0], -r.pivot[1], r.pivot[2], t);
         MatMul(tilt, m, m);
         // 0x49E83E: the root's pivot taken off y and z alike
         const int32_t d = (Mul(t[1], sy) >> 16) + (Mul(t[2], sz) >> 16);
@@ -171,10 +191,23 @@ namespace wow
         boundMin[1] -= sy0; boundMax[1] -= sy0;
     }
 
+    size_t WofInstance::Key(int p) const
+    {
+        return size_t(keys) + U32At(file, size_t(keys) + 0x18 + size_t(p) * 4) + size_t(frame) * (p == root ? 32 : 20);
+    }
+
     // 0x49E900
     void WofInstance::Walk(int p, int ox, int oy, int oz)
     {
         const Piece& piece = pieces[size_t(p)];
+        if (frames)
+        {
+            // 0x4A2A90: the piece's key turns it, before its points and its children's pivots
+            const size_t k = Key(p);
+            int32_t key[9];
+            for (int i = 0; i < 9; i++) key[i] = S16At(file, k + size_t(i) * 2);
+            MatMul(m, key, m);
+        }
         auto& w = world[size_t(p)];
         auto& s = screen[size_t(p)];
         w.resize(size_t(piece.vertexCount));

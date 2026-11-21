@@ -7,6 +7,8 @@
 //   offset (from the vertex section at header 0x0C), u32 face offset (>> 8), then up to 16 s32 child pieces
 //   ending with -1. Vertices are s16 x/y/z; faces are 10 bytes (v0 v1 v2 material, then u/v for each corner).
 //   The texture atlas is 256 pixels wide, from header 0x28 to 0x2C; materials (4 bytes each) from 0x24 to it.
+//   Animated models (header 0x1C the frame count) have per-piece keys from header 0x20: see core/WofView and
+//   docs/BATTLEMAP.md "Animation".
 // IOB (buildings): a 0x22 byte header (u16 view count, u32 face count, u32 lit triangle count, u32 animated,
 //   u32 width, u32 0x12, u32 height(?), u32 plane section size = faces x 6, u32 index table offset from 0x22),
 //   then s16 x/y/z points, s8 normals, and an 18 byte index entry per lit triangle placing an RLE patch of the
