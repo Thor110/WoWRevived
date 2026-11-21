@@ -133,7 +133,7 @@ screen is scaled down to fit.
 - **Volumes.** Each sound's type picks one of the `[Sound\Volume]` settings (0x4CA858 on): 0 Ambient, 1 Engine, 2 Explosions, 3 Weapons, 4 Special, 5 Speech, all under Master.
 - **The menus.** The main menu (0x405ED0) starts sound 0x18C, the looping "option" music, afresh each time and fades it in over 60 ticks (0x464E60). Game Options (0x406130) starts it again only if it has stopped. Opening the CD Player (0x407A21) or the credits (0x40535B) fades every sound out over 60 ticks (0x464AB0, "Fading out all current sounds"); the credits then play 0x191, the side's epilogue music (VOX `hepilog` or `mepilog`), and don't leave the bottom of the scroll until it ends.
 - **Credits timing.** The scroll steps on message 0x812E, which re-posts itself for the next tick, so it moves every other game tick (about 15 steps a second). That's what makes each side's scroll last as long as its music: 2988 steps for 206.8 seconds of `hepilog`, 3984 for 272.5 seconds of `mepilog`.
-- **Control sounds.** The front-end push buttons, checkboxes and sliders play nothing themselves; the click sounds (0x192-0x196) belong to the in-game controls.
+- **Control sounds.** The front-end push buttons, checkboxes and sliders play nothing themselves; the click sounds (0x192-0x196) belong to the in-game controls: 0x192 a text field refusing a character, 0x193 / 0x196 a popup menu opening / closed with Escape, 0x194 / 0x195 a popup item (WHotButton, 0x434390) hovered / clicked.
 - **The CD Player** has no destructor of its own, so in the original the disc kept playing after leaving it. The engine stops the music when you leave; `[WoW Engine] "CD Player Music Continues" = 1` keeps the original behaviour.
 
 ## The mouse cursor

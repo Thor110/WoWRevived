@@ -261,7 +261,9 @@ selection at +0x430, filled by its recorded commands 4 clear, 5 select (Shift ad
   command share a row (0x4331C0), the rows go down a column (0x433220), and only the hovered item's row opens out
   (0x433330). It's shown with its first item centred on the mouse, a quarter of its height above it, kept 3 pixels
   inside the screen (flipped right to left if it hits the right edge), sound 0x193 (0x432FB0); Escape closes it
-  with 0x196, a click outside closes it, and an item's command goes to the war map. The engine shows the items'
+  with 0x196, a click outside closes it, and an item's command goes to the war map. Each item (WHotButton's
+  0x434390) plays 0x194 as the mouse comes onto it (0x20) and 0x195 as it's clicked (0x202 / 0x205), so going into
+  a battle by View map clicks (the engine plays the screen's sounds before a command can put the war map aside). The engine shows the items'
   text as their tool tips and the icon's next frame under the mouse (*provisional*). After Cancel come the items of
   whoever answers 0x805C: the active tool if it answers 0x8111, else the player's current object, else the own
   sector under the mouse (selected first); and when neither a tool nor that sector filled it, the world's selected

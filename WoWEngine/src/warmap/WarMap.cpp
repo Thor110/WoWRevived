@@ -2104,8 +2104,11 @@ namespace wow
         mouseY = y;
         if (!popup.empty())
         {
+            // a WHotButton (0x434390): the mouse coming onto it (0x20) plays 0x194
+            const int was = popupHover;
             popupHover = -1;
             for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) popupHover = int(i);
+            if (popupHover >= 0 && popupHover != was) sounds.push_back(0x194);
             return;
         }
         if (buildWindow) buildWindow->hover = BuildWindowHit(x, y);
@@ -2205,12 +2208,12 @@ namespace wow
             return std::nullopt;
         }
         // the popup has the mouse (0x42E9B0): a click on an item sends its command to the war map and closes it
-        // (0x4330B0), one anywhere else just closes it
+        // (0x4330B0; the item's click, 0x434390 on 0x202 / 0x205, plays 0x195), one anywhere else just closes it
         if (!popup.empty())
         {
             if (!down) return std::nullopt;
             for (const PopupItem& item : popup)
-                if (item.rect.Contains(x, y)) { int command = item.command, param = item.param; ClosePopup(false); PopupCommand(command, param); return std::nullopt; }
+                if (item.rect.Contains(x, y)) { int command = item.command, param = item.param; sounds.push_back(0x195); ClosePopup(false); PopupCommand(command, param); return std::nullopt; }
             ClosePopup(false);
             return std::nullopt;
         }

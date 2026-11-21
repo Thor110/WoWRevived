@@ -714,6 +714,9 @@ namespace wow
 
     void FrontEnd::Execute(const Command& command)
     {
+        // the sounds the screen queued with this command (a popup item's click) play now: the command may put the
+        // screen aside before its update would have passed them on
+        if (screen) for (int id : screen->TakeSounds()) sound.Play(id);
         if (screen && screen->Handle(command)) return;
         int current = screen ? screen->Id() : CmdMainMenu;
         SDL_Log("Command 0x%X (%d) from screen 0x%X", command.id, command.param, current);

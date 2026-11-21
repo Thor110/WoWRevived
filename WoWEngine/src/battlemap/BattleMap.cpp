@@ -1064,8 +1064,11 @@ namespace wow
             dragY1 = y;
             if (std::abs(dragX1 - dragX0) > 4 || std::abs(dragY1 - dragY0) > 4) boxActive = true;
         }
+        // a WHotButton (0x434390): the mouse coming onto an item (0x20) plays 0x194
+        const int was = popupHover;
         popupHover = -1;
         for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) popupHover = int(i);
+        if (popupHover >= 0 && popupHover != was) sounds.push_back(0x194);
     }
 
     // 0x484DF0: with the mouse within 4 pixels of an edge (32 in a window), the view moves by the mouse's distance
@@ -1373,6 +1376,7 @@ namespace wow
             {
                 int command = item.command;
                 const int param = item.param;
+                sounds.push_back(0x195);    // the item's click (0x434390 on 0x202 / 0x205)
                 ClosePopup(false);
                 if (command == ReturnCommand) return Command{ ReturnCommand, setup.sector };
                 if (command == 0x80CE && param >= 0 && param <= 3)
