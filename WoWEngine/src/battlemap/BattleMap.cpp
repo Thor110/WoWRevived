@@ -32,9 +32,10 @@ namespace wow
         tiles = TerrainTiles::Load(t);
         // the sector's Damage Layer (0x439870): with none yet, one the landscape's size (+0x24 x +0x28, 0x404F50),
         // all 0; then (0x405020) unpacked and every byte less 1000 / [BattleMap] "Damage reduction divisor" (500:
-        // 2), at least 0, as the scorch. (byte_4D25A0, the shym cheat, would clear it first; not in.)
+        // 2), at least 0, as the scorch. byte_4D25A0, the shym cheat, clears it first, once.
         {
             std::vector<uint8_t> d = s.damage;
+            if (s.clearDamage) std::fill(d.begin(), d.end(), uint8_t(0));
             if (s.damageWidth != land.Width() || s.damageHeight != land.Height() || d.size() != size_t(land.Width()) * size_t(land.Height()))
                 d.assign(size_t(land.Width()) * size_t(land.Height()), 0);
             const int fade = s.damageDivisor ? 1000 / s.damageDivisor : 0;
@@ -85,6 +86,9 @@ namespace wow
         fog.damageDelta = s.fogDamageDelta;
         fog.damageRadius = s.fogDamageRadius;
         FogStart();
+        // each building's own sound started as it's added (0x48E9D0)
+        for (Unit& u : units)
+            if (IsBuilding(u)) BuildingSound(u);
         for (size_t i = 0; i < units.size(); i++)
         {
             Unit& u = units[i];
@@ -1199,6 +1203,7 @@ namespace wow
                 }
             }
             StatusTick(units[i]);
+            BuildingTick(units[i]);
             DroneTick(i);
             if (SinkTick(i)) { i--; moved = true; continue; }
             moved |= units[i].sink != 0;

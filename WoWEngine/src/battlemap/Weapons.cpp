@@ -560,6 +560,18 @@ namespace wow
             if (u.players && random::Rand() < 2000 && attacker != 0) Speak(0x110, u.group);
             Retaliate(u.group, index, attacker);
         }
+        else if (IsBuilding(u) && u.players)
+        {
+            // a building's vt+0xC0 (0x48F030): the player's (+0x24 0), when rand() is under 500 or it's still at full
+            // health (0x47DA20), hit by an object of another side (0x440110, 0x4406E0): its last 0x111 cut off if it's
+            // still playing, then 0x111 at the listener (+0xEC)
+            if (random::Rand() < 500 || u.health == MaxHealth(u.type))
+                if (const Unit* a = attacker ? UnitById(attacker) : nullptr; a && a->players != u.players && setup.sound)
+                {
+                    if (u.alertSound && setup.sound->Active(u.alertSound)) setup.sound->Stop(u.alertSound);
+                    u.alertSound = setup.sound->Play(0x111, 1.0f, 0);
+                }
+        }
         // 0x4958B0, the damage by research: by the target's side (0x4406E0) and the type that made the hit (the hit's
         // +0xC4, the gun's or shell's), each multiplier 1.0 until its enhancement is done (0x45A1C0 / 0x45B320)
         if (setup.researchMultiplier)

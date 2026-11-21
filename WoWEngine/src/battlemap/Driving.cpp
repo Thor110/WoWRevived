@@ -32,6 +32,43 @@ namespace wow
         }
     }
 
+    // The buildings (0x48E8A0's class: the non-vehicles of categories 2 and 3)
+    bool BattleMap::IsBuilding(const Unit& u) const
+    {
+        if (u.vehicle) return false;
+        auto t = setup.units->find(u.type);
+        return t != setup.units->end() && (t->second.category == 2 || t->second.category == 3);
+    }
+
+    // its own sound (the type's +0xA2, 0x4883C0) at its screen point (0x4883E0), kept at +0xE8
+    void BattleMap::BuildingSound(Unit& u)
+    {
+        auto t = setup.units->find(u.type);
+        if (!setup.sound || t == setup.units->end() || !t->second.fieldA2) return;
+        const int ix = int(u.x), iy = int(u.y);
+        u.ambientSound = setup.sound->Play(t->second.fieldA2, 1.0f, 0, ix, land.ProjectY(iy, land.HeightAt(ix, iy) + int(u.drive.lift)));
+    }
+
+    // 0x48F130, a building's update: when rand() is under 100 its sound (+0xE8) stops and, unless it's hidden
+    // (vt+0x9C), starts again at its point; then the puppet's update (0x4967E0)
+    void BattleMap::BuildingTick(Unit& u)
+    {
+        if (!IsBuilding(u) || random::Rand() >= 100) return;
+        if (u.ambientSound && setup.sound) setup.sound->Stop(u.ambientSound);
+        u.ambientSound = 0;
+        if (!u.fogged) BuildingSound(u);
+    }
+
+    // 0x48EEE0 (a building going): both its sounds stopped (+0xE8, +0xEC); and a vehicle's engine and turrets'
+    void BattleMap::StopUnitSounds(Unit& u)
+    {
+        if (!setup.sound) return;
+        for (int* h : { &u.engineSound, &u.ambientSound, &u.alertSound })
+            if (*h) { setup.sound->Stop(*h); *h = 0; }
+        for (Turret& tr : u.turrets)
+            if (tr.sound) { setup.sound->Stop(tr.sound); tr.sound = 0; }
+    }
+
     // vt+0x110 (0x4915B0, a vehicle stopping: 0x491590): with none marked (+0x13C + +0x13E 0) the vertices within its
     // type's +0x46 word x 1.25 of its whole position get bit 4 (0x47C280), which the strict ground cost (0x480680)
     // refuses, and the position is kept; vt+0x114 (0x491630: going, 0x491570; each member of a group ordered to move,

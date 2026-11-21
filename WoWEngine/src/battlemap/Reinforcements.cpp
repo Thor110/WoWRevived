@@ -127,6 +127,7 @@ namespace wow
     void BattleMap::LeaveMap(size_t index)
     {
         ClearFootprint(units[index]);
+        StopUnitSounds(units[index]);
         const Unit u = units[index];
         if (u.group >= 0 && size_t(u.group) < groupLeft.size()) groupLeft[size_t(u.group)] = true;
         if (u.engineSound && setup.sound) setup.sound->Stop(u.engineSound);

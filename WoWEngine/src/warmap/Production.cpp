@@ -126,7 +126,7 @@ namespace wow
 
     // The factory's 0x802D (0x45FC90), only while it's busy (+0x12C). The hours go further the better the
     // sector's supplied: they're divided by the product of its three ratios for the factory's side (0-2 Human,
-    // 3-5 Martian; 1 with the cheat byte_58913C, not in). Then, while there's time and a queue, the entry at the
+    // 3-5 Martian; 1 with the cheat byte_58913C, youlikeit). Then, while there's time and a queue, the entry at the
     // head takes it (0x461D60):
     //   - at 0 hours left it starts: its whole time (0x461E60), the type's build days (OBJ.ojd record 43, with
     //     the manufacture modifier) x 24, times its battle units for a vehicle
@@ -153,6 +153,7 @@ namespace wow
             const auto& r = economy[size_t(sector)].ratio;
             const size_t k = martian ? 3 : 0;
             m = r[k] * r[k + 1] * r[k + 2];
+            if (resourceCheat) m = 1.0f;    // byte_58913C (0x4606D0)
         }
         float dt = (1.0f / m) * float(hours);
         bool changed = false;

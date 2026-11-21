@@ -60,6 +60,7 @@ namespace wow
     void BattleMap::Die(size_t index)
     {
         ClearFootprint(units[index]);   // 0x490F10's vt+0x114
+        StopUnitSounds(units[index]);
         const Unit u = units[index];
         auto t = setup.units->find(u.type);
         if (u.engineSound && setup.sound) setup.sound->Stop(u.engineSound);

@@ -608,6 +608,7 @@ namespace wow
         std::vector<SaveInfo::WarMapObject> objects = exact ? WarMap::ObjectsOf(*exact) : SaveInfo::WarMapObjects(data);
         std::vector<int> owners = SaveInfo::SectorOwners(data);
         playingSlot = slot;
+        ResetCheats();
         auto map = std::make_unique<WarMap>(res, settings.colours, info, std::move(objects), std::move(units), std::move(classes),
             std::move(owners), ini.GetInt("Screen", "Scroll Speed", 40), ini.GetFloat("Tweak", "Clunting Speed", 7.0f));
         map->SetArrowTypes(std::move(arrows));
@@ -907,6 +908,18 @@ namespace wow
                 map->ReturnFromBattle();
             }
             break;
+        case 0x79:
+            // 0x402D31 (WGame 0x79): byte_4D2530 set, the network players shut down (0x449F40, 0x44AB40) and the
+            // world cleared (0x435450 on dword_4D2538), then the main menu. *Provisional*: no sender is known (the
+            // 0x79s at 0x43E4EA and 0x45A7D3 are a type and a research index); here the campaign's dropped and the
+            // main menu shown.
+            battleMap.reset();
+            warMap.reset();
+            inBattle = false;
+            playingSlot = 0;
+            topMenu = CmdMainMenu;
+            Execute({ CmdMainMenu, 0 });
+            break;
         case CmdGameOver:
             // 0x80FE (0x402B80): the war map is shut down, then VICTORY for 0x80FA / 0x80FC or DEFEAT for 0x80FB /
             // 0x80FD, then the credits and the main menu
@@ -1082,7 +1095,9 @@ namespace wow
             s.damage = d.grid;
         }
         s.damageDivisor = ini.GetInt("BattleMap", "Damage reduction divisor", 500);
-        s.fogEnabled = ini.GetInt("BattleMap", "EnableFogOfWar", 1) != 0;
+        s.fogEnabled = ini.GetInt("BattleMap", "EnableFogOfWar", 1) != 0 && !cheats.noFog;   // 0x434744
+        s.clearDamage = cheats.shym;        // byte_4D25A0, cleared once it's used (0x405059)
+        cheats.shym = false;
         s.fogDarkness = ini.GetFloat("BattleMap", "Fog darkness", 0.7f);
         s.fogReturnRate = ini.GetInt("BattleMap", "Fog return rate", 5);
         s.fogUpdateFreq = ini.GetInt("BattleMap", "Fog update freq", 15);
@@ -1294,24 +1309,69 @@ namespace wow
         canvas.DrawSprite(c.gtype, 0, mouseX + c.dx, mouseY + c.dy);
     }
 
+    // The typed cheats (0x401000, every letter, not in a network game): with none under way (dword_4D1130 0) a
+    // letter starts one by its first letter (y youlikeit, e englishrose, s shym, d datsun, c curtains, i icomeback,
+    // p punyhumans, a atchooo), the next letter count (dword_4D1134) at 1; each code's own handler (0x4011F0,
+    // 0x401280, ..., 0x4014F0; s and d inline) takes the next letter when it's the right one and does the cheat at
+    // the last, and any wrong letter ends it (dword_4D1130 0, the letter not tried as a first one).
+    static constexpr const char* CheatCodes[9] = { nullptr, "youlikeit", "englishrose", "shym", "datsun", "curtains",
+                                                   "icomeback", "punyhumans", "atchooo" };
+
     void FrontEnd::OnKey(int key)
     {
         if (key >= int(SDLK_A) && key <= int(SDLK_Z))
         {
-            static constexpr char Code[] = "englishrose";
-            char letter = char('a' + (key - int(SDLK_A)));
-            cheatProgress = letter == Code[cheatProgress] ? cheatProgress + 1 : (letter == Code[0] ? 1 : 0);
-            if (Code[cheatProgress] == 0)
+            const char letter = char('a' + (key - int(SDLK_A)));
+            if (cheatCode == 0)
             {
-                creditsEasterEgg = true;
-                cheatProgress = 0;
-                SDL_Log("Cheat: englishrose");
+                cheatProgress = 1;
+                for (int c = 1; c <= 8; c++)
+                    if (CheatCodes[c][0] == letter) cheatCode = c;
             }
+            else if (CheatCodes[cheatCode][cheatProgress] == letter)
+            {
+                if (CheatCodes[cheatCode][++cheatProgress] == 0)
+                {
+                    const int done = cheatCode;
+                    cheatCode = 0;
+                    CheatTyped(done);
+                }
+            }
+            else cheatCode = 0;
         }
         if (!screen) return;
         // a key's command fades out as a click does: Escape's back too (0x40A1B0 sends 0x8123, then the previous
         // command, which the menu hands its Fullscreen View, 0x40A1ED -> 0x40A272 -> 0x40A245 -> 0x4065E0)
         if (auto command = screen->OnKey(key)) Dispatch(*command, true);
+    }
+
+    // 0x4011D0, as a war map is made (0x417CD0) or loaded (0x418500)
+    void FrontEnd::ResetCheats()
+    {
+        cheats = Cheats{};
+        creditsEasterEgg = false;   // byte_4D25A4
+    }
+
+    void FrontEnd::CheatTyped(int code)
+    {
+        SDL_Log("Cheat: %s", CheatCodes[code]);
+        cheats.used = true;
+        WarMap* map = ActiveWarMap();
+        switch (code)
+        {
+        case 1: cheats.resources = true; if (map) map->SetResourceCheat(true); break;      // 0x4011F0
+        case 2: creditsEasterEgg = true; break;                                             // 0x401280: byte_4D25A4
+        case 3: cheats.shym = true; break;                                                  // byte_4D25A0
+        case 4: cheats.noFog = true; break;                                                 // byte_4BAD38 0
+        case 5: cheats.mat = true; break;                                                   // 0x401320
+        case 6: if (map) if (Research* r = map->LocalResearch()) r->CompleteAll(); break;   // 0x4013A0: 0x458460
+        case 7:     // 0x401440 / 0x4014F0: 0x806C / 0x806D to the sector (dword_4D2550), with a war map
+        case 8:
+            if (map)
+                for (Screen* sc : { battleMap.get(), screen.get() })
+                    if (auto* bm = dynamic_cast<BattleMap*>(sc)) { bm->CheatRemoveSide(code == 8); break; }
+            break;
+        }
     }
 
     void FrontEnd::OnMouseMove(int x, int y)

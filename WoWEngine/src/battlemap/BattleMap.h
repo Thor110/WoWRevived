@@ -103,6 +103,7 @@ namespace wow
             int damageDivisor = 500;
             // the [BattleMap] fog keys (0x4344C0-0x434680)
             bool fogEnabled = true;
+            bool clearDamage = false;   // the shym cheat (byte_4D25A0, 0x405039)
             float fogDarkness = 0.7f;
             int fogReturnRate = 5, fogUpdateFreq = 15, fogSmooth = 128, fogDropoff = 3, fogDamageDelta = 0, fogDamageRadius = 16;
             const std::map<int, std::array<int, 8>>* weapons = nullptr;     // OBJ.ojd record 12 (0x4F2F10)   // the front end's mixer: the battle's speech and engine sounds          // [System] "ZMapRes" (dword_4F7424): the bucket grid's cell size
@@ -261,6 +262,7 @@ namespace wow
                       bool marked = false;  // its marker made (GType 0x359: a mine's +0xE8, a sinker's +0x19C)
                       int sink = 0;         // +0x194: the updates left going down or coming up
                       bool under = false, hidden = false;   // +0x190 bits 0 and 1
+                      int ambientSound = 0, alertSound = 0; // a building's +0xE8 (its own loop) and +0xEC (0x111)
                       int footX = 0, footY = 0; // +0x13C / +0x13E: where its footprint is marked (both 0: none)
                       int droneTarget = 0;  // +0x190: a drone's object to run into (vt+0xC4 = 0x48FA80)
                       bool fogged = false;  // +0xB8 bit 3 (vt+0x9C / vt+0xA0): the other side's, hidden by the fog
@@ -304,6 +306,10 @@ namespace wow
         void Approach(Unit& u, const Unit& target);             // vt+0xC4: 0x491100 -> 0x496300
         void DroneTick(size_t unit);                            // 0x48FAC0 / 0x48F9F0
         void MarkFootprint(Unit& u);                            // vt+0x110, 0x4915B0
+        bool IsBuilding(const Unit& u) const;                   // the building class (0x48E8A0)
+        void BuildingSound(Unit& u);                            // its own sound (+0xA2) at its point, 0x4883E0
+        void BuildingTick(Unit& u);                             // 0x48F130
+        void StopUnitSounds(Unit& u);
         void ClearFootprint(Unit& u);                           // vt+0x114, 0x491630
         static bool IsGas(int type);                            // 0x393-0x395, WGasCloud
         bool GasTick(size_t effect);                            // 0x488D70
@@ -528,6 +534,7 @@ namespace wow
         std::vector<std::pair<int, int>> RetreatedRefs() const;
         bool Fought() const { return battleOn; }
         bool Forfeited() const { return forfeit; }
+        void CheatRemoveSide(bool own);                         // 0x806C / 0x806D (0x43B15C)
         // the unit table's +0xAC (byte_51A19C), the types met in this battle, for the research triggers
         const std::set<int>& Encountered() const { return encountered; }
         // the scorch as the battle map closes (0x439FE2 -> 0x4050B0: packed into the sector's Damage Layer)

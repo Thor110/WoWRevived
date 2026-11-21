@@ -162,6 +162,18 @@ namespace wow
         bool quit = false;
         // typed cheat codes (0x401000): "englishrose" shows the hidden end of the credits
         size_t cheatProgress = 0;
+        int cheatCode = 0;                  // dword_4D1130: 0 none yet, 1-8 the code being typed
+        // the cheats' flags (reset by 0x4011D0 as a war map is made or loaded)
+        struct Cheats
+        {
+            bool used = false;          // byte_4D1138: a cheat was typed
+            bool resources = false;     // byte_58913C, youlikeit: every product of supply ratios taken as 1
+            bool shym = false;          // byte_4D25A0: the next battle's Damage Layer cleared first
+            bool noFog = false;         // byte_4BAD38 0, datsun: no fog of war
+            bool mat = false;           // byte_4D1279, curtains: the [Debug] "Mat" flag (what it does isn't traced)
+        } cheats;
+        void ResetCheats();             // 0x4011D0
+        void CheatTyped(int code);
         bool creditsEasterEgg = false;
     };
 }

@@ -231,7 +231,7 @@ docs/REVIEW.md, with the full per-range reports in docs/review/.
 
 ## Milestone 6: the rest of the original
 
-- [ ] **Cheats**: youlikeit, shym, datsun, curtains, icomeback, punyhumans, atchooo (englishrose is in) and their
+- [x] **Cheats** (update 110; `curtains`'s flag isn't traced): youlikeit, shym, datsun, curtains, icomeback, punyhumans, atchooo (englishrose is in) and their
       flags (0x401000, 0x401320; `byte_4D1249` / `4D1261` / `4D1279`, `byte_58913C`) — 01, 03
 - [ ] **Speech queue**: opcode-6 sounds one at a time, no duplicates (0x4652B0) — 09
 - [ ] **Virtual voices** that resume at the right place when they get a voice back (0x4654E0) — 09

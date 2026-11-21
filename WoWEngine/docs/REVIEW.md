@@ -115,8 +115,9 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
 
 ## 3. Battle map objects and vehicles missing
 
-- [ ] **Buildings** (0x48E8A0-0x48F1C0: ground flattening, corner objects, ambient loop, damage frames, hit sound
+- [~] **Buildings** (0x48E8A0-0x48F1C0: ground flattening, corner objects, ambient loop, damage frames, hit sound
       0x111) and **gun emplacements** (0x48F7C0: no guns on a damaged building); turret attach (0x489980).
+      *Update 110*: the ambient loop and the hit sound 0x111.
 - [ ] **Walkers / tripods** (0x48FC70-0x48FDD0, 0x490030-0x490070: legs, footprints, `startTurnRate` / `turnAnimRate`).
 - [ ] **Fliers** (0x490120-0x490170: height keeping and bob); wobble and dust / wake trail 0x3C8 (0x493490 /
       0x4934F0).
@@ -173,9 +174,11 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
 
 ## 6. Front end
 
-- [ ] **Cheats**: the seven missing codes (0x4011F0, 0x401320, 0x4013A0, 0x401440, 0x4014F0, `shym`, `datsun`), the
-      reset at campaign start (0x4011D0), and a wrong letter returning to state 0 without re-testing it.
-- [ ] **WGame command 0x79** (shut down to the main menu).
+- [x] **Cheats**: the seven missing codes (0x4011F0, 0x401320, 0x4013A0, 0x401440, 0x4014F0, `shym`, `datsun`), the
+      reset at campaign start (0x4011D0), and a wrong letter returning to state 0 without re-testing it. *Update 110* (`curtains` sets
+      its flag, whose use isn't traced; the hourly repair's part of `youlikeit` waits on repair).
+- [x] **WGame command 0x79** (shut down to the main menu). *Update 110* (no sender is known; the review's two
+      are a type id and a research index).
 - [ ] **CD Player seek** ±5 s (0x413740 / 0x413990); the music step's CD status (0x413EB0, unclear).
 - [ ] The rest already on TASKS.md: Display Settings, the network menus, player objects in WGame::Tick (0x403680),
       commands one queue pass later.

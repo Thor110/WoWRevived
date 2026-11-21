@@ -415,6 +415,7 @@ namespace wow
                 for (int k = 0; k < 6; k++)
                     e.ratio[size_t(k)] = std::max(1.0f, (e.effDemand[size_t(k)] - e.effSupply[size_t(k)]) / e.effSupply[size_t(k)] + 1.0f);
                 float product = e.ratio[size_t(base)] * e.ratio[size_t(base + 1)] * e.ratio[size_t(base + 2)];
+                if (resourceCheat) product = 1.0f;      // byte_58913C (0x41AA16)
                 float v = 1.0f - 1.0f / product;
                 if (v > hi) hi = v;
                 if (v < lo) lo = v;

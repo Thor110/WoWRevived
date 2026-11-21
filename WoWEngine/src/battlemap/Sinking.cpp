@@ -115,6 +115,7 @@ namespace wow
     void BattleMap::Vanish(size_t index)
     {
         ClearFootprint(units[index]);
+        StopUnitSounds(units[index]);
         const Unit u = units[index];
         if (u.engineSound && setup.sound) setup.sound->Stop(u.engineSound);
         for (const Turret& tr : u.turrets)
@@ -124,5 +125,23 @@ namespace wow
             if (o.unit > int(index)) o.unit--;
         units.erase(units.begin() + std::ptrdiff_t(index));
         if (std::none_of(units.begin(), units.end(), [&](const Unit& o) { return o.group == u.group; })) GroupGone(u.group);
+    }
+
+    // The cheats punyhumans (0x806C) and atchooo (0x806D) at the sector (0x43B15C): by the local player's side (its
+    // +0x24), 0x806C the other side's and 0x806D its own units, constructions and resources (0x446370, kinds 1-3)
+    // each have every battle object taken out (0x421F50 -> 0x47D4E0: vt+0x78 on each; a vehicle's 0x495BB0 goes
+    // without a death, a key building's 0x48AC50 is lost).
+    // *Provisional*: every object goes as a vehicle does, the key building also lost.
+    void BattleMap::CheatRemoveSide(bool own)
+    {
+        for (size_t i = units.size(); i-- > 0;)
+        {
+            if (units[i].players != own) continue;
+            const Unit u = units[i];
+            Vanish(i);
+            const bool key = u.type == (setup.sector == 3 ? 0x33E : 0x78) || u.type == (setup.sector == 30 ? 0x116 : 0x3A);
+            if (key && !u.vehicle && u.group >= 0) KeyBuildingLost(u.players);
+            if (i > units.size()) i = units.size();
+        }
     }
 }

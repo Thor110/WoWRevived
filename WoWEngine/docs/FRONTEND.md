@@ -166,7 +166,24 @@ The menus use cursor 0; the text field (0x431500) asks for 0x11. Each side has i
 - **Display Settings.** The engine still draws at 640 × 480 and in true colour. The resolution and colour depth are saved for the launcher, but the engine doesn't use them yet.
 - **Loading and saving** work for the war map (see WARMAP.md); battles, research and the economy aren't saved yet beyond what the save already held.
 - **Sound for the credits.** The credits music (sound 0x191) isn't played yet. The game also waits for it to finish before leaving the credits.
-- **Other cheat codes.** 0x401000 recognises more typed codes than "englishrose", but they aren't decoded yet.
+- **Cheat codes** (0x401000, `FrontEnd::OnKey` / `CheatTyped`; ignored in a network game, byte_4D256C). With none
+  under way (dword_4D1130 0) a letter starts one by its first letter: y `youlikeit`, e `englishrose`, s `shym`, d
+  `datsun`, c `curtains`, i `icomeback`, p `punyhumans`, a `atchooo`. Each code's handler (0x4011F0, 0x401280,
+  0x401320, 0x4013A0, 0x401440, 0x4014F0; `shym` and `datsun` inline) takes the next letter when it's right and does
+  the cheat at the last; any wrong letter ends it, and that letter isn't tried as a first one. Every cheat sets
+  byte_4D1138. The effects:
+  - `youlikeit`: byte_58913C, every product of a sector's three supply ratios taken as 1 (0x41AA16 the Construction
+    view's figure, 0x45F82F / 0x4606D0 the factories' speed, 0x429C00 the hourly repair, not in);
+  - `englishrose`: byte_4D25A4, the credits' hidden end;
+  - `shym`: byte_4D25A0, the next battle's Damage Layer cleared first (0x405039, then the flag's cleared);
+  - `datsun`: byte_4BAD38 0, no fog of war (0x434744);
+  - `curtains`: byte_4D1279, the `[Debug] "Mat"` flag (what it does isn't traced);
+  - `icomeback`: the local player's research all done (0x458460 on dword_4E9B88);
+  - `punyhumans` / `atchooo`, with a war map: 0x806C / 0x806D to the sector (0x43B15C), the other side's (0x806C) or
+    the player's own (0x806D) units, constructions and resources each taking every battle object out (0x421F50 ->
+    0x47D4E0, vt+0x78).
+
+  ResetCheats (0x4011D0, as a war map is made or loaded) clears them all, byte_4BAD38 back to 1.
 - **Tooltips.** Done for the front end's controls (the CD Player's transport buttons 0x4BC / 0x4B9 / 0x4BA / 0x4BD /
   0x4BB, Display Settings' colour radios with their labels and the options with 0x453–0x456) and the war map's
   panel buttons, Research button and calendar ("Advance time", only at the third level). Still to do: the war

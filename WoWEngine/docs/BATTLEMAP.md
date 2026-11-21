@@ -911,6 +911,17 @@ set. (Fixed in update 102: a player's move set neither, so a moving group turned
 point target (force fire) is taken as bit 0 set; the second case drops the target (StopAttacking) where the game
 leaves +0x2C; 0x80B9 and vt+0x38 aren't in.
 
+## Buildings (0x48E8A0's class; `BattleMap::IsBuilding`, `BuildingTick`)
+
+The non-vehicles of categories 2 and 3. As one is added (0x48E9D0) its own sound (the type's +0xA2, 0x4883C0) plays
+at its screen point (0x4883E0, +0xE8). Each update (0x48F130), when rand() is under 100, it's stopped and, unless the
+building's hidden (vt+0x9C, the fog), played again; then the puppet's update (0x4967E0). Hit (vt+0xC0, 0x48F030): the
+player's (+0x24 0), when rand() is under 500 or it's still at full health (0x47DA20), by an object of the other side
+(0x440110, 0x4406E0), cuts off its last 0x111 if that's still playing (+0xEC) and plays 0x111 at the listener; then
+the damage (0x4958B0). Going (0x48EEE0) stops both, and for type 0x77 with +0xC0 bit 0 takes one off dword_59E174.
+*Not yet*: the ground flattened and sampled under it, the four 0x17B corner objects, its health from the
+construction's state, the damage frames (0x48A7D0, 0x48EF80) and the gun emplacements on it (0x48F7C0).
+
 ## Drones (0x5D-0x5F: 0x48F9D0-0x48FAC0; `BattleMap::DroneTick`)
 
 A drone is a vehicle (0x48F9D0: 0x490E70, +0x3C 1) that blows itself up on reaching what it's sent at. Each update
