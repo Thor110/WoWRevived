@@ -6,6 +6,7 @@
 #include "core/Random.h"
 #include <SDL3/SDL.h>
 #include <algorithm>
+#include <cstring>
 #include <cmath>
 #include <cstdio>
 #include <stdexcept>
@@ -14,6 +15,13 @@ namespace wow
 {
     namespace
     {
+        // 0x43FF00 (as in Combat.cpp)
+        int Octagonal(int x0, int y0, int x1, int y1)
+        {
+            const int a = std::abs(x1 - x0), b = std::abs(y1 - y0);
+            return b - (std::min(a, b) >> 1) + a;
+        }
+
         std::vector<uint8_t> Need(Resources& res, const std::string& path)
         {
             auto data = res.LoadFile(path);
@@ -795,11 +803,12 @@ namespace wow
     // record 12 +0xA to +0xC by a quarter of the difference a step; a quad's near corners are (X +- p, Y +- q) and
     // its far ones (X' +- p', Y' +- q'), the texture's far end at the target. Each is put in the view a quarter of
     // the way further back (its +0x1E from the gun's y + 40).
-    // *Provisional*: drawn over the whole view after the ground and its objects rather than at their depths; a gun
-    // not held to a point is taken at its unit's place and height; the shells' class's extra sprite (0x4884C0: GType 0xFF, BOTTOM2.SPR)
-    // isn't drawn.
-    void BattleMap::DrawBeams(const TerrainView::Target& t) const
+    // Drawn with the view's objects by their places (BeamItem keys), the shells' class's sprite at the target too.
+    // *Provisional*: a gun not held to a point is taken at its unit's place and height; the sprite's flag (+0x14 bit
+    // 0, the blitter's mode 2) is the 8-bit translucent blend, which a 16-bit screen doesn't use.
+    void BattleMap::BuildBeams(std::vector<BeamItem>& out) const
     {
+        out.clear();
         if (!setup.units || !setup.weapons) return;
         auto project = [&](int x, int y, int z, int& sx, int& sy) {
             sx = x - scrollX;
@@ -820,6 +829,7 @@ namespace wow
                 auto st = slotTables.find(gg->paletteSlot);
                 const ShadeTable* shade = st != slotTables.end() ? &st->second : res.GetShade(gg->paletteSlot);
                 if (!shade) continue;
+                const int level = (gt->second.fieldA1 & 0xFFFF) >> 2;
                 auto w = setup.weapons->find(g.type);
                 const int w1 = w != setup.weapons->end() ? int16_t(w->second[5]) : 0;
                 const int w2 = w != setup.weapons->end() ? int16_t(w->second[6]) : 0;
@@ -828,7 +838,6 @@ namespace wow
                 for (int i = 0; i < 4; i++) frames[i] = int(double(int64_t(gt->second.counterFrame) * 16 + i) + g.beamPhase);
                 g.beamPhase = float(g.beamPhase - -4.0f);
                 if (g.beamPhase == 16.0f) g.beamPhase = 0;
-                // 0x495280: the quads
                 // the gun's point: the point of its parent's model it's held to (+0xB0, 0x47F340; the parent its turret
                 // or its unit), else its unit's place at its height
                 int gx = int(u.x), gy = int(u.y), gz = land.HeightAt(gx, gy) + int(u.drive.lift);
@@ -837,6 +846,7 @@ namespace wow
                     for (const Attached& a : u.attached)
                         if (a.turret == g.turret) parent = a.wof;
                 if (int at[3]; g.piece >= 0 && parent && parent->WorldPoint(g.piece, g.vertex, at)) { gx = at[0]; gy = at[1]; gz = at[2]; }
+                // 0x495280: the quads
                 int x0, y0, x1, y1;
                 project(gx, gy, gz, x0, y0);
                 project(g.tx, g.ty, g.tz, x1, y1);
@@ -848,24 +858,64 @@ namespace wow
                 float px = uy * float(w1), py = -ux * float(w1);
                 const float pxg = uy * float(w2 - w1) * 0.25f, pyg = -ux * float(w2 - w1) * 0.25f;
                 float X = float(x0), Y = float(y0);
+                // each quad's place in the view (+0x1E): the gun's y + 40, a quarter of the way on each
+                int key = gy + 40;
+                const int keyStep = (g.ty - gy) / 4;
                 for (int i = 0; i < 4; i++)
                 {
                     const float X1 = X + stepX, Y1 = Y + stepY;
                     const float pn = px + pxg, qn = py + pyg;
+                    BeamItem b;
+                    b.key = key;
+                    b.atlas = atlas;
+                    b.shade = shade;
+                    b.level = level;
                     const int q[4][2] = { { int(X1 - pn), int(Y1 - qn) }, { int(X1 + pn), int(Y1 + qn) },
                                           { int(X + px), int(Y + py) }, { int(X - px), int(Y - py) } };
+                    std::memcpy(b.q, q, sizeof(q));
                     // 0x49D7E0: the cell's place in the 256-wide atlas
                     const int f = frames[i];
-                    const size_t cell = size_t(f / 16) * 16 * 256 + size_t(f % 16) * 16;
-                    DrawAtlasQuad(t, *shade, *atlas, cell, 16, q, (gt->second.fieldA1 & 0xFFFF) >> 2);
+                    b.cell = size_t(f / 16) * 16 * 256 + size_t(f % 16) * 16;
+                    out.push_back(b);
                     px = pn;
                     py = qn;
                     X = X1;
                     Y = Y1;
+                    if (i < 3) key += keyStep;
                 }
+                // the shells' class (0x4884C0 / 0x4885C0 / 0x4885F0) also shows a sprite at the target, GType 0xFF
+                // (BOTTOM2.SPR) at the type's +0xA1 / 4, a frame on each draw (0x40EFB0), 4 nearer than the last quad
+                if (g.cls == 0)
+                    if (const Sprite* sp = res.GetSprite(0xFF); sp && sp->FrameCount() > 0)
+                    {
+                        BeamItem b;
+                        b.key = key - 4;
+                        b.sprite = 0xFF;
+                        b.frame = g.flashFrame % sp->FrameCount();
+                        g.flashFrame = (g.flashFrame + 1) % sp->FrameCount();
+                        b.x = x1;
+                        b.y = y1;
+                        b.level = level;
+                        out.push_back(b);
+                    }
             }
         }
+        std::stable_sort(out.begin(), out.end(), [](const BeamItem& a, const BeamItem& b) { return a.key < b.key; });
     }
+
+    void BattleMap::DrawBeam(const BeamItem& b, Canvas& canvas, const TerrainView::Target& t) const
+    {
+        if (b.sprite)
+        {
+            const GType* g = res.FindGType(b.sprite);
+            const IndexedImage* image = res.GetFrame(b.sprite, b.frame);
+            const ShadeTable* shade = g ? res.GetShade(g->paletteSlot) : nullptr;
+            if (g && image && shade) canvas.DrawImage(*image, shade->Level(b.level), b.x - g->hotX, b.y - g->hotY);
+            return;
+        }
+        if (b.atlas && b.shade) DrawAtlasQuad(t, *b.shade, *b.atlas, b.cell, 16, b.q, b.level);
+    }
+
 
     // dat\b16.hsh, loaded once (PolyLib's set-up 0x40FEA0 reads it for a 16-bit screen; b15.hsm and b8.shl are the
     // other depths')
@@ -1779,10 +1829,17 @@ namespace wow
             const float level = levels.size() >= 256 ? float(levels[size_t(at)]) : float(at);
             faceLights.push_back({ l.x, l.y, l.z, l.range, level });
         }
+        std::vector<BeamItem> beams;
+        BuildBeams(beams);
+        size_t nextBeam = 0;
+        auto beamsTo = [&](int key) {
+            for (; nextBeam < beams.size() && beams[nextBeam].key < key; nextBeam++) DrawBeam(beams[nextBeam], canvas, t);
+        };
         auto between = [&](int limit) {
             for (; next < objects.size() && objects[next].key < limit; next++)
             {
                 const ViewObject& o = objects[next];
+                beamsTo(o.key);
                 if (o.unit >= 0 && size_t(o.unit) < units.size() && units[size_t(o.unit)].fogged) continue;   // 0x48B2D0
                 if (o.light >= 0)
                 {
@@ -1815,7 +1872,48 @@ namespace wow
                     continue;
                 }
                 const IobModel& m = o.model->model;
-                IsoObject::Draw(m, o.model->lights, o.x - IsoObject::HalfWidth(m) - scrollX, o.y + IsoObject::OffsetY(m) - scrollY,
+                // 0x4113F0: the two nearest lights (dword_4B8E28) whose ranges reach the object (its point, +0x38..+0x3C,
+                // within the range + its radius +0x3E, the octagonal distance, each further than the last) add to a
+                // copy of its levels at their level x [Game] "ISO Brightness" (0.5), at most 63 x its level / 255
+                // (255 here: cap 63)
+                const std::vector<uint8_t>* use = &o.model->lights;
+                std::vector<uint8_t> lit;
+                if (!faceLights.empty())
+                {
+                    int ox = 0, oy = 0, oz = 0, radius = 0, type = -1;
+                    if (o.prop >= 0 && size_t(o.prop) < props.size())
+                    {
+                        const Prop& pr = props[size_t(o.prop)];
+                        ox = int(pr.x); oy = int(pr.y); oz = land.HeightAt(ox, oy) + int(pr.z); type = pr.type;
+                    }
+                    else if (o.unit >= 0 && size_t(o.unit) < units.size())
+                    {
+                        const Unit& un = units[size_t(o.unit)];
+                        ox = int(un.x); oy = int(un.y); oz = land.HeightAt(ox, oy) + int(un.drive.lift); type = un.type;
+                    }
+                    if (type >= 0)
+                    {
+                        if (auto ut = setup.units->find(type); ut != setup.units->end()) radius = int16_t(ut->second.hitPoints);
+                        int last = -1;
+                        for (int n = 0; n < 2; n++)
+                        {
+                            int best = 1000000;
+                            const WofInstance::PointSource* pick = nullptr;
+                            for (const WofInstance::PointSource& l : faceLights)
+                            {
+                                const int d = Octagonal(ox, oy, l.x & 0xFFFF, l.y & 0xFFFF);
+                                if (d < (l.range & 0xFFFF) + radius && d < best && d > last) { best = d; pick = &l; }
+                            }
+                            last = best;
+                            if (!pick) break;
+                            if (lit.empty()) lit = o.model->lights;
+                            IsoObject::AddPointLight(m, lit, ox - (pick->x & 0xFFFF), oy - (pick->y & 0xFFFF), oz - (pick->z & 0xFFFF),
+                                                     int(pick->level * setup.isoBrightness), pick->range & 0xFFFF, radius, 63);
+                        }
+                        if (!lit.empty()) use = &lit;
+                    }
+                }
+                IsoObject::Draw(m, *use, o.x - IsoObject::HalfWidth(m) - scrollX, o.y + IsoObject::OffsetY(m) - scrollY,
                                 *shade, dither, t);
             }
         };
@@ -1823,7 +1921,7 @@ namespace wow
         // darkness +0x90)
         TerrainView::Fog fogView{ fog.map.empty() ? nullptr : fog.map.data(), land.Width(), fog.smooth, fog.darkness };
         TerrainView::Render(land, tiles, table, levels, dither, t, -scrollX, -scrollY, fog.enabled ? &fogView : nullptr, between, &window);
-        DrawBeams(t);
+        beamsTo(0x7FFFFFFF);
         DrawSelection(canvas);
         // the minimap (0x486CB0): the picture, the dots (2 x 2 each, 0x4A1DD0), the view's rectangle (0x49C7C0)
         if (miniShown && miniPicture)

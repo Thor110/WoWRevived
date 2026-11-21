@@ -1,8 +1,8 @@
 // The battle map's pre-drawn objects (RTypeISO 0x49DDA0, ISOLib 0x4113F0 / 0x457C60): an IOB model is a list of
 // patches, each drawn like a ground half cell (0x4579A4) at its own offset, shaded between three light levels with
 // texel 0 left out (kind 1). The levels are worked out once, when the renderer is made (0x49DF40), from the sun
-// and the patch's normals; point lights (fires, the vehicles' lights) would add to them as it's drawn (0x4111B0,
-// not in yet). See docs/BATTLEMAP.md.
+// and the patch's normals; the two nearest point lights (fires, lamps, the vehicles' lights) add to a copy of them
+// as it's drawn (0x4113F0 / 0x4111B0). See docs/BATTLEMAP.md.
 #pragma once
 #include "core/Landscape.h"
 #include "core/Models.h"
@@ -24,6 +24,13 @@ namespace wow
         // each corner when the model has a normal per point) times ftol(255 x the shade level), through the
         // LANDR .INT table, at least 8
         static std::vector<uint8_t> BaseLights(const IobModel& m, const Landscape::Sun& sun, std::span<const uint8_t> levels);
+
+        // 0x4111B0: one point light added to a copy of the levels: for each patch, the light (0x40C930 from the light
+        // to the object, dx / dy / dz the object less the light, with its normal's bytes 0 / 2 / 1, out to the light's
+        // range from `inner`) x the intensity, added to each corner's level (with a normal for each point, each
+        // corner its own; else the patch's one for all three), at most the cap
+        static void AddPointLight(const IobModel& m, std::vector<uint8_t>& lights, int dx, int dy, int dz, int intensity,
+                                  int range, int inner, int cap);
 
         // 0x457C60: every patch at (x, y) plus its offset, through the object's shade table, dither set 13
         // (0x49DEA1: DithDat + 0x3400)

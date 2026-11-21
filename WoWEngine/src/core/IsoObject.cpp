@@ -61,4 +61,38 @@ namespace wow
                                    0x3400, p.mode == 1, target, dither, table);
         }
     }
+
+    void IsoObject::AddPointLight(const IobModel& m, std::vector<uint8_t>& lights, int dx, int dy, int dz, int intensity,
+                                  int range, int inner, int cap)
+    {
+        if (cap < 8) cap = 8;
+        const float times = float(intensity);
+        for (size_t i = 0; i < m.patches.size() && i * 3 + 2 < lights.size(); i++)
+        {
+            if (m.animated)
+            {
+                for (int k = 0; k < 3; k++)
+                {
+                    const size_t n = m.patches[i].normals[k];
+                    if (n >= m.normals.size()) continue;
+                    const auto& v = m.normals[n];
+                    const double add = TerrainView::PointLight(dx, dy, dz, v[0], v[2], v[1], range, inner) * double(times);
+                    int l = int(add + double(lights[i * 3 + size_t(k)]));
+                    if (l > cap) l = cap;
+                    lights[i * 3 + size_t(k)] = uint8_t(l);
+                }
+            }
+            else if (i < m.normals.size())
+            {
+                const auto& v = m.normals[i];
+                const int add = int(TerrainView::PointLight(dx, dy, dz, v[0], v[2], v[1], range, inner) * double(times));
+                for (int k = 0; k < 3; k++)
+                {
+                    int l = int(lights[i * 3 + size_t(k)]) + add;
+                    if (l > cap) l = cap;
+                    lights[i * 3 + size_t(k)] = uint8_t(l);
+                }
+            }
+        }
+    }
 }

@@ -53,6 +53,7 @@ namespace wow
             bool showLights = true;     // [Options] "Show lights" (byte_4B8808)
             bool showShadows = true;    // [Options] "Show vehicle shadows" (byte_4B8814)
             float wofBrightness = 2.5f; // [Game] "WOF Brightness" (flt_59F364): the point lights on the models
+            float isoBrightness = 0.5f; // [Game] "ISO Brightness" (flt_4E8C04): the point lights on the IOB objects
             bool showSmoke = true;      // [Options] "Show Smoke & particles" (byte_4B880C)
             std::vector<BattleGroup> groups; // the sector's war map objects (WarMap::BattleGroups)
             int ownerFaction = 2;       // who holds the sector (0x43CA30): 0 Human, 1 Martian, 2 no one
@@ -250,7 +251,8 @@ namespace wow
                      int turret = -1; bool hardpoint = false; int middle = 0, half = 0;
                      float range = 1.0f, accuracy = 1.0f;   // +0xC8 / +0xCC, by research (0x494AF0)
                      mutable float beamPhase = 0;           // +0xA8: the beam quads' frame step (0x495180), stepped as drawn
-                     int piece = -1, vertex = 0; };         // +0xB0: the point of its parent's model it's held to
+                     int piece = -1, vertex = 0;            // +0xB0: the point of its parent's model it's held to
+                     mutable int flashFrame = 0; };         // the shells' class's sprite's frame (+0xF4's +0x38)
         // A turret (0x489820 on the vehicle 0x490820: 0x2E6-0x313, 0x389-0x38C): its type, its part's offset, its turn
         // from its unit (+0x190), the point it's aiming at (+0xC8 / +0xCC, +0xE4 bit 1), its hardpoint and its turning
         // sound (+0xE8)
@@ -420,7 +422,11 @@ namespace wow
         void Hover(Unit& u);                            // 0x490170
         void Wake(Unit& u);                             // vt+0x134, 0x4934F0
         void LowEffect(int type, float x, float y);
-        void DrawBeams(const TerrainView::Target& t) const;  // the guns' own visuals, 0x495180 / 0x495280
+        // the guns' own visuals (0x495180 / 0x495280): an atlas quad, or the shells' class's sprite at the target
+        struct BeamItem { int key = 0; const std::vector<uint8_t>* atlas = nullptr; const ShadeTable* shade = nullptr; size_t cell = 0;
+                          int q[4][2] = {}; int level = 0; int sprite = 0, frame = 0, x = 0, y = 0; };
+        void BuildBeams(std::vector<BeamItem>& out) const;
+        void DrawBeam(const BeamItem& b, Canvas& canvas, const TerrainView::Target& t) const;
         void ShipTick(size_t index);
         bool Crushable(const Unit& o) const;            // vt+0xD8
         bool Collides(const Unit& u, const Unit& o) const;  // the vehicles' vt+0xBC, 0x4929A0                    // the Ironclads' update, 0x493B50

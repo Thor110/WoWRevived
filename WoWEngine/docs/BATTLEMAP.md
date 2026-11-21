@@ -239,8 +239,16 @@ each corner named by the patch, lit like the ground (0x40CA90 with (-x, -z, -y))
 level), through the LANDR `.INT` table, at least 8. Drawn (0x4113F0 / 0x457C60), every patch goes at its offset
 through 0x4579A4 like a ground half cell, with the object's shade slot (buildings 1, `BMHB<letter>`; trees 10,
 `BMR<d>NA<letter>`; the bm group loads slots 1-4 and 10 by the hour), dither set 13 (DithDat + 0x3400) and its
-kind's span routine: kind 1 (0x4574CD) leaves texel 0 out. Up to two point lights nearer than their radius would
-add to the lights (0x4111B0); *not yet*.
+kind's span routine: kind 1 (0x4574CD) leaves texel 0 out.
+
+**Point lights on IOB objects** (0x49DE90 → 0x4113F0 → 0x4111B0): each draw a copy of the object's levels is
+lit by the two nearest lights (dword_4B8E28 = 2): each pick is the light whose octagonal distance (0x43FF00) from
+the object's point (+0x38..+0x3C, from +0x78..+0x80) is under the light's range + the object's radius (+0x3E, the
+type's +0x44) and further than the last pick's. Each adds 0x40C930 (dx / dy / dz the object less the light, out
+to the light's range from the radius) x ftol(the light's level (+0x48) x `[Game] "ISO Brightness"`, 0.5) to the
+patch levels, at most max(8, ftol(the object's level / 255 x 63)) (63 for scenery): with a normal per corner
+(header 0x0A) each corner is lit by its own; else the patch's one normal is lit once (ftol) and added to all
+three corners. *Provisional*: the normal's byte order in the second form (read as 0 / 2 / 1 as in the first).
 
 **With the ground** (0x49F610): the view's objects are kept in depth order; after each row of ground every object
 whose depth + its +0x26 is under the next row's world y is drawn, and the rest after the last row.
@@ -990,9 +998,17 @@ Every gun class but the base's own update draws four atlas quads while it fires:
 sprite (0x40EC50, vtable 0x4A9988) that's 0x40F040, which sets +0x34, the shade table level, to it / 4: 48 for the
 usual 192. (Until update 118 the engine drew them at level 0.)
 
-*Provisional*: the quads are drawn over the view after the ground and its objects rather than at their depths; a
-gun not held to a point is taken at its unit's place; the shells' extra sprite isn't drawn. Tested with every
-gun forced to fire at a point beside it (no battle at hand has a fight).
+- **The shells' class's glow** (0x4884C0 at its start, 0x4885C0 its draw, 0x4885F0 its vt+0xE4; update 119): a
+  sprite, GType 0xFF (BOTTOM2.SPR, slot 11), at the type's +0xA1 / 4, its +0x26 0x60, a frame on each draw
+  (0x40EFB0 with 0x100, wrapping), placed at the target's screen point and 4 nearer than the last quad (its +0x1E
+  the fourth quad's less 4). Its +0x14 bit 0 asks the blitter for mode 2 (0x4510C5, the 8-bit translucent blend
+  through b8.shl); on a 16-bit screen the mode's own bit makes it 6, the plain draw (0x450E27), so it's drawn plain.
+- **In the view** (update 119): each quad and glow goes in among the view's objects by its +0x1E, drawn as the
+  rows reach it.
+
+*Provisional*: a gun not held to a point is taken at its unit's place. Tested with every gun forced to fire at a
+point beside it (no battle at hand has a fight): the beams go behind the buildings in front of them and end in
+the glow.
 
 ## Parts held to a model point, and the vehicles' lights (update 117)
 

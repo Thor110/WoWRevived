@@ -150,26 +150,27 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       at hand has a fence: this waits on construction placement.
 - [x] **Gas clouds / Black Dust** (0x488CC0-0x488D70). *Update 108.*
 - [x] **Cascading death explosions** 0x255 -> 0x252 (0x48CDE0). *Update 108.*
-- [~] **Shadows**: vehicles (0x48E6D0-0x48E850) and shells (0x4884C0-0x4885F0). *Update 116*: the vehicles'
+- [x] **Shadows**: vehicles (0x48E6D0-0x48E850) and shells (0x4884C0-0x4885F0). *Update 116*: the vehicles'
       (parts 0x13B-0x14A, drawn darkening through dat\b16.hsh, stretched and offset by the sun, behind
-      `[Options] "Show vehicle shadows"`). The shells' (a GType 0xFF sprite, frame the type's +0xA1, at the ground
-      under the shell, its +0x14 bit 0 blend) come with the shots' own visuals below.
+      `[Options] "Show vehicle shadows"`). The "shells'" turned out not to be a shadow: 0x4884C0-0x4885F0 are the
+      shell guns' glow at the target (update 119, with the shots' visuals below).
 - [x] **Ambient-sound scenery** (0x4890A0-0x4892C0, with its 0x3AC substitution that shifts the scenery's rand()).
       *Update 109*: the 0x3AC substitution; its rand() was already drawn (`scenery::Burnt` for every object). The
       types (0x2AE-0x2B5, 940, 994-996; about 1,800 in the .nsb files) aren't in OBJ.ojd, so they've no sound.
-- [~] **Shots' own visuals** (0x4950D0 / 0x495180 / 0x495280, the atlas sprite 0x49D710, the textured quad 0x49D820).
+- [x] **Shots' own visuals** (0x4950D0 / 0x495180 / 0x495280, the atlas sprite 0x49D710, the textured quad 0x49D820).
       *Update 118*: the beams: four atlas quads (heatray.raw, gunshot.raw) from the gun's model point to its target
       while it fires, animated, widening by record 12's +0xA / +0xC, at the type's +0xA1 / 4 level. Found with it:
       every flying object's sprite (explosions, smoke, shells) draws at its type's +0xA1 / 4 level (48 of BMEX's 64,
-      0x487846 -> 0x40F040), where the engine had used level 0 (about a sixth as bright). Still to do: drawing them
-      at their depths, and the shell guns' extra sprite (GType 0xFF, BOTTOM2.SPR, 0x4884C0), the "shell shadow" of
-      the Shadows item.
-- [~] **Lights on models**: point lights on WOF pieces (0x49EC00 / 0x49ED90), relighting IOB objects (0x49E2C0) and
+      0x487846 -> 0x40F040), where the engine had used level 0 (about a sixth as bright). *Update 119*: drawn at
+      their depths among the view's objects, and the shell guns' glow at the target (GType 0xFF, BOTTOM2.SPR,
+      0x4884C0 / 0x4885F0, a frame a draw).
+- [x] **Lights on models**: point lights on WOF pieces (0x49EC00 / 0x49ED90), relighting IOB objects (0x49E2C0) and
       ISOLib's two nearest lights at `[Game] "ISO Brightness"` (0x4111B0 / 0x4113F0 / 0x410E00); the units'
       headlights (light parts 334-346).
       *Update 117*: the point lights on the WOF faces (0x49ED90 with 0x40C930 and the light's .INT level, x "WOF
       Brightness"), and the vehicles' own light parts (headlights) going with them. (Reported in play: the lorries
       looked malformed and had no turret; the turret was standing inside the body, now held to its model point.)
+      *Update 119*: the IOB objects lit by the two nearest point lights (0x4113F0 / 0x4111B0, ISO Brightness 0.5).
 - [~] **Group behaviour**: target-gone speech 0x10E / 0x10D (0x4821F0), the group's re-engage (vt+0x38, 0x483760),
       messages 0x80C3 (rally), 0x808A (halt), 0x80B9 in 0x490A70. *Update 109*: 0x4821F0 and vt+0x38 in (0x80C3 in
       106); 0x808A waits on the gun emplacements (its only sender, 0x496890), 0x80B9's bit 9 on what reads it.
