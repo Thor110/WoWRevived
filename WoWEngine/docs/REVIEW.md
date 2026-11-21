@@ -1,5 +1,8 @@
 # Routine review and task list
 
+> **Parity review (after update 126)**: docs/review/PARITY.md lists what eight reviewers found comparing the engine with
+> the original for 1:1 parity, in three phases (structure first). It takes precedence over the items below.
+
 A review of every routine in the original executable (2,790 in the IDA listing, 0x401000-0x4A4470) against the
 engine, made by eight reviewers each taking an address range. Each routine was classed as **ported** (and spot-
 checked), **partial** (part done, provisional, or diverging), **missing** (game logic or visible behaviour not in
