@@ -1154,8 +1154,18 @@ namespace wow
     // The right button on the map (0x41C5E0): let go within [Tweak] "Quick Cancel Timeout" (5) updates of pressing
     // it, without Ctrl, it's command 0x73, Cancel. (Held longer it opens the
     // "Warmap menu" popup, 0x41D120, which isn't in yet.) Cancel drops the selection (the player's action 2).
-    std::optional<Command> WarMap::OnRightButton(int, int, bool down)
+    std::optional<Command> WarMap::OnRightButton(int x, int y, bool down)
     {
+        if (!popup.empty() && !infoBox)
+        {
+            // held open (the game's): let go on an item it acts, anywhere else (or pressed off the items) it closes
+            rightDownAt = -1;
+            if (stickyPopup) return std::nullopt;
+            const int item = PopupItemAt(x, y);
+            if (item < 0) ClosePopup(false);
+            else if (!down) ActivatePopupItem(size_t(item));
+            return std::nullopt;
+        }
         if (!popup.empty() || infoBox) { rightDownAt = -1; return std::nullopt; }
         if (down) { SetTimeRunning(false); rightDownAt = animation; return std::nullopt; } // 0x204: 0x41A6C0(0)
         bool quick = rightDownAt >= 0 && animation - rightDownAt <= quickCancelTimeout;
@@ -2071,6 +2081,21 @@ namespace wow
         sounds.push_back(0x193);
     }
 
+    // A popup item clicked (WHotButton 0x434390 on 0x202 / 0x205): its click sound, the popup closed, its command
+    void WarMap::ActivatePopupItem(size_t index)
+    {
+        const int command = popup[index].command, param = popup[index].param;
+        sounds.push_back(0x195);
+        ClosePopup(false);
+        PopupCommand(command, param);
+    }
+
+    int WarMap::PopupItemAt(int x, int y) const
+    {
+        for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) return int(i);
+        return -1;
+    }
+
     void WarMap::ClosePopup(bool escape)
     {
         popup.clear();
@@ -2209,12 +2234,21 @@ namespace wow
         }
         // the popup has the mouse (0x42E9B0): a click on an item sends its command to the war map and closes it
         // (0x4330B0; the item's click, 0x434390 on 0x202 / 0x205, plays 0x195), one anywhere else just closes it
+        // (the game's WPopupMenu, 0x4330B0: a press or a release of either button off its items closes it, 0x42F2A0;
+        // an item acts as a button is let go on it, 0x202 / 0x205. With [Modern] "Sticky popup menus" an item acts as
+        // it's pressed and a press elsewhere closes the popup.)
         if (!popup.empty())
         {
-            if (!down) return std::nullopt;
-            for (const PopupItem& item : popup)
-                if (item.rect.Contains(x, y)) { int command = item.command, param = item.param; sounds.push_back(0x195); ClosePopup(false); PopupCommand(command, param); return std::nullopt; }
-            ClosePopup(false);
+            const int item = PopupItemAt(x, y);
+            if (stickyPopup)
+            {
+                if (!down) return std::nullopt;
+                if (item >= 0) ActivatePopupItem(size_t(item));
+                else ClosePopup(false);
+                return std::nullopt;
+            }
+            if (item < 0) ClosePopup(false);
+            else if (!down) ActivatePopupItem(size_t(item));
             return std::nullopt;
         }
         if (BuildWindowClick(x, y, down)) return std::nullopt;

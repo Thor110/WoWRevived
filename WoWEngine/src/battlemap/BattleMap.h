@@ -57,6 +57,7 @@ namespace wow
             // finished (0x43C990)
             struct Source { int sector = 0; bool players = false, hq = false; };
             std::vector<Source> sources;
+            bool stickyPopup = false;   // [Modern] "Sticky popup menus": the popup stays open once the right button's let go
             // 0x43AC40 on a sector: room there for `count` more of the player's land objects (else boats)
             std::function<bool(bool land, int sector, int count)> hasRoom;
             int noBuildBorder = 16;     // [Tweak] "No-build border width (vertices)" (dword_59D93C)
@@ -105,6 +106,8 @@ namespace wow
         void OnKeyUp(int sdlKey) override;
         void OnMouseMove(int x, int y) override;
         std::optional<Command> OnMouseButton(int x, int y, bool down) override;
+        std::optional<Command> ActivatePopupItem(size_t index);
+        int PopupItemAt(int x, int y) const;
         std::optional<Command> OnRightButton(int x, int y, bool down) override;
         int CursorAt(int x, int y) const override;
         int TipOwner(int x, int y) const override;

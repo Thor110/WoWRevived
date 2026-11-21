@@ -1348,6 +1348,23 @@ namespace wow
             if (!down && EndBoxButtonRect().Contains(x, y)) return EndBoxCommand();
             return std::nullopt;
         }
+        // the popup has the mouse (0x42E9B0). The game's (WPopupMenu 0x4330B0): a press or a release of either button
+        // off its items closes it (0x42F2A0); an item acts as a button is let go on it (0x202 / 0x205). With
+        // [Modern] "Sticky popup menus" an item acts as it's pressed and a press elsewhere closes the popup.
+        if (!popup.empty())
+        {
+            const int item = PopupItemAt(x, y);
+            if (setup.stickyPopup)
+            {
+                if (!down) return std::nullopt;
+                if (item >= 0) return ActivatePopupItem(size_t(item));
+                ClosePopup(false);
+                return std::nullopt;
+            }
+            if (item < 0) { ClosePopup(false); return std::nullopt; }
+            if (!down) return ActivatePopupItem(size_t(item));
+            return std::nullopt;
+        }
         if (!down)
         {
             const bool wasMini = miniDrag;
@@ -1362,69 +1379,81 @@ namespace wow
             MinimapScroll(x, y);
             return std::nullopt;
         }
-        if (popup.empty())
-        {
-            // 0x201 (cursor modes 0 and 1): a drag rectangle starts here (0x49C230) and the view keeps the mouse
-            dragging = true;
-            boxActive = false;
-            dragX0 = dragX1 = x;
-            dragY0 = dragY1 = y;
-            return std::nullopt;
-        }
-        for (const PopupItem& item : popup)
-            if (item.rect.Contains(x, y))
-            {
-                int command = item.command;
-                const int param = item.param;
-                sounds.push_back(0x195);    // the item's click (0x434390 on 0x202 / 0x205)
-                ClosePopup(false);
-                if (command == ReturnCommand) return Command{ ReturnCommand, setup.sector };
-                if (command == 0x80CE && param >= 0 && param <= 3)
-                {
-                    // packet 0x15 -> 0x4817C0: the stance (0x80B2) to the group and each member (+0xD8); the group
-                    // keeps it at +0x54 and, for Roam and Attack, its centre as home (0x483AE0)
-                    for (size_t g = 0; g < selected.size() && g < groupStance.size(); g++)
-                        if (selected[g]) SetStance(int(g), param);
-                    return std::nullopt;
-                }
-                if (command == 0x80CE && param == 0x80B7)
-                {
-                    // Retreat (0x4817C0 -> 0x480EF0) for each selected group of the player's
-                    for (size_t g = 0; g < selected.size(); g++)
-                        if (selected[g]) Retreat(int(g));
-                    return std::nullopt;
-                }
-                if (command == 0x80CE && param == 0x8067)
-                {
-                    // Abandon (0x4817C0): each member gets 0x8067, which sends itself 0x80A0 at once (0x489FA0)
-                    for (size_t i = 0; i < units.size();)
-                        if (units[i].players && selected[size_t(units[i].group)]) Die(i);
-                        else i++;
-                    return std::nullopt;
-                }
-                if (command == 0x80F3)
-                {
-                    // Force Fire and the specials (0x4817C0): each selected group's mode (+0x1DC) for the next click
-                    for (size_t g = 0; g < selected.size(); g++)
-                        if (selected[g]) GroupOrder(int(g), param);
-                    return std::nullopt;
-                }
-                if (command == 0x80CE)
-                {
-                    SDL_Log("order 0x%X 0x%X: not in yet", command, param);
-                    return std::nullopt;
-                }
-                ClearSelection(); // 0x73, Cancel
-                return std::nullopt;
-            }
-        ClosePopup(false);
+        // 0x201 (cursor modes 0 and 1): a drag rectangle starts here (0x49C230) and the view keeps the mouse
+        dragging = true;
+        boxActive = false;
+        dragX0 = dragX1 = x;
+        dragY0 = dragY1 = y;
         return std::nullopt;
     }
 
-    // 0x204 / 0x205: held, the popup (above); let go quickly, 0x73 (Cancel) to the selection
-    std::optional<Command> BattleMap::OnRightButton(int, int, bool down)
+    // A popup item clicked (WHotButton 0x434390 on 0x202 / 0x205): its click sound, the popup closed, its command
+    std::optional<Command> BattleMap::ActivatePopupItem(size_t index)
     {
-        if (!popup.empty()) { rightDownAt = -1; return std::nullopt; }
+        const PopupItem& item = popup[index];
+        int command = item.command;
+        const int param = item.param;
+        sounds.push_back(0x195);    // the item's click (0x434390 on 0x202 / 0x205)
+        ClosePopup(false);
+        if (command == ReturnCommand) return Command{ ReturnCommand, setup.sector };
+        if (command == 0x80CE && param >= 0 && param <= 3)
+        {
+            // packet 0x15 -> 0x4817C0: the stance (0x80B2) to the group and each member (+0xD8); the group
+            // keeps it at +0x54 and, for Roam and Attack, its centre as home (0x483AE0)
+            for (size_t g = 0; g < selected.size() && g < groupStance.size(); g++)
+                if (selected[g]) SetStance(int(g), param);
+            return std::nullopt;
+        }
+        if (command == 0x80CE && param == 0x80B7)
+        {
+            // Retreat (0x4817C0 -> 0x480EF0) for each selected group of the player's
+            for (size_t g = 0; g < selected.size(); g++)
+                if (selected[g]) Retreat(int(g));
+            return std::nullopt;
+        }
+        if (command == 0x80CE && param == 0x8067)
+        {
+            // Abandon (0x4817C0): each member gets 0x8067, which sends itself 0x80A0 at once (0x489FA0)
+            for (size_t i = 0; i < units.size();)
+                if (units[i].players && selected[size_t(units[i].group)]) Die(i);
+                else i++;
+            return std::nullopt;
+        }
+        if (command == 0x80F3)
+        {
+            // Force Fire and the specials (0x4817C0): each selected group's mode (+0x1DC) for the next click
+            for (size_t g = 0; g < selected.size(); g++)
+                if (selected[g]) GroupOrder(int(g), param);
+            return std::nullopt;
+        }
+        if (command == 0x80CE)
+        {
+            SDL_Log("order 0x%X 0x%X: not in yet", command, param);
+            return std::nullopt;
+        }
+        ClearSelection(); // 0x73, Cancel
+        return std::nullopt;
+    }
+
+    int BattleMap::PopupItemAt(int x, int y) const
+    {
+        for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) return int(i);
+        return -1;
+    }
+
+    // 0x204 / 0x205: held, the popup (above); let go quickly, 0x73 (Cancel) to the selection
+    std::optional<Command> BattleMap::OnRightButton(int x, int y, bool down)
+    {
+        if (!popup.empty())
+        {
+            // held open: let go on an item it acts, anywhere else (or pressed off the items) the popup closes
+            rightDownAt = -1;
+            if (setup.stickyPopup) return std::nullopt;
+            const int item = PopupItemAt(x, y);
+            if (item < 0) { ClosePopup(false); return std::nullopt; }
+            if (!down) return ActivatePopupItem(size_t(item));
+            return std::nullopt;
+        }
         if (down) rightDownAt = ticks;
         else
         {

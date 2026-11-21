@@ -129,6 +129,7 @@ namespace wow
         void SetArrowTypes(std::map<int, ObjOjd::ArrowType> types) { arrowTypes = std::move(types); }
         // the [Event] options (the Critical event options menu): the setting's name and its default
         void SetEventOptions(std::function<bool(const char*, bool)> get) { eventOption = std::move(get); }
+        void SetStickyPopup(bool on) { stickyPopup = on; }   // [Modern] "Sticky popup menus"
         void SetDeposits(std::map<int, std::array<int, 6>> d, float dropOff) { deposits = std::move(d); resourceDropOff = dropOff; }
         // Both sides' research (0x417CD0: the local player's first, dword_4E9B88, then the other side's, 4E9B8C),
         // read from the save when there is one (HRSH, MRSH), and the war map view's trigger update (0x418D17)
@@ -331,6 +332,8 @@ namespace wow
         int popupHover = -1;
         void OpenWarmapMenu(int x, int y);
         void ClosePopup(bool escape);
+        void ActivatePopupItem(size_t index);
+        int PopupItemAt(int x, int y) const;
         void PopupCommand(int command, int param);
         int clunWidth = 4, clunSpacing = 4;
         float cluntingSpeed = 7.0f;      // [Tweak] "Clunting Speed" (0x428B70, default 7): only for units with no speed
@@ -441,6 +444,7 @@ namespace wow
         void NextEvent();                // 0x41E730
         std::function<bool(const char*, bool)> eventOption;
         bool Option(const char* name, bool on) const { return eventOption ? eventOption(name, on) : on; }
+        bool stickyPopup = false;   // [Modern] "Sticky popup menus": the popup stays open once the right button's let go
         struct QueuedEvent { int event, param; std::string text; };
         std::deque<QueuedEvent> eventQueue;
         bool boxUp = false;              // byte_4EA0A0

@@ -612,6 +612,7 @@ namespace wow
             std::move(owners), ini.GetInt("Screen", "Scroll Speed", 40), ini.GetFloat("Tweak", "Clunting Speed", 7.0f));
         map->SetArrowTypes(std::move(arrows));
         map->SetEventOptions([this](const char* name, bool on) { return ini.GetBool("Event", name, on); });
+        map->SetStickyPopup(ini.GetBool("Modern", "Sticky popup menus", false));   // a modern option (docs/MODERN.md)
         map->SetDeposits(std::move(deposits), ini.GetFloat("Tweak", "Resource Drop Off Rate", 3.0f));
         map->SetPodInterval(ini.GetInt("Tweak", "Pod Interval (hours)", 24));
         map->SetClunting(ini.GetInt("Tweak", "WM clunting res", 36), ini.GetInt("Tweak", "WM clunting adj", 4));
@@ -1074,6 +1075,7 @@ namespace wow
         s.weapons = &weaponData;
         s.showLights = ini.GetBool("Options", "Show lights", true);
         s.showSmoke = ini.GetBool("Options", "Show Smoke & particles", true);
+        s.stickyPopup = ini.GetBool("Modern", "Sticky popup menus", false);   // a modern option (docs/MODERN.md)
         s.groups = map->BattleGroups(b.sector);
         for (const WarMap::ReinforcementSource& r : map->ReinforcementSources()) s.sources.push_back({ r.sector, r.players, r.hq });
         s.hasRoom = [this](bool land, int sector, int count) { WarMap* wm = ActiveWarMap(); return !wm || wm->HasRoom(land, sector, count); };

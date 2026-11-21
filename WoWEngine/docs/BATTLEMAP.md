@@ -407,6 +407,8 @@ sends 0x8088 to an object's group (+0x48), which selects all its units.
 - **Cursors** (WM_SETCURSOR, numbers into the cursor table: 1 `hselcurs`, 4 `h-move`, 5 `h-attack`): over the
   minimap 0; over a hotspot (0x497110) in mode 0 1 for the player's, in mode 1 5 for the other side's or with Ctrl,
   else 1; elsewhere (0x485F60) mode 0 4 with something selected else 0, mode 1 5 with Ctrl else 4.
+- **The popup** is held open by the right button, as the war map's (docs/WARMAP.md): a press or release off its
+  items closes it, an item acts as a button is let go on it (`[Modern] "Sticky popup menus"` keeps it open).
 - **Cancel**: the right button let go before the popup comes (0x205) drops the drag rectangle and sends 0x73,
   which clears the selection, as the popup's Cancel does. The popup only offers Return to Warmap with nothing
   selected and one side without units on the map.

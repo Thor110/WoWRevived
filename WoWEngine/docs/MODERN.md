@@ -21,6 +21,11 @@ not a plan with dates.
 
 - **Keyboard bindings**: every key the game uses can be rebound (the scroll keys, Tab for the minimap, Home,
   Backspace's halt, the menus, the cheats' entry), saved in the `.ini`.
+- **Sticky popup menus** (in, off by default): `[Modern] "Sticky popup menus"` = 1. The original's right-click
+  popup (war map and battle map) stays open only while the right button is held, and an item acts as a button is
+  let go on it. With the option on, the popup stays open after the right button's let go, an item acts as it's
+  clicked, and a click anywhere else closes it. To go on the modern options screen as a toggle
+  (`WarMap::SetStickyPopup`, `BattleMap::Setup::stickyPopup`).
 
 ### Sound
 

@@ -216,7 +216,8 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 - [~] **Battle map music**: CD tracks 4 / 5 (the war map's is done) — 11
 - [~] **Reported**: the power bars' colour (frame 0 at full health), the units' size (the object's scale,
       +0xA4 from record 25), the briefing sound's 120-tick fade into the battle map, the popup items' hover and click sounds (0x194 / 0x195,
-      the click into the battle map) and "Save & Exit Game" over the
+      the click into the battle map), the popup held open by the right button as the game's (the old way kept as
+      `[Modern] "Sticky popup menus"`) and "Save & Exit Game" over the
       war map are fixed (update 98). Still to do: the units' headlights (their light parts, 334-346, so the lorries
       at night show lit as in the original), the scenery's and bridges' object scale. Ideas and modern options are in
       docs/MODERN.md
