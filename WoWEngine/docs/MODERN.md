@@ -21,6 +21,9 @@ not a plan with dates.
 
 - **Keyboard bindings**: every key the game uses can be rebound (the scroll keys, Tab for the minimap, Home,
   Backspace's halt, the menus, the cheats' entry), saved in the `.ini`.
+- **War map status strip** (in, off by default): `[Modern] "War map status strip"` = 1. A darkened strip at the war
+  map's bottom left with the name of the sector or panel button under the mouse, and the engine's notes (a refused
+  route). The original has no such strip (its names are tool tips); before update 133 the engine always drew it.
 - **Sticky popup menus** (in, off by default): `[Modern] "Sticky popup menus"` = 1. The original's right-click
   popup (war map and battle map) stays open only while the right button is held, and an item acts as a button is
   let go on it. With the option on, the popup stays open after the right button's let go, an item acts as it's

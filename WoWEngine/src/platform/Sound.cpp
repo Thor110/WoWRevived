@@ -189,6 +189,19 @@ namespace wow
         voices.erase(std::remove_if(voices.begin(), voices.end(), [&](const Voice& v) { return v.handle == handle; }), voices.end());
     }
 
+    int Sound::LengthTicks(int id)
+    {
+        const SoundDef* def = table.Find(id);
+        if (!def || def->groups[0].empty()) return 0;
+        const auto& group = def->groups[0];
+        const size_t cursor = nextVariation[{ id, 0 }];
+        const SoundSample& sample = group[cursor + 1 < group.size() ? cursor + 1 : 0];
+        auto pcm = Sample(sample);
+        if (!pcm || sample.rate <= 0) return 0;
+        const double frames = double(pcm->size()) / (def->stereo ? 2 : 1);
+        return int(frames * 30.0 / sample.rate + 0.5);
+    }
+
     void Sound::Move(int handle, int x, int y)
     {
         std::lock_guard<std::mutex> l(lock);

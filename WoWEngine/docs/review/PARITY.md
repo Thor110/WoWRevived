@@ -179,10 +179,27 @@ settled: battle-ui 8, combat 4 and 9, movement 15, 16 and 24, battle-setup 4, 11
 - [x] frontend 7: radio buttons take the right button (checkboxes *provisional*, untraced).
 - [x] frontend 8: the click fade: 50% one tick after, black the tick after that.
 
+**Update 133** (the war map; details in WARMAP.md, "Parity fixes in update 133")
+- [x] warmap 1: the Resource view's bars, demand markers and facility rows, no counters (row offsets and tool tips
+      *provisional*). Tested: the bars stand at each sector's waypoint in the London save.
+- [x] warmap 2 (part): the production / idle icon with its blink; the repair icon and power bar wait for repair.
+- [x] warmap 4 / 5: the mini-map at (528, 298) Human / (536, 306) Martian, the selected sector's frame, the view's
+      outline fixed in size and in the side's colour.
+- [x] warmap 6: edge scrolling as 0x484DF0 (the window's 32-pixel border *provisional*).
+- [x] warmap 7: the rubber band's two-colour open-cornered lines.
+- [x] warmap 8: set-off routes' arrows translucent (flag 8: the blend-table span routine 0x455276), solid under the
+      mouse.
+- [x] warmap 9 / 10: no "Battle in X" line; the status strip behind [Modern] "War map status strip".
+- [x] warmap 11 / 12: the other side's dimming sticks; unfinished resources dim; the hovered counter is raised.
+- [x] warmap 15 / 16 / 17 / 18 / 19: the saved view restored; View map after an object's items (and the menu's rows);
+      the ending after the sound's length; no travellers in the Unit view's shading; the first-hour jump only in
+      the Unit view.
+- [x] `Finished()` (update 131) now counts the facilities, which are resources: a regression found while doing
+      warmap 1.
+
 **Still to do**
-- [ ] warmap 1, 2, 4-12, 14-20 (the resource view, counter icons, the mini-map, edge scrolling, the rubber band,
-      route arrows, messages, the status strip, dimming, hover, transit after a load, the saved view mode, the menu's
-      View map, the ending, unit view shading, the first-hour jump, the battle pulse).
+- [ ] warmap 2 (repair icon and bar), 14 (transit after a load: the save's route entry bytes untraced), 20 (the
+      pulse's counter; the same at a steady 30 fps).
 - [ ] battle-ui 9-12 (edge-scroll margin in a window, a ground click with no point, the cursor's modes).
 - [ ] combat 10, 13-22 (the beam glow's frame, light rolls, dying units, the firer's sparing, removal timing,
       underground targets, emplacements, gun timing, precision, cascades, fire timings).

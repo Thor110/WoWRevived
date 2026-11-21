@@ -34,6 +34,8 @@ namespace wow
         // The listener (dword_4E9250 / dy): the view's centre in the same screen space.
         void SetListener(int x, int y);
         void Stop(int handle);
+        // How many game ticks (30 a second) the sample the sound would play next lasts (its first group), 0 if none.
+        int LengthTicks(int id);
         // Moves a playing sound's point (0x489290: its +0x34 / +0x38 to an object's screen point), so its volume
         // and pan follow it.
         void Move(int handle, int x, int y);

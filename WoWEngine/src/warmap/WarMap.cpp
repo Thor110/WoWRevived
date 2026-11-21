@@ -1,4 +1,5 @@
 #include "warmap/WarMap.h"
+#include "frontend/PopupRows.h"
 
 #include "core/Random.h"
 #include "warmap/AStar.h"
@@ -21,7 +22,7 @@ namespace wow
     namespace
     {
         constexpr int ScreenW = 640, ScreenH = 480;
-        constexpr int EdgeZone = 4;           // pixels from the edge that scroll the view
+        constexpr int EdgeZone = 4;           // [Screen] "Scroll Border" (dword_4BA05C) full screen; 32 in a window
         // The map's shade table has 89 levels: ramps of tints either side of the normal 11, then solid colours at
         // 59-66. 0x41D9B0 colours each border by the sectors either side of it:
         constexpr int SelectedBorderLevel = 66; // white: the selected sector's ([+0x84]+0x60)
@@ -98,14 +99,16 @@ namespace wow
             owner[size_t(s)] = owners[size_t(s)] == 2 ? 2 : owners[size_t(s)] == side ? 0 : 1;
         map = res.GetFrame(warmap::MapGType);
         sectorMap = res.GetFrame(warmap::SectorMapGType);
-        // [Screen] "Scroll Speed" (default 40) in map pixels a tick, a fifth of it (provisional)
-        scrollStep = std::max(2, scrollSpeed / 5);
+        // [Screen] "Scroll Speed" (default 40): the edge scroll's divisor is half the view's width over it (0x484DF0)
+        scrollStep = std::max(1, scrollSpeed);
         int sector = int(game.warMap[2]);
         selected = sector >= 1 && sector <= warmap::SectorCount ? sector : 0;
         // The WMAP block holds the view's top-left corner, already less half of the game's 640 x 480 screen
         // (0x418980 subtracts it from the centre): Martian.000's 159, 298 centres on sector 3's units at 468, 540,
         // Human.000's 803, 1805 on London's at 1116, 2016. So the centre is that plus 320, 240.
         CentreOn(int(game.warMap[0]) + 320, int(game.warMap[1]) + 240);
+        // the WMAP block's 4th value is the view (0x41AC40 into world +0x70, set up by 0x419810 at 0x418CA4)
+        viewMode = std::clamp(int(game.warMap[3]), 1, 3);
         LayoutAll();
     }
 
@@ -165,8 +168,10 @@ namespace wow
     {
         PanelLayout p;
         if (!panelShown) return p; // hidden with Tab: nothing to hit
-        p.mini = { ScreenW - 115, ScreenH - 175, MiniW, MiniH };
         bool human = res.Human();
+        // 0x422EC9-0x422F12: the parent's size less the mini-map's, less the border (dword_4BA05C, 4), less 8 more in
+        // a Human game
+        p.mini = { ScreenW - MiniW - 4 - (human ? 8 : 0), ScreenH - MiniH - 4 - (human ? 8 : 0), MiniW, MiniH };
         Rect frameSize = SpriteRect(0x80, 0, 0);
         p.frame = { p.mini.x - (human ? 9 : 10), p.mini.y - (human ? 0x50 + 0x20 : 0x44 + 0x28), frameSize.w, frameSize.h };
         static constexpr int Gtypes[3] = { 0x33, 0x35, 0x34 };        // Unit View, Construction View, Resource View
@@ -467,7 +472,8 @@ namespace wow
         if (viewMode == 2) v = efficiency;
         if (viewMode == 1)
             for (const Counter& k : counters)
-                if (k.sector >= 1 && k.sector <= warmap::SectorCount && owner[size_t(k.sector)] == 0) v[size_t(k.sector)] += float(std::max(k.count, 1));
+                // (a unit on a route has left the sector's container, 0x43C7C0, so it isn't counted)
+                if (!k.Travelling() && k.sector >= 1 && k.sector <= warmap::SectorCount && owner[size_t(k.sector)] == 0) v[size_t(k.sector)] += float(std::max(k.count, 1));
         if (viewMode == 3)
         {
             int kind = (res.Human() ? 0 : 3) + std::clamp(resourceKind, 0, 2);
@@ -905,8 +911,12 @@ namespace wow
                 // 0x4250FB: at its first hour, shown in the Unit view, it's put at the curve's start (0x4406A0) and
                 // its slide set there at 1.0 (0x4208B0), so it's there at once; here it leaves the placement
                 FreeCounter(int(i));
-                k.x = int(k.arrow[0].x) + k.offsetX - 16;
-                k.y = int(k.arrow[0].y) + k.offsetY - 16;
+                // (0x4250E4-0x425132: only in the Unit view, 0x42A430 == 1)
+                if (viewMode == 1)
+                {
+                    k.x = int(k.arrow[0].x) + k.offsetX - 16;
+                    k.y = int(k.arrow[0].y) + k.offsetY - 16;
+                }
             }
             if (!k.interrupted && !k.attack)
                 for (int n = k.segment; n <= last; n++)
@@ -1052,15 +1062,17 @@ namespace wow
         // standing still then
         if (!calendarWaiting || !(animation & 2)) TurnCalendar();
 
-        int dx = 0, dy = 0;
-        if (mouseX >= 0 && !dragging)
+        // 0x484DF0 (the war map view's tick): with the mouse within the border of an edge, the view moves by the
+        // mouse's distance from the centre over (half the width / Scroll Speed), both ways at once (0x7A)
+        // *Provisional*: the border is the full-screen one (4); in a window the game uses 32
+        if (mouseX >= 0 && !dragging &&
+            !(mouseX > EdgeZone && mouseX < ScreenW - EdgeZone && mouseY > EdgeZone && mouseY < ScreenH - EdgeZone))
         {
-            if (mouseX < EdgeZone) dx -= scrollStep;
-            if (mouseX >= ScreenW - EdgeZone) dx += scrollStep;
-            if (mouseY < EdgeZone) dy -= scrollStep;
-            if (mouseY >= ScreenH - EdgeZone) dy += scrollStep;
+            const int div = std::max(1, (ScreenW / 2) / scrollStep);
+            cameraX -= (ScreenW / 2 - mouseX) / div;
+            cameraY -= (ScreenH / 2 - mouseY) / div;
+            Clamp();
         }
-        if (dx || dy) { cameraX += dx; cameraY += dy; Clamp(); }
         PanelLayout panel = Panel();
         hotButton = -1;
         for (int i = 0; i < 3; i++) if (panel.buttons[i].Contains(mouseX, mouseY)) hotButton = i;
@@ -1120,9 +1132,16 @@ namespace wow
             }
         }
 
-        // Routes: an arrow from each travelling counter through the rest of its points
-        for (const Counter& k : counters)
-            if (k.Travelling() && k.kind == viewMode - 1) DrawRouteArrow(canvas, k);
+        // Routes: an arrow from each travelling counter through the rest of its points. A route that has set off has
+        // its arrow's +0x14 bit 0 (0x425770 / 0x4257C0), which 0x49CDB0 passes as the rasteriser's flag 8 (0xC, not 4):
+        // the span routine that skips texel 0 and mixes through the blend table, translucent. It's cleared while the
+        // mouse is on the route's counter (0x42BEB0 on 0x20, 0x425730(0)) and set again as it leaves (0x8006).
+        // Previews (not set off) are solid.
+        {
+            const int hot = hovered && mouseX >= 0 ? CounterAt(mouseX, mouseY) : -1;
+            for (const Counter& k : counters)
+                if (k.Travelling() && k.kind == viewMode - 1) DrawRouteArrow(canvas, k, int(&k - counters.data()) != hot);
+        }
         for (const Preview& p : preview)
             if (p.path.size() > 1) DrawRouteArrow(canvas, p.shape);
 
@@ -1137,9 +1156,52 @@ namespace wow
             int x = k.x - cameraX, y = k.y - cameraY;
             if (x < -40 || y < -40 || x > canvas.Width() || y > canvas.Height()) return;
             if (!k.shown && !(k.players && k.Travelling())) return;
-            const bool dim = (k.players && k.kind == 1 && k.unfinished) || (!k.players && k.intel < 0xA8);
+            // 0x42B8C5-0x42B8D7: the player's unfinished constructions and resources (categories 2 and 3); 0x42BA20: the
+            // other side's once its intel is under 0xA8, and from then on (nothing clears the bit while the sprite lives)
+            if (!k.players && k.intel < 0xA8) k.dimmed = true;
+            const bool dim = (k.players && (k.kind == 1 || k.kind == 2) && k.unfinished) || (!k.players && k.dimmed);
             canvas.DrawSprite(0x77, k.frame, x, y, 0, dim ? Canvas::Blend::Translucent : Canvas::Blend::Opaque);
             if (Selected(int(&k - counters.data())) || k.inBand) canvas.DrawSprite(0x54, 0, x, y); // cselecth.spr
+            // the production icon (+0xA0, GType 0x76, 0x42BC90): an object with a factory (+0xB5) with something queued
+            // (0x42A410), at the counter's bottom right (x + cw - iw + 2, y + ch - ih + 2), depth + 2. Busy (+0x12C): its
+            // head entry's type's counter frame, blinking: phases 1 and 6 at 50%, 2-5 solid, 0, 7 and 8 not shown; at 8
+            // it waits (10 - ftol(eff x 10)) x 6 ticks (eff 0x460740: 1 / the sector's three supply ratios multiplied)
+            // and starts again. Suspended: the idle icon, frame 0x94, solid.
+            // *Provisional*: the repair icon (0x95) and its power bar aren't in (no repair yet); the object is the
+            // counter's first.
+            if (!k.refs.empty())
+                if (auto f = factories.find(k.refs.front()); f != factories.end() && !f->second.queue.entries.empty() &&
+                                                                (k.kind == 0 || !k.unfinished))
+                {
+                    const IndexedImage* face = res.GetFrame(0x77, k.frame);
+                    const int cw = face ? face->width : 32, ch = face ? face->height : 32;
+                    int frame = 0x94;
+                    Canvas::Blend blend = Canvas::Blend::Opaque;
+                    bool shown = true;
+                    if (f->second.queue.busy)
+                    {
+                        auto u = unitData.find(f->second.queue.entries.front().type);
+                        frame = u == unitData.end() ? 0 : u->second.counterFrame;
+                        if (k.iconPhase == 8)
+                        {
+                            float m = 1.0f;
+                            if (k.sector >= 1 && k.sector <= warmap::SectorCount)
+                            {
+                                const auto& r = economy[size_t(k.sector)].ratio;
+                                const size_t at = k.players == res.Human() ? 0 : 3;
+                                m = r[at] * r[at + 1] * r[at + 2];
+                            }
+                            const float eff = m != 0.0f ? 1.0f / m : 1.0f;
+                            const int pause = (10 - int(double(eff) * 10.0)) * 6;
+                            if (animation > k.iconSince + pause) { k.iconPhase = 0; k.iconSince = animation; }
+                        }
+                        else k.iconPhase++;
+                        shown = k.iconPhase >= 1 && k.iconPhase <= 6;
+                        if (k.iconPhase == 1 || k.iconPhase == 6) blend = Canvas::Blend::Translucent;
+                    }
+                    if (const IndexedImage* icon = res.GetFrame(0x76, frame); icon && shown)
+                        canvas.DrawSprite(0x76, frame, x + cw - icon->width + 2, y + ch - icon->height + 2, 0, blend);
+                }
             if (k.shared)
             {
                 std::string text = k.finishedCount < k.count ? std::to_string(k.finishedCount) + "/" + std::to_string(k.count)
@@ -1149,19 +1211,43 @@ namespace wow
                 canvas.DrawString(0x6E, text, { x, y + h - th, w, th }, TextRight);
             }
         };
-        auto onTop = [&](const Counter& k) { return Selected(int(&k - counters.data())) || k.inBand; };
-        for (const Counter& k : counters)
-            if (k.kind == viewMode - 1 && !onTop(k)) drawCounter(k); // each view shows its own kind
-        for (const Counter& k : counters)
-            if (k.kind == viewMode - 1 && onTop(k)) drawCounter(k);
-        // the rubber band (tracker 0x4E9EE0; its look isn't traced: a 1 pixel white box here)
+        // 0x42B88C: at depth 7 when picked, lit (in the band), or the hot window (dword_4EA444: under the mouse)
+        const int hotCounter = hovered && mouseX >= 0 ? CounterAt(mouseX, mouseY) : -1;
+        auto onTop = [&](const Counter& k) { const int i = int(&k - counters.data()); return Selected(i) || k.inBand || i == hotCounter; };
+        // the Resource view lays out no counters (0x41C2E0's mode 3 has no 0x43CB20 / 0x43CBB0): its own widgets
+        if (viewMode == 3) DrawResourceWidgets(canvas);
+        else
+        {
+            for (const Counter& k : counters)
+                if (k.kind == viewMode - 1 && !onTop(k)) drawCounter(k); // each view shows its own kind
+            for (const Counter& k : counters)
+                if (k.kind == viewMode - 1 && onTop(k)) drawCounter(k);
+        }
+        // the rubber band (tracker 0x49C3E0 -> 0x49C630, lines at depth 0x5DC0): with the box at least 0x17 tall, its
+        // sides from 12 below the top to 12 above the bottom, the outer line in dword_4DAF9C and the one inside it in
+        // dword_4DAFB8 (0x40B120: Human RGB6 0x2F, 0, 0 and 0x28, 0, 0; Martian 12, 42, 4 and 5, 39, 4); with it at
+        // least 0x17 wide, the top and bottom the same way from 12 in at each end. The corners stay open.
         if (rubberBand)
         {
             int l = std::min(dragX, mouseX), r = std::max(dragX, mouseX), t = std::min(dragY, mouseY), b = std::max(dragY, mouseY);
             uint32_t* out = canvas.Pixels();
-            auto plot = [&](int px, int py) { if (px >= 0 && py >= 0 && px < canvas.Width() && py < canvas.Height()) out[size_t(py) * size_t(canvas.Width()) + size_t(px)] = 0xFFFFFFu; };
-            for (int px = l; px <= r; px++) { plot(px, t); plot(px, b); }
-            for (int py = t; py <= b; py++) { plot(l, py); plot(r, py); }
+            auto c6 = [](int c) { return uint32_t((c << 2) | (c >> 4)); };
+            auto rgb = [&](int r6, int g6, int b6) { return c6(r6) << 16 | c6(g6) << 8 | c6(b6); };
+            const bool human = res.Human();
+            const uint32_t outer = human ? rgb(0x2F, 0, 0) : rgb(12, 42, 4), inner = human ? rgb(0x28, 0, 0) : rgb(5, 39, 4);
+            auto plot = [&](int px, int py, uint32_t c) { if (px >= 0 && py >= 0 && px < canvas.Width() && py < canvas.Height()) out[size_t(py) * size_t(canvas.Width()) + size_t(px)] = c; };
+            if (b - t >= 0x17)
+                for (int py = t + 12; py <= b - 12; py++)
+                {
+                    plot(l, py, outer); plot(l + 1, py, inner);
+                    plot(r, py, outer); plot(r - 1, py, inner);
+                }
+            if (r - l >= 0x17)
+                for (int px = l + 12; px <= r - 12; px++)
+                {
+                    plot(px, t, outer); plot(px, t + 1, inner);
+                    plot(px, b, outer); plot(px, b - 1, inner);
+                }
         }
 
         // the panel: its frame, the three view buttons (frame 2 for the one that's on, 1 under the mouse; the
@@ -1179,13 +1265,16 @@ namespace wow
             canvas.DrawSprite(0x341, researchFrame, panel.research.x, panel.research.y);
             Rect mini = panel.mini;
             canvas.DrawSprite(warmap::MiniMapGType, 0, mini.x, mini.y, warmap::NormalLevel); // slot 6, like the map
-            int lit = hovered ? hovered : selected;
-            if (lit) canvas.DrawSprite(warmap::MiniSectorGType, lit, mini.x, mini.y);
+            // 0x423040: the selected sector's frame (the hovered one isn't used), none without one
+            if (selected) canvas.DrawSprite(warmap::MiniSectorGType, selected, mini.x, mini.y);
             {
+                // the view's outline (0x49C740 at 0x422E6C), its size fixed at miniW x 640 / mapW by miniH x 480 / mapH,
+                // in the side's colour (dword_4DAF9C from 0x40B120: Human RGB6 0x2F, 0, 0; Martian 12, 42, 4)
                 uint32_t* out = canvas.Pixels();
                 int x0 = mini.x + cameraX * MiniW / warmap::MapWidth, y0 = mini.y + cameraY * MiniH / warmap::MapHeight;
-                int x1 = mini.x + (cameraX + ViewW()) * MiniW / warmap::MapWidth, y1 = mini.y + (cameraY + ViewH()) * MiniH / warmap::MapHeight;
-                const uint32_t colour = 0xFFFFFF;
+                int x1 = x0 + MiniW * 640 / warmap::MapWidth, y1 = y0 + MiniH * 480 / warmap::MapHeight;
+                auto c6 = [](int c) { return uint32_t((c << 2) | (c >> 4)); };
+                const uint32_t colour = res.Human() ? c6(0x2F) << 16 : (c6(12) << 16 | c6(42) << 8 | c6(4));
                 auto plot = [&](int x, int y) { if (x >= 0 && y >= 0 && x < canvas.Width() && y < canvas.Height()) out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = colour; };
                 for (int x = x0; x <= x1; x++) { plot(x, y0); plot(x, y1); }
                 for (int y = y0; y <= y1; y++) { plot(x0, y); plot(x1, y); }
@@ -1201,8 +1290,9 @@ namespace wow
                 if (line.life > 0 || line.state == 1) { canvas.DrawString(0x72, line.text, { 0x28, y, ScreenW - 0x28, 14 }, 0, colours.messageText); y += 16; }
         }
 
-        // the sector under the mouse or the panel button's name, and the engine's own notes (provisional: the game
-        // shows these its own way, not traced)
+        // the sector under the mouse or the panel button's name, and the engine's own notes: a strip the game doesn't
+        // have (its view's draw, 0x41D9B0, has nothing like it; button names are tool tips, 0x807C), only with
+        // [Modern] "War map status strip"
         std::string status;
         static constexpr int ButtonText[4] = { 0x47B, 0x47C, 0x47E, 0x47D }; // "Unit View", "Construction view", "Resource view", "View Research"
         if (!message.empty()) status = message;
@@ -1212,7 +1302,7 @@ namespace wow
         {
             // a darkened strip behind the text so it reads on either map
             uint32_t* out = canvas.Pixels();
-            int rows = status.empty() ? 0 : 16;
+            int rows = status.empty() || !statusStrip ? 0 : 16;
             for (int y = ScreenH - 20; y < ScreenH - 20 + rows; y++)
                 for (int x = 4; x < 240; x++)
                 {
@@ -1220,12 +1310,13 @@ namespace wow
                     p = (p >> 2) & 0x3F3F3F;
                 }
         }
-        if (!status.empty()) canvas.DrawString(0x72, status, { 8, ScreenH - 18, 300, 14 }, 0, colours.items);
+        if (statusStrip && !status.empty()) canvas.DrawString(0x72, status, { 8, ScreenH - 18, 300, 14 }, 0, colours.items);
         DrawBuildWindow(canvas);
         // the popup menu over everything (z 0x61B2): each item's icon, the next frame while the mouse is on it
         // (*provisional*: the hot button's frames aren't traced)
         for (size_t i = 0; i < popup.size(); i++)
         {
+            if (!PopupShown(i)) continue;
             const PopupItem& item = popup[i];
             const IndexedImage* lit = int(i) == popupHover ? res.GetFrame(item.icon, 1) : nullptr;
             canvas.DrawSprite(item.icon, lit ? 1 : 0, item.rect.x, item.rect.y);
@@ -1261,7 +1352,7 @@ namespace wow
     int WarMap::TipOwner(int x, int y) const
     {
         if (infoBox) return BoxButtonRect().Contains(x, y) ? 99 : -1;
-        for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) return 100 + int(i);
+        if (const int i = PopupItemAt(x, y); i >= 0) return 100 + i;
         if (int hit = BuildWindowHit(x, y); hit >= 0) return hit >= 200 && hit < 400 ? 10000 + hit : -1;
         PanelLayout panel = Panel();
         for (int i = 0; i < 3; i++) if (panel.buttons[i].Contains(x, y)) return i;
@@ -1585,7 +1676,6 @@ namespace wow
             debriefing.killedUnits = gone[1];
             debriefing.killedVehicles = goneCrew[1];
             debriefing.killedFacilities = goneFacilities[1];
-            Log(res.String(0x210) + " " + res.String(warmap::NameText(s)) + (winner == 0 ? ": won" : ": lost")); // the engine's own
             RecomputeOwner(s);
             // 0x43A0D3: the sector had its command building and hasn't now: 0x813D to its holder's objects there
             // (0x43A101-0x43A13A), each vehicle's factory (0x428F75) cancelling everything (0x460140)
@@ -1616,7 +1706,6 @@ namespace wow
         (loser == 0 ? debriefing.lostUnits : debriefing.killedUnits) = units[loser];
         (loser == 0 ? debriefing.lostVehicles : debriefing.killedVehicles) = vehicles[loser];
         (loser == 0 ? debriefing.lostFacilities : debriefing.killedFacilities) = facilities[loser];
-        Log(res.String(0x210) + " " + res.String(warmap::NameText(s)) + (winner == 0 ? ": won" : ": lost")); // the engine's own
         ClearSide(s, winner != 0);
         battle[size_t(s)] = false;
         if (pendingBattle == s) pendingBattle = 0;
@@ -1961,7 +2050,7 @@ namespace wow
             sounds.push_back(0x13E);
             ending = true;
             endingCode = EndCode();
-            endingDelay = 30 + 150; // (the sound's length isn't known here: 5 seconds taken)
+            endingDelay = 30 + (soundLength ? soundLength(0x13E) : 150);  // 0x41F400: the sound's length, then 30
             break;
         case EndGameLost: // 0x41F4B0: the world stops and the game hears 0x80FE after 30 ticks; forfeited
                           // (byte_4E9B94), the ending is the player's defeat, 0x80FB Human or 0x80FD Martian
@@ -2141,9 +2230,7 @@ namespace wow
     // active tool, the player's selection or the sector under the mouse (if it's the player's: it's selected
     // and the selection cancelled first) adds through 0x805C (Build and Suspend / Resume building tasks; Cancel
     // Move and Information aren't in yet). Shown at the mouse
-    // (0x432FB0): the first item centred on it (a quarter of its height above), kept 3 pixels inside the screen,
-    // sound 0x193. Items with the same command would share a row (0x4331C0), only the hovered one's opened out
-    // (0x433330); the rows go down the column (0x433220).
+    // (0x432FB0) in rows by command (frontend/PopupRows.h), sound 0x193.
     void WarMap::OpenWarmapMenu(int x, int y)
     {
         popup.clear();
@@ -2190,14 +2277,11 @@ namespace wow
                 if (const int to = RetreatTo(popupCounter); to >= 1 && HasRoomFor(c.type, to) && owner[size_t(to)] != 1)
                     add(0x80A9, 0, 0x350, 0x477);
         }
-        else if (selected >= 1 && selected <= warmap::SectorCount) add(0x8133, 0x8019, 0x2E, 0x475);
-        int w = 0, h = 0;
-        for (const PopupItem& item : popup) { w = std::max(w, item.rect.w); h += item.rect.h; }
-        int left = x - popup[0].rect.w / 2, top = y - popup[0].rect.h / 4;
-        left = std::clamp(left, 3, ScreenW - 3 - w);
-        top = std::clamp(top, 3, ScreenH - 3 - h);
-        int at = top;
-        for (PopupItem& item : popup) { item.rect.x = left; item.rect.y = at; at += item.rect.h; }
+        // 0x41D1F8: a current object's items leave the flag (var_11) clear, so the world's selected sector adds
+        // "View map" after them as it does with nothing selected
+        if (selected >= 1 && selected <= warmap::SectorCount) add(0x8133, 0x8019, 0x2E, 0x475);
+        LayOutPopupRows(popup, x, y, ScreenW, ScreenH);
+        popupOpenRow = -1;
         sounds.push_back(0x193);
     }
 
@@ -2212,7 +2296,7 @@ namespace wow
 
     int WarMap::PopupItemAt(int x, int y) const
     {
-        for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) return int(i);
+        for (size_t i = 0; i < popup.size(); i++) if (PopupShown(i) && popup[i].rect.Contains(x, y)) return int(i);
         return -1;
     }
 
@@ -2252,9 +2336,9 @@ namespace wow
         {
             // a WHotButton (0x434390): the mouse coming onto it (0x20) plays 0x194
             const int was = popupHover;
-            popupHover = -1;
-            for (size_t i = 0; i < popup.size(); i++) if (popup[i].rect.Contains(x, y)) popupHover = int(i);
+            popupHover = PopupItemAt(x, y);
             if (popupHover >= 0 && popupHover != was) sounds.push_back(0x194);
+            if (popupHover >= 0) popupOpenRow = popup[size_t(popupHover)].row;   // 0x80F1 -> 0x433330
             return;
         }
         if (buildWindow) buildWindow->hover = BuildWindowHit(x, y);
@@ -2653,8 +2737,65 @@ namespace wow
         canvas.DrawSprite(0x97, speed + (sp.Contains(mouseX, mouseY) ? 11 : 0), sp.x, sp.y);
     }
 
+    // The Resource view (0x41C2E0, mode 3): for each sector 1-30 and each of the side's three kinds,
+    //  - "ROHS" (0x426840 -> 0x426590), a bar: GType 0xB9 + kind showing its bottom ftol(spread supply (+0x80) / 3)
+    //    rows (no more than the sprite's height; 0x40EDF0), at the sector's waypoint (0x437380) moved by kind x 32 -
+    //    w / 2 - 32 and -8 - h, depth 6; on it a marker (GType 0xBC, its rect -2..0x12 by 3, depth 7) at h - ftol(spread
+    //    demand (+0x50) / 3) down from its top, frame 1 when that's under 0;
+    //  - "RFHS" (0x426140 -> 0x425E80), the player's facilities of the kind's type in the sector's resource list
+    //    (+0x5C), a counter (GType 0x77, the type's counter frame) each, the unfinished ones (0x42AA70) at 50%, in a
+    //    rect the first's size moved by kind x 32 - w / 2 - 32 and 8 from the waypoint, depth 6.
+    // *Provisional*: the facilities' counters are drawn where the rect starts (no offsets of their own are set; the
+    // widget's draw isn't traced); the tool tips (0x426AE0, 0x426430) and the facility row's click (0x80A3) aren't in.
+    void WarMap::DrawResourceWidgets(Canvas& canvas) const
+    {
+        static constexpr int FacilityTypes[6] = { 47, 48, 49, 108, 109, 110 };
+        const bool human = res.Human();
+        for (int s = 1; s <= warmap::SectorCount; s++)
+        {
+            const warmap::Point wp = warmap::Waypoint(s);
+            const int wx = int(wp.x) - cameraX, wy = int(wp.y) - cameraY;
+            if (wx < -200 || wy < -200 || wx > canvas.Width() + 200 || wy > canvas.Height() + 200) continue;
+            for (int kind = 0; kind < 3; kind++)
+            {
+                const size_t k6 = size_t((human ? 0 : 3) + kind);
+                // the bar
+                if (const IndexedImage* bar = res.GetFrame(0xB9 + kind, 0))
+                {
+                    const int full = bar->height;
+                    const int h = std::clamp(int(double(economy[size_t(s)].effSupply[k6]) * double(1.0f / 3.0f)), 0, full);
+                    const int bx = wx + kind * 32 - bar->width / 2 - 32, by = wy - 8 - h;
+                    canvas.DrawSpriteRows(0xB9 + kind, 0, bx, by, full - h, h);
+                    const int mark = int(double(h) - double(economy[size_t(s)].effDemand[k6]) * double(1.0f / 3.0f));
+                    canvas.DrawSprite(0xBC, mark < 0 ? 1 : 0, bx - 2, by + mark - 2);
+                }
+                // the facilities
+                const auto unit = unitData.find(FacilityTypes[k6]);
+                const int frame = unit == unitData.end() ? 0 : unit->second.counterFrame;
+                const IndexedImage* face = res.GetFrame(0x77, frame);
+                if (!face) continue;
+                const int fx = wx + kind * 32 - face->width / 2 - 32, fy = wy + 8;
+                int done = 0, going = 0;
+                for (const Counter& c : counters)
+                {
+                    if (c.sector != s || !c.players || c.kind != 2 || c.type != FacilityTypes[k6] || c.Travelling()) continue;
+                    if (c.refs.empty()) { done += std::min(c.count, c.finishedCount); going += c.count - std::min(c.count, c.finishedCount); continue; }
+                    for (int ref : c.refs)
+                    {
+                        if (ref < 0 || size_t(ref) >= table.size()) continue;
+                        if (std::find(destroyed.begin(), destroyed.end(), ref) != destroyed.end()) continue;
+                        (table[size_t(ref)].Value(1) >= table[size_t(ref)].Value(0) ? done : going)++;
+                    }
+                }
+                for (int i = 0; i < done; i++) canvas.DrawSprite(0x77, frame, fx, fy);
+                for (int i = 0; i < going; i++) canvas.DrawSprite(0x77, frame, fx, fy, 0, Canvas::Blend::Translucent);
+            }
+        }
+    }
+
     int WarMap::CounterAt(int x, int y) const
     {
+        if (viewMode == 3) return -1;   // the Resource view has no counters laid out
         for (size_t i = counters.size(); i-- > 0;)
         {
             const Counter& k = counters[i];
@@ -2739,8 +2880,9 @@ namespace wow
         return p;
     }
 
-    void WarMap::DrawRouteArrow(Canvas& canvas, const Counter& k) const
+    void WarMap::DrawRouteArrow(Canvas& canvas, const Counter& k, bool translucent) const
     {
+        const Canvas::Blend blend = translucent ? Canvas::Blend::Translucent : Canvas::Blend::Opaque;
         // RTypeArrow (0x49CAC0, drawn by 0x49CDB0) along the route's curve. Style (OBJ.ojd record 14): attacks 0
         // (Human) / 2 (Martian), other moves 1 / 3. Its texture is 256 x 64: the body strip in the first 64 columns,
         // the head's triangle from 64 to 191 with its point at (128, 0).
@@ -2775,8 +2917,8 @@ namespace wow
             edges(i, lx, ly, rx, ry);
             // each quad takes the whole 64 x 64 strip
             Canvas::TexVertex l0{ plx, ply, 0, 0 }, l1{ lx, ly, 0, 63 }, r1{ rx, ry, 63, 63 }, r0{ prx, pry, 63, 0 };
-            canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, l0, l1, r1);
-            canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, l0, r1, r0);
+            canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, l0, l1, r1, blend);
+            canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, l0, r1, r0, blend);
             plx = lx; ply = ly; prx = rx; pry = ry;
         }
         // the head at the last body point B: wings W1, W2 a head half width either side (moved k = the style's
@@ -2790,11 +2932,11 @@ namespace wow
         Canvas::TexVertex w2{ bx - d1y - kf * d1x, by + d1x - kf * d1y, 191, 63 };
         Canvas::TexVertex tip{ bx + d2x, by + d2y, 127, 0 };
         Canvas::TexVertex right{ prx, pry, 112, 63 }, left{ plx, ply, 144, 63 };
-        canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, w1, right, tip);
+        canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, w1, right, tip, blend);
         Canvas::TexVertex tip2 = tip;
         tip2.u = 128;
-        canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, right, left, tip2);
-        canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, left, w2, tip2);
+        canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, right, left, tip2, blend);
+        canvas.DrawTexturedTriangle(texture->data(), TexW, TexH, colours, left, w2, tip2, blend);
 
         // an attack's arrival label (0x424776): boxed text (0x49D260, font 0x71) at the route's end, the box black
         // (dword_4DAFC8) with a 1 pixel outline (dword_4DAF88 black for the Humans, the Martians' side colour
@@ -2837,7 +2979,7 @@ namespace wow
         return std::find(here.begin(), here.end(), type) != here.end();
     }
 
-    // The types of the finished constructions in a sector, both sides', one per object, from the live lists each
+    // The types of the finished constructions and resources in a sector, both sides', one per object, from the live lists each
     // time (as 0x43C990, 0x423B00 and 0x424000 walk the sector's construction lists): a construction is finished
     // when 0x42AA70 finds its +0x7C at least its +0x78, taken here as the save's second float against its first
     // (provisional: which float is which isn't traced; at the start both are 1). Destroyed ones have left the
@@ -2848,7 +2990,9 @@ namespace wow
         if (sector < 1 || sector > warmap::SectorCount) return out;
         for (const Counter& k : counters)
         {
-            if (k.sector != sector || k.kind != 1 || k.count <= 0 || k.Travelling()) continue;
+            // the construction lists (the command buildings, 0x43C990) and the resource lists (the facilities 47-49 and
+            // 108-110, 0x423B00 / 0x424000: they're resources, HRES / ARES)
+            if (k.sector != sector || (k.kind != 1 && k.kind != 2) || k.count <= 0 || k.Travelling()) continue;
             int n = 0;
             if (!k.refs.empty())
             {

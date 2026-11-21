@@ -1,4 +1,5 @@
 #include "battlemap/BattleMap.h"
+#include "frontend/PopupRows.h"
 #include "platform/Sound.h"
 #include "frontend/Canvas.h"
 #include "frontend/Resources.h"
@@ -1997,68 +1998,10 @@ namespace wow
         sounds.push_back(0x193);
     }
 
-    // WPopupMenu's rows (0x432D70 / 0x432E90 / 0x4331C0): each item goes in the row whose first item has its command,
-    // else starts a row, at most 10 rows of 8. Laid out (0x433220) each row left to right from 0, or right to left
-    // from the menu's width when it was kept off the right edge (+0x1BC), the rows down by their first items'
-    // heights. Placed (0x432FB0) at the point less the first item's half size, kept 3 inside the screen (0x42F130;
-    // bit 8: off the right edge), laid out, then moved to the point less the first item's width / 2 and its place
-    // in the row, and its height / 4 (rounded toward 0), kept inside again; then every row closed to its first item
-    // (0x433330(-1)). An item under the mouse (0x80F1 with its command) opens its row and closes the rest.
-    // *Provisional*: the menu's own size (+0x34 / +0x38, for the edge test) is taken as the laid-out items' extent.
+    // the rows and the placement: frontend/PopupRows.h
     void BattleMap::LayOutPopup(int x, int y)
     {
-        if (popup.empty()) return;
-        std::vector<int> rowCommand;
-        std::vector<int> rowCount;
-        std::vector<PopupItem> kept;
-        for (PopupItem item : popup)
-        {
-            int r = int(std::find(rowCommand.begin(), rowCommand.end(), item.command) - rowCommand.begin());
-            if (r == int(rowCommand.size()))
-            {
-                if (r >= 10) continue;
-                rowCommand.push_back(item.command);
-                rowCount.push_back(0);
-            }
-            if (rowCount[size_t(r)] >= 8) continue;
-            item.row = r;
-            item.col = rowCount[size_t(r)]++;
-            kept.push_back(item);
-        }
-        popup = std::move(kept);
-        // the menu's extent
-        std::vector<int> rowW(rowCommand.size(), 0), rowH(rowCommand.size(), 0);
-        for (const PopupItem& item : popup)
-        {
-            rowW[size_t(item.row)] += item.rect.w;
-            if (item.col == 0) rowH[size_t(item.row)] = item.rect.h;
-        }
-        int menuW = 0, menuH = 0;
-        for (size_t r = 0; r < rowW.size(); r++) { menuW = std::max(menuW, rowW[r]); menuH += rowH[r]; }
-        const Rect first = popup[0].rect;
-        auto keep = [&](int& mx, int& my, bool* right) {
-            if (right) *right = mx + menuW > 640 - 3;
-            mx = std::max(3, std::min(mx, 640 - 3 - menuW));
-            my = std::max(3, std::min(my, 480 - 3 - menuH));
-        };
-        int mx = x - first.w / 2, my = y - first.h / 2;
-        bool rtl = false;
-        keep(mx, my, &rtl);
-        // the layout, relative to the menu
-        std::vector<int> along(rowCommand.size(), rtl ? menuW : 0);
-        std::vector<int> down(rowCommand.size(), 0);
-        for (size_t r = 1; r < rowH.size(); r++) down[r] = down[r - 1] + rowH[r - 1];
-        for (PopupItem& item : popup)
-        {
-            int& a = along[size_t(item.row)];
-            if (rtl) { a -= item.rect.w; item.rect.x = a; }
-            else { item.rect.x = a; a += item.rect.w; }
-            item.rect.y = down[size_t(item.row)];
-        }
-        mx = x - first.w / 2 - popup[0].rect.x;
-        my = y - first.h / 4;
-        keep(mx, my, nullptr);
-        for (PopupItem& item : popup) { item.rect.x += mx; item.rect.y += my; }
+        LayOutPopupRows(popup, x, y, 640, 480);
         popupOpenRow = -1;
     }
 

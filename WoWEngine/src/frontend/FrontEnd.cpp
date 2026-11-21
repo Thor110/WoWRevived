@@ -630,6 +630,8 @@ namespace wow
         map->SetArrowTypes(std::move(arrows));
         map->SetEventOptions([this](const char* name, bool on) { return ini.GetBool("Event", name, on); });
         map->SetStickyPopup(ini.GetBool("Modern", "Sticky popup menus", false));   // a modern option (docs/MODERN.md)
+        map->SetStatusStrip(ini.GetBool("Modern", "War map status strip", false)); // the same
+        map->SetSoundLength([this](int id) { return sound.LengthTicks(id); });
         map->SetDeposits(std::move(deposits), ini.GetFloat("Tweak", "Resource Drop Off Rate", 3.0f));
         map->SetPodInterval(ini.GetInt("Tweak", "Pod Interval (hours)", 24));
         map->SetZoomerSpeed(ini.GetFloat("Tweak", "Warmap Zoomer Speed", 1.5f));

@@ -184,7 +184,11 @@ with:
 ## The mini-map panel
 
 "WarMap miniMap view" (0x422C70) is the mini-map (0x7F) with its highlight (0x82) and the sector frames (0x83). It
-sits in the bottom right corner; WoWRevived's screenshot puts it 115 in from the right and 175 up from the bottom.
+sits in the bottom right corner (0x422EC9-0x422F12): the parent's width less 100, less the border (4), less 8 more
+in Human games, and the height less 170, 4 and 8 the same way: (528, 298) Human, (536, 306) Martian. Its sector
+frame (0x83) is the selected sector's (0x423040; the hovered one isn't used), and the view's outline (0x49C740) is
+fixed at 100 x 640 / the map's width by 170 x 480 / its height, in the side's colour (dword_4DAF9C: Human RGB6 0x2F,
+0, 0; Martian 12, 42, 4). Update 133.
 "WarMap miniMap frame" (0x423420) is the panel: frame 0x80, and three view buttons (0x4333B0, command 0x811F, ids
 0x94 / 0x93 / 0x92) at (6, 0x29), (0x2A, 0x29), (0x4F, 0x29) in Human games and (0xA, 0x24), (0x2D, 0x24),
 (0x51, 0x24) in Martian ones, labelled 0x47B "Unit View", 0x47C "Construction view", 0x47E "Resource view".
@@ -240,8 +244,10 @@ selection at +0x430, filled by its recorded commands 4 clear, 5 select (Shift ad
 - **The rubber band** (tracker 0x4E9EE0): dragging on the map tells the sectors 0x8010 with the box (0x43C2B0):
   each of your counters of the view's kind with its corner inside (PtInRect) is lit and counted (world +0x114).
   Letting go with any inside clears the selection and selects them (0x8011, 0x43C340), cursor mode 1. The
-  engine counts it as a drag once the mouse has moved more than 2 pixels, and draws the box as a white line
-  (*provisional*: the tracker's look isn't traced).
+  engine counts it as a drag once the mouse has moved more than 2 pixels. The box (0x49C3E0 -> 0x49C630, update
+  133): each side two lines from 12 in at each end, the outer in dword_4DAF9C and the inner in dword_4DAFB8 (Human
+  RGB6 0x2F, 0, 0 and 0x28, 0, 0; Martian 12, 42, 4 and 5, 39, 4), the upright ones only with the box at least 0x17
+  tall and the level ones only with it at least 0x17 wide; the corners stay open.
 - **The route preview** (0x41D590 -> 0x419520), made again whenever the mouse goes onto another sector: in the Unit
   view, with units selected and no band out, the selected units are put in groups by their sector and how they go
   (naval: the unit's +0x52 is 5 or 6; 7; the rest), and each group gets a route to the sector with its arrow
@@ -868,11 +874,43 @@ The view (0x41C5E0, 0x41D640) and the world (0x41A450) take a key press at a tim
 
 ## Scrolling
 
-Besides the keys, the engine scrolls at the screen edges and by clicking or dragging on the mini-map, at
-`[Screen] "Scroll Speed"` / 5 pixels a tick (*provisional*: the game's own edge scrolling isn't traced).
+Besides the keys and the mini-map (a click or a drag), the view scrolls at the screen edges as 0x484DF0 does
+(update 133): with the mouse within the border (4, [Screen] "Scroll Border", full screen; 32 in a window), it moves
+by the mouse's distance from the centre over ((the view's width / 2) / [Screen] "Scroll Speed"), both ways at once,
+so up to 40 pixels a tick at the left or right edge at the default 40. (*Provisional*: the window's 32 isn't used.)
 
 ## Still to do
 
-The game's scroll rules, the event messages (top left; the engine shows only the latest), the own sectors' shading,
+The event messages (top left; the engine shows only the latest), the own sectors' shading,
 the arrows' exact curve and head, construction (the Build List window, and the construction's side of it, so command posts can be built), the AI's turns, saving, and the
 battle map.
+
+## Parity fixes in update 133
+
+- **The Resource view** (0x41C2E0, mode 3) lays out no counters. Each sector has, for each of the side's three
+  kinds, a bar (ROHS, 0x426590: GType 0xB9 + kind, its bottom ftol(spread supply / 3) rows, at the sector's
+  waypoint moved by kind x 32 - w / 2 - 32 and -8 - h), a demand marker on it (GType 0xBC at h - ftol(spread demand /
+  3) down, frame 1 under 0) and a row of the player's facilities of the kind (RFHS, 0x425E80: counters 8 below the
+  waypoint, the unfinished at 50%). *Provisional*: the facilities' counters are drawn at the row's start; the tool
+  tips and the row's click (0x80A3) aren't in.
+- **The production icon** (0x42BC90, GType 0x76) at a counter's bottom right while its object's factory has
+  something queued: busy, the head entry's counter frame blinking (phases 1 and 6 at 50%, 2-5 solid, then a pause
+  of (10 - ftol(eff x 10)) x 6 ticks, eff 1 / the sector's three supply ratios); suspended, the idle icon (0x94).
+  *Provisional*: the repair icon and power bar aren't in.
+- **Route arrows** of routes that have set off are translucent (the rasteriser's flag 8, 0x49CDB0), solid while
+  the mouse is on their counter; previews are solid.
+- **The Warmap menu** has rows by command (as the battle map's popup) and adds "View map" after a current object's
+  items too (0x41D1F8 leaves var_11 clear).
+- **Counters**: the hovered one is raised (0x42B88C); the other side's stay dim once dimmed (0x42BA20); the
+  player's unfinished resources are dimmed as well as constructions.
+- **The saved view** (WMAP's 4th value) is restored on load (0x41AC40 / 0x419810).
+- **The ending** waits for the victory sound's length (sound 0x13E) plus 30 ticks (0x41F400).
+- **The Unit view's shading** doesn't count units on a route (0x43C7C0); the route's first-hour jump is only in the
+  Unit view (0x4250E4).
+- The engine's "Battle in X: won / lost" message lines are gone (the game writes none), and its status strip is a
+  [Modern] option ("War map status strip", off).
+- `WarMap::Finished` counts the resource lists' facilities (47-49, 108-110 are resources) as well as the
+  construction lists' command buildings: since update 131 it had walked only the constructions, so the facilities'
+  output and the Resource view's figures counted none.
+- *Not yet*: units on a route restart from their origin after a load (the route entries' state in the save isn't
+  traced).

@@ -139,7 +139,10 @@ namespace wow
         void SetArrowTypes(std::map<int, ObjOjd::ArrowType> types) { arrowTypes = std::move(types); }
         // the [Event] options (the Critical event options menu): the setting's name and its default
         void SetEventOptions(std::function<bool(const char*, bool)> get) { eventOption = std::move(get); }
+        // A sound's length in ticks (the victory's wait, 0x41F400)
+        void SetSoundLength(std::function<int(int)> length) { soundLength = std::move(length); }
         void SetStickyPopup(bool on) { stickyPopup = on; }   // [Modern] "Sticky popup menus"
+        void SetStatusStrip(bool on) { statusStrip = on; }   // [Modern] "War map status strip"
         void SetDeposits(std::map<int, std::array<int, 6>> d, float dropOff) { deposits = std::move(d); resourceDropOff = dropOff; }
         // Both sides' research (0x417CD0: the local player's first, dword_4E9B88, then the other side's, 4E9B8C),
         // read from the save when there is one (HRSH, MRSH), and the war map view's trigger update (0x418D17)
@@ -180,7 +183,7 @@ namespace wow
         int cameraX = 0, cameraY = 0;    // the view's top-left on the map
         int mouseX = -1, mouseY = -1;
         int hovered = 0, selected = 0;
-        int scrollStep = 8;
+        int scrollStep = 40;             // [Screen] "Scroll Speed": the edge scroll moves (mouse - centre) / ((W / 2) / it)
         bool dragging = false;           // the mini-map
         bool draggingSpeed = false;      // the speed slider, held
         void SetSpeedFromX(int x);
@@ -351,9 +354,11 @@ namespace wow
         // The "Warmap menu" (WPopupMenu 0x432C60, opened by 0x41D120 when the right button is held): a column of
         // icon buttons (WHotButton 0x434300), one row a command
         // an item: its command and parameter, icon and tool tip (text id, or label when set)
-        struct PopupItem { int command, icon, text; Rect rect; int param = 0; std::string label; };
+        struct PopupItem { int command, icon, text; Rect rect; int param = 0; std::string label; int row = 0, col = 0; };
         std::vector<PopupItem> popup;
         int popupHover = -1;
+        int popupOpenRow = -1;      // the row opened out (0x433330 with the hovered item's command)
+        bool PopupShown(size_t i) const { return popup[i].col == 0 || popup[i].row == popupOpenRow; }
         void OpenWarmapMenu(int x, int y);
         void ClosePopup(bool escape);
         void ActivatePopupItem(size_t index);
@@ -420,6 +425,7 @@ namespace wow
         void PulseBattles();
         // the types of the finished constructions in a sector (both sides'), from the live counters
         std::vector<int> Finished(int sector) const;
+        void DrawResourceWidgets(Canvas& canvas) const;   // the Resource view's bars and facility rows (0x41C2E0 mode 3)
         // The counter placement ("clunting", 0x420160 at world +0x74): each sector's grid of cells (0x428110), cells
         // `size` pixels square over the sector's bounds rounded out, a cell usable when CHI.SPR (GType 0x84) has the
         // sector's number at its corner; 1 usable, 0x81 taken. A search keeps its place in the spiral (`index`).
@@ -467,8 +473,10 @@ namespace wow
         void ObjectEvent(int counter, int suffix, bool box, int view); // 0x41ECD0 / 0x41EDC0's shared part
         void NextEvent();                // 0x41E730
         std::function<bool(const char*, bool)> eventOption;
+        std::function<int(int)> soundLength;
         bool Option(const char* name, bool on) const { return eventOption ? eventOption(name, on) : on; }
         bool stickyPopup = false;   // [Modern] "Sticky popup menus": the popup stays open once the right button's let go
+        bool statusStrip = false;   // [Modern] "War map status strip": the engine's strip with the sector's name (not in the game)
         bool forfeited = false;     // byte_4E9B94: the battle map's key building lost with no battle on (0x48ACEF)
         struct QueuedEvent { int event, param; std::string text; };
         std::deque<QueuedEvent> eventQueue;
@@ -498,6 +506,9 @@ namespace wow
             bool unfinished = false;     // a construction not finished yet (drawn at 50% when it's ours)
             float progress = 1.0f;       // a construction's +0x7C / +0x78
             int intel = 0;               // +0x3C: hours of intel left on the other side's (not saved)
+            mutable bool dimmed = false; // the other side's sprite set to 50% (0x42BA20: only ever set, until it's made again)
+            mutable int iconPhase = 0;   // +0x94: the production icon's blink (0x42BC90)
+            mutable int iconSince = 0;   // +0x98: when its last pause began (dword_4D2558)
             bool shown = false;          // activated by the last layout (0x421630)
             int sector = 0;
             int previous = 0;            // its objects' +0x58: the sector they last came from (0 for none; not saved)
@@ -541,7 +552,7 @@ namespace wow
         std::vector<int> PlanRoute(const std::vector<int>& group, int sector, std::string* why = nullptr) const;
         void StartRoute(int counter, const std::vector<int>& path, int n);
         std::vector<Counter::ArrowPoint> RouteCurve(const std::vector<int>& path, bool naval) const;
-        void DrawRouteArrow(Canvas& canvas, const Counter& k) const;
+        void DrawRouteArrow(Canvas& canvas, const Counter& k, bool translucent = false) const;
         static std::vector<Counter::ArrowPoint> ArrowCurve(const std::vector<std::pair<float, float>>& control);
         std::vector<Counter> counters;   // what's drawn: one per kind of object, with how many there are
         struct Preview { std::vector<int> group; std::vector<int> path; Counter shape; };

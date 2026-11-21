@@ -9,7 +9,7 @@ namespace wow
     void Canvas::Clear(uint32_t colour) { std::fill(pixels, pixels + size_t(width) * height, colour); }
 
     void Canvas::DrawTexturedTriangle(const uint8_t* texture, int texW, int texH, const uint32_t* colours,
-                                      const TexVertex& a, const TexVertex& b, const TexVertex& c)
+                                      const TexVertex& a, const TexVertex& b, const TexVertex& c, Blend blend)
     {
         float area = (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y);
         if (std::abs(area) < 0.5f) return;
@@ -29,7 +29,9 @@ namespace wow
                 u = ((u % texW) + texW) % texW;
                 v = ((v % texH) + texH) % texH;
                 uint8_t index = texture[size_t(v) * size_t(texW) + size_t(u)];
-                if (index) pixels[size_t(y) * size_t(width) + size_t(x)] = colours[index];
+                if (!index) continue;
+                uint32_t& p = pixels[size_t(y) * size_t(width) + size_t(x)];
+                p = blend == Blend::Opaque ? colours[index] : ((colours[index] >> 1) & 0x7F7F7F) + ((p >> 1) & 0x7F7F7F);
             }
     }
 
@@ -61,6 +63,27 @@ namespace wow
         const GType* g = res.FindGType(gtype);
         if (!image || !shade || !g) return;
         DrawImage(*image, shade->Level(level), x - g->hotX, y - g->hotY, blend);
+    }
+
+    void Canvas::DrawSpriteRows(int gtype, int frame, int x, int y, int firstRow, int rows, int level)
+    {
+        const IndexedImage* image = res.GetFrame(gtype, frame);
+        const ShadeTable* shade = res.ShadeFor(gtype);
+        const GType* g = res.FindGType(gtype);
+        if (!image || !shade || !g || rows <= 0) return;
+        firstRow = std::clamp(firstRow, 0, image->height);
+        rows = std::min(rows, image->height - firstRow);
+        const uint32_t* colours = shade->Level(level);
+        x -= g->hotX;
+        for (int r = 0; r < rows; r++)
+        {
+            const int sy = y + r;
+            if (sy < 0 || sy >= height) continue;
+            const uint8_t* src = image->pixels.data() + size_t(firstRow + r) * image->width;
+            uint32_t* dst = pixels + size_t(sy) * width;
+            for (int ix = std::max(0, -x); ix < image->width && x + ix < width; ix++)
+                if (src[ix]) dst[x + ix] = colours[src[ix]];
+        }
     }
 
     void Canvas::DrawString(int fontGType, std::string_view text, const Rect& box, int flags, int level, int lineSpacing)
