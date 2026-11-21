@@ -159,13 +159,13 @@ namespace wow
     // The area blasts (0x487B00 on WExplosion: the factory's 718-720, 788-790, 812-823)
     bool BattleMap::IsAreaBlast(int t) { return (t >= 718 && t <= 720) || (t >= 788 && t <= 790) || (t >= 812 && t <= 823); }
 
-    void BattleMap::Explode(int type, int x, int y, int z, int firer, int attacker, int weapon)
+    void BattleMap::Explode(int type, int x, int y, int z, int firer, int attacker, int weapon, int radiusAs, int powerAs)
     {
         auto t = setup.units->find(type);
         const bool area = IsAreaBlast(type);
         if (t == setup.units->end() || (!IsExplosion(type) && !area)) return;
-        const int radius = int16_t(t->second.hitPoints);
-        const int power = MaxHealth(type);
+        const int radius = radiusAs ? radiusAs : int16_t(t->second.hitPoints);
+        const int power = powerAs ? powerAs : MaxHealth(type);
         const int ground = land.HeightAt(x, y);
         if (t->second.fieldA2 && setup.sound)
             setup.sound->Play(t->second.fieldA2, 1.0f, 0, x, land.ProjectY(y, ground + std::max(z, 0)));

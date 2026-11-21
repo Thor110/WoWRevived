@@ -46,6 +46,7 @@ namespace wow
             int quickCancelTimeout = 5; // [Tweak] "Quick Cancel Timeout": updates the right button is held for the popup
             int enemyCount = 0;         // dword_4F7430 for this battle (the scenery's burnt trees)
             bool loadScenery = true;    // [Debug] "Load scenery" (0x4F73F1)
+            bool pod = false;           // the sector's +0x64: a pod landed here since the last battle (0x41A3BC)
             const std::map<int, ObjOjd::UnitData>* units = nullptr;
             const std::map<int, ObjOjd::BattleTables::Six>* six = nullptr;  // OBJ.ojd record 6 (the WOF GTypes)
             const std::map<int, ObjOjd::BattleTables::Thirteen>* lights = nullptr; // record 13 (the light parts)
@@ -343,7 +344,10 @@ namespace wow
         void KeyBuildingLost(bool players);                     // 0x48AC50's key building case
         void StaggerDeaths(int group, int at);                  // 0x47CEE0's 0x80A0
         bool forfeit = false;                                   // byte_4E9B94: the key building lost with no battle on
-        void Explode(int type, int x, int y, int z, int firer = -1, int attacker = 0, int weapon = 0);  // 0x488070 + 0x488350 / 0x488200 (firer: a unit's group)
+        // 0x488070 + 0x488350 / 0x488200 (firer: a unit's group); a radius and power given (0x4880F0's +0xC8 /
+        // +0xCA) in place of the type's
+        void Explode(int type, int x, int y, int z, int firer = -1, int attacker = 0, int weapon = 0, int radiusAs = 0, int powerAs = 0);
+        void LandPod(const Landscape::Sun& sun);        // 0x439AE5 -> the pod's vt+0x14, 0x48F620
         static bool IsExplosion(int type);
         static bool IsAreaBlast(int type);
         void AreaDetonate(int type, int x, int y, int radius, int power, int firer, int attacker = 0, int weapon = 0);   // 0x487B50
@@ -407,7 +411,9 @@ namespace wow
         void Hover(Unit& u);                            // 0x490170
         void Wake(Unit& u);                             // vt+0x134, 0x4934F0
         void LowEffect(int type, float x, float y);
-        void ShipTick(size_t index);                    // the Ironclads' update, 0x493B50
+        void ShipTick(size_t index);
+        bool Crushable(const Unit& o) const;            // vt+0xD8
+        bool Collides(const Unit& u, const Unit& o) const;  // the vehicles' vt+0xBC, 0x4929A0                    // the Ironclads' update, 0x493B50
         // The water classes (the Ironclads' 0x4B0568, the Submersibles' 0x4B03C8)
         static bool Boat(int type) { return type >= 0x13 && type <= 0x18; }
         void SpeedControl(Unit& u, float wanted);

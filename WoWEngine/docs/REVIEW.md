@@ -132,11 +132,15 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       the lookahead push / 1 instead of / 8; the Ironclads' damage off water (0x80C1); the Track Layer's underground
       speed and its mound marker 0x35A. (Their arrival is the same as every vehicle's.) Tested only for crashes:
       none of the battles at hand has a boat or a Track Layer.
-- [~] **Stop / start footprints** (0x4915B0 / 0x491630) and **the collision filter** (0x4929A0: walkers ignore small
-      crushable objects, bridges ignored on a link); crushing. *Update 109*: the footprints; the filter and crushing
-      still to do.
+- [x] **Stop / start footprints** (0x4915B0 / 0x491630) and **the collision filter** (0x4929A0: walkers ignore small
+      crushable objects, bridges ignored on a link); crushing. *Update 109*: the footprints. *Update 115*: the filter
+      and crushing. The crushable objects are the mines (and the line-linked objects 0x1D0-0x1D3 / 0x2B6 / 0x2B7,
+      which the engine doesn't make yet); a vehicle on one sets off the mine's explosion 1 time in 4, which is how
+      mines go off. Move classes 3 and 4 pass over small ones. The bridge-link part waits on the bridge pieces being
+      objects.
 - [x] **Drones** exploding on contact (0x48F9D0-0x48FAC0). *Update 108.*
-- [ ] **Pods** (0x48F5F0 / 0x48F620).
+- [x] **Pods** (0x48F5F0 / 0x48F620). *Update 115*: the battle's pod after a landing among the player's sectors,
+      landed at random with its two blasts.
 - [ ] **Fences and walls** (0x48D780-0x48DB80, WFence 0x4987F0-0x498D30) with route blocking and node removal
       (0x494370); line-linked objects (0x48B590-0x48C650); two-point structure build-up (0x4865A0 / 0x4866E0).
 - [x] **Gas clouds / Black Dust** (0x488CC0-0x488D70). *Update 108.*

@@ -49,6 +49,8 @@ namespace wow
         std::vector<ReinforcementSource> ReinforcementSources() const;
         // The other side's units and constructions in a sector (0x43983E: the lists' counts, dword_4F7430)
         int EnemyObjects(int sector) const;
+        // EnterBattleMap (0x439ADE): the sector's pod flag (+0x64), cleared as the battle takes it
+        bool TakePod(int sector) { const bool p = podFlag[size_t(sector)]; podFlag[size_t(sector)] = false; return p; }
         // The sector's war map objects as the battle map takes them (EnterBattleMap 0x439770): each list in turn
         // (HUNI, AUNI, HCON, ACON, HRES, ARES), each object with its battle units' saved places
         std::vector<BattleGroup> BattleGroups(int sector) const;

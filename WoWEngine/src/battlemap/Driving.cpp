@@ -728,7 +728,7 @@ namespace wow
         for (auto [gx, gy] : cells)
             for (const Unit& o : units)
             {
-                if (&o == &u) continue;
+                if (&o == &u || !Collides(u, o)) continue;
                 const int ox = int(o.x), oy = int(o.y);
                 if (clampTo(ox / size, cols) != gx || clampTo(oy / size, rows) != gy) continue;
                 if (std::abs(land.HeightAt(ox, oy) - z) > 64) continue;
@@ -755,7 +755,31 @@ namespace wow
     // in it that aren't the unit and pass its vt+0xBC, the nearest by the octagonal distance (the larger difference
     // and half the smaller, from the object's position as whole numbers) that's under the object's radius + reach,
     // starting from 10000.
-    // *Provisional*: only units are in the grid, placed by where they are now; vt+0xBC isn't known (all pass).
+    // *Provisional*: only units are in the grid, placed by where they are now.
+    // Crushable (vt+0xD8, 0x486340: +0xC0 bit 2): the mines (0x48C940 sets it on them as they're placed) and the
+    // line-linked objects 0x1D0-0x1D3, 0x2B6, 0x2B7 (0x48A8B0), which aren't in the engine yet
+    bool BattleMap::Crushable(const Unit& o) const
+    {
+        return o.type >= 0x273 && o.type <= 0x276;
+    }
+
+    // The vehicles' vt+0xBC (0x4929A0): whether an object gets in the way. Not one with +0xB8 bit 2; for a type whose
+    // +0x52 is 3 (4), not a crushable one whose renderer is under 0x30 (0x20) tall (+0x2E less +0x2C); then one with
+    // +0xB8 bit 0 does; else, on a bridge link, not the bridges' pieces (0x1BC-0x1BF, 0x1CC-0x1CE) nor 0x1C0; else
+    // whether it has +0xB8 bit 1.
+    // *Provisional*: every unit counts as +0xB8 bit 0 (so the last two never come into it), and the renderer's height
+    // is its GType's first frame's.
+    bool BattleMap::Collides(const Unit& u, const Unit& o) const
+    {
+        auto t = setup.units->find(u.type);
+        const int moveClass = t == setup.units->end() ? 0 : t->second.field52;
+        if ((moveClass == 3 || moveClass == 4) && Crushable(o))
+            if (auto ot = setup.units->find(o.type); ot != setup.units->end() && ot->second.field28)
+                if (const IndexedImage* image = res.GetFrame(ot->second.field28, 0))
+                    if (image->height < (moveClass == 3 ? 0x30 : 0x20)) return false;
+        return true;
+    }
+
     const BattleMap::Unit* BattleMap::ObjectAt(const Unit& u, int px, int py, int reach) const
     {
         const int size = setup.zMapRes;
@@ -768,7 +792,7 @@ namespace wow
             int best = 10000;
             for (const Unit& o : units)
             {
-                if (&o == &u) continue;
+                if (&o == &u || !Collides(u, o)) continue;
                 const int ox = int(o.x), oy = int(o.y);
                 if (clampTo(ox / size, cols) != gx || clampTo(oy / size, rows) != gy) continue;
                 const int a = std::abs(px - ox), b = std::abs(py - oy);
@@ -794,7 +818,7 @@ namespace wow
     // set, and the look ends. Found at the unit's own position, an object that can't be crushed (vt+0xD8) pushes the
     // unit away: by (the octagonal distance less both radii) / 8 along the way to it, set straight onto the position
     // (vt+0x40); one that can be crushed is, 1 in 4 (rand() < 0x2000), with its type's effect (0x488070).
-    // *Provisional*: bit 7 and the bridge links aren't in (the ground check always runs), nor the crushing.
+    // *Provisional*: bit 7 and the bridge links aren't in (the ground check always runs).
     bool BattleMap::LookAhead(Unit& u)
     {
         auto& d = u.drive;
@@ -842,6 +866,20 @@ namespace wow
                 if (o->group == u.group && o->players == u.players && !(o->vehicle && !(o->drive.flags & 1))) d.flags |= 0x10;
                 d.flags |= 8;
                 if (i != 0) return false;
+                // one that can be crushed (vt+0xD8), at the unit's own position: 1 in 4 (rand() < 0x2000) its type's
+                // +0x98 goes off at the unit's point, ftol(+0x84 + its +0x41 byte x 1.414) up, with no firer, and the
+                // type is met (byte_51A19C)
+                if (Crushable(*o))
+                {
+                    if (random::Rand() < 0x2000)
+                        if (auto ot = setup.units->find(o->type); ot != setup.units->end())
+                        {
+                            const int crushedType = o->type;
+                            Explode(ot->second.field98, int(u.x), int(u.y), int(double(d.lift) - double(ot->second.size41) * -1.414));
+                            encountered.insert(crushedType);
+                        }
+                    return false;
+                }
                 const int dist = (std::abs(int(d.ay)) - (std::min(std::abs(int(d.ax)), std::abs(int(d.ay))) >> 1)) + std::abs(int(d.ax));
                 const float fd = float(dist);
                 const float gap = float(double(fd) - o->drive.radius - u.drive.radius);

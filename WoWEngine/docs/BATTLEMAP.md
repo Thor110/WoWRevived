@@ -959,6 +959,25 @@ the damage (0x4958B0). Going (0x48EEE0) stops both, and for type 0x77 with +0xC0
 *Not yet*: the ground flattened and sampled under it, the four 0x17B corner objects, its health from the
 construction's state, the damage frames (0x48A7D0, 0x48EF80) and the gun emplacements on it (0x48F7C0).
 
+## Pods (WPod 0x48F590, type 0xB3; `BattleMap::LandPod`)
+
+A pod that came down in a sector the player holds sets the sector's +0x64 (0x41A3BC, the war map's pods
+0x41A330), which the next battle there takes (EnterBattleMap 0x439ADE) and clears. Update 115.
+- **Made and started** after the deployment (0x439AE5): type 0xB3 from the factory, added (vt+0x24) and started
+  (vt+0x14 = 0x48F620). Its model is `dat\Pod.iob` (GType 502), its radius (+0x44) 200.
+- **Landing** (0x48F620): a place at random, x rand() % the world's width, y rand() % its height, again until a
+  vehicle could stand on every vertex within its radius (0x47B520); there at height 0 (vt+0x40), 0x3DA goes off as
+  its type has it (0x488070) and again with radius and power 300 (0x4880F0, its +0xC8 / +0xCA), both with the pod's
+  type at +0xC4; then WScenery's start (0x4896D0) puts it in the world, so neither blast reaches it.
+- **Drawn** (vt+0x5C, 0x48F5F0) with its renderer's brightness the fog's level there x 255 (vt+0x58).
+
+In a test (the flag forced on in the Human save's battle) the pod came down in open ground north of the river
+in a scorched crater with the blast, and stayed.
+
+*Provisional*: at most a hundred tries for the place (the game's loop has no limit); the firer isn't kept; the
+brightness isn't applied (as for the fog's other objects); the pod flag isn't in the engine's saves; vehicles
+already deployed there aren't moved off.
+
 ## Drones (0x5D-0x5F: 0x48F9D0-0x48FAC0; `BattleMap::DroneTick`)
 
 A drone is a vehicle (0x48F9D0: 0x490E70, +0x3C 1) that blows itself up on reaching what it's sent at. Each update
@@ -1268,6 +1287,24 @@ holds every battle map object that places itself), vt+0xBC lets all through, and
 they are each time rather than where they were put in. Crushing, bit 5, bit 7, bit 9, the bridges' links, the second
 target, the attack range ("CAN'T GET TO WITHIN ATTACK DISTANCE!"), the order re-posted while another search runs,
 the destination flag (type 0x17C), speech (0x10A, 0x10B) and engine sounds aren't in yet.
+
+
+**The collision filter and crushing** (update 115). The vehicles' vt+0xBC (0x4929A0), which the lookahead's search
+(0x47FE10) asks of each object: not one with +0xB8 bit 2; for a type whose +0x52 is 3 (or 4), not a crushable one
+whose renderer is under 0x30 (0x20) tall (+0x2E less +0x2C); then one with +0xB8 bit 0 is in the way; else, on a
+bridge link, not the bridges' pieces (0x1BC-0x1BF, 0x1CC-0x1CE) nor 0x1C0; else one with +0xB8 bit 1 is.
+Crushable (vt+0xD8 = 0x486340, +0xC0 bit 2): the mines (0x48C940 sets it as they're placed) and the line-linked
+objects 0x1D0-0x1D3, 0x2B6, 0x2B7 (0x48A8B0). A crushable object found at the unit's own position (the
+lookahead's first point) doesn't push it: 1 in 4 (rand() < 0x2000) its type's +0x98 goes off at the unit's point,
+ftol(+0x84 + its +0x41 byte x 1.414) up, with no firer, and its type is met (byte_51A19C). For a mine that's its
+explosion (788-790 for 0x273 / 0x274 / 0x276), so this is how a mine goes off under a vehicle; the walkers and
+whatever else is of move class 3 or 4 step over them. The mines' blasts are area blasts that hit only Martians
+(0x487B50), so a mine isn't used up by going off this way (only the detonate order, 0x80F8, takes it): it goes
+off again under the next vehicle. In a test (mines put under the Human lorries for it) the lorries set them off
+again and again as they drove, unharmed, as they're Human.
+
+*Provisional*: every unit counts as +0xB8 bit 0; the renderer's height is its GType's first frame's; the
+line-linked objects aren't made at all yet.
 
 ## Routes (WRouteFinder 0x493DF0-0x494960, BatRoute 0x499420-0x4998D0; `battlemap/Routes.cpp`)
 

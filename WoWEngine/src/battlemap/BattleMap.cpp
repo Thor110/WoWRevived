@@ -111,6 +111,7 @@ namespace wow
             AddPartRenderers(i);
         }
         for (const Unit& u : units) Occupy(u.type, u.x, u.y);
+        if (s.pod) LandPod(sun);
         SetUpGrounds();
         // the group's stance (+0x54, 0x4802E0) is its members' +0xD8 averaged (ftol(sum + 0.5) / n), but the game makes
         // the groups (0x4216E0, from 0x439A8D) before deployment starts the members (0x4222C0's vt+0x14 = 0x495740,
@@ -482,7 +483,8 @@ namespace wow
     //  - the owner's: a command building's place (the last of 830 / 120 or 278 / 58 among all the battle units,
     //    either side's), else a pod's for Martians, else the entry point if it came from somewhere, else the middle
     // and the player's last centre is where the view starts. Its units are placed round it (Place).
-    // *Not yet*: the pods (no pod object is made yet), so a Martian never starts at one.
+    // *Provisional*: the pods: the battle's own pod (LandPod) comes after the deployment, as in the game, so it
+    // can't be a centre; one in the scenery list (type 179) would be, but none of the .nsb files has one.
     void BattleMap::Deploy()
     {
         units.clear();
@@ -814,6 +816,66 @@ namespace wow
         }
         else if (g->gclass == 0 && res.GetFrame(gtype, 0))
             objects.push_back({ iy + 1, ix, land.ProjectY(iy, land.HeightAt(ix, iy)), nullptr, nullptr, g->paletteSlot, gtype });
+    }
+
+    // A pod landed since the last battle (the sector's +0x64, set by 0x41A330 when it came down among the Humans):
+    // EnterBattleMap (0x439AE5) makes one (type 0xB3: WPod 0x48F590, Pod.iob), adds it and starts it, then clears
+    // the flag. As it starts (0x48F620) it picks a place at random, x rand() % the world's width and y rand() % its
+    // height, until a vehicle could stand on every vertex within its radius (+0xAC, 200: 0x47B520); it's put there
+    // at height 0, and 0x3DA goes off there twice, as its type has it (0x488070) and again with radius and power 300
+    // (0x4880F0); then WScenery's start (0x4896D0).
+    // *Provisional*: the explosions' firer (the pod's type at +0xC4) isn't kept; its shadow parts and lights
+    // aren't added; the vehicles already deployed aren't moved off it; a hundred tries at most.
+    void BattleMap::LandPod(const Landscape::Sun& sun)
+    {
+        constexpr int Pod = 0xB3;
+        auto u = setup.units->find(Pod);
+        if (u == setup.units->end()) return;
+        const int radius = int16_t(u->second.hitPoints);
+        const int r = (int(uint32_t(radius) << 16) + land.HalfCell()) / land.Cell();
+        const int worldH = int((int64_t(land.Cell()) * land.Height()) >> 16);
+        float x = 0, y = 0;
+        bool found = false;
+        for (int tries = 0; tries < 100 && !found; tries++)
+        {
+            x = float(random::Rand() % std::max(1, land.WorldWidth()));
+            y = float(random::Rand() % std::max(1, worldH));
+            const int vx = (int(uint32_t(int(x)) << 16) + land.HalfCell()) / land.Cell();
+            const int vy = (int(uint32_t(int(y)) << 16) + land.HalfCell()) / land.Cell();
+            found = land.IsAreaPassable(vx - r, vy - r, vx + r, vy + r);
+        }
+        if (!found) return;
+        // the blasts first: the pod isn't in the world until its start (0x4896D0), so they don't reach it
+        Explode(0x3DA, int(x), int(y), 0);
+        Explode(0x3DA, int(x), int(y), 0, -1, 0, 0, 300, 300);
+        const GType* g = res.FindGType(u->second.field28);
+        if (g && g->gclass == 1)
+        {
+            auto m = models.find(u->second.field28);
+            if (m == models.end())
+            {
+                IsoModel im;
+                if (auto file = res.LoadFile(g->file))
+                    try
+                    {
+                        im.model = IobModel::Load(*file);
+                        im.lights = IsoObject::BaseLights(im.model, sun, levels);
+                        im.slot = g->paletteSlot;
+                    }
+                    catch (const std::exception&) {}
+                m = models.emplace(u->second.field28, std::move(im)).first;
+            }
+            if (!m->second.model.patches.empty())
+            {
+                const int ix = int(x), iy = int(y);
+                props.push_back({ Pod, x, y, 0.0f, MaxHealth(Pod) });
+                objects.push_back({ iy + IsoObject::Depth(m->second.model), ix, land.ProjectY(iy, land.HeightAt(ix, iy)), &m->second, nullptr, 0, 0,
+                                    -1, -1, 0, -1, int(props.size()) - 1 });
+                std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+            }
+        }
+        Occupy(Pod, x, y);
+        land.SetPointLight(int(x), int(y), sun);
     }
 
     // EnterBattleMap's scenery (0x439770 with [Debug] "Load scenery"): dat\<sector>.nsb, placed as the game does
