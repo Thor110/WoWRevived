@@ -231,6 +231,7 @@ namespace wow
             int offset = 0;             // +0x13A, rand() % (0x802E's value + 1): more room at the route's end
             float frame = 2.0f;         // +0xA8, its model's animation frame (0x490E70)
             float smoothTurn = 0;       // +0x190, the walkers' turn, smoothed
+            float climb = 0;            // +0x90, the fliers' upward speed
         };
         // A gun (WProjectile base 0x4949A0 and its classes): its type, its class's update (0 the shell's 0x4886A0,
         // 1 the rocket's 0x488830, 2 the mortar's 0x488CA0, launching shells), the fire cycle's state (+0xD8) and count (+0xD4),
@@ -257,6 +258,7 @@ namespace wow
                       std::vector<Turret> turrets;
                       std::vector<Attached> attached;
                       int dieAt = -1;       // a 0x80A0 posted to itself (the update it arrives on)
+                      int shoreAt = -1;     // an Ironclad's 0x80C1 (10 damage) posted to itself, off water
                       int id = 0;           // +0x08, the object's id (kept by a group's target, +0x30)
                       int scanCount = 0;    // +0xDA, updates since its last look round (0x4967E0)
                       int statusTime = 0, status = 0; // +0xDC / +0xE0: a timed status (0x80F5 frozen, 0x80F6, 0x80F7)
@@ -402,6 +404,12 @@ namespace wow
         void Steer(Unit& u);
         void Animate(Unit& u, float moved, int turn);   // vt+0x130
         void Paddle(Unit& u);                           // 0x48FDD0
+        void Hover(Unit& u);                            // 0x490170
+        void Wake(Unit& u);                             // vt+0x134, 0x4934F0
+        void LowEffect(int type, float x, float y);
+        void ShipTick(size_t index);                    // the Ironclads' update, 0x493B50
+        // The water classes (the Ironclads' 0x4B0568, the Submersibles' 0x4B03C8)
+        static bool Boat(int type) { return type >= 0x13 && type <= 0x18; }
         void SpeedControl(Unit& u, float wanted);
         void Advance(Unit& u);
         // 0x492C00 / 0x492A90: what a unit's neighbours add up to (+0x120..+0x144)

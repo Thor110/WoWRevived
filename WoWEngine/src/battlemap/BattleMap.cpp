@@ -1202,6 +1202,7 @@ namespace wow
                     continue;
                 }
             }
+            ShipTick(i);
             StatusTick(units[i]);
             BuildingTick(units[i]);
             DroneTick(i);
@@ -1247,7 +1248,7 @@ namespace wow
                 {
                     const Unit& u = units[size_t(o.unit)];
                     o.key = int(u.y) + o.depth;
-                    if (o.sprite == 0x359)
+                    if (o.sprite == 0x359 || o.sprite == 0x35A)
                     {
                         // a marker follows its unit
                         const int ix = int(u.x), iy = int(u.y);

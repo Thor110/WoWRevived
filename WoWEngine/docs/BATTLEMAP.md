@@ -297,7 +297,18 @@ as three s32s at 0x14, the others 20. Header 0x14 (+0x38, as a float) is the pla
   count (+0xDA) is a multiple of 3, makes a splash 0x3C7 there at height 0 with its renderer's +0x26 8 (0x48FCB0);
   on land it's shown again.
 
+- The fliers (class 0x490120, the factory's types 0x19-0x1B and 0x4D-0x4F; its step 0x490170 after the
+  steering) keep 256 over the height of the vertex they're in (0x47B120). With the gap from their height (+0x80,
+  the ground's plus +0x84) under 4 either way the upward speed (+0x90) is x 0.8; else it gains (gap - 4) x the
+  type's +0x54 (the war map speed) x 0.00005, kept within +0x54 x 0.01 either way, and +0x84 gains it. A Balloon
+  (speed 100) climbs 1 an update and settles at 257.
+- The wake (vt+0x134, 0x4934F0, every vehicle class but the walkers'): every fourth update of +0xDA, with vt+0x9C
+  false, off a link, over water (0x47FFE0, its point's cell of types 1-3), of a type whose +0x52 isn't 5 or 6 and
+  under 8 over the water, a wake 0x3C8 at its point at height 0, its renderer's +0x26 8.
+
 *Provisional*: the frame isn't kept in saves; every vehicle class but the walkers' is taken to use 0x493490;
+the fliers start at the ground and climb only while they move (as 0x490170 is in the moving step), and their
+height isn't saved;
 vt+0x9C is taken as false and the splash's vt+0x14 value (dword_4D2550's +0x90) isn't in.
 
 **Drawing** (0x49EC00): the pieces in depth order (qsort), flag 8 first, 0x10 last. For each piece (0x49EEF0) each
@@ -981,15 +992,27 @@ the Submersibles, with 0x4935E0 (0x4B03C8), both on 0x498D40 (0x4B0D50) on the v
 - **The Tunnelling Track Layers' update** (0x493C20): their renderer's +0x74 follows +0x194 (-x16 going down, x16
   coming up, 0 at rest); coming up on water (0x47FFE0: terrain 1-3) they're gone (vt+0x78 = 0x495BB0: 0x807B to both
   players, out of the world, no death).
+- **The water classes' steering** (update 114: the Ironclads 0x13-0x15, class 0x493870 / vtable 0x4B0568; the
+  Submersibles 0x16-0x18, 0x4935E0 / 0x4B03C8): braking (0x4938E0 / 0x493700) doubled, avoidance (0x4939A0 /
+  0x4937C0) a quarter, separation (0x493AD0) with the push doubled and the weight times the count, and the
+  lookahead's push off what's at its position (0x492897) / vt+0x14C, 1.0 (0x493B40 / 0x493860) where every other
+  class has 8.0 (0x489900).
+- **The Ironclads' update** (0x493B50): off water, when rand() % 2 is 0, they post themselves 0x80C1 with 10 for
+  the next update, 10 damage (0x48A273, vt+0xE0).
 - **The Submersibles' update** (0x493640): off water, when rand() % 2 is 0, 10 damage (vt+0xE0) every update.
+- **The Tunnelling Track Layers' speed** (vt+0x12C, 0x493D00; update 114): under (+0x190 bit 0) the type's +0x54
+  / 65, or / (65 / the Enhanced Drill multiplier, 0x265, dword_4CA1A4) once Human research 34 (dword_588CC8) is
+  done; above ground / 50, as every vehicle's (0x492DB0).
+- **Their mound** (vt+0x174, 0x493D70; update 114): their marker is GType 0x35A, the others' 0x359 (0x4992D0),
+  each with its renderer's +0x26 0x20, made the same way and placed at the unit's screen point (0x499040).
 
 In the test (the lorries taken as Tunnelling Track Layers for it, then put back) the group's mode 2 move sent all
 five down over 64 updates to -192, each with the marker (a down arrow, drawn over the unit at ground level); they
 drove there under and each came up over 64 more as it stopped, the marker going and the mode 0.
 
 *Provisional*: the label (vt+0x17C) and the renderer's +0x74 aren't drawn; +0xB8 bit 3 is taken as clear; the
-marker is drawn at ground level (at -192 the later terrain rows covered it); 0x493A40 (the Submersibles' arrival,
-vt+0x168) isn't in.
+marker is drawn at ground level (at -192 the later terrain rows covered it). (0x493A40, the water classes'
+arrival, vt+0x168, is the same as every vehicle's 0x491FA0, only not inlined.)
 
 ## The battle AI (the computer player 0x442890: 0x445210, 0x4455D0, 0x4456B0, 0x445010, 0x445B90; the groups' 0x483B70; `battlemap/BattleAi.cpp`)
 

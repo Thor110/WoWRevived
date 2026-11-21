@@ -377,6 +377,7 @@ namespace wow
         {
             Steer(u);
             if (!d.link) Paddle(u);     // the walkers' step (0x490040)
+            Hover(u);                   // the fliers' (0x490170)
             Advance(u);
         }
         if (u.wof)
@@ -439,9 +440,17 @@ namespace wow
                 else d.flags &= ~4u;
             }
             // separation (vt+0x154, 0x4920A0): the neighbours' push x how many there are
+            // (the water classes' 0x493AD0: the push doubled, the weight x the count)
+            const bool boat = Boat(u.type);
             if (n.count > 0 && !d.link)
-                add(float(double(v.separationAccWeight) * v.maxAcc), float(double(v.separationAccMax) * v.maxAcc),
-                    float(double(n.sepX) * n.count), float(double(n.sepY) * n.count));
+            {
+                if (boat)
+                    add(float(double(v.separationAccWeight) * v.maxAcc * n.count), float(double(v.separationAccMax) * v.maxAcc),
+                        float(double(n.sepX) + n.sepX), float(double(n.sepY) + n.sepY));
+                else
+                    add(float(double(v.separationAccWeight) * v.maxAcc), float(double(v.separationAccMax) * v.maxAcc),
+                        float(double(n.sepX) * n.count), float(double(n.sepY) * n.count));
+            }
             // the target (vt+0x150, 0x491BB0)
             {
                 const float fx = float(double(d.tx) - u.x), fy = float(double(d.ty) - u.y);
@@ -451,9 +460,10 @@ namespace wow
             if ((d.flags & 8) && !d.link)
             {
                 const double len = std::sqrt(double(d.ax) * d.ax + double(d.ay) * d.ay);
+                // (the water classes' 0x4939A0 / 0x4937C0: a quarter of it)
                 if (len > 0.0)
                     add(float(double(v.avoidanceAccWeight) * v.maxAcc), float(double(v.avoidanceAccMax) * v.maxAcc),
-                        float(-(d.ax / len)), float(-(d.ay / len)));
+                        float(-(d.ax / len) * (boat ? 0.25 : 1.0)), float(-(d.ay / len) * (boat ? 0.25 : 1.0)));
             }
             // braking (vt+0x160, 0x491C70): with something ahead, against the step, halved unless it's one of the
             // group's standing
@@ -465,6 +475,7 @@ namespace wow
                     const double len = std::sqrt(sq);
                     float bx = float(-(d.dx / len)), by = float(-(d.dy / len));
                     if (!(d.flags & 0x10)) { bx = float(bx * 0.5); by = float(by * 0.5); }
+                    if (boat) { bx = bx + bx; by = by + by; }   // the water classes' 0x4938E0 / 0x493700: doubled
                     add(float(double(v.brakingAccWeight) * v.maxAcc), float(double(v.brakingAccMax) * v.maxAcc), bx, by);
                 }
             }
@@ -542,6 +553,80 @@ namespace wow
         // 0x49342C: the length of the step (0x43FDA0) and the turn animate the model
         const double mx = double(u.x) - fromX, my = double(u.y) - fromY;
         Animate(u, float(std::sqrt(mx * mx + my * my)), turn);
+        Wake(u);
+    }
+
+    // The fliers' step (0x490170, class 0x490120: the factory's types 0x19-0x1B and 0x4D-0x4F), after the steering:
+    // they keep 256 over the height of the vertex they're in (0x47B120). With the gap from their height (+0x80, the
+    // ground's plus +0x84) under 4 either way the upward speed (+0x90) is x 0.8; else it gains (gap - 4) x the
+    // type's +0x54 x 0.00005, kept within +0x54 x 0.01 either way. The height over the ground (+0x84) then gains it.
+    void BattleMap::Hover(Unit& u)
+    {
+        if (!((u.type >= 0x19 && u.type <= 0x1B) || (u.type >= 0x4D && u.type <= 0x4F))) return;
+        auto t = setup.units->find(u.type);
+        if (t == setup.units->end()) return;
+        auto& d = u.drive;
+        const int ix = int(u.x), iy = int(u.y);
+        const float height = float(land.HeightAt(ix, iy)) + d.lift;   // +0x80
+        const float gap = float(land.HeightAtNearest(ix, iy) + 0x100) - height;
+        if (std::abs(int(gap)) < 4) d.climb = float(double(d.climb) * 0.8);
+        else
+        {
+            const float rate = float(int16_t(t->second.warMapSpeed));
+            const float most = rate * 0.0099999998f;
+            d.climb = (gap - 4.0f) * rate * 0.000049999999f + d.climb;
+            if (d.climb > most) d.climb = most;
+            if (d.climb < -most) d.climb = -most;
+        }
+        d.lift += d.climb;
+    }
+
+    // vt+0x134 after each step (0x4934F0, every vehicle class but the walkers'): every fourth update of the look-round
+    // count (+0xDA), with vt+0x9C false, off a link, over water (0x47FFE0: the cell of its point is of types 1-3), of a
+    // type whose +0x52 isn't 5 or 6, and under 8 over the water (|ftol(+0x84)|), it leaves a wake 0x3C8 at its point at
+    // height 0 (its renderer's +0x26 8).
+    // *Provisional*: vt+0x9C is taken as false, and the wake's vt+0x14 value (dword_4D2550's +0x90) isn't in.
+    void BattleMap::Wake(Unit& u)
+    {
+        auto& d = u.drive;
+        if (int16_t(u.scanCount) % 4 != 0 || d.link || (u.type >= 0x3E && u.type <= 0x4C)) return;
+        auto t = setup.units->find(u.type);
+        if (t == setup.units->end() || t->second.field52 == 5 || t->second.field52 == 6) return;
+        if (std::abs(int(d.lift)) >= 8) return;
+        const int x = int(u.x), y = int(u.y);
+        const int vx = std::clamp(int((int64_t(int32_t(uint32_t(x) << 16)) + land.HalfCell()) / land.Cell()), 0, land.Width() - 1);
+        const int vy = std::clamp(int((int64_t(int32_t(uint32_t(y) << 16)) + land.HalfCell()) / land.Cell()), 0, land.Height() - 1);
+        const int terrain = land.At(vx, vy).atm & 15;
+        if (terrain < 1 || terrain > 3) return;
+        LowEffect(0x3C8, float(u.x), float(u.y));
+    }
+
+    // An effect at ground height with its renderer's +0x26 (the depth over its y) 8: the walkers' splashes and the
+    // wakes
+    void BattleMap::LowEffect(int type, float x, float y)
+    {
+        if (const int k = SpawnEffect(type, x, y); k >= 0)
+        {
+            Effect& e = effects[size_t(k)];
+            for (ViewObject& o : objects)
+                if (o.effect == k) o.key += 8 - e.depth;
+            e.depth = 8;
+            std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+        }
+    }
+
+    // The Ironclads' update (0x493B50, after the vehicle's 0x4913B0): off water (0x47FFE0), when rand() % 2 is 0, it
+    // posts itself 0x80C1 with 10 for the next update: 10 damage (0x48A273, vt+0xE0).
+    void BattleMap::ShipTick(size_t index)
+    {
+        Unit& u = units[index];
+        if (u.type < 0x13 || u.type > 0x15) return;
+        if (u.shoreAt >= 0 && ticks >= u.shoreAt)
+        {
+            u.shoreAt = -1;
+            Damage(index, 10);
+        }
+        if (!OnWater(u) && random::Rand() % 2 == 0) u.shoreAt = ticks + 1;
     }
 
     // vt+0x130 after each step. Most vehicles (0x493490, the fliers' class 0x490120 too): the frame (+0xA8, 2.0 as it starts) goes on by the length
@@ -576,15 +661,7 @@ namespace wow
             const int terrain = land.At(vx, vy).atm & 15;
             const bool wet = terrain > 0 && terrain < 4;
             u.wof->SetHidden(piece, wet);
-            if (wet && int16_t(u.scanCount) % 3 == 0)
-                if (const int k = SpawnEffect(0x3C7, float(x), float(y)); k >= 0)
-                {
-                    Effect& e = effects[size_t(k)];
-                    for (ViewObject& o : objects)
-                        if (o.effect == k) o.key += 8 - e.depth;
-                    e.depth = 8;
-                    std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
-                }
+            if (wet && int16_t(u.scanCount) % 3 == 0) LowEffect(0x3C7, float(x), float(y));
         }
     }
 
@@ -771,8 +848,10 @@ namespace wow
                 if (!(fd > 0.0f)) return false;
                 const float pushY = float(double(d.ay) / fd * gap);
                 const float pushX = float(double(d.ax) / fd * gap);
-                u.x = float(double(pushX) / 8.0 + u.x);
-                u.y = float(double(pushY) / 8.0 + u.y);
+                // vt+0x14C: 8.0 (0x489900), the water classes' 1.0 (0x493B40 / 0x493860)
+                const double give = Boat(u.type) ? 1.0 : 8.0;
+                u.x = float(double(pushX) / give + u.x);
+                u.y = float(double(pushY) / give + u.y);
                 return false;
             }
             px = float(double(sx) + px);
@@ -875,6 +954,15 @@ namespace wow
         auto& d = u.drive;
         auto t = setup.units->find(u.type);
         float top = t == setup.units->end() ? 0.0f : float(double(int16_t(t->second.warMapSpeed)) * 0.02);
+        // the Tunnelling Track Layers' vt+0x12C (0x493D00): under (+0x190 bit 0) the speed / 65, or / (65 / the
+        // Enhanced Drill multiplier, 0x265: dword_4CA1A4) once Human research 34 (dword_588CC8) is done
+        if (t != setup.units->end() && u.type >= 7 && u.type <= 9 && u.under)
+        {
+            float by = 65.0f;
+            if (setup.researchDone && setup.researchDone(true, 34))
+                by = 65.0f / (setup.researchMultiplier ? setup.researchMultiplier(true, 0x265) : 1.0f);
+            top = float(int16_t(t->second.warMapSpeed)) / by;
+        }
         {
             const int vx = (int(uint32_t(int(u.x)) << 16) + land.HalfCell()) / land.Cell();
             const int vy = (int(uint32_t(int(u.y)) << 16) + land.HalfCell()) / land.Cell();

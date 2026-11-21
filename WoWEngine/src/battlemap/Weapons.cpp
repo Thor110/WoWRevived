@@ -531,16 +531,19 @@ namespace wow
         u.marked = want;
         if (!want)
         {
-            objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) { return o.unit == int(index) && o.sprite == 0x359; }), objects.end());
+            objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) {
+                return o.unit == int(index) && (o.sprite == 0x359 || o.sprite == 0x35A); }), objects.end());
             return;
         }
-        const GType* g = res.FindGType(0x359);
-        if (!g || !res.GetFrame(0x359, 0)) return;
+        // the Tunnelling Track Layers' is their mound (vt+0x174 = 0x493D70: GType 0x35A)
+        const int marker = u.type >= 7 && u.type <= 9 ? 0x35A : 0x359;
+        const GType* g = res.FindGType(marker);
+        if (!g || !res.GetFrame(marker, 0)) return;
         int depth = 1;
         for (const ViewObject& o : objects)
             if (o.unit == int(index)) { depth = o.depth + 1; break; }
         const int ix = int(u.x), iy = int(u.y);
-        ViewObject v{ iy + depth, ix, land.ProjectY(iy, land.HeightAt(ix, iy) + std::max(0, int(u.drive.lift))), nullptr, nullptr, g->paletteSlot, 0x359 };
+        ViewObject v{ iy + depth, ix, land.ProjectY(iy, land.HeightAt(ix, iy) + std::max(0, int(u.drive.lift))), nullptr, nullptr, g->paletteSlot, marker };
         v.unit = int(index);
         v.depth = depth;
         objects.push_back(v);

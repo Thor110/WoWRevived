@@ -123,10 +123,15 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       *Update 113*: the WOF animation keys (every animated model, not just the walkers), the frame advance (0x493490
       by distance, the walkers' 0x490070 by turn), and the walkers' feet hidden and splashing in water (0x48FCB0).
       The walker class is types 0x3E-0x4C; 0x19-0x1B / 0x4D-0x4F are the fliers.
-- [ ] **Fliers** (0x490120-0x490170: height keeping and bob); wobble and dust / wake trail 0x3C8 (0x493490 /
-      0x4934F0). *Update 113*: their frame advance (0x493490) is in, with every vehicle's.
-- [ ] **Ironclads and Submersibles' own steering** (0x493870-0x493B50, 0x493A40 arrival); the Tunnelling Track Layer's
-      research speed and mound (0x493D00 / 0x493D70).
+- [x] **Fliers** (0x490120-0x490170: height keeping and bob); wobble and dust / wake trail 0x3C8 (0x493490 /
+      0x4934F0). *Update 113*: their frame advance (0x493490) is in, with every vehicle's. *Update 114*: the height
+      keeping (0x490170, which is all of the "bob": a damped climb to 256 over the ground) and the wake 0x3C8 that
+      every vehicle class but the walkers' leaves on water (0x4934F0). There's no separate wobble in the code.
+- [x] **Ironclads and Submersibles' own steering** (0x493870-0x493B50, 0x493A40 arrival); the Tunnelling Track Layer's
+      research speed and mound (0x493D00 / 0x493D70). *Update 114*: braking x2, avoidance x0.25, separation x2,
+      the lookahead push / 1 instead of / 8; the Ironclads' damage off water (0x80C1); the Track Layer's underground
+      speed and its mound marker 0x35A. (Their arrival is the same as every vehicle's.) Tested only for crashes:
+      none of the battles at hand has a boat or a Track Layer.
 - [~] **Stop / start footprints** (0x4915B0 / 0x491630) and **the collision filter** (0x4929A0: walkers ignore small
       crushable objects, bridges ignored on a link); crushing. *Update 109*: the footprints; the filter and crushing
       still to do.
