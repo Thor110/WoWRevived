@@ -23,7 +23,7 @@ namespace wow
         // 0x49DF40 with brightness 0xFF: three levels for each patch, the sun on its normals (one each, or one for
         // each corner when the model has a normal per point) times ftol(255 x the shade level), through the
         // LANDR .INT table, at least 8
-        static std::vector<uint8_t> BaseLights(const IobModel& m, const Landscape::Sun& sun, std::span<const uint8_t> levels);
+        static std::vector<uint8_t> BaseLights(const IobModel& m, const Landscape::Sun& sun, std::span<const uint8_t> levels, int level = 255);
 
         // 0x4111B0: one point light added to a copy of the levels: for each patch, the light (0x40C930 from the light
         // to the object, dx / dy / dz the object less the light, with its normal's bytes 0 / 2 / 1, out to the light's

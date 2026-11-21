@@ -207,6 +207,7 @@ namespace wow
             for (const Unit& u : units) if (u.players && u.group == int(g) && !u.guns.empty()) members = true;
             if (!members) continue;
             ForceFireGroup(int(g), x, y);
+            groupOrdered[g] = true;     // packet 0x13: bit 3 (0x48167F)
             if (!any) Speak(0x10C, int(g));
             any = true;
         }
@@ -374,6 +375,7 @@ namespace wow
             }
             if (!any && ft != setup.units->end() && ft->second.category == 1) Speak(0x10C, int(g));
             any = true;
+            if (g < groupOrdered.size()) groupOrdered[g] = true;    // then bit 3 (0x4814D8)
         }
     }
 

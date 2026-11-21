@@ -53,7 +53,10 @@ namespace wow
                 // its marker (type 0x3DB, a sprite: GType 862)
                 if (auto u = setup.units->find(0x3DB); u != setup.units->end())
                     if (const GType* g = res.FindGType(u->second.field28); g && g->gclass == 0 && res.GetFrame(u->second.field28, 0))
+                    {
                         objects.push_back({ y + 1, x, land.ProjectY(y, land.HeightAt(x, y)), nullptr, nullptr, g->paletteSlot, u->second.field28 });
+                        objects.back().level = 255 >> 2;    // WScenery's 0x4897D0: ftol(255 x the fog level) out of the fog
+                    }
             }
         }
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });

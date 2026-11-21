@@ -12,9 +12,11 @@ namespace wow
         return int16_t(v);
     }
 
-    std::vector<uint8_t> IsoObject::BaseLights(const IobModel& m, const Landscape::Sun& sun, std::span<const uint8_t> levels)
+    // 0x49DF40(level): the brightness min(255, ftol(the renderer's level x the hour's shade level)); 255 as it's made
+    // (0x49E1E0), and again whenever the fog changes the renderer's level (0x49E2C0)
+    std::vector<uint8_t> IsoObject::BaseLights(const IobModel& m, const Landscape::Sun& sun, std::span<const uint8_t> levels, int rendererLevel)
     {
-        int level = int(255 * double(sun.shade));
+        int level = int(double(rendererLevel) * double(sun.shade));
         if (level > 255) level = 255;
         const double scale = double(float(level));
         auto light = [&](const std::array<int8_t, 3>& n) -> uint8_t

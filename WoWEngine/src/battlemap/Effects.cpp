@@ -115,7 +115,7 @@ namespace wow
         {
             e.gtype = gtype;
             e.frames = sprite->FrameCount();
-            e.depth = image->width / 2 + 64;
+            e.depth = image->width / 2 + 32;     // 0x487855-0x487868: (+0x2A - +0x28) / 2 + 0x20
         }
         // a dead one's slot taken again (its view object's gone), else a new one; one made this update waits for
         // the next to move

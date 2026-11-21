@@ -150,8 +150,23 @@ namespace wow
             std::vector<size_t> members;
             for (size_t i = 0; i < units.size(); i++)
                 if (units[i].players && units[i].vehicle && units[i].group == int(g)) members.push_back(i);
+            if (g < groupOrdered.size()) groupOrdered[g] = true;    // packet 0x0E: bit 3 (0x481E4E)
             OrderGroupMove(int(g), members, x, y);
         }
+    }
+
+    int BattleMap::GroupCount(int group) const
+    {
+        return int(std::count_if(units.begin(), units.end(), [&](const Unit& u) { return u.group == group; }));
+    }
+
+    bool BattleMap::PlayersOrder(int group) const
+    {
+        if (group < 0 || size_t(group) >= groupOrdered.size() || !groupOrdered[size_t(group)]) return false;
+        if (size_t(group) >= setup.groups.size() || !setup.groups[size_t(group)].Players()) return false;
+        for (const Unit& u : units)
+            if (u.group == group) return u.players;     // 0x4831B3 / 0x483370: the first member's +0x24 0
+        return false;
     }
 
     // 0x482B00 (vertex x, y): from the route finder's node at or before it (every 4 vertices from 4: ((v - 4) / 4)
@@ -224,21 +239,43 @@ namespace wow
         int ssx = 0, ssy = 0, gx = 0, gy = 0;
         NearestPassable(group, svx, svy, ssx, ssy);
         NearestPassable(group, dvx, dvy, gx, gy);
-        const int n = int(members.size());
+        // the counts the move uses are the group list's (0x4216D0), not just the members ordered
+        const int n = std::max(1, GroupCount(group));
         orders.push_back({ n, 0, nearest, farthest, group });
         const int order = int(orders.size()) - 1;
         for (size_t i : members) units[i].drive.order = order;
-        // a ground vehicle always asks for a route (vt+0x70 and vt+0x118 both no)
+        // 0x482E60: each vehicle member is asked vt+0x118 (0x493600 for the sinker classes: under); when the first
+        // member's vt+0x70 says so (only the Tunnelling Track Layers' class, 0x493B90), all of them under go straight
+        // there without a route, and some but not all under drops the order. Every other group asks for a route.
+        bool anyUnder = false, allUnder = true;
+        for (size_t i : members)
+        {
+            if (!units[i].vehicle) continue;
+            if (Sinker(units[i].type) && units[i].under) anyUnder = true;
+            else allUnder = false;
+        }
+        const Unit* firstMember = nullptr;
+        for (const Unit& o : units)
+            if (o.group == group) { firstMember = &o; break; }
+        const bool tunnelling = firstMember && ClassOf(firstMember->type) == VehicleClass::Tunneller;
+        if (tunnelling && anyUnder && !allUnder) return;
         std::vector<int> path;
         const bool attacking = group >= 0 && size_t(group) < groupTargets.size() && groupTargets[size_t(group)].target != 0;
-        if (RequestRoute(group, ssx, ssy, gx, gy, radius, path))
+        if (!(tunnelling && anyUnder && allUnder) && RequestRoute(group, ssx, ssy, gx, gy, radius, path))
         {
             if (path.empty())
             {
                 // 0x4833F0: "ROUTE NOT FOUND": the members get 0x8031 and the group stops
+                // (0x4833F0: the members 0x8031, the target dropped (0x80B9, 0x805A, +0x2C..+0x3C cleared), bit 0
+                // cleared; the speech and the portrait only for a player's order to a player's group, then bit 3
+                // cleared)
                 SDL_Log("ROUTE NOT FOUND");
-                Speak(0x10B, group);    // a player's move (bits 3 and 4)
                 for (size_t i : members) Stop8031(units[i]);
+                const bool spoken = PlayersOrder(group);
+                StopAttacking(group);
+                if (group >= 0 && size_t(group) < groupBusy.size()) groupBusy[size_t(group)] = false;
+                if (spoken) Speak(0x10B, group);
+                if (group >= 0 && size_t(group) < groupOrdered.size()) groupOrdered[size_t(group)] = false;
                 return;
             }
             // 0x483270: "ROUTE FOUND": each member gets 0x802E(ftol(sqrt(members) + 1) x its radius, the route)
@@ -247,10 +284,11 @@ namespace wow
             // the flag at the route's last node and the acknowledgement (0x483590)
             {
                 const RouteNode& last = route->nodes.back();
-                if (!attacking)
+                if (PlayersOrder(group))
                 {
-                    SpawnEffect(0x17C, int32_t(int64_t(last.x) * cell - half) >> 16, int32_t(int64_t(last.y) * cell - half) >> 16);
-                    Speak(0x10A, group);
+                    MoveFlag(int32_t(int64_t(last.x) * cell - half) >> 16, int32_t(int64_t(last.y) * cell - half) >> 16);
+                    if (!attacking) Speak(0x10A, group);
+                    groupOrdered[size_t(group)] = false;
                 }
             }
             const int scale = int(std::sqrt(double(n)) - -1.0);
@@ -259,11 +297,12 @@ namespace wow
         }
         SDL_Log("GOING STRAIGHT THERE! (from vertex %d,%d to %d,%d)", ssx, ssy, gx, gy);
         // 0x483590 at (the goal + 2): a player's move by a player's group (+0x1D8 bits 3 and 4) puts the "_ACK" flag
-        // (type 0x17C, a WAnimEffect) there and, with no target (+0x2C), the group speaks 0x10A
-        if (!attacking)
+        // (type 0x17C, a WAnimEffect) there and, with no target (+0x2C), the group speaks 0x10A; bit 3 then cleared
+        if (PlayersOrder(group))
         {
-            SpawnEffect(0x17C, int32_t(int64_t(gx + 2) * cell - half) >> 16, int32_t(int64_t(gy + 2) * cell - half) >> 16);
-            Speak(0x10A, group);
+            MoveFlag(int32_t(int64_t(gx + 2) * cell - half) >> 16, int32_t(int64_t(gy + 2) * cell - half) >> 16);
+            if (!attacking) Speak(0x10A, group);
+            groupOrdered[size_t(group)] = false;
         }
         const int dx = int(int32_t(int64_t(gx) * cell - half) >> 16), dy = int(int32_t(int64_t(gy) * cell - half) >> 16);
         // 0x80C2 to each member (0x490A70)
@@ -305,6 +344,17 @@ namespace wow
             if (!u.players || !u.vehicle || !selected[size_t(u.group)]) continue;
             Stop8031(u);
         }
+    }
+
+    // The move flag (0x483590): type 0x17C (hove-ack / move-ack.spr, palette slot 5) made there and started, then its
+    // renderer's level set to 0 (vt+0x18(0)) and its +0x14 bit 0 cleared (drawn solid). Its type's +0xA1 >> 2, 48, is
+    // past the 30 levels of slot 5's table, all black there: the flag was a black disc.
+    void BattleMap::MoveFlag(int x, int y)
+    {
+        const int e = SpawnEffect(0x17C, float(x), float(y));
+        if (e < 0) return;
+        for (ViewObject& o : objects)
+            if (o.effect == e && o.light < 0) o.level = 0;
     }
 
     // 0x805A to a unit (0x495CB0's case): vt+0xCC, a vehicle's 0x491180 (steering bit 5 cleared, bit 0 set: it stops)
@@ -432,7 +482,7 @@ namespace wow
         auto& d = u.drive;
         const auto& v = setup.vehicles;
         d.phase = int16_t(d.phase + 1);
-        if (d.phase % 3 == 0)
+        if (d.phase % SteerPeriod(u.type) == 0)
         {
             std::vector<std::pair<float, float>> acc;
             auto add = [&](float weight, float max, float fx, float fy) {
@@ -508,7 +558,8 @@ namespace wow
                     float(double(n.stepX) / n.matched), float(double(n.stepY) / n.matched));
             // cohesion (vt+0x164, 0x492240; with a route): toward the moving group members' average position,
             // attractAcc*
-            if (d.route && n.matched > 0 && !d.link && !held)
+            // (the water classes' vt+0x164 is a nullsub: no cohesion)
+            if (d.route && n.matched > 0 && !d.link && !held && !Boat(u.type))
             {
                 n.posX = float(double(n.posX) / n.matched);
                 n.posY = float(double(n.posY) / n.matched);
@@ -585,7 +636,7 @@ namespace wow
     // type's +0x54 x 0.00005, kept within +0x54 x 0.01 either way. The height over the ground (+0x84) then gains it.
     void BattleMap::Hover(Unit& u)
     {
-        if (!((u.type >= 0x19 && u.type <= 0x1B) || (u.type >= 0x4D && u.type <= 0x4F))) return;
+        if (!Flier(u.type)) return;
         auto t = setup.units->find(u.type);
         if (t == setup.units->end()) return;
         auto& d = u.drive;
@@ -612,7 +663,7 @@ namespace wow
     void BattleMap::Wake(Unit& u)
     {
         auto& d = u.drive;
-        if (int16_t(u.scanCount) % 4 != 0 || d.link || (u.type >= 0x3E && u.type <= 0x4C)) return;
+        if (int16_t(u.scanCount) % 4 != 0 || d.link || Walker(u.type)) return;
         auto t = setup.units->find(u.type);
         if (t == setup.units->end() || t->second.field52 == 5 || t->second.field52 == 6) return;
         if (std::abs(int(d.lift)) >= 8) return;
@@ -654,7 +705,7 @@ namespace wow
 
     // vt+0x130 after each step. Most vehicles (0x493490, the fliers' class 0x490120 too): the frame (+0xA8, 2.0 as it starts) goes on by the length
     // of the step x its model GType's OBJ.ojd record 6 second float (0x4F0538, read by 0x437A52). The walkers'
-    // class (0x48FC20, vtable 0x4AFEA8, its vt+0x130 0x490070: the factory's types 0x3E-0x4C) first smooths the turn, +0x190 = (turn + 2 x
+    // class (0x48FC20, vtable 0x4AFEA8, its vt+0x130 0x490070: the factory's types 0x3E-0x4C and 0x50-0x5C) first smooths the turn, +0x190 = (turn + 2 x
     // +0x190) / 3, and while it's at least [Vehicles] startTurnRate either way the frame goes on by |it| x
     // turnAnimRate + 0.2 instead. Either way a frame at or past the model's count has count - 1 taken off, so the
     // loop comes back round to frame 1 (frame 0 is the model at rest). The renderer (0x47F630) poses the model at
@@ -667,15 +718,28 @@ namespace wow
     // *Provisional*: vt+0x9C isn't known (taken as false) and the splash's vt+0x14 value isn't in.
     void BattleMap::Paddle(Unit& u)
     {
-        if (!u.wof || u.type < 0x3E || u.type > 0x4C) return;
-        static const std::vector<int> Feet[] = {
-            { 1, 2, 3 },                // 0x3E-0x40
-            { 2, 3, 4 },                // 0x41-0x43
-            { 4, 5, 6, 7 },             // 0x44-0x46
-            { 9, 6 },                   // 0x47-0x49
-            { 9, 10, 11, 12, 13, 14 },  // 0x4A-0x4C
+        if (!u.wof || !Walker(u.type)) return;
+        // each walker type's feet (0x48FDD0's switch on the type)
+        auto feet = [](int t) -> std::vector<int> {
+            switch (t)
+            {
+            case 0x3E: case 0x3F: case 0x40: return { 1, 2, 3 };
+            case 0x41: case 0x42: case 0x43: return { 2, 3, 4 };
+            case 0x44: case 0x45: case 0x46: case 0x51: case 0x52: return { 4, 5, 6, 7 };
+            case 0x47: case 0x48: case 0x49: return { 9, 6 };
+            case 0x4A: case 0x4B: case 0x4C: return { 9, 10, 11, 12, 13, 14 };
+            case 0x50: case 0x5C: return { 2, 3, 4, 5 };
+            case 0x53: return { 8, 9, 10, 11 };
+            case 0x54: case 0x55: return { 9, 10, 11, 12 };
+            case 0x56: return { 1, 2, 3, 4, 5 };
+            case 0x57: return { 2, 3, 4, 15, 16 };
+            case 0x58: return { 3, 4, 5, 6, 7 };
+            case 0x59: case 0x5A: return { 13, 14, 15, 16, 17, 18 };
+            case 0x5B: return { 1, 2, 3, 4 };
+            default: return {};
+            }
         };
-        for (int piece : Feet[(u.type - 0x3E) / 3])
+        for (int piece : feet(u.type))
         {
             int x = 0, y = 0;
             if (!u.wof->FirstPoint(piece, x, y)) continue;
@@ -695,7 +759,7 @@ namespace wow
         float rate = 0;
         if (auto t = setup.units->find(u.type); t != setup.units->end() && setup.six)
             if (auto six = setup.six->find(t->second.field28); six != setup.six->end()) rate = six->second.b;
-        const bool walker = u.type >= 0x3E && u.type <= 0x4C;
+        const bool walker = Walker(u.type);
         bool turning = false;
         if (walker)
         {
@@ -909,8 +973,8 @@ namespace wow
                 if (!(fd > 0.0f)) return false;
                 const float pushY = float(double(d.ay) / fd * gap);
                 const float pushX = float(double(d.ax) / fd * gap);
-                // vt+0x14C: 8.0 (0x489900), the water classes' 1.0 (0x493B40 / 0x493860)
-                const double give = Boat(u.type) ? 1.0 : 8.0;
+                // vt+0x14C: 8.0 (0x489900), the water classes' and drones' 1.0
+                const double give = Give(u.type);
                 u.x = float(double(pushX) / give + u.x);
                 u.y = float(double(pushY) / give + u.y);
                 return false;
@@ -1091,14 +1155,19 @@ namespace wow
             d.flags &= ~0x200u;
             u.leaving = true;
         }
+        // 0x491A4F: its group counts it (0x482450: +0x56 up; at the group's count it goes back to 0 and bit 0 is
+        // cleared, 0x480EB0), then 0x808B(1) 9 x (the count - +0x56) + 60 updates on. The count isn't reset by a new
+        // order (0x482510), so arrivals carry over.
         int left = 0;
-        if (d.order >= 0)
+        if (const int g = u.group; g >= 0 && size_t(g) < groupArrived.size())
         {
-            MoveOrder& o = orders[size_t(d.order)];
-            o.arrived++;
-            left = o.members - o.arrived;
-            // 0x8081 to the group: +0x56 counts its members' arrivals; with all of them in, bit 0 cleared (0x480EB0)
-            if (left == 0 && o.group >= 0 && size_t(o.group) < groupBusy.size()) groupBusy[size_t(o.group)] = false;
+            const int count = GroupCount(g);
+            if (++groupArrived[size_t(g)] >= count)
+            {
+                groupArrived[size_t(g)] = 0;
+                if (size_t(g) < groupBusy.size()) groupBusy[size_t(g)] = false;
+            }
+            left = count - groupArrived[size_t(g)];
         }
         Post808B(u, 1, 9 * left + 60);
     }

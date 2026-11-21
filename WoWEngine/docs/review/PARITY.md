@@ -22,22 +22,43 @@ Tick each item here with the update that fixes it.
 
 ## Phase 1: structure (fixes whole families of bugs)
 
-- [ ] **S1. View objects as the original's renderers.** Each drawn thing keeps its own sort y (+0x1E), depth (+0x26),
+- [x] **S1. View objects as the original's renderers.** Each drawn thing keeps its own sort y (+0x1E), depth (+0x26),
       shade level (+0x34) and an optional parent renderer; the key is y + depth, worked out after the parent's, every
       update. Fixes: units on bridges drawn behind the deck (0x491730 -> 0x4984C0, +0x70 while on it); turrets under
       their hulls (0x489AE0, hull + 1); shadows (0x48E850); WOF depth recomputed at each pose (0x47F340); mine and
       sinker markers on top (+0x1E 0x4650); effects' depth width/2 + 32 (0x487865); per-effect level (the move
       marker 0x17C at level 0, 0x483590: the black disc). [rendering 1-10, A1-A3; battle-ui 1, 8, A; movement 1, 24, A4]
-- [ ] **S2. Fog level on every renderer.** Each object's update sets its renderer level from the fog (0x48B3D0 ->
+      *Update 128*: `RekeyViews` each update (hull: posed depth, +0x30/+0x40 on a bridge link; turrets hull + 1 / + 1;
+      shadows hull - 1 / - 1, held while under; parts their own pose; markers 0x4650 + 0x20 raised by +0x41); bridge
+      segments at their posed depth; effects width / 2 + 32; a level on each view object: the move flag 0, scenery
+      sprites 63, lamps and 0x1C0 +0xA1 >> 2, corners 45, reinforcement markers 63. Tested: a lorry crossing
+      London's bridge now draws on the deck; the move flag shows its animation. The fog's share of the level is S2.
+- [x] **S2. Fog level on every renderer.** Each object's update sets its renderer level from the fog (0x48B3D0 ->
       vt+0x5C): WOF sun light scaled, IOB lights rebuilt per instance at that level (0x49E2C0), sprites at level / 4.
       Fogged buildings and trees are dimmed. [rendering 3, 11, A2]
-- [ ] **S3. Vehicle classes from the factory (0x446B30).** One table of each type's class (vehicle, walker 0x3E-0x4C
+      *Update 128*: each update every unit's and prop's view objects take ftol(the fog level there x 255) (x +0xA1
+      for lamps and 0x1C0); WOF faces' sun term and point lights x level / 255; IOB base lights rebuilt at the level
+      (`BaseLights(level)`, cached by model and level) with the point-light cap 63 x level / 255; prop sprites at
+      level >> 2. The fog level samples the type's +0x44 word (+0xAC), not the collision radius. Tested: the trees in
+      London's fog are dimmed with the ground.
+- [x] **S3. Vehicle classes from the factory (0x446B30).** One table of each type's class (vehicle, walker 0x3E-0x4C
       and 0x50-0x5C, flier, boat, drone, track layer, emplacement, building, scenery...) instead of scattered type
       ranges. [movement 3, A1]
+      *Update 128*: `BattleMap::ClassOf` (Plain, Tunneller, Ironclad, WaterSinker, Flier, Walker, Drone) with
+      `Walker`, `Flier`, `Boat`, `SteerPeriod` (1 for the water classes and drones, else 3) and `Give` (1.0 / 8.0).
+      Walkers now include 0x50-0x5C, with every type's feet from 0x48FDD0; drones steer every update and give 1.0;
+      boats have no cohesion; Tunnelling Track Layers all under go straight without a route, and some under drops
+      the order (0x482E60). [movement 3, 11, 12, 13]
 - [ ] **S4. Group state as the original keeps it.** +0x1D8 bits 0-9 (3/4: a player's order to a player's group, which
       gate the move marker and "acknowledged" speech), arrival counts on the group, not a growing `orders` list; the
       selection as a group of its own (0x439000 / 0x4480F0). [battle-ui 2, B; movement 2, 6, 9, 15, 16, A2;
       battle-setup B, C]
+      *Update 128 (part)*: `groupOrdered` (bit 3, set by the player's 0x0E, 0x10 and 0x13) and `PlayersOrder` (bits 3
+      and 4 and the first member the player's): the move flag and "acknowledged" only then (the flag also for an
+      attack's approach; the speech without a target), bit 3 cleared after; ROUTE NOT FOUND stops the members, drops
+      the target, clears bit 0 and speaks only for a player's order; arrivals per group (+0x56, reset at the group's
+      count, so they carry over between orders); the move's counts from the whole group (0x4216D0). Left: the
+      selection as a group of its own (0x439000 / 0x4480F0) and the rest of +0x1D8.
 - [ ] **S5. Per-object updates in start order** (the world list, 0x43A980 / 0x47D610): each object does its whole
       update in turn, instead of the engine's passes (all driving, then all guns...). Look-round timers start at
       rand() % 30 (0x4957A2). [battle-setup 4, 14, 15, A; combat A5]

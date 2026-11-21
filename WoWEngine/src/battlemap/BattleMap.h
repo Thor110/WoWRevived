@@ -149,9 +149,16 @@ namespace wow
         // object's screen point and depth, and the time-of-day shade tables of the slots they use
         struct IsoModel { IobModel model; std::vector<uint8_t> lights; int slot = 0; };
         std::map<int, IsoModel> models;
+        mutable std::map<std::pair<const IsoModel*, int>, std::vector<uint8_t>> isoLights;   // base lights by level
         struct ViewObject { int key; int x, y; const IsoModel* model; const WofInstance* wof = nullptr; int slot = 0; int sprite = 0; int light = -1;
                             int unit = -1, depth = 0, effect = -1, prop = -1;
-                            int part = -1; };   // part: which of its unit's parts (the type's record 28s) it draws
+                            int part = -1;      // part: which of its unit's parts (the type's record 28s) it draws
+                            // the renderer's shade level (+0x34, as a sprite takes it: the level vt+0x18 was given
+                            // >> 2); -1: the default for its kind
+                            int level = -1;
+                            // the level vt+0x18 was given (+0x34 for a WOF or IOB renderer, 0-255): the fog's, set
+                            // each update by its object's vt+0x5C (0x48B3D0)
+                            int bright = 255; };
         // A scenery object (WScenery 0x4895E0 / 0x489380 on the damageable 0x489E20): its type, point and height
         // (+0x84), its health (+0xC4, the type's +0x4A to start with, bit 7 set), a 0x80A0 on its way, its light
         struct Prop { int type = 0; float x = 0, y = 0, z = 0; int health = 0, dieAt = -1, light = -1; bool alive = true; };
@@ -344,7 +351,8 @@ namespace wow
         void BuildingSound(Unit& u);                            // its own sound (+0xA2) at its point, 0x4883E0
         void BuildingTick(Unit& u);                             // 0x48F130
         void LoseParts(size_t unit);
-        void Stop8031(Unit& u);                                 // 0x8031 to a vehicle: 0x4910C0 -> 0x496BC0
+        void Stop8031(Unit& u);
+        void MoveFlag(int x, int y);                            // 0x483590's flag, type 0x17C at level 0                                 // 0x8031 to a vehicle: 0x4910C0 -> 0x496BC0
         void StandDown(Unit& u);                                // 0x805A to a unit (its guns aside): vt+0xCC, vt+0xAC(0)                            // 0x48EF80's part after 0x48AB20
         const IsoModel* LoadIob(int gtype);                     // an IOB model and its lights, loaded once
         void StopUnitSounds(Unit& u);
@@ -359,6 +367,9 @@ namespace wow
         void TurretTick(Unit& u, Turret& t);                    // 0x489B40
         int GunHeading(const Unit& u, const Gun& g) const;      // its +0x40: its turret's or its unit's
         void AddPartRenderers(size_t unit);
+        // The view list's keys as the original's renderers have them (+0x1E y + +0x26 depth), worked out each update
+        // for everything that goes with a unit, the parent's before the children's, then sorted (0x40D750)
+        void RekeyViews();
         void AddCorners(size_t unit);   // 0x48E9D0: the four 0x17B objects round a Human building being built
         void PoseParts(Unit& u);
         void Impact(size_t unit, const Gun& g);                 // 0x4886A0's landing: 0x487F50
@@ -458,7 +469,29 @@ namespace wow
         bool Crushable(const Unit& o) const;            // vt+0xD8
         bool Collides(const Unit& u, const Unit& o) const;  // the vehicles' vt+0xBC, 0x4929A0                    // the Ironclads' update, 0x493B50
         // The water classes (the Ironclads' 0x4B0568, the Submersibles' 0x4B03C8)
-        static bool Boat(int type) { return type >= 0x13 && type <= 0x18; }
+        // The vehicle classes the factory (0x446B30) makes, each with its own vtable (0x490820's derived classes):
+        // 7-9 the Tunnelling Track Layers (0x493B90), 0x13-0x15 the Ironclads (0x493870), 0x16-0x18 the water
+        // sinkers (0x4935E0), 0x19-0x1B and 0x4D-0x4F the fliers (0x490120), 0x3E-0x4C and 0x50-0x5C the walkers
+        // (0x48FC20), 0x5D-0x5F the drones (0x48F970), the rest plain (0x490820)
+        enum class VehicleClass { Plain, Tunneller, Ironclad, WaterSinker, Flier, Walker, Drone };
+        static VehicleClass ClassOf(int t)
+        {
+            if (t >= 7 && t <= 9) return VehicleClass::Tunneller;
+            if (t >= 0x13 && t <= 0x15) return VehicleClass::Ironclad;
+            if (t >= 0x16 && t <= 0x18) return VehicleClass::WaterSinker;
+            if ((t >= 0x19 && t <= 0x1B) || (t >= 0x4D && t <= 0x4F)) return VehicleClass::Flier;
+            if ((t >= 0x3E && t <= 0x4C) || (t >= 0x50 && t <= 0x5C)) return VehicleClass::Walker;
+            if (t >= 0x5D && t <= 0x5F) return VehicleClass::Drone;
+            return VehicleClass::Plain;
+        }
+        static bool Boat(int type) { const auto c = ClassOf(type); return c == VehicleClass::Ironclad || c == VehicleClass::WaterSinker; }
+        static bool Walker(int type) { return ClassOf(type) == VehicleClass::Walker; }
+        static bool Flier(int type) { return ClassOf(type) == VehicleClass::Flier; }
+        // vt+0x148, the steering's period (0x492F7A): 1 (0x48FB30) for the water classes and the drones, else 3
+        // (0x4898F0); vt+0x14C, the give in the lookahead's push (0x492350): 1.0 for the same (0x493B40 / 0x493860 /
+        // 0x48FB40), else 8.0 (0x489900)
+        static int SteerPeriod(int type) { const auto c = ClassOf(type); return c == VehicleClass::Ironclad || c == VehicleClass::WaterSinker || c == VehicleClass::Drone ? 1 : 3; }
+        static double Give(int type) { return SteerPeriod(type) == 1 ? 1.0 : 8.0; }
         void SpeedControl(Unit& u, float wanted);
         void Advance(Unit& u);
         // 0x492C00 / 0x492A90: what a unit's neighbours add up to (+0x120..+0x144)
@@ -545,6 +578,7 @@ namespace wow
         void FogDecay();                                // 0x434DF0
         void FogReveal(int vx, int vy, int range);      // 0x434A80
         float FogLevel(const Unit& u);                  // 0x48B050
+        float FogLevelAt(int type, float x, float y) const;   // 0x48B050 at a point, by its type's +0x44 (+0xAC)
         void FogTick();
         void FogRevealOwn();                            // each of the player's objects' vt+0x100 (0x4964B0 / 0x48C570)
         std::set<int> encountered;      // byte_51A19C by type: 0x47F630, 0x488C00
@@ -591,7 +625,13 @@ namespace wow
         // random point; Attack and Retaliate (2, 1) go back home (+0x60 / +0x64) if more than 400 from it
         std::vector<int> groupTicks, groupHomeX, groupHomeY;
         std::vector<int> groupInterval;                         // +0x5C, the think interval (the members' +0x92 averaged)
-        std::vector<bool> groupHalted;                          // +0x1D8 bit 1: most of it halted (0x483760)
+        std::vector<bool> groupHalted;
+        // +0x1D8 bit 3: an order of the player's (packets 0x0E, 0x10 and 0x13; 0x481E4E, 0x4814D8, 0x48167F), which
+        // with bit 4 (a player's group) lets the move show its flag and speak (0x483590), cleared once it has
+        std::vector<bool> groupOrdered;
+        std::vector<int> groupArrived;                          // +0x56: members arrived (0x482450)
+        int GroupCount(int group) const;                        // 0x4216D0: the group list's count (+0x24)
+        bool PlayersOrder(int group) const;                     // bits 3 and 4, and the first member the player's                          // +0x1D8 bit 1: most of it halted (0x483760)
         std::vector<bool> groupBusy;                            // +0x1D8 bit 0 without a target: moving (an order, Avoid's run, Retreat)
         std::vector<bool> groupSelfMove;                        // +0x1D8 bit 2: that move is the group's own (0x483B70's roam / home)
         // 0x80F4 posted to an object (0x4355A0 with its delay): the update it arrives, the object, the firer, the level

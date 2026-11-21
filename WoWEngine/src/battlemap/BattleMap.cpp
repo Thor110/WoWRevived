@@ -172,9 +172,11 @@ namespace wow
         groupHomeY.assign(setup.groups.size(), 0);
         groupBusy.assign(setup.groups.size(), false);
         groupHalted.assign(setup.groups.size(), false);
+        groupOrdered.assign(setup.groups.size(), false);
+        groupArrived.assign(setup.groups.size(), 0);
         groupSelfMove.assign(setup.groups.size(), false);
         AiStart();     // the battle begun, told to the computer player (0x8075 -> 0x445210)
-        std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+        RekeyViews();
 
         // The start view (0x439B7E): on the player's HQ (the player's constructions list, HCON, searched for type
         // 278 in London or the Command Post 58 elsewhere in a Human game, 830 in sector 3 or 120 elsewhere in a Martian one), the
@@ -1148,6 +1150,101 @@ namespace wow
             objects.push_back({ iy + 1, ix, land.ProjectY(iy, land.HeightAt(ix, iy)), nullptr, nullptr, g->paletteSlot, gtype });
     }
 
+    // Each renderer's key is its +0x1E (the object's y, 0x47F516) + its +0x26, as the original's view list sorts them
+    // (0x40D750), worked out each update after the poses:
+    //   a unit's own WOF: +0x26 half the posed model's depth extent (0x47F340, every pose); on a bridge link the
+    //     bridge adds 0x30 to +0x1E and 0x40 to +0x26 (0x491730 -> 0x4984C0), so a rider draws over the deck;
+    //   a turret: the hull's +0x1E + 1 and +0x26 + 1 (0x489AE0), just after its hull;
+    //   a shadow: the hull's less 1 each (0x48E850), only while the hull's height is 0 or more (else it stays);
+    //   another WOF part: its own place and posed depth;
+    //   a mine's or sinker's marker: +0x1E never set (0x4650) and +0x26 0x20 (0x48CD69, 0x499320), so after
+    //     everything, at the object's +0x2C / +0x30, its point raised by its type's +0x41 (0x47F480 / 0x4406A0);
+    //   the rest (IOB models, building parts, corners): the unit's y + their own depth.
+    void BattleMap::RekeyViews()
+    {
+        struct Hull { int y = 0, depth = 0; bool set = false; };
+        std::vector<Hull> hulls(units.size());
+        for (ViewObject& o : objects)
+        {
+            if (o.unit < 0 || size_t(o.unit) >= units.size() || o.light >= 0) continue;
+            const Unit& u = units[size_t(o.unit)];
+            if (!o.wof || o.wof != u.wof || o.part >= 0) continue;
+            int y = int(u.y), depth = o.wof->PosedDepth();
+            if (u.drive.link) { y += 0x30; depth += 0x40; }
+            o.depth = depth;
+            o.key = y + depth;
+            hulls[size_t(o.unit)] = { y, depth, true };
+        }
+        for (ViewObject& o : objects)
+        {
+            if (o.unit < 0 || size_t(o.unit) >= units.size() || o.light >= 0 || o.effect >= 0) continue;
+            const Unit& u = units[size_t(o.unit)];
+            const Hull& h = hulls[size_t(o.unit)];
+            if (o.sprite == 0x359 || o.sprite == 0x35A)
+            {
+                const int ix = int(u.x), iy = int(u.y);
+                int raise = 0;
+                if (auto t = setup.units->find(u.type); t != setup.units->end()) raise = t->second.size41;
+                o.x = ix;
+                o.y = land.ProjectY(iy, land.HeightAt(ix, iy) + int(u.drive.lift)) - raise;
+                o.depth = 0x20;
+                o.key = 0x4650 + 0x20;
+                continue;
+            }
+            if (o.wof && o.wof == u.wof && o.part < 0) continue;
+            if (o.wof && o.part >= 0)
+            {
+                const Attached* a = nullptr;
+                for (const Attached& at : u.attached)
+                    if (at.part == o.part) { a = &at; break; }
+                if (a && a->shadow)
+                {
+                    if (!h.set || u.drive.lift < 0.0f) continue;
+                    o.depth = h.depth - 1;
+                    o.key = h.y - 1 + o.depth;
+                }
+                else if (a && a->turret >= 0 && h.set)
+                {
+                    o.depth = h.depth + 1;
+                    o.key = h.y + 1 + o.depth;
+                }
+                else
+                {
+                    o.depth = o.wof->PosedDepth();
+                    o.key = o.wof->WorldY() + o.depth;
+                }
+                continue;
+            }
+            o.key = int(u.y) + o.depth;
+        }
+        // the renderer's level (vt+0x5C, from each object's update 0x48B3D0): ftol(the fog level there (0x48B050) x
+        // 255) (0x48B2A0, 0x48B2D0, WScenery's 0x4897D0), or x its type's +0xA1 for a street lamp (type 0x110,
+        // 0x48F2E0) or type 0x1C0 (0x48D000); a sprite keeps it >> 2 (0x40F040). The flying objects' vt+0x5C does
+        // nothing (nullsub_3), nor do the lights'.
+        std::vector<int> unitBright(units.size(), 255);
+        for (size_t i = 0; i < units.size(); i++) unitBright[i] = int(FogLevelAt(units[i].type, units[i].x, units[i].y) * 255.0f);
+        for (ViewObject& o : objects)
+        {
+            if (o.light >= 0 || o.effect >= 0) continue;
+            if (o.unit >= 0 && size_t(o.unit) < units.size())
+            {
+                if (o.sprite == 0x359 || o.sprite == 0x35A) continue;   // the markers are renderers of their own
+                o.bright = unitBright[size_t(o.unit)];
+                continue;
+            }
+            if (o.prop >= 0 && size_t(o.prop) < props.size())
+            {
+                const Prop& p = props[size_t(o.prop)];
+                int of = 255;
+                if (p.type == 0x110 || p.type == 0x1C0)
+                    if (auto t = setup.units->find(p.type); t != setup.units->end()) of = t->second.fieldA1 & 0xFF;
+                o.bright = int(FogLevelAt(p.type, p.x, p.y) * float(of));
+                if (o.sprite) o.level = o.bright >> 2;
+            }
+        }
+        std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+    }
+
     float BattleMap::Progress(const Unit& u) const
     {
         if (u.group < 0 || size_t(u.group) >= setup.groups.size()) return 1.0f;
@@ -1174,6 +1271,8 @@ namespace wow
             {
                 objects[o].part = first + k;
                 objects[o].depth = objects[o].key - int(u.y);
+                // at its type's +0xA1 (0x48EC7A: the renderer's vt+0x18 with the byte, 180 >> 2 = 45)
+                if (auto ct = setup.units->find(0x17B); ct != setup.units->end()) objects[o].level = (ct->second.fieldA1 & 0xFF) >> 2;
             }
             Attached a;
             a.part = first + k;
@@ -1388,6 +1487,10 @@ namespace wow
                 const int h = int(float(land.HeightAt(ix, iy)) + o.z);
                 props.push_back({ o.type, o.x, o.y, o.z, MaxHealth(o.type) });
                 objects.push_back({ iy + 1, ix, land.ProjectY(iy, h), nullptr, nullptr, g->paletteSlot, gtype, -1, -1, 0, -1, int(props.size()) - 1 });
+                // its level (+0x34, the sprite's vt+0x18 0x40F040 keeps the argument >> 2): WScenery's 0x4897D0 gives
+                // ftol(255 x the fog level), a street lamp's (type 0x110, 0x48F2E0) and type 0x1C0's (0x48D000)
+                // ftol(its type's +0xA1 x it); 1.0 out of the fog. (Was 0, the darkest: the lamps looked black.)
+                objects.back().level = (o.type == 0x110 || o.type == 0x1C0 ? (u->second.fieldA1 & 0xFF) : 255) >> 2;
                 shadows(u->second, o.x, o.y, image->width / 2, 1);
                 if (const size_t before = lights.size(); addLight(o, u->second), lights.size() > before) props.back().light = int(before);
                 land.SetPointLight(ix, iy, sun);
@@ -1465,13 +1568,12 @@ namespace wow
         auto file = res.LoadFile(g->file);
         if (!file) return;
         float scale = 65536.0f;
-        int follow = 0, depth = 0;
+        int follow = 0;
         if (setup.six)
             if (auto six = setup.six->find(gtype); six != setup.six->end())
             {
                 scale = six->second.a;
                 follow = six->second.c;
-                depth = 2 * int16_t(six->second.d); // the renderer's +0x26 (0x49DB1C)
             }
         const Bridge bridge = Bridge::Create(land, o.extra[0], o.extra[1], o.extra[2], o.extra[3]);
         AddBridgeNodes(bridge);
@@ -1484,7 +1586,10 @@ namespace wow
             try { w = std::make_unique<WofInstance>(*file, scale, follow); }
             catch (const std::exception&) { break; }
             w->Transform(land, bridge.Heading(), x, y, land.HeightAt(x, y));
-            objects.push_back({ y + depth, 0, 0, nullptr, w.get(), g->paletteSlot });
+            // posed as a child (0x4981B0 -> 0x47F340): its +0x26 half the posed segment's depth extent, before the
+            // stitching, not record 6's
+            const int segDepth = w->PosedDepth();
+            objects.push_back({ y + segDepth, 0, 0, nullptr, w.get(), g->paletteSlot });
             wofs.push_back(std::move(w));
         }
         const int made = int(wofs.size() - first);
@@ -1699,23 +1804,9 @@ namespace wow
         // the flying objects (effects, smoke, shells)
         UpdateEffects();
         UpdateLights();
-        if (moved)
-        {
-            for (ViewObject& o : objects)
-                if (o.unit >= 0 && o.light < 0)
-                {
-                    const Unit& u = units[size_t(o.unit)];
-                    o.key = int(u.y) + o.depth;
-                    if (o.sprite == 0x359 || o.sprite == 0x35A)
-                    {
-                        // a marker follows its unit
-                        const int ix = int(u.x), iy = int(u.y);
-                        o.x = ix;
-                        o.y = land.ProjectY(iy, land.HeightAt(ix, iy) + std::max(0, int(u.drive.lift)));
-                    }
-                }
-            std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
-        }
+        // the view list is rebuilt in key order every frame (0x40D750), and the keys follow the poses
+        (void)moved;
+        RekeyViews();
         if (miniShown && (miniFrames & 0xF) == 0) MakeDots();
         miniFrames++;
     }
@@ -2037,7 +2128,7 @@ namespace wow
                 if (!shade) continue;
                 if (o.wof)
                 {
-                    o.wof->Draw(sun, *shade, t, -scrollX, -scrollY, faceLights, setup.wofBrightness);
+                    o.wof->Draw(sun, *shade, t, -scrollX, -scrollY, faceLights, setup.wofBrightness, float(o.bright) * (1.0f / 255.0f));
                     continue;
                 }
                 if (o.sprite)
@@ -2048,8 +2139,8 @@ namespace wow
                     const GType* g = res.FindGType(o.sprite);
                     // a flying object's sprite is at its type's +0xA1 / 4 (0x487846: its renderer's vt+0x18, the
                     // sprite's 0x40F040, sets +0x34, the table's level); the others at 0
-                    int level = 0;
-                    if (o.effect >= 0 && size_t(o.effect) < effects.size())
+                    int level = o.level >= 0 ? o.level : 0;
+                    if (o.level < 0 && o.effect >= 0 && size_t(o.effect) < effects.size())
                         if (auto et = setup.units->find(effects[size_t(o.effect)].type); et != setup.units->end()) level = (et->second.fieldA1 & 0xFFFF) >> 2;
                     if (image && g) canvas.DrawImage(*image, shade->Level(level), o.x - g->hotX - scrollX, o.y - g->hotY - scrollY);
                     continue;
@@ -2059,7 +2150,16 @@ namespace wow
                 // within the range + its radius +0x3E, the octagonal distance, each further than the last) add to a
                 // copy of its levels at their level x [Game] "ISO Brightness" (0.5), at most 63 x its level / 255
                 // (255 here: cap 63)
-                const std::vector<uint8_t>* use = &o.model->lights;
+                // its base lights at the renderer's level (0x49E2C0 -> 0x49DF40 when the fog changes it): made once
+                // for each model and level
+                const std::vector<uint8_t>* base = &o.model->lights;
+                if (o.bright != 255)
+                {
+                    auto& cached = isoLights[{ o.model, o.bright }];
+                    if (cached.empty()) cached = IsoObject::BaseLights(m, sun, levels, o.bright);
+                    base = &cached;
+                }
+                const std::vector<uint8_t>* use = base;
                 std::vector<uint8_t> lit;
                 if (!faceLights.empty())
                 {
@@ -2089,9 +2189,11 @@ namespace wow
                             }
                             last = best;
                             if (!pick) break;
-                            if (lit.empty()) lit = o.model->lights;
+                            if (lit.empty()) lit = *base;
+                            // at most max(8, ftol(the level / 255 x 63)) (0x4111B0)
                             IsoObject::AddPointLight(m, lit, ox - (pick->x & 0xFFFF), oy - (pick->y & 0xFFFF), oz - (pick->z & 0xFFFF),
-                                                     int(pick->level * setup.isoBrightness), pick->range & 0xFFFF, radius, 63);
+                                                     int(pick->level * setup.isoBrightness), pick->range & 0xFFFF, radius,
+                                                     int(float(o.bright) * (1.0f / 255.0f) * 63.0f));
                         }
                         if (!lit.empty()) use = &lit;
                     }

@@ -60,16 +60,21 @@ namespace wow
             }
     }
 
-    // vt+0x58 (0x48B050): the fog at the object's four corners (its point plus and less +0xAC, in vertices), each
-    // b / "Fog smooth index" (+0x9C) + (1 - that) x "Fog darkness" (+0x90) under the index, else 1.0; their mean
-    float BattleMap::FogLevel(const Unit& u)
+    // vt+0x58 (0x48B050): the fog at the object's four corners (its point plus and less +0xAC, its type's +0x44 word,
+    // in vertices), each b / "Fog smooth index" (+0x9C) + (1 - that) x "Fog darkness" (+0x90) under the index, else
+    // 1.0; their mean
+    float BattleMap::FogLevel(const Unit& u) { return FogLevelAt(u.type, u.x, u.y); }
+
+    float BattleMap::FogLevelAt(int type, float x, float y) const
     {
         if (!fog.enabled || fog.map.empty()) return 1.0f;
         const int w = land.Width(), h = land.Height();
         const int64_t cell = land.Cell(), half = land.HalfCell();
         auto vertex = [&](int v) { return int((int64_t(int32_t(uint32_t(v) << 16)) + half) / cell); };
-        const int r = vertex(int(Radius(u.type)));
-        const int cx = vertex(int(u.x)), cy = vertex(int(u.y));
+        int radius = 0;
+        if (auto t = setup.units->find(type); t != setup.units->end()) radius = int16_t(t->second.hitPoints);
+        const int r = vertex(radius);
+        const int cx = vertex(int(x)), cy = vertex(int(y));
         float sum = 0;
         for (int dy : { -r, r })
             for (int dx : { -r, r })
@@ -86,7 +91,8 @@ namespace wow
     // a multiple of "Fog update freq" (+0x98): the fog decays, then each of the player's objects (+0x24 0) reveals
     // round itself. Then the other side's (0x48B2D0, as each is drawn): at its fog level or under "Fog darkness" it's
     // hidden (vt+0xA0(1), +0xB8 bit 3; deselected, 0x4405C0(0), and 0x8126 to those targeting it), over it shown.
-    // *Provisional*: the brightness (level x 255 to the renderer, 0x48B2A0) isn't applied, nor the 0x8126.
+    // The brightness (the level x 255, or x the type's +0xA1, to the renderer) is set with the keys (RekeyViews).
+    // *Provisional*: the 0x8126 isn't sent.
     void BattleMap::FogTick()
     {
         if (!fog.enabled) return;
