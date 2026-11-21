@@ -94,9 +94,6 @@ namespace wow
         fog.damageDelta = s.fogDamageDelta;
         fog.damageRadius = s.fogDamageRadius;
         FogStart();
-        // each building's own sound started as it's added (0x48E9D0)
-        for (Unit& u : units)
-            if (IsBuilding(u)) BuildingSound(u);
         for (size_t i = 0; i < units.size(); i++)
         {
             Unit& u = units[i];
@@ -127,7 +124,6 @@ namespace wow
             if (IsBuilding(u) && unfinished && u.players) AddCorners(i);
         }
         for (const Unit& u : units) Occupy(u.type, u.x, u.y);
-        if (s.pod) LandPod(sun);
         SetUpGrounds();
         // the group's stance (+0x54, 0x4802E0) is its members' +0xD8 averaged (ftol(sum + 0.5) / n), but the game makes
         // the groups (0x4216E0, from 0x439A8D) before deployment starts the members (0x4222C0's vt+0x14 = 0x495740,
@@ -1098,6 +1094,16 @@ namespace wow
             u.partsLeft++;
         }
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+    }
+
+    void BattleMap::Begin()
+    {
+        if (begun) return;
+        begun = true;
+        // each building's own sound started as it's added (0x48E9D0)
+        for (Unit& u : units)
+            if (IsBuilding(u)) BuildingSound(u);
+        if (setup.pod) LandPod(sun);
     }
 
     const BattleMap::IsoModel* BattleMap::LoadIob(int gtype)

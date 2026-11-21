@@ -375,7 +375,13 @@ namespace wow
         // 0x488070 + 0x488350 / 0x488200 (firer: a unit's group); a radius and power given (0x4880F0's +0xC8 /
         // +0xCA) in place of the type's
         void Explode(int type, int x, int y, int z, int firer = -1, int attacker = 0, int weapon = 0, int radiusAs = 0, int powerAs = 0);
-        void LandPod(const Landscape::Sun& sun);        // 0x439AE5 -> the pod's vt+0x14, 0x48F620
+        void LandPod(const Landscape::Sun& sun);
+        bool begun = false;
+    public:
+        // As it's shown (the rest is built beforehand, behind the Briefing): the buildings' sounds started and the
+        // pod landed, which make sounds
+        void Begin();
+    private:        // 0x439AE5 -> the pod's vt+0x14, 0x48F620
         static bool IsExplosion(int type);
         static bool IsAreaBlast(int type);
         void AreaDetonate(int type, int x, int y, int radius, int power, int firer, int attacker = 0, int weapon = 0);   // 0x487B50

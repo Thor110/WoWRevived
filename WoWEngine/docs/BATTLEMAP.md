@@ -5,6 +5,12 @@ form of the battle map screen.
 
 ## The screen (`src/battlemap/BattleMap`)
 
+**Built behind the Briefing**: the engine builds the battle map while the Briefing is up (from the Briefing's
+second update, once its picture has been shown; `FrontEnd::BuildBattleMap`), and leaving the Briefing shows it at
+once (`StartBattleMap`, which builds it then only if that didn't happen). What makes sounds waits for it to be shown
+(`BattleMap::Begin`): the buildings' own sounds and the pod's landing. (Reported in play: the map was seen being put
+together, the ground, then the buildings, then the units; the original never shows that.)
+
 After the Briefing (0x71 / 0x98, see docs/WARMAP.md, Battles) the front end opens the battle map for the battle's
 sector, as EnterBattleMap (0x439770) begins: the sector's map from OBJ.ojd record 8 (0x437ADD: the sector, then a
 name to the sector table's +0xAC, `land03.cls` and so on; `ObjOjd::LoadSectorMaps`), the landscape lit for the

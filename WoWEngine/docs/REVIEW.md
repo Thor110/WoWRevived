@@ -191,6 +191,10 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       stand-down (0x805A, 0x491180) stops it. Bit 9 is the retreat: set by Retreat's second 0x80B9, it makes a unit
       leave the map at its route's end (0x491A96) in place of the engine's "within 256 of the point".
 
+- [x] **The battle map built behind the Briefing** (reported in play: it was seen being put together, the ground,
+      then the buildings, then the units). *Update 124*: built while the Briefing's up, shown at once on leaving it;
+      the buildings' sounds and the pod's landing wait for it to be shown.
+
 ## 4. Interface missing
 
 - [ ] **Battle map keys and camera**: ',' and '.' step to the next unit / construction (0x43BE50 / 0x43BF30, helpers

@@ -1,6 +1,7 @@
 // The front end: the screens and the command handling that moves between them (WGame's command handler, vanilla
 // 0x402B80). Commands are the ids the game's buttons send.
 #pragma once
+#include "battlemap/BattleMap.h"
 #include "frontend/Briefing.h"
 #include "frontend/CdPlayer.h"
 #include "frontend/Credits.h"
@@ -153,6 +154,11 @@ namespace wow
         std::map<int, std::array<int, 8>> weaponData;             // OBJ.ojd record 12
         int lastEnemyCount = 0;                                 // dword_4F7430 from the battle before
         bool StartBattleMap();
+        // The battle map is built behind the Briefing (from its second update, once its first picture is up), so
+        // leaving the Briefing goes straight to it; StartBattleMap builds it then if that hasn't happened.
+        std::unique_ptr<BattleMap> BuildBattleMap();
+        std::unique_ptr<BattleMap> pendingBattle;
+        int briefingTicks = 0;
         bool inBattle = false;
         int musicTimer = -1;       // ticks until the next music step, -1 with no war map
         int musicTrack = 1;        // dword_4B9DE0: 0 for track 2, 1 for track 3 (the first step goes to track 2)

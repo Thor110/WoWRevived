@@ -845,6 +845,8 @@ namespace wow
             if (WarMap* map = ActiveWarMap())
             {
                 if (screen && screen->Id() == WarMap::Id) warMap.reset(screen.release());
+                pendingBattle.reset();
+                briefingTicks = 0;
                 Show(std::make_unique<Briefing>(res, BattleColoursFromIni(), map->Briefing(), ini.GetInt("Briefing", "Delay", 30)));
             }
             break;
@@ -991,6 +993,9 @@ namespace wow
         }
         if (fadeIn > 0) { fadeIn--; overlay = fadeIn; }
         screen->Update();
+        // the battle map built behind the Briefing once its first picture has been shown (the original loads it as the
+        // Briefing goes, 0x439770; here it's done while the Briefing's up, so nothing of it shows being put together)
+        if (screen->Id() == Briefing::Id && !pendingBattle && ++briefingTicks == 2) pendingBattle = BuildBattleMap();
         stillTicks++;
         UpdateTooltip();
         for (int id : screen->TakeSounds()) sound.Play(id);
@@ -1087,13 +1092,13 @@ namespace wow
     // EnterBattleMap (0x439770), as far as it goes: the sector's landscape (0x47AF10, lit for the calendar's hour,
     // ftol(+0x28) % 24) and its shade tables (0x40B570, from the enemy count of the battle before), the briefing
     // sound stopped (0x41B360), then the count for the next battle (0x43983E)
-    bool FrontEnd::StartBattleMap()
+    std::unique_ptr<BattleMap> FrontEnd::BuildBattleMap()
     {
         WarMap* map = ActiveWarMap();
-        if (!map) return false;
+        if (!map) return nullptr;
         BriefingInfo b = map->Briefing();
         auto name = sectorMaps.find(b.sector);
-        if (name == sectorMaps.end()) return false;
+        if (name == sectorMaps.end()) return nullptr;
         BattleMap::Setup s;
         s.sector = b.sector;
         s.mapName = name->second;
@@ -1187,19 +1192,30 @@ namespace wow
         try
         {
             auto battle = std::make_unique<BattleMap>(res, s);
-            // 0x41B360 (from EnterBattleMap 0x439EB4): the briefing sound faded out over 120 ticks (0x464EB0, 0x78)
-            sound.FadeOut(briefingSound, 120);
-            briefingSound = 0;
-            lastEnemyCount = map->EnemyObjects(b.sector);
             SDL_Log("Battle map: sector %d, %s, hour %d, view at %d,%d", s.sector, s.mapName.c_str(), int(b.hours) % 24, battle->ScrollX(), battle->ScrollY());
-            Show(std::move(battle));
-            return true;
+            return battle;
         }
         catch (const std::exception& e)
         {
             SDL_Log("battle map: %s", e.what());
-            return false;
+            return nullptr;
         }
+    }
+
+    bool FrontEnd::StartBattleMap()
+    {
+        WarMap* map = ActiveWarMap();
+        if (!map) return false;
+        std::unique_ptr<BattleMap> battle = std::move(pendingBattle);
+        if (!battle) battle = BuildBattleMap();
+        if (!battle) return false;
+        // 0x41B360 (from EnterBattleMap 0x439EB4): the briefing sound faded out over 120 ticks (0x464EB0, 0x78)
+        sound.FadeOut(briefingSound, 120);
+        briefingSound = 0;
+        lastEnemyCount = map->EnemyObjects(map->Briefing().sector);
+        battle->Begin();
+        Show(std::move(battle));
+        return true;
     }
 
     WarMap* FrontEnd::ActiveWarMap() const
