@@ -119,7 +119,9 @@ namespace wow
     {
         StopAttacking(group);
         const ReinforcePoint p = rpoints[k];
-        groupRetreat[size_t(group)] = p.sector;
+        // each member's war map object told 0x80BB with the sector (kept by war map object)
+        for (const Unit& u : units)
+            if (u.group == group && u.ref >= 0 && size_t(u.ref) < groupRetreat.size()) groupRetreat[size_t(u.ref)] = p.sector;
         groupBusy[size_t(group)] = true;
         std::vector<size_t> members;
         for (size_t i = 0; i < units.size(); i++)
@@ -135,7 +137,7 @@ namespace wow
         ClearFootprint(units[index]);
         StopUnitSounds(units[index]);
         const Unit u = units[index];
-        if (u.group >= 0 && size_t(u.group) < groupLeft.size()) groupLeft[size_t(u.group)] = true;
+        if (u.ref >= 0 && size_t(u.ref) < groupLeft.size()) groupLeft[size_t(u.ref)] = true;
         if (u.engineSound && setup.sound) setup.sound->Stop(u.engineSound);
         for (const Turret& tr : u.turrets)
             if (tr.sound && setup.sound) setup.sound->Stop(tr.sound);
@@ -153,7 +155,7 @@ namespace wow
         {
             if (!groupLeft[g] || setup.groups[g].ref < 0) continue;
             bool still = false;
-            for (const Unit& u : units) if (u.group == int(g)) { still = true; break; }
+            for (const Unit& u : units) if (u.ref == int(g)) { still = true; break; }
             if (!still) out.push_back({ setup.groups[g].ref, groupRetreat[g] });
         }
         return out;

@@ -264,19 +264,24 @@ namespace wow
                      float range = 1.0f, accuracy = 1.0f;   // +0xC8 / +0xCC, by research (0x494AF0)
                      mutable float beamPhase = 0;           // +0xA8: the beam quads' frame step (0x495180), stepped as drawn
                      int piece = -1, vertex = 0;            // +0xB0: the point of its parent's model it's held to
-                     mutable int flashFrame = 0; };         // the shells' class's sprite's frame (+0xF4's +0x38)
+                     mutable int flashFrame = 0;            // the shells' class's sprite's frame (+0xF4's +0x38)
+                     int ox = 0, oy = 0, oz = 0;            // its part's offset from its parent (0x47EE10)
+                     int x = 0, y = 0, z = 0; };            // its own point (+0x78 / +0x7C / +0x80), posed each update
         // A turret (0x489820 on the vehicle 0x490820: 0x2E6-0x313, 0x389-0x38C): its type, its part's offset, its turn
         // from its unit (+0x190), the point it's aiming at (+0xC8 / +0xCC, +0xE4 bit 1), its hardpoint and its turning
         // sound (+0xE8)
         struct Turret { int type = 0, ox = 0, oy = 0, oz = 0, turn = 0; bool aiming = false; int aimX = 0, aimY = 0;
-                        bool hardpoint = false; int middle = 0, half = 0, sound = 0; };
+                        bool hardpoint = false; int middle = 0, half = 0, sound = 0;
+                        int x = 0, y = 0, z = 0; };         // its own point (+0x78 / +0x7C / +0x80), posed each update
         // A part drawn with its unit (a WOF of its own: a turret's, or another like the lorries' 324)
         // a part's model; piece / vertex: the point of its unit's model it's held to (the part's record 27 box, the
         // child's +0xB0), -1 for none
         struct Attached { WofInstance* wof = nullptr; int ox = 0, oy = 0, oz = 0, turret = -1; bool shadow = false;
                           int piece = -1, vertex = 0; int light = -1;       // light: a light part's index in lights
                           int part = -1; };                                 // which of the type's parts it is
-        struct Unit { int type; float x, y; int heading; bool players; int group = 0; bool vehicle = false; Drive drive;
+        // group: its battle group (+0x34), which a selection takes it into (0x4480F0); ref: its war map object (+0x48,
+        // setup.groups' index), for which side's list it's in, losses and retreats
+        struct Unit { int type; float x, y; int heading; bool players; int group = 0; int ref = -1; bool vehicle = false; Drive drive;
                       WofInstance* wof = nullptr; int engineSound = 0;
                       int health = 0;       // +0xC4: the type's +0x4A (0x47DA20) to start with
                       std::vector<Gun> guns;         // its weapon children (and its turrets')
@@ -361,12 +366,13 @@ namespace wow
         bool GasTick(size_t effect);                            // 0x488D70
         void LookRound(size_t unit);                            // 0x4967E0's count -> vt+0x104 (0x48F8A0, 0x496890)
         void AutoTarget(const Unit& u);                         // 0x496570 -> the group's 0x80B1 (0x482960)
-        void ChaseTargets();                                    // 0x483B70 -> 0x4826D0
+        void ChaseTarget(size_t group);                         // 0x483B70 -> 0x4826D0, first in GroupTick
         void Aim(Unit& u, int x, int y, int z);                 // vt+0xC8: 0x491110 -> 0x496200 -> guns 0x494D20
         void GunTick(size_t unit, Gun& g);                      // 0x494DB0 and the class's update
         void TurretTick(Unit& u, Turret& t);                    // 0x489B40
         int GunHeading(const Unit& u, const Gun& g) const;      // its +0x40: its turret's or its unit's
         void AddPartRenderers(size_t unit);
+        void PoseChildren(Unit& u);                             // the turrets' and guns' own points
         // The view list's keys as the original's renderers have them (+0x1E y + +0x26 depth), worked out each update
         // for everything that goes with a unit, the parent's before the children's, then sorted (0x40D750)
         void RekeyViews();
@@ -534,7 +540,15 @@ namespace wow
         void MinimapScroll(int x, int y);
         // Selection (docs/BATTLEMAP.md "Selecting"): the selected groups (each war map object's units are one group,
         // WBMGroup), the drag rectangle (0x49C080) and the hotspots (0x496D60)
-        std::vector<bool> selected;                         // by group (setup.groups' index)
+        std::vector<bool> selected;                         // by battle group
+        // The battle groups (WBMGroup 0x480190): one for each war map object to start with (0x4216E0), then one made
+        // for each selection that takes units from more than one (the world's vt+0x24, 0x43A600, from 0x439000)
+        std::vector<bool> groupPlayers;                     // the group's side: the player's
+        int AddGroup(bool players);
+        // 0x439000 for each war map object selected (0x8088): its units into the player's selection group (0x4480F0,
+        // out of their own), which is then the group the orders go to; that group stays theirs once deselected
+        void SelectRefs(const std::vector<int>& refs);
+        void RecomputeGroup(int group);                     // 0x800F -> 0x4802E0 when its members change
         bool dragging = false, boxActive = false;
         int dragX0 = 0, dragY0 = 0, dragX1 = 0, dragY1 = 0;
         uint32_t boxInner = 0;                              // dword_4DAFB8

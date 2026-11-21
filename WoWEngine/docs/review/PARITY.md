@@ -49,7 +49,7 @@ Tick each item here with the update that fixes it.
       Walkers now include 0x50-0x5C, with every type's feet from 0x48FDD0; drones steer every update and give 1.0;
       boats have no cohesion; Tunnelling Track Layers all under go straight without a route, and some under drops
       the order (0x482E60). [movement 3, 11, 12, 13]
-- [ ] **S4. Group state as the original keeps it.** +0x1D8 bits 0-9 (3/4: a player's order to a player's group, which
+- [x] **S4. Group state as the original keeps it.** +0x1D8 bits 0-9 (3/4: a player's order to a player's group, which
       gate the move marker and "acknowledged" speech), arrival counts on the group, not a growing `orders` list; the
       selection as a group of its own (0x439000 / 0x4480F0). [battle-ui 2, B; movement 2, 6, 9, 15, 16, A2;
       battle-setup B, C]
@@ -57,21 +57,37 @@ Tick each item here with the update that fixes it.
       and 4 and the first member the player's): the move flag and "acknowledged" only then (the flag also for an
       attack's approach; the speech without a target), bit 3 cleared after; ROUTE NOT FOUND stops the members, drops
       the target, clears bit 0 and speaks only for a player's order; arrivals per group (+0x56, reset at the group's
-      count, so they carry over between orders); the move's counts from the whole group (0x4216D0). Left: the
-      selection as a group of its own (0x439000 / 0x4480F0) and the rest of +0x1D8.
+      count, so they carry over between orders); the move's counts from the whole group (0x4216D0).
+      *Update 130*: battle groups are separate from war map objects: each unit keeps its war map object (`ref`, for
+      lists, losses, retreats and ',' / '.') and its battle group (`group`). Selecting (a click: its war map object;
+      the box: every war map object it touches, 0x8088 -> 0x439000) takes their units into one new group of the
+      player's (0x4480F0, `AddGroup` / `SelectRefs`), unless they already make one whole group; the group stays
+      theirs once deselected (0x4392A0 only drops the pointer). The new and the old groups are recomputed (0x800F ->
+      0x4802E0: range, think interval, the members' stance averaged, ground costs). Tested: the Martian battle's four
+      walker objects selected together became one group with one route, all eight walkers moving.
 - [x] **S5. Per-object updates in start order** (the world list, 0x43A980 / 0x47D610): each object does its whole
       update in turn, instead of the engine's passes (all driving, then all guns...). Look-round timers start at
       rand() % 30 (0x4957A2). [battle-setup 4, 14, 15, A; combat A5]
       *Update 129*: each unit's whole update, then its turrets' and guns' (its children, made as it started) and its
       pose, before the next unit's, in place of a driving pass then a guns pass; the look round's count starts at
       rand() % 30. The groups, the computer player and the scenery keep their places before and after the units, as
-      the world list has them (made before deployment / after). Left: GroupTick and the chase as one group update.
-- [ ] **S6. Parent / child objects for parts.** Guns, turrets, building parts, lights and tree circles as children
+      the world list has them (made before deployment / after).
+      *Update 130*: each group's chase (0x4826D0) runs first in its own update (0x483B70), with members only; the
+      update goes the game loop's way: the computer player, then the queued messages (the delayed deaths and 0x80F4
+      posts), then the screen (fog, twinkles, the end check, the groups, the units in start order, the scenery).
+- [x] **S6. Parent / child objects for parts.** Guns, turrets, building parts, lights and tree circles as children
       with a parent link and offsets, removed from the parent's list as they go. [combat 4, A1, A3; data A]
       *Update 129 (part)*: a building's lost parts come off its list at once, so one big hit takes several (0x48EF80
       with 0x47F220), and each part's explosion has the building as its firer, sparing it and its group (0x489FA0 ->
       0x488200); tested: 900-damage hits on a Factory take two parts each and its health falls by 900 each.
-      Left: guns and turrets with positions of their own, part lights linked to their parts, tree circles as children.
+      *Update 130*: turrets and guns have points of their own, posed after their parent each update (`PoseChildren`:
+      held to their parent's model point, else at their offset turned with the parent); the range arc, the turret's
+      turn, the aim's jitter (each 0x496200 from its own object), the mortar's launch and the landing spread measure
+      from them, and the beams start there. A lost part's light goes with it (0x47EAA0). The explosion's own object
+      is made before its parts (0x488070 then 0x488350).
+      Open: tree circles (0xCF-0xD4, no graphics, +0x44 48 / 24 / 12) keep their trees as children (0x48F410); whether
+      a circle can be destroyed and take its trees with it needs the children's lifetime traced (0x47EAA0 and the
+      circle class's vt+0x78) before the engine models it.
 
 ## Phase 2: high-severity behaviour (small, independent)
 

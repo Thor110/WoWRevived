@@ -120,6 +120,9 @@ namespace wow
             g.vertex = part.box[1];
             g.middle = uint16_t(part.box[2]);
             g.half = uint16_t(part.box[3]);
+            g.ox = int16_t(part.b);
+            g.oy = int16_t(part.c);
+            g.oz = int16_t(part.d);
             Upgrade(g, t->second.faction);
             u.guns.push_back(g);
         };
@@ -158,7 +161,8 @@ namespace wow
     // starts at its point (0x4883C0 / 0x4883E0: +0xE8); not turning, a sound playing stops (vt+0x13C). Then the
     // vehicle's own update (0x4913B0).
     // With the Armoured Lorry's turret 742 (a whole turn's hardpoint) and gun 414 (+-256 of the turret's heading).
-    // *Provisional*: the turret's place is its unit's plus its part's offset; the vehicle update it then runs isn't.
+    // The turret's own point (PoseChildren) is where it turns from. *Provisional*: the vehicle update it then runs
+    // isn't.
     void BattleMap::TurretTick(Unit& u, Turret& t)
     {
         const int heading = (u.heading + t.turn) & 0xFFF;
@@ -166,7 +170,7 @@ namespace wow
         if (t.aiming)
         {
             float len = 0;
-            HeadingAndLength(u.x, u.y, float(t.aimX), float(t.aimY), want, len);
+            HeadingAndLength(float(t.x), float(t.y), float(t.aimX), float(t.aimY), want, len);
         }
         else want = (t.middle + u.heading) & 0xFFFF;
         auto diff = [](int a, int b) {
@@ -185,7 +189,7 @@ namespace wow
         {
             auto tt = setup.units->find(t.type);
             if (!t.sound && tt != setup.units->end() && tt->second.fieldA2 && setup.sound)
-                t.sound = setup.sound->Play(tt->second.fieldA2, 1.0f, 0, int(u.x), land.ProjectY(int(u.y), land.HeightAt(int(u.x), int(u.y))));
+                t.sound = setup.sound->Play(tt->second.fieldA2, 1.0f, 0, t.x, land.ProjectY(t.y, t.z));
         }
         else if (t.sound && setup.sound)
         {
@@ -463,12 +467,12 @@ namespace wow
     // with +0xE4 bit 1 and further than its sight x the scale from its post (+0xC8 / +0xCC), its group's guns are
     // stood down (0x805A); then 0x496890: on stance 2 or 3 (+0xD8) with its group not attacking (+0x1D8 bit 0
     // clear, or bit 2 set) it picks a target (0x496570), and the count goes back to 0).
-    // 0x496890's first part: aiming (+0xE4 bit 1) with a group, it posts itself 0x808A when the group's mostly on
-    // screen (+0x1D8 bit 1 clear; vt+0x128 = 0x4910B0: +0x188 bit 5, held: it steers on without arrival, separation,
+    // 0x496890's first part: vt+0xAC(0) (not halted); aiming (+0xE4 bit 1) with a group, it posts itself 0x808A
+    // when the group isn't mostly halted (+0x1D8 bit 1 clear; vt+0x128 = 0x4910B0: +0x188 bit 5, held: it steers on without arrival, separation,
     // braking or matching), else 0x8031 (0x4910C0: stopped, bits 5 and 13 cleared). An emplacement (0x48F8A0) first,
     // aiming and further from its aim point (+0xC8 / +0xCC) than its sight x the scale (always, the scale being
     // 0), stands its group's guns down (0x805A to the group), which clears its aiming.
-    // *Provisional*: 0x496890's vt+0xAC isn't in; the group's 0x805A is taken as each member's (no target cleared).
+    // *Provisional*: the group's 0x805A is taken as each member's (no target cleared).
     void BattleMap::LookRound(size_t index)
     {
         Unit& u = units[index];
@@ -555,8 +559,7 @@ namespace wow
     // GType 0x359 (0x40EC50, its +0x26 set to 0x20).
     // The sinkers (0x498F20) keep theirs at +0x19C the same way, and the player's has one while it's under
     // (vt+0x188, Sinking.cpp).
-    // *Provisional*: the renderer's +0x26 (0x20) isn't known: the marker is drawn as a sprite's frame 0 over the
-    // unit, one row nearer, following it.
+    // Its renderer's +0x26 is 0x20 and its +0x1E never set (0x4650), so it draws over everything (RekeyViews).
     void BattleMap::MarkerTick(size_t index)
     {
         Unit& u = units[index];
@@ -719,14 +722,14 @@ namespace wow
     // object). An object's target follows it (+0x78..+0x80 each update); under the ground its guns are stood down.
     // *Provisional*: a target that's gone (0x8057's tidy-up) clears the group's target; the route's radius is the range snapped
     // to vertices whatever the goal's snap (the "CAN'T GET TO WITHIN ATTACK DISTANCE!" check isn't in).
-    void BattleMap::ChaseTargets()
+    void BattleMap::ChaseTarget(size_t g)
     {
-        for (size_t g = 0; g < groupTargets.size(); g++)
+        if (g >= groupTargets.size()) return;
         {
             GroupTarget& t = groupTargets[g];
-            if (t.target == 0) continue;
+            if (t.target == 0) return;
             // a computer's group (+0x1D8 bit 7) every 8th of its counts tries a special (0x482570)
-            if (g < setup.groups.size() && !setup.groups[g].Players() && g < groupTicks.size() && groupTicks[g] % 8 == 0)
+            if (g < groupPlayers.size() && !groupPlayers[g] && g < groupTicks.size() && groupTicks[g] % 8 == 0)
                 ComputerSpecials(int(g));
             const Unit* object = nullptr;
             if (t.target > 0)
@@ -734,7 +737,7 @@ namespace wow
                 // an object: gone, the target's cleared; under the ground (+0x84 under 0), the guns are told 0x805A
                 // and +0x1D8 bit 0 cleared; else the point is where it is (+0x78..+0x80)
                 object = UnitById(t.target);
-                if (!object) { StopAttacking(int(g)); continue; }
+                if (!object) { StopAttacking(int(g)); return; }
                 if (object->drive.lift < 0.0f)
                 {
                     for (Unit& u : units)
@@ -745,13 +748,13 @@ namespace wow
                                 if (gun.state != 0) gun.state = 4;
                                 gun.flags |= 1;
                             }
-                    continue;
+                    return;
                 }
                 t.x = int(object->x);
                 t.y = int(object->y);
                 t.z = int(float(land.HeightAt(t.x, t.y)) + object->drive.lift);
             }
-            if (Octagonal(t.x, t.y, t.lastX, t.lastY) <= 80) continue;
+            if (Octagonal(t.x, t.y, t.lastX, t.lastY) <= 80) return;
             t.lastX = t.x;
             t.lastY = t.y;
             t.lastZ = t.z;
@@ -774,14 +777,14 @@ namespace wow
     // 0x496200: the goal kept and the children all aimed at one point jittered by up to the distance / 16 + 1 each
     // way (rand() % twice that, less it, for x, y and height, drawn once); a turret (a vehicle) does the same for its guns, whose vt+0xC8
     // (0x494D20) keeps the point and arms them (a gun in flight, state 2, goes to 3).
-    // *Provisional*: the turret's step is taken at the unit's position (its offset and turning aren't in).
     void BattleMap::Aim(Unit& u, int x, int y, int z)
     {
         if (u.drive.lift < 0.0f || u.drive.link) return;
         x = std::clamp(x, 0, land.WorldWidth() - 1);
         y = std::clamp(y, 0, int((int64_t(land.Cell()) * land.Height()) >> 16) - 1);
-        auto jitter = [&](int gx, int gy, int gz, int& ox, int& oy, int& oz) {
-            const double dx = double(gx) - u.x, dy = double(gy) - u.y;
+        // each 0x496200 measures from its own object's point (the unit's, then the turret's for its guns)
+        auto jitter = [&](float fromX, float fromY, int gx, int gy, int gz, int& ox, int& oy, int& oz) {
+            const double dx = double(gx) - fromX, dy = double(gy) - fromY;
             const int d = int(std::sqrt(dy * dy + dx * dx) - -1.0);
             const int s = (d + ((d >> 31) & 0xF)) / 16 + 1;
             ox = gx + random::Rand() % (2 * s) - s;
@@ -796,7 +799,7 @@ namespace wow
         u.aimY = y;
         u.aiming = true;
         int cx = 0, cy = 0, cz = 0;
-        jitter(x, y, z, cx, cy, cz);
+        jitter(u.x, u.y, x, y, z, cx, cy, cz);
         size_t gun = 0, turret = 0;
         auto arm = [&](int ax, int ay, int az) {
             if (gun >= u.guns.size()) return;
@@ -815,7 +818,9 @@ namespace wow
                 auto tt = setup.units->find(part.a);
                 if (tt == setup.units->end()) continue;
                 int gx = 0, gy = 0, gz = 0;
-                jitter(cx, cy, cz, gx, gy, gz);
+                const float fx = turret < u.turrets.size() ? float(u.turrets[turret].x) : u.x;
+                const float fy = turret < u.turrets.size() ? float(u.turrets[turret].y) : u.y;
+                jitter(fx, fy, cx, cy, cz, gx, gy, gz);
                 if (turret < u.turrets.size())
                 {
                     Turret& tr = u.turrets[turret++];
@@ -841,7 +846,6 @@ namespace wow
     // The mortar's update (0x488CA0) launches its shells as the cycle goes to 1 (0x4889D0, Launch).
     // The arc (0x494FD0, with a hardpoint): |0x43FF30(ftol(vt+0x2C (its own +0x40) + the middle), the heading to the
     // point)| under the half width (vt+0x2C leaves its argument on the stack: that's 0x43FF30's second).
-    // *Provisional*: the gun is at its unit's point.
     void BattleMap::GunTick(size_t index, Gun& g)
     {
         Unit& u = units[index];
@@ -888,7 +892,7 @@ namespace wow
         {
             int heading = 0;
             float length = 0;
-            HeadingAndLength(u.x, u.y, float(g.tx), float(g.ty), heading, length);
+            HeadingAndLength(float(g.x), float(g.y), float(g.tx), float(g.ty), heading, length);    // from the gun's point
             bool inArc = true;
             if (g.hardpoint)
             {
@@ -920,7 +924,6 @@ namespace wow
     // (vt+0x40), h as its height (+0x84), the gravity (+0x94), record 12's +6 (+0xC0), the updates (vt+0xE0, +0xC2)
     // and its root's id as the firer (+0xC4); byte_51A19C of the mortar's type set. Then the entry's count goes up;
     // past a limit that isn't 0 the list is freed and the mortar fires no more.
-    // *Provisional*: the shell starts at the unit's point (the mortar's place on it isn't in).
     void BattleMap::Launch(size_t index, Gun& g)
     {
         if (g.spent) return;
@@ -929,12 +932,12 @@ namespace wow
         if (t == setup.units->end() || t->second.emitters.empty()) return;
         const auto& list = t->second.emitters;
         if (g.fired.size() != list.size()) g.fired.assign(list.size(), 0);
-        const int ground = land.HeightAt(int(u.x), int(u.y));
-        const float z = float(ground) + u.drive.lift;
-        const int h = int(z - float(land.HeightAt(int(u.x), int(u.y))));
+        // from the mortar's own point (+0x78..+0x80, PoseChildren), its height over the ground there
+        const float z = float(g.z);
+        const int h = int(z - float(land.HeightAt(g.x, g.y)));
         int heading = 0;
         float length = 0;
-        HeadingAndLength(u.x, u.y, float(g.tx), float(g.ty), heading, length);
+        HeadingAndLength(float(g.x), float(g.y), float(g.tx), float(g.ty), heading, length);
         float reach = length - (z - float(g.tz));
         if (reach < 0.1) reach = 0.1f;
         const int size = WeaponData(g.type)[3];
@@ -952,7 +955,7 @@ namespace wow
             const int count = int(double(length / across) - -1.0);
             float vx = 0, vy = 0;
             Polar(dir, across, vx, vy);
-            const int k = SpawnEffect(e.a, u.x, u.y, float(h), vx, vy, upward, e.f[2]);
+            const int k = SpawnEffect(e.a, float(g.x), float(g.y), float(h), vx, vy, upward, e.f[2]);
             if (k >= 0)
             {
                 Effect& sh = effects[size_t(k)];
@@ -992,7 +995,7 @@ namespace wow
     {
         const Unit& u = units[index];
         const auto w = WeaponData(g.type);
-        const int d = Octagonal(int(u.x), int(u.y), g.tx, g.ty) >> 5;
+        const int d = Octagonal(g.x, g.y, g.tx, g.ty) >> 5;     // from the gun's own point
         const int s = int(float(d) / g.accuracy - -1.0f);
         const int span = 2 * s;
         const int x = random::Rand() % span - s + g.tx;

@@ -59,7 +59,6 @@ namespace wow
     // has more than one child, the last child (+0x70's tail), if its health is over 0, is sent 0x80A0, which takes
     // it off the list at once: a big hit takes several, the last made first (the Factory's chimneys).
     // A part's 0x80A0 (0x489FA0) makes its type's destruction effect (+0x98) at its point, its parent the firer.
-    // *Provisional*: the part's light (a light part) stays on the ground.
     void BattleMap::LoseParts(size_t index)
     {
         Unit& u = units[index];
@@ -91,6 +90,14 @@ namespace wow
                 for (const Attached& a : u.attached)
                     if (a.part == last) { ox = a.ox; oy = a.oy; }
             }
+            // its children go with it (0x47EAA0): a light part's light out
+            for (const Attached& a : u.attached)
+                if (a.part == last && a.light >= 0 && size_t(a.light) < lights.size())
+                {
+                    lights[size_t(a.light)].alive = false;
+                    const int li = a.light;
+                    objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) { return o.light == li; }), objects.end());
+                }
             objects.erase(std::remove_if(objects.begin(), objects.end(),
                                          [&](const ViewObject& o) { return o.unit == int(index) && o.part == last; }), objects.end());
             u.attached.erase(std::remove_if(u.attached.begin(), u.attached.end(), [&](const Attached& a) { return a.part == last; }),
@@ -122,11 +129,13 @@ namespace wow
         for (ViewObject& o : objects)
             if (o.unit > int(index)) o.unit--;
         units.erase(units.begin() + std::ptrdiff_t(index));
-        const bool last = std::none_of(units.begin(), units.end(), [&](const Unit& o) { return o.group == u.group; });
+        // its war map object's last (0x47EB00 -> 0x4216D0 = 1), and the battle group's
+        const bool last = std::none_of(units.begin(), units.end(), [&](const Unit& o) { return o.ref == u.ref; });
+        const bool groupEmpty = std::none_of(units.begin(), units.end(), [&](const Unit& o) { return o.group == u.group; });
         // 0x8058 to the groups whose target it was (0x4807F0 -> 0x4821F0)
         for (size_t g = 0; g < groupTargets.size(); g++)
             if (u.id != 0 && groupTargets[g].target == u.id) TargetGone(int(g), u, last);
-        if (last) GroupGone(u.group);
+        if (groupEmpty) GroupGone(u.group);
         if (t == setup.units->end()) return;
         // vt+0xE8 (0x48A9A0): a category 0, 2 or 3 object, not a tree, frees its footprint (0x47C3A0 with 2)
         if (const int c = t->second.category; (c == 0 || c == 2 || c == 3) && !(u.type >= 0xCF && u.type <= 0xE5))
@@ -148,7 +157,7 @@ namespace wow
     void BattleMap::TargetGone(int g, const Unit& target, bool last)
     {
         if (g < 0 || size_t(g) >= groupTargets.size()) return;
-        if (size_t(g) < setup.groups.size() && setup.groups[size_t(g)].Players())
+        if (size_t(g) < groupPlayers.size() && groupPlayers[size_t(g)])
         {
             auto t = setup.units->find(target.type);
             const int category = t == setup.units->end() ? 0 : t->second.category;
@@ -189,7 +198,7 @@ namespace wow
         int delay = 30;
         for (Unit& m : units)
         {
-            if (m.group != group || m.health <= 0) continue;
+            if (m.ref != group || m.health <= 0) continue;     // a war map object's units (its list's, 0x47CEE0)
             const int when = at + delay;
             if (m.dieAt < 0 || when < m.dieAt) m.dieAt = when;
             delay += random::Rand() % 30 + 30;
@@ -204,9 +213,8 @@ namespace wow
     // when its health is over 0 and +0xB8 bit 7 is set: ftol((1 - the distance / both radii) x the power x 1.0) to
     // vt+0xE0); and under 64 up, not on water (0x47FFE0: terrain 1-3), the ground is scorched (0x804B -> 0x47C4C0
     // with the radius and the power). With its sprite it then plays as a WAnimEffect.
-    // *Provisional*: only units are hit (the scenery's damage isn't in); a death explosion's firer (the dying
-    // object's parent) is always none, so both sides are hit; a gun's spares its unit's group (0x47EB00); light parts (334-346) and emitters (smoke) aren't
-    // made.
+    // A death explosion's firer is the dying object's parent: none for a unit, so both sides are hit; a building's
+    // part's is its building (LoseParts); a gun's spares its unit's group (0x47EB00).
     // The area blasts (0x487B00 on WExplosion: the factory's 718-720, 788-790, 812-823)
     bool BattleMap::IsAreaBlast(int t) { return (t >= 718 && t <= 720) || (t >= 788 && t <= 790) || (t >= 812 && t <= 823); }
 
@@ -220,6 +228,13 @@ namespace wow
         const int ground = land.HeightAt(x, y);
         if (t->second.fieldA2 && setup.sound)
             setup.sound->Play(t->second.fieldA2, 1.0f, 0, x, land.ProjectY(y, ground + std::max(z, 0)));
+        // the WExplosion itself is made first (0x488070); its start (0x488350) then makes its parts and detonates
+        const int self = SpawnEffect(type, float(x), float(y), float(std::max(z, 0)));
+        if (self >= 0 && !area)
+        {
+            effects[size_t(self)].group = firer;        // +0xCC / +0xC4, which the cascade passes on (0x48CDE0)
+            effects[size_t(self)].attacker = attacker;
+        }
         for (const auto& part : t->second.parts)
         {
             const int px = x + int16_t(part.b), py = y + int16_t(part.c), pz = z + int16_t(part.d);
@@ -230,7 +245,6 @@ namespace wow
         if (area)
         {
             AreaDetonate(type, x, y, radius, power, firer, attacker, weapon);
-            SpawnEffect(type, float(x), float(y), float(std::max(z, 0)));
             return;
         }
         // Detonate
@@ -266,11 +280,6 @@ namespace wow
             const int vy = std::clamp((int(uint32_t(y) << 16) + land.HalfCell()) / land.Cell(), 0, land.Height() - 1);
             const int terrain = land.At(vx, vy).atm & 15;
             if (terrain < 1 || terrain > 3) land.Scorch(x, y, radius, power);
-        }
-        if (const int k = SpawnEffect(type, float(x), float(y), float(std::max(z, 0))); k >= 0)
-        {
-            effects[size_t(k)].group = firer;        // +0xCC / +0xC4, which the cascade passes on (0x48CDE0)
-            effects[size_t(k)].attacker = attacker;
         }
     }
 

@@ -197,6 +197,9 @@ namespace wow
     void BattleMap::GroupTick(int g)
     {
         if (size_t(g) >= groupTicks.size()) return;
+        // 0x483B70: with members, the chase (0x4826D0) when it has a target, before the counter
+        if (GroupCount(g) == 0) return;
+        ChaseTarget(size_t(g));
         const int count = groupTicks[size_t(g)]++;
         if (count <= groupInterval[size_t(g)]) return;
         groupTicks[size_t(g)] = 0;

@@ -149,27 +149,9 @@ namespace wow
         groupTargets.assign(setup.groups.size(), GroupTarget{});
         groupMode.assign(setup.groups.size(), 0);
         groupRange.assign(setup.groups.size(), 100000);
-        for (const Unit& u : units)
-        {
-            if (u.group < 0 || size_t(u.group) >= groupRange.size()) continue;
-            auto t = setup.units->find(u.type);
-            if (t == setup.units->end()) continue;
-            int range = u.guns.empty() ? 10000 : 0;
-            for (const Gun& g : u.guns) range = std::max(range, WeaponData(g.type)[0]);
-            int& r = groupRange[size_t(u.group)];
-            r = std::min({ r, ObjOjd::Vision(t->second, setup.armour), range });
-        }
         groupTicks.assign(setup.groups.size(), 0);
-        // each group's think interval (+0x5C, 0x4802E0): its members' type +0x92 words (record 53) summed, over the
-        // count (ftol; 0x480533, 0x4805B5-0x4805E1)
         groupInterval.assign(setup.groups.size(), 90);
-        {
-            std::vector<int> sum(setup.groups.size(), 0), n(setup.groups.size(), 0);
-            for (const Unit& u : units)
-                if (u.group >= 0 && size_t(u.group) < sum.size())
-                    if (auto t = setup.units->find(u.type); t != setup.units->end()) { sum[size_t(u.group)] += int16_t(t->second.field92); n[size_t(u.group)]++; }
-            for (size_t g = 0; g < sum.size(); g++) if (n[g]) groupInterval[g] = sum[g] / n[g];
-        }
+        for (size_t g = 0; g < setup.groups.size(); g++) RecomputeGroup(int(g));
         groupHomeX.assign(setup.groups.size(), 0);
         groupHomeY.assign(setup.groups.size(), 0);
         groupBusy.assign(setup.groups.size(), false);
@@ -326,12 +308,12 @@ namespace wow
                 if (!u.players || !vehicle(u)) continue;
                 int sx, sy;
                 UnitScreen(u, sx, sy);
-                if (sx >= l && sx < r && sy >= t && sy < b) hits.push_back(u.group);
+                if (sx >= l && sx < r && sy >= t && sy < b && std::find(hits.begin(), hits.end(), u.ref) == hits.end()) hits.push_back(u.ref);
             }
             if (hits.empty()) return;
-            selected.assign(selected.size(), false);
-            for (int g : hits) selected[size_t(g)] = true;
-            SelectionSpeech(hits.front());
+            // each object's war map object selected (0x8088 -> 0x439000): their units one group
+            SelectRefs(hits);
+            for (size_t g = 0; g < selected.size(); g++) if (selected[g]) { SelectionSpeech(int(g)); break; }
             return;
         }
         const Unit* best = HotspotAt(x, y);
@@ -366,9 +348,9 @@ namespace wow
             // several selected groups narrows the selection to it
             if (!best->players) return;
             if (ctrl && !vehicle(*best)) return;
-            ClearSelection();
-            selected[size_t(best->group)] = true;
-            SelectionSpeech(best->group);
+            const int ref = best->ref;
+            SelectRefs({ ref });
+            for (size_t g = 0; g < selected.size(); g++) if (selected[g]) { SelectionSpeech(int(g)); break; }
             return;
         }
         // mode 1 (0x497794): with Ctrl force fire at the ground under it (packet 0x13); else the player's selects
@@ -381,9 +363,9 @@ namespace wow
         }
         else if (best->players)
         {
-            ClearSelection();
-            selected[size_t(best->group)] = true;
-            SelectionSpeech(best->group);
+            const int ref = best->ref;
+            SelectRefs({ ref });
+            for (size_t g = 0; g < selected.size(); g++) if (selected[g]) { SelectionSpeech(int(g)); break; }
         }
         else AttackObject(best->id);
     }
@@ -487,7 +469,7 @@ namespace wow
         {
             const BattleGroup& bg = setup.groups[g];
             if (!bg.Players() || bg.list / 2 != 0 || bg.ref < 0) continue;
-            if (std::none_of(units.begin(), units.end(), [&](const Unit& u) { return u.group == int(g); })) continue;
+            if (std::none_of(units.begin(), units.end(), [&](const Unit& u) { return u.ref == int(g); })) continue;
             const int id = bg.ref;
             if (up ? (id > lastStepped && (best < 0 || id < bestId)) : (id < lastStepped && (best < 0 || id > bestId))) { best = int(g); bestId = id; }
             if (wrap < 0 || (up ? id < wrapId : id > wrapId)) { wrap = int(g); wrapId = id; }
@@ -506,7 +488,7 @@ namespace wow
         int minX = 0, maxX = 0, minY = 0, maxY = 0;
         for (const Unit& u : units)
         {
-            if (u.group != group) continue;
+            if (u.ref != group) continue;    // the war map object's units
             const int x = int(u.x), y = int(u.y);
             if (!any) { minX = maxX = x; minY = maxY = y; any = true; }
             minX = std::min(minX, x); maxX = std::max(maxX, x);
@@ -604,10 +586,13 @@ namespace wow
                 u.heading = 0;
                 u.players = g.Players();
                 u.group = int(&g - &setup.groups[0]);
+                u.ref = u.group;
                 u.id = nextId++;
                 units.push_back(u);
             }
         selected.assign(setup.groups.size(), false);
+        groupPlayers.clear();
+        for (const BattleGroup& g : setup.groups) groupPlayers.push_back(g.Players());
         // the battle is on (the report's +0x54) when both sides have something here
         {
             bool ours = false, theirs = false;
@@ -965,14 +950,8 @@ namespace wow
                 for (int i = 0; i < 4; i++) frames[i] = int(double(int64_t(gt->second.counterFrame) * 16 + i) + g.beamPhase);
                 g.beamPhase = float(g.beamPhase - -4.0f);
                 if (g.beamPhase == 16.0f) g.beamPhase = 0;
-                // the gun's point: the point of its parent's model it's held to (+0xB0, 0x47F340; the parent its turret
-                // or its unit), else its unit's place at its height
-                int gx = int(u.x), gy = int(u.y), gz = land.HeightAt(gx, gy) + int(u.drive.lift);
-                const WofInstance* parent = u.wof;
-                if (g.turret >= 0)
-                    for (const Attached& a : u.attached)
-                        if (a.turret == g.turret) parent = a.wof;
-                if (int at[3]; g.piece >= 0 && parent && parent->WorldPoint(g.piece, g.vertex, at)) { gx = at[0]; gy = at[1]; gz = at[2]; }
+                // the gun's own point (PoseChildren)
+                const int gx = g.x, gy = g.y, gz = g.z;
                 // 0x495280: the quads
                 int x0, y0, x1, y1;
                 project(gx, gy, gz, x0, y0);
@@ -1059,7 +1038,6 @@ namespace wow
 
     void BattleMap::PoseParts(Unit& u)
     {
-        if (u.attached.empty()) return;
         const double a = double(u.heading & 0xFFF) * 0.000244140625 * 6.283185307;
         const double c = std::cos(a), s = std::sin(a);
         for (Attached& p : u.attached)
@@ -1098,6 +1076,48 @@ namespace wow
             const int x = int(u.x + float(p.ox * c - p.oy * s));
             const int y = int(u.y + float(p.ox * s + p.oy * c));
             p.wof->Transform(land, heading & 0xFFF, x, y, int(float(land.HeightAt(x, y)) + u.drive.lift) + p.oz);
+        }
+        PoseChildren(u);
+    }
+
+    // The children's own points (+0x78..+0x80), as 0x47F340 poses each child after its parent: a turret on the point
+    // of its unit's model it's held to (+0xB0), else at its offset turned with the unit; a gun on the point of its
+    // parent's model (its turret's, else its unit's) it's held to, else at its offset turned with its parent. The
+    // range tests, the shells' launch and the aim's jitter measure from these.
+    void BattleMap::PoseChildren(Unit& u)
+    {
+        const double a = double(u.heading & 0xFFF) * 0.000244140625 * 6.283185307;
+        const double c = std::cos(a), s = std::sin(a);
+        const int ground = land.HeightAt(int(u.x), int(u.y)) + int(u.drive.lift);
+        for (size_t k = 0; k < u.turrets.size(); k++)
+        {
+            Turret& t = u.turrets[k];
+            const Attached* at = nullptr;
+            for (const Attached& p : u.attached)
+                if (p.turret == int(k)) { at = &p; break; }
+            if (int w[3]; at && at->piece >= 0 && u.wof && u.wof->WorldPoint(at->piece, at->vertex, w)) { t.x = w[0]; t.y = w[1]; t.z = w[2]; continue; }
+            t.x = int(u.x + float(t.ox * c - t.oy * s));
+            t.y = int(u.y + float(t.ox * s + t.oy * c));
+            t.z = ground + t.oz;
+        }
+        for (Gun& g : u.guns)
+        {
+            const WofInstance* parent = u.wof;
+            int px = int(u.x), py = int(u.y), pz = ground, heading = u.heading;
+            if (g.turret >= 0 && size_t(g.turret) < u.turrets.size())
+            {
+                const Turret& t = u.turrets[size_t(g.turret)];
+                px = t.x; py = t.y; pz = t.z; heading += t.turn;
+                parent = nullptr;
+                for (const Attached& p : u.attached)
+                    if (p.turret == g.turret) parent = p.wof;
+            }
+            if (int w[3]; g.piece >= 0 && parent && parent->WorldPoint(g.piece, g.vertex, w)) { g.x = w[0]; g.y = w[1]; g.z = w[2]; continue; }
+            const double b = double(heading & 0xFFF) * 0.000244140625 * 6.283185307;
+            const double cb = std::cos(b), sb = std::sin(b);
+            g.x = int(float(px) + float(g.ox * cb - g.oy * sb));
+            g.y = int(float(py) + float(g.ox * sb + g.oy * cb));
+            g.z = pz + g.oz;
         }
     }
 
@@ -1249,8 +1269,80 @@ namespace wow
 
     float BattleMap::Progress(const Unit& u) const
     {
-        if (u.group < 0 || size_t(u.group) >= setup.groups.size()) return 1.0f;
-        return setup.groups[size_t(u.group)].progress;
+        if (u.ref < 0 || size_t(u.ref) >= setup.groups.size()) return 1.0f;
+        return setup.groups[size_t(u.ref)].progress;
+    }
+
+    int BattleMap::AddGroup(bool players)
+    {
+        const int g = int(groupTargets.size());
+        groupPlayers.push_back(players);
+        selected.push_back(false);
+        groupStance.push_back(1);
+        groupTargets.push_back(GroupTarget{});
+        groupMode.push_back(0);
+        groupRange.push_back(100000);
+        groupTicks.push_back(0);
+        groupInterval.push_back(90);
+        groupHomeX.push_back(0);
+        groupHomeY.push_back(0);
+        groupBusy.push_back(false);
+        groupHalted.push_back(false);
+        groupOrdered.push_back(false);
+        groupArrived.push_back(0);
+        groupSelfMove.push_back(false);
+        grounds.push_back(GroundGroup{});
+        return g;
+    }
+
+    // 0x4802E0: +0x4E the engagement range, from 100000 the least of each member's sight (+0x48) and its vt+0xB0, its
+    // guns' longest record 12 +0 range, or 10000 with none (0x495850); +0x5C the think interval, its members' type
+    // +0x92 words summed over the count (ftol; 0x480533, 0x4805B5-0x4805E1); +0x54 the stance, the members' +0xD8
+    // averaged (ftol(sum + 0.5) / n) once they've started; and the ground costs (SetUpGrounds)
+    void BattleMap::RecomputeGroup(int group)
+    {
+        if (group < 0 || size_t(group) >= groupRange.size()) return;
+        int range = 100000, sum = 0, n = 0, stances = 0;
+        for (const Unit& u : units)
+        {
+            if (u.group != group) continue;
+            auto t = setup.units->find(u.type);
+            if (t == setup.units->end()) continue;
+            int r = u.guns.empty() ? 10000 : 0;
+            for (const Gun& g : u.guns) r = std::max(r, WeaponData(g.type)[0]);
+            range = std::min({ range, ObjOjd::Vision(t->second, setup.armour), r });
+            sum += int16_t(t->second.field92);
+            stances += u.stance;
+            n++;
+        }
+        groupRange[size_t(group)] = range;
+        if (n) groupInterval[size_t(group)] = sum / n;
+        if (n && size_t(group) >= setup.groups.size()) groupStance[size_t(group)] = int(double(stances) + 0.5) / n;
+    }
+
+    void BattleMap::SelectRefs(const std::vector<int>& refs)
+    {
+        ClearSelection();
+        std::vector<size_t> members;
+        for (size_t i = 0; i < units.size(); i++)
+            if (units[i].players && std::find(refs.begin(), refs.end(), units[i].ref) != refs.end()) members.push_back(i);
+        if (members.empty()) return;
+        // already one whole group: it's the selection (0x4480F0 moves nothing)
+        const int first = units[members[0]].group;
+        const bool same = std::all_of(members.begin(), members.end(), [&](size_t i) { return units[i].group == first; }) &&
+                          GroupCount(first) == int(members.size());
+        if (same) { selected[size_t(first)] = true; return; }
+        const int g = AddGroup(true);
+        std::vector<int> old;
+        for (size_t i : members)
+        {
+            if (std::find(old.begin(), old.end(), units[i].group) == old.end()) old.push_back(units[i].group);
+            units[i].group = g;
+        }
+        RecomputeGroup(g);
+        for (int o : old) RecomputeGroup(o);
+        SetUpGrounds();
+        selected[size_t(g)] = true;
     }
 
     // 0x48E9D0, for a building not yet finished (+0xC0 bit 0 clear) of the player's side (+0x24 0): four type 0x17B
@@ -1738,23 +1830,32 @@ namespace wow
     void BattleMap::Update()
     {
         ticks++;
+        // the game loop (0x403680): the players' updates (the computer player's), then the queued messages (0x434FA0:
+        // the delayed 0x80A0 deaths, posted by 0x48AB20, and the 0x80F4 posts), then the screen (0x43A980: the fog's
+        // decay, the twinkles, the end check, then its children in start order)
+        AiUpdate();
+        for (size_t i = 0; i < units.size();)
+            if (units[i].dieAt >= 0 && ticks >= units[i].dieAt) Die(i);
+            else i++;
+        for (size_t k = 0; k < controlPosts.size();)
+        {
+            if (controlPosts[k].at > ticks) { k++; continue; }
+            const ControlPost p = controlPosts[k];
+            controlPosts.erase(controlPosts.begin() + std::ptrdiff_t(k));
+            ControlArrives(p);
+        }
         FogTick();
         WaterTwinkles();
         // the listener (dword_4E9250 / dy): the view's centre
         if (setup.sound) setup.sound->SetListener(scrollX + 320, scrollY + 240);
-        // 0x80A0 arriving (posted by 0x48AB20)
-        for (size_t i = 0; i < units.size();)
-            if (units[i].dieAt >= 0 && ticks >= units[i].dieAt) Die(i);
-            else i++;
         // the right button held for [Tweak] "Quick Cancel Timeout" updates opens the popup (0x805B -> 0x485DE0)
         if (rightDownAt >= 0 && popup.empty() && ticks - rightDownAt == setup.quickCancelTimeout && mouseX >= 0)
             OpenPopup(mouseX, mouseY);
         EdgeScroll();
         ZoomTick();
         CheckBattleEnd();
-        AiUpdate();
+        // the groups were made before the units (0x4216E0), so their updates (0x483B70, the chase first) come first
         for (size_t g = 0; g < groupTicks.size(); g++) GroupTick(int(g));
-        ChaseTargets();
         // the world list (0x47D610) in start order: each unit's whole update (0x4967E0 / the vehicles' 0x4913B0), then
         // its children's, its turrets and guns, made as it started (0x47EE10), before the next unit's
         bool moved = false;
@@ -1793,15 +1894,6 @@ namespace wow
             if (props[i].dieAt >= 0 && ticks >= props[i].dieAt) { PropDies(i); continue; }
             SmoulderProp(i);
         }
-        // the 0x80F4s arriving (0x4355A0's delay)
-        for (size_t k = 0; k < controlPosts.size();)
-        {
-            if (controlPosts[k].at > ticks) { k++; continue; }
-            const ControlPost p = controlPosts[k];
-            controlPosts.erase(controlPosts.begin() + std::ptrdiff_t(k));
-            ControlArrives(p);
-        }
-        // the flying objects (effects, smoke, shells)
         UpdateEffects();
         UpdateLights();
         // the view list is rebuilt in key order every frame (0x40D750), and the keys follow the poses
@@ -2321,7 +2413,7 @@ namespace wow
             if (bg.list != 2 && bg.list != 3) continue;
             bool counts = bg.places.empty();
             if (!counts)
-                for (const Unit& u : units) if (u.group == int(g)) { counts = true; break; }
+                for (const Unit& u : units) if (u.ref == int(g)) { counts = true; break; }
             if (counts) (bg.Players() ? ours : theirs)++;
         }
         if (ours != 0 && theirs != 0) return;
@@ -2352,7 +2444,7 @@ namespace wow
             if (setup.groups[g].places.empty() || setup.groups[g].ref < 0) continue;
             if (g < groupLeft.size() && groupLeft[g]) continue;     // it left by a reinforcement point
             bool left = false;
-            for (const Unit& u : units) if (u.group == int(g)) { left = true; break; }
+            for (const Unit& u : units) if (u.ref == int(g)) { left = true; break; }
             if (!left) out.push_back(setup.groups[g].ref);
         }
         return out;

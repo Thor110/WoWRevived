@@ -163,7 +163,7 @@ namespace wow
     bool BattleMap::PlayersOrder(int group) const
     {
         if (group < 0 || size_t(group) >= groupOrdered.size() || !groupOrdered[size_t(group)]) return false;
-        if (size_t(group) >= setup.groups.size() || !setup.groups[size_t(group)].Players()) return false;
+        if (size_t(group) >= groupPlayers.size() || !groupPlayers[size_t(group)]) return false;
         for (const Unit& u : units)
             if (u.group == group) return u.players;     // 0x4831B3 / 0x483370: the first member's +0x24 0
         return false;
@@ -993,10 +993,11 @@ namespace wow
     // *Provisional*: every member counts as +0xB8 bit 0; the groups are set up once, at the start.
     void BattleMap::SetUpGrounds()
     {
-        grounds.assign(setup.groups.size(), GroundGroup{});
-        std::vector<float> best(setup.groups.size(), -1000.0f);
-        std::vector<int> members(setup.groups.size(), 0);
-        std::vector<bool> any(setup.groups.size(), false);
+        const size_t count = std::max(setup.groups.size(), groupTargets.size());
+        grounds.assign(count, GroundGroup{});
+        std::vector<float> best(count, -1000.0f);
+        std::vector<int> members(count, 0);
+        std::vector<bool> any(count, false);
         for (const Unit& u : units)
         {
             if (u.group < 0 || size_t(u.group) >= grounds.size()) continue;
