@@ -626,6 +626,7 @@ namespace wow
         map->SetStickyPopup(ini.GetBool("Modern", "Sticky popup menus", false));   // a modern option (docs/MODERN.md)
         map->SetDeposits(std::move(deposits), ini.GetFloat("Tweak", "Resource Drop Off Rate", 3.0f));
         map->SetPodInterval(ini.GetInt("Tweak", "Pod Interval (hours)", 24));
+        map->SetZoomerSpeed(ini.GetFloat("Tweak", "Warmap Zoomer Speed", 1.5f));
         map->SetClunting(ini.GetInt("Tweak", "WM clunting res", 36), ini.GetInt("Tweak", "WM clunting adj", 4));
         map->SetRouteFormation(ini.GetInt("Tweak", "Route clunting width", 4), ini.GetInt("Tweak", "Route clunting spacing", 4));
         map->SetEconomy(ini.GetFloat("Tweak", "Distance Crippler VX", 0.5f), ini.GetFloat("Tweak", "Distance Crippler VY", 0.5f),
@@ -1137,6 +1138,8 @@ namespace wow
         s.showLights = ini.GetBool("Options", "Show lights", true);
         s.showShadows = ini.GetBool("Options", "Show vehicle shadows", true);
         s.wofBrightness = ini.GetFloat("Game", "WOF Brightness", 2.5f);
+        s.zoomerSpeed = ini.GetFloat("Tweak", "Battlemap Zoomer Speed", 2.5f);
+        s.waterTwinkles = ini.GetInt("Tweak", "Water twinkles per frame", 20);
         s.isoBrightness = ini.GetFloat("Game", "ISO Brightness", 0.5f);
         s.showSmoke = ini.GetBool("Options", "Show Smoke & particles", true);
         s.stickyPopup = ini.GetBool("Modern", "Sticky popup menus", false);   // a modern option (docs/MODERN.md)

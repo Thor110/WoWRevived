@@ -19,6 +19,35 @@ namespace wow
         }
     }
 
+    // 0x43A670, each update of the world (0x43A980, after the fog's decay) with "Show Smoke & particles" on: "Water
+    // twinkles per frame" times, a point rand() % (the world's width less 40) + 20 by rand() % (its height less 40)
+    // + 20; at its vertex (rounded, kept on the map) an ATM byte of 1-3 (water, flat) makes, unless rand() is under
+    // (the byte less 1) x 10000, a glint, type 0x3CA + rand() % 3 (LE_1-LE_3): there at height 0, started, its
+    // renderer's +0x26 8, its frame step (+0xC0) 100, moving 0.5 by 0.5 (vt+0x80)
+    void BattleMap::WaterTwinkles()
+    {
+        if (!setup.showSmoke || setup.waterTwinkles <= 0) return;
+        const int w = land.WorldWidth() - 40, h = land.WorldHeight() - 40;
+        if (w <= 0 || h <= 0) return;
+        const int64_t cell = land.Cell(), half = land.HalfCell();
+        for (int n = 0; n < setup.waterTwinkles; n++)
+        {
+            const int x = random::Rand() % w + 20;
+            const int y = random::Rand() % h + 20;
+            const int vx = std::clamp(int((int64_t(int32_t(uint32_t(x) << 16)) + half) / cell), 0, land.Width() - 1);
+            const int vy = std::clamp(int((int64_t(int32_t(uint32_t(y) << 16)) + half) / cell), 0, land.Height() - 1);
+            const int atm = land.At(vx, vy).atm;
+            if (atm <= 0 || atm >= 4) continue;
+            if (random::Rand() < (atm - 1) * 10000) continue;
+            const int i = SpawnEffect(0x3CA + random::Rand() % 3, float(x), float(y), 0.0f, 0.5f, 0.5f, 0.0f, 0.0f);
+            if (i < 0) continue;
+            effects[size_t(i)].frameStep = 100;
+            effects[size_t(i)].depth = 8;
+            for (ViewObject& o : objects)
+                if (o.effect == i && o.light < 0) o.key = y + 8;
+        }
+    }
+
     // The factory's class for each flying type (0x446B30)
     BattleMap::EffectKind BattleMap::KindOf(int t)
     {
@@ -123,7 +152,7 @@ namespace wow
             bool gone = false;
             if (effects[i].gtype && effects[i].kind != EffectKind::Shell && effects[i].kind != EffectKind::Plain && effects[i].frames >= 3)
             {
-                effects[i].counter += 0x80;
+                effects[i].counter += effects[i].frameStep;
                 gone = effects[i].counter > (effects[i].frames - 1) << 8;
             }
             if (!gone)

@@ -79,6 +79,9 @@ namespace wow
             { 10, "BMR" + std::to_string(s.shadeClass) + "NA" + hour } };
         for (const auto& [slot, name] : slots)
             if (auto data = res.LoadFile("dat\\" + name + ".SHH")) slotTables[slot] = ShadeTable::LoadShh(*data);
+        // slot 20 is the ground's own LANDR table (the bm group fills it too): the sprites drawn through it, the water's
+        // twinkles (twink1-3.spr) among them, were skipped without it
+        slotTables[20] = table;
         SetUpRouteFinder();     // 0x47AF10, with the landscape, before anything is placed (the bridges add nodes)
         if (s.loadScenery) LoadScenery(sun, letter);
 
@@ -432,7 +435,84 @@ namespace wow
         }
         if (!any) return;
         const int cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-        ScrollTo(cx - 320, land.ProjectY(cy, land.HeightAtNearest(cx, cy)) - 240);
+        // a Zoomer there at "Battlemap Zoomer Speed" (0x43A592)
+        ZoomTo(cx - 320, land.ProjectY(cy, land.HeightAtNearest(cx, cy)) - 240);
+    }
+
+    // 0x446690: the target kept within the scroll (0 to the size less the view), the start the view's place now
+    // (the scroller's +0x58 / +0x5C), the way there's heading and length (0x43FDA0), half of it (+0x2C), the speed
+    // (+0x20), the step 0 (+0x24)
+    void BattleMap::ZoomTo(int x, int y)
+    {
+        x = std::max(0, std::min(x, land.WorldWidth() - 640 - 1));
+        y = std::max(0, std::min(y, land.WorldHeight() - 480 - 1));
+        zoomer = Zoomer{};
+        zoomer.active = true;
+        zoomer.x = float(scrollX);
+        zoomer.y = float(scrollY);
+        const float fx = float(x) - zoomer.x, fy = float(y) - zoomer.y;
+        const float d = float(std::sqrt(double(fx) * fx + double(fy) * fy));
+        if (d > 0.0f) { zoomer.dx = fx / d; zoomer.dy = fy / d; }
+        else { zoomer.dx = 1.0f; zoomer.dy = 0.0f; }
+        zoomer.half = float(double(d) * 0.5);
+        zoomer.speed = setup.zoomerSpeed;
+    }
+
+    // 0x446850, each update: the half less the step; past the middle (under 0) the step less the speed, else more;
+    // the place moved on by the step along the heading (0x43FE90) and the view put there (0x7A, whole); at a step
+    // of 0 or less it's done (0x4393D0)
+    void BattleMap::ZoomTick()
+    {
+        if (!zoomer.active) return;
+        zoomer.half -= zoomer.step;
+        if (zoomer.half < 0.0f) zoomer.step -= zoomer.speed;
+        else zoomer.step += zoomer.speed;
+        zoomer.x += zoomer.dx * zoomer.step;
+        zoomer.y += zoomer.dy * zoomer.step;
+        ScrollTo(int(zoomer.x), int(zoomer.y));
+        if (!(zoomer.step > 0.0f)) zoomer.active = false;
+    }
+
+    // 0x421D70 (',') / 0x421E50 ('.') over the player's units list (0x446370(1, 1): +0x4C): the object whose id is
+    // the nearest below (',') or above ('.') the last one stepped to, else the highest (',') or lowest ('.')
+    // *Provisional*: the war map object's index in the table stands for its id (+0x08).
+    int BattleMap::StepObject(bool up)
+    {
+        int best = -1, bestId = 0, wrap = -1, wrapId = 0;
+        for (size_t g = 0; g < setup.groups.size(); g++)
+        {
+            const BattleGroup& bg = setup.groups[g];
+            if (!bg.Players() || bg.list / 2 != 0 || bg.ref < 0) continue;
+            if (std::none_of(units.begin(), units.end(), [&](const Unit& u) { return u.group == int(g); })) continue;
+            const int id = bg.ref;
+            if (up ? (id > lastStepped && (best < 0 || id < bestId)) : (id < lastStepped && (best < 0 || id > bestId))) { best = int(g); bestId = id; }
+            if (wrap < 0 || (up ? id < wrapId : id > wrapId)) { wrap = int(g); wrapId = id; }
+        }
+        if (best < 0) { best = wrap; bestId = wrapId; }
+        if (best >= 0) lastStepped = bestId;
+        return best;
+    }
+
+    // The view on a war map object's units (0x43BE50 / 0x43BF30): the middle of their extent (0x42A2A0 /
+    // 0x42A340), projected with the nearest vertex's height (0x47B120), less half the view; ',' puts it there at
+    // once (0x7A), '.' glides there (a Zoomer at "Battlemap Zoomer Speed")
+    void BattleMap::ViewOnGroup(int group, bool glide)
+    {
+        bool any = false;
+        int minX = 0, maxX = 0, minY = 0, maxY = 0;
+        for (const Unit& u : units)
+        {
+            if (u.group != group) continue;
+            const int x = int(u.x), y = int(u.y);
+            if (!any) { minX = maxX = x; minY = maxY = y; any = true; }
+            minX = std::min(minX, x); maxX = std::max(maxX, x);
+            minY = std::min(minY, y); maxY = std::max(maxY, y);
+        }
+        if (!any) return;
+        const int cx = (maxX - minX) / 2 + minX, cy = (maxY - minY) / 2 + minY;
+        const int x = cx - 320, y = land.ProjectY(cy, land.HeightAtNearest(cx, cy)) - 240;
+        if (glide) ZoomTo(x, y);
+        else { zoomer.active = false; ScrollTo(x, y); }
     }
 
     // The selected units' brackets (0x4972F0 / 0x497000: GType 5, hselec.spr, frames 0-3 at the hotspot's corners 8 in)
@@ -1469,6 +1549,8 @@ namespace wow
             ScrollTo(scrollX + (ctrl ? round0(hi(w, 0x55555556)) : round0((hi(w, int32_t(0x92492493)) + w) >> 2)), scrollY);
             break;
         case SDLK_HOME: CentreOnSelection(); break;
+        case SDLK_COMMA: if (const int g = StepObject(false); g >= 0) ViewOnGroup(g, false); break;
+        case SDLK_PERIOD: if (const int g = StepObject(true); g >= 0) ViewOnGroup(g, true); break;
         case SDLK_BACKSPACE: Halt(); break;
         // The digits build packet 0x12 (select group n, 0 as 10), but the selection that runs the packets (0x4812B0)
         // has no case for it: in the game they do nothing, and so here.
@@ -1550,6 +1632,7 @@ namespace wow
     {
         ticks++;
         FogTick();
+        WaterTwinkles();
         // the listener (dword_4E9250 / dy): the view's centre
         if (setup.sound) setup.sound->SetListener(scrollX + 320, scrollY + 240);
         // 0x80A0 arriving (posted by 0x48AB20)
@@ -1560,6 +1643,7 @@ namespace wow
         if (rightDownAt >= 0 && popup.empty() && ticks - rightDownAt == setup.quickCancelTimeout && mouseX >= 0)
             OpenPopup(mouseX, mouseY);
         EdgeScroll();
+        ZoomTick();
         CheckBattleEnd();
         AiUpdate();
         for (size_t g = 0; g < groupTicks.size(); g++) GroupTick(int(g));

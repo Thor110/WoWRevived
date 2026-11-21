@@ -105,6 +105,9 @@ namespace
                         else if (k == "left") o.keys.push_back(SDLK_LEFT);
                         else if (k == "right") o.keys.push_back(SDLK_RIGHT);
                         else if (k == "backspace") o.keys.push_back(SDLK_BACKSPACE);
+                        else if (k == "home") o.keys.push_back(SDLK_HOME);
+                        else if (k == "comma") o.keys.push_back(SDLK_COMMA);
+                        else if (k == "period") o.keys.push_back(SDLK_PERIOD);
                         else if (k.size() == 2 && k[0] == 'f' && k[1] >= '1' && k[1] <= '9') o.keys.push_back(int(SDLK_F1) + (k[1] - '1'));
                         else if (k.size() == 1 && k[0] >= '0' && k[0] <= '9') o.keys.push_back(int(SDLK_0) + (k[0] - '0'));
                         else if (k == "click") o.keys.push_back(-1); // a left click where --mouse put the mouse

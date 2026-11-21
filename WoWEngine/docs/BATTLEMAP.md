@@ -460,6 +460,30 @@ fog tick.
   0x48B2A0, for every object), the 0x8126 isn't sent, a hidden unit can still be clicked, and the minimap's dots
   don't heed the fog.
 
+## The camera's keys and glide (0x43ADA0's switch; the Zoomer 0x446690 / 0x446850)
+
+**',' and '.'** (keys 188 / 190: 0x43BE50 / 0x43BF30): the player's units list (0x446370(1, 1), its +0x4C) is
+stepped by the objects' ids from the last one stepped to (dword_4F8740): ',' takes the nearest id below it, else
+the highest (0x421D70); '.' the nearest above, else the lowest (0x421E50). The view goes to the middle of that
+object's battle units' extent (0x42A2A0 / 0x42A340), projected with the nearest vertex's height (0x47B120), less
+half the view: ',' at once (0x7A), '.' gliding there. **Home** (0x43A480) glides to the selection's middle the same
+way. *Provisional*: the war map object's index in the table stands for its id.
+
+**The Zoomer** (0x446690): from the view's place now to the target (kept within the scroll), its heading and
+length (0x43FDA0); +0x2C half the length, +0x20 the speed (`[Tweak] "Battlemap Zoomer Speed"`, 2.5, dword_4F744C),
++0x24 the step, 0. Each update (0x446850): the half less the step; under 0 the step less the speed, else plus it;
+the place moved on by the step along the heading (0x43FE90) and the view put there (0x7A, whole); a step of 0 or
+less ends it. So it speeds up for the first half of the way and slows for the rest. The war map's InfoBox (0x41E000
+with 1) glides the same way at `[Tweak] "Warmap Zoomer Speed"` (1.5, dword_4E9F3C); its Home (0x41E000 with 0)
+jumps.
+
+**Water twinkles** (0x43A670, each update of the world after the fog's decay, with "Show Smoke & particles"):
+`[Tweak] "Water twinkles per frame"` (20) times, a random point (rand() % (the world's width less 40) + 20, the same
+down); at its vertex an ATM byte of 1-3 (water, flat) makes, unless rand() is under (the byte less 1) x 10000, a
+glint, type 0x3CA + rand() % 3 (LE_1-LE_3, `twink1-3.spr`, 8 frames), at height 0, its renderer's +0x26 8, its frame
+step (+0xC0) 100, drifting 0.5 by 0.5. Their sprites are in palette slot 20, the ground's `LANDR` table, which the
+engine hadn't registered for sprites: anything drawn through slot 20 was skipped until now.
+
 ## Minimap ("BattleMap miniMap view" 0x4868B0, RTypeMiniBattleMap 0x4A1F90, dots 0x4A1CD0)
 
 EnterBattleMap makes it with the sector (+0x8C). Its parts:

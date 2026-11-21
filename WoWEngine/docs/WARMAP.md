@@ -768,7 +768,7 @@ or 16 with a constant id (0x41E5B0's callers raise 0, 2-6, 10-15 and 17-19 that 
 0x45FD91, with a computed one).
 
 **The InfoBox** (0x41E4E0 -> 0x432520, WDialog "InfoBox" 0x801B, z 0x65FE, modal): time stops (0x41A6C0(0)), the
-view goes to the sector (0x41E000, which glides; the engine jumps), sound 0x198. The backdrop (GType 0x68, hu_event
+view glides to the sector (0x41E000 with 1: a Zoomer at `[Tweak] "Warmap Zoomer Speed"`, 1.5), sound 0x198. The backdrop (GType 0x68, hu_event
 / ma_event) is centred 4 pixels above the bottom; in Martian games ma_scrn (0x69) is drawn at 50% at +0x0B, -0x5E and
 the text goes from its corner. The text (font 0x73, wrapped to 320 pixels by 0x4161E0, centred, shade 21) sits
 0x2B (Human) or 0x17 (Martian) down, a second line (shade 22, centred too, as the original shows it) 16 pixels

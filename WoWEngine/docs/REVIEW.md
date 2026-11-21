@@ -199,9 +199,12 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
 
 ## 4. Interface missing
 
-- [ ] **Battle map keys and camera**: ',' and '.' step to the next unit / construction (0x43BE50 / 0x43BF30, helpers
+- [x] **Battle map keys and camera**: ',' and '.' step to the next unit / construction (0x43BE50 / 0x43BF30, helpers
       0x421D70 / 0x421E50); Home and the war map's sector glide zoom smoothly (Zoomer 0x446690 / 0x446850,
       `Battlemap Zoomer Speed` 2.5, `Warmap Zoomer Speed` 1.5; 0x43A480, 0x41E000); water twinkles (0x43A670).
+      *Update 126*: ',' and '.' step through the player's war map unit objects by id (',' down, at once; '.' up,
+      gliding); the Zoomer for Home, '.' and the war map's InfoBox; the water twinkles. Found with them: palette slot
+      20 (the ground's LANDR table) wasn't registered for sprites, so everything drawn through it was skipped.
 - [ ] **The popup's grid** (0x432C60-0x433330: 10 x 8, the hovered row opening out, flipped at the right edge).
 - [ ] **Unit icon tray** on the battle map (0x483DF0-0x4849D0) and the **group power-pip strip** (0x449150-0x449340,
       `hwpower.spr`).

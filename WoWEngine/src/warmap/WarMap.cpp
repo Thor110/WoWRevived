@@ -125,6 +125,37 @@ namespace wow
         Clamp();
     }
 
+    void WarMap::GlideTo(int x, int y)
+    {
+        const int tx = std::clamp(x - ViewW() / 2, 0, warmap::MapWidth - ViewW());
+        const int ty = std::clamp(y - ViewH() / 2, 0, warmap::MapHeight - ViewH());
+        zoomer = Zoomer{};
+        zoomer.active = true;
+        zoomer.x = float(cameraX);
+        zoomer.y = float(cameraY);
+        const float fx = float(tx) - zoomer.x, fy = float(ty) - zoomer.y;
+        const float d = float(std::sqrt(double(fx) * fx + double(fy) * fy));
+        if (d > 0.0f) { zoomer.dx = fx / d; zoomer.dy = fy / d; }
+        else zoomer.dx = 1.0f;
+        zoomer.half = float(double(d) * 0.5);
+    }
+
+    // 0x446850: the half less the step; past the middle the step less the speed, else more; moved on by the step
+    // and the view put there (0x7A, whole); done at a step of 0 or less
+    void WarMap::ZoomTick()
+    {
+        if (!zoomer.active) return;
+        zoomer.half -= zoomer.step;
+        if (zoomer.half < 0.0f) zoomer.step -= zoomerSpeed;
+        else zoomer.step += zoomerSpeed;
+        zoomer.x += zoomer.dx * zoomer.step;
+        zoomer.y += zoomer.dy * zoomer.step;
+        cameraX = int(zoomer.x);
+        cameraY = int(zoomer.y);
+        Clamp();
+        if (!(zoomer.step > 0.0f)) zoomer.active = false;
+    }
+
     void WarMap::Clamp()
     {
         cameraX = std::clamp(cameraX, 0, warmap::MapWidth - ViewW());
@@ -1000,6 +1031,7 @@ namespace wow
         AgeLog();
         if (!map) map = res.GetFrame(warmap::MapGType);
         if (!sectorMap) sectorMap = res.GetFrame(warmap::SectorMapGType);
+        ZoomTick();     // a world object of its own (dword_4D2538's list), whether the time runs or not
 
         // the right button held for [Tweak] "Quick Cancel Timeout" updates opens the Warmap menu (0x805B -> 0x41D120)
         if (rightDownAt >= 0 && popup.empty() && animation - rightDownAt == quickCancelTimeout && mouseX >= 0)
@@ -1965,7 +1997,7 @@ namespace wow
     }
 
     // 0x41E4E0: the InfoBox with the text, the second line and the command; time stops (0x41A6C0(0)), the view
-    // goes to the sector (0x41E000, which the game glides; the engine jumps), sound 0x198.
+    // glides to the sector (0x41E000 with 1: a Zoomer at "Warmap Zoomer Speed"), sound 0x198.
     void WarMap::OpenBox(std::string text, int sector, std::string text2, int command)
     {
         infoBox = InfoBoxState{ std::move(text), std::move(text2), command, false, sector };
@@ -1973,7 +2005,7 @@ namespace wow
         if (sector >= 1 && sector <= warmap::SectorCount)
         {
             const warmap::SectorInfo& r = warmap::Sectors[sector];
-            CentreOn((r.left + r.right) / 2, (r.top + r.bottom) / 2);
+            GlideTo((r.left + r.right) / 2, (r.top + r.bottom) / 2);
         }
         sounds.push_back(0x198);
     }

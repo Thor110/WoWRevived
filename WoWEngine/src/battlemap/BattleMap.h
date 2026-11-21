@@ -53,7 +53,9 @@ namespace wow
             bool showLights = true;     // [Options] "Show lights" (byte_4B8808)
             bool showShadows = true;    // [Options] "Show vehicle shadows" (byte_4B8814)
             float wofBrightness = 2.5f; // [Game] "WOF Brightness" (flt_59F364): the point lights on the models
-            float isoBrightness = 0.5f; // [Game] "ISO Brightness" (flt_4E8C04): the point lights on the IOB objects
+            float isoBrightness = 0.5f;
+            float zoomerSpeed = 2.5f;
+            int waterTwinkles = 20;     // [Tweak] "Water twinkles per frame" (dword_4F76E4, 0x439400)   // [Tweak] "Battlemap Zoomer Speed" (dword_4F744C, 0x43A440): Home's and '.''s glide // [Game] "ISO Brightness" (flt_4E8C04): the point lights on the IOB objects
             bool showSmoke = true;      // [Options] "Show Smoke & particles" (byte_4B880C)
             std::vector<BattleGroup> groups; // the sector's war map objects (WarMap::BattleGroups)
             int ownerFaction = 2;       // who holds the sector (0x43CA30): 0 Human, 1 Martian, 2 no one
@@ -167,6 +169,7 @@ namespace wow
         struct Effect
         {
             int type = 0, gtype = 0, counter = 0, frames = 0; bool alive = false;
+            int frameStep = 0x80;                   // +0xC0: the frame's step an update (8.8)
             EffectKind kind = EffectKind::Animated;
             float x = 0, y = 0, lift = 0;           // +0x78 / +0x7C, +0x84 (its height over the ground)
             float vx = 0, vy = 0, vz = 0, g = 0;    // +0x88..+0x90, +0x94
@@ -183,6 +186,7 @@ namespace wow
         int SpawnEffect(int type, float x, float y, float lift = 0, float vx = 0, float vy = 0, float vz = 0, float g = 0);
         static EffectKind KindOf(int type);
         void UpdateEffects();                                   // each flying object's update
+        void WaterTwinkles();                                   // 0x43A670
         void Emit(size_t effect);                               // 0x47F050
         void Smoulder(size_t unit);                             // 0x48AEF0 (from the unit's update 0x4967E0)
         void Puff(int type, int ownType, float x, float y, float lift, int radius);   // 0x48ADD0
@@ -509,6 +513,16 @@ namespace wow
         void ClearSelection() { selected.assign(selected.size(), false); }
         const Unit* HotspotAt(int x, int y) const;
         void CentreOnSelection();
+        // The Zoomer (0x446690 / 0x446850): the view glides from where it is to a point, gaining the speed each
+        // update for the first half of the way and losing it for the rest, done once its step is 0 or less
+        struct Zoomer { bool active = false; float x = 0, y = 0, dx = 0, dy = 0, half = 0, step = 0, speed = 0; };
+        Zoomer zoomer;
+        void ZoomTo(int x, int y);
+        void ZoomTick();
+        // ',' and '.' (0x43BE50 / 0x43BF30): the player's war map unit objects in the battle in turn by id
+        int StepObject(bool up);
+        int lastStepped = 0;            // dword_4F8740: the id last stepped to
+        void ViewOnGroup(int group, bool glide);
         void DrawSelection(Canvas& canvas) const;
         int scrollX = 0, scrollY = 0;
         int mouseX = -1, mouseY = -1;

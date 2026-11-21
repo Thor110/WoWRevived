@@ -123,6 +123,7 @@ namespace wow
             aiSites = std::move(sites);
         }
         void SetPodInterval(int hours) { podInterval = hours; }
+        void SetZoomerSpeed(float speed) { zoomerSpeed = speed; }  // [Tweak] "Warmap Zoomer Speed" (dword_4E9F3C, 1.5)
         void SetClunting(int res, int adj) { clunRes = std::max(1, res); clunAdj = adj; for (auto& g : grids) g.size = 0; LayoutAll(); }
         // [Tweak] "Route clunting width" and "Route clunting spacing" (0x42AF20 / 0x42AF60, both 4)
         void SetRouteFormation(int width, int spacing) { clunWidth = std::max(1, width); clunSpacing = spacing; }
@@ -159,6 +160,13 @@ namespace wow
 
     private:
         void CentreOn(int mapX, int mapY);
+        // 0x41E000 with its glide: a Zoomer (0x446690 / 0x446850) from the view's place to the one centred there,
+        // gaining "Warmap Zoomer Speed" each update for half the way and losing it for the rest
+        void GlideTo(int mapX, int mapY);
+        void ZoomTick();
+        struct Zoomer { bool active = false; float x = 0, y = 0, dx = 0, dy = 0, half = 0, step = 0; };
+        Zoomer zoomer;
+        float zoomerSpeed = 1.5f;
         void Clamp();
         Rect MiniMapRect() const;
         int ViewW() const;
