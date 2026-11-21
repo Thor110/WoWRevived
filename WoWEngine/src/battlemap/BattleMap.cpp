@@ -163,6 +163,7 @@ namespace wow
         groupHomeX.assign(setup.groups.size(), 0);
         groupHomeY.assign(setup.groups.size(), 0);
         groupBusy.assign(setup.groups.size(), false);
+        groupOffScreen.assign(setup.groups.size(), false);
         groupSelfMove.assign(setup.groups.size(), false);
         AiStart();     // the battle begun, told to the computer player (0x8075 -> 0x445210)
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
@@ -1572,6 +1573,16 @@ namespace wow
             if (SinkTick(i)) { i--; moved = true; continue; }
             moved |= units[i].sink != 0;
             MarkerTick(i);
+            // 0x47F630 -> vt+0x60 (0x47F570), from the object's update unless it's fogged: +0xE4 bit 0 set when its
+            // renderer's box (+0x1A..+0x2E) is wholly left of, above, right of or below the view, else cleared.
+            // *Provisional*: the box is taken as 32 each way round the unit's screen point.
+            if (!units[i].fogged)
+            {
+                Unit& v = units[i];
+                const int sx = int(v.x) - scrollX;
+                const int sy = land.ProjectY(int(v.y), land.HeightAt(int(v.x), int(v.y)) + int(v.drive.lift)) - scrollY;
+                v.offScreen = sx + 32 < 0 || sy + 32 < 0 || sx - 32 > 640 || sy - 32 > 480;
+            }
             LookRound(i);
             Smoulder(i);
             moved |= units[i].x != x || units[i].y != y;

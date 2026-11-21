@@ -381,7 +381,7 @@ namespace wow
     // members told 0x80B9 and 0x805A, the target cleared (+0x34..+0x3C -1) and bit 0 cleared (0x480EB0(0)); each
     // member then aims at the point (vt+0xC8 with +0x40..+0x48) or at the object (vt+0xC4). Then +0x1D8 bit 1 is set
     // when more than 10, or more than half the members (+0x24), say vt+0xA8.
-    // *Provisional*: 0x80B9 isn't sent; bit 1 (vt+0xA8) isn't kept.
+    // *Provisional*: 0x80B9 isn't sent.
     void BattleMap::Engage(int g)
     {
         if (g < 0 || size_t(g) >= groupTargets.size()) return;
@@ -399,6 +399,11 @@ namespace wow
                 if (id == -1) Aim(u, x, y, z);
                 else if (const Unit* o = UnitById(id)) Approach(u, *o);
             }
+        // bit 1: more than 10, or more than half the members (+0x24, halved unsigned), off screen (vt+0xA8)
+        int off = 0, members = 0;
+        for (const Unit& u : units)
+            if (u.group == g) { members++; if (u.offScreen) off++; }
+        if (size_t(g) < groupOffScreen.size()) groupOffScreen[size_t(g)] = off > 10 || off > (members >> 1);
     }
 
     // vt+0xC4 (0x491100 -> 0x496300): unless it says not (vt+0xF8), at another object: d = ftol(the distance - -1.0),
@@ -456,7 +461,12 @@ namespace wow
     // with +0xE4 bit 1 and further than its sight x the scale from its post (+0xC8 / +0xCC), its group's guns are
     // stood down (0x805A); then 0x496890: on stance 2 or 3 (+0xD8) with its group not attacking (+0x1D8 bit 0
     // clear, or bit 2 set) it picks a target (0x496570), and the count goes back to 0).
-    // *Provisional*: +0xE4 (posts) and 0x496890's vt+0xAC aren't in.
+    // 0x496890's first part: aiming (+0xE4 bit 1) with a group, it posts itself 0x808A when the group's mostly on
+    // screen (+0x1D8 bit 1 clear; vt+0x128 = 0x4910B0: +0x188 bit 5, held: it steers on without arrival, separation,
+    // braking or matching), else 0x8031 (0x4910C0: stopped, bits 5 and 13 cleared). An emplacement (0x48F8A0) first,
+    // aiming and further from its aim point (+0xC8 / +0xCC) than its sight x the scale (always, the scale being
+    // 0), stands its group's guns down (0x805A to the group), which clears its aiming.
+    // *Provisional*: 0x496890's vt+0xAC isn't in; the group's 0x805A is taken as each member's (no target cleared).
     void BattleMap::LookRound(size_t index)
     {
         Unit& u = units[index];
@@ -464,6 +474,29 @@ namespace wow
         if (t == setup.units->end()) return;
         const int count = u.scanCount++;
         if (count <= int16_t(t->second.field92)) return;
+        const bool hasGroup = u.group >= 0 && size_t(u.group) < groupTargets.size();
+        if (IsEmplacement(u.type) && u.aiming && hasGroup &&
+            Octagonal(int(u.x), int(u.y), u.aimX, u.aimY) > int(float(ObjOjd::Vision(t->second, setup.armour)) * kLookScale))
+        {
+            for (Unit& m : units)
+                if (m.group == u.group)
+                {
+                    m.aiming = false;
+                    m.drive.flags &= ~0x20u;
+                    for (Turret& tr : m.turrets) tr.aiming = false;
+                    for (Gun& gn : m.guns)
+                    {
+                        gn.armed = false;
+                        if (gn.state != 0) gn.state = 4;
+                        gn.flags |= 1;
+                    }
+                }
+        }
+        if (u.aiming && hasGroup && u.vehicle)
+        {
+            if (!groupOffScreen[size_t(u.group)]) u.drive.flags |= 0x20;
+            else { u.drive.flags |= 1; u.drive.flags &= ~0x2020u; u.drive.pendingAt = -1; }
+        }
         const int stance = u.stance;
         if (stance >= 2 && stance <= 3 && size_t(u.group) < groupTargets.size() && groupTargets[size_t(u.group)].target == 0 &&
             (!groupBusy[size_t(u.group)] || groupSelfMove[size_t(u.group)]))
@@ -659,7 +692,13 @@ namespace wow
         groupTargets[size_t(group)] = GroupTarget{};
         for (Unit& u : units)
             if (u.group == group)
+            {
+                u.aiming = false;   // each member's 0x805A (0x496440): +0xE4 bit 1 cleared
+                // a vehicle's (vt+0xCC, 0x491180) first clears bit 5 (held) of its steering. *Provisional*: it also
+                // sets bit 0 (stopped), which isn't done here: which of the vehicle's entries 0x805A reaches isn't sure
+                u.drive.flags &= ~0x20u;
                 for (Turret& t : u.turrets) t.aiming = false;
+            }
         for (Unit& u : units)
             if (u.group == group)
                 for (Gun& g : u.guns)
@@ -747,7 +786,11 @@ namespace wow
         };
         auto t = setup.units->find(u.type);
         if (t == setup.units->end()) return;
-        // the unit's 0x496200: one jittered point for all its children
+        // the unit's 0x496200: the goal kept (+0xC8..+0xD0), aiming (+0xE4 bit 1), one jittered point for all its
+        // children
+        u.aimX = x;
+        u.aimY = y;
+        u.aiming = true;
         int cx = 0, cy = 0, cz = 0;
         jitter(x, y, z, cx, cy, cz);
         size_t gun = 0, turret = 0;

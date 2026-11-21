@@ -182,6 +182,10 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
 - [~] **Group behaviour**: target-gone speech 0x10E / 0x10D (0x4821F0), the group's re-engage (vt+0x38, 0x483760),
       messages 0x80C3 (rally), 0x808A (halt), 0x80B9 in 0x490A70. *Update 109*: 0x4821F0 and vt+0x38 in (0x80C3 in
       106); 0x808A waits on the gun emplacements (its only sender, 0x496890), 0x80B9's bit 9 on what reads it.
+      *Update 122*: 0x496890 is every unit's look round, not only the emplacements': aiming (+0xE4 bit 1) with its
+      group mostly on screen (+0x1D8 bit 1 clear, set by 0x483760 from the members' off-screen bit 0) a unit holds
+      (0x808A, steering bit 5: going, no arrival / separation / braking / matching / cohesion), else stops (0x8031);
+      the emplacements first stand their group's guns down. Left: 0x80B9's bit 9, 0x496890's vt+0xAC.
 
 ## 4. Interface missing
 

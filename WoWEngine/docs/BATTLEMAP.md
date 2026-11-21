@@ -532,11 +532,21 @@ group keys aren't in.
   0x483B70): with a target, an object (+0x30) that's gone (0x440110) clears it as above (0x80B9, 0x805A, bit 0 via
   0x480EB0(0)); each member then aims at the point (vt+0xC8 with +0x40..+0x48) or at the object (vt+0xC4); then
   +0x1D8 bit 1 is set when more than 10, or more than half the members (+0x24), answer vt+0xA8.
-- *Provisional*: 0x80B9 and 0x8086 aren't sent; +0x56 and bit 1 aren't kept. Bit 1 decides (0x496890, a gun
-  emplacement's vt+0x104 0x48F8A0) between 0x808A (vt+0x128 = 0x4910B0: +0x188 bit 5, the steering's arrival,
-  separation, braking and matching off) and 0x8031 for its units; that isn't ported, so neither is 0x808A. A
-  vehicle's 0x80B9 (0x490CD5) sets +0x188 bit 9 to its argument (0 from 0x4821A0); 0x8031 sets bit 0 and clears
-  bits 5 and 13; 0x808B sets bit 0 to its argument and bit 13 to its opposite.
+- **Off screen** (+0xE4 bit 0, vt+0xA4 = 0x496C00 / vt+0xA8 = 0x496C20): each object's update draws it into the
+  view (0x47F630, unless it's fogged), whose vt+0x60 (0x47F570) sets the bit when the renderer's box (+0x1A..+0x2E)
+  is wholly left of, above, right of or below the view, else clears it. So the group's bit 1 means most of it is
+  off screen. *Provisional*: the box is taken as 32 each way round the unit's screen point.
+- **Aiming** (+0xE4 bit 1): set by 0x496200 (vt+0xC8, with the goal at +0xC8..+0xD0), cleared by 0x496440 (a
+  member's guns stood down, 0x805A) and the start (0x495740). A vehicle's stand-down (0x491180) clears steering bit 5
+  first (and sets bit 0, *not ported*: which entry 0x805A reaches isn't sure).
+- **Look round** (vt+0x104, 0x496890, every +0x92 updates): aiming with a group, a unit posts itself 0x808A when the
+  group's bit 1 is clear (vt+0x128 = 0x4910B0: +0x188 bit 5, held: vt+0x144 counts it as going, and its arrival,
+  separation, braking, matching and cohesion are off) or 0x8031 when set (0x4910C0: stopped, bits 5 and 13
+  cleared). A gun emplacement's (0x48F8A0) first: aiming, further from its goal than its sight x flt_59E44C (0.0,
+  so always), it stands its group's guns down (0x805A). *Provisional*: 0x496890's vt+0xAC(0) isn't in, and the
+  group's 0x805A is taken as each member's (no target cleared).
+- *Provisional*: 0x80B9 and 0x8086 aren't sent; +0x56 isn't kept. A vehicle's 0x80B9 (0x490CD5) sets +0x188 bit 9
+  to its argument (0 from 0x4821A0); 0x808B sets bit 0 to its argument and bit 13 to its opposite.
 
 ## Orders (the popup's selection items 0x47E1E0, special orders 0x47DA80, stances 0x4817C0 / 0x80B2)
 

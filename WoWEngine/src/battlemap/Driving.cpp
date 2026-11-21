@@ -329,7 +329,7 @@ namespace wow
         u.engineSound = 0;
         auto t = setup.units->find(u.type);
         if (t == setup.units->end()) return;
-        const bool going = !(u.drive.flags & 1) || u.drive.link;
+        const bool going = !(u.drive.flags & 1) || (u.drive.flags & 0x20) || u.drive.link;
         const int id = going ? t->second.fieldA2 : t->second.fieldA4;
         if (id == 0) return;
         const int x = int(u.x), y = land.ProjectY(int(u.y), land.HeightAt(int(u.x), int(u.y)));
@@ -349,7 +349,8 @@ namespace wow
             if (!(d.flags & 1)) d.flags &= ~2u;
             d.flags = (d.flags & ~0x2000u) | (!(d.flags & 1) ? 0x2000u : 0u);
         }
-        const bool active = !(d.flags & 1) || d.link;  // vt+0x144 (0x4909D0): not stopped, or on a link (bits 5, 8 not in)
+        // vt+0x144 (0x4909D0): not stopped, or held (bit 5, 0x808A; bit 8 isn't set by anything ported), or on a link
+        const bool active = !(d.flags & 1) || (d.flags & 0x20) || d.link;
         // the edges (0x4913B0): stopping sets bit 11 and, from bit 10, clears it and calls vt+0x124 (0x491590: vt+0x110,
         // then the engine sound); going sets bit 10 and, from bit 11, clears it and calls vt+0x120 (0x491570: vt+0x114,
         // then the engine sound)
@@ -404,7 +405,7 @@ namespace wow
     // After the step (0x492F40 + 0x408): on a route whose waypoint has a link byte the bridge's vt+0x100 (OnBridge)
     // is asked and +0x18C becomes the link; else, on a link, it's asked and +0x18C is cleared when it says no (a
     // broken bridge's link (+0xEC 0) over water kills it: 0x80A0, its group 0x8031).
-    // *Provisional*: bit 5 isn't in, nor broken bridges.
+    // *Provisional*: broken bridges aren't in.
     void BattleMap::Steer(Unit& u)
     {
         auto& d = u.drive;
@@ -430,7 +431,8 @@ namespace wow
             Neighbours n = Gather(u);
             // arrival (vt+0x168, 0x491FA0; not arrived and not bit 5): on a route inside the arrival radius, bit 2 and
             // against the step, arrivalAcc*; else bit 2 cleared
-            if (!(d.flags & 2))
+            const bool held = (d.flags & 0x20) != 0;
+            if (!(d.flags & 2) && !held)
             {
                 if (d.route && float(d.dist) < d.arrival)
                 {
@@ -442,7 +444,7 @@ namespace wow
             // separation (vt+0x154, 0x4920A0): the neighbours' push x how many there are
             // (the water classes' 0x493AD0: the push doubled, the weight x the count)
             const bool boat = Boat(u.type);
-            if (n.count > 0 && !d.link)
+            if (n.count > 0 && !d.link && !held)
             {
                 if (boat)
                     add(float(double(v.separationAccWeight) * v.maxAcc * n.count), float(double(v.separationAccMax) * v.maxAcc),
@@ -467,7 +469,7 @@ namespace wow
             }
             // braking (vt+0x160, 0x491C70): with something ahead, against the step, halved unless it's one of the
             // group's standing
-            if (d.flags & 8)
+            if ((d.flags & 8) && !held)
             {
                 const double sq = double(d.dx) * d.dx + double(d.dy) * d.dy;
                 if (sq > 0.0)
@@ -480,12 +482,12 @@ namespace wow
                 }
             }
             // velocity matching (vt+0x16C, 0x492160): the moving group members' average step
-            if (n.matched > 0 && !d.link)
+            if (n.matched > 0 && !d.link && !held)
                 add(float(double(v.velMatchAccWeight) * v.maxAcc), float(double(v.velMatchAccMax) * v.maxAcc),
                     float(double(n.stepX) / n.matched), float(double(n.stepY) / n.matched));
             // cohesion (vt+0x164, 0x492240; with a route): toward the moving group members' average position,
             // attractAcc*
-            if (d.route && n.matched > 0 && !d.link)
+            if (d.route && n.matched > 0 && !d.link && !held)
             {
                 n.posX = float(double(n.posX) / n.matched);
                 n.posY = float(double(n.posY) / n.matched);
@@ -1010,9 +1012,9 @@ namespace wow
         }
         if (d.link) top = 1.0f;     // on a bridge
         if (!(top <= wanted)) top = wanted;
-        // going is vt+0x144 (0x4909D0, at 0x492E8E): not stopped, or on a bridge link (bits 5 and 8 not in), and not
+        // going is vt+0x144 (0x4909D0, at 0x492E8E): not stopped, or held (bit 5), or on a bridge link, and not
         // frozen
-        if ((!(d.flags & 1) || d.link) && !u.Frozen())
+        if ((!(d.flags & 1) || (d.flags & 0x20) || d.link) && !u.Frozen())
         {
             if (double(top) < 0.2) top = 0.2f;
             if (d.speed < top) d.speed = float(double(d.speed) - double(top) * -0.050000001);
