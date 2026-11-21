@@ -400,7 +400,8 @@ the view (0x41D9B0) turns the one for its mode into levels of the map's shade ta
 
 A sector of ours gets `lo + (v - min) / (max - min) x (hi - lo)` (truncated; a range of 0 counts as 1); in the
 Resource view so does every sector. Otherwise a sector no one holds is at 11, and the other side's is 11 too,
-except in the Unit view, where it's 0.
+except in the Unit view, where it's 0 (0x41DAB6-0x41DAEF; the engine had it 0 in the Construction view too until
+update 102). Battle sectors pulse only in the Unit view (0x41DD35).
 
 ## The economy
 

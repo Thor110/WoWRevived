@@ -272,11 +272,13 @@ namespace wow
         void FillTriangle(PolyPoint p[3], const uint8_t* tex, size_t texSize, bool flat, bool masked, const ShadeTable& table,
                           const TerrainView::Target& t)
         {
+            // the flat shade is the first point's as the caller passed it, read before the sort (0x456DF5-0x456E00:
+            // ([esi+40h] & 0xFC) << 6); in a piece that isn't smooth only that point holds the face's light
+            const int flatLevel = p[0].shade >> 2;
             std::sort(p, p + 3, [](const PolyPoint& a, const PolyPoint& b) { return a.y < b.y; });
             if (p[2].y - p[0].y > 250 || p[2].y == p[0].y) return;
             const double area = double(p[1].x - p[0].x) * (p[2].y - p[0].y) - double(p[2].x - p[0].x) * (p[1].y - p[0].y);
             if (area == 0) return;
-            const int flatLevel = p[0].shade >> 2;
             const int y0 = std::max(p[0].y, t.top), y1 = std::min(p[2].y, t.bottom);
             for (int y = y0; y < y1; y++)
             {

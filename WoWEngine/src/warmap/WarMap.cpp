@@ -450,7 +450,7 @@ namespace wow
             int level;
             if (owner[size_t(s)] == 0 || viewMode == 3) level = int((v[size_t(s)] - lo) / range * float(last - first) + float(first));
             else if (owner[size_t(s)] == 2) level = warmap::NormalLevel;
-            else level = 0;
+            else level = viewMode == 1 ? 0 : warmap::NormalLevel;  // the other side's: dark only in the Unit view (0x41DAE4)
             levels[size_t(s)] = level;
         }
         PulseBattles();
@@ -460,6 +460,7 @@ namespace wow
     // 36 for ours and 47 for the rest.
     void WarMap::PulseBattles()
     {
+        if (viewMode != 1) return;     // only in the Unit view (0x41DD35)
         int frame = animation % 23, ramp = frame > 11 ? 22 - frame : frame;
         for (int s = 1; s <= warmap::SectorCount; s++)
             if (battle[size_t(s)]) levels[size_t(s)] = 36 + (owner[size_t(s)] != 0 ? 11 : 0) + ramp;
@@ -1111,10 +1112,11 @@ namespace wow
 
         // the message list
         {
-            // 0x420C10: from (0x28, 4) plus the scroll, 16 apart, the live lines and the one scrolling away
+            // 0x420C10: from (0x28, 4) plus the scroll, 16 apart, the live lines and the one scrolling away, at
+            // [Colours] "Message Text" (19, 0x4288A3)
             int y = 4 + logScroll;
             for (const LogLine& line : log)
-                if (line.life > 0 || line.state == 1) { canvas.DrawString(0x72, line.text, { 0x28, y, ScreenW - 0x28, 14 }, 0); y += 16; }
+                if (line.life > 0 || line.state == 1) { canvas.DrawString(0x72, line.text, { 0x28, y, ScreenW - 0x28, 14 }, 0, colours.messageText); y += 16; }
         }
 
         // the sector under the mouse or the panel button's name, and the engine's own notes (provisional: the game

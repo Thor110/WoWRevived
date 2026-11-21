@@ -102,6 +102,9 @@ namespace wow
     void BattleMap::OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y, int radius)
     {
         if (members.empty()) return;
+        // a move order (0x482510 / 0x480EB0) sets +0x1D8 bit 0 and clears bit 2 (the group's own periodic moves set
+        // bit 2 again after, GroupTick); bit 0 goes when they've all arrived (0x8081)
+        if (group >= 0 && size_t(group) < groupBusy.size()) { groupBusy[size_t(group)] = true; groupSelfMove[size_t(group)] = false; }
         // each member's distance to the point (0x43FF00, +0xD4), the nearest (+0x68) and the farthest (+0x6C),
         // whose position is the route's start
         auto octagonal = [](int x0, int y0, int x1, int y1) {

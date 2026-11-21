@@ -107,11 +107,12 @@ namespace wow
         groupHomeX.assign(setup.groups.size(), 0);
         groupHomeY.assign(setup.groups.size(), 0);
         groupBusy.assign(setup.groups.size(), false);
+        groupSelfMove.assign(setup.groups.size(), false);
         AiStart();     // the battle begun, told to the computer player (0x8075 -> 0x445210)
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
 
         // The start view (0x439B7E): on the player's HQ (the player's constructions list, HCON, searched for type
-        // 278 in London or 314 elsewhere in a Human game, 830 in sector 3 or 120 elsewhere in a Martian one), the
+        // 278 in London or the Command Post 58 elsewhere in a Human game, 830 in sector 3 or 120 elsewhere in a Martian one), the
         // middle of its units' extent (0x42A2A0 / 0x42A340: (max - min) / 2 + min each way); else on the player's
         // deployment centre (dword_4F742C / 4F7434) unless both are 0; else on the map's middle; projected (with the
         // height there), less half the screen
@@ -291,7 +292,10 @@ namespace wow
         const bool ctrl = (SDL_GetModState() & SDL_KMOD_CTRL) != 0;
         if (Mode() == 0)
         {
-            if (!best->players || selected[size_t(best->group)]) return;
+            // 0x497680: the player's (or the debug flag), and with Ctrl only a vehicle; then always packet 4 (the
+            // selection cleared, 0x4976DA) and the object's war map object selected (0x8088), so clicking one of
+            // several selected groups narrows the selection to it
+            if (!best->players) return;
             if (ctrl && !vehicle(*best)) return;
             ClearSelection();
             selected[size_t(best->group)] = true;
@@ -436,7 +440,7 @@ namespace wow
     // battle unit starts at its saved place; each war map object then gets a centre:
     //  - the other side's (its faction isn't the sector's owner): a Martian pod's place (type 179 in the scenery
     //    list) for Martians, else the entry point from the sector it came from (0x436050)
-    //  - the owner's: a command building's place (the last of 830 / 120 or 278 / 314 among all the battle units,
+    //  - the owner's: a command building's place (the last of 830 / 120 or 278 / 58 among all the battle units,
     //    either side's), else a pod's for Martians, else the entry point if it came from somewhere, else the middle
     // and the player's last centre is where the view starts. Its units are placed round it (Place).
     // *Not yet*: the pods (no pod object is made yet), so a Martian never starts at one.
@@ -1612,20 +1616,33 @@ namespace wow
 
     // 0x43A980, each update with the battle on (+0x54) and no box up yet (dword_4F7450): each side's objects in the
     // battle (0x47D610 / 0x47D660: those whose side, 0x4406E0, is 0 / 1), the player's taken as its own, plus its
-    // war map objects waiting off the map (+0x54 / +0x58, 0x4216D0). The player's at 0: the report filled (0x43A800)
+    // construction list's objects in the sector (+0x54 / +0x58, 0x4216D0; a side keeps the sector while its
+    // buildings stand). The player's at 0: the report filled (0x43A800)
     // and the box "Sector Lost" (0x49D) when the player held the sector (the report's +0x6C), else "Attack Failed"
     // (0x49B), its button 0x76. The other side's at 0: the report filled, and "Invaders Repelled!" (0x49C) with
     // 0x8024 when the player held it, else "Attack Successful!" (0x49A), with 0x76 if that ends the game (+0x55:
     // sector 3 taken by the Humans with no Martian base left, dword_4EB05C, or London by the Martians, dword_4EC49C),
     // else 0x8024.
     // *Provisional*: the units are what's counted (the game counts every object with a side in the battle's list);
-    // the objects waiting off the map (reinforcements) aren't in; the report's +0x6C is taken as the side that held
+    // a construction's war map object is taken as gone with its last battle unit; the report's +0x6C is taken as the side that held
     // the sector as the battle began; the game's end is taken as sector 3 won by a Human player or 30 by a Martian.
     void BattleMap::CheckBattleEnd()
     {
         if (!battleOn || battleDecided) return;
         int ours = 0, theirs = 0;
         for (const Unit& u : units) (u.players ? ours : theirs)++;
+        // plus the sector's construction lists (0x43AA59 / 0x43AAF6: +0x54 the player's, +0x58 the other side's,
+        // 0x4216D0): a construction stands while any of its battle units does, and one with no battle places (never
+        // on this map) always counts
+        for (size_t g = 0; g < setup.groups.size(); g++)
+        {
+            const BattleGroup& bg = setup.groups[g];
+            if (bg.list != 2 && bg.list != 3) continue;
+            bool counts = bg.places.empty();
+            if (!counts)
+                for (const Unit& u : units) if (u.group == int(g)) { counts = true; break; }
+            if (counts) (bg.Players() ? ours : theirs)++;
+        }
         if (ours != 0 && theirs != 0) return;
         battleDecided = true;
         const int playerSide = setup.human ? 0 : 1;

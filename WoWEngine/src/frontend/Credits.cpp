@@ -15,7 +15,7 @@ namespace wow
         musicHandle = sound.Play(0x191);
     }
 
-    Credits::~Credits() { sound.Stop(musicHandle); }
+    Credits::~Credits() { sound.FadeOut(musicHandle, 60); }   // 0x405415: faded over 60 ticks
 
     std::optional<Command> Credits::Leave() { return Command{ Previous(), 0 }; }
 
@@ -26,16 +26,17 @@ namespace wow
         // The scroll steps on message 0x812E, which re-posts itself for the next tick, so it runs every other
         // game tick: about 15 steps a second, which is what makes each side's scroll last as long as its music
         // (Human: 2988 steps for 206.8 s of hepilog; Martian: 3984 steps for 272.5 s of mepilog).
-        if (ticks % 2) return;
+        // the easter egg's hold is a post with a delay of 300 game ticks (0x40577C), counted every tick
         if (holdTicks >= 0)
         {
             if (--holdTicks <= 0) sent = Leave();
             return;
         }
+        if (ticks % 2) return;
         if (position + speed > float(end) || speed <= 0.0f)
         {
-            // at the bottom, it waits for the music to finish
-            if (!easterEgg && sound.Active(musicHandle)) return;
+            // at the bottom, it waits for the music to finish, the easter egg too (0x40574C), then holds
+            if (sound.Active(musicHandle)) return;
             if (easterEgg) holdTicks = 300; // 0x12C: stay on the picture before leaving
             else sent = Leave();
             return;

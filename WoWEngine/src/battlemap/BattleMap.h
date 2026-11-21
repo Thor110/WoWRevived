@@ -454,11 +454,13 @@ namespace wow
         void AiPlan();                                          // 0x4456B0
         void AiRunTask(const AiTask& t);                        // 0x445010
         void AiObjectGone(int group);                           // 0x445B90
+        void AiRegister(int group);                            // 0x445500
         int AiValue(int group) const;                           // 0x441E70
         // Each group's periodic stance work (0x483B70: +0x58 counting to +0x5C, 90): Roam and Attack (3) wanders to a
         // random point; Attack and Retaliate (2, 1) go back home (+0x60 / +0x64) if more than 400 from it
         std::vector<int> groupTicks, groupHomeX, groupHomeY;
-        std::vector<bool> groupBusy;                            // +0x1D8 bit 0 without a target (Avoid's run, Retreat)
+        std::vector<bool> groupBusy;                            // +0x1D8 bit 0 without a target: moving (an order, Avoid's run, Retreat)
+        std::vector<bool> groupSelfMove;                        // +0x1D8 bit 2: that move is the group's own (0x483B70's roam / home)
         // 0x80F4 posted to an object (0x4355A0 with its delay): the update it arrives, the object, the firer, the level
         struct ControlPost { int at = 0, unit = 0, attacker = 0, level = 0; };
         std::vector<ControlPost> controlPosts;

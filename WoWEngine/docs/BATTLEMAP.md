@@ -16,7 +16,7 @@ The window (WBattleMap 0x484A30, "BattleMap", 0x8018) makes the terrain view ove
 tiles), sets the world's size to the landscape's (+0x1C, +0x20) and scrolls to the start view. The view's scroll
 is kept between 0 and the world's size less the view's less 1 (0x42F6F0 / 0x40E5A0).
 
-- **Start view** (0x439B7E): the player's HQ, looked for among the Human constructions (type 278 in London or 314
+- **Start view** (0x439B7E): the player's HQ, looked for among the Human constructions (type 278 in London or 58, the Command Post,
   elsewhere in a Human game; 830 in sector 3 or 120 elsewhere in a Martian one) and centred on its units (0x42A2A0
   / 0x42A340); else the deployment's centre (dword_4F742C / 4F7434); else the map's middle, (+0x1C / 2, +0x28 x
   +0x30 >> 16 / 2). It's projected with the height there (0x47B170, `Landscape::ProjectY`) and half the screen is
@@ -314,7 +314,7 @@ and third, and BATP and its class's own tags (VEHI / VEHU for a vehicle). A fres
 
 **The centre** (0x421FE0), for each object in the list:
 - the command building's place, if one stands among the battle world's objects: the last found of type 830 in
-  sector 3 or 120 elsewhere (Martian), or 278 in sector 30 or 314 elsewhere (Human), either side's;
+  sector 3 or 120 elsewhere (Martian), or 278 in sector 30 or 58 elsewhere (Human), either side's;
 - a Martian pod's place (type 179 in the scenery list, made when a pod landed among the Humans, sector +0x64);
 - if the list's faction (its first object's +0x0C) isn't the sector's owner (0x43CA30): the pod for Martians,
   else the entry point from the sector the object came from (+0x58); if it is: the command building, else the
@@ -338,7 +338,7 @@ vehicle, or a building could go there (0x47B610) for anything else. Past the map
 used. The units then stand in the block row by row from (spot + size - k x size), 2 x size apart, each with a
 heading of `rand() & 0xFFF`, and are told to gather at the spot (0x80C3).
 
-**Start view** (0x439B7E): the player's command building in HCON (Human 278 / 314, Martian 830 / 120 by sector),
+**Start view** (0x439B7E): the player's command building in HCON (Human 278 / 58, Martian 830 / 120 by sector),
 the middle of its units' extent ((max - min) / 2 + min, 0x42A2A0 / 0x42A340); else 4F742C / 4F7434 unless their
 sum is 0; else the map's middle.
 
@@ -393,8 +393,10 @@ sends 0x8088 to an object's group (+0x48), which selects all its units.
   in the box (PtInRect) and that is a vehicle (+0xB8 bit 0) or has +0x3C set, selects its group. Otherwise the
   click goes by cursor mode (1 orders, 3 building; nothing yet).
 - **Hotspots** (0x496D60, made by 0x48A660 for objects whose vtbl+0xF0 says so): a square window 2 x the type's
-  +0x40 byte wide over the object. Let go on it in cursor mode 0 (0x497770 -> 0x497680): nothing if it's selected
-  already or not the player's; with Ctrl only a vehicle; else the selection is cleared and its group selected.
+  +0x40 byte wide over the object. Let go on it in cursor mode 0 (0x497770 -> 0x497680): nothing if it's not the
+  player's (or +0xB8 bit 6); with Ctrl only a vehicle; else the selection is always cleared (packet 4) and its group
+  selected (0x8088), so clicking one of several selected groups narrows the selection to it. (Fixed in update 102:
+  the engine left an already-selected group's click alone.)
   (With Ctrl in mode 1 it's force fire at the ground under it, packet 0x13.)
 - **Shown** (0x8012 -> 0x4972F0 / 0x497000): a selected object of the player's gets GType 5 (`hselec.spr`)
   frames 0-3 at its hotspot's corners 8 in, and GType 7 (`hpower.spr`) at the middle of its bottom edge 8 up, its
@@ -477,7 +479,7 @@ it).
 **Dying** (0x80A0, 0x489FA0): it posts itself 0x8057 (gone) and makes its type's destruction effect (+0x98) with
 0x488070 at its point, ftol(+0x84 + its +0x41 byte x 1.414) up, the firer its parent (none for a unit). The battle's key
 building going (the Martian Base 0x33E where the kind is 3, else the Communications Centre 0x78; Parliament 0x116
-where it's 0x1E, else 0x13A) speaks 0x112 if it was the player's, else 0x13B. Abandon (0x8067) sends 0x80A0 at once.
+where it's 0x1E, else the Command Post 0x3A) speaks 0x112 if it was the player's, else 0x13B. Abandon (0x8067) sends 0x80A0 at once.
 
 **Explosions** are the types the factory makes as WExplosion (0x488180, and Death_Explosion 6-8's 0x48CD80 on it):
 0x221-0x243, 0x247-0x255 and its switch's 715-717, 946-948, 986, 997-999, 1006-1008. +0xC8 is the type's +0x44 (the
@@ -589,7 +591,7 @@ calls vt+0x104 (0x48F8A0: with +0xE4 bit 1 and further than its sight x flt_59E4
 stood down; then 0x496890: on stance 2 or 3 with its group not attacking (+0x1D8 bit 0 clear or bit 2 set) it picks a
 target, 0x496570), and +0xDA goes back to 0. **0x496570**: within its sight (+0x48) x flt_59E44C (octagonal, whole
 positions), not under the ground itself, of the other side's objects that can be targeted (vt+0x6C, +0xC0 bit 0) the
-first armed one (+0x3C) is taken at once; else the battle's key building (0x33E / 0x78, 0x116 / 0x13A) if seen, else
+first armed one (+0x3C) is taken at once; else the battle's key building (0x33E / 0x78, 0x116 / 0x3A) if seen, else
 the last seen. The group gets 0x80B1 (0x4807F0's case: a player's group and a vehicle target, rand() under 5000 says
 0x10F; then 0x482960, as 0x482880 with bit 0 set). (0x482570, every 8th update of a group with +0x1D8 bit 7, tries
 one of 27 special orders at random through CanDo and 0x4817C0: the computer's, for the battle AI.)
@@ -670,7 +672,7 @@ standing; while it lasts it takes no other aim (0x496300 checks vt+0xF8 first) a
 **0x80F4 is Infiltrate's** (guns 800-802, mode 13-15, fire the blasts 812-814): each object in reach is posted
 0x80F4 with the firer (+0xCC) and the level 1-3 (0x4355A0: its last argument, 120 / 240 / 360, is the delay). On
 arrival (0x495CB0) only the battle's key building acts on it (the Martian base 0x33E or the Communications Centre
-0x78, Parliament 0x116 or 0x13A, by the kind), and only when it isn't the player's (+0x24 not 0) and the firer is
+0x78, Parliament 0x116 or the Command Post 0x3A, by the kind), and only when it isn't the player's (+0x24 not 0) and the firer is
 still there (0x440110): it tells its sector (vt+0xDC -> +0x48 -> +0x48) 0x80F4 (0x43B920: the sector's +0x128 the
 level, dword_4E9B60 the firer's side by 0x4406E0) and speaks 0x115. The war map's set-up after the battle
 (0x418E17) turns that into intel (docs/WARMAP.md "Intel and the fog"). In `Combat.cpp`: `controlPosts`,
@@ -689,8 +691,10 @@ and step not run) rather than as 0x4909D0's callers do.
 
 **On the battle map**, each update with the battle on (the report's +0x54: both sides had something there) and no
 box up yet (dword_4F7450): each side's count is its objects in the battle (0x47D610 / 0x47D660: the world's list,
-those whose side, 0x4406E0, is 0 or 1; the player's taken as its own by 0x404BA0) plus its war map objects waiting
-off the map (+0x54 / +0x58, 0x4216D0). The player's at 0: the report is filled (0x43A800) and the InfoBox
+those whose side, 0x4406E0, is 0 or 1; the player's taken as its own by 0x404BA0) plus its construction list's
+objects in the sector (+0x54 / +0x58, 0x4216D0, at 0x43AA59 / 0x43AAF6), so a side keeps the sector while its
+buildings stand. (Earlier updates read +0x54 / +0x58 as objects waiting off the map. The engine's constructions are
+battle units too; one with no battle places is counted from its group.) The player's at 0: the report is filled (0x43A800) and the InfoBox
 (0x432520) says "Sector Lost" (0x49D) if the player held the sector (the report's +0x6C), else "Attack Failed"
 (0x49B), its button 0x76 (back to the war map). The other side's at 0: the report filled, and "Invaders Repelled!"
 (0x49C) with 0x8024 if the player held it, else "Attack Successful!" (0x49A) with 0x76 if that ends the game (+0x55:
@@ -713,8 +717,8 @@ destroyed it, and at update 135 the box said "Invaders Repelled!" (the player ho
 it; the popup then had Return to Warmap, and the war map (seeing only the player's objects there) gave
 RETURNING TO WAR ROOMS.
 
-*Provisional*: the units are what's counted (not every object with a side); the objects waiting off the map
-(reinforcements) aren't in; the report's +0x6C is taken as the side holding the sector as the battle began; the
+*Provisional*: the units are what's counted (not every object with a side), a construction's war map object taken as
+gone with its last battle unit; the report's +0x6C is taken as the side holding the sector as the battle began; the
 game's end as sector 3 won by a Human player or 30 by a Martian; the war map's taking of the losses isn't checked
 end to end (no save with a contested sector to hand); nor is Infiltrate's intel (0x80F4's +0x128) reaching the war
 map.
@@ -792,7 +796,13 @@ group's move have arrived (0x8081: +0x56 counts them up to the count, 0x480EB0(0
 lorry hit on Avoid sent its group 400 off ("GOING STRAIGHT THERE!"), and hit on Attack by the other side's object
 took it as the group's target and drove at it.
 
-*Provisional*: bit 0 without a target is kept as `groupBusy` (set by the run and Retreat, cleared on arrival); a
+Bit 0 without a target is kept as `groupBusy` and bit 2 as `groupSelfMove`: every move order (0x482510 /
+0x480EB0: the player's moves, Avoid's run, Retreat, the AI's) sets bit 0 and clears bit 2, and only the group's own
+periodic roam or home move (0x483B70) sets bit 2 (0x483DCB); bit 0 clears when all the move's members have
+arrived. So a group moving under an order ignores hits, and looking round (0x496890) waits for bit 0 clear or bit 2
+set. (Fixed in update 102: a player's move set neither, so a moving group turned on its attacker.)
+
+*Provisional*: a
 point target (force fire) is taken as bit 0 set; the second case drops the target (StopAttacking) where the game
 leaves +0x2C; 0x80B9 and vt+0x38 aren't in.
 
@@ -836,16 +846,19 @@ The battle's computer side is played by the war map's computer player (vtable 0x
 (0x442AC0): 0x8075 (the battle begun, 0x445210), 0x807F (ended, 0x445620: all cleared), 0x807A (an object gone,
 0x445B90), 0x80B1 (a threat seen, 0x445D60: from the target scan, which never finds one, flt_59E44C being 0).
 
-**Begun** (0x445210): its counts cleared; +0x450, whether it holds the sector. Holding it, every construction in the
-sector, either side's (the sector's lists 2 and 3), becomes a threat (+0x47C, 16; each a war map object and an
-active flag, +0x14 bit 0). Then each of its own units (list 1) is added (0x445500): passed over with no battle
-units; of AI.ojd class 2 (0x441EB0) its group is set to stance 0 and it isn't added; else it goes in its list
-(+0x540, +0x544 the count).
+**Begun** (0x445210): its counts cleared; +0x450, whether it holds the sector. Holding it, its own constructions and
+then its own resources there (0x446370(2,0) and (3,0): the sector's +0x58 and +0x60, lists 3 and 5) become threats
+(+0x47C, 16; each a war map object and an active flag, +0x14 bit 0): what it defends. Then each of its own units
+(list 1) is added (0x445500): passed over with no battle units; of AI.ojd class 2 (0x441EB0) its group is set to
+stance 0 and it isn't added; else it's told 0x80B2 with 2 (Attack, 0x4455B5) and goes in its list (+0x540, +0x544
+the count). When a threat goes, each task on it is deleted and its destructor (0x4451A0) puts its own object back
+the same way, so the planner (with no tasks left) sends it again. (Corrected in update 102: lists 2 and 3, no
+stance 2 and no return to the list before.)
 
 **Each update** (vt+0x10 = 0x4455D0): with no tasks (+0x478) the planner runs; otherwise only a cursor moves round
 the 32 slots (+0x470). A task acts once, as it's made, and stays until an object of it is gone. **The planner**
 (0x4456B0), with its list not empty:
-- holding the sector, the first active threat that's the battle's key building (0x33E / 0x78, 0x116 / 0x13A) is
+- holding the sector, the first active threat that's the battle's key building (0x33E / 0x78, 0x116 / 0x3A) is
   taken (its flag cleared) and the strongest of its own (0x441E70: battle units x AI.ojd's weight, word_518B10) put
   on it; with none, the flag is set again;
 - r = its own count / the threats' (1.0 with none): over 5.0 a third go to the next active threat and a quarter
@@ -881,7 +894,7 @@ attack orders' home values aren't traced (the point, or the object's point, is u
 
 **The points** (0x43D150, from EnterBattleMap with the battle on or the debug flag byte_4D1279; the table at
 dword_4F7458, 0x18 bytes each, dword_4F76E8 of them): for each sector 1-30 with its holder's command building there
-finished (0x43C990: a Human holder's Parliament 0x116 in London or 0x13A elsewhere, a Martian's base 0x33E in sector
+finished (0x43C990: a Human holder's Parliament 0x116 in London or the Command Post 0x3A elsewhere, a Martian's base 0x33E in sector
 3 or 0x78 elsewhere, in either construction list, 0x42AA70), for each link kind 7, 5 and 1 the point units from it
 come in by (0x436050; none, (0, 0), from a sector that isn't a neighbour). A point nearest an edge is put 100 in
 from it. With the player holding that sector (0x4EAE1C against the player's side; or the debug flag) and room

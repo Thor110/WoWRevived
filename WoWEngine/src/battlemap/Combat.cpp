@@ -55,7 +55,7 @@ namespace wow
     // 0x80A0 (0x489FA0): the object posts itself 0x8057 (gone) and makes its type's destruction effect (+0x98,
     // 0x488070) at its point, ftol(+0x84 + its +0x41 byte x 1.414) up, with its parent as the firer; the battle's
     // key building (the Martian Base 0x33E where the kind is 3, else the Communications Centre 0x78; Parliament
-    // 0x116 where it's 0x1E, else 0x13A) going, with a battle on, speaks 0x112 if it was the player's, else 0x13B.
+    // 0x116 where it's 0x1E, else the Command Post 0x3A) going, with a battle on, speaks 0x112 if it was the player's, else 0x13B.
     // *Provisional*: gone at once rather than on the next update; the kind is taken as the sector.
     void BattleMap::Die(size_t index)
     {
@@ -76,7 +76,7 @@ namespace wow
             land.ClearOccupied(int(u.x), int(u.y), int16_t(t->second.currentHitPoints), 2);
         const int z = int(double(u.drive.lift) - double(t->second.size41) * -1.414);
         Explode(t->second.field98, int(u.x), int(u.y), z);
-        const bool key = u.type == (setup.sector == 3 ? 0x33E : 0x78) || u.type == (setup.sector == 30 ? 0x116 : 0x13A);
+        const bool key = u.type == (setup.sector == 3 ? 0x33E : 0x78) || u.type == (setup.sector == 30 ? 0x116 : 0x3A);
         if (key && setup.sound) setup.sound->Play(u.players ? 0x112 : 0x13B, 1.0f);
     }
 
@@ -235,7 +235,7 @@ namespace wow
             land.ClearOccupied(int(p.x), int(p.y), int16_t(t->second.currentHitPoints), 2);
         const int z = int(double(p.z) - double(t->second.size41) * -1.414);
         Explode(t->second.field98, int(p.x), int(p.y), z);
-        const bool key = p.type == (setup.sector == 3 ? 0x33E : 0x78) || p.type == (setup.sector == 30 ? 0x116 : 0x13A);
+        const bool key = p.type == (setup.sector == 3 ? 0x33E : 0x78) || p.type == (setup.sector == 30 ? 0x116 : 0x3A);
         if (key && setup.sound) setup.sound->Play(0x13B, 1.0f);
     }
 
@@ -314,7 +314,7 @@ namespace wow
 {
     // 0x495CB0's case 0x80F4 (firer, level): with the firer still there (0x440110) and the object not the player's
     // (+0x24 not 0) and the battle's key building (the Martian base 0x33E where the kind is 3, else the
-    // Communications Centre 0x78; Parliament 0x116 where it's 0x1E, else 0x13A), the sector (vt+0xDC -> +0x48 ->
+    // Communications Centre 0x78; Parliament 0x116 where it's 0x1E, else the Command Post 0x3A), the sector (vt+0xDC -> +0x48 ->
     // +0x48) is told 0x80F4 (0x43B920: its +0x128 the level, dword_4E9B60 the firer's side, 0x4406E0) and 0x115 is
     // spoken with the building's voice (byte_51A190). Any other object does nothing with it.
     // *Provisional*: the kind is taken as the sector, as for the battle's end.
@@ -323,7 +323,7 @@ namespace wow
         const Unit* u = UnitById(p.unit);
         const Unit* firer = UnitById(p.attacker);
         if (!u || !firer || p.attacker == 0 || u->players) return;
-        const bool key = u->type == (setup.sector == 3 ? 0x33E : 0x78) || u->type == (setup.sector == 30 ? 0x116 : 0x13A);
+        const bool key = u->type == (setup.sector == 3 ? 0x33E : 0x78) || u->type == (setup.sector == 30 ? 0x116 : 0x3A);
         if (!key) return;
         controlLevel = p.level;
         controlByPlayer = firer->players;

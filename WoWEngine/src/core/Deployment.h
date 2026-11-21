@@ -26,9 +26,11 @@ namespace wow
     namespace deploy
     {
         // The command buildings (0x421FE0, 0x439B7E): the Martian one is 830 in sector 3 and 120 elsewhere, the Human
-        // 278 in sector 30 and 314 elsewhere
+        // 278 (Parliament) in sector 30 and 58 (the Command Post) elsewhere. The game's `sub eax,1Eh; neg; sbb eax,eax;
+        // and al,24h; add eax,116h` masks only the low byte, so the "else" case is 0xFFFFFF24 + 0x116, which wraps to
+        // 0x3A, not 0x13A (0x422089, 0x439B94, 0x48ACA0, 0x495E0D and the rest).
         inline int MartianHq(int sector) { return sector == 3 ? 830 : 120; }
-        inline int HumanHq(int sector) { return sector == 30 ? 278 : 314; }
+        inline int HumanHq(int sector) { return sector == 30 ? 278 : 58; }
 
         // 0x436050: where units coming from sector previous into sector enter its map, by the pair (a switch on
         // previous x 100 + sector): boats (move class 5 or 6) at its second point, the rest at its first. (0, 0) when

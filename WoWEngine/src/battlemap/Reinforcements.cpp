@@ -10,7 +10,7 @@ namespace wow
 {
     // 0x43D150, as the battle map is entered (0x439770), with the battle on (the report's +0x54) or the debug flag
     // byte_4D1279: the table cleared, then for each sector 1-30 that has its holder's command building finished
-    // (0x43C990: Parliament 0x116 in London, else 0x13A, for a Human holder; the Martian base 0x33E in sector 3, else
+    // (0x43C990: Parliament 0x116 in London, else the Command Post 0x3A, for a Human holder; the Martian base 0x33E in sector 3, else
     // 0x78, for a Martian one; in either of its construction lists), for each link kind 7, 5 and 1: the point units
     // from it enter this sector by (0x436050), (0, 0) for none; a point nearest an edge is put 100 in from it (its x
     // nearest the left: 100; y the top: 100; the right: the width less 100; the bottom: the height less 100). With

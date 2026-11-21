@@ -25,10 +25,10 @@ namespace wow
     }
 
     // 0x8075 to the AI player (0x445210): the counts and lists cleared; +0x450 whether it holds the sector (0x43CA30
-    // against its side). Holding it, every construction in the sector, either side's (the sector's lists 2 and 3,
-    // 0x446370), becomes a threat, active, up to 16. Then each of its own units (list 1) goes in (0x445500): one with
-    // no battle units is passed over; one of AI class 2 has its group set to stance 0 (Avoid, 0x80B2) and isn't
-    // added; the rest are added to its list.
+    // against its side). Holding it, its own constructions and then its own resources in the sector (0x446370(2,0)
+    // and (3,0): the sector's +0x58 and +0x60, lists 3 and 5) become threats, active, up to 16: what it defends.
+    // Then each of its own units (list 1) goes in (0x445500, AiRegister): one with no battle units is passed over.
+    // (Before update 102 the engine took lists 2 and 3, the player's constructions and its own, and no stance 2.)
     void BattleMap::AiStart()
     {
         aiThreats.clear();
@@ -39,15 +39,24 @@ namespace wow
         const int aiFaction = setup.human ? 1 : 0;
         aiHolder = setup.ownerFaction == aiFaction;
         if (aiHolder)
-            for (size_t g = 0; g < setup.groups.size() && aiThreats.size() < 16; g++)
-                if (setup.groups[g].list / 2 == 1) aiThreats.push_back({ int(g), true });
+            for (int list : { 3, 5 })   // its own constructions, then its own resources (0x446370(2,0) / (3,0))
+                for (size_t g = 0; g < setup.groups.size() && aiThreats.size() < 16; g++)
+                    if (setup.groups[g].list == list) aiThreats.push_back({ int(g), true });
         for (size_t g = 0; g < setup.groups.size(); g++)
         {
             if (setup.groups[g].list != 1) continue;
             if (AiValue(int(g)) == 0 && std::none_of(units.begin(), units.end(), [&](const Unit& u) { return u.group == int(g); })) continue;
-            if (setup.groups[g].aiClass == 2) { SetStance(int(g), 0); continue; }
-            aiOwn.push_back(int(g));
+            AiRegister(int(g));
         }
+    }
+
+    // 0x445500, an own object put in the AI's list: one of AI class 2 is set to stance 0 (Avoid, 0x80B2) and left
+    // out; the rest are told 0x80B2 with 2 (Attack, 0x4455B5) and added
+    void BattleMap::AiRegister(int g)
+    {
+        if (setup.groups[size_t(g)].aiClass == 2) { SetStance(g, 0); return; }
+        SetStance(g, 2);
+        if (std::find(aiOwn.begin(), aiOwn.end(), g) == aiOwn.end()) aiOwn.push_back(g);
     }
 
     // 0x4455D0, each update: +0x45C counts up; with no tasks the planner runs (0x4456B0); otherwise the cursor
@@ -85,7 +94,7 @@ namespace wow
 
     // 0x4456B0, with its own list not empty:
     //  - holding the sector (+0x450): the first active threat that's the battle's key building (the Martian base 0x33E
-    //    in sector 3, else 0x78; Parliament 0x116 in London, else 0x13A) is taken (its flag cleared), and its
+    //    in sector 3, else 0x78; Parliament 0x116 in London, else the Command Post 0x3A) is taken (its flag cleared), and its
     //    strongest own object (0x441E70) put on it (taken from the list, 0x445E30); with none to send, the threat's
     //    flag is set again;
     //  - r, its own count over the threats' (+0x474; 1.0 with none): over 5.0, a third of its own go to the next
@@ -110,7 +119,7 @@ namespace wow
             {
                 if (!aiThreats[i].active) continue;
                 const int type = setup.groups[size_t(aiThreats[i].group)].type;
-                if (type == (setup.sector == 3 ? 0x33E : 0x78) || type == (setup.sector == 30 ? 0x116 : 0x13A)) { key = int(i); break; }
+                if (type == (setup.sector == 3 ? 0x33E : 0x78) || type == (setup.sector == 30 ? 0x116 : 0x3A)) { key = int(i); break; }
             }
             if (key >= 0)
             {
@@ -154,7 +163,8 @@ namespace wow
 
     // 0x807A to the AI player (0x445B90), an object gone, with a battle on: its own (its side the AI's): every task
     // whose own object it was goes, its list loses it, and a task's second object that was it is cleared; another
-    // side's: every task whose threat it was goes, and every threat that was it (+0x474 down).
+    // side's: every task whose threat it was goes (its own object back in the list, 0x4451A0), and every threat that
+    // was it (+0x474 down).
     void BattleMap::AiObjectGone(int group)
     {
         if (!aiOn || group < 0 || size_t(group) >= setup.groups.size()) return;
@@ -165,7 +175,14 @@ namespace wow
             aiOwn.erase(std::remove(aiOwn.begin(), aiOwn.end(), group), aiOwn.end());
             return;
         }
+        // each task on it goes; its destructor (0x4451A0) puts its own object back in the list (0x445500), so the
+        // planner can use it again once the tasks run out
+        std::vector<int> back;
+        for (const AiTask& t : aiTasks)
+            if (t.threat == group && t.own >= 0) back.push_back(t.own);
         aiTasks.erase(std::remove_if(aiTasks.begin(), aiTasks.end(), [&](const AiTask& t) { return t.threat == group; }), aiTasks.end());
+        for (int g : back)
+            if (std::any_of(units.begin(), units.end(), [&](const Unit& u) { return u.group == g; })) AiRegister(g);
         aiThreats.erase(std::remove_if(aiThreats.begin(), aiThreats.end(), [&](const AiThreat& t) { return t.group == group; }), aiThreats.end());
     }
 
@@ -195,6 +212,7 @@ namespace wow
             const int x = random::Rand() % (w - 200) + 100;
             const int y = random::Rand() % (h - 200) + 100;
             OrderGroupMove(g, members, x, y);
+            groupSelfMove[size_t(g)] = true;   // bit 2 (0x483DCB)
             return;
         }
         if (stance != 1 && stance != 2) return;
@@ -204,7 +222,11 @@ namespace wow
         int& hx = groupHomeX[size_t(g)];
         int& hy = groupHomeY[size_t(g)];
         if (hx == 0 && hy == 0) { hx = cx; hy = cy; }
-        if (Octagonal(cx, cy, hx, hy) > 400) OrderGroupMove(g, members, hx, hy);
+        if (Octagonal(cx, cy, hx, hy) > 400)
+        {
+            OrderGroupMove(g, members, hx, hy);
+            groupSelfMove[size_t(g)] = true;   // bit 2 (0x483DCB)
+        }
     }
 
     // A group's last unit gone (0x8057 from its war map object's last battle unit): the AI player told (0x807A)

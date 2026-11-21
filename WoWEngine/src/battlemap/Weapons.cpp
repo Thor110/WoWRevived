@@ -383,14 +383,15 @@ namespace wow
         const int count = u.scanCount++;
         if (count <= int16_t(t->second.field92)) return;
         const int stance = u.stance;
-        if (stance >= 2 && stance <= 3 && size_t(u.group) < groupTargets.size() && groupTargets[size_t(u.group)].target == 0 && !groupBusy[size_t(u.group)])
+        if (stance >= 2 && stance <= 3 && size_t(u.group) < groupTargets.size() && groupTargets[size_t(u.group)].target == 0 &&
+            (!groupBusy[size_t(u.group)] || groupSelfMove[size_t(u.group)]))
             AutoTarget(u);
         u.scanCount = 0;
     }
 
     // 0x496570: within its sight (+0x48) x the scale (octagonal, whole positions), with it not under the ground,
     // every other side's object that can be targeted (vt+0x6C, +0xC0 bit 0): an armed one (+0x3C) is the target
-    // at once; else the battle's key building (0x33E / 0x78, 0x116 / 0x13A by the kind) if seen, else the last seen.
+    // at once; else the battle's key building (0x33E / 0x78, 0x116 / 0x3A by the kind) if seen, else the last seen.
     // The group gets 0x80B1 with it: for a player's group (+0x1D8 bit 4) and a vehicle target (+0xB8 bit 0), if
     // rand() is under 5000 speech 0x10F; then 0x482960: as 0x482880, the target set and bit 0 set.
     // *Provisional*: a player's unit seeing an unarmed one also tells the battle (0x80B1 to dword_4E9B78), not in.
@@ -408,7 +409,7 @@ namespace wow
             if (o.health <= 0 || o.players == u.players || !Targetable(o)) continue;
             if (!o.guns.empty()) { pick = &o; break; }
             last = &o;
-            if (o.type == (setup.sector == 3 ? 0x33E : 0x78) || o.type == (setup.sector == 30 ? 0x116 : 0x13A)) key = &o;
+            if (o.type == (setup.sector == 3 ? 0x33E : 0x78) || o.type == (setup.sector == 30 ? 0x116 : 0x3A)) key = &o;
         }
         if (!pick) pick = key ? key : last;
         if (!pick) return;
@@ -498,7 +499,8 @@ namespace wow
         const Unit& m = units[member];
         if (gt.target <= 0)
         {
-            if (gt.target < 0 || groupBusy[size_t(g)]) return;
+            // a group moving under an order (bit 0 set, bit 2 clear: 0x48389E-0x4838AD) takes no notice
+            if (gt.target < 0 || (groupBusy[size_t(g)] && !groupSelfMove[size_t(g)])) return;
             const int stance = groupStance[size_t(g)];
             if (stance == 0)
             {

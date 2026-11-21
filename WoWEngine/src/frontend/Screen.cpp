@@ -48,7 +48,8 @@ namespace wow
             break;
         case Button::Kind::Slider:
         {
-            int position = b.max > 0 ? (b.value * 10 + b.max / 2) / b.max : 0;
+            // 0x432080: (the frame count / 2 - 1) x the position, divided by the maximum, truncating (0x4320B6 div)
+            int position = b.max > 0 ? b.value * 10 / b.max : 0;
             plateFrame = position + (lit ? 11 : 0);
             glassFrame = lit ? 1 : 0;
             break;

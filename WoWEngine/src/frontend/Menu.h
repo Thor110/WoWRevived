@@ -25,6 +25,7 @@ namespace wow
         int items = 4;        // [Colours] "Menu Items"
         int staticText = 4;   // [Colours] "Menu Static Text"
         int lineSpacing = 4;  // [Tweak] "Text Line Spacing", for free-standing text
+        int messageText = 19; // [Colours] "Message Text" (word_4B9420, the war map message list's level)
     };
 
     class Menu : public Screen

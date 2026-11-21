@@ -27,39 +27,39 @@ segment count, the WOF scale chain, reinforcement points, entry points and the `
 
 ## 1. Bugs (the engine contradicts the original)
 
-Each is small; fix these first. (The address is where the original shows it; the report has the port's line.)
+Each is small; fix these first. Ticked: fixed (the update says which). (The address is where the original shows it; the report has the port's line.)
 
-- [ ] **Human command building outside London is 58, not 314** (0x422082, 0x42A9C9, 0x439B94: `and al,24h; add
+- [x] **Human command building outside London is 58, not 314** (0x422082, 0x42A9C9, 0x439B94: `and al,24h; add
       eax,116h` wraps). `core/Deployment.h` HumanHq; deployment and the start view never find a Command Post. Fix
       the docs too (BATTLEMAP.md).
-- [ ] **The battle ends too early**: each side's count adds its construction list (0x43AA59 / 0x43AAF6, sector +0x54
+- [x] **The battle ends too early**: each side's count adds its construction list (0x43AA59 / 0x43AAF6, sector +0x54
       / +0x58); the engine counts units only (`BattleMap.cpp` battle end).
-- [ ] **The battle AI's threats** are its own constructions and resources, lists 3 and 5 (0x445210:
+- [x] **The battle AI's threats** are its own constructions and resources, lists 3 and 5 (0x445210:
       0x446370(2,0) / (3,0)); the engine takes lists 2 and 3 (`BattleAi.cpp` AiStart; BATTLEMAP.md too).
-- [ ] **AI units get stance 2 (Attack)** as they're registered (0x445500, `push 2`).
-- [ ] **AI attackers go back to the pool** when their target dies (task destructor 0x4451A0 -> 0x445500); the
+- [x] **AI units get stance 2 (Attack)** as they're registered (0x445500, `push 2`).
+- [x] **AI attackers go back to the pool** when their target dies (task destructor 0x4451A0 -> 0x445500); the
       engine loses them for the rest of the battle.
-- [ ] **Groups ignore hits while moving under an order** (0x483880: bit 0 set and bit 2 clear; every move order sets
+- [x] **Groups ignore hits while moving under an order** (0x483880: bit 0 set and bit 2 clear; every move order sets
       bit 0, only 0x483B70's own moves set bit 2). `Retaliate` / `OrderMove`.
-- [ ] **Click-select narrows the selection**: 0x497680 always clears (packet 4) before reselecting; the engine keeps
+- [x] **Click-select narrows the selection**: 0x497680 always clears (packet 4) before reselecting; the engine keeps
       every group when one already selected is clicked. Shift (packet 5) adds.
 - [ ] **Speed control's going test** is vt+0x144 (0x4909D0: not stopped, or bits 5 / 8 or the link byte, and not
       frozen), not bit 0 alone (0x492E8E; `Driving.cpp`).
-- [ ] **Flat-shaded WOF faces**: the flat level comes from vertex 0 as passed, before the sort (0x456DF5);
+- [x] **Flat-shaded WOF faces**: the flat level comes from vertex 0 as passed, before the sort (0x456DF5);
       `WofView.cpp` takes the top vertex after sorting.
 - [ ] **The computer's research choice** is the side's plan picker, 0x45A400 / 0x45B4E0 (two hard-coded plans by
       rand(), falling back to 0x458A60), not 0x458A60 directly; it also shifts the rand() stream (RESEARCH.md too).
-- [ ] **Enemy sector shade in the Construction view** is 11, not 0 (0x41DAB6-0x41DAEF); only the Unit view darkens
+- [~] **Enemy sector shade in the Construction view** (shade and pulse done in update 102; the borders still to do) is 11, not 0 (0x41DAB6-0x41DAEF); only the Unit view darkens
       it. Battle sectors pulse only in the Unit view (0x41DD35). Borders count a sector without a finished command
       building as no one's (0x41DC1A, 0x43C990).
-- [ ] **Slider frames truncate** (0x4320B6 `div`): `value * 10 / max`, not rounded (`Screen.cpp`).
+- [x] **Slider frames truncate** (0x4320B6 `div`): `value * 10 / max`, not rounded (`Screen.cpp`).
 - [ ] **Word wrap** breaks at width or more, resets the run to 0, keeps runs of spaces and sums per-character widths
       (0x416250; `Canvas.cpp`).
 - [ ] **CD Next / Prev wrap round and stop play** (0x413220 / 0x4134B0, caller 0x4083E4); the engine clamps 2-5.
-- [ ] **The war map message list** draws at `[Colours] "Message Text"` 19 with flags 1 (0x4288A3); the engine uses 0.
+- [x] **The war map message list** draws at `[Colours] "Message Text"` 19 with flags 1 (0x4288A3); the engine uses 0.
 - [ ] **The CD Player's palette group 0x2F9** also loads `{S}R{S}I` into slot 5 and `{S}RGI` into slot 9
       (0x40BCB3, 0x40C54F), and the loader frees all 33 slots first (0x40B6C0).
-- [ ] **Credits**: the easter egg holds 300 ticks, not 600 (0x40577C); waits for the music first; the music fades
+- [~] **Credits** (the hold, the music wait and its fade done in update 102; the exit's fade still to do): the easter egg holds 300 ticks, not 600 (0x40577C); waits for the music first; the music fades
       over 60 (0x405415); the exit fades (0x405689 -> 0x4065E0).
 - [ ] **Escape in the front-end menus fades** like a click (0x40A1B0 -> 0x4065E0); Splash and Credits take a right
       click as a skip (0x405E6E, 0x405672).
