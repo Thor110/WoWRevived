@@ -45,6 +45,58 @@ namespace wow::ffuh
         }
     }
 
+    std::vector<uint8_t> Compress(std::span<const uint8_t> data)
+    {
+        uint32_t frequencies[256] = {};
+        for (uint8_t b : data) frequencies[b]++;
+        std::vector<Node> nodes;
+        uint32_t bits = 0, packed = 1;
+        std::vector<std::vector<uint8_t>> codes(256);
+        int distinct = 0;
+        for (uint32_t f : frequencies) distinct += f != 0;
+        if (distinct > 1)
+        {
+            nodes.reserve(512);
+            const int root = BuildTree(frequencies, nodes);
+            // each leaf's code, root first
+            std::vector<std::pair<int, std::vector<uint8_t>>> stack{ { root, {} } };
+            while (!stack.empty())
+            {
+                auto [n, code] = std::move(stack.back());
+                stack.pop_back();
+                if (nodes[size_t(n)].left < 0) { codes[nodes[size_t(n)].symbol] = code; continue; }
+                auto l = code, r = code;
+                l.push_back(0);
+                r.push_back(1);
+                stack.push_back({ nodes[size_t(n)].left, std::move(l) });
+                stack.push_back({ nodes[size_t(n)].right, std::move(r) });
+            }
+            for (int s = 0; s < 256; s++) bits += uint32_t(codes[size_t(s)].size()) * frequencies[s];
+            packed = bits / 8 + ((bits & 7) ? 1 : 0) + 4;
+        }
+        std::vector<uint8_t> out(16 + 1024 + packed, 0);
+        auto put = [&](size_t at, uint32_t v) { for (int i = 0; i < 4; i++) out[at + size_t(i)] = uint8_t(v >> (8 * i)); };
+        out[0] = 'F'; out[1] = 'F'; out[2] = 'U'; out[3] = 'H';
+        put(4, uint32_t(data.size()));
+        put(8, packed);
+        put(12, bits);
+        for (int s = 0; s < 256; s++) put(16 + size_t(s) * 4, frequencies[s]);
+        uint8_t* stream = &out[16 + 1024];
+        if (bits == 0)
+        {
+            if (!data.empty()) stream[0] = data[0];
+            return out;
+        }
+        size_t pos = 0;
+        for (uint8_t b : data)
+            for (uint8_t bit : codes[b])
+            {
+                if (bit) stream[pos >> 3] |= uint8_t(1u << (pos & 7));
+                pos++;
+            }
+        return out;
+    }
+
     bool IsCompressed(std::span<const uint8_t> data)
     {
         return data.size() >= 4 && data[0] == 'F' && data[1] == 'F' && data[2] == 'U' && data[3] == 'H';

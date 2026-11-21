@@ -162,10 +162,11 @@ docs/REVIEW.md, with the full per-range reports in docs/review/.
       (0x4868B0: picture, dots, view rectangle, click and drag, Tab), and selecting by box and by click with the
       brackets and power bars (0x485930, 0x49C080, 0x497110), the cursor modes and cursors, Cancel and Home.
       Still to do: the group keys, the mouse's orders,
-      the panel, fog of war (0x484A30, 0x4346C0) —
+      the panel (0x484A30); fog of war is in (update 107, 0x4346C0) —
       05, 11, 13, 14
 - [~] **Enter / leave a sector**: the landscape, shade tables, briefing sound and enemy count of 0x439770 are in;
-      the rest of it (fog, zoomer, objects, battle info), 0x439ED0 and the battle-end dialogs aren't — 03, 06
+      the fog (update 107), the Damage Layer (107) and 0x439ED0's cancel and fade (105) too; the zoomer, battle
+      info and the battle-end dialogs aren't — 03, 06
 - [~] **Deployment**: each sector object's battle units from the save, the centres (HQ, entry points from the
       sector they came from, middle), ring placement and headings, the start view (0x421FE0, 0x4222C0, 0x436050,
       0x439B7E; docs/BATTLEMAP.md); the units are drawn standing. Still to do: pods, the exact ground and object

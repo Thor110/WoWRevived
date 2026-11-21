@@ -118,6 +118,7 @@ namespace wow
         // (+0x8C, +0x20); here it is the landscape's own, a byte for each vertex.
         void Scorch(int x, int y, int radius, int intensity);
         const std::vector<uint8_t>& Scorched() const { return scorch; }
+        void SetScorched(std::vector<uint8_t> s) { if (s.size() == scorch.size()) scorch = std::move(s); }
         // 0x47C7E0: keeps a world position on the map; true when it moved it
         bool ClampWorld(int& x, int& y) const;
         // 0x47C830 / 0x47C8A0: a light at a world position

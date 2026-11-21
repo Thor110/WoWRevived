@@ -108,6 +108,7 @@ if(TARGET SDL3::SDL3)
     src/battlemap/Reinforcements.cpp
     src/battlemap/Sinking.cpp
     src/battlemap/BattleAi.cpp
+    src/battlemap/Fog.cpp
         src/warmap/WarMap.cpp
         src/warmap/Production.cpp
         src/warmap/BuildWindow.cpp

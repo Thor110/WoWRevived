@@ -81,6 +81,11 @@ namespace wow
         std::vector<uint8_t> rest;     // u32 owner, DMGL and the sector's own data
         int Owner() const;
         void SetOwner(int owner);
+        // The sector's Damage Layer (DMGL after the owner, 0x405100 / 0x4051B0): "DMGL", u32 width, height, the
+        // packed size; unless both are 0, u32 0x410 and the FFUH header (0x415720), u32 the packed size and the
+        // packed bytes. False if it has none (an empty grid) or doesn't read.
+        bool Damage(int& width, int& height, std::vector<uint8_t>& grid) const;
+        void SetDamage(int width, int height, const std::vector<uint8_t>& grid);
     };
 
     struct SaveFile

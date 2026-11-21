@@ -96,6 +96,15 @@ namespace wow
             std::function<bool(bool human, int index)> researchDone;
             // a side's improvement multiplier by its enhancement's type (Research::Multiplier: 1.0 until it's done)
             std::function<float(bool human, int type)> researchMultiplier;
+            // the sector's Damage Layer (width, height, a byte a vertex; 0 x 0 for none yet), and [BattleMap]
+            // "Damage reduction divisor" (dword_4D259C, 500)
+            int damageWidth = 0, damageHeight = 0;
+            std::vector<uint8_t> damage;
+            int damageDivisor = 500;
+            // the [BattleMap] fog keys (0x4344C0-0x434680)
+            bool fogEnabled = true;
+            float fogDarkness = 0.7f;
+            int fogReturnRate = 5, fogUpdateFreq = 15, fogSmooth = 128, fogDropoff = 3, fogDamageDelta = 0, fogDamageRadius = 16;
             const std::map<int, std::array<int, 8>>* weapons = nullptr;     // OBJ.ojd record 12 (0x4F2F10)   // the front end's mixer: the battle's speech and engine sounds          // [System] "ZMapRes" (dword_4F7424): the bucket grid's cell size
         };
 
@@ -251,6 +260,7 @@ namespace wow
                       bool marked = false;  // its marker made (GType 0x359: a mine's +0xE8, a sinker's +0x19C)
                       int sink = 0;         // +0x194: the updates left going down or coming up
                       bool under = false, hidden = false;   // +0x190 bits 0 and 1
+                      bool fogged = false;  // +0xB8 bit 3 (vt+0x9C / vt+0xA0): the other side's, hidden by the fog
                       int stance = 1;       // +0xD8: its type's +0x43 byte (record 56) to start with (0x495740)
                     };
         int nextId = 1;
@@ -426,6 +436,25 @@ namespace wow
         int scrollX = 0, scrollY = 0;
         int mouseX = -1, mouseY = -1;
         int ticks = 0;
+        // The fog of war (WFogOfWar at the world's +0x84): the [BattleMap] keys, the FogMap and the stamps
+        struct FogOfWar
+        {
+            bool enabled = true;        // +0x8C: "EnableFogOfWar" (1), and byte_4BAD38 (the datsun cheat clears it)
+            float darkness = 0.7f;      // +0x90: "Fog darkness"
+            int returnRate = 5;         // +0x94: "Fog return rate"
+            int updateFreq = 15;        // +0x98: "Fog update freq"
+            int smooth = 128;           // +0x9C: "Fog smooth index"
+            int dropoff = 3;            // +0xA0: "Fog vert dropoff"
+            int damageDelta = 0;        // +0xA4: "Fog damage delta" (read, not used)
+            int damageRadius = 16;      // +0xA8: "Fog vert damage radius" (the redraw rectangle's margin, 0x434BD0)
+            std::vector<uint8_t> map;   // +0x18, a byte a vertex
+            std::array<std::vector<uint8_t>, 20> stamps; // +0x20 + 4i
+        } fog;
+        void FogStart();                                // 0x4346C0, 0x434DF0
+        void FogDecay();                                // 0x434DF0
+        void FogReveal(int vx, int vy, int range);      // 0x434A80
+        float FogLevel(const Unit& u);                  // 0x48B050
+        void FogTick();
         std::set<int> encountered;      // byte_51A19C by type: 0x47F630, 0x488C00
         int rightDownAt = -1;
         struct PopupItem { int command, icon, text; Rect rect; int param = 0; };
@@ -488,7 +517,11 @@ namespace wow
         bool Fought() const { return battleOn; }
         bool Forfeited() const { return forfeit; }
         // the unit table's +0xAC (byte_51A19C), the types met in this battle, for the research triggers
-        const std::set<int>& Encountered() const { return encountered; }               // byte_4E9B94 (0x48ACEF)
+        const std::set<int>& Encountered() const { return encountered; }
+        // the scorch as the battle map closes (0x439FE2 -> 0x4050B0: packed into the sector's Damage Layer)
+        const std::vector<uint8_t>& Scorch() const { return land.Scorched(); }
+        int ScorchWidth() const { return land.Width(); }
+        int ScorchHeight() const { return land.Height(); }               // byte_4E9B94 (0x48ACEF)
         // 0x80F4 taken by the other side's key building (0x495CB0 -> the sector, 0x43B920): the level (+0x128, 1-3;
         // 0 for none) and whether the player's side fired it (dword_4E9B60)
         int ControlLevel() const { return controlLevel; }

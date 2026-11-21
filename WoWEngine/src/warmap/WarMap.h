@@ -70,6 +70,11 @@ namespace wow
         std::optional<Command> OnMouseButton(int x, int y, bool down) override;
         std::optional<Command> OnRightButton(int x, int y, bool down) override;
         void SetQuickCancelTimeout(int ticks) { quickCancelTimeout = ticks; }
+        // A sector's Damage Layer ("Damage Layer", vtable 0x4A92E8, the sector's +0x8C): the battle map's scorch, a
+        // byte a landscape vertex, kept between battles and saved as DMGL; empty (0 x 0) until its first battle
+        struct DamageLayer { int width = 0, height = 0; std::vector<uint8_t> grid; };
+        int BattleSector() const { return battleSector; }
+        DamageLayer& Damage(int sector) { return damage[size_t(std::clamp(sector, 0, warmap::SectorCount))]; }
         void Encounter(const std::set<int>& types) { encountered.insert(types.begin(), types.end()); } // byte_51A19C from the battle map
         void OnMouseMove(int x, int y) override;
         void OnKeyUp(int sdlKey) override;
@@ -195,6 +200,7 @@ namespace wow
         int AddObject(int type, int sector, bool players, int kind); // kind as a save list: 0, 2 or 4
         // the save it came from, and its objects (counters hold indices into it)
         std::optional<SaveFile> save;
+        std::array<DamageLayer, warmap::SectorCount + 1> damage{};
         std::vector<SaveObject> table;
         std::vector<int> destroyed;      // refs into the table of objects gone from the map (not written back)
         std::map<int, ObjOjd::UnitData> unitData;

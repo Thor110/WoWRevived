@@ -103,11 +103,13 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       slide to the route start at `Clunting Speed` (0x428020 / 0x425080) rather than jump, and Clunting Speed isn't
       a travel speed. *Update 106*: the slide and Clunting Speed done; the save part waits on the route format.
 - [~] **Staggered deaths** of a whole list (in for the key building's loss, update 104; Abandon goes at once as the game's 0x8067 does) (0x47CEE0: 30, then +30 + rand() % 30 each).
-- [ ] **Damage Layer**: scorch kept per sector in the save (DMGL), fading 2 a byte each battle entry (0x404EA0-
-      0x4051B0, 0x439892), cleared by `shym`; needs the FFUH encoder (0x415520 / 0x4157E0 / 0x415720).
-- [ ] **Fog of war** (0x4344C0-0x434DF0: the `[BattleMap]` keys, two byte maps, 19 stamps, Reveal from units every
+- [x] **Damage Layer**: scorch kept per sector in the save (DMGL), fading 2 a byte each battle entry (0x404EA0-
+      0x4051B0, 0x439892), cleared by `shym`; needs the FFUH encoder (0x415520 / 0x4157E0 / 0x415720). *Update 107*
+      (the `shym` clear goes with the cheats).
+- [x] **Fog of war** (0x4344C0-0x434DF0: the `[BattleMap]` keys, two byte maps, 19 stamps, Reveal from units every
       update (0x4964B0), Decay every "Fog update freq", Flush; objects' visibility and shading 0x48B050 / 0x48B2D0 /
-      0x48C570 / 0x48C840 / 0x47FEB0), feeding `TerrainView`'s fog input.
+      0x48C570 / 0x48C840 / 0x47FEB0), feeding `TerrainView`'s fog input. *Update 107* (objects' brightness,
+      0x8126 and the minimap's dots still to do; 0x47FEB0 not looked at).
 - [~] **Deployment's remaining parts** (0x4222C0: the fixed-place bit, 0x80C3 to each unit, the pod centre).
       *Update 106*: 0x80C3 in; the fixed-place bit and +0x18C wait on the units' saved battle state.
 

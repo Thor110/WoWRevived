@@ -83,6 +83,18 @@ All take world positions (vertex x cell), as integers, and work in the game's fi
 - **Scorch** (0x47C4C0): darkens a byte for each vertex in a radius by (r - d) x (4 + intensity / 128) / r, up to
   255. The game keeps these bytes in the battle world's layer (+0x8C, +0x20) and redraws the screen rectangle the
   blast covers; the engine keeps them in the landscape until the battle world exists.
+- **The Damage Layer** ("Damage Layer", 0x404EA0, vtable 0x4A92E8; the sector's +0x8C): the scorch kept between
+  battles. Entering the battle map (0x439870), a sector with none yet (its packed data +0x24 empty) gets one the
+  landscape's size (+0x24 x +0x28, 0x404F50: all 0, packed at once); then 0x405020 unpacks it (0x4155B0) and takes
+  1000 / `[BattleMap] "Damage reduction divisor"` (dword_4D259C, 500: so 2) off every byte, at least 0. The `shym`
+  cheat (byte_4D25A0) clears it once first (*not in*: the cheats aren't). Leaving (0x439FE2 -> 0x4050B0) it's packed
+  again (0x415520). It's saved as the sector's DMGL (0x405100; read by 0x4051B0): "DMGL", u32 width, height, the
+  packed size; unless both are 0, u32 0x410, the FFUH header (0x415720: "FFUH", the size, the packed size, the bit
+  count and the 256 counts), u32 the packed size and the packed bytes. FFUH packing (0x415520 / 0x415D20(1) /
+  0x4157E0): the tree as the archives' decoder builds it, each byte's code root first and LSB first, the packed size
+  bits / 8 (one more for a part byte) + 4; one symbol only is 0 bits, a packed size of 1 and that byte, read from
+  after the counts (0x4158E0). The engine: `ffuh::Compress`, `SaveSector::Damage` / `SetDamage`,
+  `WarMap::Damage(sector)`, and the battle map's `Setup::damage` in and `Scorch()` out.
 - **ClampWorld** (0x47C7E0), **SetPointLight** / **ClearPointLight** (0x47C830 / 0x47C8A0) and the 32 x 32 light
   masks the vehicles' headlights lay on the ground (0x47C900 / 0x47CAB0, called from 0x48E383 and 0x48E657).
 
@@ -354,7 +366,34 @@ model (1) or a sprite (0).
 landscape's IsAreaPassable; the object check as circles (the unit size against each unit already placed, at its
 IOB collision radius or its own size), without the scenery; +0x188 / +0x18C aren't read; there are no pods yet;
 the order of the objects in a list is the counters' order; and where these `rand()` calls fall against the
-scenery's isn't checked. The units don't move, fight or hide in the fog yet.
+scenery's isn't checked.
+
+## Fog of war (WFogOfWar 0x4344C0-0x434DF0; 0x48B050 / 0x48B2D0; `battlemap/Fog.cpp`)
+
+The `[BattleMap]` keys (0x4344C0-0x434680, the fog's +0x8C-+0xA8): `EnableFogOfWar` (1; with byte_4BAD38, which
+the `datsun` cheat clears, +0x8C), `Fog darkness` (0.7, +0x90), `Fog return rate` (5, +0x94), `Fog update freq`
+(15, +0x98), `Fog smooth index` (128, +0x9C), `Fog vert dropoff` (3, +0xA0), `Fog damage delta` (0, +0xA4, read,
+not used) and `Fog vert damage radius` (16, +0xA8, the margin of the screen rectangle a changed vertex redraws).
+
+- **Made** (0x4346C0, EnterBattleMap +0x1A8): FogMap (+0x18) and OldFog (+0x1C), a byte for each landscape vertex,
+  all 0, or all 0xFF with the fog off; and 19 round stamps (+0x20 + 4i, i 1-19) of radius 5i (+0x70 + i): 2r x 2r
+  bytes from (-r, -r), each 0 at r or further, 255 within r less the dropoff, (r - d) x 255 / dropoff between
+  (0x4349A0). Then the first decay (0x434DF0 at +0x625).
+- **Decay** (0x434DF0): every byte that isn't 0 less the return rate, at least 0. The battle world's update
+  (0x43A980) does it when the tick (dword_4D2558) is a multiple of the update freq.
+- **Reveal** (0x434A80, vt+0x100): at the tick the update freq divides, each of the player's objects (+0x24 0;
+  0x4967E0 for a vehicle, 0x48C840 for the rest) reveals round its vertex: a vehicle always (0x4964B0), anything
+  else when its +0x48 isn't 0 (0x48C570), with its +0x48 in vertices as the range: at most 100, x 0.2 is the stamp
+  (19 at most; under 1 nothing), max-blended into FogMap.
+- **The ground** (0x4A0045): a vertex's light times b / smooth + (1 - b / smooth) x darkness under the smooth index,
+  else 1 (`TerrainView::Fog`). Flush (0x434BD0, from 0x49F4E0) copies the changed bytes to OldFog and redraws their
+  screen rectangles; the engine draws every frame, so it needs none.
+- **The objects** (vt+0x58, 0x48B050): the same level at the object's four corners (its point plus and less its
+  +0xAC, in vertices), averaged. The other side's (0x48B2D0, +0x24 not 0) at or under the darkness are hidden
+  (vt+0xA0(1), +0xB8 bit 3; deselected 0x4405C0(0), and 0x8126 to everything targeting them), over it shown again
+  (`Unit::fogged`, not drawn). *Provisional*: the level isn't passed to the renderer as a brightness (x 255,
+  0x48B2A0, for every object), the 0x8126 isn't sent, a hidden unit can still be clicked, and the minimap's dots
+  don't heed the fog.
 
 ## Minimap ("BattleMap miniMap view" 0x4868B0, RTypeMiniBattleMap 0x4A1F90, dots 0x4A1CD0)
 
@@ -379,7 +418,7 @@ EnterBattleMap makes it with the sector (+0x8C). Its parts:
   the view (0x7A) and keeps the mouse (0x42E9B0); moving with the button held does the same.
 - **Tab** (0x80C8): hides it, or makes the dots again and shows it.
 
-*Not yet*: the type 987 and 694 / 695 dots, and the fog (every unit shows).
+*Not yet*: the type 987 and 694 / 695 dots, and the fog (every unit shows, "Fog of war" above).
 
 ## Selecting (0x484FB0 / 0x485930 / 0x485D00, the drag rectangle 0x49C080, hotspots 0x496D60-0x497890)
 

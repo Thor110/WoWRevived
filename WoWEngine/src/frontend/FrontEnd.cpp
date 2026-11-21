@@ -856,7 +856,15 @@ namespace wow
                 if (auto* bm = dynamic_cast<BattleMap*>(sc))
                 {
                     if (bm->Forfeited()) forfeit = true;
-                    if (WarMap* map = ActiveWarMap()) map->Encounter(bm->Encountered());
+                    if (WarMap* map = ActiveWarMap())
+                    {
+                        map->Encounter(bm->Encountered());
+                        // 0x439FE2 -> 0x4050B0: the scorch packed back into the sector's Damage Layer
+                        WarMap::DamageLayer& d = map->Damage(map->BattleSector());
+                        d.width = bm->ScorchWidth();
+                        d.height = bm->ScorchHeight();
+                        d.grid = bm->Scorch();
+                    }
                 }
             for (Screen* sc : { battleMap.get(), screen.get() })
                 if (auto* bm = dynamic_cast<BattleMap*>(sc); bm && bm->Fought())
@@ -1066,6 +1074,22 @@ namespace wow
         BattleMap::Setup s;
         s.sector = b.sector;
         s.mapName = name->second;
+        if (WarMap* wm = ActiveWarMap())
+        {
+            const WarMap::DamageLayer& d = wm->Damage(b.sector);
+            s.damageWidth = d.width;
+            s.damageHeight = d.height;
+            s.damage = d.grid;
+        }
+        s.damageDivisor = ini.GetInt("BattleMap", "Damage reduction divisor", 500);
+        s.fogEnabled = ini.GetInt("BattleMap", "EnableFogOfWar", 1) != 0;
+        s.fogDarkness = ini.GetFloat("BattleMap", "Fog darkness", 0.7f);
+        s.fogReturnRate = ini.GetInt("BattleMap", "Fog return rate", 5);
+        s.fogUpdateFreq = ini.GetInt("BattleMap", "Fog update freq", 15);
+        s.fogSmooth = ini.GetInt("BattleMap", "Fog smooth index", 128);
+        s.fogDropoff = ini.GetInt("BattleMap", "Fog vert dropoff", 3);
+        s.fogDamageDelta = ini.GetInt("BattleMap", "Fog damage delta", 0);
+        s.fogDamageRadius = ini.GetInt("BattleMap", "Fog vert damage radius", 16);
         s.hours = b.hours;
         if (auto d = dayTimes.find(int(b.hours) % 24); d != dayTimes.end()) s.dayTime = &d->second;
         s.shadeClass = Landscape::ShadeClass(lastEnemyCount);

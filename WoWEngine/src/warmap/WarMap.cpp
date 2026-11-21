@@ -743,6 +743,13 @@ namespace wow
         std::vector<SaveRoute> routes = std::move(from.routes);
         from.routes.clear();
         save = std::move(from);
+        // each sector's Damage Layer (DMGL, 0x4051B0)
+        for (int sector = 1; sector <= warmap::SectorCount; sector++)
+        {
+            DamageLayer& d = damage[size_t(sector)];
+            d = {};
+            if (!save->Sector(sector).Damage(d.width, d.height, d.grid)) d = {};
+        }
         for (const SaveRoute& route : routes)
             for (const SaveObject& o : route.objects)
             {
@@ -783,6 +790,8 @@ namespace wow
         {
             int rel = owner[size_t(sector)];
             s.Sector(sector).SetOwner(rel == 2 ? 2 : human ? rel : 1 - rel);
+            const DamageLayer& d = damage[size_t(sector)];   // 0x405100
+            s.Sector(sector).SetDamage(d.width, d.height, d.grid);
             // the sector's economy (0x43C5E0): for each kind its spread supply, spread demand, ratio, demand, 0
             std::vector<uint8_t>& rest = s.Sector(sector).rest;
             if (rest.size() >= 120)

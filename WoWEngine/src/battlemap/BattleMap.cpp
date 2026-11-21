@@ -30,6 +30,17 @@ namespace wow
         Terrain t = Terrain::Load(Need(res, "maps\\" + base + ".cls"), Need(res, "maps\\" + base + ".atm"));
         land = Landscape::Create(t);
         tiles = TerrainTiles::Load(t);
+        // the sector's Damage Layer (0x439870): with none yet, one the landscape's size (+0x24 x +0x28, 0x404F50),
+        // all 0; then (0x405020) unpacked and every byte less 1000 / [BattleMap] "Damage reduction divisor" (500:
+        // 2), at least 0, as the scorch. (byte_4D25A0, the shym cheat, would clear it first; not in.)
+        {
+            std::vector<uint8_t> d = s.damage;
+            if (s.damageWidth != land.Width() || s.damageHeight != land.Height() || d.size() != size_t(land.Width()) * size_t(land.Height()))
+                d.assign(size_t(land.Width()) * size_t(land.Height()), 0);
+            const int fade = s.damageDivisor ? 1000 / s.damageDivisor : 0;
+            for (uint8_t& b : d) b = uint8_t(std::max(0, int(b) - fade));
+            land.SetScorched(std::move(d));
+        }
 
         // The hour's light (0x47AF10 -> 0x40B030) and the shade tables (0x40B570, 0x40B6C0): the first set's letter
         // names them, L and N becoming X and Y in a Martian game
@@ -64,6 +75,16 @@ namespace wow
 
         Deploy();
         SetUpReinforcements();
+        // the fog (0x4346C0 at EnterBattleMap +0x1A8, its first decay at +0x625)
+        fog.enabled = s.fogEnabled;
+        fog.darkness = s.fogDarkness;
+        fog.returnRate = s.fogReturnRate;
+        fog.updateFreq = s.fogUpdateFreq;
+        fog.smooth = std::max(1, s.fogSmooth);
+        fog.dropoff = std::max(1, s.fogDropoff);
+        fog.damageDelta = s.fogDamageDelta;
+        fog.damageRadius = s.fogDamageRadius;
+        FogStart();
         for (size_t i = 0; i < units.size(); i++)
         {
             Unit& u = units[i];
@@ -1145,6 +1166,7 @@ namespace wow
     void BattleMap::Update()
     {
         ticks++;
+        FogTick();
         // the listener (dword_4E9250 / dy): the view's centre
         if (setup.sound) setup.sound->SetListener(scrollX + 320, scrollY + 240);
         // 0x80A0 arriving (posted by 0x48AB20)
@@ -1518,6 +1540,7 @@ namespace wow
             for (; next < objects.size() && objects[next].key < limit; next++)
             {
                 const ViewObject& o = objects[next];
+                if (o.unit >= 0 && size_t(o.unit) < units.size() && units[size_t(o.unit)].fogged) continue;   // 0x48B2D0
                 if (o.light >= 0)
                 {
                     const Light& l = lights[size_t(o.light)];
@@ -1548,7 +1571,10 @@ namespace wow
                                 *shade, dither, t);
             }
         };
-        TerrainView::Render(land, tiles, table, levels, dither, t, -scrollX, -scrollY, nullptr, between, &window);
+        // the fog the ground darkens by (0x4A0045: FogMap +0x18, the width +0x84, the smooth index +0x9C, the
+        // darkness +0x90)
+        TerrainView::Fog fogView{ fog.map.empty() ? nullptr : fog.map.data(), land.Width(), fog.smooth, fog.darkness };
+        TerrainView::Render(land, tiles, table, levels, dither, t, -scrollX, -scrollY, fog.enabled ? &fogView : nullptr, between, &window);
         DrawSelection(canvas);
         // the minimap (0x486CB0): the picture, the dots (2 x 2 each, 0x4A1DD0), the view's rectangle (0x49C7C0)
         if (miniShown && miniPicture)
