@@ -313,8 +313,12 @@ vt+0x9C is taken as false and the splash's vt+0x14 value (dword_4D2550's +0x90) 
 
 **Drawing** (0x49EC00): the pieces in depth order (qsort), flag 8 first, 0x10 last. For each piece (0x49EEF0) each
 face's light (0x49ED90) comes from the normal of its three world points (cross product), lit as the ground
-(0x40CA90) times the brightness (1), the day set's third float and 256, at most 255 (point lights would add here,
-times `[Game] "WOF Brightness"`); a smooth piece averages its faces into each group's points, the others give
+(0x40CA90) times the brightness (1), the day set's third float and 256; then (update 117) each point light (the
+light renderers' list) adds PointLight (0x40C930: from the model's point, +0x50 / +0x54, its height +0x58 less
+half its top bound +0x6A, to the light's +0x38..+0x3C; the face's normal; out to its range +0x3E from 0x1C) x the
+light's level (+0x48: the landscape's .INT table at its intensity x 256, clamped, 0x40CB10) x the brightness x
+`[Game] "WOF Brightness"` (2.5), ftol'd as it goes; at most 255. A headlight of 0.4 gives about table[102] x 2.5,
+which is what lights the lorries near one up white at night; a smooth piece averages its faces into each group's points, the others give
 each face's light to its first point (the table, byte_59F768, is shared and kept between pieces, as in the game).
 A face is drawn when its screen winding is negative, with its material (255 none), its corners in the order
 first, third, second, and flat when its three lights agree or the piece isn't smooth.
@@ -958,6 +962,24 @@ player's (+0x24 0), when rand() is under 500 or it's still at full health (0x47D
 the damage (0x4958B0). Going (0x48EEE0) stops both, and for type 0x77 with +0xC0 bit 0 takes one off dword_59E174.
 *Not yet*: the ground flattened and sampled under it, the four 0x17B corner objects, its health from the
 construction's state, the damage frames (0x48A7D0, 0x48EF80) and the gun emplacements on it (0x48F7C0).
+
+## Parts held to a model point, and the vehicles' lights (update 117)
+
+**Held parts.** A part record (record 28) with a record 27 box before it (+0x12 not -1) gives its child +0xB0 =
+{+0x12, +0x14, +0x16, +0x18} (0x47EEC0), the first two a piece and a point of the parent's model. Each time the
+parent is posed (0x47F340) every such child's offset (vt+0x38) is that point of the parent's posed model less the
+parent's place (+0x78 / +0x7C / +0x80), and it's placed there (vt+0x7C): it rides on the point. The Armoured
+Lorry's turret (742, AR_LORT1.wof) is held to piece 1, point 0 of the body: on its roof. (Until update 117 the
+engine stood it at the lorry's place on the ground, inside the body, so it couldn't be seen.)
+
+**The vehicles' lights.** A light part (334-346) among a vehicle's parts (the lorries' 334, 80 ahead and 16 up)
+starts as the scenery's do (0x48DE80: under a parent of category 0-3 it stays when rand() % 100 is at most 100 x
+the hour's fourth float and the parent isn't Martian, then only with "Show lights"), and goes with its vehicle,
+at the part's offset turned with it. Its pool on the ground is the ground's point light; the models' faces take
+it too (above, "Drawing").
+
+*Provisional*: the light's offset is turned as the other parts' are (x along the heading); a dead vehicle's
+light leaves the view with it but its slot isn't freed.
 
 ## Vehicle shadows (WShadow 0x48E680: types 0x13B-0x14A; `BattleMap::AddPartRenderers` / `PoseParts`)
 

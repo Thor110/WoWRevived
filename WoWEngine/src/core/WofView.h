@@ -25,7 +25,11 @@ namespace wow
         void Transform(const Landscape& land, int heading, int x, int y, int z, bool upright = false);
 
         // 0x49EC00 / 0x49EEF0: the pieces in depth order, each face lit and drawn at the view offset
-        void Draw(const Landscape::Sun& sun, const ShadeTable& table, const TerrainView::Target& target, int ox, int oy) const;
+        // A point light as the faces see it (the light renderer's +0x38..+0x3E and +0x48: its level, the landscape's
+        // .INT table at intensity x 256, 0x40CB10)
+        struct PointSource { int x, y, z, range; float level; };
+        void Draw(const Landscape::Sun& sun, const ShadeTable& table, const TerrainView::Target& target, int ox, int oy,
+                  std::span<const PointSource> lights = {}, float wofBrightness = 2.5f) const;
 
         // Damage variants: a piece whose flags' low two bits are neither 0 nor this is hidden (+0x5E, 1 at first)
         void SetVariant(int v);
@@ -56,6 +60,13 @@ namespace wow
         int MinX() const { return boundMin[0]; }
         int MaxX() const { return boundMax[0]; }
         int MaxY() const { return boundMax[1]; }     // +0x70
+        // A point of a piece from the last pose (WorldPts: x, y, height), false if there's no such point
+        bool WorldPoint(int piece, int vertex, int out[3]) const
+        {
+            if (piece < 0 || size_t(piece) >= world.size() || vertex < 0 || size_t(vertex) >= world[size_t(piece)].size()) return false;
+            for (int k = 0; k < 3; k++) out[k] = world[size_t(piece)][size_t(vertex)][size_t(k)];
+            return true;
+        }
 
         // Drawn as a shadow (its instance's +0x48 0x20, 0x48E700): each pixel darkened through this table
         // (dat\b16.hsh, 64 rows of 256 words) by the texel, nothing of the texture's own colours
@@ -96,6 +107,8 @@ namespace wow
         void Walk(int piece, int ox, int oy, int oz);
         size_t Key(int piece) const;         // the piece's key for this frame
         int FaceLight(const std::array<int32_t, 3>& a, const std::array<int32_t, 3>& b, const std::array<int32_t, 3>& c,
-                      const Landscape::Sun& sun) const;
+                      const Landscape::Sun& sun, std::span<const PointSource> lights, float wofBrightness) const;
+        int anchorZ = 0;                     // +0x58, with anchorX (+0x50) / the world y (+0x54) below
+        int anchorWorldY = 0;
     };
 }

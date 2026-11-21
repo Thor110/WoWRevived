@@ -236,11 +236,11 @@ namespace wow
     // As it's added (0x48DDC0): with any of record 13's times (+4, +8, +0xC) it fades: the intensity 0, the count
     // Ticks(a), the step the float / that, phase 0, and it joins the updated list; then 0x47EE10 makes its renderer
     // (vt+0x28, 0x48E050), which sets the intensity to the float again. Its range is its type's +0x44 word.
-    void BattleMap::AddLight(int type, int x, int y, int z)
+    int BattleMap::AddLight(int type, int x, int y, int z)
     {
-        if (!setup.showLights) return;
+        if (!setup.showLights) return -1;
         auto u = setup.units->find(type);
-        if (u == setup.units->end()) return;
+        if (u == setup.units->end()) return -1;
         ObjOjd::BattleTables::Thirteen t;
         if (setup.lights)
             if (auto it = setup.lights->find(type); it != setup.lights->end()) t = it->second;
@@ -261,6 +261,7 @@ namespace wow
         else lights[size_t(index)] = l;
         objects.push_back({ y + (-32 - l.range), x, y, nullptr, nullptr, 0, 0, index });
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+        return index;
     }
 
     // 0x48E100, each update of a fading light: with the count under 0 the phase moves on: from 0 (rising) the step 0

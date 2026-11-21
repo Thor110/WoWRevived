@@ -1131,6 +1131,7 @@ namespace wow
         s.weapons = &weaponData;
         s.showLights = ini.GetBool("Options", "Show lights", true);
         s.showShadows = ini.GetBool("Options", "Show vehicle shadows", true);
+        s.wofBrightness = ini.GetFloat("Game", "WOF Brightness", 2.5f);
         s.showSmoke = ini.GetBool("Options", "Show Smoke & particles", true);
         s.stickyPopup = ini.GetBool("Modern", "Sticky popup menus", false);   // a modern option (docs/MODERN.md)
         s.groups = map->BattleGroups(b.sector);

@@ -158,9 +158,12 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       *Update 109*: the 0x3AC substitution; its rand() was already drawn (`scenery::Burnt` for every object). The
       types (0x2AE-0x2B5, 940, 994-996; about 1,800 in the .nsb files) aren't in OBJ.ojd, so they've no sound.
 - [ ] **Shots' own visuals** (0x4950D0 / 0x495180 / 0x495280, the atlas sprite 0x49D710, the textured quad 0x49D820).
-- [ ] **Lights on models**: point lights on WOF pieces (0x49EC00 / 0x49ED90), relighting IOB objects (0x49E2C0) and
+- [~] **Lights on models**: point lights on WOF pieces (0x49EC00 / 0x49ED90), relighting IOB objects (0x49E2C0) and
       ISOLib's two nearest lights at `[Game] "ISO Brightness"` (0x4111B0 / 0x4113F0 / 0x410E00); the units'
       headlights (light parts 334-346).
+      *Update 117*: the point lights on the WOF faces (0x49ED90 with 0x40C930 and the light's .INT level, x "WOF
+      Brightness"), and the vehicles' own light parts (headlights) going with them. (Reported in play: the lorries
+      looked malformed and had no turret; the turret was standing inside the body, now held to its model point.)
 - [~] **Group behaviour**: target-gone speech 0x10E / 0x10D (0x4821F0), the group's re-engage (vt+0x38, 0x483760),
       messages 0x80C3 (rally), 0x808A (halt), 0x80B9 in 0x490A70. *Update 109*: 0x4821F0 and vt+0x38 in (0x80C3 in
       106); 0x808A waits on the gun emplacements (its only sender, 0x496890), 0x80B9's bit 9 on what reads it.

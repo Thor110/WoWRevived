@@ -182,6 +182,8 @@ namespace wow
         MatMul(tilt, m, m);
         // 0x49E83E: the root's pivot taken off y and z alike
         const int32_t d = (Mul(t[1], sy) >> 16) + (Mul(t[2], sz) >> 16);
+        anchorWorldY = y;
+        anchorZ = z;
         Walk(root, x, y - d, z - d);
         const int16_t sy0 = ProjectY(topY, y, z);
         anchorX = x;
@@ -282,7 +284,7 @@ namespace wow
     // 0x49ED90: the face's normal from its three world points, lit by the sun, x the set's third float x 256
     // (point lights would be added here, x "WOF Brightness"), at most 255
     int WofInstance::FaceLight(const std::array<int32_t, 3>& a, const std::array<int32_t, 3>& b, const std::array<int32_t, 3>& c,
-                               const Landscape::Sun& sun) const
+                               const Landscape::Sun& sun, std::span<const PointSource> lights, float wofBrightness) const
     {
         int32_t dx1 = b[0] - a[0], dy1 = b[1] - a[1], dz1 = b[2] - a[2];
         int32_t dx2 = c[0] - a[0], dy2 = c[1] - a[1], dz2 = c[2] - a[2];
@@ -291,6 +293,18 @@ namespace wow
         int32_t nz = Mul(dx2, dy1) - Mul(dy2, dx1);
         double l = Landscape::SlopeLight(nx, ny, nz, sun.strength, sun.ambient, sun) * 1.0 * double(sun.third) * 256.0;
         int v = int(l);
+        // the point lights (the list at +0x14): each adds 0x40C930 from the model's point (+0x50 / +0x54, its height
+        // +0x58 less half its top bound +0x6A) to the light, for this face's normal, out to its range (+0x3E) from
+        // 0x1C, x its level (+0x48) x the brightness (1) x "WOF Brightness" (flt_59F364), ftol'd each time
+        const int mid = boundMin[1] / 2;
+        const float times = float(1.0f * wofBrightness);
+        for (const PointSource& p : lights)
+        {
+            const int dx = (p.x & 0xFFFF) - anchorX, dy = (p.y & 0xFFFF) - anchorWorldY;
+            const int dz = (p.z & 0xFFFF) + mid - anchorZ;
+            const double add = TerrainView::PointLight(dx, dy, dz, nx, ny, nz, p.range & 0xFFFF, 0x1C) * double(p.level) * double(times);
+            v = int(double(v) + add);
+        }
         return v > 255 ? 255 : v;
     }
 
@@ -357,7 +371,8 @@ namespace wow
     }
 
     // 0x49EC00: the pieces by depth (flag 8 first, 0x10 last, the rest by their nearest point), then 0x49EEF0
-    void WofInstance::Draw(const Landscape::Sun& sun, const ShadeTable& table, const TerrainView::Target& target, int ox, int oy) const
+    void WofInstance::Draw(const Landscape::Sun& sun, const ShadeTable& table, const TerrainView::Target& target, int ox, int oy,
+                           std::span<const PointSource> lights, float wofBrightness) const
     {
         std::vector<std::pair<int, int>> order; // {piece, key}
         for (size_t p = 0; p < pieces.size(); p++)
@@ -379,7 +394,7 @@ namespace wow
             {
                 const uint8_t* fd = face(f);
                 if (fd[0] >= w.size() || fd[1] >= w.size() || fd[2] >= w.size()) { faceLight[f] = 0; continue; }
-                faceLight[f] = uint8_t(FaceLight(w[fd[0]], w[fd[1]], w[fd[2]], sun));
+                faceLight[f] = uint8_t(FaceLight(w[fd[0]], w[fd[1]], w[fd[2]], sun, lights, wofBrightness));
             }
             int flatFlag = 0;
             if (piece.flags & 0x20)

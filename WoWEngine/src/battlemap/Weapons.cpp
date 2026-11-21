@@ -541,7 +541,7 @@ namespace wow
         if (!g || !res.GetFrame(marker, 0)) return;
         int depth = 1;
         for (const ViewObject& o : objects)
-            if (o.unit == int(index)) { depth = o.depth + 1; break; }
+            if (o.unit == int(index) && o.light < 0) { depth = o.depth + 1; break; }
         const int ix = int(u.x), iy = int(u.y);
         ViewObject v{ iy + depth, ix, land.ProjectY(iy, land.HeightAt(ix, iy) + std::max(0, int(u.drive.lift))), nullptr, nullptr, g->paletteSlot, marker };
         v.unit = int(index);

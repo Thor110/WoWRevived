@@ -52,6 +52,7 @@ namespace wow
             const std::map<int, ObjOjd::BattleTables::Thirteen>* lights = nullptr; // record 13 (the light parts)
             bool showLights = true;     // [Options] "Show lights" (byte_4B8808)
             bool showShadows = true;    // [Options] "Show vehicle shadows" (byte_4B8814)
+            float wofBrightness = 2.5f; // [Game] "WOF Brightness" (flt_59F364): the point lights on the models
             bool showSmoke = true;      // [Options] "Show Smoke & particles" (byte_4B880C)
             std::vector<BattleGroup> groups; // the sector's war map objects (WarMap::BattleGroups)
             int ownerFaction = 2;       // who holds the sector (0x43CA30): 0 Human, 1 Martian, 2 no one
@@ -183,7 +184,7 @@ namespace wow
         void Emit(size_t effect);                               // 0x47F050
         void Smoulder(size_t unit);                             // 0x48AEF0 (from the unit's update 0x4967E0)
         void Puff(int type, int ownType, float x, float y, float lift, int radius);   // 0x48ADD0
-        void AddLight(int type, int x, int y, int z);           // a light part made (0x48DDC0, 0x48E050, 0x48DE80)
+        int AddLight(int type, int x, int y, int z);  // its index in lights, -1 for none           // a light part made (0x48DDC0, 0x48E050, 0x48DE80)
         void UpdateLights();                                    // 0x48E100 for the fading ones
         void Speak(int id, int group);                          // 0x481770 with the group's voice (0x449120)
         void SelectionSpeech(int group);                       // 0x439000's 0x109
@@ -254,7 +255,10 @@ namespace wow
         struct Turret { int type = 0, ox = 0, oy = 0, oz = 0, turn = 0; bool aiming = false; int aimX = 0, aimY = 0;
                         bool hardpoint = false; int middle = 0, half = 0, sound = 0; };
         // A part drawn with its unit (a WOF of its own: a turret's, or another like the lorries' 324)
-        struct Attached { WofInstance* wof = nullptr; int ox = 0, oy = 0, oz = 0, turret = -1; bool shadow = false; };
+        // a part's model; piece / vertex: the point of its unit's model it's held to (the part's record 27 box, the
+        // child's +0xB0), -1 for none
+        struct Attached { WofInstance* wof = nullptr; int ox = 0, oy = 0, oz = 0, turret = -1; bool shadow = false;
+                          int piece = -1, vertex = 0; int light = -1; };    // light: a light part's index in lights
         struct Unit { int type; float x, y; int heading; bool players; int group = 0; bool vehicle = false; Drive drive;
                       WofInstance* wof = nullptr; int engineSound = 0;
                       int health = 0;       // +0xC4: the type's +0x4A (0x47DA20) to start with

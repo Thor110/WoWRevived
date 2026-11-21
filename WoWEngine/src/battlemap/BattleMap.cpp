@@ -690,9 +690,10 @@ namespace wow
     // The unit's turrets' WOF models (0x47EE10 makes each part a child object with its renderer: 742 on the Armoured
     // Lorry), turned with the turret; posed each update at the unit's point plus the part's offset turned by the
     // unit's heading, its height the unit's plus the part's z (PoseParts)
-    // *Provisional*: the offset's turn (x along the heading, y across it) and the height; the other WOF parts (the
-    // lorries' 324, WOF 739, which looks to be a shadow drawn some other way) and the parts' own parts (a turret's gun
-    // has a sprite, GType class 6) aren't drawn.
+    // A part with a record 27 box is held to a point of its unit's model (+0xB0, 0x47F340): the lorries' turret
+    // to piece 1, point 0, the roof. The shadows (0x13B-0x14A) and the light parts (334-346) are made here too.
+    // *Provisional*: the offset's turn (x along the heading, y across it) for the parts not held; the parts' own
+    // parts (a turret's gun has a sprite, GType class 6) aren't drawn.
     void BattleMap::AddPartRenderers(size_t index)
     {
         Unit& u = units[index];
@@ -708,6 +709,29 @@ namespace wow
             // shadows" (0x48E6D0)
             const bool isShadow = part.a >= 0x13B && part.a <= 0x14A;
             if (isShadow && (!setup.showShadows || ShadowBlend().empty())) continue;
+            if (part.a >= 334 && part.a <= 346)
+            {
+                // a light part (0x48DE80): under a parent of category 0-3 it stays when rand() % 100 is at most 100 x
+                // the hour's fourth float and the parent isn't Martian; then only with "Show lights" (AddLight). It
+                // goes with its unit, at the part's offset (PoseParts).
+                const int roll = random::Rand() % 100;
+                const float chance = setup.dayTime ? setup.dayTime->sets[0].f[3] : 0.0f;
+                const int category = t->second.category;
+                if (category >= 0 && category <= 3 && (double(chance) * 100.0 < double(roll) || t->second.faction == 1)) continue;
+                const int x = int(u.x) + int16_t(part.b), y = int(u.y) + int16_t(part.c);
+                const int li = AddLight(part.a, x, y, land.HeightAt(x, y) + int(u.drive.lift) + int16_t(part.d));
+                if (li < 0) continue;
+                // its view object goes with the unit's (a dead unit's are taken out together)
+                for (ViewObject& o : objects)
+                    if (o.light == li) o.unit = int(index);
+                Attached a;
+                a.light = li;
+                a.ox = int16_t(part.b);
+                a.oy = int16_t(part.c);
+                a.oz = int16_t(part.d);
+                u.attached.push_back(a);
+                continue;
+            }
             auto pt = setup.units->find(part.a);
             if (pt == setup.units->end()) continue;
             const int gtype = pt->second.field28;
@@ -742,6 +766,7 @@ namespace wow
             a.oy = int16_t(part.c);
             a.oz = int16_t(part.d);
             a.turret = thisTurret;
+            if (part.box[0] >= 0) { a.piece = part.box[0]; a.vertex = part.box[1]; }
             if (isShadow)
             {
                 // 0x48E700: drawn darkening (+0x48 0x20), its x scale x (|the sun's cos| + 1); one behind its
@@ -751,7 +776,7 @@ namespace wow
                 w->ScaleX(std::fabs(sun.across) - -1.0f);
                 depth = -1;
                 for (const ViewObject& o : objects)
-                    if (o.unit == int(index) && !o.wof) { depth = o.depth - 1; break; }
+                    if (o.unit == int(index) && o.light < 0 && (!o.wof || o.wof == u.wof)) { depth = o.depth - 1; break; }
             }
             u.attached.push_back(a);
             objects.push_back({ int(u.y) + depth, 0, 0, nullptr, w.get(), g->paletteSlot, 0, -1, int(index), depth });
@@ -780,6 +805,17 @@ namespace wow
         const double c = std::cos(a), s = std::sin(a);
         for (Attached& p : u.attached)
         {
+            if (p.light >= 0 && size_t(p.light) < lights.size())
+            {
+                // the light keeps to its unit: the part's offset turned with it, raised 16 (as AddLight)
+                Light& l = lights[size_t(p.light)];
+                l.x = int(u.x + float(p.ox * c - p.oy * s));
+                l.y = int(u.y + float(p.ox * s + p.oy * c));
+                l.z = land.HeightAt(l.x, l.y) + int(u.drive.lift) + p.oz + 16;
+                for (ViewObject& o : objects)
+                    if (o.light == p.light) { o.x = l.x; o.y = l.y; o.key = l.y + (-32 - l.range); }
+                continue;
+            }
             if (p.shadow)
             {
                 // 0x48E750: its height offset (+0xA0) takes it down to the ground (0 on a bridge link), and its x
@@ -790,10 +826,17 @@ namespace wow
                 p.oz = u.drive.link ? 0 : int(-u.drive.lift);
                 p.ox = int(float((h * 0.08333333333333333 - -1.0) * sun.across * -6.0));
             }
-            const int x = int(u.x + float(p.ox * c - p.oy * s));
-            const int y = int(u.y + float(p.ox * s + p.oy * c));
             int heading = u.heading;
             if (p.turret >= 0 && size_t(p.turret) < u.turrets.size()) heading += u.turrets[size_t(p.turret)].turn;
+            // held to a point of its unit's model (+0xB0): after the unit's pose (0x47F3C3) its offset is that point
+            // less the unit's place (vt+0x38), so it's put on the point itself (vt+0x7C)
+            if (int at[3]; p.piece >= 0 && u.wof && u.wof->WorldPoint(p.piece, p.vertex, at))
+            {
+                p.wof->Transform(land, heading & 0xFFF, at[0], at[1], at[2]);
+                continue;
+            }
+            const int x = int(u.x + float(p.ox * c - p.oy * s));
+            const int y = int(u.y + float(p.ox * s + p.oy * c));
             p.wof->Transform(land, heading & 0xFFF, x, y, int(float(land.HeightAt(x, y)) + u.drive.lift) + p.oz);
         }
     }
@@ -1344,7 +1387,7 @@ namespace wow
         if (moved)
         {
             for (ViewObject& o : objects)
-                if (o.unit >= 0)
+                if (o.unit >= 0 && o.light < 0)
                 {
                     const Unit& u = units[size_t(o.unit)];
                     o.key = int(u.y) + o.depth;
@@ -1643,6 +1686,17 @@ namespace wow
         // the ground row by row, each object drawn once the rows reach its depth (0x49F610)
         size_t next = 0;
         TerrainView::Window window;
+        // the lights as the models' faces see them (0x49ED90): their level the landscape's .INT table at the
+        // intensity they have now x 256 (+0x48, 0x40CB10)
+        std::vector<WofInstance::PointSource> faceLights;
+        for (const Light& l : lights)
+        {
+            if (!l.alive) continue;
+            const float now = l.fading ? l.current : l.intensity;
+            int at = int(std::clamp(double(now) * 256.0, 0.0, 255.0));
+            const float level = levels.size() >= 256 ? float(levels[size_t(at)]) : float(at);
+            faceLights.push_back({ l.x, l.y, l.z, l.range, level });
+        }
         auto between = [&](int limit) {
             for (; next < objects.size() && objects[next].key < limit; next++)
             {
@@ -1661,7 +1715,7 @@ namespace wow
                 if (!shade) continue;
                 if (o.wof)
                 {
-                    o.wof->Draw(sun, *shade, t, -scrollX, -scrollY);
+                    o.wof->Draw(sun, *shade, t, -scrollX, -scrollY, faceLights, setup.wofBrightness);
                     continue;
                 }
                 if (o.sprite)
