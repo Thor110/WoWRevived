@@ -48,7 +48,7 @@ namespace wow
         struct ReinforcementSource { int sector = 0; bool players = false, hq = false; };
         std::vector<ReinforcementSource> ReinforcementSources() const;
         // The other side's units and constructions in a sector (0x43983E: the lists' counts, dword_4F7430)
-        int EnemyObjects(int sector) const;
+        int MartianInfestation(int sector, bool human) const;   // dword_4F7430 (0x43981C)
         // EnterBattleMap (0x439ADE): the sector's pod flag (+0x64), cleared as the battle takes it
         bool TakePod(int sector) { const bool p = podFlag[size_t(sector)]; podFlag[size_t(sector)] = false; return p; }
         // The sector's war map objects as the battle map takes them (EnterBattleMap 0x439770): each list in turn
@@ -418,8 +418,8 @@ namespace wow
         void BuildSectorPaths();
         void ShadeSectors();
         void PulseBattles();
-        // the types of the finished constructions in each sector (both sides')
-        std::array<std::vector<int>, warmap::SectorCount + 1> finished;
+        // the types of the finished constructions in a sector (both sides'), from the live counters
+        std::vector<int> Finished(int sector) const;
         // The counter placement ("clunting", 0x420160 at world +0x74): each sector's grid of cells (0x428110), cells
         // `size` pixels square over the sector's bounds rounded out, a cell usable when CHI.SPR (GType 0x84) has the
         // sector's number at its corner; 1 usable, 0x81 taken. A search keeps its place in the spiral (`index`).

@@ -45,12 +45,6 @@ namespace wow
         // 0x518B14: wire fences, mines) share one a type and sector (0x4282A0 / 0x428270), with how many there are
         // in the counter font (GType 0x6E, right-aligned). Where they go is the counter placement's (LayoutAll):
         // the war map doesn't use the places objects are saved with.
-        // a construction counts once it's finished: 0x42AA70 wants its +0x7C at least its +0x78, taken here as the
-        // save's second float against its first (provisional: which float is which isn't traced; at the start
-        // both are 1)
-        for (const auto& o : objects)
-            if ((o.list == 2 || o.list == 3) && o.sector >= 1 && o.sector <= warmap::SectorCount && o.value[1] >= o.value[0])
-                finished[size_t(o.sector)].push_back(o.unitType);
         struct Group { int sector, list, type, x, y, count; std::vector<int> refs; bool shared = false; int finished = 0; bool firstUnfinished = false; float progress = 1.0f; };
         std::vector<Group> groups;
         for (const auto& o : objects)
@@ -289,7 +283,7 @@ namespace wow
         auto it = deposits.find(sector);
         float b = it == deposits.end() ? 0.0f : float(it->second[size_t(kind)]);
         int n = 0;
-        for (int type : finished[size_t(sector)]) if (type == FacilityType[kind]) n++;
+        for (int type : Finished(sector)) if (type == FacilityType[kind]) n++;
         if (n == 0) return b;
         const float r = resourceDropOff, fn = float(n);
         return (fn + 1.0f) * r * b / (r + fn) - fn * r * b / (r + fn - 1.0f);
@@ -305,7 +299,7 @@ namespace wow
         bool human = (owner[size_t(sector)] == 0) == res.Human();
         if ((kind < 3) != human) return 0.0f; // only the owner's constructions are asked
         int n = 0;
-        for (int type : finished[size_t(sector)]) if (type == FacilityType[kind]) n++;
+        for (int type : Finished(sector)) if (type == FacilityType[kind]) n++;
         if (n == 0) return 0.0f;
         auto it = deposits.find(sector);
         float b = it == deposits.end() ? 0.0f : float(it->second[size_t(kind)]);
@@ -1457,22 +1451,17 @@ namespace wow
     // men in its units in the sector wins (the side holding it on a tie), and the loser's units, constructions and
     // resources there go (0x43A250). The battle report (0x421210 at dword_4E9B7C) gets what each side lost for the
     // Debriefing; the sector's battle flag goes and it and its neighbours are seen (0x418E17).
-    // 0x43C990 for every sector: the holder's command building (Human: Parliament 0x116 in London, else 0x13A;
-    // Martian: the base 0x33E in sector 3, else 0x78) among its constructions, finished (0x42AA70)
+    // 0x43C990 for every sector: the holder's command building (Human: Parliament 0x116 in London, else the Command
+    // Post 0x3A, 0x116 + 0xFFFFFF24; Martian: the base 0x33E in sector 3, else 0x78) among its constructions,
+    // finished (0x42AA70): HasCommandPost
     std::vector<WarMap::ReinforcementSource> WarMap::ReinforcementSources() const
     {
         std::vector<ReinforcementSource> out;
-        const bool human = res.Human();
         for (int n = 1; n <= warmap::SectorCount; n++)
         {
             const int rel = owner[size_t(n)];
             if (rel == 2) { out.push_back({ n, false, false }); continue; }
-            const int faction = human ? rel : 1 - rel;   // 0 Human, 1 Martian
-            const int hq = faction == 0 ? (n == 30 ? 0x116 : 0x13A) : (n == 3 ? 0x33E : 0x78);
-            bool found = false;
-            for (const Counter& k : counters)
-                if (k.sector == n && k.kind == 1 && k.type == hq && !k.unfinished && !k.Travelling()) { found = true; break; }
-            out.push_back({ n, rel == 0, found });
+            out.push_back({ n, rel == 0, HasCommandPost(n) });
         }
         return out;
     }
@@ -2831,8 +2820,37 @@ namespace wow
         if (who == 2) return false;
         bool human = (who == 0) == res.Human();
         int type = human ? (sector == 30 ? 278 : 58) : (sector == 3 ? 830 : 120);
-        const auto& here = finished[size_t(sector)];
+        const std::vector<int> here = Finished(sector);
         return std::find(here.begin(), here.end(), type) != here.end();
+    }
+
+    // The types of the finished constructions in a sector, both sides', one per object, from the live lists each
+    // time (as 0x43C990, 0x423B00 and 0x424000 walk the sector's construction lists): a construction is finished
+    // when 0x42AA70 finds its +0x7C at least its +0x78, taken here as the save's second float against its first
+    // (provisional: which float is which isn't traced; at the start both are 1). Destroyed ones have left the
+    // lists, so they no longer count.
+    std::vector<int> WarMap::Finished(int sector) const
+    {
+        std::vector<int> out;
+        if (sector < 1 || sector > warmap::SectorCount) return out;
+        for (const Counter& k : counters)
+        {
+            if (k.sector != sector || k.kind != 1 || k.count <= 0 || k.Travelling()) continue;
+            int n = 0;
+            if (!k.refs.empty())
+            {
+                for (int ref : k.refs)
+                {
+                    if (ref < 0 || size_t(ref) >= table.size()) continue;
+                    if (std::find(destroyed.begin(), destroyed.end(), ref) != destroyed.end()) continue;
+                    const SaveObject& o = table[size_t(ref)];
+                    if (o.Value(1) >= o.Value(0)) n++;
+                }
+            }
+            else n = std::min(k.count, k.finishedCount);   // objects read without a table entry
+            for (int i = 0; i < n; i++) out.push_back(k.type);
+        }
+        return out;
     }
 
     std::vector<int> WarMap::FindRoute(int from, int to, const std::vector<int>& group, std::string* why) const

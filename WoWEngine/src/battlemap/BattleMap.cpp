@@ -84,6 +84,9 @@ namespace wow
         slotTables[20] = table;
         SetUpRouteFinder();     // 0x47AF10, with the landscape, before anything is placed (the bridges add nodes)
         if (s.loadScenery) LoadScenery(sun, letter);
+        // the pod (0x439ADE-0x439B20): made, added and started before the six deployments (0x439B24), so its blasts
+        // go off before any unit stands and the Martians deploy round it
+        if (s.pod) LandPod(sun);
 
         Deploy();
         SetUpReinforcements();
@@ -265,12 +268,17 @@ namespace wow
         }
     }
 
-    // An object's screen point (+0x2C / +0x30, the view's coordinates): its renderer's point less the scroll
+    // An object's screen point (+0x2C / +0x30, the view's coordinates; 0x47F480 -> 0x4406A0): x, and y projected at
+    // its height (+0x80: the ground plus its lift) less the type's +0x41 byte, then less the scroll. The brackets,
+    // the power bar, the click and the box all use it, so on a walker they sit up at its body, not its feet.
     bool BattleMap::UnitScreen(const Unit& u, int& sx, int& sy) const
     {
         const int ix = int(u.x), iy = int(u.y);
+        int raise = 0;
+        if (setup.units)
+            if (auto t = setup.units->find(u.type); t != setup.units->end()) raise = t->second.size41;
         sx = ix - scrollX;
-        sy = land.ProjectY(iy, land.HeightAt(ix, iy)) - scrollY;
+        sy = land.ProjectY(iy, land.HeightAt(ix, iy) + int(u.drive.lift)) - raise - scrollY;
         return true;
     }
 
@@ -566,13 +574,13 @@ namespace wow
 
     // The deployment (0x421FE0 for each list, in EnterBattleMap's order: HCON, HRES, ACON, ARES, HUNI, AUNI). Every
     // battle unit starts at its saved place; each war map object then gets a centre:
-    //  - the other side's (its faction isn't the sector's owner): a Martian pod's place (type 179 in the scenery
+    //  - the other side's (its faction isn't the sector's owner): the pod's place (this battle's, or type 179 in the scenery
     //    list) for Martians, else the entry point from the sector it came from (0x436050)
     //  - the owner's: a command building's place (the last of 830 / 120 or 278 / 58 among all the battle units,
     //    either side's), else a pod's for Martians, else the entry point if it came from somewhere, else the middle
     // and the player's last centre is where the view starts. Its units are placed round it (Place).
-    // *Provisional*: the pods: the battle's own pod (LandPod) comes after the deployment, as in the game, so it
-    // can't be a centre; one in the scenery list (type 179) would be, but none of the .nsb files has one.
+    // The battle's own pod (LandPod) lands first, so it is a centre; one in the scenery list (type 179) would be
+    // too, but none of the .nsb files has one.
     void BattleMap::Deploy()
     {
         units.clear();
@@ -638,9 +646,16 @@ namespace wow
                 const ObjOjd::UnitData* d = unit(g.type);
                 const int moveClass = d ? d->field52 : 0;
                 int cx = midX, cy = midY;
+                // 0x4220CB: the pod (type 0xB3 in the world's +0x11C) a centre for a Martian list (its first object's
+                // faction 1, 0x4406E0)
+                const bool pod = podX != -1 && podY != -1 && faction == 1;
                 if (setup.ownerFaction != faction)
-                    deploy::EntryPoint(g.previous, setup.sector, moveClass, cx, cy);
+                {
+                    if (pod) { cx = podX; cy = podY; }
+                    else deploy::EntryPoint(g.previous, setup.sector, moveClass, cx, cy);
+                }
                 else if (hqX != -1 || hqY != -1) { cx = hqX; cy = hqY; }
+                else if (pod) { cx = podX; cy = podY; }
                 else if (g.previous) deploy::EntryPoint(g.previous, setup.sector, moveClass, cx, cy);
                 if (g.Players()) { startX = cx; startY = cy; }
                 std::vector<size_t> members;
@@ -1385,7 +1400,10 @@ namespace wow
         // each building's own sound started as it's added (0x48E9D0)
         for (Unit& u : units)
             if (IsBuilding(u)) BuildingSound(u);
-        if (setup.pod) LandPod(sun);
+        // the pod's blasts were set off as the battle was built (behind the Briefing): heard now
+        if (setup.sound)
+            for (const auto& [id, x, y] : heldSounds) setup.sound->Play(id, 1.0f, 0, x, y);
+        heldSounds.clear();
     }
 
     const BattleMap::IsoModel* BattleMap::LoadIob(int gtype)
@@ -1415,7 +1433,7 @@ namespace wow
     // at height 0, and 0x3DA goes off there twice, as its type has it (0x488070) and again with radius and power 300
     // (0x4880F0); then WScenery's start (0x4896D0).
     // *Provisional*: the explosions' firer (the pod's type at +0xC4) isn't kept; its shadow parts and lights
-    // aren't added; the vehicles already deployed aren't moved off it; a hundred tries at most.
+    // aren't added; a hundred tries at most.
     void BattleMap::LandPod(const Landscape::Sun& sun)
     {
         constexpr int Pod = 0xB3;
@@ -1435,6 +1453,8 @@ namespace wow
             found = land.IsAreaPassable(vx - r, vy - r, vx + r, vy + r);
         }
         if (!found) return;
+        podX = int(x);
+        podY = int(y);
         // the blasts first: the pod isn't in the world until its start (0x4896D0), so they don't reach it
         Explode(0x3DA, int(x), int(y), 0);
         Explode(0x3DA, int(x), int(y), 0, -1, 0, 0, 300, 300);
@@ -1837,6 +1857,12 @@ namespace wow
         for (size_t i = 0; i < units.size();)
             if (units[i].dieAt >= 0 && ticks >= units[i].dieAt) Die(i);
             else i++;
+        // a forfeit's 0x76 (0x43AA18, posted 150 updates on through 0x4355A0): back to the war map
+        if (forfeitAt >= 0 && ticks >= forfeitAt)
+        {
+            forfeitAt = -1;
+            sent = Command{ ReturnCommand, setup.sector };
+        }
         for (size_t k = 0; k < controlPosts.size();)
         {
             if (controlPosts[k].at > ticks) { k++; continue; }
@@ -2401,6 +2427,14 @@ namespace wow
     // the sector as the battle began;.
     void BattleMap::CheckBattleEnd()
     {
+        // 0x43AA18, before the battle-on test: with no box up, a forfeit (byte_4E9B94, the key building lost with no
+        // battle on) posts 0x76 to the screen 150 updates on (0x111 / 0x76 through 0x4355A0) and marks the box up
+        if (forfeit && !battleDecided)
+        {
+            battleDecided = true;
+            forfeitAt = ticks + 150;
+            return;
+        }
         if (!battleOn || battleDecided) return;
         int ours = 0, theirs = 0;
         for (const Unit& u : units) (u.players ? ours : theirs)++;

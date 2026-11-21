@@ -83,11 +83,15 @@ namespace wow
         return out;
     }
 
-    int WarMap::EnemyObjects(int sector) const
+    // EnterBattleMap 0x43981C-0x439864 (dword_4F7430): in a Human game the other side's constructions and resources
+    // (+0x58 + +0x60), in a Martian game the player's own (+0x54 + +0x5C), each the number of war map objects in the
+    // battle's list (0x4216D0, +0x24): always the Martians' constructions and resources there, the sector's
+    // infestation. It picks the LANDR shade digit and the burnt trees.
+    int WarMap::MartianInfestation(int sector, bool human) const
     {
         int n = 0;
-        for (int kind = 0; kind < 2; kind++)
-            for (int c : SectorObjects(sector, false, kind)) n += counters[size_t(c)].count;
+        for (const BattleGroup& g : BattleGroups(sector))
+            if (g.list / 2 >= 1 && ((g.list & 1) == 0) == !human) n++;
         return n;
     }
 

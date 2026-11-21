@@ -91,21 +91,42 @@ Tick each item here with the update that fixes it.
 
 ## Phase 2: high-severity behaviour (small, independent)
 
-- [ ] Units never pick targets: the look-round scale `flt_59E44C` is `[Tweak] "Audible radius multiplier"` (1.0), not
+- [x] Units never pick targets: the look-round scale `flt_59E44C` is `[Tweak] "Audible radius multiplier"` (1.0), not
       0. [combat 1]
-- [ ] Air-burst table chosen by impact height over 64, not weapon size (0x487F50). [combat 2]
-- [ ] A building's lost part fires as its building (0x489FA0), so it doesn't hurt it. [combat 3]
-- [ ] Selection marks at ground + lift + the type's +0x41 (0x47F480 / 0x4406A0), not the feet. [battle-ui 4]
-- [ ] Scenery sprites (street lamps, ~49), reinforcement markers (63) and building corners (45) at their levels, not 0.
+      *Update 131*: `setup.lookScale` from the ini (1.0), in the look round's emplacement check and the auto-target
+      sight.
+- [x] Air-burst table chosen by impact height over 64, not weapon size (0x487F50). [combat 2]
+      *Update 131*: `ImpactAt` takes the air bursts when the height over the ground is over 64, else water or land by
+      the terrain; the size only indexes (1-67).
+- [x] A building's lost part fires as its building (0x489FA0), so it doesn't hurt it. [combat 3]
+      *Update 129* (S6): the part's explosion has the building's group as its firer.
+- [x] Selection marks at ground + lift + the type's +0x41 (0x47F480 / 0x4406A0), not the feet. [battle-ui 4]
+      *Update 131*: `UnitScreen` projects at the ground + lift, less the type's +0x41 (scaled); tested: the Martian
+      battle's box-selected walkers have their brackets round their bodies.
+- [x] Scenery sprites (street lamps, ~49), reinforcement markers (63) and building corners (45) at their levels, not 0.
       [rendering 4]
-- [ ] Landscape tint and red weed from the Martian constructions and resources (0x43981C). [battle-setup 1]
-- [ ] Human command building 0x3A, not 0x13A, in ReinforcementSources. [warmap 3]
-- [ ] Destroyed constructions leave `finished[]`. [warmap 13]
-- [ ] Menus open with the back button focused (Quit: Enter mustn't quit). [frontend 1]
-- [ ] A vehicle arriving on a bridge clears its link (0x491A9C). [movement 4]
-- [ ] Mines: the collision filter's test the right way round (0x4929A0). [movement 8]
-- [ ] The pod lands before deployment (0x439AE5); a forfeit returns to the war map 150 updates on (0x43AA18).
+      *Update 128* (S1/S2): each view object's level (lamps and 0x1C0 +0xA1, markers 63, corners 45), fogged.
+- [x] Landscape tint and red weed from the Martian constructions and resources (0x43981C). [battle-setup 1]
+      *Update 131*: `WarMap::MartianInfestation(sector, human)`: the Martian side's constructions and resources there,
+      as numbers of war map objects (destroyed ones left out), for both `enemyCount` and `lastEnemyCount`.
+- [x] Human command building 0x3A, not 0x13A, in ReinforcementSources. [warmap 3]
+      *Update 131*: `ReinforcementSources` asks `HasCommandPost`.
+- [x] Destroyed constructions leave `finished[]`. [warmap 13]
+      *Update 131*: `finished[]` is gone; `WarMap::Finished(sector)` walks the live counters' objects (not destroyed,
+      +0x7C at least +0x78) each time.
+- [x] Menus open with the back button focused (Quit: Enter mustn't quit). [frontend 1]
+      *Update 131*: `FocusLast()` after the bottom button in Load Game, Quit Game, Sound Control, Display Settings and
+      Critical events.
+- [x] A vehicle arriving on a bridge clears its link (0x491A9C). [movement 4]
+      *Update 131*: `Advance` sets `link = 0` after its 0x808B(1); the lift stays.
+- [x] Mines: the collision filter's test the right way round (0x4929A0). [movement 8]
+      *Update 131*: a class 3 / 4 vehicle passes over a low object only when it isn't crushable (*provisional* as
+      before: the height is the GType's first frame's).
+- [x] The pod lands before deployment (0x439AE5); a forfeit returns to the war map 150 updates on (0x43AA18).
       [battle-setup 2, 3]
+      *Update 131*: `LandPod` runs after the scenery and before `Deploy()`, its point a centre for Martian lists (as the
+      other side's, and as the owner's with no command building); its blasts' sounds wait for `Begin`. A forfeit
+      (`forfeit`, no box up) sets `forfeitAt` = now + 150 and `Update` sends 0x76 then (`TakeCommand`).
 
 ## Phase 3: the rest
 

@@ -8,7 +8,8 @@ form of the battle map screen.
 **Built behind the Briefing**: the engine builds the battle map while the Briefing is up (from the Briefing's
 second update, once its picture has been shown; `FrontEnd::BuildBattleMap`), and leaving the Briefing shows it at
 once (`StartBattleMap`, which builds it then only if that didn't happen). What makes sounds waits for it to be shown
-(`BattleMap::Begin`): the buildings' own sounds and the pod's landing. (Reported in play: the map was seen being put
+(`BattleMap::Begin`): the buildings' own sounds and the pod's blasts (the pod itself lands as the map is built,
+before the deployment; update 131). (Reported in play: the map was seen being put
 together, the ground, then the buildings, then the units; the original never shows that.)
 
 After the Briefing (0x71 / 0x98, see docs/WARMAP.md, Battles) the front end opens the battle map for the battle's
@@ -114,9 +115,12 @@ point lights get 64 x the third float x (0.2 + 0.5 sin). At the start of a battl
 the set's name picks the shade table `dat\LANDR<d><letter>.int` (a Martian game, byte_4B84C4 "I Am Human" clear, uses X for L and Y for N); the last
 of its 256 bytes at or under the third float x 64 gives the light level (/ 256).
 
-The digit `<d>` (dword_4DAED0) is 0 for up to 3 (dword_4BD4F8) enemy units and buildings in the sector, 1 for 4 to
-9 and 2 for 10 (dword_4BD4FC) or more. The battle map set-up counts them into dword_4F7430 (0x43983E: the Martian
-units and buildings in a Human game, the Human ones in a Martian game) only after it has loaded the tables
+The digit `<d>` (dword_4DAED0) is 0 for up to 3 (dword_4BD4F8) Martian constructions and resources in the sector, 1 for 4 to
+9 and 2 for 10 (dword_4BD4FC) or more. The battle map set-up counts into dword_4F7430 (0x43981C-0x439864: in a Human
+game the other side's construction and resource lists, +0x58 + +0x60; in a Martian game the player's own, +0x54 +
++0x5C; each 0x4216D0, the number of war map objects) the Martians' constructions and resources in the sector, its
+infestation, whichever side is played (`WarMap::MartianInfestation`, update 131: the engine had counted the other
+side's units and constructions). It does so only after it has loaded the tables
 (0x439812), so the files a battle uses follow the count from the battle before; the first battle of a session uses
 0. The same count makes some scenery start out burnt (0x4890C0). `Landscape::ShadeClass`.
 
@@ -386,7 +390,8 @@ and third, and BATP and its class's own tags (VEHI / VEHU for a vehicle). A fres
 **The centre** (0x421FE0), for each object in the list:
 - the command building's place, if one stands among the battle world's objects: the last found of type 830 in
   sector 3 or 120 elsewhere (Martian), or 278 in sector 30 or 58 elsewhere (Human), either side's;
-- a Martian pod's place (type 179 in the scenery list, made when a pod landed among the Humans, sector +0x64);
+- a Martian pod's place (type 0xB3 in the world's +0x11C: this battle's pod, which lands before the deployment, or
+  one in the scenery list; update 131);
 - if the list's faction (its first object's +0x0C) isn't the sector's owner (0x43CA30): the pod for Martians,
   else the entry point from the sector the object came from (+0x58); if it is: the command building, else the
   pod for Martians, else the entry point if it came from somewhere, else the map's middle.
@@ -550,7 +555,10 @@ sends 0x8088 to an object's group (+0x48), which selects all its units.
 - **Home** (0x43A480): the view centred on the selection: the middle of its members' extent (0x4836A0, halves
   rounded to 0), projected with the nearest vertex's height (0x47B120), less half the view.
 
-*Provisional*: the hotspot is taken as centred on the object's screen point (the ground under it); +0x3C isn't read
+The object's screen point (0x47F480 -> 0x4406A0, +0x2C / +0x30) is x and y projected at its height (the ground plus
+its lift, +0x80) less its type's +0x41 byte (byte_51A131), so on a walker the brackets, the bar, the click and the box
+are up at its body (update 131; the engine had used the ground under it).
+*Provisional*: the hotspot is taken as centred on the object's screen point; +0x3C isn't read
 (only vehicles count for the box); the frontmost hotspot is the one lowest on screen; no damage yet, so the power
 bar is full. The orders themselves (move, attack, force fire), Shift adding to the selection (packet 5) and the
 group keys aren't in.
@@ -582,7 +590,7 @@ group keys aren't in.
   group's bit 1 is clear (vt+0x128 = 0x4910B0: +0x188 bit 5, held: vt+0x144 counts it as going, and its arrival,
   separation, braking, matching and cohesion are off) or 0x8031 when set (0x4910C0: stopped, bits 5 and 13
   cleared). It first clears its halted bit (vt+0xAC(0)). A gun emplacement's (0x48F8A0) first: aiming, further
-  from its goal than its sight x flt_59E44C (0.0, so always), it stands its group's guns down (0x805A).
+  from its goal than its sight x flt_59E44C (1.0), it stands its group's guns down (0x805A).
   *Provisional*: the group's 0x805A is taken as each member's (no target cleared).
 - **Retreating** (+0x188 bit 9): a vehicle's 0x80B9 (0x490CD5) sets it to its lparam. The senders that clear the
   target send 0 (0x4821A0, 0x482880, 0x481CA0, Retreat's first); Retreat's second, to each member (0x4810B4 /
@@ -720,7 +728,9 @@ then 4; 4: the count ftol(+4 x 30 / 20) + rand() % 15, then 0. Then **aimed** (0
 width) if it has one. The **landing**: the shell's update once in state 2 when the count is a multiple of 5 (+0xF0 bit
 1 marks it), the rocket's in state 3: the spread s = ftol(the octagonal distance from the gun / 32 / +0xCC (1.0) + 1),
 x, y and height each moved by rand() % 2s - s, the height less the ground at the vertex there (0x47B120); then
-0x487F50 with +6 as the size: on water (terrain 1-3) 0x4D0340[size - 1], else 0x4D0230[size - 1], over 64 0x4D0450;
+0x487F50 with +6 as the size: with the height over the ground over 64 (`cmp arg_C, 40h`) the air bursts 0x4D0450[size
+- 1], else on water (terrain 1-3) 0x4D0340[size - 1], else 0x4D0230[size - 1] (update 131: the engine had tested the
+size against 64);
 the effect made there with the firer (the gun's root object) and the gun's type. The effects for sizes up to 40 are
 all WExplosions (381-394, 484-589), 41-43 too (715-717), 44-49 and 50-61 area blasts (718-720, 788-790, 812-823), the
 rest WExplosions. An explosion spares the firer's group (0x47EB00) unless the other says otherwise (vt+0xF8).
@@ -781,10 +791,10 @@ the last seen. The group gets 0x80B1 (0x4807F0's case: a player's group and a ve
 0x10F; then 0x482960, as 0x482880 with bit 0 set). (0x482570, every 8th update of a group with +0x1D8 bit 7, tries
 one of 27 special orders at random through CanDo and 0x4817C0: the computer's, for the battle AI.)
 
-**flt_59E44C is never written**: it sits in uninitialised data and nothing in the listing stores to it (two reads,
-0x48F8CC and 0x4965A3, no other reference), so it stays 0.0, the sight is 0 and the scan finds nothing: units don't
-pick their own targets. It's kept as `kLookScale` in `Weapons.cpp`. *Provisional*: if something unseen sets it, the
-scan works (checked with 1.0: the lorries on Attack took the tower as their target unasked).
+**flt_59E44C** is the value of the `[Tweak] "Audible radius multiplier"` object at 0x59E438 (0x495620 builds it with
+1.0; 0x416500 keeps the value at its +0x14, 0x59E44C), so the scan reaches the unit's full sight and units pick their
+own targets (`BattleMap::Setup::lookScale`). Until update 131 the engine took it as never written and 0, so units on
+stances 2 and 3 never engaged on their own.
 
 In sector 30, Force Fire from the popup on a point west of the start: the group drove into range (a 4-node route) and
 the five lorries' rockets landed round their jittered aims, a few units out, each an effect 382 with a scorch. With
@@ -924,6 +934,9 @@ So losing it takes that side's constructions and resources in the sector with it
 Back on the war map, the forfeit (0x41AED0) raises EndGameLost with the player's home sector (30 Human, 3 Martian),
 whose ending (0x41F4B0) is the player's defeat, 0x80FB Human or 0x80FD Martian. In the test (London viewed, no battle,
 Parliament made to die at update 30) the flag was set and the five lorries went at updates 61, 119, 165, 224 and 278.
+With the flag set, the battle screen's update (0x43AA18, before its battle-on test, with no box up) posts itself 0x76
+(Return to Warmap) 150 updates on through 0x4355A0 and marks the box up, so the forfeit goes back to the war map by
+itself (update 131).
 *Provisional*: the kind is taken as the sector; the forfeit isn't checked end to end on the war map.
 
 ## The modes and specials (0x4817C0, 0x481CA0, 0x496920, 0x482570; `battlemap/Weapons.cpp`)
@@ -1140,7 +1153,8 @@ the x offset is taken as the part offset turned with the unit's heading, as the 
 
 A pod that came down in a sector the player holds sets the sector's +0x64 (0x41A3BC, the war map's pods
 0x41A330), which the next battle there takes (EnterBattleMap 0x439ADE) and clears. Update 115.
-- **Made and started** after the deployment (0x439AE5): type 0xB3 from the factory, added (vt+0x24) and started
+- **Made and started** before the deployment (0x439AE5, then the six 0x421FE0 from 0x439B24; update 131, the engine
+  had it after): the Martian lists deploy round it (0x4220CB) and its blasts go off before any unit stands; type 0xB3 from the factory, added (vt+0x24) and started
   (vt+0x14 = 0x48F620). Its model is `dat\Pod.iob` (GType 502), its radius (+0x44) 200.
 - **Landing** (0x48F620): a place at random, x rand() % the world's width, y rand() % its height, again until a
   vehicle could stand on every vertex within its radius (0x47B520); there at height 0 (vt+0x40), 0x3DA goes off as
@@ -1152,8 +1166,8 @@ In a test (the flag forced on in the Human save's battle) the pod came down in o
 in a scorched crater with the blast, and stayed.
 
 *Provisional*: at most a hundred tries for the place (the game's loop has no limit); the firer isn't kept; the
-brightness isn't applied (as for the fog's other objects); the pod flag isn't in the engine's saves; vehicles
-already deployed there aren't moved off.
+brightness isn't applied (as for the fog's other objects); the pod flag isn't in the engine's saves. The battle is built
+behind the Briefing, so the blasts' sounds are held until the map is shown (`BattleMap::Begin`).
 
 ## Drones (0x5D-0x5F: 0x48F9D0-0x48FAC0; `BattleMap::DroneTick`)
 
@@ -1214,7 +1228,7 @@ arrival, vt+0x168, is the same as every vehicle's 0x491FA0, only not inlined.)
 
 The battle's computer side is played by the war map's computer player (vtable 0x4AA680), through its handler
 (0x442AC0): 0x8075 (the battle begun, 0x445210), 0x807F (ended, 0x445620: all cleared), 0x807A (an object gone,
-0x445B90), 0x80B1 (a threat seen, 0x445D60: from the target scan, which never finds one, flt_59E44C being 0).
+0x445B90), 0x80B1 (a threat seen, 0x445D60: from the target scan).
 
 **Begun** (0x445210): its counts cleared; +0x450, whether it holds the sector. Holding it, its own constructions and
 then its own resources there (0x446370(2,0) and (3,0): the sector's +0x58 and +0x60, lists 3 and 5) become threats

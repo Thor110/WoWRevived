@@ -55,6 +55,7 @@ namespace wow
             float wofBrightness = 2.5f; // [Game] "WOF Brightness" (flt_59F364): the point lights on the models
             float isoBrightness = 0.5f;
             float zoomerSpeed = 2.5f;
+            float lookScale = 1.0f;     // [Tweak] "Audible radius multiplier" (flt_59E44C): the look round's sight x it
             int waterTwinkles = 20;     // [Tweak] "Water twinkles per frame" (dword_4F76E4, 0x439400)   // [Tweak] "Battlemap Zoomer Speed" (dword_4F744C, 0x43A440): Home's and '.''s glide // [Game] "ISO Brightness" (flt_4E8C04): the point lights on the IOB objects
             bool showSmoke = true;      // [Options] "Show Smoke & particles" (byte_4B880C)
             std::vector<BattleGroup> groups; // the sector's war map objects (WarMap::BattleGroups)
@@ -379,7 +380,7 @@ namespace wow
         void AddCorners(size_t unit);   // 0x48E9D0: the four 0x17B objects round a Human building being built
         void PoseParts(Unit& u);
         void Impact(size_t unit, const Gun& g);                 // 0x4886A0's landing: 0x487F50
-        void ImpactAt(int size, int x, int y, int z, int group, int attacker = 0, int weapon = 0); // 0x487F50: the effect by size and terrain
+        void ImpactAt(int size, int x, int y, int z, int group, int attacker = 0, int weapon = 0); // 0x487F50: the effect by height, terrain and size
         void Launch(size_t unit, Gun& g);                       // 0x4889D0
         bool ShellLands(size_t effect);                         // 0x488F00 after the step: gone?
         struct Landing { int size, x, y, z, group, attacker, weapon; };
@@ -393,11 +394,14 @@ namespace wow
         void KeyBuildingLost(bool players);                     // 0x48AC50's key building case
         void StaggerDeaths(int group, int at);                  // 0x47CEE0's 0x80A0
         bool forfeit = false;                                   // byte_4E9B94: the key building lost with no battle on
+        int forfeitAt = -1;                                     // the update its 0x76 arrives (0x43AA18, + 150)
         // 0x488070 + 0x488350 / 0x488200 (firer: a unit's group); a radius and power given (0x4880F0's +0xC8 /
         // +0xCA) in place of the type's
         void Explode(int type, int x, int y, int z, int firer = -1, int attacker = 0, int weapon = 0, int radiusAs = 0, int powerAs = 0);
         void LandPod(const Landscape::Sun& sun);
         bool begun = false;
+        std::vector<std::array<int, 3>> heldSounds;             // sounds made before Begin (the pod's blasts): id, x, y
+        int podX = -1, podY = -1;                               // where this battle's pod landed
     public:
         // As it's shown (the rest is built beforehand, behind the Briefing): the buildings' sounds started and the
         // pod landed, which make sounds

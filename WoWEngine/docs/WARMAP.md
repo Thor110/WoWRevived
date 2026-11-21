@@ -365,7 +365,10 @@ speed divides by 0 in the game and never gets anywhere (*provisional*: 1 pixel a
   - 3: neither end has its owner's command building, finished (0x43C990: a Human sector needs a Command Post, type
     58, or in London (30) type 278 (the code adds 0x116 and the low byte 0x24 of -1, which wraps to 0x3A); a Martian one a Communications Centre, 120, or in sector 3 the
     landing site, 830. Finished is the construction's +0x7C at least its +0x78 (0x42AA70); the engine compares
-    the save's two floats, *provisional* as to which is which)
+    the save's two floats, *provisional* as to which is which. The game walks the sector's live construction lists
+    each time it asks, so a destroyed one stops counting at once; the engine does the same from its counters
+    (`WarMap::Finished`, update 131: it had kept an append-only list, and the battle map's reinforcement sources
+    had looked for type 0x13A, not 0x3A, outside London)
   - 4 / 5: a sector passed through (not the goal) has no command building, or isn't the player's
   - 6: the start has no command building and the step goes into a sector that isn't the player's
   - 7 / 8: the goal would hold more than `[Tweak] "Max units in sector"` (default 15) units, or `"Max boats in

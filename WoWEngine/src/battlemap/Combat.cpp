@@ -227,7 +227,11 @@ namespace wow
         const int power = powerAs ? powerAs : MaxHealth(type);
         const int ground = land.HeightAt(x, y);
         if (t->second.fieldA2 && setup.sound)
-            setup.sound->Play(t->second.fieldA2, 1.0f, 0, x, land.ProjectY(y, ground + std::max(z, 0)));
+        {
+            const int sy = land.ProjectY(y, ground + std::max(z, 0));
+            if (begun) setup.sound->Play(t->second.fieldA2, 1.0f, 0, x, sy);
+            else heldSounds.push_back({ t->second.fieldA2, x, sy });   // built behind the Briefing: heard at Begin
+        }
         // the WExplosion itself is made first (0x488070); its start (0x488350) then makes its parts and detonates
         const int self = SpawnEffect(type, float(x), float(y), float(std::max(z, 0)));
         if (self >= 0 && !area)

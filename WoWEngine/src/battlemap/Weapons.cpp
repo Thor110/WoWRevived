@@ -47,8 +47,8 @@ namespace wow
             return -1;
         }
 
-        // 0x487F50's effect tables by size - 1: on land (0x4D0230), on water (terrain 1-3, 0x4D0340), and over 64
-        // (0x4D0450)
+        // 0x487F50's effect tables by size - 1: on land (0x4D0230), on water (terrain 1-3, 0x4D0340), and in the air
+        // (the impact's height over 64, 0x4D0450)
         constexpr int kImpactLand[67] = { 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 484, 485, 486, 487, 488, 489,
             490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511,
             512, 513, 715, 716, 717, 718, 719, 720, 788, 789, 790, 812, 813, 814, 815, 816, 817, 818, 819, 820, 821, 822,
@@ -459,9 +459,8 @@ namespace wow
         Aim(u, x, y, z);
     }
 
-    // flt_59E44C, the sight's scale for looking round (0x48F8A0, 0x496570): nothing in the program writes it, so it
-    // keeps the 0.0 it starts with. *Provisional*: if something unseen sets it, the scans below find targets.
-    static constexpr float kLookScale = 0.0f;
+    // flt_59E44C, the sight's scale for looking round (0x48F8A0, 0x496570): the value of the [Tweak] "Audible radius
+    // multiplier" object at 0x59E438 (0x495620 makes it, 1.0; 0x416500 keeps the value at its +0x14)
 
     // The unit's update (0x4967E0): +0xDA counts up; past its type's +0x92 word it looks round (vt+0x104, 0x48F8A0:
     // with +0xE4 bit 1 and further than its sight x the scale from its post (+0xC8 / +0xCC), its group's guns are
@@ -470,8 +469,8 @@ namespace wow
     // 0x496890's first part: vt+0xAC(0) (not halted); aiming (+0xE4 bit 1) with a group, it posts itself 0x808A
     // when the group isn't mostly halted (+0x1D8 bit 1 clear; vt+0x128 = 0x4910B0: +0x188 bit 5, held: it steers on without arrival, separation,
     // braking or matching), else 0x8031 (0x4910C0: stopped, bits 5 and 13 cleared). An emplacement (0x48F8A0) first,
-    // aiming and further from its aim point (+0xC8 / +0xCC) than its sight x the scale (always, the scale being
-    // 0), stands its group's guns down (0x805A to the group), which clears its aiming.
+    // aiming and further from its aim point (+0xC8 / +0xCC) than its sight x the scale (1.0), stands its group's
+    // guns down (0x805A to the group), which clears its aiming.
     // *Provisional*: the group's 0x805A is taken as each member's (no target cleared).
     void BattleMap::LookRound(size_t index)
     {
@@ -482,7 +481,7 @@ namespace wow
         if (count <= int16_t(t->second.field92)) return;
         const bool hasGroup = u.group >= 0 && size_t(u.group) < groupTargets.size();
         if (IsEmplacement(u.type) && u.aiming && hasGroup &&
-            Octagonal(int(u.x), int(u.y), u.aimX, u.aimY) > int(float(ObjOjd::Vision(t->second, setup.armour)) * kLookScale))
+            Octagonal(int(u.x), int(u.y), u.aimX, u.aimY) > int(float(ObjOjd::Vision(t->second, setup.armour)) * setup.lookScale))
         {
             for (Unit& m : units)
                 if (m.group == u.group)
@@ -520,7 +519,7 @@ namespace wow
     {
         auto t = setup.units->find(u.type);
         if (t == setup.units->end() || u.drive.lift < 0.0f) return;
-        const int sight = int(float(ObjOjd::Vision(t->second, setup.armour)) * kLookScale);
+        const int sight = int(float(ObjOjd::Vision(t->second, setup.armour)) * setup.lookScale);
         const Unit* key = nullptr;
         const Unit* last = nullptr;
         const Unit* pick = nullptr;
@@ -1007,9 +1006,12 @@ namespace wow
 
     void BattleMap::ImpactAt(int size, int x, int y, int h, int group, int attacker, int weapon)
     {
-        int effect = 0;
-        if (size > 64) effect = size - 1 < 67 ? kImpactBig[size - 1] : 0;
-        else if (size >= 1)
+        // 0x487F50: the height decides the table (over 64: the air bursts, cmp arg_C, 40h), the terrain under the
+        // point land or water; the size only indexes it
+        if (size < 1 || size > 67) return;
+        int effect;
+        if (h > 64) effect = kImpactBig[size - 1];
+        else
         {
             const int vx = std::clamp(int((int64_t(int32_t(uint32_t(x) << 16)) + land.HalfCell()) / land.Cell()), 0, land.Width() - 1);
             const int vy = std::clamp(int((int64_t(int32_t(uint32_t(y) << 16)) + land.HalfCell()) / land.Cell()), 0, land.Height() - 1);

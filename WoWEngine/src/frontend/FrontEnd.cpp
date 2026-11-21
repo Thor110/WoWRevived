@@ -197,6 +197,7 @@ namespace wow
         for (int slot = SaveSlot::First; slot <= SaveSlot::Last; slot++)
             if (auto name = SaveSlot::Name(files, res.Human(), slot)) m->AddButtonText(CmdLoadSlot, *name, slot);
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
+        m->FocusLast();                               // 0x42EBE0 on the bottom button
         return m;
     }
 
@@ -266,6 +267,7 @@ namespace wow
         m->AddHeading(previous == CmdMainMenu ? 0x403 : 0x404);
         m->AddButton(CmdQuitGame, 0x445);
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x446);
+        m->FocusLast();                               // 0x42EBE0 on the bottom button
         return m;
     }
 
@@ -292,6 +294,7 @@ namespace wow
         volume(0x440, "Speech", &pendingSpeech);
         m->AddCheck(0x441, ini.GetBool(SoundSection, "CD", true), [this](Button& b) { ini.SetBool(SoundSection, "CD", b.value != 0); });
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
+        m->FocusLast();                               // 0x42EBE0 on the bottom button
         return m;
     }
 
@@ -340,6 +343,7 @@ namespace wow
             [this](Button& b) { ini.SetInt("Screen", "Scroll Speed", b.value * 10 + 10); });
 
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
+        m->FocusLast();                               // 0x42EBE0 on the bottom button
         return m;
     }
 
@@ -354,6 +358,7 @@ namespace wow
             m->AddEventCheck(e.text, ini.GetBool("Event", e.name, e.on), [this, e](Button& b) { ini.SetBool("Event", e.name, b.value != 0); });
         }
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
+        m->FocusLast();                               // 0x42EBE0 on the bottom button
         return m;
     }
 
@@ -1126,7 +1131,7 @@ namespace wow
         s.shadeClass = Landscape::ShadeClass(lastEnemyCount);
         s.human = res.Human();
         s.quickCancelTimeout = ini.GetInt("Tweak", "Quick Cancel Timeout", 5);
-        s.enemyCount = map->EnemyObjects(b.sector);
+        s.enemyCount = map->MartianInfestation(b.sector, res.Human());
         s.pod = map->TakePod(b.sector);
         s.loadScenery = ini.GetBool("Debug", "Load scenery", true);
         s.units = &map->Units();
@@ -1139,6 +1144,7 @@ namespace wow
         s.showShadows = ini.GetBool("Options", "Show vehicle shadows", true);
         s.wofBrightness = ini.GetFloat("Game", "WOF Brightness", 2.5f);
         s.zoomerSpeed = ini.GetFloat("Tweak", "Battlemap Zoomer Speed", 2.5f);
+        s.lookScale = ini.GetFloat("Tweak", "Audible radius multiplier", 1.0f);
         s.waterTwinkles = ini.GetInt("Tweak", "Water twinkles per frame", 20);
         s.isoBrightness = ini.GetFloat("Game", "ISO Brightness", 0.5f);
         s.showSmoke = ini.GetBool("Options", "Show Smoke & particles", true);
@@ -1215,7 +1221,7 @@ namespace wow
         // 0x41B360 (from EnterBattleMap 0x439EB4): the briefing sound faded out over 120 ticks (0x464EB0, 0x78)
         sound.FadeOut(briefingSound, 120);
         briefingSound = 0;
-        lastEnemyCount = map->EnemyObjects(map->Briefing().sector);
+        lastEnemyCount = map->MartianInfestation(map->Briefing().sector, res.Human());
         battle->Begin();
         Show(std::move(battle));
         return true;

@@ -851,7 +851,7 @@ namespace wow
     }
 
     // The vehicles' vt+0xBC (0x4929A0): whether an object gets in the way. Not one with +0xB8 bit 2; for a type whose
-    // +0x52 is 3 (4), not a crushable one whose renderer is under 0x30 (0x20) tall (+0x2E less +0x2C); then one with
+    // +0x52 is 3 (4), not one under 0x30 (0x20) tall (+0x2E less +0x2C) that isn't crushable; then one with
     // +0xB8 bit 0 does; else, on a bridge link, not the bridges' pieces (0x1BC-0x1BF, 0x1CC-0x1CE) nor 0x1C0; else
     // whether it has +0xB8 bit 1.
     // *Provisional*: every unit counts as +0xB8 bit 0 (so the last two never come into it), and the renderer's height
@@ -860,10 +860,12 @@ namespace wow
     {
         auto t = setup.units->find(u.type);
         const int moveClass = t == setup.units->end() ? 0 : t->second.field52;
-        if ((moveClass == 3 || moveClass == 4) && Crushable(o))
+        // a low object (0x492A04) is passed over unless it's crushable (0x492A12: vt+0xD8 true goes on to the
+        // test), so the mines are hit and then crushed or set off (0x492350)
+        if (moveClass == 3 || moveClass == 4)
             if (auto ot = setup.units->find(o.type); ot != setup.units->end() && ot->second.field28)
                 if (const IndexedImage* image = res.GetFrame(ot->second.field28, 0))
-                    if (image->height < (moveClass == 3 ? 0x30 : 0x20)) return false;
+                    if (image->height < (moveClass == 3 ? 0x30 : 0x20) && !Crushable(o)) return false;
         return true;
     }
 
@@ -1171,5 +1173,8 @@ namespace wow
             left = count - groupArrived[size_t(g)];
         }
         Post808B(u, 1, 9 * left + 60);
+        // 0x491A9C: the bridge link dropped (+0x18C = 0), so vt+0x144 no longer counts it as going and it stops; its
+        // deck height (+0x84) stays, so it stands on the deck
+        d.link = 0;
     }
 }

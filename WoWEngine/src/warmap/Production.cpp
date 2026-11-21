@@ -250,7 +250,6 @@ namespace wow
             if (c.unfinished) { c.unfinished = false; c.finishedCount = std::min(c.count, c.finishedCount + 1); }
             c.progress = 1.0f;
         }
-        if (sector >= 1 && sector <= warmap::SectorCount) finished[size_t(sector)].push_back(o.Type());
         const int type = o.Type();
         const bool post = type == (sector == 3 ? 830 : 120) || type == (sector == 30 ? 278 : 58);
         if (post)
@@ -459,7 +458,7 @@ namespace wow
         if (n >= u->second.maxPerSector) return false;
         if (u->second.prerequisite)
         {
-            const auto& here = finished[size_t(sector)];
+            const std::vector<int> here = Finished(sector);
             if (std::find(here.begin(), here.end(), u->second.prerequisite) == here.end()) return false;
         }
         return it->second.queue.entries.size() < 32;
