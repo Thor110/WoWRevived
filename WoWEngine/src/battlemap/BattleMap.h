@@ -302,6 +302,9 @@ namespace wow
         int MaxHealth(int type) const;                          // 0x47DA20: +0x4A with the armour modifiers
         void Damage(size_t unit, int amount);                   // vt+0xE0, 0x48AB20
         void Die(size_t unit);                                  // 0x80A0
+        void KeyBuildingLost(bool players);                     // 0x48AC50's key building case
+        void StaggerDeaths(int group, int at);                  // 0x47CEE0's 0x80A0
+        bool forfeit = false;                                   // byte_4E9B94: the key building lost with no battle on
         void Explode(int type, int x, int y, int z, int firer = -1, int attacker = 0);  // 0x488070 + 0x488350 / 0x488200 (firer: a unit's group)
         static bool IsExplosion(int type);
         static bool IsAreaBlast(int type);
@@ -459,6 +462,7 @@ namespace wow
         // Each group's periodic stance work (0x483B70: +0x58 counting to +0x5C, 90): Roam and Attack (3) wanders to a
         // random point; Attack and Retaliate (2, 1) go back home (+0x60 / +0x64) if more than 400 from it
         std::vector<int> groupTicks, groupHomeX, groupHomeY;
+        std::vector<int> groupInterval;                         // +0x5C, the think interval (the members' +0x92 averaged)
         std::vector<bool> groupBusy;                            // +0x1D8 bit 0 without a target: moving (an order, Avoid's run, Retreat)
         std::vector<bool> groupSelfMove;                        // +0x1D8 bit 2: that move is the group's own (0x483B70's roam / home)
         // 0x80F4 posted to an object (0x4355A0 with its delay): the update it arrives, the object, the firer, the level
@@ -475,6 +479,7 @@ namespace wow
         // The war map objects that left by a reinforcement point, and the sector each went to
         std::vector<std::pair<int, int>> RetreatedRefs() const;
         bool Fought() const { return battleOn; }
+        bool Forfeited() const { return forfeit; }               // byte_4E9B94 (0x48ACEF)
         // 0x80F4 taken by the other side's key building (0x495CB0 -> the sector, 0x43B920): the level (+0x128, 1-3;
         // 0 for none) and whether the player's side fired it (dword_4E9B60)
         int ControlLevel() const { return controlLevel; }

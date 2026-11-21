@@ -78,6 +78,43 @@ namespace wow
         Explode(t->second.field98, int(u.x), int(u.y), z);
         const bool key = u.type == (setup.sector == 3 ? 0x33E : 0x78) || u.type == (setup.sector == 30 ? 0x116 : 0x3A);
         if (key && setup.sound) setup.sound->Play(u.players ? 0x112 : 0x13B, 1.0f);
+        if (key && t->second.category != 1 && u.group >= 0) KeyBuildingLost(u.players);
+    }
+
+    // vt+0x78 (0x48AC50) on the battle's key building (not a vehicle, with a war map object): its sector is told 0x80AA
+    // with whether it was the player's (0x43B99C: to that side's construction and resource lists, +0x54 / +0x5C or
+    // +0x58 / +0x60); and where the kind is 3 or 0x1E (the home sectors), with no battle on (the report's +0x54)
+    // byte_4E9B94 is set (the game forfeited), and the sector is told 0x8136 "DESTROYING VEHICLES" (0x43B95F: that
+    // side's unit list, +0x4C / +0x50). Each war map object in those lists (0x428D70, cases 0x80AA and 0x8136) posts
+    // 0x80A0 to its battle units one update on (0x429410), and the list staggers them (StaggerDeaths).
+    // *Provisional*: the kind is taken as the sector.
+    void BattleMap::KeyBuildingLost(bool players)
+    {
+        auto wipe = [&](int kind) {
+            for (size_t g = 0; g < setup.groups.size(); g++)
+                if (setup.groups[g].Players() == players && setup.groups[g].list / 2 == kind) StaggerDeaths(int(g), ticks + 1);
+        };
+        wipe(1);    // 0x80AA: constructions,
+        wipe(2);    // then resources
+        if (setup.sector == 3 || setup.sector == 30)
+        {
+            if (!battleOn) forfeit = true;
+            wipe(0);    // 0x8136: units
+        }
+    }
+
+    // 0x47CEE0: a list told 0x80A0 posts it to each member (0x4355A0), the first 30 updates on and each next one
+    // 30 + rand() % 30 after the one before
+    void BattleMap::StaggerDeaths(int group, int at)
+    {
+        int delay = 30;
+        for (Unit& m : units)
+        {
+            if (m.group != group || m.health <= 0) continue;
+            const int when = at + delay;
+            if (m.dieAt < 0 || when < m.dieAt) m.dieAt = when;
+            delay += random::Rand() % 30 + 30;
+        }
     }
 
     // 0x488070 with a WExplosion (0x488180): +0xC8 the type's +0x44 (its radius), +0xCA its +0x4A (its power).

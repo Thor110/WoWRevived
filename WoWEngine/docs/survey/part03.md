@@ -178,7 +178,7 @@ Non-critical entries just run the handler. 0x41E730 (cmd 0x8122) pops the next q
 | # | Name | Handler | Critical test | Behaviour |
 |---|---|---|---|---|
 | 0 | BattleInSector | 0x41E850 | always | `sector+0x124 = 1`. Own sector: dialog 0x4AF "Enemy have attacked" / button 0x4B2 "Defend", sound 0x138. Else dialog 0x4B0 "Invasion commencing" / 0x4B1 "Attack", sound 0x139 (0x13A for sectors 3 and 30) with volume from `player->0x4392E0`. Cmd 0x8072. Message "Battle in %s" (0x210). |
-| 1 | ConstructionCompleted | 0x41EDC0 | 0x4EA088 | "%s completed." (0x4B4 + name 0x440720). Switches to the Construction view (Resource view if the type's `0x51A100 == 2`) and opens a dialog if the setting is on. Sound 0x12F unless class 7. |
+| 1 | ConstructionCompleted | 0x41EDC0 | 0x4EA088 | "%s completed." (0x4B4 + name 0x440720). Switches to the Resource view, or the Construction view when the type's `0x51A100 == 2` (corrected by the routine review; the engine does this) and opens a dialog if the setting is on. Sound 0x12F unless class 7. |
 | 2 | UnitCompleted | 0x41ECD0 | 0x4EA08C | "%s unit completed." (0x4B3). Sound 0x131 if `0x51A148 == 1`, else 0x1C0. |
 | 3 | ArrivedInSector | 0x41EAE0 | 0x4EA094 | "Vehicle/s arrived in %s" (0x211), sound 0x120 |
 | 4 | ResearchCompleted | 0x41EB90 | 0x4BA0DC | 0x46B + item name, "%s .. %s"; `0x414700(0x46B,0)` |

@@ -851,7 +851,9 @@ namespace wow
             std::optional<std::vector<int>> lost;
             std::vector<std::pair<int, int>> retreated;
             int controlLevel = 0;
-            bool controlByPlayer = false;
+            bool controlByPlayer = false, forfeit = false;
+            for (Screen* sc : { battleMap.get(), screen.get() })
+                if (auto* bm = dynamic_cast<BattleMap*>(sc); bm && bm->Forfeited()) forfeit = true;
             for (Screen* sc : { battleMap.get(), screen.get() })
                 if (auto* bm = dynamic_cast<BattleMap*>(sc); bm && bm->Fought())
                 {
@@ -868,7 +870,7 @@ namespace wow
             {
                 sound.FadeOut(briefingSound, 30);
                 briefingSound = 0;
-                map->FightBattle(lost ? &*lost : nullptr, lost ? &retreated : nullptr, controlLevel, controlByPlayer);
+                map->FightBattle(lost ? &*lost : nullptr, lost ? &retreated : nullptr, controlLevel, controlByPlayer, forfeit);
                 auto d = std::make_unique<Debriefing>(res, BattleColoursFromIni(), map->Debriefing(), ini.GetInt("Debriefing", "Delay", 300));
                 const int h = sound.Play(d->Sound());   // +0x98, faded in over 60 ticks (0x464E60)
                 sound.FadeIn(h, 60);

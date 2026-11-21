@@ -87,6 +87,10 @@ namespace wow
         }
         for (const Unit& u : units) Occupy(u.type, u.x, u.y);
         SetUpGrounds();
+        // the group's stance (+0x54, 0x4802E0) is its members' +0xD8 averaged (ftol(sum + 0.5) / n), but the game makes
+        // the groups (0x4216E0, from 0x439A8D) before deployment starts the members (0x4222C0's vt+0x14 = 0x495740,
+        // which sets +0xD8 from record 56), and its pool allocator (0x440740) reuses freed blocks uncleared, so what it
+        // averages is whatever was left there. *Provisional*: Retaliate (1), the usual default.
         groupStance.assign(setup.groups.size(), 1);
         // the groups' targets, modes and engagement ranges (0x4802E0: +0x4E, from 100000 the least of each member's
         // sight (+0x48) and its vt+0xB0, its guns' longest record 12 +0 range, or 10000 with none (0x495850))
@@ -104,6 +108,16 @@ namespace wow
             r = std::min({ r, ObjOjd::Vision(t->second, setup.armour), range });
         }
         groupTicks.assign(setup.groups.size(), 0);
+        // each group's think interval (+0x5C, 0x4802E0): its members' type +0x92 words (record 53) summed, over the
+        // count (ftol; 0x480533, 0x4805B5-0x4805E1)
+        groupInterval.assign(setup.groups.size(), 90);
+        {
+            std::vector<int> sum(setup.groups.size(), 0), n(setup.groups.size(), 0);
+            for (const Unit& u : units)
+                if (u.group >= 0 && size_t(u.group) < sum.size())
+                    if (auto t = setup.units->find(u.type); t != setup.units->end()) { sum[size_t(u.group)] += int16_t(t->second.field92); n[size_t(u.group)]++; }
+            for (size_t g = 0; g < sum.size(); g++) if (n[g]) groupInterval[g] = sum[g] / n[g];
+        }
         groupHomeX.assign(setup.groups.size(), 0);
         groupHomeY.assign(setup.groups.size(), 0);
         groupBusy.assign(setup.groups.size(), false);
@@ -1621,11 +1635,11 @@ namespace wow
     // and the box "Sector Lost" (0x49D) when the player held the sector (the report's +0x6C), else "Attack Failed"
     // (0x49B), its button 0x76. The other side's at 0: the report filled, and "Invaders Repelled!" (0x49C) with
     // 0x8024 when the player held it, else "Attack Successful!" (0x49A), with 0x76 if that ends the game (+0x55:
-    // sector 3 taken by the Humans with no Martian base left, dword_4EB05C, or London by the Martians, dword_4EC49C),
+    // after the owner is recomputed, sector 3 the Humans' (dword_4EB05C) or London the Martians' (dword_4EC49C)),
     // else 0x8024.
     // *Provisional*: the units are what's counted (the game counts every object with a side in the battle's list);
     // a construction's war map object is taken as gone with its last battle unit; the report's +0x6C is taken as the side that held
-    // the sector as the battle began; the game's end is taken as sector 3 won by a Human player or 30 by a Martian.
+    // the sector as the battle began;.
     void BattleMap::CheckBattleEnd()
     {
         if (!battleOn || battleDecided) return;

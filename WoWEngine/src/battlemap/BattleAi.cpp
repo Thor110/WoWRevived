@@ -186,7 +186,7 @@ namespace wow
         aiThreats.erase(std::remove_if(aiThreats.begin(), aiThreats.end(), [&](const AiThreat& t) { return t.group == group; }), aiThreats.end());
     }
 
-    // 0x483B70's periodic part, every group: +0x58 counts up past +0x5C (90), then (vt+0x38 first):
+    // 0x483B70's periodic part, every group: +0x58 counts up past +0x5C (the members' +0x92 averaged), then (vt+0x38 first):
     //  - Roam and Attack (3), not attacking (+0x1D8 bit 0) and with members: to x = rand() % (the width - 200) + 100,
     //    y = rand() % (the height - 200) + 100 (0x482510);
     //  - Attack or Retaliate (2, 1), not attacking and with members: its centre (each member's whole position summed,
@@ -198,7 +198,7 @@ namespace wow
     {
         if (size_t(g) >= groupTicks.size()) return;
         const int count = groupTicks[size_t(g)]++;
-        if (count <= 90) return;
+        if (count <= groupInterval[size_t(g)]) return;
         groupTicks[size_t(g)] = 0;
         const int stance = groupStance[size_t(g)];
         const bool attacking = groupTargets[size_t(g)].target != 0 || groupBusy[size_t(g)];

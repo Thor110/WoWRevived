@@ -42,7 +42,7 @@ namespace wow
         // 0x71 / 0x98 -> 0x97: the battle's end. With the battle map's losses (the war map objects whose battle units
         // all went), those objects go; without (no battle map), it's settled here (*provisional*)
         void FightBattle(const std::vector<int>* lost = nullptr, const std::vector<std::pair<int, int>>* retreated = nullptr,
-                         int controlLevel = 0, bool controlByPlayer = false);
+                         int controlLevel = 0, bool controlByPlayer = false, bool forfeit = false);
         // Each sector as a reinforcement points' source for the battle map (0x43D150): whether the player holds it and
         // whether its holder's command building is there finished (0x43C990)
         struct ReinforcementSource { int sector = 0; bool players = false, hq = false; };
@@ -445,6 +445,7 @@ namespace wow
         std::function<bool(const char*, bool)> eventOption;
         bool Option(const char* name, bool on) const { return eventOption ? eventOption(name, on) : on; }
         bool stickyPopup = false;   // [Modern] "Sticky popup menus": the popup stays open once the right button's let go
+        bool forfeited = false;     // byte_4E9B94: the battle map's key building lost with no battle on (0x48ACEF)
         struct QueuedEvent { int event, param; std::string text; };
         std::deque<QueuedEvent> eventQueue;
         bool boxUp = false;              // byte_4EA0A0

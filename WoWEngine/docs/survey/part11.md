@@ -228,7 +228,7 @@ Vtable 0x4AD968, base 0x48B480, factory ranges routed to 0x4479B8.
 |---|---|---|
 | 0x487B00 | `WAreaBlast` ctor (vtable 0x4ADC38, base 0x488180) | Factory cases 718–720. |
 | 0x487B50 | `WAreaBlast::Detonate` | Collisions query at its radius (+0xAC), excluding the firer's side (firer id +0xCC). By its own type +0x20: 0x1F8/0x21E/0x244/0x32F → **0x80F5** level 1; 0x1F9/0x21F/0x245 → level 2; 0x1FA/0x220/0x246 → level 3. 0x32C/0x32D/0x32E → delayed **0x80F4**(firer, level 1/2/3) after 120/240/360 ticks. 0x330/0x331 → 0x80F5 2/3. 0x332–0x334 → **0x80F6** level 1–3 plus damage (vcall +0xC0(self, 1.0)). 0x335–0x337 → **0x80F7** level 1–3. 0x2CE–0x2D0 damage only targets with height < 0 (submerged). 0x314–0x316 damage only kind-1 targets. Ability mapping *(guess)*: 0x80F5 = Freeze, 0x80F4 = Scare (timed), 0x80F6 = Pulse/Shock, 0x80F7 = Control. |
-| 0x487F50 | `SpawnImpactEffect(size,x,y,h,owner,firer)` | size ≤ 64. Picks the effect type from a table by the terrain under (x,y): water → unk_4D0450, land 1–3 → unk_4D0340, other → unk_4D0230, indexed [size−1]. Creates it (0x446B30) and sets +0xC4 owner, +0xCC firer, position, init, add to world. |
+| 0x487F50 | `SpawnImpactEffect(size,x,y,h,owner,firer)` | size ≤ 64. Picks the effect type from a table (corrected by the routine review, docs/REVIEW.md): size over 64 → unk_4D0450; else by the terrain under (x,y), 1-3 (water) → unk_4D0340, other → unk_4D0230; indexed [size−1]. Creates it (0x446B30) and sets +0xC4 owner, +0xCC firer, position, init, add to world. |
 | 0x488070 | `SpawnObject(type,x,y,h,owner,firer)` | Same as above without the terrain table. Callers: 0x48CDE0, 0x48F620, 0x492350. |
 | 0x4880F0 | `SpawnObjectEx(..., c8, ca)` | Also sets +0xC8/+0xCA (damage / radius). |
 | 0x488180 | `WExplosion` ctor (vtable 0x4ADD20, base 0x488FB0) | +0xC8 = unit table +0x44 (damage), +0xCA = +0x4A (radius). Factory cases 715–717. |
@@ -383,7 +383,7 @@ SC/SB/SA variant), +0xA1 byte palette, +0xA2 word ambient/engine sound, +0xAC by
 | dword_4BA058 = 40, dword_4BA05C = 4 | Scroll divisor, margin |
 | flt_4F0510[8], dword_4F04C0[], unk_4F6E38/dword_4F6E78[cat×17] | Movement category tables (slope base, max slope, terrain costs) — filled from OBJ.ojd *(guess)* |
 | word_4F2F10.. (16 bytes a weapon: +6 impact size, +0xE extra height) | Weapon table |
-| unk_4D0230 / 4D0340 / 4D0450 | Impact effect type tables (other / land / water) |
+| unk_4D0230 / 4D0340 / 4D0450 | Impact effect type tables (land / water / over size 64) |
 
 ---
 

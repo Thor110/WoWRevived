@@ -1392,8 +1392,9 @@ namespace wow
     }
 
     void WarMap::FightBattle(const std::vector<int>* lost, const std::vector<std::pair<int, int>>* retreated,
-                             int controlLevel, bool controlByPlayer)
+                             int controlLevel, bool controlByPlayer, bool forfeit)
     {
+        if (forfeit) forfeited = true;
         for (auto& r : research) if (r) r->UpdateTriggers(encountered); // 0x41A094, on the way to the battle map
         const int s = battleSector;
         debriefing = DebriefingInfo{};
@@ -1528,7 +1529,7 @@ namespace wow
     void WarMap::ReturnFromBattle()
     {
         for (auto& r : research) if (r) r->UpdateTriggers(encountered); // the view's set-up, 0x418D17
-        if (debriefing.fought) AnnounceBattleResult();
+        if (debriefing.fought || forfeited) AnnounceBattleResult();   // (0x808D comes either way; 0x41AED0 checks the forfeit first)
         battleSector = 0;
         NextEvent();
     }
@@ -1547,11 +1548,18 @@ namespace wow
         Log(text);
     }
 
-    // 0x41AED0: a winner and a loser: the player won: EndGameWon (event 18, with the other side's home sector)
+    // 0x41AED0: forfeited, EndGameLost (below). Otherwise a winner and a loser: the player won: EndGameWon (event 18, with the other side's home sector)
     // if the game is over, else sound 0x13C; lost: EndGameLost (19) if over, else 0x140. No winner: 0x13D or
     // 0x13F.
     void WarMap::AnnounceBattleResult()
     {
+        // the game forfeited (byte_4E9B94, set on the battle map): EndGameLost with the player's home sector
+        // (30 Human, 3 Martian), the flag and the report's +0x54 cleared (0x41AED8-0x41AF01)
+        if (forfeited)
+        {
+            RaiseEvent(EndGameLost, res.Human() ? 30 : 3);
+            return;
+        }
         const int player = res.Human() ? 0 : 1;
         if (report.winner != report.loser)
         {
@@ -1856,10 +1864,12 @@ namespace wow
             endingCode = EndCode();
             endingDelay = 30 + 150; // (the sound's length isn't known here: 5 seconds taken)
             break;
-        case EndGameLost: // 0x41F4B0: the world stops and the game hears 0x80FE after 30 ticks
+        case EndGameLost: // 0x41F4B0: the world stops and the game hears 0x80FE after 30 ticks; forfeited
+                          // (byte_4E9B94), the ending is the player's defeat, 0x80FB Human or 0x80FD Martian
             SetView(1);
             ending = true;
-            endingCode = EndCode();
+            endingCode = forfeited ? (res.Human() ? 0x80FB : 0x80FD) : EndCode();
+            forfeited = false;
             endingDelay = 30;
             break;
         case ResourceWarning: case ResourceAlert: // 0x41F280 / 0x41F340

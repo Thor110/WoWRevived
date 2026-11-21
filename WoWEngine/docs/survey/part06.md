@@ -232,7 +232,7 @@ Functions:
 | 0x43A480 | `CentreOnSelection` (Home) | Group bounds (vtbl+0x30), projected to the screen; makes a Zoomer (0x446690, 0x44 bytes) with speed `[Tweak] Battlemap Zoomer Speed` (0x4F744C, default 2.5) |
 | 0x43A5E0 / 0x43A5F0 | Landscape width / height | +0x88 +0x1C / +0x20 |
 | 0x43A670 | `WaterTwinkles` | Picks `[Tweak] Water twinkles per frame` (0x4F76E4, default 20) random cells, 20 px in from the edge. On water depth 1–3 (landscape cell byte +8) it spawns, with chance `rand() >= depth*10000-10000`, object 0x3CA + rand()%3 with scale 0.5, 0.5, life 100 and +0x4C+0x26 = 8. It only runs when byte 0x4B880C is set. |
-| 0x43A800 | `ComputeBattleResult` | Recomputes the owner and fills the battle info 0x4E9B7C. It sets the "game won" flag +0x55 when sector 3 is taken with 0x4EB05C == 0 (no Martian base), or sector 30 with 0x4EC49C == 1 (London). Calls vtbl+0x78 on every object in 0x59DDC8[0x59DDC0]. |
+| 0x43A800 | `ComputeBattleResult` | Recomputes the owner and fills the battle info 0x4E9B7C. It sets the "game won" flag +0x55 when, after the owner is recomputed, sector 3 belongs to the Humans (0x4EB05C, its owner, 0) or sector 30 to the Martians (0x4EC49C, 1) (corrected by the routine review: 0x4EB05C isn't "no Martian base"). Calls vtbl+0x78 on every object in 0x59DDC8[0x59DDC0]. |
 | **0x43A980** | `Tick` | Updates the fog when `0x4D2558 % 0x4EA614 == 0`, runs the water twinkles, then checks for the end of the battle (below). |
 | 0x43AC10 / **0x43AC40** | `HasRoomFor(type,…)` / `HasRoom(isLand, extra)` | Room check: own land units + 0x4F86B8[n] + units en route (0x420060) + extra < `Max units in sector` (0x4EA1B4); boats + 0x4F76F0[n] + … < `Max boats in sector` (0x4EA1CC) |
 | **0x43ADA0** | `HandleMessage` | See 4.1 |

@@ -66,19 +66,21 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
 - [ ] **The route save format** (probable; check with a save holding a unit in transit): +0x34 is a u32 entry count,
       the entries follow untagged, each with segment, index, five floats and a byte (0x425A60 / 0x427F70 /
       0x42B250); `SaveFile.cpp` reads a float and a WMOB-tagged list.
-- [ ] **Group stance and think interval** are the members' averages (0x4802E0: stance ftol(mean + 0.5), interval
+- [x] **Group stance and think interval** (update 104: the interval is averaged; the stance, traced, is left at 1: the
+      groups are made before deployment starts the members, and the pool allocator doesn't clear, so the game averages
+      leftovers) are the members' averages (0x4802E0: stance ftol(mean + 0.5), interval
       the mean of type +0x92), not 1 and 90. *Trace the call order first* (whether +0xD8 is set when it runs).
 - [ ] **Object ids** start at 0, lowest free first, freed ones reused last in first out (0x4A3350); the engine counts
       up from 1. (They appear in saves and order packets.)
 - [ ] **WOF pieces of equal depth**: the game sorts with `qsort` (unstable, 0x49ED32); the engine's stable sort can
       order them differently.
 - [ ] Debug only: the reinforcement table with `byte_4D1279` (0x43D16D).
-- [ ] Docs: `docs/survey/part11.md` §2.9 (0x487F50's tables), part08 §2.6 (the 0xFBEF mask), part06 (+0x55 reading),
+- [x] Docs (update 104): `docs/survey/part11.md` §2.9 (0x487F50's tables), part08 §2.6 (the 0xFBEF mask), part06 (+0x55 reading),
       part03 (0x41EDC0's view choice). (The stale *Provisional* at `Driving.cpp:44` is fixed, update 103.)
 
 ## 2. Game rules missing (they change how a game plays)
 
-- [ ] **Destroying the key building** ends the battle and the game (0x48AC50: 0x80AA to the owner; kinds 3 / 0x1E
+- [x] **Destroying the key building** (update 104; the victory delay's sound length still 150 assumed) ends the battle and the game (0x48AC50: 0x80AA to the owner; kinds 3 / 0x1E
       set `byte_4E9B94` and send 0x8136 "DESTROYING VEHICLES"); the war map's forfeit (0x41AED0 / 0x41F4B0: event 19
       with sector 30 / 3, codes 0x80FB / 0x80FD; the victory delay is sound 0x13E's length + 30).
 - [ ] **Leaving a battle** (0x439ED0): a holder that lost its command building has its units' factory tasks cancelled
@@ -94,7 +96,7 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
 - [ ] **Routes keep their progress through a save** (0x4217E0, 0x4257C0; with the save format above); counters
       slide to the route start at `Clunting Speed` (0x428020 / 0x425080) rather than jump, and Clunting Speed isn't
       a travel speed.
-- [ ] **Staggered deaths** of a whole list (0x47CEE0: 30, then +30 + rand() % 30 each).
+- [~] **Staggered deaths** of a whole list (in for the key building's loss, update 104; Abandon goes at once as the game's 0x8067 does) (0x47CEE0: 30, then +30 + rand() % 30 each).
 - [ ] **Damage Layer**: scorch kept per sector in the save (DMGL), fading 2 a byte each battle entry (0x404EA0-
       0x4051B0, 0x439892), cleared by `shym`; needs the FFUH encoder (0x415520 / 0x4157E0 / 0x415720).
 - [ ] **Fog of war** (0x4344C0-0x434DF0: the `[BattleMap]` keys, two byte maps, 19 stamps, Reveal from units every

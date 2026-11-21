@@ -698,7 +698,7 @@ battle units too; one with no battle places is counted from its group.) The play
 (0x432520) says "Sector Lost" (0x49D) if the player held the sector (the report's +0x6C), else "Attack Failed"
 (0x49B), its button 0x76 (back to the war map). The other side's at 0: the report filled, and "Invaders Repelled!"
 (0x49C) with 0x8024 if the player held it, else "Attack Successful!" (0x49A) with 0x76 if that ends the game (+0x55:
-sector 3 taken by the Humans with no Martian base left, dword_4EB05C, or London by the Martians, dword_4EC49C), else
+after the owner is recomputed, sector 3 the Humans', dword_4EB05C, or London the Martians', dword_4EC49C, 0x43A917-0x43A94B), else
 0x8024. 0x8024 only closes the box: the battle map goes on, its popup offering Return to Warmap (one side gone).
 (byte_4E9B94, set, sends 0x76 after 150 updates.) **The report** (0x43A800): the sector (+0x50), each side's lists
 counted (0x421740 / 0x4216D0 / 0x421790 / 0x421F90 into +0x10..+0x4C), the winner (+0x68) the sector's holder
@@ -718,8 +718,7 @@ it; the popup then had Return to Warmap, and the war map (seeing only the player
 RETURNING TO WAR ROOMS.
 
 *Provisional*: the units are what's counted (not every object with a side), a construction's war map object taken as
-gone with its last battle unit; the report's +0x6C is taken as the side holding the sector as the battle began; the
-game's end as sector 3 won by a Human player or 30 by a Martian; the war map's taking of the losses isn't checked
+gone with its last battle unit; the report's +0x6C is taken as the side holding the sector as the battle began;  the war map's taking of the losses isn't checked
 end to end (no save with a contested sector to hand); nor is Infiltrate's intel (0x80F4's +0x128) reaching the war
 map.
 
@@ -728,6 +727,19 @@ selection then holding just that one (0x4216D0 = 1), the player's (+0x24 0) vehi
 type's voice (byte_51A190). A fresh selection, by click or box, so speaks once, by its first object
 (`SelectionSpeech`); in the test both a box over the lorries and a click on one said it. *Provisional*:
 byte_4D2554 is taken as set.
+
+**Losing the key building** (vt+0x78 = 0x48AC50 on a non-vehicle with a war map object that's the battle's key
+building, by the same test as above): its sector is told 0x80AA with whether it was the player's (0x43B99C: that
+side's construction and resource lists, +0x54 / +0x5C or +0x58 / +0x60). In the home sectors (kind 3 or 0x1E) and with
+no battle on (the report's +0x54) byte_4E9B94 is set first, the game forfeited; then the sector is told 0x8136
+"DESTROYING VEHICLES" (0x43B95F: that side's unit list, +0x4C / +0x50). Each war map object in those lists answers
+either message (0x428D70) by posting 0x80A0 to its battle units one update on (0x429410), and a list given 0x80A0
+(0x47CEE0) posts it to each member, the first 30 updates on and each next one 30 + rand() % 30 after the one before.
+So losing it takes that side's constructions and resources in the sector with it, and in a home sector its units too.
+Back on the war map, the forfeit (0x41AED0) raises EndGameLost with the player's home sector (30 Human, 3 Martian),
+whose ending (0x41F4B0) is the player's defeat, 0x80FB Human or 0x80FD Martian. In the test (London viewed, no battle,
+Parliament made to die at update 30) the flag was set and the five lorries went at updates 61, 119, 165, 224 and 278.
+*Provisional*: the kind is taken as the sector; the forfeit isn't checked end to end on the war map.
 
 ## The modes and specials (0x4817C0, 0x481CA0, 0x496920, 0x482570; `battlemap/Weapons.cpp`)
 
