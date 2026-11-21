@@ -1034,8 +1034,9 @@ building's own model and its parts go with it when it's destroyed.
 one child, 0x48A7D0 (with the part count less 1) gives how many to lose: the children less 1, less ftol(the part
 count x the health / its most), at most the part count less 1. For each, while it has more than one child, its
 last child, if its health is over 0, is sent 0x80A0 (its destruction effect, type +0x98, at its point). The dying
-child is still on the list until it's gone, so each hit takes at most one part, the last made: the Factory loses
-its chimneys first, then its wings. *Provisional*: a lost part's light (a light part) stays on the ground; the
+child goes from the list at once (0x8057 -> the parent's 0x47F220), so a big hit takes several, the last made
+first: the Factory loses its chimneys first, then its wings. The part's explosion has the building as its firer, so
+it spares the building and its group (0x488200). *Provisional*: a lost part's light (a light part) stays on the ground; the
 IOB parts' offsets aren't turned with a heading (buildings don't turn).
 
 **Being built** (0x48E9D0): the building's state is its war map object's +0x7C / +0x78 (read through +0x48; the

@@ -110,6 +110,8 @@ namespace wow
             const bool unfinished = double(progress) <= 0.9999;
             if (IsBuilding(u) && unfinished) u.health = std::max(1, int(float(u.health) * progress));
             if (auto d = setup.units->find(u.type); d != setup.units->end()) u.stance = d->second.field43;   // 0x495740
+            // and the look round's count (+0xDA) rand() % 30 (0x4957A2), so the units don't all look on one update
+            u.scanCount = random::Rand() % 30;
             SetUpGuns(u);
             // 0x48F7C0: an emplacement not on a vehicle whose construction is under 1.0 has no guns (+0x3C 0)
             if (IsEmplacement(u.type) && progress < 1.0f) u.guns.clear();
@@ -1753,6 +1755,8 @@ namespace wow
         AiUpdate();
         for (size_t g = 0; g < groupTicks.size(); g++) GroupTick(int(g));
         ChaseTargets();
+        // the world list (0x47D610) in start order: each unit's whole update (0x4967E0 / the vehicles' 0x4913B0), then
+        // its children's, its turrets and guns, made as it started (0x47EE10), before the next unit's
         bool moved = false;
         for (size_t i = 0; i < units.size(); i++)
         {
@@ -1775,10 +1779,6 @@ namespace wow
             LookRound(i);
             Smoulder(i);
             moved |= units[i].x != x || units[i].y != y;
-        }
-        // the guns (their own updates, each a child of its unit or its turret)
-        for (size_t i = 0; i < units.size(); i++)
-        {
             // 0x47F630 from the object's update (0x48B3D0), unless +0xB8 bit 3 (vt+0x9C): with a renderer (+0x4C)
             // and +0xB8 bit 5 clear, its type is met (byte_51A19C, the research triggers' 0x45B9D0)
             if (!units[i].hidden) encountered.insert(units[i].type);   // (*provisional*: bit 5 taken as hidden)

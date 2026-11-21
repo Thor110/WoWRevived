@@ -59,11 +59,19 @@ Tick each item here with the update that fixes it.
       the target, clears bit 0 and speaks only for a player's order; arrivals per group (+0x56, reset at the group's
       count, so they carry over between orders); the move's counts from the whole group (0x4216D0). Left: the
       selection as a group of its own (0x439000 / 0x4480F0) and the rest of +0x1D8.
-- [ ] **S5. Per-object updates in start order** (the world list, 0x43A980 / 0x47D610): each object does its whole
+- [x] **S5. Per-object updates in start order** (the world list, 0x43A980 / 0x47D610): each object does its whole
       update in turn, instead of the engine's passes (all driving, then all guns...). Look-round timers start at
       rand() % 30 (0x4957A2). [battle-setup 4, 14, 15, A; combat A5]
+      *Update 129*: each unit's whole update, then its turrets' and guns' (its children, made as it started) and its
+      pose, before the next unit's, in place of a driving pass then a guns pass; the look round's count starts at
+      rand() % 30. The groups, the computer player and the scenery keep their places before and after the units, as
+      the world list has them (made before deployment / after). Left: GroupTick and the chase as one group update.
 - [ ] **S6. Parent / child objects for parts.** Guns, turrets, building parts, lights and tree circles as children
       with a parent link and offsets, removed from the parent's list as they go. [combat 4, A1, A3; data A]
+      *Update 129 (part)*: a building's lost parts come off its list at once, so one big hit takes several (0x48EF80
+      with 0x47F220), and each part's explosion has the building as its firer, sparing it and its group (0x489FA0 ->
+      0x488200); tested: 900-damage hits on a Factory take two parts each and its health falls by 900 each.
+      Left: guns and turrets with positions of their own, part lights linked to their parts, tree circles as children.
 
 ## Phase 2: high-severity behaviour (small, independent)
 

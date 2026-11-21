@@ -56,9 +56,9 @@ namespace wow
     // A building's vt+0xE0 (0x48EF80), after 0x48AB20: with +0xB8 bit 8 (set on every object, 0x47D7D4) and more
     // than one child, 0x48A7D0 with its part count less 1 gives how many to lose: the children less 1, less
     // ftol(the part count x the health / its most, 0x47DA20), at most the part count less 1. For each, while it
-    // has more than one child, the last child (+0x70's tail), if its health is over 0, is sent 0x80A0. The child
-    // isn't off the list until it's gone, so a hit takes one part, the last made: the Factory's chimneys first.
-    // A part's 0x80A0 (0x489FA0) makes its type's destruction effect (+0x98) at its point.
+    // has more than one child, the last child (+0x70's tail), if its health is over 0, is sent 0x80A0, which takes
+    // it off the list at once: a big hit takes several, the last made first (the Factory's chimneys).
+    // A part's 0x80A0 (0x489FA0) makes its type's destruction effect (+0x98) at its point, its parent the firer.
     // *Provisional*: the part's light (a light part) stays on the ground.
     void BattleMap::LoseParts(size_t index)
     {
@@ -72,29 +72,35 @@ namespace wow
         int lose = (u.partsLeft - 1) - int(float(parts) * ratio);
         if (lose >= parts) lose = parts - 1;
         if (lose <= 0) return;
-        const int last = u.partsLeft - 1;
-        u.partsLeft--;
-        int type = -1, ox = 0, oy = 0, oz = 0;
-        if (size_t(last) < t->second.parts.size())
+        // each pass takes the last child: its 0x80A0 runs at once (vt+0x1C = 0x47DF20) and its 0x8057 takes it off the
+        // parent's list there and then (vt+0x78 -> the parent's vt+0x50, 0x47F220), so one big hit can take several
+        for (int pass = 0; pass < lose && u.partsLeft > 1; pass++)
         {
-            const auto& part = t->second.parts[size_t(last)];
-            type = part.a; ox = int16_t(part.b); oy = int16_t(part.c); oz = int16_t(part.d);
+            const int last = u.partsLeft - 1;
+            u.partsLeft--;
+            int type = -1, ox = 0, oy = 0, oz = 0;
+            if (size_t(last) < t->second.parts.size())
+            {
+                const auto& part = t->second.parts[size_t(last)];
+                type = part.a; ox = int16_t(part.b); oy = int16_t(part.c); oz = int16_t(part.d);
+            }
+            else
+            {
+                // one of the corner objects (AddCorners)
+                type = 0x17B;
+                for (const Attached& a : u.attached)
+                    if (a.part == last) { ox = a.ox; oy = a.oy; }
+            }
+            objects.erase(std::remove_if(objects.begin(), objects.end(),
+                                         [&](const ViewObject& o) { return o.unit == int(index) && o.part == last; }), objects.end());
+            u.attached.erase(std::remove_if(u.attached.begin(), u.attached.end(), [&](const Attached& a) { return a.part == last; }),
+                             u.attached.end());
+            auto pt = setup.units->find(type);
+            if (pt == setup.units->end()) continue;
+            const int z = int(double(oz) - double(pt->second.size41) * -1.414);
+            // 0x489FA0: the part's parent is its explosion's firer (+0xCC its id, the group spared by 0x488200)
+            Explode(pt->second.field98, int(u.x) + ox, int(u.y) + oy, z, u.group, u.id);
         }
-        else
-        {
-            // one of the corner objects (AddCorners)
-            type = 0x17B;
-            for (const Attached& a : u.attached)
-                if (a.part == last) { ox = a.ox; oy = a.oy; }
-        }
-        objects.erase(std::remove_if(objects.begin(), objects.end(),
-                                     [&](const ViewObject& o) { return o.unit == int(index) && o.part == last; }), objects.end());
-        u.attached.erase(std::remove_if(u.attached.begin(), u.attached.end(), [&](const Attached& a) { return a.part == last; }),
-                         u.attached.end());
-        auto pt = setup.units->find(type);
-        if (pt == setup.units->end()) return;
-        const int z = int(double(oz) - double(pt->second.size41) * -1.414);
-        Explode(pt->second.field98, int(u.x) + ox, int(u.y) + oy, z);
     }
 
     // 0x80A0 (0x489FA0): the object posts itself 0x8057 (gone) and makes its type's destruction effect (+0x98,
