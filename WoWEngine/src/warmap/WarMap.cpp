@@ -179,7 +179,9 @@ namespace wow
         // 0x424160 gives a new route its arrival time: the route's length in map pixels (+0x68) over the slowest
         // unit's war map speed (unit +0x54, OBJ.ojd records 37/38) x 0.05, in game hours. A counter is one unit
         // type, so it's that type's speed: 100 goes 5 map pixels an hour.
-        return k.speed > 0 ? float(k.speed) * 0.05f : cluntingSpeed;
+        // (with no speed the game divides by 0 and the route never gets anywhere; *provisional*: such a counter goes
+        // 1 pixel an hour here. Clunting Speed is only the counters' slide, 0x428020)
+        return k.speed > 0 ? float(k.speed) * 0.05f : 1.0f;
     }
 
     void WarMap::Log(std::string text)
@@ -343,8 +345,9 @@ namespace wow
     //   1  spread supply: the sector's own, plus every other sector's over (its path's count x VX + 1), plus the
     //      Resource Buffer
     //   2  demand: each object adds its own (0x8143 to the sector's lists, 0x429640): a unit's upkeep (unit
-    //      table records 45/46) for each of its men, halved while it stays put, plus its work (records 47/48)
-    //      while it repairs or builds (neither is in yet); a travelling unit's goes to the sector it's in now
+    //      table records 45/46) for each of its men, halved while it stays put; any object's work (records 47/48)
+    //      while its factory works (+0x54's +0x12C) or it repairs (+0x50; repair isn't in yet); a travelling
+    //      unit's goes to the sector it's in now
     //   3  spread demand: the sector's own, plus every other sector's over (its path's count x VY + 1)
     //   4  ratio: spread demand over spread supply, at least 1; and table 1, the Construction view, from the
     //      player's three kinds: 1 - 1 / (r0 r1 r2) (byte_58913C, a cheat, makes it 0), with its least and most
@@ -385,12 +388,18 @@ namespace wow
             for (SectorEconomy& e : economy) e.demand.fill(0.0f);
             for (const Counter& k : counters)
             {
-                if (k.kind != 0 || k.sector < 1 || k.sector > N) continue;
+                if (k.sector < 1 || k.sector > N) continue;
                 // a travelling unit's goes to the sector it last reached (0x424E90)
                 const int at = k.Travelling() ? k.path[size_t(k.segment)] : k.sector;
                 auto unit = unitData.find(k.type);
                 if (unit == unitData.end()) continue;
                 const bool human = k.players == res.Human();
+                // 0x42964F: the work, for each of its objects whose factory is busy
+                for (int ref : k.refs)
+                    if (auto f = factories.find(ref); f != factories.end() && f->second.queue.busy)
+                        for (int i = 0; i < 3; i++)
+                            economy[size_t(at)].demand[size_t((human ? 0 : 3) + i)] += unit->second.activity[i];
+                if (unit->second.category != 1) continue;   // 0x4296AB: the upkeep is a vehicle's (+0x10, 1)
                 const float crew = float(CrewOf(k)), still = k.Travelling() ? 1.0f : 0.5f;
                 for (int i = 0; i < 3; i++)
                     economy[size_t(at)].demand[size_t((human ? 0 : 3) + i)] += unit->second.upkeep[i] * still * crew;
@@ -858,7 +867,9 @@ namespace wow
             const int origin = k.path.front(), last = int(k.path.size()) - 1;
             if (++k.hoursOn == 1)
             {
-                FreeCounter(int(i)); // 0x4208B0: its cell given back as it sets off
+                // 0x4250FB: at its first hour, shown in the Unit view, it's put at the curve's start (0x4406A0) and
+                // its slide set there at 1.0 (0x4208B0), so it's there at once; here it leaves the placement
+                FreeCounter(int(i));
                 k.x = int(k.arrow[0].x) + k.offsetX - 16;
                 k.y = int(k.arrow[0].y) + k.offsetY - 16;
             }
@@ -883,7 +894,7 @@ namespace wow
             {
                 k.segment++;
                 k.segmentStarted = true;
-                if (k.segment == last || k.interrupted)
+                if (k.segment == last || k.retreat || k.interrupted)   // (0x42529F: the end, +0x44, +0x60)
                 {
                     Arrive(int(i), k.path[size_t(k.segment)], k.path[size_t(k.segment - 1)]);
                     continue;
@@ -910,11 +921,12 @@ namespace wow
 
     // A counter arriving (0x425471: 0xAD to the group with the sector, +0x58 the one before, then the entry goes),
     // and the route ending with it (0x4253F9), ArrivedInSector unless it was an attack.
-    void WarMap::Arrive(int index, int sector, int previous)
+    void WarMap::Arrive(int index, int sector, int previous, bool announce)
     {
         Counter& k = counters[size_t(index)];
         k.previous = previous;
-        const bool attack = k.attack;
+        k.retreat = false;
+        const bool attack = k.attack || !announce;
         k.path.clear();
         k.arrow.clear();
         k.sector = sector;
@@ -924,6 +936,36 @@ namespace wow
         RecomputeOwner(sector);
         RefreshSector(sector);
         if (!attack) RaiseEvent(ArrivedInSector, sector);
+    }
+
+    // 0x4249B0: where a travelling object would stop: the route's source (+0x24) if it hasn't set off (+0x30 0),
+    // else the node after the one it last reached (the last node at the end)
+    int WarMap::RetreatTo(int index) const
+    {
+        const Counter& k = counters[size_t(index)];
+        if (!k.Travelling()) return 0;
+        if (k.hoursOn == 0) return k.path.front();
+        const int last = int(k.path.size()) - 1;
+        return k.path[size_t(k.segment == last ? k.segment : k.segment + 1)];
+    }
+
+    // Retreat, 0x80A9 to the object (0x428E66): its +0x44 set and the message passed to its route (0x424F00):
+    // before the route has set off (+0x30 0) the object goes back (0x424F50: 0xAD with the source sector, +0x58 0,
+    // 0x42A440(0), out of the route; the source laid out again, an empty route gone); after, the route's update
+    // stops it at the next sector it reaches (0x4252A8), as at the end
+    void WarMap::Retreat(int index)
+    {
+        if (index < 0 || size_t(index) >= counters.size()) return;
+        Counter& k = counters[size_t(index)];
+        if (!k.Travelling()) return;
+        if (k.hoursOn == 0)
+        {
+            const int origin = k.path.front();
+            k.previous = 0;
+            Arrive(index, origin, 0, false);
+            return;
+        }
+        k.retreat = true;
     }
 
     // Attacks on the same sector arrive together (the route manager's 0x41FCF0, after a route is added): the
@@ -2078,12 +2120,14 @@ namespace wow
         // (0x43B9F0), while its battle map isn't open (+0x18). An object (0x429A70) with a factory, not on its
         // way anywhere, and a vehicle or a finished construction (0x42AA70), adds "Build" (0x813E with 0x8065,
         // icon 0x20, 0x470) and, with something queued, "Suspend building tasks" (0x813F, icon 0x22, 0x495) while
-        // busy or "Resume building tasks" (icon 0x23, 0x496). The current object here is the first selected
+        // busy or "Resume building tasks" (icon 0x23, 0x496); one on its way, "Retreat" (below). The current object here is the first selected
         // counter's first object (*provisional*: the war map's own idea of it isn't traced).
         popupObject = -1;
+        popupCounter = -1;
         if (!selection.empty())
         {
             const Counter& c = counters[size_t(selection.front())];
+            popupCounter = selection.front();
             const int ref = c.refs.empty() ? -1 : c.refs.front();
             auto f = factories.find(ref);
             if (f != factories.end() && !c.Travelling() && c.players && (c.kind == 0 || !c.unfinished))
@@ -2096,6 +2140,11 @@ namespace wow
                     else add(0x813E, 0x813F, 0x23, 0x496);
                 }
             }
+            // 0x429B08: on its way (+0x70), "Retreat" (0x80A9, icon 0x350, 0x477) when where it would stop
+            // (0x4249B0) has room for its type (0x43AC10) and isn't the other player's (0x43CA30)
+            if (c.Travelling() && c.players)
+                if (const int to = RetreatTo(popupCounter); to >= 1 && HasRoomFor(c.type, to) && owner[size_t(to)] != 1)
+                    add(0x80A9, 0, 0x350, 0x477);
         }
         else if (selected >= 1 && selected <= warmap::SectorCount) add(0x8133, 0x8019, 0x2E, 0x475);
         int w = 0, h = 0;
@@ -2138,6 +2187,7 @@ namespace wow
         if (command == 0x73) ClearSelection();
         // an object's (0x428DFD): Build opens its window, the other its building tasks suspended or resumed
         if (command == 0x813E && param == 0x8065) OpenBuildWindow(popupObject);
+        if (command == 0x80A9) Retreat(popupCounter);
         if (command == 0x813E && param == 0x813F)
         {
             auto f = factories.find(popupObject);
@@ -3159,5 +3209,26 @@ namespace wow
         k.offsetY = (n / clunWidth - clunWidth / 2) * clunSpacing;
         k.labelHours = k.hoursLeft;
         for (int i = 0; i < 6; i++) k.labelFrom[i] = game.dateTime[i];
+        // the route started (0x425770 -> 0x428020): each object gives its cell back and slides to the curve's start
+        // plus its place in the formation at [Tweak] "Clunting Speed" (0x42A3E0 -> 0x4208B0 -> 0x4286C0, with a
+        // counter shown), its +0x44 cleared; it's out of its sector (0xAD with none)
+        k.retreat = false;
+        if (k.cell >= 0 && k.sector >= 1 && k.sector <= warmap::SectorCount)
+        {
+            CellGrid& g = grids[size_t(k.sector)];
+            if (size_t(k.cell) < g.cells.size()) g.cells[size_t(k.cell)] &= 0x7F;
+            k.cell = -1;
+        }
+        if (!k.arrow.empty() && std::find(placed.begin(), placed.end(), index) != placed.end())
+        {
+            k.targetX = int(k.arrow[0].x) + k.offsetX - 16;
+            k.targetY = int(k.arrow[0].y) + k.offsetY - 16;
+            k.slideX = float(k.x); k.slideY = float(k.y);
+            const float dx = float(k.targetX - k.x), dy = float(k.targetY - k.y), d = std::sqrt(dx * dx + dy * dy);
+            k.slideLeft = d;
+            k.slideStep = cluntingSpeed;
+            k.stepX = d > 0 ? dx / d * cluntingSpeed : 0;
+            k.stepY = d > 0 ? dy / d * cluntingSpeed : 0;
+        }
     }
 }

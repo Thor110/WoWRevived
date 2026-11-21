@@ -570,8 +570,13 @@ namespace wow
             }
             else needs = true;
         }
-        if (!needs) return;
         const int W = land.WorldWidth(), H = int((int64_t(land.Height()) * cell) >> 16);
+        if (!needs)
+        {
+            // 0x4227F0: each told 0x80C3 with the map's middle (+0x1C / 2, the height in world units / 2)
+            for (size_t idx : members) Muster(idx, W / 2, H / 2);
+            return;
+        }
         auto toVertex = [&](int v) { return int(int32_t(uint32_t(v) << 16) / cell); };
         int px = W / 2, py = H / 2;
         bool found = false, giveUp = false;
@@ -622,6 +627,7 @@ namespace wow
             m.x = float(x);
             m.y = float(y);
             m.heading = random::Rand() & 0xFFF;
+            Muster(idx, px, py);     // 0x422787: 0x80C3 with the spot
             x += 2 * size;
             if (++col == k) { col = 0; y += 2 * size; x = x0; }
         }

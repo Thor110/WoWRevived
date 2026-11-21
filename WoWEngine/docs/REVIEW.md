@@ -92,19 +92,24 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       side's research-done message (0xB9) reaching the AI goes with the next item.
 - [x] **The AI's building upgrades** (0x442D80: retypes its buildings when research finishes a mark). *Update 105*
       (with the other side's 0xB9 reaching it).
-- [ ] **The war map economy's "working" demand** (0x429640: record 47/48 while a factory works or repairs).
-- [ ] **Repair** on the war map (0x422AB0, 0x4297C0, 0x4299C0, 0x429B80's repair part).
-- [ ] **Retreat on the war map** (0x424F50 0x80A9, the +0x44 stop-at-next-node flag, the Retreat item in 0x429A70).
-- [ ] **Routes keep their progress through a save** (0x4217E0, 0x4257C0; with the save format above); counters
+- [x] **The war map economy's "working" demand** (0x429640: record 47/48 while a factory works or repairs).
+      *Update 106* (the repairing part comes with repair).
+- [ ] **Repair** on the war map (0x422AB0, 0x4297C0, 0x4299C0, 0x429B80's repair part). *Needs first*: each
+      battle unit's hit points kept between the maps (the battle map starts every unit at its type's +0x4A and
+      nothing is written back to the saved BMOL), so there's nothing damaged on the war map to repair yet.
+- [x] **Retreat on the war map** (0x424F50 0x80A9, the +0x44 stop-at-next-node flag, the Retreat item in 0x429A70).
+      *Update 106.*
+- [~] **Routes keep their progress through a save** (0x4217E0, 0x4257C0; with the save format above); counters
       slide to the route start at `Clunting Speed` (0x428020 / 0x425080) rather than jump, and Clunting Speed isn't
-      a travel speed.
+      a travel speed. *Update 106*: the slide and Clunting Speed done; the save part waits on the route format.
 - [~] **Staggered deaths** of a whole list (in for the key building's loss, update 104; Abandon goes at once as the game's 0x8067 does) (0x47CEE0: 30, then +30 + rand() % 30 each).
 - [ ] **Damage Layer**: scorch kept per sector in the save (DMGL), fading 2 a byte each battle entry (0x404EA0-
       0x4051B0, 0x439892), cleared by `shym`; needs the FFUH encoder (0x415520 / 0x4157E0 / 0x415720).
 - [ ] **Fog of war** (0x4344C0-0x434DF0: the `[BattleMap]` keys, two byte maps, 19 stamps, Reveal from units every
       update (0x4964B0), Decay every "Fog update freq", Flush; objects' visibility and shading 0x48B050 / 0x48B2D0 /
       0x48C570 / 0x48C840 / 0x47FEB0), feeding `TerrainView`'s fog input.
-- [ ] **Deployment's remaining parts** (0x4222C0: the fixed-place bit, 0x80C3 to each unit, the pod centre).
+- [~] **Deployment's remaining parts** (0x4222C0: the fixed-place bit, 0x80C3 to each unit, the pod centre).
+      *Update 106*: 0x80C3 in; the fixed-place bit and +0x18C wait on the units' saved battle state.
 
 ## 3. Battle map objects and vehicles missing
 

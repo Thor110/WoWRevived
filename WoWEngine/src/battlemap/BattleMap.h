@@ -335,6 +335,7 @@ namespace wow
         int startX = 0, startY = 0;                          // dword_4F742C / 4F7434: the player's deployment centre
         void Deploy();
         void Place(std::vector<size_t> members, int cx, int cy);
+        void Muster(size_t index, int x, int y);        // 0x80C3 to a vehicle (0x490D06)
         void AddRenderer(int type, float x, float y, int heading, int unit = -1);
         // Driving (Driving.cpp): the move order (0x482E60 straight there, 0x80C2), each update's steering and step
         // (0x4913B0, 0x492F40, 0x492DE0, 0x491870), halt (0x8031)

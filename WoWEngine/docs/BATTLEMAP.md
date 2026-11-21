@@ -336,7 +336,12 @@ centre, 0.7075 x k x size apart (an int), radius r from 0, each with ftol(r / st
 cell) / cell) is passable and each unit's place in the block clear of the battle world's objects (0x47FE10) for a
 vehicle, or a building could go there (0x47B610) for anything else. Past the map's width and height the middle is
 used. The units then stand in the block row by row from (spot + size - k x size), 2 x size apart, each with a
-heading of `rand() & 0xFFF`, and are told to gather at the spot (0x80C3).
+heading of `rand() & 0xFFF`, and each is told 0x80C3 with the spot; units that kept their places are told it with
+the map's middle (0x4227F0). A vehicle's 0x80C3 (0x490D06, `BattleMap::Muster`) sets its heading (+0x100) from the
+point to it (0x43FDA0), its speed (+0x104) to 0.2 and its velocity (+0x108 / +0x10C) that way (0x43FE90), so it
+eases away from the point; then 0x47F320(1) and vt+0x11C (*not in*). Placing is also forced by its +0x188 bit 13
+(about its +0xF4 / +0xF8 target) or its +0x18C byte (0x422412 / 0x422463); both come from the unit's saved battle
+state, which isn't read (*provisional*: never set).
 
 **Start view** (0x439B7E): the player's command building in HCON (Human 278 / 58, Martian 830 / 120 by sector),
 the middle of its units' extent ((max - min) / 2 + min, 0x42A2A0 / 0x42A340); else 4F742C / 4F7434 unless their

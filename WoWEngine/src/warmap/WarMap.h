@@ -224,6 +224,7 @@ namespace wow
         struct BuildWindowState { int ref = -1; int scroll = 0, queueScroll = 0, hover = -1, pressed = -1; };
         std::optional<BuildWindowState> buildWindow;
         int popupObject = -1;                           // the object whose items the popup has
+        int popupCounter = -1;                          // its counter (for Retreat)
         // The computer player (warmap/WarMapAi.cpp): its phase (+0x43C), its units in the order they move
         // (dword_546230, the cursor +0x440 and count +0x444), its clock (+0x448), its research (+0x454) and the
         // strength gathered (+0x460)
@@ -297,7 +298,9 @@ namespace wow
         int RefOfId(uint32_t id) const;
         float ClockTick();
         void MoveRoutes(int hours);      // the routes' 0x802D (0x425080)
-        void Arrive(int index, int sector, int previous);
+        void Arrive(int index, int sector, int previous, bool announce = true);
+        void Retreat(int index);                        // 0x80A9 (0x428E66, 0x424F50)
+        int RetreatTo(int index) const;             // 0x4249B0
         void ArriveTogether();           // 0x41FCF0
         // who holds each sector: 0 the side being played, 1 the other side, 2 no one
         std::array<int, warmap::SectorCount + 1> owner{};
@@ -339,7 +342,7 @@ namespace wow
         int PopupItemAt(int x, int y) const;
         void PopupCommand(int command, int param);
         int clunWidth = 4, clunSpacing = 4;
-        float cluntingSpeed = 7.0f;      // [Tweak] "Clunting Speed" (0x428B70, default 7): only for units with no speed
+        float cluntingSpeed = 7.0f;      // [Tweak] "Clunting Speed" (0x428B70, default 7): the slide to a route's start (0x428020)
         std::string message;             // the engine's own note (a refused route), shown in the status strip
         // The message list (PopupMessageController 0x420A30 at 0x28, 4; lines added by 0x4191A0 -> 0x420DA0):
         // at most 10 (0x4BA4FC, the oldest goes), each a "Message Item" (0x428810, font 0x72) shown for 5 x 30
@@ -495,6 +498,7 @@ namespace wow
             int offsetX = 0, offsetY = 0; // entry +0x10 / +0x14: its place in the formation
             int hoursOn = 0;             // route +0x30: game hours it has been going
             bool interrupted = false;    // route +0x60
+            bool retreat = false;        // the object's +0x44: Retreat, it stops at the next sector it reaches
             bool naval = false;          // route +0x50: its first unit's +0x52 is 5 or 6
             int trim = 0;                // the arrow's +0x5C: drawn from this curve point on (behind the units)
             float labelHours = 0;        // route +0x6C: the hours to arrival the attack label shows

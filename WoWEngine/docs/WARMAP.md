@@ -286,14 +286,23 @@ selection at +0x430, filled by its recorded commands 4 clear, 5 select (Shift ad
   first), the hours still to go (+0x34, length / speed), what's left of the way to the next waypoint (+0x38, of
   +0x3C) and the path index it last reached (+0x24); and its place in a formation `[Tweak] "Route clunting width"`
   (4) wide and `"Route clunting spacing"` (4) apart (0x42AF20 / 0x42AF60): the n-th at ((n % w) - w / 2,
-  (n / w) - w / 2) x spacing. Each hour (0x425080):
-  - the first puts the units at the curve's start, plus their places (0x4406A0)
+  (n / w) - w / 2) x spacing. As the route starts (0x425770 -> 0x428020) each object gives its cell back and
+  slides to the curve's start plus its place at `[Tweak] "Clunting Speed"` (7) pixels a tick (0x42A3E0 ->
+  0x4208B0 -> 0x4286C0), +0x44 cleared, out of its sector (0xAD with none). Each hour (0x425080):
+  - the first puts the units at the curve's start, plus their places (0x4406A0), their slides set there at 1.0
+    (0x4208B0, a counter shown in the Unit view)
   - unless it's an attack or interrupted already, every sector from the slowest entry's on is checked: one with a
     battle (+0x124), or held by the other side, other than the start, interrupts the route (+0x60) with event 11,
     TravelInterrupted (0x41EF80: "Travel interrupted" 0x419, sound 0x147, and the event box if the option's on)
   - each entry goes (way still to go / hours still to go) x hours; on getting to a waypoint it arrives there if
-    it's the last, or the route was interrupted (0xAD to the group with the sector; +0x58 the one before);
-    otherwise the next waypoint's distance is added
+    it's the last, its object's +0x44 (Retreat) is set, or the route was interrupted (0xAD to the group with the
+    sector; +0x58 the one before); otherwise the next waypoint's distance is added
+  - **Retreat** (the object's popup item, 0x429B08: on its way, "Retreat", 0x80A9 with icon 0x350 and text 0x477,
+    when where it would stop (0x4249B0: the route's source before it has set off, +0x30 0, else the waypoint after
+    the one it last reached) has room for its type (0x43AC10) and isn't the other player's): 0x80A9 to the object
+    (0x428E66) sets its +0x44 and goes on to the route (0x424F00): not yet set off, the object goes back to the
+    source (0x424F50: 0xAD with it, +0x58 0, out of the route, the source laid out again, an empty route gone; no
+    ArrivedInSector); set off, it stops at the next waypoint as above (`WarMap::Retreat`)
   - on the map it's that far along the arrow's curve: point `segment x 32 + int(f)` and the fraction between it
     and the next, f = (1 - left / length) x 32; the smallest of these over the entries trims the arrow (+0x5C: its
     body is drawn only past it)
@@ -331,7 +340,8 @@ selection at +0x430, filled by its recorded commands 4 clear, 5 select (Shift ad
   the slowest unit's speed x 0.05, in game hours, kept at +0x6C and shown as a date (0x41B9A0). A counter is one unit
   type, so it goes speed x 0.05 map pixels a game hour: 100 is 5. Reloading a route (0x4257C0) works it out again
   with x 0.01 between its first two points (not yet understood). `[Tweak] "Clunting Speed"` (0x428B70, default 7,
-  the same as the fastest Human unit's 140 x 0.05) is only used for a counter with no speed. `wowdump --units`
+  the same as the fastest Human unit's 140 x 0.05) is only the slide to a route's start (above). A counter with no
+speed divides by 0 in the game and never gets anywhere (*provisional*: 1 pixel an hour here). `wowdump --units`
   prints the table.
 - **The way**: the game's route finder, an A* (FindRoute 0x44EFA0, set up by 0x44EE70 from 0x424160, at most
   1000 steps) over 31 nodes whose neighbour lists are at 0x4BD260. 0x435710 builds a 32 x 32 table of link kinds at
@@ -416,7 +426,7 @@ five when the war map starts (0x418BAF):
 |---|---|
 | 0 | **Supply**: in a sector someone holds, its owner's constructions (0x446370(3, ...)) are told 0x803C and each kind's output is added up (0x421D00). A finished facility of the kind (types 47-49, 108-110) makes `int(hp / maxHP) x r B / (n + r - 1)` (0x423B00), r the `[Tweak] "Resource Drop Off Rate"` (3), B the deposit and n the sector's finished facilities of the kind; nothing while the sector has no command building. A sector no one holds supplies nothing. |
 | 1 | **Spread supply**: the sector's own, plus every other sector's over `count x VX + 1`, count being the sectors (start included) on the sector's cached path to it, plus the `"Resource Buffer"` (30). Sectors with no path give nothing. |
-| 2 | **Demand**: zeroed, then each sector's four object lists are told 0x8143 (0x429640): a unit adds its upkeep (unit records 45 / 46, three floats for its side's kinds) for each man it carries (its battle map list's count), halved while it stays put, plus its work (records 47 / 48) while it repairs or builds (not in yet). A travelling unit's goes to the sector it's in now (0x424E90). |
+| 2 | **Demand**: zeroed, then each sector's four object lists are told 0x8143 (0x429640): a unit adds its upkeep (unit records 45 / 46, three floats for its side's kinds) for each man it carries (its battle map list's count), halved while it stays put, and any object (constructions too) adds its work (records 47 / 48) while its factory is busy (+0x54's +0x12C) or it repairs (+0x50; repair isn't in yet). The upkeep is only a vehicle's (+0x10, 1). A travelling unit's goes to the sector it's in now (0x424E90). |
 | 3 | **Spread demand**: as phase 1 with VY and no buffer. |
 | 4 | **Ratio**: `max(1, spread demand / spread supply)` (worked as `(D - S) / S + 1`); then table 1 for the Construction view, `1 - 1 / (r0 r1 r2)` over the side's three kinds, its least and most kept (0x4E99A8 / 0x4E99AC). The cheat byte 0x58913C makes it 0. |
 
