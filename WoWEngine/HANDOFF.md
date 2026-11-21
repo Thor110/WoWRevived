@@ -21,8 +21,9 @@ These were in the previous session's scratch space, not in the repository. Ask t
    names: `sub_XXXXXX`, `dword_XXXXXX`, `loc_...`). Every address in the docs and code comments refers to it.
    `docs/ida/functions.tsv` and `docs/ida/strings.tsv` are an index of it (`tools/ida_index.py` regenerates them),
    handy for finding a routine without opening the whole file.
-2. **The game's files**: an install of the original (Human and Martian discs' data: `DAT/`, `MAPS/`, `SFX/`, `VOX/`,
-   `FMV/`, `OBJ.ojd`, `AI.ojd`, `SFX.ojd`, `TEXT.ojd`, `Human.000`, `Martian.000`, ...). The tests below were run on
+2. **The game's files**: the copy used so far came from https://archive.org/details/wow-cd-1 (fetched at the
+   previous session's request). It is an install of the original (Human and Martian discs' data: `DAT/`, `MAPS/`,
+   `SFX/`, `VOX/`, `FMV/`, `OBJ.ojd`, `AI.ojd`, `SFX.ojd`, `TEXT.ojd`, `Human.000`, `Martian.000`, ...). The tests below were run on
    such a folder, with one saved game in `SaveGame/Human.001` (a Human campaign; loading it and opening London gives
    a battle with lorries by Big Ben and a bridge).
 
