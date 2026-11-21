@@ -94,7 +94,7 @@ namespace wow
     void BattleMap::FogTick()
     {
         if (!fog.enabled) return;
-        if (fog.updateFreq > 0 && ticks % fog.updateFreq == 0)
+        if (fog.updateFreq > 0 && Frame() % fog.updateFreq == 0)
         {
             FogDecay();
             FogRevealOwn();

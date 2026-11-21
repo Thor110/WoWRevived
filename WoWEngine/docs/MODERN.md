@@ -5,6 +5,30 @@ yet unless marked. The original's behaviour stays the default; each option here 
 engine's `.ini` where it says so. This is a list to come back to once the original is complete (milestones 1-5),
 not a plan with dates.
 
+## Modern fixes (on by default; do not "correct" these back)
+
+These depart from the original's code on purpose, because the original's behaviour is a fault. The owner fixed each
+in WoWRevived's patches to the original game (the repository readme's list), and the engine keeps the fix. In the
+code each is to be marked `MODERN FIX`. A parity pass must leave them alone. They are the last stage of the work
+(docs/PLAN.md, Stage 6), after the original is complete; the table says how the engine stands until then.
+
+| Fix | The original | The engine |
+|---|---|---|
+| Volume sliders saved | The Sound Control sliders never write the registry, so the volumes are lost | Written to `WoWRevived.ini` |
+| Music toggle | The Sound Control check box does nothing | Stops and starts the music (*to do*: today it's only read when music starts) |
+| Master volume on the music | Master doesn't reach the music's playback | Master scales the music |
+| Resolution applied at once | The slider only takes effect after a restart | *To do*: the engine saves `[Screen] Size` but always draws 640 x 480 |
+| Desktop resolution on the first start | (no such thing) | *To do*: with no `[Screen] Size` yet, the desktop's is taken; afterwards the player's choice stands |
+| No 8 / 16-bit colour choice | Two radios in Display Settings; 8-bit doesn't work on modern systems | *To do*: the radios taken out (WoWRevived skips their creation) |
+| No "Lights" toggle, lights always on | With lights off, Infiltrate, which makes a light, crashes the game | *To do*: the toggle taken out and `[Options] "Show lights"` forced on at start-up (WoWRevived does both) |
+
+Other changes WoWRevived made to the executable, for reference when reading the listing (`IDA-Output.txt` was made
+from `WoW_patched.exe`): the CD Player's "no CD" check skipped, the .smk file check skipped, winmm redirected to
+`_inmm.dll`, the resolution slider's creation skipped, and the battle map's drag select border widened from 640 to
+2048. Where the listing shows one of these, the retail behaviour is what the docs should describe.
+
+A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stage 6); it can wait.
+
 ## Options
 
 ### Graphics
@@ -32,14 +56,11 @@ not a plan with dates.
 
 ### Sound
 
-- **Working sound controls**: the Sound Control menu's sliders applied to the mixer at once (master, effects,
-  speech, ambient, music), and kept in the `.ini`.
+- **Working sound controls**: now a modern fix, on by default; see "Modern fixes" above.
 
 ### Lights
 
-- Either remove the lights toggle (`[Options] "Show lights"`) or fix what made it a problem in the earlier
-  patched game (the Infiltrate skill crashing with the lights off). The engine's Infiltrate (0x80F4) doesn't
-  touch the lights, so the crash shouldn't carry over; this is to check once both are in.
+- Decided: the lights toggle goes and the lights are always on; see "Modern fixes" above.
 
 ## Game modes
 

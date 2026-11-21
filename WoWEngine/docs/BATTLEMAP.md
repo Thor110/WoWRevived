@@ -451,8 +451,14 @@ as the group is made, from its vehicle members' types). The object check (0x47FE
 nearer (octagonal, whole positions) than an object's +0xAC + the size to any object the first unit's vt+0xBC says
 gets in its way.
 
-*Provisional*: the world's grid in 0x47FE10 is taken as the units started so far; ActivateAll's vt+0x64 / vt+0x78
-(an object taken out again after its start) isn't traced; a building's scenery clearing leaves the bridges and
+Update 137: the grid 0x47FE10 searches is dword_4D2550's +0x118 (the four buckets round the place, 0x449920), the
+one an explosion searches for its victims (0x47FC50), so the scenery refuses a place as the started units do
+(trees don't get in a vehicle's way, +0xB8 bit 2). After an object's start ActivateAll takes it out again if it
+answers vt+0x64 (vt+0x78, no explosion): for WScenery, the street lamp, the pod's class and the tree circles that
+is 0x489750, the sector's Damage Layer (the world's +0x8C) not 0 at the vertex nearest it, so scenery on ground
+earlier battles scorched doesn't come back; for the other classes it's never (0x48B580).
+
+*Provisional*: whether a building's parts are in the grid; a building's scenery clearing leaves the bridges and
 the pod; +0x188 / +0x18C aren't read; the order of the objects in a list is the counters' order; the order of the
 `rand()` calls inside one object's start is the engine's.
 

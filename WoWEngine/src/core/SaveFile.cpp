@@ -284,27 +284,90 @@ namespace wow
             route.progress = r.F32();
             for (uint32_t i = 0; i < n; i++) route.path.push_back(r.U32());
             route.field50 = r.U8();
-            r.Tag("WMOB");
+            // the route's units (WarMapRouteEntryList 0x427F70): u32 count, then each entry: its object as a list
+            // writes one (u32 type and the object's own save), then the entry's eight values (0x42B250). The
+            // engine's saves before update 137 had "WMOB", the count and the objects alone; still read.
+            const bool legacy = r.At("WMOB", r.p);
+            if (legacy) r.p += 4;
             uint32_t count = r.U32();
             size_t end = sector0At - 8;
             if (k + 1 < routeCount)
             {
-                // the next route's WMOB list (one with no SELO 16 bytes before it), then back over its header
                 end = std::string::npos;
-                for (size_t q = r.Find("WMOB", r.p); q != std::string::npos && end == std::string::npos; q = r.Find("WMOB", q + 4))
+                if (legacy)
                 {
-                    if (q >= 16 && std::memcmp(&data[q - 16], "SELO", 4) == 0) continue;
-                    for (uint32_t m = 0; m <= 64 && end == std::string::npos; m++)
+                    // the next route's WMOB list (one with no SELO 16 bytes before it), then back over its header
+                    for (size_t q = r.Find("WMOB", r.p); q != std::string::npos && end == std::string::npos; q = r.Find("WMOB", q + 4))
                     {
-                        size_t h = q - 29 - 4 * size_t(m);
-                        if (q < 29 + 4 * size_t(m) || h < r.p) break;
-                        Reader peek{ data, h + 20 };
-                        if (peek.U32() == m) end = h;
+                        if (q >= 16 && std::memcmp(&data[q - 16], "SELO", 4) == 0) continue;
+                        for (uint32_t m = 0; m <= 64 && end == std::string::npos; m++)
+                        {
+                            size_t h = q - 29 - 4 * size_t(m);
+                            if (q < 29 + 4 * size_t(m) || h < r.p) break;
+                            Reader peek{ data, h + 20 };
+                            if (peek.U32() == m) end = h;
+                        }
+                    }
+                }
+                else
+                {
+                    // the next route's header: the first place after this one's units that reads as one (sectors
+                    // 1-30, the flags 0 or 1, the 5, a path from its origin to its destination, a count, and a
+                    // unit's type and SELO after it)
+                    auto sector = [](uint32_t v) { return v >= 1 && v <= 30; };
+                    for (size_t h = r.p + 4; h + 37 <= sector0At && end == std::string::npos; h++)
+                    {
+                        Reader peek{ data, h };
+                        const uint32_t origin = peek.U32(), destination = peek.U32(), f5F = peek.U32(), f5E = peek.U32(), five = peek.U32();
+                        const uint32_t m = peek.U32();
+                        if (!sector(origin) || !sector(destination) || f5F > 1 || f5E > 1 || five != 5 || m < 1 || m > 64) continue;
+                        if (h + 28 + 4 * size_t(m) + 1 + 4 + 8 > sector0At) continue;
+                        peek.U32();
+                        bool good = true;
+                        uint32_t first = 0, last = 0;
+                        for (uint32_t i = 0; i < m && good; i++)
+                        {
+                            last = peek.U32();
+                            if (i == 0) first = last;
+                            good = sector(last);
+                        }
+                        if (!good || first != origin || last != destination || peek.U8() > 1) continue;
+                        const uint32_t units = peek.U32();
+                        if (units < 1 || units > 4096 || !r.At("SELO", peek.p + 4)) continue;
+                        end = h;
                     }
                 }
                 if (end == std::string::npos) throw FormatError("save: a route's end not found");
             }
             route.objects = r.Objects(0, count, end, 4);
+            // each object is followed by its entry's eight values (0x42B150 after the object's own load); taken
+            // off the object's bytes when every one of them reads as an entry of this route
+            {
+                auto f32 = [](const std::vector<uint8_t>& b, size_t at) { float f; std::memcpy(&f, &b[at], 4); return f; };
+                std::vector<SaveRouteEntry> entries;
+                for (const SaveObject& o : route.objects)
+                {
+                    if (o.bytes.size() < 32 + 24) break;
+                    const size_t at = o.bytes.size() - 32;
+                    SaveRouteEntry e;
+                    e.segment = int32_t(Get32(o.bytes, at));
+                    e.index = int32_t(Get32(o.bytes, at + 4));
+                    e.speed = f32(o.bytes, at + 8);
+                    e.remaining = f32(o.bytes, at + 12);
+                    e.hoursLeft = f32(o.bytes, at + 16);
+                    e.segmentLeft = f32(o.bytes, at + 20);
+                    e.segmentLength = f32(o.bytes, at + 24);
+                    e.started = Get32(o.bytes, at + 28);
+                    if (e.started > 1 || e.segment < 0 || uint32_t(e.segment) >= n || e.index < 0 || e.index > 4096 ||
+                        !(e.segmentLength >= 0.0f) || !(e.speed >= 0.0f)) break;
+                    entries.push_back(e);
+                }
+                if (!legacy && entries.size() == route.objects.size())
+                {
+                    for (SaveObject& o : route.objects) o.bytes.resize(o.bytes.size() - 32);
+                    route.entries = std::move(entries);
+                }
+            }
             s.routes.push_back(std::move(route));
         }
         s.podHours = r.U32();
@@ -383,7 +446,25 @@ namespace wow
             w.F32(route.progress);
             for (uint32_t sector : route.path) w.U32(sector);
             w.U8(route.field50);
-            w.List(route.objects);
+            if (route.entries.size() != route.objects.size()) w.List(route.objects);   // as it was read (before update 137)
+            else
+            {
+                // 0x427F70: the count, then each entry: its object, then its own values (0x42B250)
+                w.U32(uint32_t(route.objects.size()));
+                for (size_t i = 0; i < route.objects.size(); i++)
+                {
+                    const SaveRouteEntry& e = route.entries[i];
+                    w.Bytes(route.objects[i].bytes);
+                    w.U32(uint32_t(e.segment));
+                    w.U32(uint32_t(e.index));
+                    w.F32(e.speed);
+                    w.F32(e.remaining);
+                    w.F32(e.hoursLeft);
+                    w.F32(e.segmentLeft);
+                    w.F32(e.segmentLength);
+                    w.U32(e.started);
+                }
+            }
         }
         w.U32(podHours);
         w.U32(pods);

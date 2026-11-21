@@ -69,7 +69,6 @@ namespace wow
             int builders[3] = { 0, 0, 0 }; // +0x78-0x80, records 49 / 50 / 51 (one, two or three): what builds it
             float buildDays = 0;     // record 43: its manufacture time in days (+0x5C after the modifier)
             int buildFaction = 2;    // the faction as it was when record 43 came
-            float buildMul = 1.0f;   // record 44: +0x5C multiplied again (not used by OBJ.ojd)
             // The rest of the 0xB0-byte entry (0x437750), for the battle map; defaults from 0x4377A3
             std::string code;        // +0x30, record 16: the last four characters of its data (the WSelectableObject name)
             int infoPage = 0;        // +0x18, record 22: its information page (0x4403A0)

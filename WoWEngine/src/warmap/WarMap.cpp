@@ -782,13 +782,53 @@ namespace wow
             d = {};
             if (!save->Sector(sector).Damage(d.width, d.height, d.grid)) d = {};
         }
+        // The routes (0x4257C0): each one's path as it was saved, its arrow built again (0x4244E0), and each of its
+        // units put back where its entry says (0x42B150): the path index it last reached, the way and the hours
+        // still to go, how far along its segment it is. The route's count of hours (+0x30) isn't saved, so its
+        // next hour is its first again (0x42509A), as in the game. The arrival label's hours (+0x6C) are worked
+        // out again as the game does (0x425999-0x425A50): the way between the first two sectors' waypoints over
+        // the unit's war map speed x 0.01, the longest of its units' (not the hours actually left: an original
+        // quirk, kept).
+        // A save with no entries (written by the engine before update 137) sends its units off again from the
+        // route's start, as before.
         for (const SaveRoute& route : routes)
-            for (const SaveObject& o : route.objects)
+        {
+            std::vector<int> path;
+            for (uint32_t s : route.path) path.push_back(int(s));
+            bool good = path.size() >= 2 && route.entries.size() == route.objects.size();
+            for (int s : path) if (s < 1 || s > warmap::SectorCount) good = false;
+            for (size_t i = 0; i < route.objects.size(); i++)
             {
+                const SaveObject& o = route.objects[i];
                 table.push_back(o);
                 int k = AddCounter(o.Type(), int(route.origin), o.list == 0, int(table.size()) - 1);
-                if (k >= 0 && route.destination >= 1 && int(route.destination) <= warmap::SectorCount) SendTo(k, int(route.destination));
+                if (k < 0) continue;
+                if (!good)
+                {
+                    if (route.destination >= 1 && int(route.destination) <= warmap::SectorCount) SendTo(k, int(route.destination));
+                    continue;
+                }
+                const SaveRouteEntry& e = route.entries[i];
+                StartRoute(k, path, e.index);
+                Counter& c = counters[size_t(k)];
+                c.attack = route.flag5E != 0;
+                c.naval = route.field50 != 0;
+                c.segment = std::clamp(int(e.segment), 0, int(path.size()) - 2);
+                c.segmentStarted = e.started != 0;
+                c.remaining = e.remaining;
+                c.hoursLeft = e.hoursLeft;
+                c.segmentLeft = e.segmentLeft;
+                c.segmentLength = e.segmentLength;
+                c.slideLeft = 0;
+                {
+                    auto a = warmap::Waypoint(path[0]), b = warmap::Waypoint(path[1]);
+                    const int dx = a.x - b.x, dy = a.y - b.y;
+                    const double speed = double(float(c.speed)) * 0.01;
+                    if (speed > 0.0) c.labelHours = float(std::sqrt(double(dx * dx + dy * dy)) / speed);
+                }
+                PlaceOnRoute(c);
             }
+        }
         ReadFactories();
     }
 
@@ -872,7 +912,21 @@ namespace wow
                     if (k.refs.size() > 1 && i > 0) o.SetPosition(0, 0);
                     else o.SetPosition(k.x, k.y);
                 }
-                if (route) route->objects.push_back(std::move(o));
+                if (route)
+                {
+                    // its entry (0x42B250)
+                    SaveRouteEntry e;
+                    e.segment = k.segment;
+                    e.index = k.formation;
+                    e.speed = PixelsPerHour(k);
+                    e.remaining = k.remaining;
+                    e.hoursLeft = k.hoursLeft;
+                    e.segmentLeft = k.segmentLeft;
+                    e.segmentLength = k.segmentLength;
+                    e.started = k.segmentStarted ? 1 : 0;
+                    route->entries.push_back(e);
+                    route->objects.push_back(std::move(o));
+                }
                 else s.Sector(k.sector).lists[size_t(o.list)].push_back(std::move(o));
             }
         }
@@ -899,7 +953,6 @@ namespace wow
     //   - when every counter on it has arrived, a route that isn't an attack raises event 3, ArrivedInSector
     void WarMap::MoveRoutes(int hours)
     {
-        constexpr int Steps = 32; // the curve's points a sector (+0x40: 2 to the power +0x44, 5)
         const float h = float(hours);
         for (size_t i = 0; i < counters.size(); i++)
         {
@@ -951,17 +1004,27 @@ namespace wow
             }
             float frac = 1.0f - k.segmentLeft / k.segmentLength;
             if (frac >= 0.5f && k.segmentStarted) k.segmentStarted = false;
-            float f = frac * float(Steps);
-            int whole = int(f);
-            // (the game reads past the curve when an hour goes beyond the next waypoint; kept on it here)
-            int at = std::clamp(k.segment * Steps + whole, 0, int(k.arrow.size()) - 2);
-            k.trim = at;
-            const auto& p0 = k.arrow[size_t(at)];
-            const auto& p1 = k.arrow[size_t(at + 1)];
-            float part = f - float(whole);
-            k.x = int(p0.x + (p1.x - p0.x) * part) + k.offsetX - 16;
-            k.y = int(p0.y + (p1.y - p0.y) * part) + k.offsetY - 16;
+            PlaceOnRoute(k);
         }
+    }
+
+    // Where an entry stands (0x4252D0-0x4253D0, and 0x4258F8 as a route is loaded): (1 - +0x38 / +0x3C) of the way
+    // along its segment's 32 curve points, the arrow drawn from that point on (+0x5C)
+    void WarMap::PlaceOnRoute(Counter& k)
+    {
+        constexpr int Steps = 32; // the curve's points a sector (+0x40: 2 to the power +0x44, 5)
+        if (k.arrow.size() < 2) return;
+        const float frac = k.segmentLength != 0.0f ? 1.0f - k.segmentLeft / k.segmentLength : 0.0f;
+        float f = frac * float(Steps);
+        int whole = int(f);
+        // (the game reads past the curve when an hour goes beyond the next waypoint; kept on it here)
+        int at = std::clamp(k.segment * Steps + whole, 0, int(k.arrow.size()) - 2);
+        k.trim = at;
+        const auto& p0 = k.arrow[size_t(at)];
+        const auto& p1 = k.arrow[size_t(at + 1)];
+        float part = f - float(whole);
+        k.x = int(p0.x + (p1.x - p0.x) * part) + k.offsetX - 16;
+        k.y = int(p0.y + (p1.y - p0.y) * part) + k.offsetY - 16;
     }
 
     // A counter arriving (0x425471: 0xAD to the group with the sector, +0x58 the one before, then the entry goes),
@@ -3422,6 +3485,7 @@ namespace wow
         k.hoursOn = 0;
         k.interrupted = false;
         k.trim = 0;
+        k.formation = n;
         k.offsetX = (n % clunWidth - clunWidth / 2) * clunSpacing;
         k.offsetY = (n / clunWidth - clunWidth / 2) * clunSpacing;
         k.labelHours = k.hoursLeft;

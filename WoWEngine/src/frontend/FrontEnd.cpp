@@ -989,6 +989,7 @@ namespace wow
 
     void FrontEnd::Update()
     {
+        frames++;                // 0x403749, before the screens' updates
         sound.Update();
         if (!screen) return;
         if (delayed)
@@ -1124,6 +1125,7 @@ namespace wow
             s.damage = d.grid;
         }
         s.damageDivisor = ini.GetInt("BattleMap", "Damage reduction divisor", 500);
+        s.frame = &frames;
         s.fogEnabled = ini.GetInt("BattleMap", "EnableFogOfWar", 1) != 0 && !cheats.noFog;   // 0x434744
         s.clearDamage = cheats.shym;        // byte_4D25A0, cleared once it's used (0x405059)
         cheats.shym = false;

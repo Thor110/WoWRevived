@@ -385,6 +385,9 @@ speed divides by 0 in the game and never gets anywhere (*provisional*: 1 pixel a
   a refusal is the engine's own. Boats cross at a link's sea points, fliers at its land points if it has them.
 - Arriving in a sector the other side holds gives "Battle in" and the sector (a battle, which needs the battle
   map) and the counter stays where it came from; arriving in a sector no one holds takes it (*provisional*).
+- **Saved routes' units** (update 137): after the route's own values comes its WarMapRouteEntryList (0x427F70): a
+  u32 count, then each entry's object and eight values (0x42B250; `SaveRouteEntry` in core/SaveFile.h). Loading
+  (0x427E80 / 0x42B150) puts each unit back on the path where it was.
 - **Saved routes** (0x425A60): origin, destination, +0x5F, +0x5E (attack), +0x44 (5), the path's count, +0x34, the
   path (the start first), the u8 +0x50 (naval) and the units.
 

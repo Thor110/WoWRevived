@@ -13,7 +13,8 @@
 //   MPAD   u32 count, then each line: u32 length and the text with its NUL, u32 life,
 //          u32 state, u32 the game hour it came                                               0x420FD0, 0x428B10
 //   u32 routes, then each route: u32 origin, destination, two flags, 5, path length n,
-//          f32 progress, n path sectors, u8, and its travelling objects as a WMOB list        0x41FEC0, 0x425A60
+//          f32 progress, n path sectors, u8, u32 units, and each unit: its object, then its
+//          route entry's eight values (SaveRouteEntry)                              0x41FEC0, 0x425A60, 0x427F70
 //   u32 pod hours, u32 pods                                                                   0x41A330
 //   sector 0: u32 owner, DMGL and the rest (no SECT, no lists)
 //   sectors 1-30: SECT, then six lists, HUNI AUNI HCON ACON HRES ARES (the H lists the side being played), each
@@ -60,13 +61,29 @@ namespace wow
         size_t SeloAt() const { return Kind2() ? 12 : 4; }
     };
 
+    // A route's entry (RouteEntry 0x42AFE0), as its save writes it after its object (0x42B250): eight values, 32
+    // bytes. The entry's +0x10 / +0x14 (its place in the formation) are worked out again from the index (0x42B1F8).
+    struct SaveRouteEntry
+    {
+        int32_t segment = 0;        // +0x24: the path index it last reached
+        int32_t index = 0;          // +0x18: which of the route's units it is (its formation place)
+        float speed = 0;            // +0x2C: map pixels a game hour (its type's +0x54 x 0.05)
+        float remaining = 0;        // +0x30: the way still to go
+        float hoursLeft = 0;        // +0x34
+        float segmentLeft = 0;      // +0x38: of the way to the next sector's waypoint
+        float segmentLength = 0;    // +0x3C
+        uint32_t started = 1;       // +0x28 (a byte, written as a dword)
+    };
+
     struct SaveRoute
     {
         uint32_t origin = 0, destination = 0, flag5F = 0, flag5E = 1, field44 = 5;
-        float progress = 0;
+        float progress = 0;         // the route's +0x34 (*provisional*: read as an int by 0x42586A; 0 in every save seen)
         std::vector<uint32_t> path;
         uint8_t field50 = 0;
         std::vector<SaveObject> objects;
+        // one for each object, or none: a save written before update 137 has the objects alone
+        std::vector<SaveRouteEntry> entries;
     };
 
     struct SaveMessage

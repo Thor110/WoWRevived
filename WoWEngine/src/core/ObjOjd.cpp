@@ -191,7 +191,7 @@ namespace wow
             case 33: units[unit].field50 = int16_t(r.U16()); break;     // 0x4381E9
             case 34: units[unit].armourRaw = int16_t(r.U16()); units[unit].armourFaction = units[unit].faction; units[unit].armourMuls.clear(); break; // 0x43823F
             case 35: units[unit].armourMuls.push_back(f32()); break;    // 0x4382BA
-            case 44: units[unit].buildMul *= f32(); break;              // 0x438595
+            case 44: units[unit].buildDays *= f32(); break;             // 0x438595: +0x5C x f there and then (a later record 43 writes over it)
             case 53: units[unit].field92 = int16_t(r.U16()); break;     // 0x438757
             case 56: units[unit].field43 = r.U8(); break;               // 0x4387B0
             case 57: units[unit].field4C = int16_t(r.U16()); break;     // 0x4387C6
@@ -284,9 +284,7 @@ namespace wow
         float factor = 1.0f;
         if (unit.buildFaction == 0) factor = playingHuman ? m.humanFriend : m.humanEnemy;
         else if (unit.buildFaction == 1) factor = playingHuman ? m.martianEnemy : m.martianFriend;
-        float v = unit.buildDays * factor;
-        if (unit.buildMul != 1.0f) v *= unit.buildMul; // record 44
-        return v;
+        return unit.buildDays * factor;
     }
 
     // record 34 (0x43823F): ftol(v x the modifier) as a word, then each record 35 (0x4382BA): ftol(+0x4A x f)

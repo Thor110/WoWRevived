@@ -65,6 +65,16 @@ namespace wow
                 int id = s16();
                 rate = DefaultRate;
                 group = 0;
+                // 0x463DE1: an id met again keeps its entry (its loop and other flags, +0x5C, +0x64 and its samples);
+                // only +0x58, the type and the volume are set
+                if (auto known = table.sounds.find(id); known != table.sounds.end())
+                {
+                    known->second.field58 = 0;
+                    known->second.type = type;
+                    known->second.volume = volume;
+                    current = &known->second;
+                    break;
+                }
                 SoundDef def;
                 def.id = id;
                 def.type = type;

@@ -525,6 +525,7 @@ namespace wow
             int segment = 0;             // entry +0x24: the path index it last reached
             bool segmentStarted = false; // entry +0x28: set on reaching a sector, cleared half way to the next
             int offsetX = 0, offsetY = 0; // entry +0x10 / +0x14: its place in the formation
+            int formation = 0;           // entry +0x18: which of its route's units it is (the offsets come from it)
             int hoursOn = 0;             // route +0x30: game hours it has been going
             bool interrupted = false;    // route +0x60
             bool retreat = false;        // the object's +0x44: Retreat, it stops at the next sector it reaches
@@ -551,6 +552,7 @@ namespace wow
         std::vector<int> FindRoute(int from, int to, const std::vector<int>& group, std::string* why = nullptr) const;
         std::vector<int> PlanRoute(const std::vector<int>& group, int sector, std::string* why = nullptr) const;
         void StartRoute(int counter, const std::vector<int>& path, int n);
+        void PlaceOnRoute(Counter& k);   // its place on the arrow's curve and the arrow's trim, from its entry
         std::vector<Counter::ArrowPoint> RouteCurve(const std::vector<int>& path, bool naval) const;
         void DrawRouteArrow(Canvas& canvas, const Counter& k, bool translucent = false) const;
         static std::vector<Counter::ArrowPoint> ArrowCurve(const std::vector<std::pair<float, float>>& control);

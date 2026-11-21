@@ -349,7 +349,7 @@ namespace wow
     // *Provisional*: +0xC0 bit 3's 0x80C1 to the parent's +0x48 +0x6C and vt+0x9C aren't in.
     void BattleMap::Smoulder(size_t index)
     {
-        if (ticks % 15 != 0 || !setup.showSmoke) return;
+        if (Frame() % 15 != 0 || !setup.showSmoke) return;
         const Unit& u = units[index];
         if (u.fogged) return;   // 0x48AEF0: no smoke while vt+0x9C (in the fog)
         const int max = MaxHealth(u.type);
@@ -383,7 +383,7 @@ namespace wow
     // level up to its own
     void BattleMap::SmoulderProp(size_t index)
     {
-        if (ticks % 15 != 0 || !setup.showSmoke) return;
+        if (Frame() % 15 != 0 || !setup.showSmoke) return;
         const Prop& p = props[index];
         const int max = MaxHealth(p.type);
         if (max == 0) return;

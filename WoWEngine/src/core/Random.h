@@ -36,6 +36,8 @@ namespace wow::random
     {
         Table& t = GameTable();
         int v = t.values[t.next++ & 1023];
-        return n >= 0 ? v % (n + 1) : 0;
+        // idiv by n + 1: the remainder keeps the value's sign (never negative) for n under -1 too; n = -1 divides
+        // by 0 in the game, 0 here
+        return n != -1 ? v % (n + 1) : 0;
     }
 }

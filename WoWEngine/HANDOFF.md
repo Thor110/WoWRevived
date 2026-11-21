@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 136
+# Handoff: WoWEngine after update 138
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -72,13 +72,22 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     and send them across it. `ROUTE FOUND` in the log is the move working; the route goes round the building.
 - For a check the scripts can't reach, add temporary code in a copy of the file, rebuild, run and restore the file.
   Examples: forcing the pod with `s.pod = ... || true`, or printing a value with `SDL_Log`.
+- **War map, a unit in transit saved and loaded** (needs a slot: copy `Human.000` to `SaveGame/Human.001`):
+  `--human --load 1 --ticks 30 --screenshot w.bmp "wait:10,click:328:228,wait:5,move:120:270,wait:5,click:120:270,wait:10,move:450:420,5,wait:60,backspace,wait:5"`
+  sends London's counter towards the next sector and runs the clock ten hours (a digit sets the speed, Backspace
+  stops it; more than a day and a pod's event box takes the input). Add
+  `,escape,wait:20,click:320:330,wait:30,up,wait:3,enter,wait:30` to Save & Exit; `--load 1` again shows it where
+  it was. Don't click a destination on another counter: that selects the counter.
 - Neither test battle has an enemy in range. So combat, retaliation, deaths and the AI's attacks have mostly been
   checked against the disassembly, not seen running. The owner's word on it: combat needs the game played, or
   waited through, until the two sides meet; there's no shortcut in the data.
 
 ## Where the knowledge is
 
-- `docs/review/PARITY.md`: **start here.** The parity review's three phases, each item ticked with the update that
+- `docs/PLAN.md`: the staged plan and task list for what's left (written after update 136). Start with it.
+- `docs/MODERN.md`, "Modern fixes": the deliberate departures that are on by default (the owner's WoWRevived
+  fixes). Marked `MODERN FIX` in the code; don't correct them back to the original.
+- `docs/review/PARITY.md`: **the parity detail.** The parity review's three phases, each item ticked with the update that
   did it, and at the end the **Deferred** list (what's still open and why) and the architecture items' status.
 - `docs/review/parity/*.md`: the eight reviewers' reports. Each finding has the original's addresses and the engine's
   file:line (line numbers as of update 126).
@@ -91,7 +100,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 136
+## State after update 138
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -126,7 +135,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **137**.
+  - The next number is **139**.
   - Work only in `WoWEngine/`. For a file format, `WoWViewer/` has the owner's own readers in C#.
   - Commit locally but don't push unless asked; a stop hook may ask to push, and the owner's answer has been no.
 - At the start of each update, merge `origin/main` (the owner's merged copy) first.

@@ -120,6 +120,7 @@ namespace wow
         bool Fades(const Screen& s) const;
         std::optional<Command> delayed;
         int delayTicks = 0;
+        int frames = 0;          // dword_4D2558: the game's frame counter (0x403749), carried from screen to screen
         int fadeIn = 0;
         int overlay = 0;
         std::unique_ptr<Screen> warMap;   // kept while its menus are showing

@@ -61,6 +61,9 @@ namespace wow
             bool showSmoke = true;      // [Options] "Show Smoke & particles" (byte_4B880C)
             std::vector<BattleGroup> groups; // the sector's war map objects (WarMap::BattleGroups)
             int ownerFaction = 2;       // who holds the sector (0x43CA30): 0 Human, 1 Martian, 2 no one
+            // the game's frame counter (dword_4D2558: one more each pass of the game's update, 0x403749, whatever
+            // screen is up), which times the fog, the look rounds' reveals and the smoke; none: the battle's own
+            const int* frame = nullptr;
             // The sector's neighbours as reinforcement points' sources (0x43D150): each sector, whether the player
             // holds it (0x4EAE1C against the player's side) and whether its holder's command building is there
             // finished (0x43C990)
@@ -606,6 +609,7 @@ namespace wow
         int scrollX = 0, scrollY = 0;
         int mouseX = -1, mouseY = -1;
         int ticks = 0;
+        int Frame() const { return setup.frame ? *setup.frame : ticks; }   // dword_4D2558
         // The fog of war (WFogOfWar at the world's +0x84): the [BattleMap] keys, the FogMap and the stamps
         struct FogOfWar
         {

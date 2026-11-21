@@ -96,7 +96,7 @@ namespace wow
     // 0x80C3 (x, y) to a vehicle (0x490D06), sent by deployment (0x4222C0) with its spot, or the map's middle for one
     // that kept its place: its heading (+0x100) and the length from the point to it (0x43FDA0), its speed (+0x104)
     // 0.2 and its velocity (+0x108 / +0x10C) that way (0x43FE90), so it eases away from the point.
-    // *Provisional*: 0x47F320(1) and vt+0x11C after it aren't in.
+    // *Provisional*: what +0xB8 bit 9 (0x47F320) is for isn't traced; it isn't kept.
     void BattleMap::Muster(size_t index, int x, int y)
     {
         Unit& u = units[index];
@@ -106,6 +106,12 @@ namespace wow
         HeadingAndLength(float(x), float(y), u.x, u.y, d.heading, length);
         d.speed = 0.2f;
         Polar(d.heading, 0.2f, d.vx, d.vy);
+        // 0x490D70: +0xB8 bit 9 set (0x47F320(1)), then vt+0x11C, one step of its driving there and then (0x492F40;
+        // a walker's 0x490040 leaves its footprints after it)
+        Steer(u);
+        if (!d.link) Paddle(u);
+        Hover(u);
+        Advance(u);
     }
 
     // 0x0E from the player (0x481CA0 -> 0x482510 -> 0x804F, 0x482E60): the point snapped (below), and with no

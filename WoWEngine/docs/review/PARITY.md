@@ -246,27 +246,59 @@ settled: battle-ui 8, combat 4 and 9, movement 15, 16 and 24, battle-setup 4, 11
 - Checked and matching, nothing to change: 0x48A5A0 (splash damage), 0x4025F0 (Random), 0x41A330 (pods), the
   route record's header (0x425A60 / 0x4257C0), flt_59E44C as the "Audible radius multiplier" setting (0x495620).
 
+**Update 137** (PLAN.md Stage 1, first part)
+- [x] The listing against WoWRevived's executable edits (PLAN 1.0). `IDA-Output.txt` shows the retail code at the
+      sites looked at: the CD Player's check is `jnz` (0x40892D); Display Settings makes the resolution slider, both
+      colour radios and the lights toggle (0x40987F-0x40994E); the drag rectangle's clamp is 640 (0x49C6B0, six
+      0x280s). Only the import is changed (`_INMM.dll`). The .smk check wasn't looked at. Nothing in the engine
+      came from a patched value. The clamp (the rubber band's vt+0x1C: at most 640 either way) isn't in the
+      engine; at 640 x 480 it can't act.
+- [x] warmap 14 (PLAN 1.1): units on a route are put back where they were. The route's units are a
+      WarMapRouteEntryList (0x427E80 / 0x427F70): a u32 count, then each entry: its object, then eight values
+      (0x42B150 / 0x42B250): +0x24 the path index reached, +0x18 its number in the route (its formation place,
+      +0x10 / +0x14, comes from it), +0x2C its speed, +0x30 the way left, +0x34 the hours left, +0x38 / +0x3C how
+      far along its segment, +0x28. `SaveRouteEntry` reads and writes them; `WarMap::UseSave` starts each route
+      on its saved path and sets each unit's entry, the arrow trimmed as 0x4258F8 does. The route's +0x30 (hours
+      on) isn't saved, and the label's hours are worked out again the game's way (0x425999, the x 0.01 quirk).
+      Tested: a unit sent from London, saved part of the way and loaded, stands at the same place on its arrow.
+- [x] The route list's layout in the save was the engine's guess ("WMOB", a count, the objects); the game writes
+      the count alone, then the entries. The engine now writes the game's and reads both.
+      *Provisional*: checked against the disassembly only; no save made by the original with units on their
+      way has been read yet.
+- [x] Scenery on scorched ground doesn't come back (PLAN 1.2): ActivateAll (0x47D030) takes out an object that
+      answers vt+0x64 after its start; for WScenery, the street lamp, the pod's class and the tree circles that is
+      0x489750, the sector's Damage Layer not 0 at its vertex. For every other class it is never (0x48B580).
+- [x] The deployment's object check counts the scenery (PLAN 1.2): 0x47FE10 searches dword_4D2550's +0x118 grid,
+      the same one an explosion searches for its victims (0x47FC50), four buckets round the place (0x449920).
+- [x] data 6, 8, 13: an SFX id met again keeps its entry (0x463DE1); record 44 multiplies +0x5C there and then
+      (0x438595); Random(n) takes the remainder for n under -1.
+
+**Update 138** (PLAN.md Stage 1, second part)
+- [x] battle-setup 12 (the rest): the fog's decay and reveals (0x43A9B1, 0x49681A, 0x48C84E) and the smoulder's
+      smoke (0x48AF5D) go by the game's frame counter, dword_4D2558, one more each pass of the game's update
+      (0x403749) whatever screen is up. `FrontEnd::frames`, given to the battle (`Setup::frame`, `Frame()`).
+- [x] movement 20: the muster order (0x80C3, 0x490D06) ends with one step of the vehicle's driving (vt+0x11C,
+      0x492F40; the walkers' and fliers' with it), after setting +0xB8 bit 9 (0x47F320(1), *provisional*: what
+      the bit is for isn't traced).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
 known visible bug in the two test battles.
 - battle-ui 9: the window's 32-pixel scroll border (the engine has no windowed / full-screen flag of the game's,
   dword_4EA364). battle-ui 12: cursor modes 2-7 (the editor / placement tools, not in the engine).
-- deployment: which objects ActivateAll takes out again (vt+0x64 after the start, 0x47D07E); the world grid's four
-  layers in 0x47FE10 (taken as the started units); the bridges and the pod in a building's scenery clearing; the
-  order of the rand() calls inside one object's start.
+- deployment: whether a building's parts are in the grid 0x47FE10 searches; the bridges and the pod in a
+  building's scenery clearing; the order of the rand() calls inside one object's start; the update order as the
+  world list's (HUNI, HCON, HRES, AUNI, ACON, ARES).
 - movement 17: the route search held off 10 updates while another group's runs (needs the route finder to become a
-  stateful object, movement A3). movement 19: the second target (+0xC8 / +0xCC, nothing sets it yet). movement 20:
-  Muster's first step (deployment musters units before the engine starts them; needs the start order of 0x495740).
+  stateful object, movement A3). movement 19: the second target (+0xC8 / +0xCC, nothing sets it yet).
   movement 21: broken bridges (bridges can't break yet, movement A5).
-- battle-setup 12 (part): the fog's timing by the game's global frame counter (dword_4D2558, carried over from the
-  war map). battle-setup 18: the end-of-battle counts' lists (+0x118 holds what with a side, unverified).
+- battle-setup 18: the end-of-battle counts' lists (+0x118 holds what with a side, unverified).
 - warmap 2 (part): the repair icon and power bar (repair isn't in). warmap 14: units on a route restart after a load
-  (which bytes of the WMOB part hold a route entry's progress isn't traced). warmap 20: the battle pulse's own draw
+  (done, update 137). warmap 20: the battle pulse's own draw
   counter (the same at a steady 30 fps).
 - frontend behaviour 2 (what 0x80CF answers per control), 6 (the CD Player's live time and starting track: needs
   the music's track kept in `Music`), 8 (Debriefing's delay from its second draw: one frame).
-- data 6 (an SFX id defined twice), 8 (record 44 in order), 13 (Random(n) for n < -1): latent, no data uses them.
 
 The architecture items, by report:
 - Settled by Phase 1: rendering A1-A3, battle-ui A / B, movement A1 / A2 / A4, combat A1-A3 / A5, battle-setup A-C,

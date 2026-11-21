@@ -724,8 +724,10 @@ namespace wow
     // buckets round the place): one that gets in the first unit's way (vt+0xBC) nearer (octagonal, whole
     // positions) than its radius (+0xAC) + the size refuses the spot. Each unit placed is started at once
     // (StartUnit), so the next object's checks see it.
-    // *Provisional*: the world's objects are taken as the units started so far (the grid's four layers aren't
-    // traced); +0x188 bit 13 (a fixed place) and +0x18C aren't read.
+    // The world's objects are the grid's (dword_4D2550's +0x118, the four buckets round the place, 0x449920): the
+    // units started so far and the scenery.
+    // *Provisional*: whether a building's parts are in the grid as well; the walkers' pass over low scenery
+    // (0x492A04) isn't applied to the scenery here; +0x188 bit 13 (a fixed place) and +0x18C aren't read.
     void BattleMap::Place(std::vector<size_t> members, int cx, int cy)
     {
         if (members.empty()) return;
@@ -791,6 +793,14 @@ namespace wow
                             const Unit& other = units[oi];
                             if (!other.started || oi == members[0] || !Collides(head, other)) continue;
                             if (Octagonal(bx, by, int(other.x), int(other.y)) < other.drive.radius + size) { ok = false; break; }
+                        }
+                        // the scenery is in the same grid (dword_4D2550's +0x118, which 0x47FC50 searches for an
+                        // explosion's victims too); a tree doesn't get in a vehicle's way (+0xB8 bit 2, 0x4929A0)
+                        for (size_t pi = 0; pi < props.size() && ok; pi++)
+                        {
+                            const Prop& p = props[pi];
+                            if (!p.alive || (p.type >= 0xCF && p.type <= 0xE5) || (p.type >= 0x399 && p.type <= 0x3A9)) continue;
+                            if (Octagonal(bx, by, int(p.x), int(p.y)) < Radius44(p.type) + size) ok = false;
                         }
                         bx += 2 * size;
                         if (++col == k) { col = 0; by += 2 * size; bx = size + tx - span; }
@@ -1771,6 +1781,36 @@ namespace wow
             if (const size_t before = lights.size(); addLight(PlacedObject{ o.type, x, y, o.z, {}, o.roll }, u->second), lights.size() > before)
                 props.back().light = int(before);
             land.SetPointLight(ix, iy, sun);
+        }
+        // ActivateAll (0x47D030), after each object's start: one that answers vt+0x64 is taken out again (vt+0x78,
+        // 0x4895A0, no explosion). For WScenery (0x489380), the street lamp (0x48F290), the pod's class (0x48F590:
+        // 0xB3, 0xCB-0xCE) and the tree circles vt+0x64 is 0x489750: whether the sector's Damage Layer (the
+        // world's +0x8C) is anything but 0 at the vertex nearest it. Scenery standing on ground that earlier
+        // battles scorched doesn't come back. A circle goes with its trees. (The other classes' vt+0x64 is
+        // 0x48B580, never: the units and buildings among them.)
+        {
+            const std::vector<uint8_t>& layer = land.Scorched();
+            const int w = land.Width(), h = land.Height();
+            auto damaged = [&](int x, int y) {
+                if (layer.size() != size_t(w) * size_t(h)) return false;
+                const int vx = std::clamp((int(uint32_t(x) << 16) + land.HalfCell()) / land.Cell(), 0, w - 1);
+                const int vy = std::clamp((int(uint32_t(y) << 16) + land.HalfCell()) / land.Cell(), 0, h - 1);
+                return layer[size_t(vy) * size_t(w) + size_t(vx)] != 0;
+            };
+            for (size_t c = 0; c < circles.size(); c++)
+                if (circles[c].alive && damaged(circles[c].x, circles[c].y))
+                {
+                    circles[c].alive = false;
+                    for (size_t i = 0; i < props.size(); i++)
+                        if (props[i].alive && props[i].circle == int(c)) RemoveProp(i);
+                }
+            for (size_t i = 0; i < props.size(); i++)
+            {
+                const int t = props[i].type;
+                const bool asks = (t >= 0xD5 && t <= 0x10F) || (t >= 0x111 && t <= 0x115) || (t >= 721 && t <= 741) ||
+                                  (t >= 845 && t <= 904) || (t >= 973 && t <= 985) || t == 0x110 || t == 0xB3 || (t >= 0xCB && t <= 0xCE);
+                if (props[i].alive && props[i].circle < 0 && asks && damaged(int(props[i].x), int(props[i].y))) RemoveProp(i);
+            }
         }
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
     }
