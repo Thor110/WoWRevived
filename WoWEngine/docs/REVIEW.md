@@ -122,8 +122,9 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       0x4934F0).
 - [ ] **Ironclads and Submersibles' own steering** (0x493870-0x493B50, 0x493A40 arrival); the Tunnelling Track Layer's
       research speed and mound (0x493D00 / 0x493D70).
-- [ ] **Stop / start footprints** (0x4915B0 / 0x491630) and **the collision filter** (0x4929A0: walkers ignore small
-      crushable objects, bridges ignored on a link); crushing.
+- [~] **Stop / start footprints** (0x4915B0 / 0x491630) and **the collision filter** (0x4929A0: walkers ignore small
+      crushable objects, bridges ignored on a link); crushing. *Update 109*: the footprints; the filter and crushing
+      still to do.
 - [x] **Drones** exploding on contact (0x48F9D0-0x48FAC0). *Update 108.*
 - [ ] **Pods** (0x48F5F0 / 0x48F620).
 - [ ] **Fences and walls** (0x48D780-0x48DB80, WFence 0x4987F0-0x498D30) with route blocking and node removal
@@ -131,13 +132,16 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
 - [x] **Gas clouds / Black Dust** (0x488CC0-0x488D70). *Update 108.*
 - [x] **Cascading death explosions** 0x255 -> 0x252 (0x48CDE0). *Update 108.*
 - [ ] **Shadows**: vehicles (0x48E6D0-0x48E850) and shells (0x4884C0-0x4885F0).
-- [ ] **Ambient-sound scenery** (0x4890A0-0x4892C0, with its 0x3AC substitution that shifts the scenery's rand()).
+- [x] **Ambient-sound scenery** (0x4890A0-0x4892C0, with its 0x3AC substitution that shifts the scenery's rand()).
+      *Update 109*: the 0x3AC substitution; its rand() was already drawn (`scenery::Burnt` for every object). The
+      types (0x2AE-0x2B5, 940, 994-996; about 1,800 in the .nsb files) aren't in OBJ.ojd, so they've no sound.
 - [ ] **Shots' own visuals** (0x4950D0 / 0x495180 / 0x495280, the atlas sprite 0x49D710, the textured quad 0x49D820).
 - [ ] **Lights on models**: point lights on WOF pieces (0x49EC00 / 0x49ED90), relighting IOB objects (0x49E2C0) and
       ISOLib's two nearest lights at `[Game] "ISO Brightness"` (0x4111B0 / 0x4113F0 / 0x410E00); the units'
       headlights (light parts 334-346).
-- [ ] **Group behaviour**: target-gone speech 0x10E / 0x10D (0x4821F0), the group's re-engage (vt+0x38, 0x483760),
-      messages 0x80C3 (rally), 0x808A (halt), 0x80B9 in 0x490A70.
+- [~] **Group behaviour**: target-gone speech 0x10E / 0x10D (0x4821F0), the group's re-engage (vt+0x38, 0x483760),
+      messages 0x80C3 (rally), 0x808A (halt), 0x80B9 in 0x490A70. *Update 109*: 0x4821F0 and vt+0x38 in (0x80C3 in
+      106); 0x808A waits on the gun emplacements (its only sender, 0x496890), 0x80B9's bit 9 on what reads it.
 
 ## 4. Interface missing
 

@@ -261,6 +261,7 @@ namespace wow
                       bool marked = false;  // its marker made (GType 0x359: a mine's +0xE8, a sinker's +0x19C)
                       int sink = 0;         // +0x194: the updates left going down or coming up
                       bool under = false, hidden = false;   // +0x190 bits 0 and 1
+                      int footX = 0, footY = 0; // +0x13C / +0x13E: where its footprint is marked (both 0: none)
                       int droneTarget = 0;  // +0x190: a drone's object to run into (vt+0xC4 = 0x48FA80)
                       bool fogged = false;  // +0xB8 bit 3 (vt+0x9C / vt+0xA0): the other side's, hidden by the fog
                       int stance = 1;       // +0xD8: its type's +0x43 byte (record 56) to start with (0x495740)
@@ -297,9 +298,13 @@ namespace wow
         void MemberSpecial(size_t unit, int message, int level); // 0x495CB0's 0x80E1-0x80E3 / 0x80F0: 0x495C10
         void ReceiveSpecial(size_t unit, int message, int level); // 0x80F8 (0x48C9B0) / 0x80F9 (0x495CB0)
         void StopAttacking(int group);                          // the target cleared, the guns 0x805A
+        void TargetGone(int group, const Unit& target, bool last); // 0x4821F0
+        void Engage(int group);                                 // vt+0x38, 0x483760
         void AttackObject(int id);                              // packet 0x10 (0x4812B0 -> 0x481F70 -> 0x482880)
         void Approach(Unit& u, const Unit& target);             // vt+0xC4: 0x491100 -> 0x496300
         void DroneTick(size_t unit);                            // 0x48FAC0 / 0x48F9F0
+        void MarkFootprint(Unit& u);                            // vt+0x110, 0x4915B0
+        void ClearFootprint(Unit& u);                           // vt+0x114, 0x491630
         static bool IsGas(int type);                            // 0x393-0x395, WGasCloud
         bool GasTick(size_t effect);                            // 0x488D70
         void LookRound(size_t unit);                            // 0x4967E0's count -> vt+0x104 (0x48F8A0, 0x496890)

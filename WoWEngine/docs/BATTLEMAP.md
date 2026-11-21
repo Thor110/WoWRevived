@@ -172,7 +172,11 @@ Placing them (`PlaceScenery`), with the game's `rand()`:
 
 - **Burnt trees** (WScenery's constructor 0x489380): with more than 3 enemy units and buildings in the sector
   (dword_4F7430, this battle's count), each scenery object made takes a `rand()`, and a tree (0xD5-0xE5) under
-  (0x8000 / 7) x (count - 3) becomes its red-weed kind (0x399-0x3A9).
+  (0x8000 / 7) x (count - 3) becomes its red-weed kind (0x399-0x3A9). The ambient-sound scenery (0x4890A0: 0x2AE-0x2B5,
+  940, 994-996, about 1,800 in the .nsb files) draws its rand() the same way, and under the mark all but 0x2AE-0x2B0,
+  0x2B5, 995 and 996 become 940 (0x3AC). As it starts (0x489170) it plays its type's sound (+0xA2) at its point,
+  1 update in about 328 (rand() < 100, 0x4892C0) stopping and playing it again, and stops it when it goes
+  (0x4891F0). None of these types is in OBJ.ojd, so none has a sound or anything to draw.
 - **Tree circles** (0x48F410, when they start, after everything's loaded): `srand(seed)`, then 8, 4 or 2 trees
   (types 0xCF / 0xD2, 0xD0 / 0xD3, 0xD1 / 0xD4) of the C kinds (0xD5 + `rand() % 7`) or D kinds (0xDC +
   `rand() % 10`); the first at angle `rand() & 0xFFF` (of 4096), each next 4096 / n further round, at distance
@@ -465,6 +469,25 @@ sends 0x8088 to an object's group (+0x48), which selects all its units.
 (only vehicles count for the box); the frontmost hotspot is the one lowest on screen; no damage yet, so the power
 bar is full. The orders themselves (move, attack, force fire), Shift adding to the selection (packet 5) and the
 group keys aren't in.
+
+## A group's target gone, and its engage (0x4821F0, 0x483760; `BattleMap::TargetGone`, `BattleMap::Engage`)
+
+- **Target gone** (0x8058 to the groups targeting an object, 0x4807F0 -> 0x4821F0, when it dies or changes class):
+  for its target (+0x30), a player's group (+0x1D8 bit 4) says **0x10E** (0x464EE0 at the listener, in the group's
+  voice, 0x449120) when it was a building (0x440700: 2 or 3), and **0x10D** when it was a vehicle (+0xB8 bit 0) that
+  was its war map object's last battle unit (0x47EB00 -> 0x4216D0 = 1); the leader's portrait is told each time
+  (0x4842D0, *not in*). Then the members get 0x80B9 and 0x805A (0x4821A0), the target is cleared (+0x2C / +0x30 0,
+  +0x34..+0x3C -1), each member 0x805A again, both players 0x8086 with its id, +0x1D8 bit 0 cleared, and +0x56 and
+  the mode (+0x1DC) 0.
+- **Engage** (vt+0x38, 0x483760; after an attack order 0x481F70, a retaliation 0x483880, and first in the periodic
+  0x483B70): with a target, an object (+0x30) that's gone (0x440110) clears it as above (0x80B9, 0x805A, bit 0 via
+  0x480EB0(0)); each member then aims at the point (vt+0xC8 with +0x40..+0x48) or at the object (vt+0xC4); then
+  +0x1D8 bit 1 is set when more than 10, or more than half the members (+0x24), answer vt+0xA8.
+- *Provisional*: 0x80B9 and 0x8086 aren't sent; +0x56 and bit 1 aren't kept. Bit 1 decides (0x496890, a gun
+  emplacement's vt+0x104 0x48F8A0) between 0x808A (vt+0x128 = 0x4910B0: +0x188 bit 5, the steering's arrival,
+  separation, braking and matching off) and 0x8031 for its units; that isn't ported, so neither is 0x808A. A
+  vehicle's 0x80B9 (0x490CD5) sets +0x188 bit 9 to its argument (0 from 0x4821A0); 0x8031 sets bit 0 and clears
+  bits 5 and 13; 0x808B sets bit 0 to its argument and bit 13 to its opposite.
 
 ## Orders (the popup's selection items 0x47E1E0, special orders 0x47DA80, stances 0x4817C0 / 0x80B2)
 
@@ -1277,6 +1300,13 @@ and gone past its last frame (7 frames: 12 updates). Then, unless the group has 
 group's voice (0x449120: its first member's type's +0xA0; the three groups of 0x10A are the three voices, Sc / Sb /
 Sa). "ROUTE NOT FOUND" (0x4833F0) speaks **0x10B** the same way. Speech plays at the listener (0x481770), and the leader's
 portrait flashes (0x4842D0, not in).
+
+**Footprints** (vt+0x110 / vt+0x114, 0x4915B0 / 0x491630; `BattleMap::MarkFootprint` / `ClearFootprint`): stopping
+(0x491590) a vehicle with none marked (+0x13C + +0x13E 0) marks the vertices within its type's +0x46 word x 1.25
+(dbl_4B01E0) of its whole position with bit 4 (0x47C280), which the strict ground cost (0x480680) refuses, keeping
+the position; going (0x491570), each member of a group ordered to move (0x482F17, before the route's asked) and a
+vehicle removed (0x490F10) take it off again (0x47C3A0) when the sum's over 0. In the test the five lorries each
+marked theirs as they stopped after a move.
 
 **Engine sounds** (0x4913B0): an update in which a vehicle is neither going (vt+0x144) nor faster than 0.01 sets
 +0x188 bit 11 and, if bit 10 was set, clears it and calls vt+0x124 (0x491590); any other sets bit 10 and, from bit 11,

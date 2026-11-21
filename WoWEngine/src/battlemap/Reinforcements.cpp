@@ -126,6 +126,7 @@ namespace wow
     // A unit leaving the map at its point: gone without its destruction (0x8057), its group marked as having left
     void BattleMap::LeaveMap(size_t index)
     {
+        ClearFootprint(units[index]);
         const Unit u = units[index];
         if (u.group >= 0 && size_t(u.group) < groupLeft.size()) groupLeft[size_t(u.group)] = true;
         if (u.engineSound && setup.sound) setup.sound->Stop(u.engineSound);

@@ -114,6 +114,7 @@ namespace wow
     // vt+0x78 (0x495BB0): out of the world without a death (0x807B to both players, then gone)
     void BattleMap::Vanish(size_t index)
     {
+        ClearFootprint(units[index]);
         const Unit u = units[index];
         if (u.engineSound && setup.sound) setup.sound->Stop(u.engineSound);
         for (const Turret& tr : u.turrets)

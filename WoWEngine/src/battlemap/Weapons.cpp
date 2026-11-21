@@ -341,7 +341,7 @@ namespace wow
     // member 0x80B9 again, the target +0x2C and its id +0x30, where it was last aimed (+0x34..+0x3C) -1), +0x1D8
     // bit 0 set (0x480EB0(1)), vt+0x38, and for a player's group (bit 4) whose first member is a vehicle speech
     // 0x10C; then bit 3. The move into range and the aim follow from the group's update (0x4826D0).
-    // (Type 0x3DB's case, the reinforcement markers: RetreatToMarker.) *Provisional*: 0x80B9 and vt+0x38 aren't in.
+    // (Type 0x3DB's case, the reinforcement markers: RetreatToMarker.) *Provisional*: 0x80B9 isn't sent.
     void BattleMap::AttackObject(int id)
     {
         const Unit* target = UnitById(id);
@@ -368,10 +368,35 @@ namespace wow
                 t = GroupTarget{};
                 t.target = id;
                 if (g < groupHomeX.size()) { groupHomeX[g] = int(target->x); groupHomeY[g] = int(target->y); }
+                Engage(int(g));     // vt+0x38
             }
             if (!any && ft != setup.units->end() && ft->second.category == 1) Speak(0x10C, int(g));
             any = true;
         }
+    }
+
+    // vt+0x38 (0x483760), the group's engage: with a target (+0x2C), an object (+0x30) that's gone (0x440110) has the
+    // members told 0x80B9 and 0x805A, the target cleared (+0x34..+0x3C -1) and bit 0 cleared (0x480EB0(0)); each
+    // member then aims at the point (vt+0xC8 with +0x40..+0x48) or at the object (vt+0xC4). Then +0x1D8 bit 1 is set
+    // when more than 10, or more than half the members (+0x24), say vt+0xA8.
+    // *Provisional*: 0x80B9 isn't sent; bit 1 (vt+0xA8) isn't kept.
+    void BattleMap::Engage(int g)
+    {
+        if (g < 0 || size_t(g) >= groupTargets.size()) return;
+        GroupTarget& t = groupTargets[size_t(g)];
+        if (t.target == 0) return;
+        if (t.target != -1 && !UnitById(t.target))
+        {
+            StopAttacking(g);
+            if (size_t(g) < groupBusy.size()) groupBusy[size_t(g)] = false;
+        }
+        const int id = t.target, x = t.x, y = t.y, z = t.z;
+        for (Unit& u : units)
+            if (u.group == g)
+            {
+                if (id == -1) Aim(u, x, y, z);
+                else if (const Unit* o = UnitById(id)) Approach(u, *o);
+            }
     }
 
     // vt+0xC4 (0x491100 -> 0x496300): unless it says not (vt+0xF8), at another object: d = ftol(the distance - -1.0),
@@ -571,7 +596,7 @@ namespace wow
     //  - with one targeted: a computer's group (bit 7) whose target is unarmed (+0x3C 0), hit by an armed firer, stands
     //    its guns down (0x805A to each member) and clears bit 0 (and bit 2), so it's free to pick again.
     // *Provisional*: a point target (force fire) is taken as bit 0 set; the second case drops the target outright
-    // (StopAttacking) where the game leaves +0x2C; 0x80B9 and vt+0x38 aren't in.
+    // (StopAttacking) where the game leaves +0x2C; 0x80B9 isn't sent.
     void BattleMap::Retaliate(int g, size_t member, int attacker)
     {
         if (g < 0 || size_t(g) >= groupTargets.size()) return;
@@ -599,6 +624,7 @@ namespace wow
             if (!a || a->players == m.players || !Targetable(*a)) return;
             gt = GroupTarget{};
             gt.target = attacker;
+            Engage(g);              // vt+0x38
             return;
         }
         if (g >= int(setup.groups.size()) || setup.groups[size_t(g)].Players() || attacker == 0) return;

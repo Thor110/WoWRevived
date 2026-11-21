@@ -59,6 +59,7 @@ namespace wow
     // *Provisional*: gone at once rather than on the next update; the kind is taken as the sector.
     void BattleMap::Die(size_t index)
     {
+        ClearFootprint(units[index]);   // 0x490F10's vt+0x114
         const Unit u = units[index];
         auto t = setup.units->find(u.type);
         if (u.engineSound && setup.sound) setup.sound->Stop(u.engineSound);
@@ -69,7 +70,11 @@ namespace wow
         for (ViewObject& o : objects)
             if (o.unit > int(index)) o.unit--;
         units.erase(units.begin() + std::ptrdiff_t(index));
-        if (std::none_of(units.begin(), units.end(), [&](const Unit& o) { return o.group == u.group; })) GroupGone(u.group);
+        const bool last = std::none_of(units.begin(), units.end(), [&](const Unit& o) { return o.group == u.group; });
+        // 0x8058 to the groups whose target it was (0x4807F0 -> 0x4821F0)
+        for (size_t g = 0; g < groupTargets.size(); g++)
+            if (u.id != 0 && groupTargets[g].target == u.id) TargetGone(int(g), u, last);
+        if (last) GroupGone(u.group);
         if (t == setup.units->end()) return;
         // vt+0xE8 (0x48A9A0): a category 0, 2 or 3 object, not a tree, frees its footprint (0x47C3A0 with 2)
         if (const int c = t->second.category; (c == 0 || c == 2 || c == 3) && !(u.type >= 0xCF && u.type <= 0xE5))
@@ -79,6 +84,28 @@ namespace wow
         const bool key = u.type == (setup.sector == 3 ? 0x33E : 0x78) || u.type == (setup.sector == 30 ? 0x116 : 0x3A);
         if (key && setup.sound) setup.sound->Play(u.players ? 0x112 : 0x13B, 1.0f);
         if (key && t->second.category != 1 && u.group >= 0) KeyBuildingLost(u.players);
+    }
+
+    // 0x4821F0 (0x8058 to a group, its target, +0x30, gone or changed class): a player's group (+0x1D8 bit 4) says
+    // 0x10E (0x464EE0 at the listener, in its voice 0x449120) when it was a building (0x440700: 2 or 3), and 0x10D
+    // when it was a vehicle (+0xB8 bit 0) that was its war map object's last (0x47EB00 -> 0x4216D0 = 1), its leader's
+    // portrait told each time (0x4842D0, *not in*). Then the members 0x80B9 and 0x805A (0x4821A0), the target cleared
+    // (+0x2C / +0x30 0, +0x34..+0x3C -1), each member 0x805A again, 0x8086 to both players with its id, +0x1D8 bit 0
+    // cleared, +0x56 and the mode (+0x1DC) 0.
+    // *Provisional*: 0x80B9 and 0x8086 aren't sent; +0x56 isn't kept.
+    void BattleMap::TargetGone(int g, const Unit& target, bool last)
+    {
+        if (g < 0 || size_t(g) >= groupTargets.size()) return;
+        if (size_t(g) < setup.groups.size() && setup.groups[size_t(g)].Players())
+        {
+            auto t = setup.units->find(target.type);
+            const int category = t == setup.units->end() ? 0 : t->second.category;
+            if (category == 2 || category == 3) Speak(0x10E, g);
+            if (target.vehicle && last) Speak(0x10D, g);
+        }
+        StopAttacking(g);
+        if (size_t(g) < groupBusy.size()) groupBusy[size_t(g)] = false;
+        if (size_t(g) < groupMode.size()) groupMode[size_t(g)] = 0;
     }
 
     // vt+0x78 (0x48AC50) on the battle's key building (not a vehicle, with a war map object): its sector is told 0x80AA

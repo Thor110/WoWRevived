@@ -57,13 +57,17 @@ namespace wow
 
     namespace scenery
     {
-        // 0x489380: the burnt kind of a tree, or the type as it was
+        // 0x489380: the burnt kind of a tree, or the type as it was. The ambient-sound scenery (0x4890A0: 0x2AE-0x2B5,
+        // 940, 994-996) draws its rand() the same way, and under the same mark all but 0x2AE-0x2B0, 0x2B5, 995 and 996
+        // become 0x3AC (940). (None of those types is in OBJ.ojd, so they've no sound, +0xA2, and draw nothing; the
+        // rand() is what matters.)
         inline int Burnt(int type, int enemyCount)
         {
             if (enemyCount <= 3) return type;
             int r = random::Rand();
             if (r >= (0x8000 / (10 - 3)) * (enemyCount - 3)) return type;
             if (type >= 0xD5 && type <= 0xE5) return type - 0xD5 + 0x399;
+            if ((type >= 0x2B1 && type <= 0x2B4) || type == 940 || type == 994) return 940;
             return type;
         }
     }

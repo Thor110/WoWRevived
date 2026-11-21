@@ -32,6 +32,30 @@ namespace wow
         }
     }
 
+    // vt+0x110 (0x4915B0, a vehicle stopping: 0x491590): with none marked (+0x13C + +0x13E 0) the vertices within its
+    // type's +0x46 word x 1.25 of its whole position get bit 4 (0x47C280), which the strict ground cost (0x480680)
+    // refuses, and the position is kept; vt+0x114 (0x491630: going, 0x491570; each member of a group ordered to move,
+    // 0x482F17; removed, 0x490F10) takes it off again (0x47C3A0) if it's there (the sum over 0)
+    void BattleMap::MarkFootprint(Unit& u)
+    {
+        if (u.footX + u.footY != 0) return;
+        auto t = setup.units->find(u.type);
+        if (t == setup.units->end()) return;
+        const int r = int(double(int16_t(t->second.currentHitPoints)) * 1.25);
+        land.MarkOccupied(int(u.x), int(u.y), r, 4);
+        u.footX = int16_t(int(u.x));
+        u.footY = int16_t(int(u.y));
+    }
+
+    void BattleMap::ClearFootprint(Unit& u)
+    {
+        if (u.footX + u.footY <= 0) return;
+        auto t = setup.units->find(u.type);
+        if (t != setup.units->end())
+            land.ClearOccupied(u.footX, u.footY, int(double(int16_t(t->second.currentHitPoints)) * 1.25), 4);
+        u.footX = u.footY = 0;
+    }
+
     // 0x80C3 (x, y) to a vehicle (0x490D06), sent by deployment (0x4222C0) with its spot, or the map's middle for one
     // that kept its place: its heading (+0x100) and the length from the point to it (0x43FDA0), its speed (+0x104)
     // 0.2 and its velocity (+0x108 / +0x10C) that way (0x43FE90), so it eases away from the point.
@@ -132,6 +156,7 @@ namespace wow
             Unit& u = units[i];
             if (u.drive.link) continue;
             const int d = octagonal(int(u.x), int(u.y), x, y);
+            if (u.vehicle) ClearFootprint(u);   // 0x482F17: vt+0x114 (its own footprint off the ground it routes over)
             u.drive.toPoint = d;
             if (d < nearest) nearest = d;
             if (d > farthest)
@@ -298,7 +323,8 @@ namespace wow
             {
                 d.flags &= ~0x400u;
                 Surface(index);         // the sinkers' vt+0x124 (0x499120)
-                EngineSound(u);
+                MarkFootprint(units[index]);
+                EngineSound(units[index]);
             }
             return;
         }
@@ -306,6 +332,7 @@ namespace wow
         if (d.flags & 0x800)
         {
             d.flags &= ~0x800u;
+            ClearFootprint(u);
             EngineSound(u);
         }
         // frozen (vt+0x108, 0x4909D0's check), it doesn't move
