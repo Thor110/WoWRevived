@@ -42,7 +42,8 @@ namespace
 {
     constexpr int GameWidth = 640;
     constexpr int GameHeight = 480;
-    constexpr uint64_t TickNs = 1'000'000'000ull / 30;
+    // the timer's period (0x401CAA-0x401CBD): 1000 / "Game Frequency" ms in whole numbers, 33 ms at 30
+    uint64_t TickNs = 33'000'000ull;
     constexpr int WaitKey = -100'000'000; // a "wait:n" in the screenshot keys, less n
     constexpr int MoveKey = -50'000'000;  // a "move:x:y", less x << 12 | y
     constexpr int DownKey = -60'000'000;  // "down:x:y"
@@ -164,6 +165,7 @@ namespace
         {
             std::string value;
             if (ini.Get(wow::IniStore::RootSection(), "Enable Network Version", value)) settings.networkEnabled = std::atoi(value.c_str()) != 0;
+            if (ini.Get(wow::IniStore::RootSection(), "Game Frequency", value)) settings.gameFrequency = std::max(1, std::atoi(value.c_str()));
             if (ini.Get("Colours", "Menu Heading", value)) settings.colours.heading = std::atoi(value.c_str());
             if (ini.Get("Colours", "Menu Items", value)) settings.colours.items = std::atoi(value.c_str());
             if (ini.Get("Colours", "Menu Static Text", value)) settings.colours.staticText = std::atoi(value.c_str());
@@ -262,7 +264,9 @@ int main(int argc, char** argv)
         wow::Vfs vfs(*files);
         wow::Resources resources(vfs, human);
         wow::Settings ini(vfs.Files());
-        wow::FrontEnd frontEnd(resources, ReadSettings(*files), ini, vfs.Files());
+        const wow::FrontEndSettings settings = ReadSettings(*files);
+        TickNs = uint64_t(1000 / settings.gameFrequency) * 1'000'000ull;
+        wow::FrontEnd frontEnd(resources, settings, ini, vfs.Files());
 
         wow::Video video;
         std::string error;

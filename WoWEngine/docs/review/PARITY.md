@@ -205,16 +205,52 @@ settled: battle-ui 8, combat 4 and 9, movement 15, 16 and 24, battle-setup 4, 11
 - [x] battle-setup 7, 12 (part), 13, 16: the planner's worth over 0, the first decay after the reveals, vehicles only
       for a group's range and grounds, every member's staggered death.
 
-**Still to do**
-- [ ] battle-ui 9 (the window's 32-pixel scroll border: the engine has no windowed flag), 12 (the editor's cursor
-      modes 2-7).
-- [ ] movement 17 (the route search held off for 10 updates while another group's runs), 19 (the second target),
-      20 (Muster's first step: the engine's units aren't started when deployment musters them), 21 (broken bridges).
-- [ ] battle-setup 12 (part: the fog by the game's global frame counter), 18 (the counts' lists).
-- [ ] warmap 2 (repair icon and bar), 14 (transit after a load: the save's route entry bytes untraced), 20 (the
-      pulse's counter; the same at a steady 30 fps).
-- [ ] rendering 9, 12, 13 (the gun flash level, a WOF's piece order, view list ties).
-- [ ] frontend 9 and behaviour 1-8; data 4-13; the architecture items.
+**Update 135** (the rest that could be settled from the disassembly alone)
+- [x] rendering 9: checked, already matching (the beam's level +0xA1 >> 2). Rendering 12 (qsort vs stable_sort of a
+      WOF's pieces) and 13 (the view list's ties) are left on purpose: unstable orders only differ for coplanar
+      pieces and equal keys, and copying them would mean copying the CRT's qsort.
+- [x] frontend 9: text centred on a point takes the widest line's box (0x40FBF0).
+- [x] frontend behaviour 1: the tick is 1000 / "Game Frequency" whole milliseconds (33 ms, 0x401CAA), the value read
+      from [Main] (the registry redirect's root section, where the game key's root values live); the battle's
+      gun and light timings read the same value (update 134's [System] corrected).
+- [x] frontend behaviour 3: a fade-out's ratio replaces the fade-in's (0x464DC6).
+- [x] frontend behaviour 5: the movies' sound ignores Master (no SmackVolumePan).
+- [x] frontend behaviour 4 and 7: checked, equivalent (the reviewer's finding).
+- [x] data 4 / 5: a sample already in any of the sound's groups isn't added again and a group has no cap
+      (0x466B40); an opcode 0 type over 5 keeps the last priority (0x463DAB).
+- [x] data 7 / 9 / 10 / 11 / 12: records 38 and 39 in double, one truncation; record 35 multiplies +0x4A's 100 with no
+      record 34; record 6's first word and record 12's words signed; [Tweak] "VisRadMul" read; an off-map scenery
+      object at (0, 0).
+
+## Deferred (with the reason each is still open)
+
+Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
+known visible bug in the two test battles.
+- battle-ui 9: the window's 32-pixel scroll border (the engine has no windowed / full-screen flag of the game's,
+  dword_4EA364). battle-ui 12: cursor modes 2-7 (the editor / placement tools, not in the engine).
+- movement 17: the route search held off 10 updates while another group's runs (needs the route finder to become a
+  stateful object, movement A3). movement 19: the second target (+0xC8 / +0xCC, nothing sets it yet). movement 20:
+  Muster's first step (deployment musters units before the engine starts them; needs the start order of 0x495740).
+  movement 21: broken bridges (bridges can't break yet, movement A5).
+- battle-setup 12 (part): the fog's timing by the game's global frame counter (dword_4D2558, carried over from the
+  war map). battle-setup 18: the end-of-battle counts' lists (+0x118 holds what with a side, unverified).
+- warmap 2 (part): the repair icon and power bar (repair isn't in). warmap 14: units on a route restart after a load
+  (which bytes of the WMOB part hold a route entry's progress isn't traced). warmap 20: the battle pulse's own draw
+  counter (the same at a steady 30 fps).
+- frontend behaviour 2 (what 0x80CF answers per control), 6 (the CD Player's live time and starting track: needs
+  the music's track kept in `Music`), 8 (Debriefing's delay from its second draw: one frame).
+- data 6 (an SFX id defined twice), 8 (record 44 in order), 13 (Random(n) for n < -1): latent, no data uses them.
+
+The architecture items, by report:
+- Settled by Phase 1: rendering A1-A3, battle-ui A / B, movement A1 / A2 / A4, combat A1-A3 / A5, battle-setup A-C,
+  data A (tree circles' children: their lifetime is still open, see S6).
+- Still as they were, by choice for now: movement A3 (the route finder is a function, not a stateful singleton),
+  movement A5 (bridges are scenery, not objects that can break), combat A4 (hits take ints; Hit now takes the raw
+  double), battle-ui C (the screen point is computed when needed; it's the same value), battle-ui D / warmap
+  (popups: rows now, but still a flat list of items, not child windows), warmap A (one `Counter` for the original's
+  counter and its objects), warmap B / C (views and drawing are immediate, not child objects and a depth-sorted
+  display list), frontend 1-3 (the Fullscreen View, controls and the cursor as one Screen / Button / int), data B-D
+  (OBJ.ojd parsed by several loops, modifiers applied at use, saves carried as blobs found by tag).
 
 ## Original bugs to keep
 

@@ -689,7 +689,8 @@ namespace wow
         // every sound stops for the movie (0x44DEFE -> 0x465B20)
         sound.FadeOutAll(0);
         ambient = 0;
-        Show(std::make_unique<MovieScreen>(res, std::move(movie), next, sound.Master()));
+        // SMACKW32 is driven without SmackVolumePan: the movies' sound ignores [Sound\Volume] Master
+        Show(std::make_unique<MovieScreen>(res, std::move(movie), next, 1.0f));
     }
 
     std::unique_ptr<Screen> FrontEnd::WarMapMenu()
@@ -1152,9 +1153,9 @@ namespace wow
         s.wofBrightness = ini.GetFloat("Game", "WOF Brightness", 2.5f);
         s.zoomerSpeed = ini.GetFloat("Tweak", "Battlemap Zoomer Speed", 2.5f);
         s.lookScale = ini.GetFloat("Tweak", "Audible radius multiplier", 1.0f);
-        // "Game Frequency" is a registry value at the game key's root (0x401770 -> 0x411810 / 0x4119A0, default 30);
-        // *provisional*: the engine reads it from the ini's [System]
-        s.gameFrequency = std::max(1, ini.GetInt("System", "Game Frequency", 30));
+        // "Game Frequency" is a registry value at the game key's root (0x401770 -> 0x411810 / 0x4119A0, default 30),
+        // which the registry redirect keeps in the ini's root section, [Main]
+        s.gameFrequency = std::max(1, ini.GetInt("Main", "Game Frequency", 30));
         s.waterTwinkles = ini.GetInt("Tweak", "Water twinkles per frame", 20);
         s.isoBrightness = ini.GetFloat("Game", "ISO Brightness", 0.5f);
         s.showSmoke = ini.GetBool("Options", "Show Smoke & particles", true);
@@ -1190,6 +1191,7 @@ namespace wow
         s.vehicles.turnAnimRate = ini.GetFloat("Vehicles", "turnAnimRate", 0.02f);
         s.zMapRes = ini.GetInt("System", "ZMapRes", 400);
         s.sound = &sound;
+        s.armour.visRadMul = ini.GetFloat("Tweak", "VisRadMul", 1.5f);   // 0x4373D0 (flt_4F706C), record 32
         s.armour.scenery = ini.GetFloat("Tweak", "Scenery Armour Modifier", 1.2f);
         s.armour.humanFriend = ini.GetFloat("Tweak", "HumanFriend Armour Modifier", 1.8f);
         s.armour.humanEnemy = ini.GetFloat("Tweak", "HumanEnemy Armour Modifier", 1.8f);

@@ -232,8 +232,9 @@ namespace wow
             case 38: // 0x438392: scales the speed and +0x56
             {
                 float a = f32(), b = f32();
-                units[unit].warMapSpeed = int(float(units[unit].warMapSpeed) * a);
-                units[unit].field56 = int(float(units[unit].field56) * b);
+                // fild word; fmul float; ftol: no rounding through float first
+                units[unit].warMapSpeed = int(double(units[unit].warMapSpeed) * double(a));
+                units[unit].field56 = int(double(units[unit].field56) * double(b));
                 break;
             }
             case 45: for (float& v : units[unit].upkeep) v = f32(); break;      // 0x4385BA
@@ -275,7 +276,7 @@ namespace wow
         float factor = 1.0f; // flt_4AA518
         if (unit.researchFaction == 0) factor = playingHuman ? m.humanFriend : m.humanEnemy;
         else if (unit.researchFaction == 1) factor = playingHuman ? m.martianEnemy : m.martianFriend;
-        return int16_t(int(float(unit.researchDays * 24) * factor));
+        return int16_t(int(double(unit.researchDays * 24) * double(factor)));   // x87, one truncation (0x438444)
     }
 
     float ObjOjd::BuildTable(const UnitData& unit, bool playingHuman, const ManufactureModifiers& m)
@@ -291,11 +292,15 @@ namespace wow
     // record 34 (0x43823F): ftol(v x the modifier) as a word, then each record 35 (0x4382BA): ftol(+0x4A x f)
     int ObjOjd::Armour(const UnitData& unit, bool playingHuman, const ArmourModifiers& m)
     {
-        if (unit.armourFaction < 0) return 100;
-        float mod = m.scenery;
-        if (unit.armourFaction == 0) mod = playingHuman ? m.humanFriend : m.humanEnemy;
-        else if (unit.armourFaction == 1) mod = playingHuman ? m.martianEnemy : m.martianFriend;
-        int a = int(int16_t(int(double(unit.armourRaw) * double(mod))));
+        // without a record 34, +0x4A stays at its 100, and the record 35s (0x4382BA) still multiply it
+        int a = 100;
+        if (unit.armourFaction >= 0)
+        {
+            float mod = m.scenery;
+            if (unit.armourFaction == 0) mod = playingHuman ? m.humanFriend : m.humanEnemy;
+            else if (unit.armourFaction == 1) mod = playingHuman ? m.martianEnemy : m.martianFriend;
+            a = int(int16_t(int(double(unit.armourRaw) * double(mod))));
+        }
         for (float f : unit.armourMuls) a = int(int16_t(int(double(a) * double(f))));
         return a;
     }
@@ -320,10 +325,10 @@ namespace wow
             {
             case 0: id = int16_t(r.U16()); break;
             case 15: unit = int16_t(r.U16()); break;
-            case 6: { auto& e = t.six[id]; e.a = f32(); e.b = f32(); e.c = r.U16(); e.d = r.U16(); break; } // 0x437A52
+            case 6: { auto& e = t.six[id]; e.a = f32(); e.b = f32(); e.c = int16_t(r.U16()); e.d = r.U16(); break; } // 0x437A52 (the first word movsx, 0x49DD4B)
             case 10: { auto& e = t.ten[id]; for (int& v : e) v = int16_t(r.U16()); break; }                 // 0x437BB8
             case 11: { int a = int16_t(r.U16()); t.eleven[id] = { a, f32() }; break; }                      // 0x437BE6
-            case 12: { auto& e = t.twelve[unit]; for (int& v : e) v = r.U16(); break; }                     // 0x437C87
+            case 12: { auto& e = t.twelve[unit]; for (int& v : e) v = int16_t(r.U16()); break; }            // 0x437C87 (read movsx, 0x494CB6)
             case 13: { auto& e = t.thirteen[unit]; e.f = f32(); e.a = int16_t(r.U16()); e.b = int16_t(r.U16()); e.c = int16_t(r.U16()); break; } // 0x437D19
             case 9: // 0x437866
             {

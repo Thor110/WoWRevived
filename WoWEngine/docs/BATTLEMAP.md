@@ -1641,7 +1641,8 @@ the selection voice (0x109, 0x439000) aren't in; a quiet positional voice isn't 
 - **A gun aimed** works out its in-range flag at once (0x494D20 -> 0x494FD0), so it can fire on the next cycle.
 - **The cascade** (0x48CDE0) passes its weapon type on.
 - **"Game Frequency"** (dword_4B84C8, a registry value, default 30) scales the gun cycle and the lights' fades.
-  *Provisional*: the engine reads it from the ini's [System].
+  It's kept in the ini's root section, [Main], where the registry redirect puts the game key's root values; the
+  front end's tick is 1000 / it whole milliseconds (33 ms at 30, update 135).
 - **Damage** is worked in double and truncated once (0x48A5A0), the scenery's too.
 - **A ground click** with no point found is still sent with y 0 (0x485C5F); in mode 0 the cursor over the other
   side's unit stays as it was (0x4971B7).

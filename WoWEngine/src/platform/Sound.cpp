@@ -322,7 +322,8 @@ namespace wow
             if (v.fadeOutTicks)
             {
                 v.fadeOutDone++;
-                v.fade = std::min(v.fade, 1.0f - float(v.fadeOutDone) / float(v.fadeOutTicks));
+                // 0x464DC6-0x464DF1: the fade-out's ratio replaces the fade-in's (0x464CB0)
+                v.fade = 1.0f - float(v.fadeOutDone) / float(v.fadeOutTicks);
             }
         }
         voices.erase(std::remove_if(voices.begin(), voices.end(), [](const Voice& v) { return v.fadeOutTicks && v.fadeOutDone >= v.fadeOutTicks; }), voices.end());

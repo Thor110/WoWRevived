@@ -18,6 +18,7 @@ namespace wow
     struct FrontEndSettings
     {
         bool networkEnabled = false; // [Main] "Enable Network Version"
+        int gameFrequency = 30;      // [Main] "Game Frequency" (dword_4B84C8): ticks a second
         MenuColours colours;
     };
 

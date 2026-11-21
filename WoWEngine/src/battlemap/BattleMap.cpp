@@ -1528,6 +1528,13 @@ namespace wow
         std::vector<SceneryObject> list;
         try { list = wow::LoadScenery(*data); }
         catch (const std::exception&) { return; }
+        // WScenery::Load (0x4895E0, 0x489653): an object off the map (x past the world's width, y past its height, or
+        // either under 0) is put at (0, 0), both at once
+        {
+            const int worldH = int((int64_t(land.Height()) * land.Cell()) >> 16);
+            for (SceneryObject& o : list)
+                if (o.x < 0 || o.y < 0 || o.x >= land.WorldWidth() || o.y >= worldH) { o.x = 0; o.y = 0; }
+        }
         auto radius = [&](int type) {
             auto u = setup.units->find(type);
             return u == setup.units->end() ? 0 : int(int16_t(u->second.hitPoints));

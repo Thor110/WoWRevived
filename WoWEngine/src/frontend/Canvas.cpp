@@ -108,11 +108,16 @@ namespace wow
         int y = box.y;
         if (flags & TextCentreY) y += (box.h - totalHeight) / 2;
 
+        // centred on a point (a box with no width), the text's own box is the widest line's, from -(widest / 2)
+        // (0x40FBF0), and each line is centred in that (0x40F770)
+        int widest = 0;
+        for (std::string_view line : lines) widest = std::max(widest, font->Measure(line));
         for (std::string_view line : lines)
         {
             int lineWidth = font->Measure(line);
             int x = box.x;
             if (flags & TextRight) x = box.x + box.w - lineWidth;
+            else if ((flags & TextCentreX) && box.w == 0) x += -(widest >> 1) + (widest - lineWidth) / 2;
             else if (flags & TextCentreX) x += (box.w - lineWidth) / 2;
 
             for (char c : line)

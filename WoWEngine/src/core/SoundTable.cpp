@@ -57,7 +57,8 @@ namespace wow
             case 0:
                 type = s16();
                 volume = 1.0f;
-                priority = type == SoundDef::Speech ? 0x80 : 0xC0;
+                // 0x463DAB: a type over 5 jumps past the priority's store, keeping the last one
+                if (type >= 0 && type <= 5) priority = type == SoundDef::Speech ? 0x80 : 0xC0;
                 break;
             case 1:
             {
@@ -81,11 +82,12 @@ namespace wow
                 bool wanted = op == 2 || (op == 4 && human) || (op == 3 && !human);
                 if (wanted)
                 {
-                    auto& samples = entry().groups[group];
-                    // the game keeps at most 5 per group, and shares a sample used twice
+                    // 0x466B40 looks the sample up in all three groups and adds nothing when it's there already (no cap
+                    // on a group's count)
                     bool already = false;
-                    for (const SoundSample& s : samples) already |= s.name == name;
-                    if (!already && samples.size() < 5) samples.push_back({ name, type == SoundDef::Speech, rate });
+                    for (const auto& g : entry().groups)
+                        for (const SoundSample& s : g) already |= s.name == name;
+                    if (!already) entry().groups[group].push_back({ name, type == SoundDef::Speech, rate });
                 }
                 break;
             }
