@@ -544,8 +544,8 @@ int main(int argc, char** argv)
             auto table = wow::SoundTable::Load(ReadFile(argv[2]), human);
             for (const auto& [id, s] : table.Sounds())
             {
-                std::printf("0x%03X  %-10s vol %.2f%s%s%s", unsigned(id), wow::SoundTable::TypeName(s.type), double(s.volume),
-                    s.loop ? "  loop" : "", s.positional ? "  positional" : "", s.stereo ? "  stereo" : "");
+                std::printf("0x%03X  %-10s vol %.2f%s%s%s%s", unsigned(id), wow::SoundTable::TypeName(s.type), double(s.volume),
+                    s.loop ? "  loop" : "", s.positional ? "  positional" : "", s.stereo ? "  stereo" : "", s.flag6 ? "  queued" : "");
                 for (int g = 0; g < 3; g++)
                 {
                     if (s.groups[g].empty()) continue;

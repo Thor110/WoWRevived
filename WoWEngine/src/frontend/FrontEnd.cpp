@@ -107,6 +107,7 @@ namespace wow
         for (int t = 0; t < 6; t++) types[t] = ini.GetFloat(SoundSection, Types[t], 1.0f);
         float master = ini.GetFloat(SoundSection, "Master", 1.0f);
         sound.SetVolumes(master, types);
+        sound.SetMinimumAudible(ini.GetFloat("Sound", "Minimum Audible Volume", 0.05f));   // 0x4646C0
         music.SetVolume(master);
     }
 

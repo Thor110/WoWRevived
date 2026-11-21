@@ -45,6 +45,7 @@ namespace wow
 
         // [Sound\Volume] Master and the per-type volumes, 0-1.
         void SetVolumes(float master, const float typeVolumes[6]);
+        void SetMinimumAudible(float v) { minimumAudible = v; }
 
         // Once per game tick: fades.
         void Update();
@@ -78,7 +79,14 @@ namespace wow
             uint64_t age = 0;         // when it started, for stealing the oldest
             int fadeTicks = 0, fadeDone = 0;
             int fadeOutTicks = 0, fadeOutDone = 0; // fading out, then stopped
+            // Ambient and engine sounds are virtual until the update hands them a voice (0x462FF0 / 0x463C30):
+            // unvoiced they go on in time, silent, so a voice given back later picks up where it would be (0x4657B0)
+            bool voiced = true;
+            float hand = 1;           // the ambient crossfade: in over 15 ticks, out over 150 (0x463C30, 0x4655F0)
+            int handIn = 0, handOut = 0;
         };
+        void HandOutVoices();           // 0x462FF0's ambient (0x463C30) and engine parts
+        float minimumAudible = 0.05f;   // [Sound] "Minimum Audible Volume" (dword_4CA874, read by 0x462FF0)
 
         static void SDLCALL Feed(void* self, SDL_AudioStream* stream, int additional, int total);
         void Mix(float* out, int frames);
@@ -94,6 +102,10 @@ namespace wow
         uint64_t started = 0;
         bool menuDuck = false;
         std::map<std::pair<int, int>, size_t> nextVariation; // round-robin cursor per sound id and group (0x466BC0)
+        // The speech queue (0x5891E0): opcode-6 speech waiting for the speech playing to end, newest first
+        struct Queued { int id; float volume; int group, x, y; };
+        std::vector<Queued> speechQueue;
+        bool fromQueue = false;
         static float Curve(float volume);     // the 128-step decibel table (0x465B20)
         float master = 1.0f, typeVolume[6] = { 1, 1, 1, 1, 1, 1 };
         int listenerX = 0, listenerY = 0;

@@ -26,7 +26,9 @@ namespace wow
         }
         SDL_PutAudioStreamData(stream, data, int(length));
         SDL_FlushAudioStream(stream);
+        pcm.assign(data, data + length);
         SDL_free(data);
+        frameSize = std::max(1u, uint32_t(SDL_AUDIO_FRAMESIZE(spec)));
         bytesPerSecond = uint32_t(SDL_AUDIO_FRAMESIZE(spec)) * uint32_t(spec.freq);
         if (bytesPerSecond == 0) bytesPerSecond = 1;
         lengthBytes = length;
@@ -43,6 +45,20 @@ namespace wow
         stream = nullptr;
         lengthBytes = lengthMs = 0;
         paused = false;
+        pcm.clear();
+    }
+
+    void Music::Seek(int deltaMs)
+    {
+        if (!stream || pcm.empty()) return;
+        const int64_t now = int64_t(PositionMs()) + deltaMs;
+        const int64_t to = std::clamp<int64_t>(now, 0, int64_t(lengthMs));
+        uint64_t offset = uint64_t(to) * bytesPerSecond / 1000;
+        offset -= offset % frameSize;
+        offset = std::min<uint64_t>(offset, pcm.size());
+        SDL_ClearAudioStream(stream);
+        if (offset < pcm.size()) SDL_PutAudioStreamData(stream, pcm.data() + offset, int(pcm.size() - offset));
+        SDL_FlushAudioStream(stream);
     }
 
     void Music::SetPaused(bool p)

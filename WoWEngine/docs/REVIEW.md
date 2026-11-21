@@ -165,12 +165,17 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
 
 ## 5. Sound
 
-- [ ] **Ambient voices** from the per-tick update with the crossfade (0x463C30: 150 out, 15 in).
-- [ ] **The speech queue** (0x4652B0 / 0x466D00: one at a time, no duplicates).
-- [ ] **Virtual voices** resuming at the right place (0x4654E0 / 0x4657B0); FadeOutKeep; a second FadeOut keeps the
-      earlier end.
-- [ ] **`[Sound]` settings**: Minimum Audible Volume, Search Libraries First, Unload Limit (0x4646C0 / 0x465EB0 /
-      0x465EF0); loose files only in debug play (0x4660A0).
+- [x] **Ambient voices** from the per-tick update with the crossfade (0x463C30: 150 out, 15 in). *Update 111*
+      (with the engine sounds' 4 loudest).
+- [x] **The speech queue** (0x4652B0 / 0x466D00: one at a time, no duplicates). *Update 111* (which end plays,
+      0x462FF0, is provisional: the routine is collapsed in the listing).
+- [~] **Virtual voices** resuming at the right place (0x4654E0 / 0x4657B0); FadeOutKeep; a second FadeOut keeps the
+      earlier end. *Update 111*: the virtual voices and
+      the earlier fade end; FadeOutKeep still to do.
+- [~] **`[Sound]` settings**: Minimum Audible Volume, Search Libraries First, Unload Limit (0x4646C0 / 0x465EB0 /
+      0x465EF0); loose files only in debug play (0x4660A0). *Update 111*: Minimum Audible Volume (the
+      voice hand-out's audible mark); the others, and the borders (`[Sound]` "Inner / Outer (Ambient) border",
+      0x464580-0x464640, points), still to do.
 
 ## 6. Front end
 
@@ -179,7 +184,8 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       its flag, whose use isn't traced; the hourly repair's part of `youlikeit` waits on repair).
 - [x] **WGame command 0x79** (shut down to the main menu). *Update 110* (no sender is known; the review's two
       are a type id and a research index).
-- [ ] **CD Player seek** ±5 s (0x413740 / 0x413990); the music step's CD status (0x413EB0, unclear).
+- [~] **CD Player seek** ±5 s (0x413740 / 0x413990); the music step's CD status (0x413EB0, unclear). *Update 111*:
+      the seek (`Music::Seek`; no button sends transports 4 / 6); the CD status still unclear.
 - [ ] The rest already on TASKS.md: Display Settings, the network menus, player objects in WGame::Tick (0x403680),
       commands one queue pass later.
 

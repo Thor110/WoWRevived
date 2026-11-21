@@ -8,7 +8,8 @@
 //   back button   plate 0xA4, glass 0xA8, string 0x40F, sends the previous menu's id
 //   status        sprite 0xAA at (47, 20 below the back button), "[track - 1]<mm:ss>", or 0x4CC with no music
 //   transport     command 0x80D3 at y 291: previous 0xA1 (0) at x 54, then play 0x9F (1) and stop 0x9E (2)
-//                 sharing x = width + 65, pause 0xA0 (5) and next 0xA2 (3) each 11 past the one before
+//                 sharing x = width + 65, pause 0xA0 (5) and next 0xA2 (3) each 11 past the one before; the
+//                 handler also takes 4 and 6 (seek back / on 5 seconds), which no button sends
 //   picture       GType 0xA9 + track at (295, 26)
 //   title / text  string from the table at 0x4B8B38 (tracks 2-5: 0x4C5-0x4C8): its first line centred at
 //                 (320, 360) in font 0x73, the rest wrapped to 500 pixels in font 0x72 centred at (320, 416)

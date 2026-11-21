@@ -1304,6 +1304,22 @@ each way to nothing at 640 x 400 (ambient: 640 x 400 to 960 x 600), 0 when the a
 multiplied (0x464FF0); it pans by its x less the listener's x 4 (DSBPAN, not speech); an opcode 18 sound beyond the
 outer border isn't made. The 5th argument picks the variation group: for speech, the voice.
 
+**The speech queue** (0x5891E0; `Sound::Play` / `Update`): speech (type 5) whose SFX.ojd entry has opcode 6 (+0x6C;
+130 of the 134 speech sounds, `wowdump --sfx` marks them "queued") isn't played at once but pushed onto the front of
+the queue (0x4652B0 -> 0x466D00), refused if its id is there already; each tick (0x462FF0), with no speech voice
+playing, the queue's head plays. FadeOutAll (0x464AB0) leaves the queue alone. *Provisional*: 0x462FF0 is collapsed
+in the listing; it reads the head, the newest, which is taken as the one played.
+
+**Ambient and engine voices** (0x462FF0's hand-out, 0x463C30; `Sound::HandOutVoices`): those sounds take no voice
+as they're played; each tick the update hands them out. Of the ambient sounds the loudest audible one (its volume
+against the listener) is voiced; when that changes the one playing fades out over 150 ticks and the new one in over
+15 (the voice's own fade-in forced to 15, 0x4655F0). Of the engine sounds the 4 loudest audible are voiced. An
+unvoiced sound goes on in time, silent, so a voice given back picks up where it would be (0x4654E0 / 0x4657B0: (age
+- start) x rate x the frame size / 30, modulo the size). With all 8 voices in use a newer sound of a higher type
+takes an ambient or engine sound's voice by making it virtual. A second fade-out keeps the earlier end (0x464EB0:
+end = min(end, now + n)), FadeOutAll too. *Not yet*: FadeOutKeep (0x464E80, +0x50, a fade that leaves the sound
+alive).
+
 **The flag** (0x483590): a player's move by a player's group (+0x1D8 bits 3 and 4) makes type 0x17C ("_ACK", category
 4, GType 26), a WAnimEffect (0x488FB0): its sprite at the point (going straight, the goal + 2 vertices; with a route,
 its last node), its depth half the width + 64 (0x489000), its frame counter (8.8) going on 0x80 an update (0x40EF20)

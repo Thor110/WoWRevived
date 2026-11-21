@@ -3,6 +3,7 @@
 // "Music-Human\NN TrackNN.wav" and "Music-Martian\NN TrackNN.wav" (the names the _inmm wrapper already uses).
 // A track is loaded whole and queued on an SDL audio stream; the position comes from how much is left queued.
 #pragma once
+#include <vector>
 #include <SDL3/SDL.h>
 
 #include <cstdint>
@@ -29,8 +30,12 @@ namespace wow
         bool Finished() const;          // played to the end
         uint32_t PositionMs() const;
         uint32_t LengthMs() const { return lengthMs; }
+        // Moves the position by this many milliseconds, kept to the track (the CD's 0x413740 / 0x413990)
+        void Seek(int deltaMs);
 
     private:
+        std::vector<uint8_t> pcm;       // the whole track, to seek in
+        uint32_t frameSize = 1;
         SDL_AudioStream* stream = nullptr;
         uint32_t lengthBytes = 0, lengthMs = 0, bytesPerSecond = 1;
         bool paused = false;

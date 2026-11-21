@@ -233,8 +233,8 @@ docs/REVIEW.md, with the full per-range reports in docs/review/.
 
 - [x] **Cheats** (update 110; `curtains`'s flag isn't traced): youlikeit, shym, datsun, curtains, icomeback, punyhumans, atchooo (englishrose is in) and their
       flags (0x401000, 0x401320; `byte_4D1249` / `4D1261` / `4D1279`, `byte_58913C`) — 01, 03
-- [ ] **Speech queue**: opcode-6 sounds one at a time, no duplicates (0x4652B0) — 09
-- [ ] **Virtual voices** that resume at the right place when they get a voice back (0x4654E0) — 09
+- [x] **Speech queue** (update 111): opcode-6 sounds one at a time, no duplicates (0x4652B0) — 09
+- [x] **Virtual voices** (update 111) that resume at the right place when they get a voice back (0x4654E0) — 09
 - [ ] **Speech attached to text ids** (0x414700) — 02
 - [ ] **`[Sound]` settings**: Minimum Audible Volume, Search Libraries First, Unload Limit; the library-before-loose-
       file order — 09, 10

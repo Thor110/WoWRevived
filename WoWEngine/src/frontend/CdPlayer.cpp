@@ -9,7 +9,7 @@ namespace wow
     {
         constexpr int CmdTrack = 0x803F;
         constexpr int CmdTransport = 0x80D3;
-        enum Transport { PrevTrack = 0, Play = 1, Stop = 2, NextTrack = 3, Pause = 5 };
+        enum Transport { PrevTrack = 0, Play = 1, Stop = 2, NextTrack = 3, SeekBack = 4, Pause = 5, SeekForward = 6 };
         constexpr int TrackText[6] = { 0x2F9, 0x2F9, 0x4C5, 0x4C6, 0x4C7, 0x4C8 }; // vanilla 0x4B8B38
         constexpr int ButtonFont = 0x73, CreditsFont = 0x72;
     }
@@ -122,6 +122,11 @@ namespace wow
             break;
         case Stop: music.Stop(); music.SetPaused(false); playing = false; Refresh(); break;
         case Pause: if (playing) { music.SetPaused(true); playing = false; Refresh(); } break;
+        // 0x4082B2 / 0x4082CF: back or on 5 seconds (0x500 in TMSF, 0x413740 / 0x413990: the seconds and minutes
+        // borrowed, kept to the track), the status redrawn while playing (0x414150). No button sends them (the
+        // transport buttons are 0, 1, 2, 3 and 5), so they're never reached.
+        case SeekBack: music.Seek(-5000); Refresh(); break;
+        case SeekForward: music.Seek(5000); Refresh(); break;
         default: break;
         }
         return true;

@@ -92,6 +92,16 @@ namespace wow
         const SoundDef* def = table.Find(id);
         if (!def) return 0;
         if (groupIndex < 0 || groupIndex > 2) groupIndex = 0;
+        // 0x4652B0: speech with opcode 6 (+0x6C) goes into the speech queue (0x466D00) unless that id's already
+        // there; the queue's head plays once no speech is playing (0x462FF0, each tick)
+        if (def->type == SoundDef::Speech && def->flag6 && !fromQueue)
+        {
+            std::lock_guard<std::mutex> l(lock);
+            for (const Queued& q : speechQueue)
+                if (q.id == id) return 0;
+            speechQueue.insert(speechQueue.begin(), { id, volume, groupIndex, x, y });
+            return 0;
+        }
         const auto& group = def->groups[groupIndex];
         if (group.empty()) return 0;
         const bool placed = x != 0 || y != 0;
@@ -127,6 +137,16 @@ namespace wow
         constexpr size_t Voices = 8;
         auto loudness = [&](const Voice& o) { return o.gain * o.fade; };
         auto erase = [&](size_t i) { voices.erase(voices.begin() + std::ptrdiff_t(i)); };
+        // ambient and engine sounds take no voice now: the update hands them out (0x463C30)
+        if (v.type == SoundDef::Ambient || v.type == SoundDef::Engine)
+        {
+            v.voiced = false;
+            v.hand = 0;
+            v.handle = nextHandle++;
+            v.age = started++;
+            voices.push_back(v);
+            return v.handle;
+        }
         int sameType = 0;
         for (const Voice& o : voices) if (o.type == v.type) sameType++;
         if (v.type == SoundDef::Speech)
@@ -144,13 +164,14 @@ namespace wow
             }
             if (pick < voices.size()) erase(pick);
         }
-        else if (voices.size() >= Voices)
+        else if (size_t(std::count_if(voices.begin(), voices.end(), [](const Voice& o) { return o.voiced; })) >= Voices)
         {
             size_t pick = voices.size();
             for (size_t i = 0; i < voices.size(); i++)
-                if (voices[i].type < v.type && (pick == voices.size() || voices[i].type < voices[pick].type)) pick = i;
+                if (voices[i].voiced && voices[i].type < v.type && (pick == voices.size() || voices[i].type < voices[pick].type)) pick = i;
             if (pick == voices.size()) return 0;
-            erase(pick);
+            if (voices[pick].type <= SoundDef::Engine) { voices[pick].voiced = false; voices[pick].hand = 0; voices[pick].handOut = 0; }
+            else erase(pick);
         }
         v.handle = nextHandle++;
         v.age = started++;
@@ -182,14 +203,24 @@ namespace wow
     {
         std::lock_guard<std::mutex> l(lock);
         if (ticks <= 0) { voices.erase(std::remove_if(voices.begin(), voices.end(), [&](const Voice& v) { return v.handle == handle; }), voices.end()); return; }
-        for (Voice& v : voices) if (v.handle == handle && !v.fadeOutTicks) { v.fadeOutTicks = ticks; v.fadeOutDone = 0; }
+        // 0x464EB0: the end is the earlier of the one set and now + ticks, the start the earlier too
+        for (Voice& v : voices)
+            if (v.handle == handle)
+            {
+                if (!v.fadeOutTicks) { v.fadeOutTicks = ticks; v.fadeOutDone = 0; }
+                else v.fadeOutTicks = std::min(v.fadeOutTicks, v.fadeOutDone + ticks);
+            }
     }
 
     void Sound::FadeOutAll(int ticks)
     {
         std::lock_guard<std::mutex> l(lock);
         if (ticks <= 0) { voices.clear(); return; }
-        for (Voice& v : voices) { v.fadeOutTicks = ticks; v.fadeOutDone = 0; }
+        for (Voice& v : voices)
+        {
+            if (!v.fadeOutTicks) { v.fadeOutTicks = ticks; v.fadeOutDone = 0; }
+            else v.fadeOutTicks = std::min(v.fadeOutTicks, v.fadeOutDone + ticks);   // the earlier end kept
+        }
     }
 
     void Sound::SetPaused(bool paused)
@@ -231,7 +262,32 @@ namespace wow
 
     void Sound::Update()
     {
+        // the speech queue (0x462FF0): with no speech voice playing, its head is played.
+        // *Provisional*: 0x462FF0 is collapsed in the listing; it reads the head (the newest, 0x466D00 pushes at the
+        // front), taken here as the one played.
+        {
+            Queued next{};
+            bool play = false;
+            {
+                std::lock_guard<std::mutex> l(lock);
+                bool speaking = false;
+                for (const Voice& v : voices) if (v.type == SoundDef::Speech) speaking = true;
+                if (!speaking && !speechQueue.empty())
+                {
+                    next = speechQueue.front();
+                    speechQueue.erase(speechQueue.begin());
+                    play = true;
+                }
+            }
+            if (play)
+            {
+                fromQueue = true;
+                Play(next.id, next.volume, next.group, next.x, next.y);
+                fromQueue = false;
+            }
+        }
         std::lock_guard<std::mutex> l(lock);
+        HandOutVoices();
         for (Voice& v : voices)
         {
             if (v.fadeTicks && v.fadeDone < v.fadeTicks)
@@ -246,6 +302,45 @@ namespace wow
             }
         }
         voices.erase(std::remove_if(voices.begin(), voices.end(), [](const Voice& v) { return v.fadeOutTicks && v.fadeOutDone >= v.fadeOutTicks; }), voices.end());
+    }
+
+    // The update's hand-out (0x462FF0): of the ambient sounds the loudest audible one (its own volume against the
+    // listener) has the voice; when that changes, the one playing fades out over 150 ticks and the new one fades in
+    // over 15 (0x463C30; the voice's own fade-in is forced to 15, 0x4655F0). Of the engine sounds the 4 loudest
+    // audible ones are voiced (the loudest silent one first). Audible: at least [Sound] "Minimum Audible Volume"
+    // (0.05). Called with the lock held.
+    void Sound::HandOutVoices()
+    {
+        auto loud = [](const Voice& v) { return v.gain * v.attenuation; };
+        // ambient
+        Voice* best = nullptr;
+        for (Voice& v : voices)
+            if (v.type == SoundDef::Ambient && !v.fadeOutTicks && loud(v) >= minimumAudible && (!best || loud(v) > loud(*best))) best = &v;
+        for (Voice& v : voices)
+        {
+            if (v.type != SoundDef::Ambient) continue;
+            if (&v == best)
+            {
+                if (!v.voiced || v.handOut) { v.voiced = true; v.handOut = 0; v.handIn = 1; v.hand = 0; }
+                if (v.handIn) { v.hand = std::min(1.0f, float(v.handIn) / 15.0f); if (++v.handIn > 15) v.handIn = 0; }
+            }
+            else if (v.voiced)
+            {
+                if (!v.handOut) { v.handOut = 1; v.handIn = 0; }
+                v.hand = std::max(0.0f, 1.0f - float(v.handOut) / 150.0f);
+                if (++v.handOut > 150) { v.voiced = false; v.handOut = 0; v.hand = 0; }
+            }
+        }
+        // engine: the 4 loudest audible
+        std::vector<Voice*> engines;
+        for (Voice& v : voices) if (v.type == SoundDef::Engine) engines.push_back(&v);
+        std::stable_sort(engines.begin(), engines.end(), [&](const Voice* a, const Voice* b) { return loud(*a) > loud(*b); });
+        for (size_t i = 0; i < engines.size(); i++)
+        {
+            const bool on = i < 4 && loud(*engines[i]) >= minimumAudible;
+            engines[i]->voiced = on;
+            engines[i]->hand = on ? 1.0f : 0.0f;
+        }
     }
 
     void SDLCALL Sound::Feed(void* self, SDL_AudioStream* stream, int additional, int)
@@ -267,9 +362,16 @@ namespace wow
         {
             const auto& pcm = *v.pcm;
             const double length = double(pcm.size() / size_t(v.channels)); // frames
+            if (!v.voiced)
+            {
+                // a virtual voice goes on in time without a sound (0x4657B0's resume point)
+                v.position += v.step * frames;
+                if (v.loop && length > 0) v.position = std::fmod(v.position, length);
+                continue;
+            }
             // the duck (0x4CA998): 0.5 for everything but speech while speech plays, 0.25 under the war map menu
             float duck = v.type == SoundDef::Speech ? 1.0f : menuDuck ? 0.25f : speechPlaying ? 0.5f : 1.0f;
-            float gain = Curve(v.gain * v.fade * v.speechFade * v.attenuation * typeVolume[v.type] * master * duck) / 32768.0f;
+            float gain = Curve(v.gain * v.fade * v.speechFade * v.hand * v.attenuation * typeVolume[v.type] * master * duck) / 32768.0f;
             // the pan (DSBPAN, hundredths of a dB taken off the far side)
             const float panLeft = v.pan > 0 ? std::pow(10.0f, -v.pan / 2000.0f) : 1.0f;
             const float panRight = v.pan < 0 ? std::pow(10.0f, v.pan / 2000.0f) : 1.0f;
