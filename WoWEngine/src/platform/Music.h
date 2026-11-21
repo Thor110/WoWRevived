@@ -1,12 +1,14 @@
-// Music playback for the CD Player and, later, the in-game music.
+// Music playback for the CD Player and the in-game music.
 // The game played Red Book CD audio through MCI; WoW Revived's installer rips tracks 2-5 of each disc to
 // "Music-Human\NN TrackNN.wav" and "Music-Martian\NN TrackNN.wav" (the names the _inmm wrapper already uses).
-// A track is loaded whole and queued on an SDL audio stream; the position comes from how much is left queued.
+// A track is streamed from its file as the audio device asks for it: a track is about 55 MB, and read whole it
+// stalled the game for seconds on a cold disk as the war map's music started. The position is what's been fed
+// less what's still queued.
 #pragma once
-#include <vector>
 #include <SDL3/SDL.h>
 
 #include <cstdint>
+#include <cstdio>
 #include <filesystem>
 
 namespace wow
@@ -19,7 +21,7 @@ namespace wow
         Music(const Music&) = delete;
         Music& operator=(const Music&) = delete;
 
-        // Starts a WAV file from the beginning. Returns false (and stays stopped) if it can't be loaded or played.
+        // Starts a WAV file from the beginning. Returns false (and stays stopped) if it can't be opened or played.
         bool Play(const std::filesystem::path& wav);
         void Stop();
         void SetPaused(bool paused);
@@ -34,10 +36,15 @@ namespace wow
         void Seek(int deltaMs);
 
     private:
-        std::vector<uint8_t> pcm;       // the whole track, to seek in
-        uint32_t frameSize = 1;
+        // the device asking for more (called with the stream locked; everything that touches the file or `fed`
+        // locks the stream too, so it's the one lock)
+        static void SDLCALL Feed(void* self, SDL_AudioStream* stream, int additional, int total);
+
         SDL_AudioStream* stream = nullptr;
-        uint32_t lengthBytes = 0, lengthMs = 0, bytesPerSecond = 1;
+        std::FILE* file = nullptr;
+        uint64_t dataStart = 0;         // the data chunk's place in the file
+        uint32_t lengthBytes = 0, lengthMs = 0, bytesPerSecond = 1, frameSize = 1;
+        uint32_t fed = 0;               // bytes of the data handed to the stream so far
         bool paused = false;
         float volume = 1.0f;
     };

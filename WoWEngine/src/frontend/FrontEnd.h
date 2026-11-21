@@ -53,6 +53,7 @@ namespace wow
         void Show(std::unique_ptr<Screen> next);
 
         std::unique_ptr<Menu> NewMenu(int id);
+        std::unique_ptr<Menu> MenuOver(int id, int previous, int style); // over the map whose menu opened it
         int BackTo(int menu, int current);
         void ShowMenu(std::unique_ptr<Screen> menu, int back);
         std::map<int, int> menuParents; // each menu's way back, as BackTo keeps it

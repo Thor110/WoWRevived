@@ -248,6 +248,15 @@ namespace wow
         return m;
     }
 
+    // A menu opened from the war map's or the battle map's own menu is drawn over that map, as that menu is
+    // (backdrop 0 and the map's palette group: the war map's, or 0x2F0); from the front end, on the menu backdrop
+    std::unique_ptr<Menu> FrontEnd::MenuOver(int id, int previous, int style)
+    {
+        if (previous == CmdWarMapMenu) return std::make_unique<Menu>(id, res, settings.colours, 0, warmap::PaletteGroup, style);
+        if (previous == BattleMap::MenuCommand) return std::make_unique<Menu>(id, res, settings.colours, 0, 0x2F0, style);
+        return std::make_unique<Menu>(id, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, style);
+    }
+
     std::unique_ptr<Screen> FrontEnd::QuitGame(int previous)
     {
         // from the main menu on its own backdrop; from the war map's menu ("Save & Exit Game") over the map, as that
@@ -262,7 +271,7 @@ namespace wow
 
     std::unique_ptr<Screen> FrontEnd::SoundControl(int previous)
     {
-        auto m = NewMenu(CmdSoundControl);
+        auto m = MenuOver(CmdSoundControl, previous, 0);
         m->AddHeading(0x411);
         // the menu works in tenths (0x4B8A7C-0x4B8A84); the settings hold 0-1 like the game's. Master applies at
         // once (the 0x812B timer, 0x4644A0); Ambient (sound type 0) and Speech (type 5) when the menu closes
@@ -336,7 +345,7 @@ namespace wow
 
     std::unique_ptr<Screen> FrontEnd::CriticalEvents(int previous)
     {
-        auto m = std::make_unique<Menu>(CmdCriticalEvents, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, 2);
+        auto m = MenuOver(CmdCriticalEvents, previous, 2);
         m->AddHeading(0x412);
         for (size_t i = 0; i < std::size(Events); i++)
         {

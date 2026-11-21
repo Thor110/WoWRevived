@@ -119,6 +119,7 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       0x111) and **gun emplacements** (0x48F7C0: no guns on a damaged building); turret attach (0x489980).
       *Update 110*: the ambient loop and the hit sound 0x111.
 - [ ] **Walkers / tripods** (0x48FC70-0x48FDD0, 0x490030-0x490070: legs, footprints, `startTurnRate` / `turnAnimRate`).
+      (Reported in play: units' animations don't play; the models' pieces aren't animated yet. Comes with this.)
 - [ ] **Fliers** (0x490120-0x490170: height keeping and bob); wobble and dust / wake trail 0x3C8 (0x493490 /
       0x4934F0).
 - [ ] **Ironclads and Submersibles' own steering** (0x493870-0x493B50, 0x493A40 arrival); the Tunnelling Track Layer's
