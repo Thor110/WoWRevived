@@ -104,8 +104,15 @@ namespace wow
             // every object's +0xAC is its type's +0x44 word (the neighbours keep apart by it)
             if (auto d = setup.units->find(u.type); d != setup.units->end()) u.drive.radius = int16_t(d->second.hitPoints);
             u.health = MaxHealth(u.type);
+            // 0x48E9D0: a building whose construction isn't done (+0x7C / +0x78 at most 0.9999; +0xC0 bit 0 clear)
+            // starts with that much of its health, at least 1
+            const float progress = Progress(u);
+            const bool unfinished = double(progress) <= 0.9999;
+            if (IsBuilding(u) && unfinished) u.health = std::max(1, int(float(u.health) * progress));
             if (auto d = setup.units->find(u.type); d != setup.units->end()) u.stance = d->second.field43;   // 0x495740
             SetUpGuns(u);
+            // 0x48F7C0: an emplacement not on a vehicle whose construction is under 1.0 has no guns (+0x3C 0)
+            if (IsEmplacement(u.type) && progress < 1.0f) u.guns.clear();
             if (auto d = setup.units->find(u.type); d != setup.units->end() && d->second.category == 1)
             {
                 u.vehicle = true;
@@ -117,6 +124,7 @@ namespace wow
             }
             AddRenderer(u.type, u.x, u.y, u.heading, int(i));
             AddPartRenderers(i);
+            if (IsBuilding(u) && unfinished && u.players) AddCorners(i);
         }
         for (const Unit& u : units) Occupy(u.type, u.x, u.y);
         if (s.pod) LandPod(sun);
@@ -1052,6 +1060,43 @@ namespace wow
         }
         else if (g->gclass == 0 && res.GetFrame(gtype, 0))
             objects.push_back({ iy + 1, ix, land.ProjectY(iy, land.HeightAt(ix, iy)), nullptr, nullptr, g->paletteSlot, gtype });
+    }
+
+    float BattleMap::Progress(const Unit& u) const
+    {
+        if (u.group < 0 || size_t(u.group) >= setup.groups.size()) return 1.0f;
+        return setup.groups[size_t(u.group)].progress;
+    }
+
+    // 0x48E9D0, for a building not yet finished (+0xC0 bit 0 clear) of the player's side (+0x24 0): four type 0x17B
+    // objects (WEffect 0x487730, its plain kind) made children (0x47D190, after its parts, so a hit takes them
+    // first) at (-h, -h), (h, -h), (-h, h) and (h, h) from it, h its type's +0x46 word, each drawn at its type's
+    // +0xA1 level. They go with the building.
+    void BattleMap::AddCorners(size_t index)
+    {
+        Unit& u = units[index];
+        auto t = setup.units->find(u.type);
+        if (t == setup.units->end()) return;
+        const int h = int16_t(t->second.currentHitPoints);
+        const int at[4][2] = { { -h, -h }, { h, -h }, { -h, h }, { h, h } };
+        const int first = int(t->second.parts.size());
+        for (int k = 0; k < 4; k++)
+        {
+            const size_t before = objects.size();
+            AddRenderer(0x17B, u.x + float(at[k][0]), u.y + float(at[k][1]), 0, int(index));
+            for (size_t o = before; o < objects.size(); o++)
+            {
+                objects[o].part = first + k;
+                objects[o].depth = objects[o].key - int(u.y);
+            }
+            Attached a;
+            a.part = first + k;
+            a.ox = at[k][0];
+            a.oy = at[k][1];
+            u.attached.push_back(a);
+            u.partsLeft++;
+        }
+        std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
     }
 
     const BattleMap::IsoModel* BattleMap::LoadIob(int gtype)

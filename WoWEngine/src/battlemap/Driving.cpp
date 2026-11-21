@@ -35,7 +35,7 @@ namespace wow
     // The buildings (0x48E8A0's class: the non-vehicles of categories 2 and 3)
     bool BattleMap::IsBuilding(const Unit& u) const
     {
-        if (u.vehicle) return false;
+        if (u.vehicle || IsEmplacement(u.type)) return false;
         auto t = setup.units->find(u.type);
         return t != setup.units->end() && (t->second.category == 2 || t->second.category == 3);
     }

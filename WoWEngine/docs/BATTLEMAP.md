@@ -983,9 +983,21 @@ child is still on the list until it's gone, so each hit takes at most one part, 
 its chimneys first, then its wings. *Provisional*: a lost part's light (a light part) stays on the ground; the
 IOB parts' offsets aren't turned with a heading (buildings don't turn).
 
-*Not yet*: the four 0x17B corner objects (0x48E9D0: put at ±the type's +0x46 word round a Human building that isn't
-finished, +0xC0 bit 0 clear, which waits on construction placement), its health from the construction's state,
-the objects within reach re-seated (vt+0x78), and the gun emplacements on it (0x48F7C0).
+**Being built** (0x48E9D0): the building's state is its war map object's +0x7C / +0x78 (read through +0x48; the
+war map's construction progress, `BattleGroup::progress`). At most 0.9999 it isn't finished (+0xC0 bit 0 clear): it
+starts with ftol(its most health x that), at least 1, and on the player's side (+0x24 0) gets four type 0x17B
+children (the plain WEffect, GType 17 `bld_mark.spr`) at (-h, -h), (h, -h), (-h, h), (h, h) from it, h its type's
++0x46 word, after its parts, so they're the first a hit takes. Finished, type 0x77 adds one to dword_59E174.
+*Provisional*: a resource object's two save floats are taken as the same +0x78 / +0x7C as a construction's.
+
+**Gun emplacements** (types 0x32-0x39 and 0x6F-0x76, WEmplacement 0x48F750 on the vehicles' 0x490820, +0xB8 bit 0
+cleared): category 2 but not the building class. As one starts (vt+0x14, 0x48F7C0), when its root (vt+0xDC) isn't a
+vehicle (category 1) and the root's state (+0x48's +0x7C / +0x78) is under 1.0, its children are started and it
+has no guns (+0x3C 0, `guns` cleared); then the vehicles' start (0x490E70).
+
+*Not yet*: the objects within reach re-seated as a building's added (vt+0x78, 0x48E9D0's last loop). A war map
+construction under way is in the battle's lists only when its object exists, so these are seen with a building
+being built in the sector.
 
 ## The guns' beams (update 118; `BattleMap::DrawBeams`, `DrawAtlasQuad` in core/WofView)
 

@@ -76,6 +76,7 @@ namespace wow
                     if (auto w = aiWeights.find(g.type); w != aiWeights.end()) g.aiWeight = w->second;
                     g.aiClass = AiClass(g.type);
                     g.places = o.BattlePositions();
+                    if (list >= 2 && o.Value(0) != 0.0f) g.progress = o.Value(1) / o.Value(0);
                     out.push_back(std::move(g));
                 }
             }

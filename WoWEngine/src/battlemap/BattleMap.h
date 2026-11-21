@@ -328,6 +328,11 @@ namespace wow
         void DroneTick(size_t unit);                            // 0x48FAC0 / 0x48F9F0
         void MarkFootprint(Unit& u);                            // vt+0x110, 0x4915B0
         bool IsBuilding(const Unit& u) const;                   // the building class (0x48E8A0)
+        // the gun emplacements (0x48F750 on the vehicles' 0x490820, +0xB8 bit 0 clear): the Medium and Heavy Guns, AA
+        // Array, Rapid Heat Ray, Heat Ray Turret and Projectile Launcher, types 0x32-0x39 and 0x6F-0x76 (category 2,
+        // but not the building class)
+        static bool IsEmplacement(int type) { return (type >= 0x32 && type <= 0x39) || (type >= 0x6F && type <= 0x76); }
+        float Progress(const Unit& u) const;                    // its war map object's +0x7C / +0x78 (1 for none)
         void BuildingSound(Unit& u);                            // its own sound (+0xA2) at its point, 0x4883E0
         void BuildingTick(Unit& u);                             // 0x48F130
         void LoseParts(size_t unit);                            // 0x48EF80's part after 0x48AB20
@@ -344,6 +349,7 @@ namespace wow
         void TurretTick(Unit& u, Turret& t);                    // 0x489B40
         int GunHeading(const Unit& u, const Gun& g) const;      // its +0x40: its turret's or its unit's
         void AddPartRenderers(size_t unit);
+        void AddCorners(size_t unit);   // 0x48E9D0: the four 0x17B objects round a Human building being built
         void PoseParts(Unit& u);
         void Impact(size_t unit, const Gun& g);                 // 0x4886A0's landing: 0x487F50
         void ImpactAt(int size, int x, int y, int z, int group, int attacker = 0, int weapon = 0); // 0x487F50: the effect by size and terrain

@@ -74,16 +74,27 @@ namespace wow
         if (lose <= 0) return;
         const int last = u.partsLeft - 1;
         u.partsLeft--;
-        const auto& part = t->second.parts[size_t(last)];
+        int type = -1, ox = 0, oy = 0, oz = 0;
+        if (size_t(last) < t->second.parts.size())
+        {
+            const auto& part = t->second.parts[size_t(last)];
+            type = part.a; ox = int16_t(part.b); oy = int16_t(part.c); oz = int16_t(part.d);
+        }
+        else
+        {
+            // one of the corner objects (AddCorners)
+            type = 0x17B;
+            for (const Attached& a : u.attached)
+                if (a.part == last) { ox = a.ox; oy = a.oy; }
+        }
         objects.erase(std::remove_if(objects.begin(), objects.end(),
                                      [&](const ViewObject& o) { return o.unit == int(index) && o.part == last; }), objects.end());
         u.attached.erase(std::remove_if(u.attached.begin(), u.attached.end(), [&](const Attached& a) { return a.part == last; }),
                          u.attached.end());
-        auto pt = setup.units->find(part.a);
+        auto pt = setup.units->find(type);
         if (pt == setup.units->end()) return;
-        const int x = int(u.x) + int16_t(part.b), y = int(u.y) + int16_t(part.c);
-        const int z = int(double(int16_t(part.d)) - double(pt->second.size41) * -1.414);
-        Explode(pt->second.field98, x, y, z);
+        const int z = int(double(oz) - double(pt->second.size41) * -1.414);
+        Explode(pt->second.field98, int(u.x) + ox, int(u.y) + oy, z);
     }
 
     // 0x80A0 (0x489FA0): the object posts itself 0x8057 (gone) and makes its type's destruction effect (+0x98,
