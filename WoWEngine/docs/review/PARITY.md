@@ -313,16 +313,32 @@ settled: battle-ui 8, combat 4 and 9, movement 15, 16 and 24, battle-setup 4, 11
 - Loose map files: a **modern fix**, not parity (MODERN.md). The engine marks MAPS.WoW's entries from `maps\`,
   not the game's `Map\` (0x414FAB), so they work. Leave it.
 
+**Update 141** (PLAN.md Stage 2: the route finder and the bridges)
+- [x] movement 17, A3 (PLAN 2.1): the route finder is one search kept between updates (`RouteFinder`, on a
+      resumable `AStarRun`). A group's move begins it (0x494440) and returns; the group's update carries it on 200
+      neighbours at a time before its chase (0x483B8C -> 0x483270, `PollRoute`) and ends the move: ROUTE FOUND
+      (the route, the flag, the acknowledgement, each member's 0x802E) or 0x4833F0. While it's another group's,
+      a move is put off 10 updates (0x482E75, `heldMoves`); a group left with no members lets its search go
+      (0x494960). Tested: the same routes as before in both battles. Not tested: two groups ordered at once.
+- [x] movement 21, A5 (PLAN 2.2): a bridge is an object in the world's grid at its own point, with its type's
+      health (+0x4A, 100) and radius (+0x44). An explosion damages it like the scenery; dead (0x80A0), it gives
+      its type's destruction effect, its segments go, its footprint comes off, its table entry is cleared
+      (0x4866C0) and it breaks (0x486850): both route nodes come out (0x494370 `RemoveNode`), which gives up a
+      search under way at its group's next poll (dword_59E41C, 0x4833BA). A building starting over one takes it
+      out without the effect (0x48D2E0). A vehicle on its link keeps link and height, as the game's does with
+      the table's entry empty (0x493374). Tested by killing London's bridges: the deck is gone and a move
+      across the river ends in ROUTE NOT FOUND; with them standing the lorries cross.
+      *Provisional*: a bridge broken but still standing (segments lost at its start, 0x4865A0: only from a
+      saved battle), which drops its riders or drowns them (0x4933D0), waits for battle saving.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
 known visible bug in the two test battles.
 - battle-ui 12: cursor modes 2-7 (the editor / placement tools, not in the engine).
-- deployment: a bridge under a starting building is taken out too (0x48D2E0), which needs bridges that can go
-  (movement 21); the order of the rand() calls inside one object's start; the update order as the
+- deployment: the order of the rand() calls inside one object's start; the update order as the
   world list's (HUNI, HCON, HRES, AUNI, ACON, ARES).
-- movement 17: the route search held off 10 updates while another group's runs (needs the route finder to become a
-  stateful object, movement A3). movement 21: broken bridges (bridges can't break yet, movement A5).
+- movement 21 (the rest): a bridge broken but standing (needs a saved battle to arise).
 - warmap 2 (part): the repair icon and power bar (repair isn't in). warmap 14: units on a route restart after a load
   (done, update 137). warmap 20: the battle pulse's own draw
   counter (the same at a steady 30 fps).

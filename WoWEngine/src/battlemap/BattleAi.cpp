@@ -211,7 +211,9 @@ namespace wow
     {
         if (size_t(g) >= groupTicks.size()) return;
         // 0x483B70: with members, the chase (0x4826D0) when it has a target, before the counter
-        if (GroupCount(g) == 0) return;
+        // with none, a search that's still its own is let go (0x494960)
+        if (GroupCount(g) == 0) { if (finder.group == g) finder.group = -1; return; }
+        PollRoute(g);       // 0x483B8C, before the chase
         ChaseTarget(size_t(g));
         const int count = groupTicks[size_t(g)]++;
         if (count <= groupInterval[size_t(g)]) return;

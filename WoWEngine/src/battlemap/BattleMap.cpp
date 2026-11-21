@@ -870,9 +870,8 @@ namespace wow
     // A building's start (0x48E9D0 at 0x48EB3A-0x48EBD0): every object of the scenery list (the world's +0x11C)
     // nearer (octagonal, whole positions) than its radius (+0xAC) + the building's type's +0x46 word is taken out
     // (vt+0x78, 0x4895A0: no explosion). A tree circle goes with its trees, its children.
-    // A pod is taken out the same way (its vt+0x78 is 0x4895A0 too).
-    // *Provisional*: a bridge within reach would go as well (0x48D2E0 -> 0x4895A0); bridges can't be taken out
-    // yet, so they're left.
+    // A pod is taken out the same way (its vt+0x78 is 0x4895A0 too), and a bridge (0x48D2E0 -> 0x4895A0), which
+    // breaks as it goes (BridgeDies).
     void BattleMap::ClearScenery(size_t building)
     {
         const Unit& b = units[building];
@@ -892,6 +891,9 @@ namespace wow
             if (!p.alive || p.circle >= 0) continue;
             if (Octagonal(bx, by, int(p.x), int(p.y)) < Radius44(p.type) + reach) RemoveProp(i);
         }
+        for (size_t i = 0; i < bridgeLinks.size(); i++)
+            if (!bridgeLinks[i].gone && Octagonal(bx, by, bridgeLinks[i].x, bridgeLinks[i].y) < Radius44(bridgeLinks[i].type) + reach)
+                BridgeDies(i, true);
     }
 
     // A battle unit's renderer by its GType's class (0x47EB10): a WOF model (2) posed at its place and heading, an
@@ -1862,6 +1864,11 @@ namespace wow
             }
         const Bridge bridge = Bridge::Create(land, o.extra[0], o.extra[1], o.extra[2], o.extra[3]);
         AddBridgeNodes(bridge);
+        const size_t link = bridgeLinks.size() - 1;
+        bridgeLinks[link].type = o.type;
+        bridgeLinks[link].x = int(o.x);
+        bridgeLinks[link].y = int(o.y);
+        bridgeLinks[link].health = MaxHealth(o.type);
         const size_t first = wofs.size();
         for (int i = 0; i < bridge.Count(); i++)
         {
@@ -1875,6 +1882,7 @@ namespace wow
             // stitching, not record 6's
             const int segDepth = w->PosedDepth();
             objects.push_back({ y + segDepth, 0, 0, nullptr, w.get(), g->paletteSlot });
+            bridgeLinks[link].segments.push_back(w.get());
             wofs.push_back(std::move(w));
         }
         const int made = int(wofs.size() - first);
@@ -2042,6 +2050,17 @@ namespace wow
             controlPosts.erase(controlPosts.begin() + std::ptrdiff_t(k));
             ControlArrives(p);
         }
+        // the moves put off while the route finder was another group's (0x804F, 10 updates on)
+        for (size_t k = 0; k < heldMoves.size();)
+        {
+            if (heldMoves[k].at > ticks) { k++; continue; }
+            const HeldMove h = heldMoves[k];
+            heldMoves.erase(heldMoves.begin() + std::ptrdiff_t(k));
+            std::vector<size_t> members;
+            for (size_t i = 0; i < units.size(); i++)
+                if (units[i].group == h.group && std::find(h.ids.begin(), h.ids.end(), units[i].id) != h.ids.end()) members.push_back(i);
+            OrderGroupMove(h.group, members, h.x, h.y);
+        }
         FogTick();
         WaterTwinkles();
         // the listener (dword_4E9250 / dy): the view's centre
@@ -2100,6 +2119,8 @@ namespace wow
         }
         for (size_t c = 0; c < circles.size(); c++)
             if (circles[c].alive && circles[c].dieAt >= 0 && ticks >= circles[c].dieAt) CircleDies(c);
+        for (size_t b = 0; b < bridgeLinks.size(); b++)
+            if (!bridgeLinks[b].gone && bridgeLinks[b].dieAt >= 0 && ticks >= bridgeLinks[b].dieAt) BridgeDies(b, false);
         // the scenery: 0x80A0 arriving, the damage smoke
         for (size_t i = 0; i < props.size(); i++)
         {

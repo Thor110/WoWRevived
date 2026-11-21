@@ -6,6 +6,7 @@
 #pragma once
 #include <array>
 #include <functional>
+#include "core/AStar.h"
 #include "core/Bridge.h"
 #include "core/Landscape.h"
 #include "core/ObjOjd.h"
@@ -482,7 +483,18 @@ namespace wow
         std::vector<std::vector<int>> rfExtra;          // links added later (0x494220's -2 chain), newest first
         std::vector<int> rfOwn;                         // a node's own list's link to its partner (0x494400), or -1
         // The bridges as links (dword_59D9C0[1..], counted from 1 by dword_59D9B8 as they're made, 0x486490)
-        struct BridgeLink { int ax = 0, ay = 0, bx = 0, by = 0, length = 0; float segment = 0; };
+        // A bridge (0x48D050 on the damageable 0x489E20): its ends, its place (+0x78 / +0x7C, where it's in the
+        // world's grid), its health (+0xC4, the type's +0x4A), its two route nodes (+0xE4 / +0xE8) and its segments,
+        // its children. Its link number (+0xDC) is its place in the table (dword_59D9C0) + 1. Dead (0x80A0, 0x489FA0)
+        // or taken out (vt+0x78, 0x48D2E0), it leaves the table (0x4866C0), its footprint goes, and it breaks
+        // (vt+0x108, 0x486850): both nodes come out of the route finder (0x494370), which stops a search under way.
+        struct BridgeLink { int ax = 0, ay = 0, bx = 0, by = 0, length = 0; float segment = 0;
+                            int type = 0, x = 0, y = 0, health = 0, dieAt = -1; bool gone = false;
+                            int nodeA = -1, nodeB = -1; std::vector<const WofInstance*> segments; };
+        bool BridgeGone(int link) const { return link < 1 || link > int(bridgeLinks.size()) || bridgeLinks[size_t(link - 1)].gone; }
+        void BridgeDies(size_t bridge, bool quietly);
+        void RemoveNode(int node);                                                      // 0x494370
+        bool finderAbort = false;       // dword_59E41C: a node went since the search began
         std::vector<BridgeLink> bridgeLinks;
         int InsertNode(int x, int y, int link);                                         // 0x494220
         void AddBridgeNodes(const Bridge& bridge);                                      // 0x4983D0
@@ -491,7 +503,25 @@ namespace wow
         void SetUpRouteFinder();                                                        // 0x493DF0
         int LineCost(int group, int x0, int y0, int x1, int y1) const;                  // 0x4994B0
         int StepCost(int group, int goal, int a, int b) const;                          // 0x499660
-        bool RequestRoute(int group, int sx, int sy, int& dx, int& dy, int radius, std::vector<int>& path); // 0x494440
+        bool BeginRoute(int group, int sx, int sy, int& dx, int& dy, int radius);   // 0x494440: true, a search started
+        // The route finder (WRouteFinder, dword_59E418): one search at a time (+0x44 the group it's for, +0 the
+        // A*), begun by a group's move (0x482E60 -> 0x494440) and run 200 neighbours at a time by that group's
+        // update (0x483B70 -> 0x483270) until it's found a way or there's none. While it's another group's, a
+        // group's move is put off: its 0x804F posted to itself again 10 updates on (0x482E75).
+        struct RouteFinder
+        {
+            int group = -1;             // +0x44; -1: free
+            AStarRun run;
+            int order = -1;             // the move's order (its members are the units still on it)
+            int n = 1;                  // the group's count as the move began
+            int sx = 0, sy = 0, gx = 0, gy = 0;
+            bool attacking = false;
+        };
+        RouteFinder finder;
+        struct HeldMove { int at = 0, group = 0, x = 0, y = 0; std::vector<int> ids; };
+        std::vector<HeldMove> heldMoves;
+        void PollRoute(int group);                                              // 0x483270
+        void RouteNotFound(int group, const std::vector<size_t>& members);      // 0x4833F0
         std::shared_ptr<const Route> BuildRoute(int group, const std::vector<int>& path) const;            // 0x494690
         void FollowRoute(Unit& u, int value, std::shared_ptr<const Route> route);       // 0x802E, 0x4911B0
         void SetWaypoint(Unit& u, int index);                                           // 0x491790

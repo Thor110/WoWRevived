@@ -1,6 +1,8 @@
 // The battle map's route finder (WRouteFinder 0x493DF0-0x494960 on the A* 0x44EE70, with the BatRoute cost
 // 0x499420-0x4998D0) and a vehicle following a route (0x802E: 0x4911B0, 0x491790). See docs/BATTLEMAP.md "Routes".
 #include "battlemap/BattleMap.h"
+
+#include <SDL3/SDL.h>
 #include "core/AStar.h"
 #include "core/Bridge.h"
 #include "core/Random.h"
@@ -132,11 +134,57 @@ namespace wow
         auto vertex = [&](float v) { return int((int64_t(int32_t(uint32_t(int(v)) << 16)) + half) / cell); };
         const int na = InsertNode(vertex(float(double(b.ax) - ox)), vertex(float(double(b.ay) - oy)), link);
         const int nb = InsertNode(vertex(float(double(b.bx) + ox)), vertex(float(double(b.by) + oy)), link);
+        bridgeLinks.back().nodeA = na;
+        bridgeLinks.back().nodeB = nb;
         if (na < 0 || nb < 0) return;
         auto& la = rfLinks[size_t(na)];
         la.insert(la.begin() + std::min<ptrdiff_t>(4, ptrdiff_t(la.size())), nb);
         auto& lb = rfLinks[size_t(nb)];
         lb.insert(lb.begin() + std::min<ptrdiff_t>(4, ptrdiff_t(lb.size())), na);
+    }
+
+    // 0x494370: the node comes out of the lists of the four grid nodes round it (the first four of its own list),
+    // its own entry is emptied, and dword_59E41C is set: a search under way is given up at its group's next poll
+    // (0x4833BA: route not found).
+    void BattleMap::RemoveNode(int node)
+    {
+        finderAbort = true;
+        if (node < 0 || size_t(node) >= rfLinks.size()) return;
+        const std::vector<int> own = rfLinks[size_t(node)];
+        for (size_t k = 0; k < own.size() && k < 4; k++)
+        {
+            const int g = own[k];
+            if (g < 0 || size_t(g) >= rfExtra.size()) continue;
+            auto& e = rfExtra[size_t(g)];
+            e.erase(std::remove(e.begin(), e.end(), node), e.end());
+        }
+        rfLinks[size_t(node)].clear();
+        rfExtra[size_t(node)].clear();
+    }
+
+    // A bridge gone: by its death (0x80A0 -> 0x489FA0: its type's destruction effect, +0x98, at its point) or taken
+    // out with nothing more (vt+0x78, 0x48D2E0 -> 0x4895A0, a building starting over it). Its segments go with it,
+    // its footprint comes off (vt+0xE8), its table entry is cleared (0x4866C0) and it breaks (0x486850).
+    // A vehicle still on its link keeps the link and its height: with the table's entry empty neither is touched
+    // again (0x493374 / 0x49339F).
+    // *Provisional*: a bridge broken but still standing (+0xEC 0 with its table entry: one started with segments
+    // lost, 0x4865A0, which only a saved battle can bring) isn't in; that case drops its riders (0x4933D0).
+    void BattleMap::BridgeDies(size_t index, bool quietly)
+    {
+        BridgeLink& b = bridgeLinks[index];
+        if (b.gone) return;
+        b.gone = true;
+        b.dieAt = -1;
+        objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) {
+            return o.wof && std::find(b.segments.begin(), b.segments.end(), o.wof) != b.segments.end(); }), objects.end());
+        auto t = setup.units->find(b.type);
+        if (t != setup.units->end())
+            if (const int c = t->second.category; c == 0 || c == 2 || c == 3) land.ClearOccupied(b.x, b.y, Radius46(b.type), 2);
+        RemoveNode(b.nodeA);
+        RemoveNode(b.nodeB);
+        if (quietly || t == setup.units->end()) return;
+        const int z = int(0.0 - double(t->second.size41) * -1.414);
+        Explode(t->second.field98, b.x, b.y, z);
     }
 
     // vt+0x100 (0x4984E0, each update a vehicle's waypoint or +0x18C is this link): within the length (+0xD8) of
@@ -244,11 +292,9 @@ namespace wow
     // distance over 1) the goal becomes the start: no route. Else the goal is pulled back the radius along the
     // line from the start and, when that line can be crossed (0x4994B0 not -1), that's where it goes: no route.
     // Otherwise an A* over the nodes (0x44EE70: StepCost, the goal reached within the radius by 0x43FF00 (0x499800))
-    // is started; the group polls it (0x483B70 -> 0x483270), 200 neighbours tried each update.
-    // *Provisional*: the search is run to its end at once.
-    bool BattleMap::RequestRoute(int group, int sx, int sy, int& dx, int& dy, int radius, std::vector<int>& path)
+    // is started (true); the group polls it (0x483B70 -> 0x483270, PollRoute), 200 neighbours tried each update.
+    bool BattleMap::BeginRoute(int group, int sx, int sy, int& dx, int& dy, int radius)
     {
-        path.clear();
         if (rfCols == 0) return false;
         auto node = [&](int x, int y) {
             int i = (x - 4) / 4, j = (y - 4) / 4;
@@ -276,13 +322,66 @@ namespace wow
             dy = ny;
             return false;
         }
-        auto cost = [&](int a, int b) { return StepCost(group, goal, a, b); };
-        auto next = [&](int id) -> const std::vector<int>& { return RouteNeighbours(id); };
-        auto isGoal = [&](int a, int g) {
-            return Octagonal(rfX[size_t(a)], rfY[size_t(a)], rfX[size_t(g)], rfY[size_t(g)]) <= radius;
-        };
-        path = AStarSearch(start, goal, cost, next, isGoal, INT_MAX);
+        finder.run.Begin(start, goal,
+            [this, group, goal](int a, int b) { return StepCost(group, goal, a, b); },
+            [this](int id) { return std::vector<int>(RouteNeighbours(id)); },
+            [this, radius](int a, int g) {
+                return Octagonal(rfX[size_t(a)], rfY[size_t(a)], rfX[size_t(g)], rfY[size_t(g)]) <= radius;
+            });
+        finder.group = group;
+        finderAbort = false;        // 0x494558
         return true;
+    }
+
+    // 0x483270, from the group's update while the route finder is its: 200 more neighbours (0x44EFA0); still
+    // running, nothing; found, "ROUTE FOUND": the route built (0x494690), the flag and the acknowledgement for a
+    // player's order, and each member 0x802E(ftol(sqrt(members) + 1) x its radius, the route); none, 0x4833F0.
+    // Either way the finder is free again.
+    void BattleMap::PollRoute(int group)
+    {
+        if (finder.group != group) return;
+        // 0x4833BA: a node taken out since the search began (dword_59E41C) ends it: route not found
+        int state = 2;
+        if (finderAbort) finderAbort = false;
+        else state = finder.run.Step(200);
+        if (state == 0) return;
+        const RouteFinder f = finder;
+        finder.group = -1;
+        std::vector<size_t> members;
+        for (size_t i = 0; i < units.size(); i++)
+            if (units[i].group == group && units[i].drive.order == f.order) members.push_back(i);
+        if (state != 1 || f.run.Path().empty())
+        {
+            SDL_Log("ROUTE NOT FOUND");
+            RouteNotFound(group, members);
+            return;
+        }
+        const std::vector<int>& path = f.run.Path();
+        SDL_Log("ROUTE FOUND: %zu nodes, from vertex %d,%d to %d,%d", path.size(), f.sx, f.sy, f.gx, f.gy);
+        const auto route = BuildRoute(group, path);
+        const int32_t cell = land.Cell(), half = land.HalfCell();
+        // the flag at the route's last node and the acknowledgement (0x483590)
+        const RouteNode& last = route->nodes.back();
+        if (PlayersOrder(group))
+        {
+            MoveFlag(int32_t(int64_t(last.x) * cell - half) >> 16, int32_t(int64_t(last.y) * cell - half) >> 16);
+            if (!f.attacking) Speak(0x10A, group);
+            groupOrdered[size_t(group)] = false;
+        }
+        const int scale = int(std::sqrt(double(f.n)) - -1.0);
+        for (size_t i : members) FollowRoute(units[i], scale * units[i].drive.radius, route);
+    }
+
+    // 0x4833F0, route not found: the members 0x8031, the target dropped (0x80B9, 0x805A, +0x2C..+0x3C cleared), bit 0
+    // cleared; the speech and the portrait only for a player's order to a player's group, then bit 3 cleared
+    void BattleMap::RouteNotFound(int group, const std::vector<size_t>& members)
+    {
+        for (size_t i : members) Stop8031(units[i]);
+        const bool spoken = PlayersOrder(group);
+        StopAttacking(group);
+        if (group >= 0 && size_t(group) < groupBusy.size()) groupBusy[size_t(group)] = false;
+        if (spoken) Speak(0x10B, group);
+        if (group >= 0 && size_t(group) < groupOrdered.size()) groupOrdered[size_t(group)] = false;
     }
 
     // 0x494690: a node for each step of the path (x, y, link byte). Each between the ends moves to the average of

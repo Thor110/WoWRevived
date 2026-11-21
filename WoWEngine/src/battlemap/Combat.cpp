@@ -293,6 +293,23 @@ namespace wow
             if (d > reach || reach == 0) continue;
             DamageProp(i, int((1.0 - double(d) / double(reach)) * power));   // one truncation (0x48A5A0, x87)
         }
+        // the bridges: each one object in the grid at its own point (its segments its children), its radius its
+        // type's +0x44, its health its +0x4A
+        for (BridgeLink& b : bridgeLinks)
+        {
+            if (b.gone || b.health <= 0) continue;
+            auto bt = setup.units->find(b.type);
+            if (bt == setup.units->end() || bt->second.category == 4) continue;
+            const int reach = radius + Radius44(b.type);
+            const int d = Octagonal(b.x, b.y, x, y);
+            if (d > reach || reach == 0) continue;
+            b.health -= int((1.0 - double(d) / double(reach)) * power);
+            if (b.health <= 0)
+            {
+                const int at = ticks + random::Rand() % 20 + 10;
+                if (b.dieAt < 0 || at < b.dieAt) b.dieAt = at;
+            }
+        }
         // the tree circles, each one object (its trees its children)
         for (Circle& c : circles)
         {

@@ -27,7 +27,7 @@ Small and independent; most need one routine traced.
       restored without planning again.
 - [ ] 1.2 Deployment's leftovers (update 136's provisional points). Done in 137: what ActivateAll takes out again
       (scenery on scorched ground) and the grid 0x47FE10 searches (the scenery counts). Done in 140: a building's parts aren't in
-      the grid. Left: a bridge under a starting building (it goes too, 0x48D2E0; with 2.2);
+      the grid. Done in 141: a bridge under a starting building goes too. Left:
       the order of the rand() calls inside one start; the start order kept for the update order (the world
       list is HUNI, HCON, HRES, AUNI, ACON, ARES).
 - [x] 1.3 Tree circles hit by weapons (S6's last open point).
@@ -45,9 +45,9 @@ Small and independent; most need one routine traced.
 
 ## Stage 2: the battle map's missing pieces
 
-- [ ] 2.1 The route finder as a stateful object, its search spread over updates, a second group's held off 10
+- [x] 2.1 The route finder as a stateful object, its search spread over updates, a second group's held off 10
       updates (movement A3, 17).
-- [ ] 2.2 Bridges as objects that break; broken links; the ground under them redone (movement A5, 21).
+- [x] 2.2 Bridges as objects that break; broken links; the ground under them redone (movement A5, 21).
 - [ ] 2.3 Footprints taken off and route nodes removed as objects go; crushing.
 - [ ] 2.4 The walker subclass: the leg animation's rate, footprints (0x48FDD0, 0x490070).
 - [ ] 2.5 Fliers and boats checked against their classes; the units' headlights; the scenery's and bridges' object

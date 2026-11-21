@@ -375,6 +375,18 @@ to four each in 21 of the 30 sectors.
   (0x497AC0), world and screen points alike; the segment's bounds widen to them. So the segments' own geometry
   only gives the faces and textures, and the posed points only give the pieces' depth order.
 
+**Destroyed** (update 141). A bridge is in the world's grid at its own point (+0x78 / +0x7C), radius its type's
++0x44, health its +0x4A (100 for the City bridge). An explosion hits it like any object there; its segments, its
+children, are never hit themselves. Dead (0x80A0 -> 0x489FA0) it gives its type's destruction effect and is taken
+out (vt+0x78, 0x48D2E0 -> 0x4895A0); a building starting over it takes it out with nothing more. Going (vt+0x18,
+0x498380), its entry in the link table is cleared (0x4866C0) and it breaks (vt+0x108, 0x486850): +0xEC cleared and
+both route nodes removed (0x494370: out of the four grid nodes' lists round each, dword_59E41C set, which makes the
+group whose search is running give it up at its next poll, 0x4833BA). A vehicle whose link is that bridge's finds
+the table's entry empty and is left alone (0x493374, 0x49339F): it keeps the link and its height. A bridge broken
+but still standing (+0xEC 0 with its entry in the table) comes only from 0x4865A0, a bridge started with segments
+lost; there a vehicle on the link over water is killed (0x80A0, its group 0x8031) and any other loses the link and
+its height (0x4933D0). *Provisional*: that last case isn't in.
+
 The engine builds the joints once, as the battle map loads; the game redoes them every update (they only change
 when the ground does). *Provisional*: the segments' place among the view's objects (each by its own y plus the
 GType's +0x26), not checked against the game.

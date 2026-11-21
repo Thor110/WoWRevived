@@ -199,6 +199,15 @@ namespace wow
     void BattleMap::OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y)
     {
         if (members.empty()) return;
+        // 0x482E60's first test: the route finder busy with another group's search, this move is put off: 0x804F
+        // posted to the group again, with the point, 10 updates on
+        if (finder.group >= 0 && finder.group != group)
+        {
+            HeldMove h{ ticks + 10, group, x, y, {} };
+            for (size_t i : members) h.ids.push_back(units[i].id);
+            heldMoves.push_back(std::move(h));
+            return;
+        }
         // a move order (0x482510 / 0x480EB0) sets +0x1D8 bit 0 and clears bit 2 (the group's own periodic moves set
         // bit 2 again after, GroupTick); bit 0 goes when they've all arrived (0x8081)
         if (group >= 0 && size_t(group) < groupBusy.size()) { groupBusy[size_t(group)] = true; groupSelfMove[size_t(group)] = false; }
@@ -253,16 +262,7 @@ namespace wow
         // 0x4830FD: the route's radius is 4, or with a target (+0x2C) the group's range (+0x4E) in vertices; when the
         // goal had to be moved further out than that, "CAN'T GET TO WITHIN ATTACK DISTANCE!" and route not found
         // (0x4833F0)
-        auto notFound = [&]() {
-            // 0x4833F0: the members 0x8031, the target dropped (0x80B9, 0x805A, +0x2C..+0x3C cleared), bit 0 cleared;
-            // the speech and the portrait only for a player's order to a player's group, then bit 3 cleared
-            for (size_t i : members) Stop8031(units[i]);
-            const bool spoken = PlayersOrder(group);
-            StopAttacking(group);
-            if (group >= 0 && size_t(group) < groupBusy.size()) groupBusy[size_t(group)] = false;
-            if (spoken) Speak(0x10B, group);
-            if (group >= 0 && size_t(group) < groupOrdered.size()) groupOrdered[size_t(group)] = false;
-        };
+        auto notFound = [&]() { RouteNotFound(group, members); };
         int radius = 4;
         if (attacking)
         {
@@ -295,31 +295,13 @@ namespace wow
             if (o.group == group) { firstMember = &o; break; }
         const bool tunnelling = firstMember && ClassOf(firstMember->type) == VehicleClass::Tunneller;
         if (tunnelling && anyUnder && !allUnder) return;
-        std::vector<int> path;
-        if (!(tunnelling && anyUnder && allUnder) && RequestRoute(group, ssx, ssy, gx, gy, radius, path))
+        if (!(tunnelling && anyUnder && allUnder) && BeginRoute(group, ssx, ssy, gx, gy, radius))
         {
-            if (path.empty())
-            {
-                // 0x4833F0: "ROUTE NOT FOUND": the members get 0x8031 and the group stops
-                SDL_Log("ROUTE NOT FOUND");
-                notFound();
-                return;
-            }
-            // 0x483270: "ROUTE FOUND": each member gets 0x802E(ftol(sqrt(members) + 1) x its radius, the route)
-            SDL_Log("ROUTE FOUND: %zu nodes, from vertex %d,%d to %d,%d", path.size(), ssx, ssy, gx, gy);
-            const auto route = BuildRoute(group, path);
-            // the flag at the route's last node and the acknowledgement (0x483590)
-            {
-                const RouteNode& last = route->nodes.back();
-                if (PlayersOrder(group))
-                {
-                    MoveFlag(int32_t(int64_t(last.x) * cell - half) >> 16, int32_t(int64_t(last.y) * cell - half) >> 16);
-                    if (!attacking) Speak(0x10A, group);
-                    groupOrdered[size_t(group)] = false;
-                }
-            }
-            const int scale = int(std::sqrt(double(n)) - -1.0);
-            for (size_t i : members) FollowRoute(units[i], scale * units[i].drive.radius, route);
+            // the search is the route finder's now; the group's update carries it on and ends the move (PollRoute)
+            finder.order = order;
+            finder.n = n;
+            finder.sx = ssx; finder.sy = ssy; finder.gx = gx; finder.gy = gy;
+            finder.attacking = attacking;
             return;
         }
         SDL_Log("GOING STRAIGHT THERE! (from vertex %d,%d to %d,%d)", ssx, ssy, gx, gy);
@@ -649,12 +631,16 @@ namespace wow
         u.x = float(double(d.dx) + u.x);
         u.y = float(double(d.dy) + u.y);
         const int waypointLink = d.route && d.waypoint < int(d.route->nodes.size()) ? d.route->nodes[size_t(d.waypoint)].link : 0;
+        // (0x493374 / 0x49339F: a link whose bridge has gone from the table is left as it is, the height with it)
         if (waypointLink)
         {
-            OnBridge(u, waypointLink);
-            d.link = waypointLink;
+            if (!BridgeGone(waypointLink))
+            {
+                OnBridge(u, waypointLink);
+                d.link = waypointLink;
+            }
         }
-        else if (d.link && !OnBridge(u, d.link)) d.link = 0;
+        else if (d.link && !BridgeGone(d.link) && !OnBridge(u, d.link)) d.link = 0;
         // 0x49342C: the length of the step (0x43FDA0) and the turn animate the model
         const double mx = double(u.x) - fromX, my = double(u.y) - fromY;
         Animate(u, float(std::sqrt(mx * mx + my * my)), turn);
