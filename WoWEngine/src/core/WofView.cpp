@@ -303,7 +303,7 @@ namespace wow
         // The game's rasteriser (its edge set-up, rounding and 48 span routines) isn't traced yet; this follows
         // what's known of it: triangles taller than 250 rows are refused, u / v index a 256 wide texture.
         void FillTriangle(PolyPoint p[3], const uint8_t* tex, size_t texSize, bool flat, bool masked, const ShadeTable& table,
-                          const TerrainView::Target& t)
+                          const TerrainView::Target& t, const uint16_t* blend = nullptr)
         {
             // the flat shade is the first point's as the caller passed it, read before the sort (0x456DF5-0x456E00:
             // ([esi+40h] & 0xFC) << 6); in a piece that isn't smooth only that point holds the face's light
@@ -336,6 +336,18 @@ namespace wow
                     size_t at = size_t(v) * 256 + size_t(u);
                     if (at >= texSize) continue;
                     uint8_t texel = tex[at];
+                    if (blend)
+                    {
+                        // the shadows' span (mode 0x20, 0x4566FE in 16 bits): each of the pixel's 5 / 6 / 5 bit
+                        // channels through dat\b16.hsh's row for the texel (red at 0, green at 64, blue at 128),
+                        // the three words added
+                        const uint32_t px = out[x];
+                        const uint16_t* row = blend + size_t(texel & 63) * 256;
+                        const uint16_t c = uint16_t(row[(px >> 19) & 31] + row[64 + ((px >> 10) & 63)] + row[128 + ((px >> 3) & 31)]);
+                        const uint32_t r = (c >> 11) & 31, g = (c >> 5) & 63, b = c & 31;
+                        out[x] = (out[x] & 0xFF000000u) | ((r << 3 | r >> 2) << 16) | ((g << 2 | g >> 4) << 8) | (b << 3 | b >> 2);
+                        continue;
+                    }
                     if (masked && !texel) continue;
                     int level = flat ? flatLevel : int(sa + (sb - sa) * f) >> 2;
                     out[x] = table.Level(level)[texel];
@@ -412,7 +424,7 @@ namespace wow
                     { a[0] + ox, a[1] + oy, fd[4], fd[5], l0 },
                     { c[0] + ox, c[1] + oy, fd[8], fd[9], l2 },
                     { b[0] + ox, b[1] + oy, fd[6], fd[7], l1 } };
-                FillTriangle(pts, &file[texAt], file.size() - texAt, flat, (entry & 0x80000000u) != 0, table, target);
+                FillTriangle(pts, &file[texAt], file.size() - texAt, flat, (entry & 0x80000000u) != 0, table, target, shadowTable);
             }
         }
     }

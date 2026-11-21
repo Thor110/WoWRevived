@@ -55,6 +55,13 @@ namespace wow
         // The projected bounds after Transform (+0x68..+0x72), relative to the anchor
         int MinX() const { return boundMin[0]; }
         int MaxX() const { return boundMax[0]; }
+        int MaxY() const { return boundMax[1]; }     // +0x70
+
+        // Drawn as a shadow (its instance's +0x48 0x20, 0x48E700): each pixel darkened through this table
+        // (dat\b16.hsh, 64 rows of 256 words) by the texel, nothing of the texture's own colours
+        void SetShadow(const uint16_t* table) { shadowTable = table; }
+        // The x scale (+0x3C) times a factor, ftol'd (0x48E72F)
+        void ScaleX(float f) { sx = int(float(sx) * f); }
 
     private:
         struct Piece
@@ -70,6 +77,7 @@ namespace wow
         int root = 0;
         int sx = 1, sy = 1, sz = 1;          // +0x3C..+0x44
         int groundFollow = 0;                // +0x60
+        const uint16_t* shadowTable = nullptr;
         int frames = 0, frame = 0;           // header 0x1C (+0x62 set when it isn't 0), +0x5C
         uint32_t keys = 0;                   // header 0x20 (+0x30); its piece offsets 0x18 on (+0x34)
         float keyScale = 1.0f;               // header 0x14 (+0x38)

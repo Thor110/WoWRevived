@@ -959,6 +959,30 @@ the damage (0x4958B0). Going (0x48EEE0) stops both, and for type 0x77 with +0xC0
 *Not yet*: the ground flattened and sampled under it, the four 0x17B corner objects, its health from the
 construction's state, the damage frames (0x48A7D0, 0x48EF80) and the gun emplacements on it (0x48F7C0).
 
+## Vehicle shadows (WShadow 0x48E680: types 0x13B-0x14A; `BattleMap::AddPartRenderers` / `PoseParts`)
+
+Update 116. A vehicle's shadow is one of its parts (the lorries' 324, WOF 739), made as the others are (0x47EE10).
+- **Start** (0x48E6D0): gone at once (vt+0x78) without `[Options] "Show vehicle shadows"` (byte_4B8814, 1; on the
+  options screen as 0x44E / 0x454). Its renderer (0x48E700) draws in mode 0x20 (the WOF instance's +0x48) with its
+  x scale (+0x3C) x (|the sun's cos| + 1), ftol'd.
+- **Placing** (vt+0x7C, 0x48E750, each time it's posed): its height offset (+0xA0) is less its unit's +0x84, down to
+  the ground (0 on a bridge link); its x offset (+0x98) is ((h x 1/12) + 1) x the sun's cos (flt_4DA770) x -6,
+  h the unit's +0x84 plus its model's lowest screen point (+0x70; that alone on a link). With +0xB0 set the
+  height comes from a point of one of its unit's model's pieces instead (*not in*).
+- **Drawing** (vt+0x4C, 0x48E850): only while its unit's +0x84 isn't below 0 (not under the ground), one behind
+  its unit (its renderer's +0x26 and +0x1E the parent's less 1).
+- **Mode 0x20** in the triangle filler (0x456DD0's span table off_4C1EFC, 32-47 in 8 bits: 0x4561F2; 48-63 in 16
+  bits: 0x4566FE): no texture colour of its own; each pixel goes through PolyLib's blend table for the texel.
+  With a 16-bit screen that's `dat\b16.hsh` (0x40FEA0; `b15.hsm` / `b8.shl` for the other depths): 64 rows of
+  256 words, the pixel's red (5 bits) looked up at 0, green (6) at 64 and blue (5) at 128 of the texel's row, the
+  three words added.
+
+In the Human save's battle (at night, the sun's cos small) the lorries' shadows lie mostly under them; with the
+sun forced low for a test they reach out beside each lorry, the ground darkened.
+
+*Provisional*: the +0xB0 point; the "isn't below 0" check (the sinkers' shadows still draw under the ground);
+the x offset is taken as the part offset turned with the unit's heading, as the other parts' are.
+
 ## Pods (WPod 0x48F590, type 0xB3; `BattleMap::LandPod`)
 
 A pod that came down in a sector the player holds sets the sector's +0x64 (0x41A3BC, the war map's pods

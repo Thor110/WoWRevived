@@ -143,9 +143,17 @@ Each is small; fix these first. Ticked: fixed (the update says which). (The addr
       landed at random with its two blasts.
 - [ ] **Fences and walls** (0x48D780-0x48DB80, WFence 0x4987F0-0x498D30) with route blocking and node removal
       (0x494370); line-linked objects (0x48B590-0x48C650); two-point structure build-up (0x4865A0 / 0x4866E0).
+      *Looked at in update 116*: a fence (0x1C3-0x1C8, WFence on 0x498750) keeps its two end points at +0xE8 / +0xEC
+      and +0xF0 / +0xF4, snapped to the vertex grid (0x498900); its battle record carries them (vt+0x08 0x4987F0
+      reads four words and sends itself 0x80A5 / 0x80A6; vt+0x0C 0x498890 writes them). The engine carries a battle
+      object's record as bytes and doesn't make fence objects, nor place a new construction in battle, and no save
+      at hand has a fence: this waits on construction placement.
 - [x] **Gas clouds / Black Dust** (0x488CC0-0x488D70). *Update 108.*
 - [x] **Cascading death explosions** 0x255 -> 0x252 (0x48CDE0). *Update 108.*
-- [ ] **Shadows**: vehicles (0x48E6D0-0x48E850) and shells (0x4884C0-0x4885F0).
+- [~] **Shadows**: vehicles (0x48E6D0-0x48E850) and shells (0x4884C0-0x4885F0). *Update 116*: the vehicles'
+      (parts 0x13B-0x14A, drawn darkening through dat\b16.hsh, stretched and offset by the sun, behind
+      `[Options] "Show vehicle shadows"`). The shells' (a GType 0xFF sprite, frame the type's +0xA1, at the ground
+      under the shell, its +0x14 bit 0 blend) come with the shots' own visuals below.
 - [x] **Ambient-sound scenery** (0x4890A0-0x4892C0, with its 0x3AC substitution that shifts the scenery's rand()).
       *Update 109*: the 0x3AC substitution; its rand() was already drawn (`scenery::Burnt` for every object). The
       types (0x2AE-0x2B5, 940, 994-996; about 1,800 in the .nsb files) aren't in OBJ.ojd, so they've no sound.

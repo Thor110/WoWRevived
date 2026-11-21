@@ -704,11 +704,15 @@ namespace wow
         {
             const bool isTurret = (part.a >= 0x2E6 && part.a <= 0x313) || (part.a >= 0x389 && part.a <= 0x38C);
             const int thisTurret = isTurret ? turret++ : -1;
+            // the vehicles' shadows (0x13B-0x14A, WShadow 0x48E680): gone as they start without "Show vehicle
+            // shadows" (0x48E6D0)
+            const bool isShadow = part.a >= 0x13B && part.a <= 0x14A;
+            if (isShadow && (!setup.showShadows || ShadowBlend().empty())) continue;
             auto pt = setup.units->find(part.a);
             if (pt == setup.units->end()) continue;
             const int gtype = pt->second.field28;
             const GType* g = res.FindGType(gtype);
-            if (!g || g->gclass != 2 || !isTurret) continue;
+            if (!g || g->gclass != 2 || !(isTurret || isShadow)) continue;
             auto f = wofFiles.find(gtype);
             if (f == wofFiles.end())
             {
@@ -738,6 +742,17 @@ namespace wow
             a.oy = int16_t(part.c);
             a.oz = int16_t(part.d);
             a.turret = thisTurret;
+            if (isShadow)
+            {
+                // 0x48E700: drawn darkening (+0x48 0x20), its x scale x (|the sun's cos| + 1); one behind its
+                // unit (0x48E850: its renderer's +0x26 and +0x1E the parent's less 1)
+                a.shadow = true;
+                w->SetShadow(ShadowBlend().data());
+                w->ScaleX(std::fabs(sun.across) - -1.0f);
+                depth = -1;
+                for (const ViewObject& o : objects)
+                    if (o.unit == int(index) && !o.wof) { depth = o.depth - 1; break; }
+            }
             u.attached.push_back(a);
             objects.push_back({ int(u.y) + depth, 0, 0, nullptr, w.get(), g->paletteSlot, 0, -1, int(index), depth });
             wofs.push_back(std::move(w));
@@ -745,13 +760,36 @@ namespace wow
         PoseParts(u);
     }
 
+    // dat\b16.hsh, loaded once (PolyLib's set-up 0x40FEA0 reads it for a 16-bit screen; b15.hsm and b8.shl are the
+    // other depths')
+    const std::vector<uint16_t>& BattleMap::ShadowBlend()
+    {
+        if (shadowBlend.empty())
+            if (auto data = res.LoadFile("dat\\b16.hsh"); data && data->size() >= 64 * 512)
+            {
+                shadowBlend.resize(64 * 256);
+                for (size_t i = 0; i < shadowBlend.size(); i++) shadowBlend[i] = uint16_t((*data)[i * 2] | ((*data)[i * 2 + 1] << 8));
+            }
+        return shadowBlend;
+    }
+
     void BattleMap::PoseParts(Unit& u)
     {
         if (u.attached.empty()) return;
         const double a = double(u.heading & 0xFFF) * 0.000244140625 * 6.283185307;
         const double c = std::cos(a), s = std::sin(a);
-        for (const Attached& p : u.attached)
+        for (Attached& p : u.attached)
         {
+            if (p.shadow)
+            {
+                // 0x48E750: its height offset (+0xA0) takes it down to the ground (0 on a bridge link), and its x
+                // offset (+0x98) is ((h / 12) + 1) x the sun's cos x -6, h the unit's height plus its model's lowest
+                // screen point (+0x70; that alone on a link)
+                const int lowest = u.wof ? u.wof->MaxY() : 0;
+                const double h = u.drive.link ? double(lowest) : double(u.drive.lift) + lowest;
+                p.oz = u.drive.link ? 0 : int(-u.drive.lift);
+                p.ox = int(float((h * 0.08333333333333333 - -1.0) * sun.across * -6.0));
+            }
             const int x = int(u.x + float(p.ox * c - p.oy * s));
             const int y = int(u.y + float(p.ox * s + p.oy * c));
             int heading = u.heading;

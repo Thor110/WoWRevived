@@ -51,6 +51,7 @@ namespace wow
             const std::map<int, ObjOjd::BattleTables::Six>* six = nullptr;  // OBJ.ojd record 6 (the WOF GTypes)
             const std::map<int, ObjOjd::BattleTables::Thirteen>* lights = nullptr; // record 13 (the light parts)
             bool showLights = true;     // [Options] "Show lights" (byte_4B8808)
+            bool showShadows = true;    // [Options] "Show vehicle shadows" (byte_4B8814)
             bool showSmoke = true;      // [Options] "Show Smoke & particles" (byte_4B880C)
             std::vector<BattleGroup> groups; // the sector's war map objects (WarMap::BattleGroups)
             int ownerFaction = 2;       // who holds the sector (0x43CA30): 0 Human, 1 Martian, 2 no one
@@ -189,6 +190,8 @@ namespace wow
         std::vector<ViewObject> objects;    // sorted by key
         std::map<int, ShadeTable> slotTables;
         std::map<std::string, std::vector<uint8_t>> masks;   // the shadows' .raw masks
+        std::vector<uint16_t> shadowBlend;  // dat\b16.hsh (PolyLib's set-up, 0x40FEA0), for the shadows
+        const std::vector<uint16_t>& ShadowBlend();
         std::vector<std::unique_ptr<WofInstance>> wofs;      // the bridges' segments, posed once
         // A light (0x48DD50 on 0x487A30: types 334-346): its point, range (its type's +0x44 word) and the intensity
         // its renderer (RTypeLight 0x4A27A0, +0x40) has. One whose record 13 has times (a, b, c) fades (0x48E100):
@@ -251,7 +254,7 @@ namespace wow
         struct Turret { int type = 0, ox = 0, oy = 0, oz = 0, turn = 0; bool aiming = false; int aimX = 0, aimY = 0;
                         bool hardpoint = false; int middle = 0, half = 0, sound = 0; };
         // A part drawn with its unit (a WOF of its own: a turret's, or another like the lorries' 324)
-        struct Attached { WofInstance* wof = nullptr; int ox = 0, oy = 0, oz = 0, turret = -1; };
+        struct Attached { WofInstance* wof = nullptr; int ox = 0, oy = 0, oz = 0, turret = -1; bool shadow = false; };
         struct Unit { int type; float x, y; int heading; bool players; int group = 0; bool vehicle = false; Drive drive;
                       WofInstance* wof = nullptr; int engineSound = 0;
                       int health = 0;       // +0xC4: the type's +0x4A (0x47DA20) to start with

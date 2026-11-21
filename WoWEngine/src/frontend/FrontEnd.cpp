@@ -1130,6 +1130,7 @@ namespace wow
         s.moveSlopes = &moveSlopes;
         s.weapons = &weaponData;
         s.showLights = ini.GetBool("Options", "Show lights", true);
+        s.showShadows = ini.GetBool("Options", "Show vehicle shadows", true);
         s.showSmoke = ini.GetBool("Options", "Show Smoke & particles", true);
         s.stickyPopup = ini.GetBool("Modern", "Sticky popup menus", false);   // a modern option (docs/MODERN.md)
         s.groups = map->BattleGroups(b.sector);
