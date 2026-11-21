@@ -1,0 +1,175 @@
+# Routine review and task list
+
+A review of every routine in the original executable (2,790 in the IDA listing, 0x401000-0x4A4470) against the
+engine, made by eight reviewers each taking an address range. Each routine was classed as **ported** (and spot-
+checked), **partial** (part done, provisional, or diverging), **missing** (game logic or visible behaviour not in
+the engine) or **library** (C runtime, MFC, DirectX plumbing, codecs, destructors and the like, replaced by SDL or
+not needed). The full reports, with every address and the port's file and line for each finding, are in
+`docs/review/range-*.md`; this page is the task list drawn from them, to be worked through top to bottom.
+
+| Range | Routines | Ported | Partial | Missing | Library |
+|---|---|---|---|---|---|
+| 0x401000-0x40FFFF: WinMain, front end, shade tables, renderer | 307 | 100 | 31 | 14 | 162 |
+| 0x410000-0x41FFFF: ISOLib, CD player, text, war map world | 294 | 116 | 16 | 9 | 153 |
+| 0x420000-0x42FFFF: war map objects, routes, deployment, saves | 327 | 141 | 34 | 23 | 129 |
+| 0x430000-0x43FFFF: UI controls, fog, battle world, sectors | 256 | 107 | 17 | 41 (22 debug) | 91 |
+| 0x440000-0x44FFFF: AI players, factory, panels, network | 297 | 78 | 20 | 47 | 150 (+2 unclear) |
+| 0x450000-0x47CFFF: spans, research, build lists, sound, CRT | 475 | 227 | 45 | 11 | 192 |
+| 0x47D000-0x48FFFF: battle objects, groups, effects, classes | 431 | 118 | 28 | 102 | 183 |
+| 0x490000-0x4A4470: vehicles, routes, bridges, renderers, UI | 403 | 187 | 24 | 70 | 122 |
+| **Total** | **2,790** | **1,074** | **215** | **317** | **1,182** |
+
+Checked and found matching (no task): the war map AI's phases and constants, the economy's five phases, pods,
+resource warnings, battle detection, the event queue, the route hourly step and curves, the A* rules, counter
+placement, the calendar, the end-game codes, the guns' impact tables, the explosion splash, the damage smoke,
+turret turning and arcs, the ground and slope costs, the vehicles' speed and turn constants, LineCost, the bridge
+segment count, the WOF scale chain, reinforcement points, entry points and the `[Tweak]` defaults.
+
+## 1. Bugs (the engine contradicts the original)
+
+Each is small; fix these first. (The address is where the original shows it; the report has the port's line.)
+
+- [ ] **Human command building outside London is 58, not 314** (0x422082, 0x42A9C9, 0x439B94: `and al,24h; add
+      eax,116h` wraps). `core/Deployment.h` HumanHq; deployment and the start view never find a Command Post. Fix
+      the docs too (BATTLEMAP.md).
+- [ ] **The battle ends too early**: each side's count adds its construction list (0x43AA59 / 0x43AAF6, sector +0x54
+      / +0x58); the engine counts units only (`BattleMap.cpp` battle end).
+- [ ] **The battle AI's threats** are its own constructions and resources, lists 3 and 5 (0x445210:
+      0x446370(2,0) / (3,0)); the engine takes lists 2 and 3 (`BattleAi.cpp` AiStart; BATTLEMAP.md too).
+- [ ] **AI units get stance 2 (Attack)** as they're registered (0x445500, `push 2`).
+- [ ] **AI attackers go back to the pool** when their target dies (task destructor 0x4451A0 -> 0x445500); the
+      engine loses them for the rest of the battle.
+- [ ] **Groups ignore hits while moving under an order** (0x483880: bit 0 set and bit 2 clear; every move order sets
+      bit 0, only 0x483B70's own moves set bit 2). `Retaliate` / `OrderMove`.
+- [ ] **Click-select narrows the selection**: 0x497680 always clears (packet 4) before reselecting; the engine keeps
+      every group when one already selected is clicked. Shift (packet 5) adds.
+- [ ] **Speed control's going test** is vt+0x144 (0x4909D0: not stopped, or bits 5 / 8 or the link byte, and not
+      frozen), not bit 0 alone (0x492E8E; `Driving.cpp`).
+- [ ] **Flat-shaded WOF faces**: the flat level comes from vertex 0 as passed, before the sort (0x456DF5);
+      `WofView.cpp` takes the top vertex after sorting.
+- [ ] **The computer's research choice** is the side's plan picker, 0x45A400 / 0x45B4E0 (two hard-coded plans by
+      rand(), falling back to 0x458A60), not 0x458A60 directly; it also shifts the rand() stream (RESEARCH.md too).
+- [ ] **Enemy sector shade in the Construction view** is 11, not 0 (0x41DAB6-0x41DAEF); only the Unit view darkens
+      it. Battle sectors pulse only in the Unit view (0x41DD35). Borders count a sector without a finished command
+      building as no one's (0x41DC1A, 0x43C990).
+- [ ] **Slider frames truncate** (0x4320B6 `div`): `value * 10 / max`, not rounded (`Screen.cpp`).
+- [ ] **Word wrap** breaks at width or more, resets the run to 0, keeps runs of spaces and sums per-character widths
+      (0x416250; `Canvas.cpp`).
+- [ ] **CD Next / Prev wrap round and stop play** (0x413220 / 0x4134B0, caller 0x4083E4); the engine clamps 2-5.
+- [ ] **The war map message list** draws at `[Colours] "Message Text"` 19 with flags 1 (0x4288A3); the engine uses 0.
+- [ ] **The CD Player's palette group 0x2F9** also loads `{S}R{S}I` into slot 5 and `{S}RGI` into slot 9
+      (0x40BCB3, 0x40C54F), and the loader frees all 33 slots first (0x40B6C0).
+- [ ] **Credits**: the easter egg holds 300 ticks, not 600 (0x40577C); waits for the music first; the music fades
+      over 60 (0x405415); the exit fades (0x405689 -> 0x4065E0).
+- [ ] **Escape in the front-end menus fades** like a click (0x40A1B0 -> 0x4065E0); Splash and Credits take a right
+      click as a skip (0x405E6E, 0x405672).
+- [ ] **The route save format** (probable; check with a save holding a unit in transit): +0x34 is a u32 entry count,
+      the entries follow untagged, each with segment, index, five floats and a byte (0x425A60 / 0x427F70 /
+      0x42B250); `SaveFile.cpp` reads a float and a WMOB-tagged list.
+- [ ] **Group stance and think interval** are the members' averages (0x4802E0: stance ftol(mean + 0.5), interval
+      the mean of type +0x92), not 1 and 90. *Trace the call order first* (whether +0xD8 is set when it runs).
+- [ ] **Object ids** start at 0, lowest free first, freed ones reused last in first out (0x4A3350); the engine counts
+      up from 1. (They appear in saves and order packets.)
+- [ ] **WOF pieces of equal depth**: the game sorts with `qsort` (unstable, 0x49ED32); the engine's stable sort can
+      order them differently.
+- [ ] Debug only: the reinforcement table with `byte_4D1279` (0x43D16D).
+- [ ] Docs: `docs/survey/part11.md` §2.9 (0x487F50's tables), part08 §2.6 (the 0xFBEF mask), part06 (+0x55 reading),
+      part03 (0x41EDC0's view choice); the stale *Provisional* at `Driving.cpp:44`.
+
+## 2. Game rules missing (they change how a game plays)
+
+- [ ] **Destroying the key building** ends the battle and the game (0x48AC50: 0x80AA to the owner; kinds 3 / 0x1E
+      set `byte_4E9B94` and send 0x8136 "DESTROYING VEHICLES"); the war map's forfeit (0x41AED0 / 0x41F4B0: event 19
+      with sector 30 / 3, codes 0x80FB / 0x80FD; the victory delay is sound 0x13E's length + 30).
+- [ ] **Leaving a battle** (0x439ED0): a holder that lost its command building has its units' factory tasks cancelled
+      (0x813D -> 0x428F75 -> 0x460140 BuildList::CancelAll); every sound fades over 30.
+- [ ] **Research multipliers in damage** (0x4958B0: armour and weapon by weapon type and target side; 0x494AF0
+      upgrading shots).
+- [ ] **Research triggers**: the battle map marks the unit table's +0xAC "encountered" (0x47F630, 0x488C00,
+      0x492931) so `UpdateTriggers` sees it; the other side's research-done message (0xB9) reaches the AI.
+- [ ] **The AI's building upgrades** (0x442D80: retypes its buildings when research finishes a mark).
+- [ ] **The war map economy's "working" demand** (0x429640: record 47/48 while a factory works or repairs).
+- [ ] **Repair** on the war map (0x422AB0, 0x4297C0, 0x4299C0, 0x429B80's repair part).
+- [ ] **Retreat on the war map** (0x424F50 0x80A9, the +0x44 stop-at-next-node flag, the Retreat item in 0x429A70).
+- [ ] **Routes keep their progress through a save** (0x4217E0, 0x4257C0; with the save format above); counters
+      slide to the route start at `Clunting Speed` (0x428020 / 0x425080) rather than jump, and Clunting Speed isn't
+      a travel speed.
+- [ ] **Staggered deaths** of a whole list (0x47CEE0: 30, then +30 + rand() % 30 each).
+- [ ] **Damage Layer**: scorch kept per sector in the save (DMGL), fading 2 a byte each battle entry (0x404EA0-
+      0x4051B0, 0x439892), cleared by `shym`; needs the FFUH encoder (0x415520 / 0x4157E0 / 0x415720).
+- [ ] **Fog of war** (0x4344C0-0x434DF0: the `[BattleMap]` keys, two byte maps, 19 stamps, Reveal from units every
+      update (0x4964B0), Decay every "Fog update freq", Flush; objects' visibility and shading 0x48B050 / 0x48B2D0 /
+      0x48C570 / 0x48C840 / 0x47FEB0), feeding `TerrainView`'s fog input.
+- [ ] **Deployment's remaining parts** (0x4222C0: the fixed-place bit, 0x80C3 to each unit, the pod centre).
+
+## 3. Battle map objects and vehicles missing
+
+- [ ] **Buildings** (0x48E8A0-0x48F1C0: ground flattening, corner objects, ambient loop, damage frames, hit sound
+      0x111) and **gun emplacements** (0x48F7C0: no guns on a damaged building); turret attach (0x489980).
+- [ ] **Walkers / tripods** (0x48FC70-0x48FDD0, 0x490030-0x490070: legs, footprints, `startTurnRate` / `turnAnimRate`).
+- [ ] **Fliers** (0x490120-0x490170: height keeping and bob); wobble and dust / wake trail 0x3C8 (0x493490 /
+      0x4934F0).
+- [ ] **Ironclads and Submersibles' own steering** (0x493870-0x493B50, 0x493A40 arrival); the Tunnelling Track Layer's
+      research speed and mound (0x493D00 / 0x493D70).
+- [ ] **Stop / start footprints** (0x4915B0 / 0x491630) and **the collision filter** (0x4929A0: walkers ignore small
+      crushable objects, bridges ignored on a link); crushing.
+- [ ] **Drones** exploding on contact (0x48F9D0-0x48FAC0).
+- [ ] **Pods** (0x48F5F0 / 0x48F620).
+- [ ] **Fences and walls** (0x48D780-0x48DB80, WFence 0x4987F0-0x498D30) with route blocking and node removal
+      (0x494370); line-linked objects (0x48B590-0x48C650); two-point structure build-up (0x4865A0 / 0x4866E0).
+- [ ] **Gas clouds / Black Dust** (0x488CC0-0x488D70).
+- [ ] **Cascading death explosions** 0x255 -> 0x252 (0x48CDE0).
+- [ ] **Shadows**: vehicles (0x48E6D0-0x48E850) and shells (0x4884C0-0x4885F0).
+- [ ] **Ambient-sound scenery** (0x4890A0-0x4892C0, with its 0x3AC substitution that shifts the scenery's rand()).
+- [ ] **Shots' own visuals** (0x4950D0 / 0x495180 / 0x495280, the atlas sprite 0x49D710, the textured quad 0x49D820).
+- [ ] **Lights on models**: point lights on WOF pieces (0x49EC00 / 0x49ED90), relighting IOB objects (0x49E2C0) and
+      ISOLib's two nearest lights at `[Game] "ISO Brightness"` (0x4111B0 / 0x4113F0 / 0x410E00); the units'
+      headlights (light parts 334-346).
+- [ ] **Group behaviour**: target-gone speech 0x10E / 0x10D (0x4821F0), the group's re-engage (vt+0x38, 0x483760),
+      messages 0x80C3 (rally), 0x808A (halt), 0x80B9 in 0x490A70.
+
+## 4. Interface missing
+
+- [ ] **Battle map keys and camera**: ',' and '.' step to the next unit / construction (0x43BE50 / 0x43BF30, helpers
+      0x421D70 / 0x421E50); Home and the war map's sector glide zoom smoothly (Zoomer 0x446690 / 0x446850,
+      `Battlemap Zoomer Speed` 2.5, `Warmap Zoomer Speed` 1.5; 0x43A480, 0x41E000); water twinkles (0x43A670).
+- [ ] **The popup's grid** (0x432C60-0x433330: 10 x 8, the hovered row opening out, flipped at the right edge).
+- [ ] **Unit icon tray** on the battle map (0x483DF0-0x4849D0) and the **group power-pip strip** (0x449150-0x449340,
+      `hwpower.spr`).
+- [ ] **The combined order panel** for a mixed group (0x448500 / 0x4484A0) and the **Information** button and page
+      (0x440300 / 0x4403A0, InfoPage 0x4A3E60).
+- [ ] **Build placement** on the battle map (cursor modes 3-6: 0x485930, 0x4A03A0-0x4A14C0).
+- [ ] **Retreat markers**: tool tip "Retreat to" (0x487580), arrow frames by the nearest edge (0x487490), minimap dots.
+- [ ] **War map counters**: the power bar, production blink and repair icon (0x42B850 / 0x42BC90); the tool tips'
+      production lines (0x45F7D0 / 0x460A40, 0x428D70, 0x42A4B0); route arrows at 50% once started, solid on hover
+      (0x425730); the mini map framing the selected sector (0x423040).
+- [ ] **The Resource view's overlays** (0x425E80-0x426AE0, RFHS / ROHS: stacks, bars, tool tips, click to pick).
+- [ ] **Battle music**: CD tracks 4 / 5 (0x4861E0).
+- [ ] **Cursors**: animation (0x40CDC0), the wait cursor (0x40E680) and the busy icon (0x44E4B0-0x44E5C0).
+
+## 5. Sound
+
+- [ ] **Ambient voices** from the per-tick update with the crossfade (0x463C30: 150 out, 15 in).
+- [ ] **The speech queue** (0x4652B0 / 0x466D00: one at a time, no duplicates).
+- [ ] **Virtual voices** resuming at the right place (0x4654E0 / 0x4657B0); FadeOutKeep; a second FadeOut keeps the
+      earlier end.
+- [ ] **`[Sound]` settings**: Minimum Audible Volume, Search Libraries First, Unload Limit (0x4646C0 / 0x465EB0 /
+      0x465EF0); loose files only in debug play (0x4660A0).
+
+## 6. Front end
+
+- [ ] **Cheats**: the seven missing codes (0x4011F0, 0x401320, 0x4013A0, 0x401440, 0x4014F0, `shym`, `datsun`), the
+      reset at campaign start (0x4011D0), and a wrong letter returning to state 0 without re-testing it.
+- [ ] **WGame command 0x79** (shut down to the main menu).
+- [ ] **CD Player seek** ±5 s (0x413740 / 0x413990); the music step's CD status (0x413EB0, unclear).
+- [ ] The rest already on TASKS.md: Display Settings, the network menus, player objects in WGame::Tick (0x403680),
+      commands one queue pass later.
+
+## 7. Later or optional
+
+- [ ] **Players and the order-packet queue** (0x425BF0 / 0x425D30, 0x4460A0-0x449EB0), the **network player** and
+      **DeePlay** (0x445EA0-0x44A8D0).
+- [ ] **Demo recording and playback** (0x42D290 / 0x42D2D0 / 0x42D520, `playback.N`).
+- [ ] **Placing buildings at AI.ojd sites** for the player's side too (0x441420 / 0x444510; trigger 0x8112 has no
+      sender found); `[Debug] Enemy Visible` (0x442850); the "threat seen" handler (0x445D60).
+- [ ] Debug tools: the scenery editor and object placement (22 routines, 0x43xxxx), the Create menu (0x49BAA0).

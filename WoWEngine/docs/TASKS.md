@@ -140,6 +140,9 @@ The war map runs from a save but nothing is kept: these make it a real game stat
 
 ## Milestone 5: the battle map
 
+A review of every routine against the engine (update 101) gives the task list to work through next, bugs first:
+docs/REVIEW.md, with the full per-range reports in docs/review/.
+
 - [x] **Terrain**: `core/Models` takes the height scale from CLS +0x2C; `core/Landscape` keeps the heights × √2
       (docs/BATTLEMAP.md) — 10
 - [~] **Landscape**: done in `core/Landscape` (0x47AF10-0x47CCF0): vertInf, heights and normals, the placement and
