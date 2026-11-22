@@ -210,7 +210,7 @@ namespace
 namespace
 {
     // Everything SDL_Log says also goes to WoWEngine.log next to the engine (a Windows build has no console to see
-    // it in), started afresh each run.
+    // it in), started afresh each run (the run before's kept as WoWEngine.previous.log).
     std::FILE* logFile = nullptr;
     SDL_LogOutputFunction defaultLog = nullptr;
     void* defaultLogData = nullptr;
@@ -307,6 +307,12 @@ namespace
     void StartLogFile()
     {
         std::string path = std::string(SDL_GetBasePath() ? SDL_GetBasePath() : "") + "WoWEngine.log";
+        // the run before's log is kept as WoWEngine.previous.log: a player who starts the game again after a crash
+        // still has the log that says what happened
+        {
+            std::error_code ec;
+            if (fs::exists(path, ec)) fs::rename(path, std::string(SDL_GetBasePath() ? SDL_GetBasePath() : "") + "WoWEngine.previous.log", ec);
+        }
         logFile = std::fopen(path.c_str(), "w");
         SDL_GetLogOutputFunction(&defaultLog, &defaultLogData);
         SDL_SetLogOutputFunction(LogToFile, nullptr);

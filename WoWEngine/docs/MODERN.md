@@ -279,6 +279,30 @@ The repository's earlier work on the original executable (unit fixes, asset upda
 and the repository) has much that can be carried over: fixes to units' data and updated assets. To go through
 once the engine is complete.
 
+## Ideas from the owner (noted at update 199; not planned in detail yet)
+
+- **More save slots.** The game has five. More would need either a list that scrolls or a number that depends
+  on the view size, and the second is awkward (a save made at a large size would have no row at a small one).
+  *A third way, to weigh*: pages. The Load and Save menus keep their five rows and get a "More" row that
+  turns to the next five, so the menu is the same at every size and the number of slots is free. The slot
+  files already go by number (`.001` to `.005`), so higher numbers need no new format.
+- **New strings added to TEXT.ojd by the installer.** "Modern Options" and every other caption the engine adds
+  are plain English text in the code now. Better: the install routine appends them to the end of each
+  language's TEXT.ojd, so each language can have its own. To settle when it is done: the ids they get (past
+  the last the game uses, so nothing of the game's moves), the engine falling back to its built-in English
+  when a TEXT.ojd doesn't have them, and who supplies the other languages' wording.
+- **Zoom controls.** The planned keys for the battle map's zoom (already listed under Controls as wheel zoom):
+  `+` and `-` or the mouse wheel to zoom, `R` to reset. (`R` is free in battle. Typing a cheat with an R in
+  it would also reset the zoom, which does no harm.)
+- **A trailer for the project.** The very last thing: once the engine is at 1:1 parity and the modern options
+  are in, and everything else is done.
+- **The log.** Whether WoWEngine.log should only be written when there is a crash. *Decided for now*: it stays
+  on always. A log written only at the crash would hold the fault's address and nothing of what led to it,
+  and the lead-up (which screen, which commands, the last battle or save) is what makes a report usable; a
+  stall (the watchdog's STALL line) isn't a crash at all and would leave nothing. It costs little: a few
+  kilobytes, started afresh each run. Since update 199 the run before's log is kept as
+  `WoWEngine.previous.log`, so starting the game again after a crash doesn't lose it.
+
 ## Ideas from players
 
 ### Z-Fighter

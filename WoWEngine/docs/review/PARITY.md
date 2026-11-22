@@ -1053,6 +1053,11 @@ transparency")
   under 1, another kept under 2, 1 pressed twice selecting the two again and moving the view to them; both
   battles without the keys the same picture as before.
 
+**Update 199** (notes; nothing of the original's changed)
+- The owner's ideas written down in MODERN.md ("Ideas from the owner"): more save slots, new strings appended
+  to TEXT.ojd by the installer, the zoom keys, a trailer last of all, the log.
+- The log of the run before is kept as WoWEngine.previous.log.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
