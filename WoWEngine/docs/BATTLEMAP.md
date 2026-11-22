@@ -1189,8 +1189,9 @@ usual 192. (Until update 118 the engine drew them at level 0.)
 - **The shells' class's glow** (0x4884C0 at its start, 0x4885C0 its draw, 0x4885F0 its vt+0xE4; update 119): a
   sprite, GType 0xFF (BOTTOM2.SPR, slot 11), at the type's +0xA1 / 4, its +0x26 0x60, a frame on each draw
   (0x40EFB0 with 0x100, wrapping), placed at the target's screen point and 4 nearer than the last quad (its +0x1E
-  the fourth quad's less 4). Its +0x14 bit 0 asks the blitter for mode 2 (0x4510C5, the 8-bit translucent blend
-  through b8.shl); on a 16-bit screen the mode's own bit makes it 6, the plain draw (0x450E27), so it's drawn plain.
+  the fourth quad's less 4). Its +0x14 bit 0 (0x48855F) is the blitter's 50% blend (docs/FRONTEND.md,
+  "Blending": on a 16-bit screen each channel halved and added), so the glow is seen through. (Until update 170
+  the engine drew it solid, having taken the blend for the 8-bit screen's only.)
 - **In the view** (update 119): each quad and glow goes in among the view's objects by its +0x1E, drawn as the
   rows reach it.
 
@@ -1415,6 +1416,12 @@ spreads as it arrives); the retreated object is taken out of its counter into a 
 from the battle's sector (AddCounter, Arrive).
 
 ## Flying objects and emitters (0x487730, 0x487890, 0x47F050, 0x47F770; 0x48AEF0, 0x48ADD0; `battlemap/Effects.cpp`)
+
+**Seen through** (update 170, from the owner's frame of a fight in the original): an animated effect's sprite has
++0x14 bit 0, the blitter's 50% blend. WAnimEffect's view sets it (0x489000 at 0x48902E, with the sprite's depth
+half its width + 64), and the explosions' (0x488350) and the smoke's (0x48DD00) views go through it: bursts, fire,
+smoke, the move flag. The mortars' shells, the gas clouds and the plain object make theirs without it (0x488EF0,
+0x488D10, 0x487800) and are solid.
 
 **The classes** on the flying object 0x487730 (its update 0x487890): WAnimEffect (0x488FB0, update 0x489050: the
 factory's 0x15B-0x16E, 0x174-0x17A, 918-920, 952-972, 988-993, 1000 and 0x17C) with WExplosion on it (0x488180); the

@@ -1103,8 +1103,8 @@ namespace wow
     // its far ones (X' +- p', Y' +- q'), the texture's far end at the target. Each is put in the view a quarter of
     // the way further back (its +0x1E from the gun's y + 40).
     // Drawn with the view's objects by their places (BeamItem keys), the shells' class's sprite at the target too.
-    // *Provisional*: a gun not held to a point is taken at its unit's place and height; the sprite's flag (+0x14 bit
-    // 0, the blitter's mode 2) is the 8-bit translucent blend, which a 16-bit screen doesn't use.
+    // *Provisional*: a gun not held to a point is taken at its unit's place and height. The sprite's flag (+0x14 bit
+    // 0) draws it at 50% (update 170; the engine had taken the blend for the 8-bit screen's only).
     void BattleMap::BuildBeams(std::vector<BeamItem>& out) const
     {
         out.clear();
@@ -1211,7 +1211,8 @@ namespace wow
             const GType* g = res.FindGType(b.sprite);
             const IndexedImage* image = res.GetFrame(b.sprite, b.frame);
             const ShadeTable* shade = g ? res.GetShade(g->paletteSlot) : nullptr;
-            if (g && image && shade) canvas.DrawImage(*image, shade->Level(b.level), b.x - g->hotX, b.y - g->hotY);
+            // the glow's sprite has +0x14 bit 0 too (0x48855F): at 50%
+            if (g && image && shade) canvas.DrawImage(*image, shade->Level(b.level), b.x - g->hotX, b.y - g->hotY, Canvas::Blend::Translucent);
             return;
         }
         if (b.atlas && b.shade) DrawAtlasQuad(t, *b.shade, *b.atlas, b.cell, 16, b.q, b.level);
@@ -2823,7 +2824,18 @@ namespace wow
                     int level = o.level >= 0 ? o.level : 0;
                     if (o.level < 0 && o.effect >= 0 && size_t(o.effect) < effects.size())
                         if (auto et = setup.units->find(effects[size_t(o.effect)].type); et != setup.units->end()) level = (et->second.fieldA1 & 0xFFFF) >> 2;
-                    if (image && g) canvas.DrawImage(*image, shade->Level(level), o.x - g->hotX - scrollX, o.y - g->hotY - scrollY);
+                    // an animated effect's sprite has +0x14 bit 0 (WAnimEffect's view, 0x489000 at 0x48902E; the
+                    // explosions' 0x488350 and the smoke's 0x48DD00 go through it): the blitter's 50% blend, each
+                    // channel halved and added on a 16-bit screen. The shells and the plain object (0x488EF0,
+                    // 0x488D10, 0x487800) are drawn solid. (The owner's frame of the original: a burst and its
+                    // smoke seen through.)
+                    Canvas::Blend blend = Canvas::Blend::Opaque;
+                    if (o.effect >= 0 && size_t(o.effect) < effects.size())
+                    {
+                        const EffectKind kind = effects[size_t(o.effect)].kind;
+                        if (kind == EffectKind::Animated || kind == EffectKind::Smoke) blend = Canvas::Blend::Translucent;
+                    }
+                    if (image && g) canvas.DrawImage(*image, shade->Level(level), o.x - g->hotX - scrollX, o.y - g->hotY - scrollY, blend);
                     continue;
                 }
                 const IobModel& m = o.model->model;

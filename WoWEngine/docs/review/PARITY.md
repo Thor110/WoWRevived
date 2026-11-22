@@ -735,6 +735,17 @@ Martian start's units turned differently)
   plainly wrong, but there is no frame of the original's fight to set beside them; sent to the owner to say
   what looks off. No code changed.
 
+**Update 170** (5.2: the owner's frame of a fight in the original: "the only thing missing appears to be
+transparency")
+- [x] **Animated effects are drawn at 50%.** Their sprites have +0x14 bit 0 (WAnimEffect's view 0x489000, which
+      the explosions' and the smoke's views call): bursts, fire, smoke and the move flag are seen through. The
+      engine drew them solid.
+- [x] **The shells' glow at the target too** (0x48855F). The engine's note had the flag down as the 8-bit
+      screen's blend only; FRONTEND.md already had it right (16-bit: each channel halved and added).
+- Shells, gas clouds and the plain flying object stay solid (their views don't set the flag).
+- The rest of the owner's frame agrees with the engine's of the same kind of fight: the selection rings, the
+  move marker, the heat ray, the pips.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
