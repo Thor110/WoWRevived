@@ -2205,7 +2205,7 @@ namespace wow
         return std::nullopt;
     }
 
-    void BattleMap::OnKeyUp(int) {}
+    void BattleMap::OnKeyUp(int) { infoPage.reset(); }      // (0x101 closes the information page, 0x4A41A9)
 
     void BattleMap::OnMouseMove(int x, int y)
     {
@@ -2429,8 +2429,66 @@ namespace wow
                         popup.push_back(item);
             }
         }
+        // WSelectableObject's own answer to 0x805C (0x440300, which every object's handler hands on to: 0x47E00C):
+        // with a page for its type (+0x18), "Information" (0x808C, icon 0x2A, text 0x478), after its other items.
+        // The object asked is the one under the mouse if it answers 0x8111 (0x485EB0), else the player's current
+        // one (0x439230).
+        // *Provisional*: 0x8111 is taken as "the player's"; an object under the mouse that isn't selected adds
+        // only this item here (its own orders aren't asked for), and a selection of several kinds adds none.
+        popupInfoText = 0;
+        {
+            const Unit* asked = HotspotAt(x, y);
+            if (asked && !asked->players) asked = nullptr;
+            bool oneKind = !members.empty();
+            for (const Unit* m : members) if (m->type != members[0]->type) oneKind = false;
+            if (!asked && oneKind) asked = members[0];
+            if (asked)
+                if (auto t = setup.units->find(asked->type); t != setup.units->end() && t->second.infoPage)
+                {
+                    popupInfoText = t->second.infoPage;
+                    UnitScreen(*asked, popupInfoX, popupInfoY);
+                    add(0x808C, 0x2A, 0x478);
+                }
+        }
         LayOutPopup(x, y);
         sounds.push_back(0x193);
+    }
+
+    // The page (0x4A3E60): a window over the whole screen that takes the mouse. The type's page text wrapped at
+    // 256 in font 0x73 (0x4161E0), as a BoxedText (0x49D260) made with dword_4DAFC8, 32 right and 32 down of the
+    // object's screen point (0x440440), its box 4 out on the left and top and 3 on the right and bottom (0x4163C0)
+    // and kept inside the window (0x416400), its level word_4B9424 (15). Fifteen updates on (0x812C) the text's
+    // speech starts (0x414700). Any key let go, or either mouse button let go, closes it (0x4A4190 -> 0x42F2A0).
+    // In the owner's frame of the original: a black box 259 x 139 for eight lines, centred on the point, the
+    // text 132, 121, 99.
+    // *Provisional*: the speech isn't in (speech by text id isn't ported); the colours are the frame's.
+    void BattleMap::DrawInfoPage(Canvas& canvas) const
+    {
+        if (!infoPage) return;
+        const Font* font = res.GetFont(0x73);
+        if (!font) return;
+        const std::string text = canvas.Wrap(0x73, infoPage->text, 0x100);
+        int tw = 0, lines = 0;
+        for (size_t start = 0;;)
+        {
+            const size_t end = text.find('\n', start);
+            tw = std::max(tw, font->Measure(text.substr(start, end == std::string::npos ? std::string::npos : end - start)));
+            lines++;
+            if (end == std::string::npos) break;
+            start = end + 1;
+        }
+        const int spacing = 4;      // a free-standing text object's (0x40F620, [Tweak] "Text Line Spacing")
+        const int th = font->Height() * lines + spacing * (lines - 1);
+        Rect box{ infoPage->x - tw / 2 - 4, infoPage->y - th / 2 - 4, tw + 7, th + 7 };
+        if (box.x + box.w > canvas.Width()) box.x = canvas.Width() - box.w;
+        if (box.y + box.h > canvas.Height()) box.y = canvas.Height() - box.h;
+        if (box.x < 0) box.x = 0;
+        if (box.y < 0) box.y = 0;
+        uint32_t* out = canvas.Pixels();
+        for (int y = box.y; y < box.y + box.h; y++)
+            for (int x = box.x; x < box.x + box.w; x++)
+                if (x >= 0 && y >= 0 && x < canvas.Width() && y < canvas.Height()) out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = 0;
+        canvas.DrawString(0x73, text, { box.x + 4, box.y + 4, tw, th }, TextCentreX, 15, spacing);
     }
 
     // the rows and the placement: frontend/PopupRows.h
@@ -2549,6 +2607,7 @@ namespace wow
 
     std::optional<Command> BattleMap::OnMouseButton(int x, int y, bool down)
     {
+        if (infoPage) { if (!down) infoPage.reset(); return std::nullopt; }   // (0x202 closes the page, 0x4A41EF)
         if (endBox)
         {
             if (!down && EndBoxButtonRect().Contains(x, y)) return EndBoxCommand();
@@ -2616,6 +2675,12 @@ namespace wow
         sounds.push_back(0x195);    // the item's click (0x434390 on 0x202 / 0x205)
         ClosePopup(false);
         if (command == ReturnCommand) return Command{ ReturnCommand, setup.sector };
+        if (command == 0x808C)
+        {
+            // 0x4403A0: the page opened at the object (InfoPage)
+            if (popupInfoText) infoPage = InfoPage{ res.String(popupInfoText), popupInfoX + 0x20, popupInfoY + 0x20 };
+            return std::nullopt;
+        }
         if (command == 0x80CE && param >= 0 && param <= 3)
         {
             // packet 0x15 -> 0x4817C0: the stance (0x80B2) to the group and each member (+0xD8); the group
@@ -2664,6 +2729,7 @@ namespace wow
     // 0x204 / 0x205: held, the popup (above); let go quickly, 0x73 (Cancel) to the selection
     std::optional<Command> BattleMap::OnRightButton(int x, int y, bool down)
     {
+        if (infoPage) { if (!down) infoPage.reset(); return std::nullopt; }   // (0x205 closes the page)
         if (!popup.empty())
         {
             // held open: let go on an item it acts, anywhere else (or pressed off the items) the popup closes
@@ -2862,6 +2928,7 @@ namespace wow
             bool lit = int(i) == popupHover && res.GetFrame(item.icon, 1);
             canvas.DrawSprite(item.icon, lit ? 1 : 0, item.rect.x, item.rect.y);
         }
+        DrawInfoPage(canvas);
         // the battle's end box (0x432520's layout, as the war map draws it): the backdrop (GType 0x68) centred 4 above
         // the bottom, in Martian games ma_scrn (0x69) over it at 50%; the text (font 0x73, level 21) wrapped at 320
         // pixels and centred, 0x2B below the top (0x17 below ma_scrn's in Martian games); the button (0x6A)

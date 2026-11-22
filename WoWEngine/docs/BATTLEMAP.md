@@ -536,6 +536,29 @@ glint, type 0x3CA + rand() % 3 (LE_1-LE_3, `twink1-3.spr`, 8 frames), at height 
 step (+0xC0) 100, drifting 0.5 by 0.5. Their sprites are in palette slot 20, the ground's `LANDR` table, which the
 engine hadn't registered for sprites: anything drawn through slot 20 was skipped until now.
 
+## The information page (0x440300, 0x4403A0, "InfoPage" 0x4A3E60; `BattleMap::DrawInfoPage`)
+
+Every selectable object's handler hands what it doesn't take on to WSelectableObject's (0x440300; the battle
+objects' at 0x47E00C, the war map objects' at 0x428ECA). To the popup's query (0x805C) it adds **Information**
+(command 0x808C, icon GType 0x2A, text 0x478) when the object's type has an information page (+0x18, OBJ.ojd
+record 22), after the object's other items. The object asked is the one under the mouse if it answers 0x8111,
+else the player's current one (0x485EB0).
+
+The item opens the page (0x4403A0 -> 0x4A3E60): a window over the whole screen that takes the mouse; the page's
+text wrapped at 256 in font 0x73 (0x4161E0), as a BoxedText made with dword_4DAFC8 at level 15 (word_4B9424), its
+box 4 out on the left and top and 3 on the right and bottom, centred 32 right and 32 down of the object's screen
+point and kept on the screen. Fifteen updates on (0x812C) the text's speech starts (0x414700). Any key let go, or
+either mouse button let go, closes it.
+
+Against the owner's two frames of the original (the lorries in London): the popup's four items (Cancel, the
+order, Force Fire, Information) are the engine's; the page is a black box, its text 132, 121, 99, which the
+engine's level 15 gives exactly.
+*Provisional*: the speech isn't in. In the frame the gaps between words are about 10 pixels wide and the lines
+break earlier than the engine's, whose font 0x73 has a space 5 wide; the glyphs are the same. The engine reads
+the test install's font (from the Italian release), so the English release's font may simply have a wider space:
+to be checked with the owner's files. 0x8111 is taken as "the player's"; an object under the mouse that isn't
+selected adds only Information.
+
 ## Group icons (the holder 0x483DF0, the icon windows 0x484120, made by 0x422910; `BattleMap::DrawGroupIcons`)
 
 One icon for each of the player's war map objects with vehicles (and the sector's command building if it is in

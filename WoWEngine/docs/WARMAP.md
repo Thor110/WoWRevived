@@ -283,7 +283,7 @@ selection at +0x430, filled by its recorded commands 4 clear, 5 select (Shift ad
   (0x813E with 0x8065, icon 0x20 `RBHbuild`, 0x470) and, with something queued, **Suspend building tasks**
   (0x813E with 0x813F, icon 0x22, 0x495) while it's busy or **Resume building tasks** (icon 0x23, 0x496); see
   Production. The engine takes the first selected counter's first object as the current object (*provisional*).
-  Still to come: Cancel Move (0x80A9, for a unit on its way) and an object's Information (0x440300).
+  Retreat (0x80A9, for a unit on its way) and an object's Information (0x440300) are in.
 
 - **Routes** (WWarMapRoute 0x4240D0) move on every game hour: the calendar sends 0x802D with the hours gone by and
   the route's handler (0x424F00) moves its entries on (0x425080). A route keeps its sectors, the start first
@@ -414,8 +414,12 @@ resource's name, then "%0.2f %s %s" twice and "%s %0.2f %s": the sector's spread
 
 **The popup's items** (0x41D1A4): the window under the mouse is asked first: a counter of the player's (it
 answers 0x8111) gets the 0x805C and its object adds its items whatever is selected; otherwise the player's
-current object, then the sectors. The only items the game's routines add are an object's Build, Suspend /
-Resume building tasks and Retreat (0x429A70) and a sector's View map (0x43B9F0).
+current object, then the sectors. An object adds Build, Suspend / Resume building tasks and Retreat (0x429A70) and
+then, through the routine every selectable object hands on to (0x440300), **Information** (0x808C, icon 0x2A,
+text 0x478) when its type has an information page (+0x18, OBJ.ojd record 22); a sector adds View map (0x43B9F0).
+Information opens the page (0x4403A0 -> the "InfoPage" window 0x4A3E60; BATTLEMAP.md "The information page").
+(Update 155 wrongly said the game had no Information item: the object's own routine had been read without the
+one it hands on to. The owner's frames of the original put that right.)
 
 **A damaged facility makes nothing**: a finished resource facility's share of its sector's output is times its
 health / its full health as whole numbers (0x423B00), so 0 until it's mended (the engine takes it from the

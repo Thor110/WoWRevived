@@ -1607,6 +1607,7 @@ namespace wow
             const IndexedImage* lit = int(i) == popupHover ? res.GetFrame(item.icon, 1) : nullptr;
             canvas.DrawSprite(item.icon, lit ? 1 : 0, item.rect.x, item.rect.y);
         }
+        DrawInfoPage(canvas);
         DrawBox(canvas); // z 0x65FE, over everything
     }
 
@@ -1617,6 +1618,7 @@ namespace wow
     // "Warmap menu" popup, 0x41D120, which isn't in yet.) Cancel drops the selection (the player's action 2).
     std::optional<Command> WarMap::OnRightButton(int x, int y, bool down)
     {
+        if (infoPage) { if (!down) infoPage.reset(); return std::nullopt; }   // (0x205 closes the page, 0x4A41EF)
         if (!popup.empty() && !infoBox)
         {
             // held open (the game's): let go on an item it acts, anywhere else (or pressed off the items) it closes
@@ -1877,7 +1879,39 @@ namespace wow
         return std::nullopt;
     }
 
-    void WarMap::OnKeyUp(int) {}
+    void WarMap::OnKeyUp(int) { infoPage.reset(); }     // (0x101 closes the information page, 0x4A41A9)
+
+    // The information page (0x4A3E60; BattleMap::DrawInfoPage has the rules): the type's page text wrapped at 256
+    // in font 0x73 at level 15, a black box 4 / 4 / 3 / 3 round it, centred 32 right and 32 down of the object's
+    // point and kept on the screen. *Provisional*: the speech 15 updates on isn't in.
+    void WarMap::DrawInfoPage(Canvas& canvas) const
+    {
+        if (!infoPage) return;
+        const Font* font = res.GetFont(0x73);
+        if (!font) return;
+        const std::string text = canvas.Wrap(0x73, infoPage->text, 0x100);
+        int tw = 0, lines = 0;
+        for (size_t start = 0;;)
+        {
+            const size_t end = text.find('\n', start);
+            tw = std::max(tw, font->Measure(text.substr(start, end == std::string::npos ? std::string::npos : end - start)));
+            lines++;
+            if (end == std::string::npos) break;
+            start = end + 1;
+        }
+        const int spacing = 4;
+        const int th = font->Height() * lines + spacing * (lines - 1);
+        Rect box{ infoPage->x - tw / 2 - 4, infoPage->y - th / 2 - 4, tw + 7, th + 7 };
+        if (box.x + box.w > canvas.Width()) box.x = canvas.Width() - box.w;
+        if (box.y + box.h > canvas.Height()) box.y = canvas.Height() - box.h;
+        if (box.x < 0) box.x = 0;
+        if (box.y < 0) box.y = 0;
+        uint32_t* out = canvas.Pixels();
+        for (int y = box.y; y < box.y + box.h; y++)
+            for (int x = box.x; x < box.x + box.w; x++)
+                if (x >= 0 && y >= 0 && x < canvas.Width() && y < canvas.Height()) out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = 0;
+        canvas.DrawString(0x73, text, { box.x + 4, box.y + 4, tw, th }, TextCentreX, 15, spacing);
+    }
 
     // A battle (0x8072, the box's Defend / Attack): the world's selected sector becomes the battle's (+0x60 =
     // sectors[dword_4E9B98]) and it sends itself 0x8133 with 0x8019: the briefing transition (0x41B210) and disc
@@ -2598,8 +2632,8 @@ namespace wow
     // The Warmap menu (0x41D120): Cancel (command 0x73, icon GType 0x1C RBHcncl, text 0x476), then the items the
     // active tool, the player's selection or the sector under the mouse (if it's the player's: it's selected
     // and the selection cancelled first) adds through 0x805C: an object's Build, Suspend / Resume building tasks
-    // and Retreat (0x429A70), a sector's View map (0x43B9F0). Those are all the items the game's routines add: the
-    // "Cancel Move" and "Information" items earlier notes listed aren't in them. Shown at the mouse
+    // and Retreat (0x429A70), then WSelectableObject's own Information (0x440300, which the object's handler hands
+    // on to); a sector's View map (0x43B9F0). ("Cancel Move" is Retreat, 0x80A9.) Shown at the mouse
     // (0x432FB0) in rows by command (frontend/PopupRows.h), sound 0x193.
     void WarMap::OpenWarmapMenu(int x, int y)
     {
@@ -2625,6 +2659,7 @@ namespace wow
         // counter's first object (*provisional*: the war map's own idea of it isn't traced).
         popupObject = -1;
         popupCounter = -1;
+        popupInfoText = 0;
         // 0x41D1A4: the window under the mouse (dword_4EA444) is asked first: one that answers 0x8111 (a counter of
         // the player's, 0x42BEB0) gets the 0x805C and its object adds the items, whatever is selected; only
         // otherwise the player's current object (0x439230)
@@ -2651,6 +2686,15 @@ namespace wow
             if (c.Travelling() && c.players)
                 if (const int to = RetreatTo(popupCounter); to >= 1 && HasRoomFor(c.type, to) && owner[size_t(to)] != 1)
                     add(0x80A9, 0, 0x350, 0x477);
+            // then WSelectableObject's own (0x440300, which the object's handler hands on to, 0x428ECA): with a
+            // page for its type (+0x18), "Information" (0x808C, icon 0x2A, text 0x478)
+            if (auto t = unitData.find(c.type); t != unitData.end() && t->second.infoPage)
+            {
+                popupInfoText = t->second.infoPage;
+                popupInfoX = c.x - cameraX;
+                popupInfoY = c.y - cameraY;
+                add(0x808C, 0, 0x2A, 0x478);
+            }
         }
         // 0x41D1F8: a current object's items leave the flag (var_11) clear, so the world's selected sector adds
         // "View map" after them as it does with nothing selected
@@ -2688,6 +2732,8 @@ namespace wow
     void WarMap::PopupCommand(int command, int param)
     {
         if (command == 0x73) ClearSelection();
+        // 0x4403A0: the object's information page, 32 right and 32 down of its point (0x4A3E60)
+        if (command == 0x808C && popupInfoText) infoPage = InfoPage{ res.String(popupInfoText), popupInfoX + 0x20, popupInfoY + 0x20 };
         // an object's (0x428DFD): Build opens its window, the other its building tasks suspended or resumed
         if (command == 0x813E && param == 0x8065) OpenBuildWindow(popupObject);
         if (command == 0x80A9) Retreat(popupCounter);
@@ -2806,6 +2852,7 @@ namespace wow
 
     std::optional<Command> WarMap::OnMouseButton(int x, int y, bool down)
     {
+        if (infoPage) { if (!down) infoPage.reset(); return std::nullopt; }   // (0x202 closes the page)
         // the box is modal and has the mouse: only its button answers
         if (infoBox)
         {

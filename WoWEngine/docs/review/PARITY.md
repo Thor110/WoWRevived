@@ -566,14 +566,27 @@ Martian start's units turned differently)
       player's current object; the engine went by the selection alone.
 - [x] A damaged resource facility makes nothing (0x423B00's health / full health as whole numbers), now that
       the health is kept.
-- Not things the game has: the popup's "Cancel Move" and "Information" items (the only items added are Build,
-  Suspend / Resume building tasks, Retreat and View map). The notes that two events' boxes weren't in were
-  stale: `RunEvent` opens them.
+- The notes that two events' boxes weren't in were stale: `RunEvent` opens them. (This entry also said the
+  popup had no Information item. That was wrong; see update 156.)
 - Seen while checking the kept health: in the Human start save 15 of the 116 battle units, all Martian
   constructions of types 113 and 116, are saved under the full health the engine works out for their types
   (1439 of 2159 and 1259 of 1439); every other unit is at exactly its type's. They are left as saved, so they
   start a little damaged (and a Martian Repair Facility would mend them): either the start save was made with
   older figures or the engine's full health for those two types is high. Not settled.
+
+**Update 156** (from the owner's two frames of the original: the battle popup with Information, and the page)
+- [x] **Correction to update 155: the popup does have Information.** An object's own popup routine (0x429A70 on
+      the war map, 0x47E1E0 on the battle map) isn't the whole of it: its handler hands on to WSelectableObject's
+      (0x440300), which adds Information (0x808C, icon 0x2A, text 0x478) for a type with an information page
+      (+0x18). Update 155 read only the first and concluded the item didn't exist. Lesson kept in HANDOFF.md:
+      before saying the game lacks something, follow the handler's fall-through, and ask the owner.
+- [x] Information is in both popups, after the object's other items, and opens the page (0x4403A0, "InfoPage"
+      0x4A3E60): the text wrapped at 256 in font 0x73 at level 15, a black box round it, centred 32 right and
+      down of the object, closed by any key or button let go. The engine's battle popup for the lorries shows
+      the frame's four items; the page's text colour is the frame's exactly (132, 121, 99).
+- *Open*: in the frame the word gaps are about twice the engine's and the lines break earlier (same glyphs):
+  likely the English release's font 0x73 has a wider space than the Italian install's the engine was run on.
+  The page's speech (0x414700, 15 updates on) isn't in.
 
 ## Deferred (with the reason each is still open)
 

@@ -691,6 +691,13 @@ namespace wow
         // an item's row and place in it (0x432D70 / 0x432E90: the row whose first item has its command, +0x28)
         struct PopupItem { int command, icon, text; Rect rect; int param = 0; int row = 0, col = 0; };
         std::vector<PopupItem> popup;       // "Battlemap menu" (WPopupMenu 0x432C60, 0x485DE0)
+        // The information page (WSelectableObject's 0x440300 / 0x4403A0, the window "InfoPage" 0x4A3E60): the popup's
+        // Information item (0x808C) of an object whose type has a page (+0x18, OBJ.ojd record 22), and the box it
+        // opens; popupInfo is the page and the point the popup's item would open it at
+        struct InfoPage { std::string text; int x = 0, y = 0; };
+        std::optional<InfoPage> infoPage;
+        int popupInfoText = 0, popupInfoX = 0, popupInfoY = 0;
+        void DrawInfoPage(Canvas& canvas) const;
         int popupHover = -1;
         int popupOpenRow = -1;
         mutable int lastCursor = 0;         // the cursor last set (kept where the game sets none)              // the row opened out (0x433330 with the hovered item's command)

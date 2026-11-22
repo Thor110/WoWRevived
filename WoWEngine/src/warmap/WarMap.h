@@ -264,6 +264,12 @@ namespace wow
         std::optional<BuildWindowState> buildWindow;
         int popupObject = -1;                           // the object whose items the popup has
         int popupCounter = -1;                          // its counter (for Retreat)
+        // The information page (0x440300 / 0x4403A0, the window "InfoPage" 0x4A3E60; as the battle map's): the
+        // popup's Information item (0x808C) of an object whose type has a page (+0x18), and the box it opens
+        struct InfoPage { std::string text; int x = 0, y = 0; };
+        std::optional<InfoPage> infoPage;
+        int popupInfoText = 0, popupInfoX = 0, popupInfoY = 0;
+        void DrawInfoPage(Canvas& canvas) const;
         // The computer player (warmap/WarMapAi.cpp): its phase (+0x43C), its units in the order they move
         // (dword_546230, the cursor +0x440 and count +0x444), its clock (+0x448), its research (+0x454) and the
         // strength gathered (+0x460)

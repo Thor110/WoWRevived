@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 155) and what is next
+## Where things stand (update 156) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -35,7 +35,8 @@ the working order; the stages further down stay the full inventory.
       counters' strength pips and the tool tips' task lines (154); the Resource view's tool tips, the popup
       asking the counter under the mouse, damaged facilities making nothing (155). Looked into and found in
       already, or not things the game does: 3.2's context buttons, Suspend / Resume, CommandCentreBuilt; the
-      event boxes; the popup's "Cancel Move" and "Information" items (no routine adds them). Left: 3.3's
+      event boxes. Corrected in 156: the popup's Information item and the information page are real and are
+      in now (the owner's frames). Left: 3.3's
       hourly fan-out, 3.4 (several units as one route), 3.6 and 3.7, each to be checked against the code first:
       these lists have turned out stale more often than not.
 
