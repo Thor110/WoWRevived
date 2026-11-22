@@ -605,6 +605,25 @@ Martian start's units turned differently)
 - *Open, seen in the same frame*: the mini-map shades the sectors by owner (the engine's is plain); the counter
   at the route's far end sits about 18 left and 13 up of the engine's. Both for update 158.
 
+**Update 158** (the mini-map panel, from the same frame of the original)
+- [x] **The mini-map is shaded by sector, as the map is.** It is a map sprite through its own sector map (0x82,
+      0x422D4C) and the levels are the global table the big map uses (0x49C000). The engine drew it plain and
+      took 0x82 for a highlight picture.
+- [x] **The panel sat 5 pixels too far right (Human), the view 11 (Martian).** The frame places itself (the
+      parent's width less its own less 4, 0x42371A) and the world then moves the view to the frame's x + 9 / + 10
+      (0x418C35 / 0x418C70); the engine placed the frame from the view.
+- [x] **The view's outline**: one pixel smaller each way (it is the rectangle, 42 x 32), one further in (0x423331),
+      held 2 inside the far edges, and its colour through the 16-bit screen (0, 0, 189). The rubber band's two
+      colours go through the same.
+- Against the owner's frame the mini-map's 17,000 pixels, outline included, are identical.
+- *Open*: the panel's frame, buttons and the calendar are the same shapes in the same places but not the same
+  pixels: the original's are smooth where the engine's (from the Italian discs' `hmframe.spr` etc.) are dithered,
+  and the frame has a black drop shadow the engine's copy has as transparent. No palette slot or level turns one
+  into the other (one index of the engine's picture lies under several colours of the original's), so the
+  picture files differ. Asked of the owner: whether their install's files are the same as the Italian discs'.
+- *Open*: the Martian panel's new place is from the listing alone.
+- *Open, from update 157*: the counter at a route's far end sits about 18 left and 13 up of the engine's.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

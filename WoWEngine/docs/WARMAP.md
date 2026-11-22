@@ -17,7 +17,7 @@ What's worked out about the war map (WWarMapWorld, constructor 0x417CD0), and wh
 | 0x7D | `HWM.SPR` / `MWM.SPR` | 6 | The map, 1498 x 2544 |
 | 0x7E | `HWMHI.SPR` / `MWMHI.SPR` | 6 | The sector map, the same size (below) |
 | 0x7F | `HMINI.SPR` / `mmini.spr` | 6 | The mini-map, 100 x 170 (a fifteenth of the map) |
-| 0x82 | `HMINIHI.SPR` / `mminihi.spr` | 6 | The mini-map's highlight |
+| 0x82 | `HMINIHI.SPR` / `mminihi.spr` | 6 | The mini-map's sector map, 100 x 170: the sectors 1-30, 0 elsewhere |
 | 0x83 | `HSECTOR.SPR` / `MSECTOR.SPR` | 5 | 31 frames, one per sector, to light a sector on the mini-map |
 | 0x76-0x78 | `HU-CNT24/32/48.SPR` | 5 | The round unit and building counters, 150 frames |
 | 0x84 | `CHI.SPR` | 6 | Another numbered map: the sectors drawn a little smaller, and the sea areas numbered from 192. Used while the sector objects are set up, to find each sector's counter cells |
@@ -183,12 +183,25 @@ with:
 
 ## The mini-map panel
 
-"WarMap miniMap view" (0x422C70) is the mini-map (0x7F) with its highlight (0x82) and the sector frames (0x83). It
-sits in the bottom right corner (0x422EC9-0x422F12): the parent's width less 100, less the border (4), less 8 more
-in Human games, and the height less 170, 4 and 8 the same way: (528, 298) Human, (536, 306) Martian. Its sector
-frame (0x83) is the selected sector's (0x423040; the hovered one isn't used), and the view's outline (0x49C740) is
-fixed at 100 x 640 / the map's width by 170 x 480 / its height, in the side's colour (dword_4DAF9C: Human RGB6 0x2F,
-0, 0; Martian 12, 42, 4). Update 133.
+"WarMap miniMap view" (0x422C70) is the mini-map (0x7F) drawn through its own sector map (0x82: the sectors 1-30,
+0 elsewhere; a 0x49BE70 object handed to the map sprite's 0x49C8D0 at 0x422D4C), with the selected sector's frame
+(0x83, 0x423040; the hovered one isn't used) on top. The levels are the one global table the big map's sectors use
+(0x49C000 writes dword_59E678 / dword_59E9B0), so every sector on the mini-map has the shade the view gives it on
+the map ("Sector shading", below). Update 158: against the owner's frame all 17,000 pixels agree.
+
+Where the two windows sit (update 158; the engine had the frame placed from the view). Each first puts itself in the
+bottom right corner: the frame (0x42371A) at the parent's size less its own (the sprite's width by 0x50 Human /
+0x44 Martian) less the border (dword_4BA05C, 4); the view (0x422EC9) the same with its 100 x 170, and 8 more in
+Human games. The world then moves both (0x418C02): the frame keeps its x and goes to the view's y less its own
+height less 0x20 (Human) or 0x28 (Martian); the view goes to the frame's x + 9 (Human) or + 10 (Martian) at its
+own y. Human: frame 514, 186, view 523, 298 (the owner's frame). Martian: frame 515, 198, view 525, 306 (no frame
+of the original to hand).
+
+The view's outline (0x49C740 at 0x422E6C) is a rectangle 100 x 640 / the map's width by 170 x 480 / its height (42
+x 32, its last column and row inside that), in the side's colour (dword_4DAF9C: Human RGB6 0, 0, 0x2F; Martian 12,
+42, 4) through the 16-bit screen (the Human blue measures 189). Told where the view is (0x8004, 0x423244), its
+corner is the map's scaled down, not below 0 and kept 2 inside the far edges, then 1 more each way.
+
 "WarMap miniMap frame" (0x423420) is the panel: frame 0x80, and three view buttons (0x4333B0, command 0x811F, ids
 0x94 / 0x93 / 0x92) at (6, 0x29), (0x2A, 0x29), (0x4F, 0x29) in Human games and (0xA, 0x24), (0x2D, 0x24),
 (0x51, 0x24) in Martian ones, labelled 0x47B "Unit View", 0x47C "Construction view", 0x47E "Resource view".

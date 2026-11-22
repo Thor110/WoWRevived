@@ -160,21 +160,24 @@ namespace wow
         cameraY = std::clamp(cameraY, 0, warmap::MapHeight - ViewH());
     }
 
-    // The mini-map panel, "WarMap miniMap frame" (0x423420) around "WarMap miniMap view" (0x422C70). The view sits
-    // in the bottom right corner (where exactly is from WoWRevived's screenshot: 115 and 175 in from the right and
-    // bottom edges); 0x418C14 then puts the frame (GType 0x80: hmframe.SPR 122 x 290, mmframe.SPR 121 x 130) above
-    // it, 0x50 + 0x20 higher and 9 to the left in Human games, 0x44 + 0x28 and 10 in Martian ones. The three view
-    // buttons (0x4333B0, command 0x811F) are placed in the frame by 0x423420.
+    // The mini-map panel, "WarMap miniMap frame" (0x423420) around "WarMap miniMap view" (0x422C70). Each first
+    // puts itself in the bottom right corner (the frame 0x42371A: the parent's size less its own, the sprite's width
+    // by 0x50 Human / 0x44 Martian, less the border, dword_4BA05C, 4; the view 0x422EC9: the same with its 100 x 170
+    // and 8 more in Human games). 0x418C02 then moves both: the frame stays at its x and goes to the view's y less
+    // its own height less 0x20 (Human) or 0x28 (Martian), and the view goes to the frame's x + 9 (Human) or + 10
+    // (Martian) at its own y. So Human: frame 514, 186, view 523, 298 (the owner's frame of the original); Martian:
+    // frame 515, 198, view 525, 306. The three view buttons (0x4333B0, command 0x811F) are placed in the frame by
+    // 0x423420.
     WarMap::PanelLayout WarMap::Panel() const
     {
         PanelLayout p;
         if (!panelShown) return p; // hidden with Tab: nothing to hit
         bool human = res.Human();
-        // 0x422EC9-0x422F12: the parent's size less the mini-map's, less the border (dword_4BA05C, 4), less 8 more in
-        // a Human game
-        p.mini = { ScreenW - MiniW - 4 - (human ? 8 : 0), ScreenH - MiniH - 4 - (human ? 8 : 0), MiniW, MiniH };
         Rect frameSize = SpriteRect(0x80, 0, 0);
-        p.frame = { p.mini.x - (human ? 9 : 10), p.mini.y - (human ? 0x50 + 0x20 : 0x44 + 0x28), frameSize.w, frameSize.h };
+        const int frameX = ScreenW - frameSize.w - 4;                          // 0x42371A
+        const int miniY = ScreenH - MiniH - 4 - (human ? 8 : 0);               // 0x422EC9
+        p.mini = { frameX + (human ? 9 : 10), miniY, MiniW, MiniH };           // 0x418C35 / 0x418C70
+        p.frame = { frameX, miniY - (human ? 0x50 + 0x20 : 0x44 + 0x28), frameSize.w, frameSize.h }; // 0x418C14 / 0x418C4F
         static constexpr int Gtypes[3] = { 0x33, 0x35, 0x34 };        // Unit View, Construction View, Resource View
         static constexpr int HumanX[3] = { 6, 0x2A, 0x4F }, MartianX[3] = { 0xA, 0x2D, 0x51 };
         for (int i = 0; i < 3; i++)
@@ -1518,8 +1521,11 @@ namespace wow
         {
             int l = std::min(dragX, mouseX), r = std::max(dragX, mouseX), t = std::min(dragY, mouseY), b = std::max(dragY, mouseY);
             uint32_t* out = canvas.Pixels();
+            // the screen is 16-bit (5, 6, 5): red and blue lose their lowest bit (the view's outline measures 0, 0,
+            // 189 in the owner's frame, 0x2F through five bits)
             auto c6 = [](int c) { return uint32_t((c << 2) | (c >> 4)); };
-            auto rgb = [&](int r6, int g6, int b6) { return c6(r6) << 16 | c6(g6) << 8 | c6(b6); };
+            auto c5 = [](int c) { c >>= 1; return uint32_t((c << 3) | (c >> 2)); };
+            auto rgb = [&](int r6, int g6, int b6) { return c5(r6) << 16 | c6(g6) << 8 | c5(b6); };
             const bool human = res.Human();
             const uint32_t outer = human ? rgb(0, 0, 0x2F) : rgb(12, 42, 4), inner = human ? rgb(0, 0, 0x28) : rgb(5, 39, 4);
             auto plot = [&](int px, int py, uint32_t c) { if (px >= 0 && py >= 0 && px < canvas.Width() && py < canvas.Height()) out[size_t(py) * size_t(canvas.Width()) + size_t(px)] = c; };
@@ -1551,7 +1557,29 @@ namespace wow
             int researchFrame = researchHeld ? (hotButton == 3 ? 2 : 3) : hotButton == 3 ? 1 : 0;
             canvas.DrawSprite(0x341, researchFrame, panel.research.x, panel.research.y);
             Rect mini = panel.mini;
-            canvas.DrawSprite(warmap::MiniMapGType, 0, mini.x, mini.y, warmap::NormalLevel); // slot 6, like the map
+            // the mini-map (0x7F) is a map sprite through its own sector map (0x82, made by 0x49BE70 and handed to
+            // 0x49C8D0 at 0x422D4C), and the levels are the one global table the big map's sectors use (0x49C000
+            // writes dword_59E678 / dword_59E9B0): each sector on it has the shade the view gives it on the map.
+            // 0x82 holds the sectors only (1-30, 0 the rest); the borders are in the picture
+            {
+                const IndexedImage* mm = res.GetFrame(warmap::MiniMapGType);
+                const IndexedImage* ms = res.GetFrame(warmap::MiniMapHighlightGType);
+                const ShadeTable* mshade = res.ShadeFor(warmap::MiniMapGType);
+                if (!mshade) mshade = res.ShadeFor(warmap::MapGType);
+                if (mm && ms && mshade && ms->width == mm->width && ms->height == mm->height)
+                {
+                    uint32_t* out = canvas.Pixels();
+                    for (int y = 0; y < mm->height; y++)
+                        for (int x = 0; x < mm->width; x++)
+                        {
+                            const int px = mini.x + x, py = mini.y + y;
+                            if (px < 0 || py < 0 || px >= canvas.Width() || py >= canvas.Height()) continue;
+                            const size_t i = size_t(y) * size_t(mm->width) + size_t(x);
+                            out[size_t(py) * size_t(canvas.Width()) + size_t(px)] = mshade->Level(levels[ms->pixels[i]])[mm->pixels[i]];
+                        }
+                }
+                else canvas.DrawSprite(warmap::MiniMapGType, 0, mini.x, mini.y, warmap::NormalLevel);
+            }
             // 0x423040: the selected sector's frame (the hovered one isn't used), none without one
             if (selected) canvas.DrawSprite(warmap::MiniSectorGType, selected, mini.x, mini.y);
             {
@@ -1559,10 +1587,19 @@ namespace wow
                 // in the side's colour (dword_4DAF9C from 0x40B120: Human RGB6 0, 0, 0x2F, blue: 0x40B3B0's pushes are
                 // b, g, r; Martian 12, 42, 4)
                 uint32_t* out = canvas.Pixels();
-                int x0 = mini.x + cameraX * MiniW / warmap::MapWidth, y0 = mini.y + cameraY * MiniH / warmap::MapHeight;
-                int x1 = x0 + MiniW * 640 / warmap::MapWidth, y1 = y0 + MiniH * 480 / warmap::MapHeight;
+                // 0x423244 (the view told where it is, 0x8004): the corner scaled down, not below 0 and kept 2 inside
+                // the far edges, then 1 more each way; the box is its rectangle, so its last column and row are one
+                // short of the size (the owner's frame: 42 x 32 pixels, its top 121 down)
+                const int bw = MiniW * 640 / warmap::MapWidth, bh = MiniH * 480 / warmap::MapHeight;
+                int bx = std::max(0, cameraX * MiniW / warmap::MapWidth), by = std::max(0, cameraY * MiniH / warmap::MapHeight);
+                if (bx + bw > MiniW - 2) bx = MiniW - bw - 2;
+                if (by + bh > MiniH - 2) by = MiniH - bh - 2;
+                int x0 = mini.x + bx + 1, y0 = mini.y + by + 1;
+                int x1 = x0 + bw - 1, y1 = y0 + bh - 1;
+                // through the 16-bit screen's 5, 6, 5 (the owner's frame: 0, 0, 189)
                 auto c6 = [](int c) { return uint32_t((c << 2) | (c >> 4)); };
-                const uint32_t colour = res.Human() ? c6(0x2F) : (c6(12) << 16 | c6(42) << 8 | c6(4));
+                auto c5 = [](int c) { c >>= 1; return uint32_t((c << 3) | (c >> 2)); };
+                const uint32_t colour = res.Human() ? c5(0x2F) : (c5(12) << 16 | c6(42) << 8 | c5(4));
                 auto plot = [&](int x, int y) { if (x >= 0 && y >= 0 && x < canvas.Width() && y < canvas.Height()) out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = colour; };
                 for (int x = x0; x <= x1; x++) { plot(x, y0); plot(x, y1); }
                 for (int y = y0; y <= y1; y++) { plot(x0, y); plot(x1, y); }

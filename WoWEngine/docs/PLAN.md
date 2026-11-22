@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 157) and what is next
+## Where things stand (update 158) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -37,7 +37,8 @@ the working order; the stages further down stay the full inventory.
       already, or not things the game does: 3.2's context buttons, Suspend / Resume, CommandCentreBuilt; the
       event boxes. Corrected in 156: the popup's Information item and the information page are real and are
       in now (the owner's frames). 157: the menu on a unit in transit as the owner's frame (Cancel move, no
-      View map, the sector unselected, units in transit selectable). Left: 3.3's
+      View map, the sector unselected, units in transit selectable). 158: the mini-map shaded by sector and
+      the panel where the game puts it. Left: 3.3's
       hourly fan-out, 3.4 (several units as one route), 3.6 and 3.7, each to be checked against the code first:
       these lists have turned out stale more often than not.
 
@@ -53,8 +54,12 @@ the working order; the stages further down stay the full inventory.
 - **Lighting in London** (update 143): Big Ben and Parliament are brighter in the original because its lorries
   stand beside them with their headlights on; the engine's stand to the south. It goes with the deployment
   spot above, not a lighting fault (update 151).
-- **The mini-map's sectors shaded by owner** and **where the counter at a route's far end sits** (update 157,
-  the owner's Cancel move frame): next, update 158.
+- **Where the counter at a route's far end sits** (update 157, the owner's Cancel move frame): about 18 left
+  and 13 up of the engine's.
+- **The war map's panel art** (update 158): the frame, its buttons and the calendar are dithered in the engine
+  (the Italian discs' files) and smooth in the owner's frame, with a drop shadow. The files differ, or the
+  owner's install has other ones; asked.
+- **The Martian panel's place** (update 158) is from the listing; wants a frame of the original's Martian war map.
 - **The route save layout** against a real save of the original with units in transit (asked of the owner).
 
 Ask the owner for a frame of the original whenever a change is visible: a fresh game, the battle opened,
