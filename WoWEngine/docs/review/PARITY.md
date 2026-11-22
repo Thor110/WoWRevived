@@ -759,6 +759,21 @@ transparency")
 - 5.2: the heat ray in the engine's fight set beside the owner's frame: the same white beam widening to the
   target with the see-through glow at its end.
 
+**Update 172** (the owner's first long session on the engine: a crash, and units walking into buildings)
+- [x] **The speed slider didn't turn time on.** Letting the slider go with a speed set turns time running on
+      (0x4278FC). The engine's set the speed and nothing else, so everything that stops the clock by turning
+      time off (an event's box, a press on the map, the research screen, a battle) did nothing: the clock ran on
+      under the pod's box and again after the battle. That is the state the owner's log shows (the computer
+      player eight hours on while the box was up). Fixed.
+- [x] **Advance time** (a click on the calendar): refused while a sector holds both sides, and it turns time
+      off first (0x427987). The engine's did neither.
+- [x] **Crash reporting.** A fault that isn't a C++ exception left a log that just stopped. Now a line says
+      what it was (on Windows the exception code, the address and its offset in the engine, the address read
+      or written, a stack run out), and what the engine was doing (`core/Crumb.h`: set at the war map's hour
+      steps, the battle's end, saving, drawing).
+- *Not reproduced*: the crash itself. In PLAN.md.
+- *Reproduced, not fixed*: units walking into the building they attack. In PLAN.md with what was traced.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

@@ -1,6 +1,7 @@
 #include "frontend/FrontEnd.h"
 
 #include "core/AiTable.h"
+#include "core/Crumb.h"
 #include "core/Random.h"
 #include "frontend/MovieScreen.h"
 #include "frontend/Splash.h"
@@ -524,6 +525,7 @@ namespace wow
 
     void FrontEnd::SaveCampaign()
     {
+        Crumb("saving the campaign");
         WarMap* map = ActiveWarMap();
         // MODERN FIX: the game's save (0x4042D0) writes slot 0 to Human.000 / Martian.000 in the game folder, the
         // files new campaigns start from, so a campaign with no slot saved over them (docs/ODDITIES.md). Here a
@@ -921,6 +923,7 @@ namespace wow
                     controlByPlayer = bm->ControlByPlayer();
                     break;
                 }
+            Crumb("leaving the battle map: settling the battle on the war map");
             battleMap.reset();
             // 0x97 (0x41A0DC): the battle's end. The battle isn't fought on the battle map yet, so the war map
             // settles it (*provisional*), then the Debriefing (0x49A7B0)

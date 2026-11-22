@@ -2,6 +2,7 @@
 #include "frontend/PopupRows.h"
 
 #include "core/Random.h"
+#include "core/Crumb.h"
 #include "warmap/AStar.h"
 
 #include <SDL3/SDL_keyboard.h>
@@ -735,10 +736,15 @@ namespace wow
     // cool-down, +0x68); the resource warnings come in the same loop.
     void WarMap::Hourly(int hours)
     {
+        Crumb("war map hour: routes");
         MoveRoutes(hours);
+        Crumb("war map hour: the computer player's turn");
         AiTurn(hours);
+        Crumb("war map hour: research");
         for (auto& r : research) if (r) r->Advance(hours);
+        Crumb("war map hour: pods");
         DropPod(hours);
+        Crumb("war map hour: sectors (repairs, production)");
         for (Counter& k : counters) k.intel = std::max(0, k.intel - hours);
         for (int s = 1; s <= warmap::SectorCount; s++)
         {
@@ -768,7 +774,9 @@ namespace wow
                 if (aiCooldown[size_t(s)]) aiCooldown[size_t(s)]--;
             }
         }
+        Crumb("war map hour: resource warnings");
         ResourceWarnings();
+        Crumb("war map: after the hour");
     }
 
     // Resource warnings (0x419EFB): for each of the player's three kinds, the least spread supply over spread
@@ -1318,6 +1326,7 @@ namespace wow
 
     void WarMap::Update()
     {
+        Crumb("war map: update");
         AgeLog();
         if (!map) map = res.GetFrame(warmap::MapGType);
         if (!sectorMap) sectorMap = res.GetFrame(warmap::SectorMapGType);
@@ -1375,6 +1384,7 @@ namespace wow
 
     void WarMap::Draw(Canvas& canvas) const
     {
+        Crumb("war map: drawing");
         const IndexedImage* m = map;
         const IndexedImage* s = sectorMap;
         const ShadeTable* shade = res.ShadeFor(warmap::MapGType);
@@ -2215,6 +2225,7 @@ namespace wow
     // the queued events come again (0x41E730).
     void WarMap::ReturnFromBattle()
     {
+        Crumb("war map: back from a battle (the announcement and the queued events)");
         for (auto& r : research) if (r) r->UpdateTriggers(encountered); // the view's set-up, 0x418D17
         if (debriefing.fought || forfeited) AnnounceBattleResult();   // (0x808D comes either way; 0x41AED0 checks the forfeit first)
         battleSector = 0;
@@ -2997,7 +3008,16 @@ namespace wow
         // the speed slider (a Scrollbar, 0x431E30): pressing it sets the position under the mouse, and moving
         // with the button held drags it until the button comes up, wherever the mouse is by then
         Rect sp = SpeedRect();
-        if (!down && draggingSpeed) { draggingSpeed = false; return std::nullopt; }
+        if (!down && draggingSpeed)
+        {
+            draggingSpeed = false;
+            // the slider let go (the calendar's 0x4E with 0x202, 0x4278D5): with a speed set, time is turned on
+            // (0x4278FC: 0x41A6C0(1)). Without this an event's box, a press on the map or coming back from a battle
+            // (each 0x41A6C0(0), which does nothing when time is already off) couldn't stop a clock the slider
+            // had started.
+            if (warmap::Speeds[speed] != 0.0f) SetTimeRunning(true);
+            return std::nullopt;
+        }
         if (down && sp.Contains(x, y))
         {
             draggingSpeed = true;
@@ -3007,6 +3027,10 @@ namespace wow
         // a click on the rest of the calendar moves time on an hour at once (0x4278A0: +0x30 and the tick)
         if (down && CalendarRect().Contains(x, y))
         {
+            // 0x427987: only when every sector allows it (0x41AEA0: none with both sides in it); time is turned
+            // off (0x41A6C0(0)), then the hour
+            if (!SpeedChangeAllowed()) return std::nullopt;
+            SetTimeRunning(false);
             forcedHours++;
             ClockTick();
             if (hoursPassed > 0) Hourly(hoursPassed);

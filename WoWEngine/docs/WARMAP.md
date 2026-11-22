@@ -955,10 +955,14 @@ Frequency"), with the speeds at 0x4BA470 the floats 0.0-10.0 (the slider's posit
 with February's leap years. The clock document (0x41F550) is made with speed 0, so the war map starts with time
 stopped until the slider or a digit sets a speed.
 
-**Time running** (world +0x64, 0x41A6C0): turned on by a digit, which sets the speed first (0x41A450; refused,
+**Time running** (world +0x64, 0x41A6C0): turned on by the speed slider let go with a speed set (the calendar's
+0x4E with 0x202, 0x4278FC; update 172) and by a digit, which sets the speed first (0x41A450; refused,
 nothing changing, while any sector holds units or constructions of both sides, 0x41AEA0 -> 0x43D010); turned off by
 Backspace, any press of a mouse button on the map (0x201 / 0x204, a counter too), the research screen (0x7D),
-every critical event's box, and a speed of 0 (0x41F640). A change is recorded in the player's command stream
+every critical event's box, the calendar's Advance time click (0x4279AB, which is itself refused while a sector
+holds both sides, 0x427996), and a speed of 0 (0x41F640). Turning it off when it is already off does nothing
+(0x41A6FC), which is why the slider has to turn it on: until update 172 the engine's slider set the speed alone,
+and then no box, press or battle could stop the clock it had started. A change is recorded in the player's command stream
 (actions 0xA on / 0xB off, `{01,01,code,04}`) and the opponent is told (vtbl +0x30; the computer, 0x442A80,
 records 0xC / 0xD); when the commands are carried out the world gets 0x8050 / 0x8054 for each on, adding one to
 +0x68, and 0x8051 / 0x8055 for each off, taking one away and setting the speed to 0. While +0x68 is exactly 1 (one

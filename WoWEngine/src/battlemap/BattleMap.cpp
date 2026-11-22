@@ -5,6 +5,7 @@
 #include "frontend/Resources.h"
 #include "core/Bytes.h"
 #include "core/Random.h"
+#include "core/Crumb.h"
 #include <SDL3/SDL.h>
 #include <algorithm>
 #include <cstring>
@@ -2278,6 +2279,7 @@ namespace wow
 
     void BattleMap::Update()
     {
+        Crumb("battle map: update");
         ticks++;
         // the game loop (0x403680): the players' updates (the computer player's), then the queued messages (0x434FA0:
         // the delayed 0x80A0 deaths, posted by 0x48AB20, and the 0x80F4 posts), then the screen (0x43A980: the fog's
@@ -2769,6 +2771,7 @@ namespace wow
 
     void BattleMap::Draw(Canvas& canvas) const
     {
+        Crumb("battle map: drawing");
         canvas.Clear(0);
         TerrainView::Target t{ canvas.Pixels(), canvas.Width(), 0, 0, canvas.Width(), canvas.Height() };
         // the ground row by row, each object drawn once the rows reach its depth (0x49F610)

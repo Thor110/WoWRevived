@@ -7,6 +7,7 @@
 #include "core/Vfs.h"
 #include "frontend/Canvas.h"
 #include "core/Random.h"
+#include "core/Crumb.h"
 #include "frontend/FrontEnd.h"
 #include "frontend/Resources.h"
 #include "frontend/Settings.h"
@@ -26,6 +27,17 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#else
+#include <csignal>
+#endif
 
 #include <cstdint>
 #include <cstdio>
@@ -197,12 +209,48 @@ namespace
         if (defaultLog) defaultLog(defaultLogData, category, priority, message);
         (void)userdata;
     }
+    // A fault that isn't a C++ exception (an access violation, a stack overflow, an abort) closes the window with
+    // nothing said. These put a line in WoWEngine.log first: what it was, where, and what the engine was doing
+    // (wow::crumb), then let the fault go on as it would have.
+#ifdef _WIN32
+    LONG WINAPI CrashFilter(EXCEPTION_POINTERS* e)
+    {
+        if (logFile && e && e->ExceptionRecord)
+        {
+            const EXCEPTION_RECORD& r = *e->ExceptionRecord;
+            const auto base = reinterpret_cast<unsigned long long>(GetModuleHandleW(nullptr));
+            const auto at = reinterpret_cast<unsigned long long>(r.ExceptionAddress);
+            std::fprintf(logFile, "CRASH: exception 0x%08lX at 0x%llX (the engine's base 0x%llX, offset 0x%llX) while: %s\n",
+                         static_cast<unsigned long>(r.ExceptionCode), at, base, at - base, wow::crumb);
+            if (r.ExceptionCode == EXCEPTION_ACCESS_VIOLATION && r.NumberParameters >= 2)
+                std::fprintf(logFile, "CRASH: %s address 0x%llX\n", r.ExceptionInformation[0] ? "writing" : "reading",
+                             static_cast<unsigned long long>(r.ExceptionInformation[1]));
+            if (r.ExceptionCode == EXCEPTION_STACK_OVERFLOW) std::fprintf(logFile, "CRASH: the stack ran out (a routine calling itself without end)\n");
+            std::fflush(logFile);
+        }
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+#else
+    void CrashSignal(int sig)
+    {
+        if (logFile) { std::fprintf(logFile, "CRASH: signal %d while: %s\n", sig, wow::crumb); std::fflush(logFile); }
+        std::signal(sig, SIG_DFL);
+        std::raise(sig);
+    }
+#endif
     void StartLogFile()
     {
         std::string path = std::string(SDL_GetBasePath() ? SDL_GetBasePath() : "") + "WoWEngine.log";
         logFile = std::fopen(path.c_str(), "w");
         SDL_GetLogOutputFunction(&defaultLog, &defaultLogData);
         SDL_SetLogOutputFunction(LogToFile, nullptr);
+#ifdef _WIN32
+        SetUnhandledExceptionFilter(CrashFilter);
+        ULONG reserve = 64 * 1024;          // room for the filter to run when the stack itself has run out
+        SetThreadStackGuarantee(&reserve);
+#else
+        for (int sig : { SIGSEGV, SIGABRT, SIGFPE, SIGILL, SIGBUS }) std::signal(sig, CrashSignal);
+#endif
     }
 }
 
