@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 174
+# Handoff: WoWEngine after update 175
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -137,7 +137,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 174
+## State after update 175
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -172,7 +172,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **175**.
+  - The next number is **176**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.
@@ -181,6 +181,9 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (about three minutes to build, runs some ten times slower).
   - The script's `click` on the speed slider (`down:590:30,wait:2,up:590:30` in a Martian game) starts the clock
     as the mouse does; a digit does it the keyboard's way.
+  - WoWEngine.log's own lines to look for in a report from the owner: `CRASH:` (a fault, with what the
+    engine was doing) and `STALL:` (the main loop stopped for 5 s). Neither can be built or run here on the
+    Windows side, so a compile error in `main.cpp`'s `_WIN32` parts is possible: ask.
   - Frames from the owner: check they were taken with WoWRevived's **Enhanced Assets off** before chasing a
     difference in a sprite's pixels (update 158 lost time to this).
   - Work only in `WoWEngine/`. For a file format, `WoWViewer/` has the owner's own readers in C#.

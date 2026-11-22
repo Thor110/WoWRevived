@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 174) and what is next
+## Where things stand (update 175) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -46,10 +46,14 @@ the working order; the stages further down stay the full inventory.
 **Open questions to keep track of** (each has its notes in PARITY.md; don't re-trace what is ruled out there)
 
 - **A crash after coming back from a battle** (the owner, update 172: a Martian campaign, the war map shown, a
-  stall, the window gone, nothing in the log). Not reproduced: the same campaign state (the clock run on past the
-  pod by the slider, the attack at hour 8, a win, a loss, the forfeit) comes back clean here, under the address
-  and undefined-behaviour checkers too. The clock running on was a fault of its own and is fixed; the log now
-  says what a fault was and what the engine was doing. Wait for the next one's log.
+  stall, the window gone, nothing in the log). Not reproduced in updates 172 or 175: wins, losses, the forfeit,
+  the player's objects losing some or all of their units, the clock left running across the battle, twelve
+  whole games on different seeds, most of it under the address and undefined-behaviour checkers. What the
+  owner's log does say: it ends at the war map's return with no line after it, so before the war map's music
+  step (30 updates on) had started its track, and before any hour had passed. Everything that runs in that
+  second runs here without fault, so it is likely something only Windows does (the audio device, the file
+  calls). The log now names a fault (172) and a hang (175: a STALL line after 5 s with what the engine was
+  doing), and the music file's reader can no longer loop on a bad chunk length. Wait for the next log.
 - **London's deployment spot** (updates 143, 144). The original puts the lorries at ring 95's 288 degree spot,
   the engine at its 72 degree one. N2 (148) didn't settle it: with the parts and segments in the grid the engine
   still takes the 72 degree spot. Worth a fresh frame from the owner on the discs' start files, a new Human

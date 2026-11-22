@@ -795,6 +795,19 @@ transparency")
 - *Seen running*: the first Martian battle left alone. The Scouts pick the Command Post themselves, close in,
   stop when their Heat Rays fire and stay (update 173's call at work without an order).
 
+**Update 175** (the crash after a battle again; nothing of the original's changed)
+- *Not reproduced*, again. Tried: the owner's sequence with the clock left running across the battle; the
+  player's first object losing every unit, each object losing one, all lost; the Human side wiped out or only
+  its vehicles; twelve unattended games through to the war map and on, each on its own seed.
+- [x] **A hang is reported** (`main.cpp`'s watchdog): a thread that watches the main loop's heartbeat writes
+      `STALL: the main loop hasn't run for 5 s, while: ...` to WoWEngine.log, and how long it lasted if it ends.
+      The owner's "stalled, then closed" would have left that line.
+- [x] **The music file's reader** (`Music::Play`): the chunks walked with 64-bit offsets and a bound, the
+      format chunk's length bounded, a data length past the file's end cut to the file. On Windows a chunk
+      length over 2 GB turned the seek backwards and the walk never ended. Whether the owner's track 3 has such
+      a chunk isn't known; it is the one step the log shows was due and didn't happen.
+- Crumbs at both music steps.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

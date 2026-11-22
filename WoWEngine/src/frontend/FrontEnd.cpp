@@ -1282,6 +1282,7 @@ namespace wow
     void FrontEnd::BattleMusicStep()
     {
         constexpr int TenSeconds = 10 * 30;
+        Crumb("battle map: the music step (a track stopped or started)");
         battleMusicTimer = -1;
         if (!ini.GetBool(SoundSection, "CD", true)) return;
         if (music.Playing() && !music.Finished()) { music.Stop(); battleMusicTimer = TenSeconds; return; }
@@ -1330,6 +1331,7 @@ namespace wow
 
     void FrontEnd::MusicStep()
     {
+        Crumb("war map: the music step (a track stopped or started)");
         // the ambient sound from the last step fades out over 60 ticks
         sound.FadeOut(warAmbient, 60);
         warAmbient = 0;

@@ -42,7 +42,10 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <atomic>
+#include <chrono>
 #include <exception>
+#include <thread>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -221,7 +224,7 @@ namespace
             const auto base = reinterpret_cast<unsigned long long>(GetModuleHandleW(nullptr));
             const auto at = reinterpret_cast<unsigned long long>(r.ExceptionAddress);
             std::fprintf(logFile, "CRASH: exception 0x%08lX at 0x%llX (the engine's base 0x%llX, offset 0x%llX) while: %s\n",
-                         static_cast<unsigned long>(r.ExceptionCode), at, base, at - base, wow::crumb);
+                         static_cast<unsigned long>(r.ExceptionCode), at, base, at - base, wow::crumb.load());
             if (r.ExceptionCode == EXCEPTION_ACCESS_VIOLATION && r.NumberParameters >= 2)
                 std::fprintf(logFile, "CRASH: %s address 0x%llX\n", r.ExceptionInformation[0] ? "writing" : "reading",
                              static_cast<unsigned long long>(r.ExceptionInformation[1]));
@@ -233,11 +236,38 @@ namespace
 #else
     void CrashSignal(int sig)
     {
-        if (logFile) { std::fprintf(logFile, "CRASH: signal %d while: %s\n", sig, wow::crumb); std::fflush(logFile); }
+        if (logFile) { std::fprintf(logFile, "CRASH: signal %d while: %s\n", sig, wow::crumb.load()); std::fflush(logFile); }
         std::signal(sig, SIG_DFL);
         std::raise(sig);
     }
 #endif
+    // The watchdog: a thread that looks at the main loop's heartbeat once a second. Five seconds with no pass puts a
+    // STALL line in the log with what the engine was doing; a pass after that, a line saying how long it was.
+    void Watch()
+    {
+        unsigned last = wow::heartbeat.load();
+        int still = 0;
+        bool said = false;
+        for (;;)
+        {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            const unsigned now = wow::heartbeat.load();
+            if (now != last)
+            {
+                if (said && logFile) { std::fprintf(logFile, "%8.3f STALL over after %d s\n", double(SDL_GetTicks()) / 1000.0, still); std::fflush(logFile); }
+                last = now;
+                still = 0;
+                said = false;
+                continue;
+            }
+            if (++still == 5 && logFile)
+            {
+                std::fprintf(logFile, "%8.3f STALL: the main loop hasn't run for 5 s, while: %s\n", double(SDL_GetTicks()) / 1000.0, wow::crumb.load());
+                std::fflush(logFile);
+                said = true;
+            }
+        }
+    }
     void StartLogFile()
     {
         std::string path = std::string(SDL_GetBasePath() ? SDL_GetBasePath() : "") + "WoWEngine.log";
@@ -375,8 +405,10 @@ int main(int argc, char** argv)
             frontEnd.SetPaused(!on);
             SDL_Log("OnActivateApp %s", on ? "On" : "Off");
         };
+        std::thread(Watch).detach();    // it only reads the heartbeat and writes the log; it ends with the process
         while (!done && !frontEnd.QuitRequested())
         {
+            wow::Beat();
             SDL_Event event;
             bool closed = false;
             while (SDL_PollEvent(&event))

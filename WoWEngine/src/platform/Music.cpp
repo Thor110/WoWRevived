@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cstring>
+#include <filesystem>
+#include <system_error>
 #include <vector>
 
 namespace wow
@@ -10,6 +12,15 @@ namespace wow
     {
         uint32_t U32(const uint8_t* p) { return uint32_t(p[0]) | uint32_t(p[1]) << 8 | uint32_t(p[2]) << 16 | uint32_t(p[3]) << 24; }
         uint16_t U16(const uint8_t* p) { return uint16_t(p[0] | p[1] << 8); }
+        // fseek with an offset that doesn't fit a long on Windows; 0 when it worked
+        int Seek64(std::FILE* f, uint64_t to)
+        {
+#ifdef _WIN32
+            return _fseeki64(f, int64_t(to), SEEK_SET);
+#else
+            return fseeko(f, off_t(to), SEEK_SET);
+#endif
+        }
     }
 
     Music::~Music() { Stop(); }
@@ -33,31 +44,38 @@ namespace wow
         uint64_t start = 0;
         uint32_t size = 0;
         bool haveFormat = false, haveData = false;
-        if (std::fread(header, 1, 12, f) == 12 && std::memcmp(header, "RIFF", 4) == 0 && std::memcmp(header + 8, "WAVE", 4) == 0)
+        // (the chunks are walked with 64-bit offsets and a bound on their number: a length past 2 GB would turn a
+        // 32-bit seek backwards and walk the same chunks for ever)
+        std::error_code ec;
+        const uint64_t fileSize = std::filesystem::file_size(wav, ec);
+        if (!ec && std::fread(header, 1, 12, f) == 12 && std::memcmp(header, "RIFF", 4) == 0 && std::memcmp(header + 8, "WAVE", 4) == 0)
         {
             uint8_t chunk[8];
-            while (!haveData && std::fread(chunk, 1, 8, f) == 8)
+            uint64_t at = 12;
+            for (int walked = 0; !haveData && walked < 1000 && at + 8 <= fileSize; walked++)
             {
+                if (Seek64(f, at) || std::fread(chunk, 1, 8, f) != 8) break;
                 const uint32_t length = U32(chunk + 4);
                 if (std::memcmp(chunk, "fmt ", 4) == 0)
                 {
+                    if (length < 16 || length > 4096) break;
                     std::vector<uint8_t> fmt(length);
-                    if (length < 16 || std::fread(fmt.data(), 1, length, f) != length) break;
+                    if (std::fread(fmt.data(), 1, length, f) != length) break;
                     const uint16_t format = U16(&fmt[0]), bits = U16(&fmt[14]);
                     if (format != 1 || (bits != 8 && bits != 16)) break;
                     spec.channels = U16(&fmt[2]);
                     spec.freq = int(U32(&fmt[4]));
                     spec.format = bits == 8 ? SDL_AUDIO_U8 : SDL_AUDIO_S16LE;
                     haveFormat = true;
-                    if (length & 1) std::fseek(f, 1, SEEK_CUR);
                 }
                 else if (std::memcmp(chunk, "data", 4) == 0)
                 {
-                    start = uint64_t(std::ftell(f));
-                    size = length;
+                    start = at + 8;
+                    // a length that runs past the file's end (a rip cut short, or 0xFFFFFFFF) is what's there
+                    size = uint32_t(std::min<uint64_t>(length, fileSize - start));
                     haveData = true;
                 }
-                else std::fseek(f, long(length + (length & 1)), SEEK_CUR);
+                at += 8 + uint64_t(length) + (length & 1);
             }
         }
         if (!haveFormat || !haveData || spec.channels == 0 || spec.freq <= 0)
@@ -75,7 +93,7 @@ namespace wow
         lengthMs = uint32_t(uint64_t(lengthBytes) * 1000 / bytesPerSecond);
         fed = 0;
         paused = false;
-        std::fseek(f, long(start), SEEK_SET);
+        Seek64(f, start);
         stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, Feed, this);
         if (!stream)
         {
@@ -161,7 +179,7 @@ namespace wow
         offset = std::min<uint64_t>(offset, lengthBytes);
         SDL_LockAudioStream(stream);
         SDL_ClearAudioStream(stream);
-        std::fseek(file, long(dataStart + offset), SEEK_SET);
+        Seek64(file, dataStart + offset);
         fed = uint32_t(offset);
         SDL_UnlockAudioStream(stream);
     }
