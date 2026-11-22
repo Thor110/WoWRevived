@@ -70,7 +70,9 @@ namespace wow
     void Menu::AddEventCheckText(std::string text, bool value, OnChange changed)
     {
         AddEventCheck(0, value, std::move(changed));
-        buttons.back().text = std::move(text);
+        // two spaces before the caption, as WoWRevived's TEXT.ojd has before the game's own check box captions:
+        // without them the text's start runs over the tick / cross
+        buttons.back().text = "  " + std::move(text);
     }
 
     void Menu::AddRadio(int textId, int group, bool value, OnChange changed, int tooltip)

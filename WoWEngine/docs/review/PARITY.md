@@ -1109,6 +1109,10 @@ transparency")
   click, zooming, a drag box, edge scrolling and the menu; both battles at the defaults the same picture as
   before, byte for byte.
 
+**Update 206** (the Modern Options menu's captions)
+- Two spaces before each check box caption, so the text clears the tick or cross. The zoomed selection
+  brackets noted in MODERN.md as waiting on the testers.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

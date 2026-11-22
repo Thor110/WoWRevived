@@ -71,7 +71,8 @@ check boxes, and each box is a setting in WoWRevived.ini that can be set there a
 Two more boxes aren't settings: **Record input** and **Play a recording** switch the game's playback recordings
 (below) on and off while playing.
 
-The captions are the engine's own English text (there are no strings for them in TEXT.ojd).
+The captions have two spaces before them, as WoWRevived's TEXT.ojd has before the game's own check box
+captions, so they clear the tick or cross. They are the engine's own English text (there are no strings for them in TEXT.ojd).
 
 ### Group keys and Shift select (update 198)
 
@@ -108,8 +109,12 @@ The limits: the land's view is never less than half the picture nor more than tw
 land; the panels' space is never less than 640 x 480, which they are made for (so at a 640 x 480 view size the
 HUD can be made smaller but not larger; at 1920 x 1080 it goes up to 225%). A new battle starts unzoomed.
 
-What it doesn't do yet: the war map's panels don't follow the HUD scale; the selection's brackets and the drag
-box are drawn with the land, so they thicken and thin with the zoom; with the HUD not at 100% the land is
+*Waiting on the testers* (the owner, update 206): the selection's brackets over a unit are drawn with the land,
+so they grow and shrink with the zoom and look a little smudged when scaled. That is probably right (kept
+small they would sit on top of a zoomed unit); to be decided when a build has been tried.
+
+What it doesn't do yet: the war map's panels don't follow the HUD scale; the drag box is drawn with the land,
+so it thickens and thins with the zoom; with the HUD not at 100% the land is
 scaled twice (to the panels' space, then to the picture), which softens it a little. The wheel isn't written to
 a playback recording (the keys are).
 
