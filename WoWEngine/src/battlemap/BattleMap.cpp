@@ -996,6 +996,9 @@ namespace wow
                 // down round its own point (vt+0xE4)
                 NoteModel(part.a, true);
                 Occupy(part.a, float(x), float(y));
+                // the part's own parts are made and started with it (0x47EE10 on the child): each wing, leg and pod of
+                // a Martian building has a shadow part (331) of its own, laid from the part's renderer at its point
+                LayShadows(pt->second, float(x), float(y), IsoObject::HalfWidth(m->model), IsoObject::Depth(m->model));
                 const int depth = int16_t(part.c) + IsoObject::Depth(m->model);
                 ViewObject v{ int(u.y) + depth, x, land.ProjectY(y, land.HeightAt(int(u.x), int(u.y)) + int16_t(part.d)), m };
                 v.unit = int(index);
@@ -1058,6 +1061,29 @@ namespace wow
             wofs.push_back(std::move(w));
         }
         PoseParts(u);
+        // its shadow parts (0x14B-0x14D): a unit's are laid as they start like the scenery's (0x48E460), from its
+        // renderer as it stands: an IOB model's half width and depth; a WOF's +0x28 / +0x2A are still what its
+        // constructor gave them (0x49DB06: less and plus its GType's record 6 second word, 0x4F0532; the drawn
+        // extents only replace them at its first draw, 0x49DC2C) and its +0x26 the posed model's (0x47F3A3)
+        if (!u.vehicle)
+        {
+            int hw = 0, depth = 1;
+            bool has = false;
+            for (const ViewObject& o : objects)
+            {
+                if (o.unit != int(index) || o.part >= 0 || o.light >= 0) continue;
+                if (o.model) { hw = IsoObject::HalfWidth(o.model->model); depth = IsoObject::Depth(o.model->model); has = true; }
+                else if (o.wof && o.wof == u.wof)
+                {
+                    if (setup.six)
+                        if (auto six = setup.six->find(t->second.field28); six != setup.six->end()) hw = int16_t(six->second.d);
+                    depth = u.wof->PosedDepth();
+                    has = true;
+                }
+                if (has) break;
+            }
+            if (has) LayShadows(t->second, u.x, u.y, hw, depth);
+        }
     }
 
     // The guns' own visuals (vt+0x4C 0x495180 and vt+0xE4 0x495280, the quads made at the gun's start, vt+0xE0
@@ -1683,34 +1709,6 @@ namespace wow
         // its scale wide, the depth / sqrt 2 either side of y, mirrored when the sun's cos is 0 or less (0x47C900,
         // the moving light the ground view takes off). The half width and depth are the parent renderer's (+0x28
         // to +0x2A halved, +0x26).
-        auto shadows = [&](const ObjOjd::UnitData& unit, float x, float y, int halfWidth, int depth) {
-            for (const auto& part : unit.parts)
-            {
-                if (part.a < 0x14B || part.a > 0x14D) continue;
-                auto pu = setup.units->find(part.a);
-                if (pu == setup.units->end()) continue;
-                const GType* pg = res.FindGType(pu->second.field28);
-                if (!pg) continue;
-                auto mask = masks.find(pg->file);
-                if (mask == masks.end())
-                {
-                    auto data = res.LoadFile(pg->file);
-                    mask = masks.emplace(pg->file, data && data->size() >= 1024 ? *data : std::vector<uint8_t>{}).first;
-                }
-                if (mask->second.empty()) continue;
-                const float px = x + float(int16_t(part.b)), py = y + float(int16_t(part.c));
-                const float scale = part.f * pu->second.scale; // the part's, then its type's (0x47EE10)
-                const int hw = halfWidth;
-                const int across = int(double(2 * hw) - double(std::fabs(sun.across)) * double(scale) * -10.0);
-                const int dy = (depth * 362) >> 9;
-                const int y0 = int(py - float(dy)), y1 = int(py + float(dy));
-                int x0, x1;
-                const bool flip = !(sun.across > 0.0f);
-                if (!flip) { x1 = int(px + float(hw)); x0 = x1 - across; }
-                else { x0 = int(px - float(hw)); x1 = x0 + across; }
-                land.ProjectLight(mask->second.data(), x0 - 8, y0 - 8, x1, y1, flip, sun);
-            }
-        };
         // WScenery's start (0x4896D0): after its parts, every object of a category 0, 2 or 3 type (the scenery is
         // all category 0, so all of it: 0x47D828 sets +0xB8 bit 1) puts the sun's point level (SetPointLight) on the
         // vertex it stands on, a dark spot the ground view takes off. The tree circles do too, at their centres.
@@ -1787,7 +1785,7 @@ namespace wow
                 // ftol(255 x the fog level), a street lamp's (type 0x110, 0x48F2E0) and type 0x1C0's (0x48D000)
                 // ftol(its type's +0xA1 x it); 1.0 out of the fog. (Was 0, the darkest: the lamps looked black.)
                 objects.back().level = (o.type == 0x110 || o.type == 0x1C0 ? (u->second.fieldA1 & 0xFF) : 255) >> 2;
-                shadows(u->second, o.x, o.y, image->width / 2, 1);
+                LayShadows(u->second, o.x, o.y, image->width / 2, 1);
                 if (const size_t before = lights.size(); addLight(o, u->second), lights.size() > before) props.back().light = int(before);
                 land.SetPointLight(ix, iy, sun);
                 continue;
@@ -1824,7 +1822,7 @@ namespace wow
             props.back().circle = o.circle;
             props.back().tree = o.tree;
             objects.push_back({ iy + IsoObject::Depth(model), ix, land.ProjectY(iy, h), &m->second, nullptr, 0, 0, -1, -1, 0, -1, int(props.size()) - 1 });
-            shadows(u->second, x, y, (IsoObject::HalfWidth(model) - -IsoObject::HalfWidth(model)) / 2, IsoObject::Depth(model));
+            LayShadows(u->second, x, y, (IsoObject::HalfWidth(model) - -IsoObject::HalfWidth(model)) / 2, IsoObject::Depth(model));
             if (const size_t before = lights.size(); addLight(PlacedObject{ o.type, x, y, o.z, {}, o.roll }, u->second), lights.size() > before)
                 props.back().light = int(before);
             land.SetPointLight(ix, iy, sun);
@@ -1860,6 +1858,38 @@ namespace wow
             }
         }
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
+    }
+
+    // The shadow parts of an object (types 0x14B-0x14D, 0x48E2A0), laid as they start (0x48E460): see LoadScenery.
+    // The half width and depth are the parent renderer's (+0x28 to +0x2A halved, +0x26) as they stand then.
+    void BattleMap::LayShadows(const ObjOjd::UnitData& unit, float x, float y, int halfWidth, int depth)
+    {
+        for (const auto& part : unit.parts)
+        {
+            if (part.a < 0x14B || part.a > 0x14D) continue;
+            auto pu = setup.units->find(part.a);
+            if (pu == setup.units->end()) continue;
+            const GType* pg = res.FindGType(pu->second.field28);
+            if (!pg) continue;
+            auto mask = masks.find(pg->file);
+            if (mask == masks.end())
+            {
+                auto data = res.LoadFile(pg->file);
+                mask = masks.emplace(pg->file, data && data->size() >= 1024 ? *data : std::vector<uint8_t>{}).first;
+            }
+            if (mask->second.empty()) continue;
+            const float px = x + float(int16_t(part.b)), py = y + float(int16_t(part.c));
+            const float scale = part.f * pu->second.scale; // the part's, then its type's (0x47EE10)
+            const int hw = halfWidth;
+            const int across = int(double(2 * hw) - double(std::fabs(sun.across)) * double(scale) * -10.0);
+            const int dy = (depth * 362) >> 9;
+            const int y0 = int(py - float(dy)), y1 = int(py + float(dy));
+            int x0, x1;
+            const bool flip = !(sun.across > 0.0f);
+            if (!flip) { x1 = int(px + float(hw)); x0 = x1 - across; }
+            else { x0 = int(px - float(hw)); x1 = x0 + across; }
+            land.ProjectLight(mask->second.data(), x0 - 8, y0 - 8, x1, y1, flip, sun);
+        }
     }
 
     // vt+0xE4 (0x48A950) as an object is added to the world (0x48A8B0): an object whose type is of class 0, 2 or 3

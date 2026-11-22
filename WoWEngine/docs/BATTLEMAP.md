@@ -230,7 +230,8 @@ vertex it stands on (SetPointLight 0x47C830), which the ground view takes off: a
 (0x48F410) do it at their centres. It's set after the shadows, so it wins on that vertex. *Provisional*: done for
 the drawn objects and the circles; the ambient sound objects' classes aren't checked.
 
-**Shadows** (the buildings' part 331, types 0x14B-0x14D, 0x48E2A0, a class 14 GType whose `.raw` is a 32 x 32 mask
+**Shadows** (a unit building's too, and each of its parts': a part's own parts are made with it, and every arm
+and foot of a Martian building has one) (the buildings' part 331, types 0x14B-0x14D, 0x48E2A0, a class 14 GType whose `.raw` is a 32 x 32 mask
 of 0-63): when one starts (0x48E460) it reads its parent's renderer and lays the mask on the ground's moving light
 (0x47C900), which the ground view takes off the lit level, so it darkens. The rectangle: y from the object's y less
 its depth x 362 / 512 to y plus it; across, 2 x the half width + 10 x |cos of the sun| x the part's scale (the part

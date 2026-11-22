@@ -452,6 +452,18 @@ Martian start's units turned differently)
   (+0x188 = 0x801, 0x490EDC) and the speed dies away in ten updates (0x492EF5). Not found: what sets them
   going. To check with the owner: whether the units of a fresh battle keep turning slowly if left alone.
 
+**Update 147** (the first of PLAN.md's "next" list)
+- [x] The ground shadows of unit buildings. A shadow part (331 / 0x14B-0x14D, 0x48E2A0) lays its mask as it
+      starts (0x48E310 -> 0x48E460) whatever its parent is; the engine did it for the scenery only. A unit
+      building's own shadow part is laid from its renderer, and so is the shadow part of each of its parts: every
+      wing, leg and pod of a Martian building is a part with a shadow part of its own (0x47EE10 makes a child's
+      parts as it does a unit's). In the owner's Martian frame the HQ's dark patches are under its four arms and
+      feet; the engine now has them there. The mask is also taken off and laid again by 0x8126 / 0x8125
+      (0x48E3A0: sent to the children as the parent is fogged, 0x48B3AB, and as it is placed, 0x48A742);
+      *not yet*: taking it off.
+- **Open, tracked in PLAN.md**: the deployed units' facing. The owner: units do sometimes turn on after a level
+  loads, not every time; possibly the computer player.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

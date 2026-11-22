@@ -1,5 +1,42 @@
 # Plan after update 136
 
+## Where things stand (update 147) and what is next
+
+Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
+the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
+the working order; the stages further down stay the full inventory.
+
+**Next, in this order**
+
+- [x] N1 (147) The buildings' ground shadows for units: the shadow part (331) of a unit building and of each of
+      its parts, as the scenery already had.
+- [ ] N2 Objects the collision grid is missing: a building's parts and a bridge's segments, each with its own
+      radius (the deployment's check, the look ahead, an explosion's victims; PARITY.md, updates 143 and 144).
+- [ ] N3 Ground flag 8: the mines (0x273-0x276, 0x48CB10) and the line-linked objects (0x48B690) mark the
+      ground their own side won't cross; the cost routine already refuses it.
+- [ ] N4 Stage 2.6: the group panel top left (icons with strength pips, seen in every frame of the original),
+      the order panel, the group keys.
+- [ ] N5 The unfinished building's corner markers lit grey, not yellow; Big Ben and Parliament lit as the
+      original (London's frame).
+- [ ] N6 Stage 2.7: reinforcements arriving, the zoomer, the battle info and battle-end dialogs.
+- [ ] N7 Stage 2.8 and 2.9, then Stages 3 to 5 as listed below.
+
+**Open questions to keep track of** (each has its notes in PARITY.md; don't re-trace what is ruled out there)
+
+- **How deployed units end up facing** (updates 145, 146). Measured in the owner's Martian frame: the two units
+  that stand alone both face about 3400 of 4096, the engine has them near 0. The owner: units do sometimes go
+  on turning after a level loads, not always; it may be the computer player's doing. Watch for it while doing
+  2.8 (the battle AI) and anything that sets a stopped unit going (0x808B, 0x80C2 at a battle's start).
+- **London's deployment spot** (updates 143, 144). The original puts the lorries at ring 95's 288 degree spot,
+  the engine at its 72 degree one. N2 may settle it (the bridge's last segment misses the block by 3).
+- **Lighting in London** (update 143): Big Ben and Parliament brighter and warmer in the original, road light
+  pools the engine doesn't draw.
+- **The route save layout** against a real save of the original with units in transit (asked of the owner).
+
+Ask the owner for a frame of the original whenever a change is visible: a fresh game, the battle opened,
+nothing moved.
+
+
 What is left, in stages, each stage a run of updates (a zip each). It gathers the open items of
 [review/PARITY.md](review/PARITY.md) (Deferred), [TASKS.md](TASKS.md) (the `[ ]` and `[~]` items) and
 [MODERN.md](MODERN.md), and the owner's notes of update 136. PARITY.md and TASKS.md stay the detailed lists; tick

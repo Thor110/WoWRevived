@@ -226,6 +226,7 @@ namespace wow
         std::vector<ViewObject> objects;    // sorted by key
         std::map<int, ShadeTable> slotTables;
         std::map<std::string, std::vector<uint8_t>> masks;   // the shadows' .raw masks
+        void LayShadows(const ObjOjd::UnitData& unit, float x, float y, int halfWidth, int depth);   // 0x48E460
         std::vector<uint16_t> shadowBlend;  // dat\b16.hsh (PolyLib's set-up, 0x40FEA0), for the shadows
         const std::vector<uint16_t>& ShadowBlend();
         std::vector<std::unique_ptr<WofInstance>> wofs;      // the bridges' segments, posed once
