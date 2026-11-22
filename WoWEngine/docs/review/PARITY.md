@@ -785,6 +785,16 @@ transparency")
 - *Changed with it*: Force Fire and the specials now end after the first shot (the group's mode 0 and its target
   gone, 0x496BC0), as the listing has it. Not checked against the original by eye.
 
+**Update 174**
+- [x] **Halt** (Backspace, packet 0x11, 0x481311): the group's home becomes its members' middle before they are
+      stopped. The engine left the home where the last order put it, so a halted group on Attack or Retaliate
+      could later walk back there (0x483B70's "more than 400 from home").
+- *Checked, nothing to change*: the other calls a gun or turret makes on what carries it (0x489B51-0x489D8A,
+  0x494E05, 0x494E14) are in; 0x802F to an object (0x495D42) is never sent by the game; the group's own 0x8031
+  (0x480A3A: the members 0x80B9 then 0x8031) has one sender the engine has (a broken bridge's drowning).
+- *Seen running*: the first Martian battle left alone. The Scouts pick the Command Post themselves, close in,
+  stop when their Heat Rays fire and stay (update 173's call at work without an order).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

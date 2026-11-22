@@ -1520,7 +1520,8 @@ unit's radius (+0xAC, the type's +0x44 word) x `arrivalRadius` - -20, its growth
 (+0x1D0) x 0.01 x members x 0.5; then 0x808B(0) is posted (0x4355A0's last argument is the delay): at once if the
 unit is moving (speed over 0.01), else after ftol(5 x members x (+0xD4 - the group's +0x68) / (+0x6C - +0x68 + 1) +
 rand() % 8) updates. The offset (+0x13A) is left as it was.
-Backspace (packet 0x11) sends the members 0x8031: stopped.
+Backspace (packet 0x11, 0x481311): the group's home (+0x60 / +0x64) becomes its members' middle, then the
+members get 0x8031: stopped (update 174: the home; a stance's wander back, 0x483B70, measures from it).
 
 **The ground** (WBMGroup 0x4802E0, 0x480680): each group works out from its members, by move class (the type's +0x52
 word) and OBJ.ojd records 10 (17 costs a class, 0x4F6E38) and 11 (max slope and slope base, 0x4F04C0 / 0x4F0510):

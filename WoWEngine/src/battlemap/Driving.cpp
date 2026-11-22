@@ -344,14 +344,29 @@ namespace wow
         }
     }
 
-    // Backspace (packet 0x11, 0x4812B0): the selection's members get 0x8031: stopped (bit 0), bits 5 and 13 cleared.
-    // *Not yet*: the group's target set to its centre.
+    // Backspace (packet 0x11, 0x4812B0's case, 0x481311): for each selected group, its home (+0x60 / +0x64) becomes
+    // its members' middle (each whole sum taken as ftol(the position + the sum so far), over the count, +0x24,
+    // unsigned), then every member gets 0x8031: a vehicle is stopped (bit 0), bits 5 and 13 cleared (0x490C08).
     void BattleMap::Halt()
     {
-        for (Unit& u : units)
+        for (size_t g = 0; g < selected.size(); g++)
         {
-            if (!u.players || !u.vehicle || !selected[size_t(u.group)]) continue;
-            Stop8031(u);
+            if (!selected[g]) continue;
+            int sx = 0, sy = 0;
+            uint32_t count = 0;
+            bool players = false;
+            for (const Unit& u : units)
+            {
+                if (u.group != int(g)) continue;
+                players = players || u.players;
+                sx = int(u.x + float(sx));
+                sy = int(u.y + float(sy));
+                count++;
+            }
+            if (!players || !count) continue;
+            if (g < groupHomeX.size()) { groupHomeX[g] = int(uint32_t(sx) / count); groupHomeY[g] = int(uint32_t(sy) / count); }
+            for (Unit& u : units)
+                if (u.group == int(g) && u.vehicle) Stop8031(u);
         }
     }
 
