@@ -84,7 +84,8 @@ namespace wow
     struct SaveRoute
     {
         uint32_t origin = 0, destination = 0, flag5F = 0, flag5E = 1, field44 = 5;
-        float progress = 0;         // the route's +0x34 (*provisional*: read as an int by 0x42586A; 0 in every save seen)
+        uint32_t added = 0;         // the route's +0x34, an int (0x42586A): how many units it has been given (1, and
+                                    // 2 where the entry left is index 1, in the owner's five saves with a route)
         std::vector<uint32_t> path;
         uint8_t field50 = 0;
         std::vector<SaveObject> objects;
@@ -105,8 +106,10 @@ namespace wow
         int Owner() const;
         void SetOwner(int owner);
         // The sector's Damage Layer (DMGL after the owner, 0x405100 / 0x4051B0): "DMGL", u32 width, height, the
-        // packed size; unless both are 0, u32 0x410 and the FFUH header (0x415720), u32 the packed size and the
-        // packed bytes. False if it has none (an empty grid) or doesn't read.
+        // packed size; unless both are 0, the FFUH header and counts (0x415720) and then the packed bytes, each as
+        // its size, its size again and the bytes (u32 0x410 twice, 0x410 bytes; u32 n twice, n bytes: the writer's
+        // block call, vt+0x14, puts the size before the bytes itself). False if it has none (an empty grid) or
+        // doesn't read. Checked against the owner's 24 saves in update 178: read and written back the same.
         bool Damage(int& width, int& height, std::vector<uint8_t>& grid) const;
         void SetDamage(int width, int height, const std::vector<uint8_t>& grid);
     };

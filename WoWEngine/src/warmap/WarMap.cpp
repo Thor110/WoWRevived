@@ -1023,6 +1023,7 @@ namespace wow
             bool good = path.size() >= 2 && route.entries.size() == route.objects.size();
             for (int s : path) if (s < 1 || s > warmap::SectorCount) good = false;
             const int routeNumber = ++nextRoute;
+            routeAdded[routeNumber] = int(route.added);
             for (size_t i = 0; i < route.objects.size(); i++)
             {
                 const SaveObject& o = route.objects[i];
@@ -1108,13 +1109,21 @@ namespace wow
         }
         s.routes.clear();
         std::vector<bool> written(table.size(), false);
+        std::map<int, size_t> routeAt;   // a route's number to its place in the save's list
+        struct Placed { int ref, sector; SaveObject object; };
+        std::vector<Placed> placed;
         for (const Counter& k : counters)
         {
             if (k.sector < 1 || k.sector > warmap::SectorCount) continue;
             SaveRoute* route = nullptr;
-            if (k.Travelling())
+            // units sent together are one route's entries (0x424160), so they are written as one route
+            if (k.Travelling() && k.route && routeAt.count(k.route)) route = &s.routes[routeAt[k.route]];
+            else if (k.Travelling())
             {
                 SaveRoute r;
+                if (auto a = routeAdded.find(k.route); a != routeAdded.end()) r.added = uint32_t(a->second);
+                if (r.added < uint32_t(k.formation + 1)) r.added = uint32_t(k.formation + 1);
+                if (k.route) routeAt[k.route] = s.routes.size();
                 r.origin = uint32_t(k.path.front());
                 r.destination = uint32_t(k.path.back());
                 r.flag5F = 1;
@@ -1153,7 +1162,7 @@ namespace wow
                     route->entries.push_back(e);
                     route->objects.push_back(std::move(o));
                 }
-                else s.Sector(k.sector).lists[size_t(o.list)].push_back(std::move(o));
+                else placed.push_back({ ref, k.sector, std::move(o) });
             }
         }
         // anything with no counter (a sector too full to show it) stays where it was
@@ -1161,8 +1170,12 @@ namespace wow
         {
             if (written[i] || std::find(destroyed.begin(), destroyed.end(), int(i)) != destroyed.end()) continue;
             int sector = table[i].Sector();
-            if (sector >= 1 && sector <= warmap::SectorCount) s.Sector(sector).lists[size_t(table[i].list)].push_back(table[i]);
+            if (sector >= 1 && sector <= warmap::SectorCount) placed.push_back({ int(i), sector, table[i] });
         }
+        // each list in the order its objects were read or made (the table's): the game's lists keep their order,
+        // a new object going on the end, and the counters' order isn't theirs
+        std::stable_sort(placed.begin(), placed.end(), [](const Placed& a, const Placed& b) { return a.ref < b.ref; });
+        for (Placed& pl : placed) s.Sector(pl.sector).lists[size_t(pl.object.list)].push_back(std::move(pl.object));
         return s.Write();
     }
 
@@ -3993,6 +4006,7 @@ namespace wow
     {
         Counter& k = counters[size_t(index)];
         k.route = route > 0 ? route : ++nextRoute;   // an entry of that route, or a route of its own
+        routeAdded[k.route] = std::max(routeAdded[k.route], n + 1);
         const int sector = path.back();
         k.moved = true;
         k.path = path;

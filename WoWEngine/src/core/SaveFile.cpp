@@ -204,33 +204,52 @@ namespace wow
 
     namespace
     {
+        // The Damage Layer's two blocks, as 0x405100 writes them after "DMGL", the width, the height and +0x18 (the
+        // packed stream's size): for each, its size (vt+0x2C) and then the block through vt+0x14, which writes the
+        // size again before the bytes. So: 0x410, 0x410, the FFUH header and counts (0x410 bytes); n, n, the stream
+        // (n bytes). The engine's saves before update 178 had each size once; they are still read.
+        struct DamageBlocks { size_t header = 0, stream = 0, streamSize = 0, end = 0; };
+        bool FindDamage(const std::vector<uint8_t>& rest, DamageBlocks& b)
+        {
+            if (rest.size() < 20 || std::memcmp(&rest[4], "DMGL", 4) != 0) return false;
+            b = {};
+            if (Get32(rest, 8) + Get32(rest, 12) == 0) { b.end = 20; return true; }
+            size_t at = 20;
+            auto block = [&](size_t& start, size_t& size) {
+                if (at + 8 > rest.size()) return false;
+                size = Get32(rest, at);
+                at += 4;
+                // the size again (the game's), unless the block starts here (the engine's old saves)
+                const bool twice = Get32(rest, at) == size && !(at + 4 <= rest.size() && std::memcmp(&rest[at], "FFUH", 4) == 0);
+                if (twice) at += 4;
+                start = at;
+                at += size;
+                return at <= rest.size();
+            };
+            size_t headerSize = 0;
+            if (!block(b.header, headerSize) || headerSize != 0x410) return false;
+            if (!block(b.stream, b.streamSize)) return false;
+            b.end = at;
+            return true;
+        }
         // where the DMGL after the owner ends (0 if it isn't there)
         size_t DamageEnd(const std::vector<uint8_t>& rest)
         {
-            if (rest.size() < 20 || std::memcmp(&rest[4], "DMGL", 4) != 0) return 0;
-            const uint32_t w = Get32(rest, 8), h = Get32(rest, 12);
-            size_t at = 20;
-            if (w + h == 0) return at;
-            if (at + 4 > rest.size()) return 0;
-            at += 4 + Get32(rest, at);
-            if (at + 4 > rest.size()) return 0;
-            at += 4 + Get32(rest, at);
-            return at <= rest.size() ? at : 0;
+            DamageBlocks b;
+            return FindDamage(rest, b) ? b.end : 0;
         }
     }
 
     bool SaveSector::Damage(int& width, int& height, std::vector<uint8_t>& grid) const
     {
-        const size_t end = DamageEnd(rest);
-        if (!end) return false;
+        DamageBlocks b;
+        if (!FindDamage(rest, b)) return false;
         width = int(Get32(rest, 8));
         height = int(Get32(rest, 12));
         if (width + height == 0) return false;
-        const uint32_t header = Get32(rest, 20);
-        std::vector<uint8_t> packed(rest.begin() + 24, rest.begin() + 24 + std::ptrdiff_t(header));
-        const size_t data = 24 + header + 4;
-        packed.insert(packed.end(), rest.begin() + std::ptrdiff_t(data), rest.begin() + std::ptrdiff_t(end));
-        // 0 bits: one byte repeated, the one after the counts (0x4155B0 sets +0x20 there, 0x4158E0 fills with it)
+        std::vector<uint8_t> packed(rest.begin() + std::ptrdiff_t(b.header), rest.begin() + std::ptrdiff_t(b.header + 0x410));
+        packed.insert(packed.end(), rest.begin() + std::ptrdiff_t(b.stream), rest.begin() + std::ptrdiff_t(b.stream + b.streamSize));
+        // 0 bits: one byte repeated, the stream's (0x4155B0 sets +0x20 there, 0x4158E0 fills with it)
         if (packed.size() > 0x410 && Get32(packed, 12) == 0)
         {
             grid.assign(size_t(Get32(packed, 4)), packed[0x410]);
@@ -254,13 +273,13 @@ namespace wow
             const std::vector<uint8_t> packed = ffuh::Compress(grid);
             const uint32_t size = Get32(packed, 8);
             Put32(chunk, 12, size);
-            chunk.resize(16 + 4);
-            Put32(chunk, 16, 0x410);
+            auto word = [&](uint32_t v) { const size_t at = chunk.size(); chunk.resize(at + 4); Put32(chunk, at, v); };
+            word(0x410);
+            word(0x410);
             chunk.insert(chunk.end(), packed.begin(), packed.begin() + 0x410);
-            const size_t at = chunk.size();
-            chunk.resize(at + 4);
-            Put32(chunk, at, size);
-            chunk.insert(chunk.end(), packed.begin() + 0x410, packed.end());
+            word(size);
+            word(size);
+            chunk.insert(chunk.end(), packed.begin() + 0x410, packed.begin() + 0x410 + std::ptrdiff_t(size));
         }
         rest.erase(rest.begin() + 4, rest.begin() + std::ptrdiff_t(end));
         rest.insert(rest.begin() + 4, chunk.begin(), chunk.end());
@@ -316,7 +335,7 @@ namespace wow
             route.field44 = r.U32();
             uint32_t n = r.U32();
             if (n > 64) throw FormatError("save: a route of " + std::to_string(n) + " sectors");
-            route.progress = r.F32();
+            route.added = r.U32();
             for (uint32_t i = 0; i < n; i++) route.path.push_back(r.U32());
             route.field50 = r.U8();
             // the route's units (WarMapRouteEntryList 0x427F70): u32 count, then each entry: its object as a list
@@ -478,7 +497,7 @@ namespace wow
             w.U32(route.flag5E);
             w.U32(route.field44);
             w.U32(uint32_t(route.path.size()));
-            w.F32(route.progress);
+            w.U32(route.added);
             for (uint32_t sector : route.path) w.U32(sector);
             w.U8(route.field50);
             if (route.entries.size() != route.objects.size()) w.List(route.objects);   // as it was read (before update 137)

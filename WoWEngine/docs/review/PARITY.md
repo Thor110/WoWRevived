@@ -828,6 +828,25 @@ transparency")
       at the end, from its first frame when the cursor changes (0x40CD30). Only a cursor with more than one
       frame shows it (the wait cursors).
 
+**Update 178** (the owner's 24 saves: every one loads and runs; each read and written straight back)
+- [x] **The Damage Layer's layout was wrong** (0x405100). The game writes each of its two blocks as its size,
+      then the block through the writer's vt+0x14, which puts the size before the bytes again: 0x410, 0x410, the
+      header; n, n, the stream. The engine had each size once. So it read no layer of the game's (every
+      sector's scorch was dropped on loading, and the bytes it couldn't place were left in the sector's data
+      when it saved), and the game could not have read the engine's. Both ways fixed; the engine's older saves
+      are still read. All the saves' layers (up to 30 in one) now come back byte for byte, which also shows
+      the packer makes the game's bytes.
+- [x] **A sector's lists keep their order** in a save. The engine wrote the objects counter by counter, which
+      shuffled every list in a late game. They are written in the order they were read or made.
+- [x] **A route's +0x34 is a count** (1, and 2 where the entry left has index 1), not a float; and units sent
+      together are written as one route with an entry each (0x424160), not a route apiece.
+- *Confirmed*: the route entries' eight values, in five saves with a unit on its way (the way left over the
+  hours left is the speed in each).
+- *What still differs after a round trip*: the view (the engine starts on the selected sector), the messages
+  ("Game Loaded" added, old ones aged out) and at most 32 bytes a save in the sectors' own numbers (a last
+  bit of a recomputed float).
+- The load line's view is logged signed.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

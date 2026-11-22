@@ -554,8 +554,8 @@ namespace wow
             return;
         }
         if (!name.empty()) info.name = name;
-        SDL_Log("War map from %s: \"%s\", %d/%d/%d, view %u,%u sector %u", gamePath.c_str(), info.name.c_str(), info.Day(), info.Month(),
-            info.Year(), info.warMap[0], info.warMap[1], info.warMap[2]);
+        SDL_Log("War map from %s: \"%s\", %d/%d/%d, view %d,%d sector %u", gamePath.c_str(), info.name.c_str(), info.Day(), info.Month(),
+            info.Year(), int(info.warMap[0]), int(info.warMap[1]), info.warMap[2]);
         // WWarMapWorld (0x417CD0) fades every sound out over 30 ticks, stops the CD and has the music start 5
         // seconds later (0x4181BF)
         sound.FadeOutAll(30);

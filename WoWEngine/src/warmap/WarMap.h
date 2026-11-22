@@ -594,6 +594,7 @@ namespace wow
         std::vector<int> PlanRoute(const std::vector<int>& group, int sector, std::string* why = nullptr) const;
         void StartRoute(int counter, const std::vector<int>& path, int n, int route = 0);
         int nextRoute = 0;               // the last route's number
+        std::map<int, int> routeAdded;   // by route number: the units it has been given (the route's +0x34)
         void PlaceOnRoute(Counter& k);   // its place on the arrow's curve and the arrow's trim, from its entry
         std::vector<Counter::ArrowPoint> RouteCurve(const std::vector<int>& path, bool naval) const;
         void DrawRouteArrow(Canvas& canvas, const Counter& k, bool translucent = false, int trim = -1, float hours = -1.0f) const;

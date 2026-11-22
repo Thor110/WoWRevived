@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 177) and what is next
+## Where things stand (update 178) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -42,6 +42,11 @@ the working order; the stages further down stay the full inventory.
       view's start on the selected sector, the view button's held frame. Left: 3.3's
       hourly fan-out (checked, 165), 3.4 (done, 166), 3.6 (done, 167); 3.7 is left, to be checked against the code first:
       these lists have turned out stale more often than not.
+
+**The owner's saves** (update 178): 24 saves of the original's, early to end game, some hex-edited for larger
+groups, are the test set for anything that reads or writes a save. In the scratchpad they are under `saves/`;
+ask the owner for the folder again in a new session (`SaveGame.zip`). The check: load each, save it at once,
+and compare with the original section by section.
 
 **Open questions to keep track of** (each has its notes in PARITY.md; don't re-trace what is ruled out there)
 
@@ -179,16 +184,21 @@ wrong name: what is left of it is what the war map's save keeps of a battle's ob
       of whether anything would be seen.
 - [ ] 4.3 **Sound's leftovers**: the borders as settings and by screen size (above), the library before loose
       files, the unload limit, Minimum Audible Volume.
-- [ ] 4.4 **War map objects written field by field** (was 4.0 and 4.1): a new object made as the game makes it
+- [~] 4.4 **War map objects written field by field** (was 4.0 and 4.1; begun in 178 with the owner's 24 saves:
+      a save read and written straight back now matches the game's but for the view, the message list and a
+      few rounded numbers; the routes' layout is confirmed and the Damage Layer's corrected): a new object made as the game makes it
       (0x43CD10 / 0x42A030) and not copied from a saved one of its type; each battle unit's BAMO / BATP and
       class tags read and written as fields, not carried as bytes; the sector's battle and pod flags; a route's
-      progress in the save (needs a save of the original's with units on their way, asked of the owner).
+      progress in the save (done, 178: five of the owner's saves have a route; they read as the engine wrote
+      them, and the route's +0x34 is a count, not a float).
 - [ ] 4.5 **The players and their commands**: the local, computer and network player objects, the command
       records (0x4460A0), and the commands the world handles one queue pass later (0x95, 0x419A24; was 3.7).
 - [ ] 4.6 **Playback recordings** (`playback.%d`, 0x42D290, `[Demo]` Playback Files): they are recorded
       commands, so they come after 4.5.
-- [ ] 4.7 **The network game**: the menus' lists and the lockstep packets. The retail network code doesn't work
-      (WoWRevived ships another build for it), so what parity means here is the owner's call. Last.
+- [ ] 4.7 **The network game**: the menus' lists and the lockstep packets. The owner wants it tried, last or
+      nearly last (update 178). Their reading of what the network build needs to play a campaign: its timer
+      taken out, network play itself, and the start files no longer saved over (the engine already doesn't,
+      docs/ODDITIES.md). The retail network code doesn't work; WoWRevived ships another build for it.
 - [ ] 4.8 **The developers' aids** (optional): the debug log (`[Debug]` Log Debug Output, 0x417C30; WoWEngine.log
       stands in), the overlays (Show Radii, Show Arrival, Show Orders, Show Accelerations), `[Stats]`.
 

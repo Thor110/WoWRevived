@@ -96,8 +96,10 @@ All take world positions (vertex x cell), as integers, and work in the game's fi
   1000 / `[BattleMap] "Damage reduction divisor"` (dword_4D259C, 500: so 2) off every byte, at least 0. The `shym`
   cheat (byte_4D25A0) clears it once first (*not in*: the cheats aren't). Leaving (0x439FE2 -> 0x4050B0) it's packed
   again (0x415520). It's saved as the sector's DMGL (0x405100; read by 0x4051B0): "DMGL", u32 width, height, the
-  packed size; unless both are 0, u32 0x410, the FFUH header (0x415720: "FFUH", the size, the packed size, the bit
-  count and the 256 counts), u32 the packed size and the packed bytes. FFUH packing (0x415520 / 0x415D20(1) /
+  packed size; unless both are 0, u32 0x410 twice, the FFUH header (0x415720: "FFUH", the size, the packed size,
+  the bit count and the 256 counts), u32 the packed size twice and the packed bytes (each block's size is written,
+  vt+0x2C, and then the block by vt+0x14, which writes the size again; the engine had each once until update 178,
+  so it read none of the game's layers). FFUH packing (0x415520 / 0x415D20(1) /
   0x4157E0): the tree as the archives' decoder builds it, each byte's code root first and LSB first, the packed size
   bits / 8 (one more for a part byte) + 4; one symbol only is 0 bits, a packed size of 1 and that byte, read from
   after the counts (0x4158E0). The engine: `ffuh::Compress`, `SaveSector::Damage` / `SetDamage`,
