@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 156) and what is next
+## Where things stand (update 157) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -36,7 +36,8 @@ the working order; the stages further down stay the full inventory.
       asking the counter under the mouse, damaged facilities making nothing (155). Looked into and found in
       already, or not things the game does: 3.2's context buttons, Suspend / Resume, CommandCentreBuilt; the
       event boxes. Corrected in 156: the popup's Information item and the information page are real and are
-      in now (the owner's frames). Left: 3.3's
+      in now (the owner's frames). 157: the menu on a unit in transit as the owner's frame (Cancel move, no
+      View map, the sector unselected, units in transit selectable). Left: 3.3's
       hourly fan-out, 3.4 (several units as one route), 3.6 and 3.7, each to be checked against the code first:
       these lists have turned out stale more often than not.
 
@@ -52,6 +53,8 @@ the working order; the stages further down stay the full inventory.
 - **Lighting in London** (update 143): Big Ben and Parliament are brighter in the original because its lorries
   stand beside them with their headlights on; the engine's stand to the south. It goes with the deployment
   spot above, not a lighting fault (update 151).
+- **The mini-map's sectors shaded by owner** and **where the counter at a route's far end sits** (update 157,
+  the owner's Cancel move frame): next, update 158.
 - **The route save layout** against a real save of the original with units in transit (asked of the owner).
 
 Ask the owner for a frame of the original whenever a change is visible: a fresh game, the battle opened,

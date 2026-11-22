@@ -1325,9 +1325,11 @@ namespace wow
         if (panel.research.Contains(mouseX, mouseY)) hotButton = 3;
         bool overPanel = panel.mini.Contains(mouseX, mouseY) || hotButton >= 0 || (panel.frame.Contains(mouseX, mouseY) && res.Human());
         hovered = mouseX >= 0 && !overPanel ? SectorAt(mouseX, mouseY) : 0;
-        // the selection drops what's gone off on its way or out of the view's kind
+        // the selection drops what's gone or out of the view's kind. One on its way stays selectable (0x42C160 has
+        // no test for it; the owner's frame of the original shows one with its marks and its menu); the route
+        // preview passes over it
         selection.erase(std::remove_if(selection.begin(), selection.end(), [&](int i) {
-            return size_t(i) >= counters.size() || counters[size_t(i)].Travelling() || counters[size_t(i)].kind != viewMode - 1; }), selection.end());
+            return size_t(i) >= counters.size() || counters[size_t(i)].count <= 0 || counters[size_t(i)].kind != viewMode - 1; }), selection.end());
         if (hovered != previewSector) BuildPreview(hovered);
     }
 
@@ -2632,14 +2634,17 @@ namespace wow
     // The Warmap menu (0x41D120): Cancel (command 0x73, icon GType 0x1C RBHcncl, text 0x476), then the items the
     // active tool, the player's selection or the sector under the mouse (if it's the player's: it's selected
     // and the selection cancelled first) adds through 0x805C: an object's Build, Suspend / Resume building tasks
-    // and Retreat (0x429A70), then WSelectableObject's own Information (0x440300, which the object's handler hands
-    // on to); a sector's View map (0x43B9F0). ("Cancel Move" is Retreat, 0x80A9.) Shown at the mouse
+    // and Cancel move (0x429A70), then WSelectableObject's own Information (0x440300, which the object's handler hands
+    // on to); a sector's View map (0x43B9F0). Shown at the mouse
     // (0x432FB0) in rows by command (frontend/PopupRows.h), sound 0x193.
     void WarMap::OpenWarmapMenu(int x, int y)
     {
         popup.clear();
         popupHover = -1;
         int sector = SectorAt(x, y);
+        // (0x41D1FD: the sector under the mouse is only looked at with no window of the player's under it and no
+        // current object)
+        if (const int over = CounterAt(x, y); over >= 0 && counters[size_t(over)].players) sector = 0;
         if (sector && owner[size_t(sector)] == 0 && selection.empty()) selected = sector;
         auto add = [&](int command, int param, int icon, int text) {
             Rect r = SpriteRect(icon, 0, 0);
@@ -2655,7 +2660,7 @@ namespace wow
         // (0x43B9F0), while its battle map isn't open (+0x18). An object (0x429A70) with a factory, not on its
         // way anywhere, and a vehicle or a finished construction (0x42AA70), adds "Build" (0x813E with 0x8065,
         // icon 0x20, 0x470) and, with something queued, "Suspend building tasks" (0x813F, icon 0x22, 0x495) while
-        // busy or "Resume building tasks" (icon 0x23, 0x496); one on its way, "Retreat" (below). The current object here is the first selected
+        // busy or "Resume building tasks" (icon 0x23, 0x496); one on its way, "Cancel move" (below). The current object here is the first selected
         // counter's first object (*provisional*: the war map's own idea of it isn't traced).
         popupObject = -1;
         popupCounter = -1;
@@ -2681,7 +2686,7 @@ namespace wow
                     else add(0x813E, 0x813F, 0x23, 0x496);
                 }
             }
-            // 0x429B08: on its way (+0x70), "Retreat" (0x80A9, icon 0x350, 0x477) when where it would stop
+            // 0x429B08: on its way (+0x70), "Cancel move" (0x80A9, icon 0x350, text 0x477) when where it would stop
             // (0x4249B0) has room for its type (0x43AC10) and isn't the other player's (0x43CA30)
             if (c.Travelling() && c.players)
                 if (const int to = RetreatTo(popupCounter); to >= 1 && HasRoomFor(c.type, to) && owner[size_t(to)] != 1)
@@ -2696,9 +2701,13 @@ namespace wow
                 add(0x808C, 0, 0x2A, 0x478);
             }
         }
-        // 0x41D1F8: a current object's items leave the flag (var_11) clear, so the world's selected sector adds
-        // "View map" after them as it does with nothing selected
-        if (selected >= 1 && selected <= warmap::SectorCount) add(0x8133, 0x8019, 0x2E, 0x475);
+        // 0x41D28C: var_11 decides it. The window under the mouse answering (0x41D1D2 -> 0x41D287) or the sector
+        // under it (0x41D253) sets it and the world's selected sector isn't asked; after the current object's
+        // items (0x41D1F8) it's clear and the selected sector (+0x60), if there is one, adds "View map" (0x41D294).
+        // A counter becoming selected clears the selected sector (0x42C080), so in the owner's frame of the
+        // original a unit on its way shows Cancel, Cancel move and Information, and no View map.
+        const bool hotAnswered = hot >= 0 && counters[size_t(hot)].players;
+        if (!hotAnswered && selected >= 1 && selected <= warmap::SectorCount) add(0x8133, 0x8019, 0x2E, 0x475);
         LayOutPopupRows(popup, x, y, ScreenW, ScreenH);
         popupOpenRow = -1;
         sounds.push_back(0x193);
@@ -2941,9 +2950,9 @@ namespace wow
             if (cursorMode == 1 && shift)
             {
                 if (Selected(counter)) selection.erase(std::remove(selection.begin(), selection.end(), counter), selection.end());
-                else selection.push_back(counter);
+                else { selection.push_back(counter); selected = 0; }   // a counter becoming selected clears the world's selected sector (0x42C080 -> 0x419260(0))
             }
-            else if (cursorMode <= 1) selection = { counter };
+            else if (cursorMode <= 1) { selection = { counter }; selected = 0; }   // a counter becoming selected clears the world's selected sector (0x42C080 -> 0x419260(0))
             previewSector = -1;
             return std::nullopt;
         }
@@ -2956,7 +2965,7 @@ namespace wow
             {
                 selection.clear();
                 for (size_t i = 0; i < counters.size(); i++)
-                    if (counters[i].inBand) selection.push_back(int(i));
+                    if (counters[i].inBand) { selection.push_back(int(i)); selected = 0; }
                 cursorMode = 1;
             }
             for (Counter& k : counters) k.inBand = false;

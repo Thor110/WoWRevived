@@ -969,8 +969,13 @@ battle map.
   *Provisional*: the repair icon and power bar aren't in.
 - **Route arrows** of routes that have set off are translucent (the rasteriser's flag 8, 0x49CDB0), solid while
   the mouse is on their counter; previews are solid.
-- **The Warmap menu** has rows by command (as the battle map's popup) and adds "View map" after a current object's
-  items too (0x41D1F8 leaves var_11 clear).
+- **The Warmap menu** has rows by command (as the battle map's popup). Who is asked (0x41D120): a counter of the
+  player's under the mouse (the window answering 0x8111, 0x41D1A4) adds its object's items and nothing follows
+  (var_11 set, 0x41D287); otherwise the current object (0x439230) adds its items and the world's selected sector,
+  if there is one, still adds "View map" (0x41D1F8 leaves var_11 clear, 0x41D294); with neither, the sector under
+  the mouse. A counter becoming selected clears the selected sector (0x42C080 -> 0x419260(0)), so a selected
+  unit's menu has no "View map" until a sector is selected again. A unit on its way between sectors shows Cancel,
+  "Cancel move" (0x80A9, icon 0x350, text 0x477) and Information, as in the owner's frame. Update 157.
 - **Counters**: the hovered one is raised (0x42B88C); the other side's stay dim once dimmed (0x42BA20); the
   player's unfinished resources are dimmed as well as constructions.
 - **The saved view** (WMAP's 4th value) is restored on load (0x41AC40 / 0x419810).

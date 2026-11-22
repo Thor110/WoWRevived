@@ -588,6 +588,23 @@ Martian start's units turned differently)
   likely the English release's font 0x73 has a wider space than the Italian install's the engine was run on.
   The page's speech (0x414700, 15 updates on) isn't in.
 
+**Update 157** (from the owner's frame of the original: the war map menu on a unit in transit)
+- [x] **"Cancel move" was in already, under the wrong name.** It is the object's 0x80A9 item (0x429B08, icon
+      0x350, text 0x477), shown for a unit on its way between sectors; the notes called it "Retreat". Renamed.
+- [x] **Who the menu asks (0x41D120), followed to the letter.** A counter of the player's under the mouse
+      answers and nothing follows (var_11 set at 0x41D287): no "View map", and the sector under it isn't
+      selected. Only after the current object's items (0x41D1F8) is the world's selected sector still asked.
+      The engine added "View map" after a unit's items and selected the sector under the counter.
+- [x] **A counter becoming selected clears the selected sector** (0x42C080 -> 0x419260(0)): the sector's bold
+      outline and the mini-map's frame go, as in the frame.
+- [x] **A unit in transit can be selected.** 0x42C160 has no test for it and the frame shows one with its marks;
+      the engine dropped such counters from the selection every update (untraced). The route preview passes over
+      them as before.
+- The scripted run now gives the frame's picture: the marks on the counter, the thin sector outline, Cancel /
+  Cancel move / Information, the route's arrow translucent with the mouse off the counter.
+- *Open, seen in the same frame*: the mini-map shades the sectors by owner (the engine's is plain); the counter
+  at the route's far end sits about 18 left and 13 up of the engine's. Both for update 158.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
