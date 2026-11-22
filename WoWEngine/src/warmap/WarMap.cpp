@@ -298,7 +298,7 @@ namespace wow
     // What a sector's facilities of a kind make together (0x421D00 over the owner's constructions, each told
     // 0x803C by phase 0): a finished facility makes int(hp / maxHP) x r B / (n + r - 1), r the drop-off rate,
     // B the sector's deposit and n its finished facilities of the kind, and nothing while the sector has no
-    // command building. (Facilities aren't damaged on the war map yet, so hp / maxHP is 1.)
+    // command building.
     float WarMap::FacilityOutput(int sector, int kind) const
     {
         if (!HasCommandPost(sector)) return 0.0f;
@@ -310,7 +310,26 @@ namespace wow
         auto it = deposits.find(sector);
         float b = it == deposits.end() ? 0.0f : float(it->second[size_t(kind)]);
         const float r = resourceDropOff;
-        return float(n) * (r * b / (float(n) + r - 1.0f));
+        // each finished one's share times its health / its full health as whole numbers (0x423B00: cdq, idiv):
+        // one that's damaged at all makes nothing till it's mended
+        int working = 0, counted = 0;
+        const int most = UnitMaxHealth(FacilityType[kind]);
+        for (const Counter& k : counters)
+        {
+            if (k.sector != sector || k.kind != 2 || k.type != FacilityType[kind] || k.count <= 0 || k.Travelling()) continue;
+            for (int ref : k.refs)
+            {
+                if (ref < 0 || size_t(ref) >= table.size()) continue;
+                if (std::find(destroyed.begin(), destroyed.end(), ref) != destroyed.end()) continue;
+                const SaveObject& o = table[size_t(ref)];
+                if (!(o.Value(1) >= o.Value(0))) continue;
+                counted++;
+                const std::vector<int> healths = o.BattleHealths();
+                working += healths.empty() || most <= 0 ? 1 : healths.front() / most;
+            }
+        }
+        if (counted < n) working += n - counted;     // (objects read without a table entry: taken as whole)
+        return float(working) * (r * b / (float(n) + r - 1.0f));
     }
 
     // How many men a counter's objects carry (each object's battle map part, 0x4216D0: its BMOL list's count);
@@ -726,7 +745,7 @@ namespace wow
     // counters; otherwise, under 0.8, another (0x4E9BB0) goes up, and past 504 raises event 13,
     // ResourceWarning, and is cleared. They count calls, not hours. The events (0x41F280 / 0x41F340): "Resource
     // Warning: <the resource>" (0x41B, 0x214 + kind) in the message list with the kind's sound (0x4BA1D8 /
-    // 0x4BA1F0); with the [Event] option on, the game also opens its event box (not in yet).
+    // 0x4BA1F0); with the [Event] option on, the game also opens its event box (RunEvent).
     void WarMap::ResourceWarnings()
     {
         static constexpr int WarningSound[6] = { 0x124, 0x122, 0x123, 0x125, 0x126, 0x127 };
@@ -1109,7 +1128,7 @@ namespace wow
     //   - unless it's interrupted already or an attack, every sector from the one it last reached to the end is
     //     checked: one with a battle (+0x124), or held by the other side, other than where the route started,
     //     interrupts it (+0x60) with event 11, TravelInterrupted (0x41EF80: "Travel interrupted" (0x419), sound
-    //     0x147; with the [Event] option on the game also opens its event box, not in yet)
+    //     0x147; with the [Event] option on the game also opens its event box, RunEvent)
     //   - it goes the way still to go over the hours still to go each hour, waypoint to waypoint (0x437380); on
     //     reaching a sector's waypoint it arrives there if that's the last, or the route was interrupted
     //   - on the map it's that far along the arrow's curve (32 points a sector), and the arrow is drawn from there
@@ -1626,6 +1645,36 @@ namespace wow
         if (panel.research.Contains(x, y)) return 3;
         if (CalendarRect().Contains(x, y) && !SpeedRect().Contains(x, y)) return 4;
         if (panel.frame.Contains(x, y) || panel.mini.Contains(x, y)) return -1;
+        // the Resource view's widgets (0x426AE0 the bar's, 0x426430 the facilities'): 20000 + sector x 8 + kind x 2,
+        // + 1 for the facilities
+        if (viewMode == 3)
+        {
+            static constexpr int FacilityTypes[6] = { 47, 48, 49, 108, 109, 110 };
+            const bool human = res.Human();
+            for (int s = 1; s <= warmap::SectorCount; s++)
+            {
+                const warmap::Point wp = warmap::Waypoint(s);
+                const int wx = int(wp.x) - cameraX, wy = int(wp.y) - cameraY;
+                for (int kind = 0; kind < 3; kind++)
+                {
+                    const size_t k6 = size_t((human ? 0 : 3) + kind);
+                    if (const IndexedImage* bar = res.GetFrame(0xB9 + kind, 0))
+                    {
+                        const int h = std::clamp(int(double(economy[size_t(s)].effSupply[k6]) * double(1.0f / 3.0f)), 0, bar->height);
+                        const int bx = wx + kind * 32 - bar->width / 2 - 32, by = wy - 8 - h;
+                        if (x >= bx && y >= by && x < bx + bar->width && y < by + h) return 20000 + s * 8 + kind * 2;
+                    }
+                    const auto unit = unitData.find(FacilityTypes[k6]);
+                    const IndexedImage* face = res.GetFrame(0x77, unit == unitData.end() ? 0 : unit->second.counterFrame);
+                    if (!face) continue;
+                    const int fx = wx + kind * 32 - face->width / 2 - 32, fy = wy + 8;
+                    if (x < fx || y < fy || x >= fx + face->width || y >= fy + face->height) continue;
+                    const bool any = std::any_of(counters.begin(), counters.end(), [&](const Counter& c) {
+                        return c.sector == s && c.players && c.kind == 2 && c.type == FacilityTypes[k6] && !c.Travelling() && c.count > 0; });
+                    if (any) return 20000 + s * 8 + kind * 2 + 1;
+                }
+            }
+        }
         // a counter of the player's answers 0x807C (the other side's don't)
         int counter = CounterAt(x, y);
         if (counter >= 0 && counters[size_t(counter)].players) return 1000 + counter;
@@ -1732,6 +1781,23 @@ namespace wow
         {
             const PopupItem& item = popup[size_t(owner - 100)];
             return item.label.empty() ? res.String(item.text) : item.label;
+        }
+        // a Resource view widget's (0x426AE0, 0x426430; only at the first level): the resource's name, then
+        // "%0.2f %s %s" twice and "%s %0.2f %s": the sector's spread supply (+0x80) with 0x517 and 0x514, its
+        // spread demand (+0x50) with 0x517 and 0x516, then 0x515, what one more facility would add (0x423F80) and
+        // 0x517
+        if (owner >= 20000)
+        {
+            if (level != 1) return {};
+            const int s = (owner - 20000) / 8, kind = ((owner - 20000) % 8) / 2;
+            if (s < 1 || s > warmap::SectorCount || kind > 2) return {};
+            const size_t k6 = size_t((res.Human() ? 0 : 3) + kind);
+            char line[256];
+            std::snprintf(line, sizeof(line), "%s\n%0.2f %s %s\n%0.2f %s %s\n%s %0.2f %s", res.String(0x214 + int(k6)).c_str(),
+                          double(economy[size_t(s)].effSupply[k6]), res.String(0x517).c_str(), res.String(0x514).c_str(),
+                          double(economy[size_t(s)].effDemand[k6]), res.String(0x517).c_str(), res.String(0x516).c_str(),
+                          res.String(0x515).c_str(), double(ResourceGain(s, int(k6))), res.String(0x517).c_str());
+            return line;
         }
         if (owner >= 10000) return BuildWindowTip(owner - 10000);
         if (owner >= 1000 && size_t(owner - 1000) < counters.size()) return CounterTip(owner - 1000, level);
@@ -2531,8 +2597,9 @@ namespace wow
 
     // The Warmap menu (0x41D120): Cancel (command 0x73, icon GType 0x1C RBHcncl, text 0x476), then the items the
     // active tool, the player's selection or the sector under the mouse (if it's the player's: it's selected
-    // and the selection cancelled first) adds through 0x805C (Build and Suspend / Resume building tasks; Cancel
-    // Move and Information aren't in yet). Shown at the mouse
+    // and the selection cancelled first) adds through 0x805C: an object's Build, Suspend / Resume building tasks
+    // and Retreat (0x429A70), a sector's View map (0x43B9F0). Those are all the items the game's routines add: the
+    // "Cancel Move" and "Information" items earlier notes listed aren't in them. Shown at the mouse
     // (0x432FB0) in rows by command (frontend/PopupRows.h), sound 0x193.
     void WarMap::OpenWarmapMenu(int x, int y)
     {
@@ -2558,10 +2625,15 @@ namespace wow
         // counter's first object (*provisional*: the war map's own idea of it isn't traced).
         popupObject = -1;
         popupCounter = -1;
-        if (!selection.empty())
+        // 0x41D1A4: the window under the mouse (dword_4EA444) is asked first: one that answers 0x8111 (a counter of
+        // the player's, 0x42BEB0) gets the 0x805C and its object adds the items, whatever is selected; only
+        // otherwise the player's current object (0x439230)
+        const int hot = CounterAt(x, y);
+        const int asked = hot >= 0 && counters[size_t(hot)].players ? hot : selection.empty() ? -1 : selection.front();
+        if (asked >= 0)
         {
-            const Counter& c = counters[size_t(selection.front())];
-            popupCounter = selection.front();
+            const Counter& c = counters[size_t(asked)];
+            popupCounter = asked;
             const int ref = c.refs.empty() ? -1 : c.refs.front();
             auto f = factories.find(ref);
             if (f != factories.end() && !c.Travelling() && c.players && (c.kind == 0 || !c.unfinished))
@@ -3049,7 +3121,8 @@ namespace wow
     //    (+0x5C), a counter (GType 0x77, the type's counter frame) each, the unfinished ones (0x42AA70) at 50%, in a
     //    rect the first's size moved by kind x 32 - w / 2 - 32 and 8 from the waypoint, depth 6.
     // *Provisional*: the facilities' counters are drawn where the rect starts (no offsets of their own are set; the
-    // widget's draw isn't traced); the tool tips (0x426AE0, 0x426430) and the facility row's click (0x80A3) aren't in.
+    // widget's draw isn't traced); the facility row's click (0x80A3 -> 0x425E80, the row made again) isn't needed
+    // here, the row being worked out as it's drawn. The tool tips are in (TipText).
     void WarMap::DrawResourceWidgets(Canvas& canvas) const
     {
         static constexpr int FacilityTypes[6] = { 47, 48, 49, 108, 109, 110 };

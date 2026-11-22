@@ -407,6 +407,20 @@ side multiplied / 24, 0x45F7D0), then "Efficiency n.n" (0x493: 100 / that produc
 "Construction suspended" (0x492). "Idle" (0x491) is in both routines but only on a path the test before it has
 already ruled out.
 
+**The Resource view's tool tips** (the bar's 0x426AE0, the facilities' 0x426430; the first level only): the
+resource's name, then "%0.2f %s %s" twice and "%s %0.2f %s": the sector's spread supply (+0x80) with strings
+0x517 and 0x514, its spread demand (+0x50) with 0x517 and 0x516, then 0x515, what one more facility would add
+(0x423F80) and 0x517.
+
+**The popup's items** (0x41D1A4): the window under the mouse is asked first: a counter of the player's (it
+answers 0x8111) gets the 0x805C and its object adds its items whatever is selected; otherwise the player's
+current object, then the sectors. The only items the game's routines add are an object's Build, Suspend /
+Resume building tasks and Retreat (0x429A70) and a sector's View map (0x43B9F0).
+
+**A damaged facility makes nothing**: a finished resource facility's share of its sector's output is times its
+health / its full health as whole numbers (0x423B00), so 0 until it's mended (the engine takes it from the
+saved health since update 155).
+
 ## Repair (0x4297C0, 0x429B80, 0x422AB0, 0x4299C0; `WarMap::PickRepair`, `WarMap::RepairStep`)
 
 Each battle unit keeps its health (+0xC4) with its war map object: the save writes it as the last of BAMO's five

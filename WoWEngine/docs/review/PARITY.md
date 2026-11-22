@@ -559,6 +559,22 @@ Martian start's units turned differently)
 - Looked at and already in: the factory's context buttons, Suspend / Resume building tasks, CommandCentreBuilt
   (TASKS.md and PLAN.md had them as missing).
 
+**Update 155** (Stage 3: the Resource view, the popup, facilities)
+- [x] The Resource view's tool tips (0x426AE0, 0x426430): the resource's name, the sector's spread supply and
+      spread demand, and what one more facility would add.
+- [x] The popup asks the counter under the mouse first (0x41D1A4, a player's counter answering 0x8111), then the
+      player's current object; the engine went by the selection alone.
+- [x] A damaged resource facility makes nothing (0x423B00's health / full health as whole numbers), now that
+      the health is kept.
+- Not things the game has: the popup's "Cancel Move" and "Information" items (the only items added are Build,
+  Suspend / Resume building tasks, Retreat and View map). The notes that two events' boxes weren't in were
+  stale: `RunEvent` opens them.
+- Seen while checking the kept health: in the Human start save 15 of the 116 battle units, all Martian
+  constructions of types 113 and 116, are saved under the full health the engine works out for their types
+  (1439 of 2159 and 1259 of 1439); every other unit is at exactly its type's. They are left as saved, so they
+  start a little damaged (and a Martian Repair Facility would mend them): either the start save was made with
+  older figures or the engine's full health for those two types is high. Not settled.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
