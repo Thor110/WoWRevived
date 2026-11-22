@@ -496,7 +496,7 @@ another looked for. With no target the count goes up by one a call, and past 24 
 (0x4299C0).
 
 *Provisional*: what 0x8124 asks isn't traced (taken as the workshop being finished); the icon is drawn solid
-whenever the counter has no production icon, and its power bar isn't in; a battle unit that dies while others of
+whenever the counter has no production icon (its power bar is the pips of update 154); a battle unit that dies while others of
 its object live on isn't taken out of the object. Not seen running in a game: it needs a damaged unit and a
 repairer in one sector. Checked with a stand-in: Parliament's saved health reads 17999, its type's full health,
 and with it set to 5 and a unit made a Mk1 the target is taken and marked.

@@ -2207,7 +2207,7 @@ namespace wow
         return std::nullopt;
     }
 
-    void BattleMap::OnKeyUp(int) { infoPage.reset(); }      // (0x101 closes the information page, 0x4A41A9)
+    void BattleMap::OnKeyUp(int) { CloseInfoPage(); }      // (0x101 closes the information page, 0x4A41A9)
 
     void BattleMap::OnMouseMove(int x, int y)
     {
@@ -2284,6 +2284,8 @@ namespace wow
         // the game loop (0x403680): the players' updates (the computer player's), then the queued messages (0x434FA0:
         // the delayed 0x80A0 deaths, posted by 0x48AB20, and the 0x80F4 posts), then the screen (0x43A980: the fog's
         // decay, the twinkles, the end check, then its children in start order)
+        if (infoPage && infoPage->speechIn > 0 && --infoPage->speechIn == 0 && setup.sound)
+            if (const int id = res.Text().Extra(infoPage->textId)) infoPage->speech = setup.sound->Play(id);
         AiUpdate();
         for (size_t i = 0; i < units.size();)
             if (units[i].dieAt >= 0 && ticks >= units[i].dieAt) Die(i);
@@ -2464,7 +2466,16 @@ namespace wow
     // speech starts (0x414700). Any key let go, or either mouse button let go, closes it (0x4A4190 -> 0x42F2A0).
     // In the owner's frame of the original: a black box 259 x 139 for eight lines, centred on the point, the
     // text 132, 121, 99.
-    // *Provisional*: the speech isn't in (speech by text id isn't ported); the colours are the frame's.
+    // The speech (0x4A41C2, the 0x812C timer 15 updates after the page is made, 0x4A4046): the text's sound (TEXT.ojd's
+    // type 4 record for the id, 0x414700) at the listener, kept at +0x84; the page going fades it over 30 updates
+    // (0x4A40FE).
+    // *Provisional*: the colours are the frame's.
+    void BattleMap::CloseInfoPage()
+    {
+        if (infoPage && infoPage->speech && setup.sound) setup.sound->FadeOut(infoPage->speech, 30);
+        infoPage.reset();
+    }
+
     void BattleMap::DrawInfoPage(Canvas& canvas) const
     {
         if (!infoPage) return;
@@ -2610,7 +2621,7 @@ namespace wow
 
     std::optional<Command> BattleMap::OnMouseButton(int x, int y, bool down)
     {
-        if (infoPage) { if (!down) infoPage.reset(); return std::nullopt; }   // (0x202 closes the page, 0x4A41EF)
+        if (infoPage) { if (!down) CloseInfoPage(); return std::nullopt; }   // (0x202 closes the page, 0x4A41EF)
         if (endBox)
         {
             if (!down && EndBoxButtonRect().Contains(x, y)) return EndBoxCommand();
@@ -2681,7 +2692,7 @@ namespace wow
         if (command == 0x808C)
         {
             // 0x4403A0: the page opened at the object (InfoPage)
-            if (popupInfoText) infoPage = InfoPage{ res.String(popupInfoText), popupInfoX + 0x20, popupInfoY + 0x20 };
+            if (popupInfoText) infoPage = InfoPage{ res.String(popupInfoText), popupInfoX + 0x20, popupInfoY + 0x20, popupInfoText };
             return std::nullopt;
         }
         if (command == 0x80CE && param >= 0 && param <= 3)
@@ -2732,7 +2743,7 @@ namespace wow
     // 0x204 / 0x205: held, the popup (above); let go quickly, 0x73 (Cancel) to the selection
     std::optional<Command> BattleMap::OnRightButton(int x, int y, bool down)
     {
-        if (infoPage) { if (!down) infoPage.reset(); return std::nullopt; }   // (0x205 closes the page)
+        if (infoPage) { if (!down) CloseInfoPage(); return std::nullopt; }   // (0x205 closes the page)
         if (!popup.empty())
         {
             // held open: let go on an item it acts, anywhere else (or pressed off the items) the popup closes

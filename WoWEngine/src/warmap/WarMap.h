@@ -93,6 +93,9 @@ namespace wow
         int HoveredSector() const { return hovered; }
         const SaveInfo& Game() const { return game; }
         int Speed() const { return speed; }  // the clock's speed, 0-10
+        // the information page's speech, for the front end: a sound to start (once), and whether to fade it
+        int TakeInfoSpeechStart() { const int id = infoSpeechStart; infoSpeechStart = 0; return id; }
+        bool TakeInfoSpeechFade() { const bool f = infoSpeechFade; infoSpeechFade = false; return f; }
         void SetSectorLimits(int units, int boats) { maxUnits = units; maxBoats = boats; }
         // [Tweak] "HumanFriend / HumanEnemy / MartianFriend / MartianEnemy Manufacture Modifier" (0x437664-0x437724)
         void SetManufacture(const ObjOjd::ManufactureModifiers& m) { manufacture = m; }
@@ -268,8 +271,11 @@ namespace wow
         int popupCounter = -1;                          // its counter (for Retreat)
         // The information page (0x440300 / 0x4403A0, the window "InfoPage" 0x4A3E60; as the battle map's): the
         // popup's Information item (0x808C) of an object whose type has a page (+0x18), and the box it opens
-        struct InfoPage { std::string text; int x = 0, y = 0; };
+        struct InfoPage { std::string text; int x = 0, y = 0; int textId = 0, speechIn = 15; };
         std::optional<InfoPage> infoPage;
+        int infoSpeechStart = 0;        // a sound for the front end to start and keep (the page's speech)
+        bool infoSpeechFade = false;    // the page has gone: its speech fades over 30
+        void CloseInfoPage();
         int popupInfoText = 0, popupInfoX = 0, popupInfoY = 0;
         void DrawInfoPage(Canvas& canvas) const;
         // The computer player (warmap/WarMapAi.cpp): its phase (+0x43C), its units in the order they move

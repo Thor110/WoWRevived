@@ -808,6 +808,16 @@ transparency")
       a chunk isn't known; it is the one step the log shows was due and didn't happen.
 - Crumbs at both music steps.
 
+**Update 176**
+- [x] **The information page speaks** (0x4A4046 / 0x4A41C2 / 0x4A40FE): 15 updates after the page is made its
+      text's sound starts (0x414700: TEXT.ojd's type 4 record for the id, at the listener), and the page going
+      fades it over 30. All 136 pages have one. On both maps (`BattleMap::CloseInfoPage`,
+      `WarMap::CloseInfoPage` with the front end keeping the sound).
+- *Checked*: 0x414700's other callers (0x41EC1A, 0x41ECBA the research events; 0x45D2E5, 0x45DB44, 0x45E295 the
+  research screen) were in. The battle map's menu has no save (0x49BD50), so a battle is never saved part way:
+  Stage 4.1 is about what the war map's save keeps of a battle's objects, not a save in a battle.
+- *Stale notes found*: the counter's "power bar" in WARMAP.md is the strength pips of update 154.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

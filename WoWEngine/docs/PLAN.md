@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 175) and what is next
+## Where things stand (update 176) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -54,6 +54,8 @@ the working order; the stages further down stay the full inventory.
   second runs here without fault, so it is likely something only Windows does (the audio device, the file
   calls). The log now names a fault (172) and a hang (175: a STALL line after 5 s with what the engine was
   doing), and the music file's reader can no longer loop on a bad chunk length. Wait for the next log.
+  The owner tried again (update 176) and it didn't happen; they are keeping an eye out. The log's CRASH and
+  STALL lines stay in for release, by the owner's wish, for players' reports.
 - **London's deployment spot** (updates 143, 144). The original puts the lorries at ring 95's 288 degree spot,
   the engine at its 72 degree one. N2 (148) didn't settle it: with the parts and segments in the grid the engine
   still takes the 72 degree spot. Worth a fresh frame from the owner on the discs' start files, a new Human
@@ -157,7 +159,8 @@ Small and independent; most need one routine traced.
       recordings.
 - [ ] 4.3 The network game: the menus' lists, the lockstep packets. The retail network code doesn't work
       (WoWRevived ships a different build for it), so what "parity" means here is the owner's call.
-- [ ] 4.4 Speech attached to text ids; the `[Sound]` settings; animated cursors and the busy icon; the remaining
+- [~] 4.4 Speech attached to text ids (done, update 176: 0x414700 has six callers, the research events and
+      screen, which were in, and the information page, which is now); the `[Sound]` settings; animated cursors and the busy icon; the remaining
       settings of the ~229; the debug log.
 
 ## Stage 5: combat seen running

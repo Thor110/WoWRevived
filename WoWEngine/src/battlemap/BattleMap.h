@@ -697,8 +697,9 @@ namespace wow
         // The information page (WSelectableObject's 0x440300 / 0x4403A0, the window "InfoPage" 0x4A3E60): the popup's
         // Information item (0x808C) of an object whose type has a page (+0x18, OBJ.ojd record 22), and the box it
         // opens; popupInfo is the page and the point the popup's item would open it at
-        struct InfoPage { std::string text; int x = 0, y = 0; };
+        struct InfoPage { std::string text; int x = 0, y = 0; int textId = 0, speechIn = 15, speech = 0; };
         std::optional<InfoPage> infoPage;
+        void CloseInfoPage();                                   // 0x4A40A0: its speech faded over 30
         int popupInfoText = 0, popupInfoX = 0, popupInfoY = 0;
         void DrawInfoPage(Canvas& canvas) const;
         int popupHover = -1;

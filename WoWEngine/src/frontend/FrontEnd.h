@@ -169,6 +169,7 @@ namespace wow
         int battleTrack = 1;       // dword_4D0124
         void BattleMusicStep();
         int warAmbient = 0;        // world +0x12C
+        int infoSpeech = 0;         // the war map's information page's speech
         int clockSound = 0;        // the calendar's +0x34
         int clockSpeed = -1;       // the speed it was last set for
         int loadedGroup = -1;

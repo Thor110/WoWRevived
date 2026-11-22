@@ -1310,6 +1310,10 @@ namespace wow
     void FrontEnd::WarMapSounds(WarMap& map)
     {
         if (musicTimer > 0 && --musicTimer == 0) MusicStep();
+        // the information page's speech (0x4A41C2 / 0x4A40FE): started 15 updates after the page, faded over 30 as
+        // the page goes
+        if (map.TakeInfoSpeechFade() && infoSpeech) { sound.FadeOut(infoSpeech, 30); infoSpeech = 0; }
+        if (const int id = map.TakeInfoSpeechStart()) infoSpeech = sound.Play(id);
         // the clock (0x41F860, on each change of speed): a Human clock ticks only while stopped (0x1A2, looping,
         // faded out over 15 ticks once it runs again); a Martian one has a sound for every speed (0x1A1 + speed,
         // the old one faded over 5 ticks and the new one faded in over 5)
