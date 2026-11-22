@@ -525,6 +525,9 @@ namespace wow
     void FrontEnd::SaveCampaign()
     {
         WarMap* map = ActiveWarMap();
+        // MODERN FIX: the game's save (0x4042D0) writes slot 0 to Human.000 / Martian.000 in the game folder, the
+        // files new campaigns start from, so a campaign with no slot saved over them (docs/ODDITIES.md). Here a
+        // campaign without a slot from 1 to 5 isn't saved.
         if (!map || playingSlot < SaveSlot::First || playingSlot > SaveSlot::Last) return;
         auto data = map->SaveData();
         if (!data) { SDL_Log("The war map didn't come from a save it can write, so it isn't saved"); return; }

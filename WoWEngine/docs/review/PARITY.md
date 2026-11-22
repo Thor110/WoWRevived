@@ -659,6 +659,14 @@ Martian start's units turned differently)
 - *Open*: the first pod (sector 6, types 62 and 89, in the original's file; sector 10 in the engine): a draw from
   rand() the engine doesn't make, or makes at another time. In PLAN.md.
 
+**Update 162** (the English disc's own start files; no code changed)
+- [x] **Closed: who wrote the differing English pair.** The pair off the owner's English disc is the same as
+      the other four releases'. The save routine (0x4042D0) writes slot 0 to `Human.000` / `Martian.000` in the
+      game folder, so a campaign whose slot is still 0 saves over the start file when the war map is left or a
+      battle comes back; the testing folder's pair was that. In ODDITIES.md.
+- The engine doesn't write the start files: its save leaves a campaign without a slot alone, now marked
+  `MODERN FIX` in the code and listed in MODERN.md.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

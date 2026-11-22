@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 161) and what is next
+## Where things stand (update 162) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -60,8 +60,6 @@ the working order; the stages further down stay the full inventory.
   moves, its construction, its research), but the pod lands in sector 10, not 6. The owner: its place varies
   somewhat between games. So some draw that isn't fixed (per update shown, per sound, the mouse?) comes before
   0x41A330's; find it rather than matching sector 6.
-- **Who wrote the English start files** (update 161): dated the day the owner took frames; the four continental
-  releases agree byte for byte.
 - **The route save layout** against a real save of the original with units in transit (asked of the owner).
 
 Ask the owner for a frame of the original whenever a change is visible: a fresh game, the battle opened,

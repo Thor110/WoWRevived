@@ -7,36 +7,44 @@ nobody has to find them twice. Not engine faults, and not things to "fix" withou
 
 A new campaign starts from `Human.000` or `Martian.000` in the game folder (0x4043D0 builds `%s.%03d` with slot
 0; docs/WARMAP.md, "Saving"). The owner sent the two files from five installs: German, English, Spanish, French
-and Italian.
+and Italian, and later the English pair from the disc itself.
 
-| File | DE | ES | FR | ITA | EN (the owner's install) |
+| File | DE | ES | FR | ITA | EN (the owner's WoWRevived testing folder) |
 |---|---|---|---|---|---|
 | `Human.000` | 19,312 bytes, SHA-256 `60f7e4a4...`, 26 Oct 1998 18:00 | the same | the same, 17:45 | the same | 19,312 bytes, `cbd252a3...`, **22 Nov 2026 02:32** |
 | `Martian.000` | 34,172 bytes, `daa920dc...`, 26 Oct 1998 18:12 | the same | the same, 17:57 | the same | **35,711 bytes**, `7adec20f...`, **22 Nov 2026 01:21** |
 
-**The four continental releases are byte for byte the same**, and carry the discs' date. Only the English
-install's pair differs, and both of its files were last written on the day the owner was taking frames for
-updates 157 to 159. So the evidence is against "the English release shipped other start files": these two look
-like the 1998 files written over by a game in play. *Not confirmed*: what wrote them. The game saves a campaign to
-its slot when the war map is left or a battle comes back (0x4042D0), and slot 0's name is the start file's; a
-campaign running in slot 0, or a tool beside the game, would do it. Worth checking against an untouched English
-disc. Until then, treat the continental file as the real start and the English pair as a save.
+**All five releases shipped the same pair.** The four continental ones are byte for byte the same and carry
+the discs' date, and the pair the owner then took straight off the English disc (update 162) is the same again:
+`60f7e4a4...` and `daa920dc...`. The differing English pair in the table came from the owner's WoWRevived
+testing folder, where both files had been written on the day the frames for updates 157 to 159 were taken.
+
+**What wrote them: the game itself. Saving to slot 0 overwrites the start file.** The save routine (0x4042D0,
+"Saving game to slot %d") names its file `SaveGame\%s.%03d` for every slot but 0; for slot 0 it writes
+`%s.%03d` with 0, that is `Human.000` or `Martian.000` in the game folder, the very file new campaigns start
+from. The game saves the campaign to its slot whenever the war map is left or a battle comes back
+(docs/WARMAP.md, "Saving"). A campaign started the ordinary way has been given a slot from 1 up (0x404660), so
+this never shows; one that reaches the war map with its slot still 0 (a start that skips the menus' slot step,
+as a patched or debugging start may) saves over the start file, and every "new" campaign after that begins
+from wherever that one stopped. The owner made no edits by hand; this is how the testing folder's pair came to
+be a day old. **To put it right, copy the two files from the disc again.** The engine doesn't do this: a
+campaign with no slot isn't saved (a `MODERN FIX`, docs/MODERN.md).
 
 Every one of the ten files, the 1998 ones included, carries the name of a slot 1 save inside it
 (`SaveGame\Human.001`, `SaveGame\Martian.001`): the developers made the start files by saving a game in slot 1
 and renaming it.
 
-### `Human.000`: English against the rest
+### `Human.000`: the testing folder's against the discs'
 
 Three bytes, all in the WMAP block: the view's saved corner is 593, 1948 where the others have 803, 1805.
 Nothing else. It makes no difference in play: with a sector selected (London, 30) the view is centred on that
 sector's bounds when the map opens (0x4189B9), which gives 803, 1805 either way.
 
-### `Martian.000`: English against the rest
+### `Martian.000`: the testing folder's against the discs'
 
-The English file is the same campaign **one game day later**:
+The testing folder's file is the same campaign **one game day later**:
 
-| What | DE / ES / FR / ITA | EN |
+| What | The discs' (all five) | The testing folder's |
 |---|---|---|
 | Game time (CALN) | 0.0 hours | 24.2667 hours: 91 updates at speed 8 (8 / 30 of an hour each), one update past the 24th hour |
 | Date (DtTm) | 1 Sep 1898, 00:00:00 | 2 Sep 1898, 00:00:24 as stored (day 1, hour 0, minute 0, second 24) |
