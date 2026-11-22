@@ -1123,6 +1123,12 @@ transparency")
   edge scrolling; the battle's panels the same way; at the defaults both war maps and both battles the same
   picture as before, byte for byte.
 
+**Update 208** (modern option: the window's size; nothing of the original's changed)
+- In a window the engine opens at the size the player last gave it (`[WoW Engine]` "Window Size"), else at the
+  view size or what of it fits the desktop. It used to open at 640 x 480 whatever the view size.
+- Seen: the engine starting in a window; both battles as before. Not seen: a real window dragged and reopened
+  (the test runs have no window to resize).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

@@ -138,6 +138,10 @@ The wheel isn't written to a playback recording (the keys are).
 - **The picture on the screen**: its shape kept, with bars where it doesn't fill (`[WoW Engine]` "Stretch" = 1
   fills instead); sharp pixels when it goes in a whole number of times, smoothed when it doesn't. Full screen
   unless `[WoW Engine]` "Windowed" = 1; Alt + Enter changes it while playing.
+- **The window's size** (update 208): in a window, the size the player last dragged it to (`[WoW Engine]`
+  "Window Size", width,height, written as the window is resized, not while it is maximised or fills the
+  screen). With none kept yet the window opens at the view size, or as much of it as the desktop has room
+  for at the same shape, in the middle of the screen. The picture is scaled to whatever size the window has.
 - **Backgrounds are never scaled.** The main menu's and the legal screens' (`humanbd`, `martbd`, `legal1`,
   `legal2`) are read from `DAT\extra\<width>x<height>\` in the game folder when the size has them there
   (`Resources::SetViewSize`), and drawn from the top left at their own size. The briefing, research and CD

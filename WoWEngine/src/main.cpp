@@ -416,6 +416,36 @@ int main(int argc, char** argv)
         if (!video.Open("Jeff Wayne's 'The War Of The Worlds' - WoW Engine v" WOWENGINE_VERSION, GameWidth, GameHeight, !windowed, error))
             throw std::runtime_error(error);
         wow::Screen::windowed = windowed;
+        // MODERN: the window's size. The one the player last gave it ([WoW Engine] "Window Size", kept as the
+        // window is resized); with none yet, the view size, or as much of it as the desktop has room for at the
+        // same shape. Used whenever the game is in a window, at the start or after Alt + Enter.
+        int setW = 0, setH = 0;         // the size the engine gave the window itself (not kept as the player's)
+        auto sizeWindow = [&]() {
+            if (!options.screenshot.empty()) return;
+            int w = 0, h = 0;
+            const std::string kept = ini.GetString("WoW Engine", "Window Size", "");
+            if (std::sscanf(kept.c_str(), "%d,%d", &w, &h) != 2 || w < 320 || h < 240)
+            {
+                const std::string size = ini.GetString("Screen", "Size", "640,480");
+                if (std::sscanf(size.c_str(), "%d,%d", &w, &h) != 2 || w < 640 || h < 480) { w = GameWidth; h = GameHeight; }
+                SDL_Rect room{};
+                const SDL_DisplayID display = SDL_GetDisplayForWindow(video.Window());
+                if (display && SDL_GetDisplayUsableBounds(display, &room) && room.w > 0 && room.h > 0)
+                {
+                    // (a little less than the room, for the window's own frame)
+                    const double fit = std::min({ 1.0, room.w * 0.92 / w, room.h * 0.92 / h });
+                    w = int(w * fit);
+                    h = int(h * fit);
+                }
+            }
+            setW = w;
+            setH = h;
+            SDL_SetWindowSize(video.Window(), w, h);
+            SDL_SetWindowPosition(video.Window(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+        };
+        if (windowed) sizeWindow();
+        bool windowSized = false;       // the window has had its size set for windowed play
+        windowSized = windowed;
         video.SetStretch(ini.GetBool("WoW Engine", "Stretch", false));
         wow::Canvas canvas(video.Pixels(), video.Width(), video.Height(), resources);
         // the picture is the size the front end asks for (the view size for the menus, 640 x 480 for the maps and
@@ -428,6 +458,7 @@ int main(int argc, char** argv)
                 windowSetting = frontEnd.WindowedSetting();
                 video.SetFullScreen(!windowSetting);
                 wow::Screen::windowed = windowSetting;
+                if (windowSetting && !windowSized) { sizeWindow(); windowSized = true; }
             }
             video.SetStretch(frontEnd.StretchSetting());
             if (frontEnd.GameCursor() != cursorSetting)
@@ -554,11 +585,25 @@ int main(int argc, char** argv)
                 {
                 case SDL_EVENT_QUIT: closed = true; break;
                 case SDL_EVENT_KEY_DOWN:
-                    if (event.key.key == SDLK_RETURN && (event.key.mod & SDL_KMOD_ALT)) { if (!event.key.repeat) { video.ToggleFullScreen(); wow::Screen::windowed = !(SDL_GetWindowFlags(video.Window()) & SDL_WINDOW_FULLSCREEN); } }
+                    if (event.key.key == SDLK_RETURN && (event.key.mod & SDL_KMOD_ALT))
+                    {
+                        if (!event.key.repeat)
+                        {
+                            video.ToggleFullScreen();
+                            wow::Screen::windowed = !(SDL_GetWindowFlags(video.Window()) & SDL_WINDOW_FULLSCREEN);
+                            if (wow::Screen::windowed && !windowSized) { sizeWindow(); windowSized = true; }
+                        }
+                    }
                     else if (event.key.key == SDLK_PAUSE) { if (!event.key.repeat) setActive(!active); }
                     // (the engine's own: Escape ends a playback; the game drops all input until the file ends)
                     else if (playback.Playing() && event.key.key == SDLK_ESCAPE) frontEnd.SetPlaybackState(playback.Recording(), false);
                     else if (active) input(0x100, VirtualFromKey(int(event.key.key)), 0, 0);
+                    break;
+                // MODERN: the window's size is kept as the player changes it (not while it fills the screen)
+                case SDL_EVENT_WINDOW_RESIZED:
+                    if (windowSized && !(SDL_GetWindowFlags(video.Window()) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_MINIMIZED)) &&
+                        event.window.data1 >= 320 && event.window.data2 >= 240 && (event.window.data1 != setW || event.window.data2 != setH))
+                        ini.SetString("WoW Engine", "Window Size", std::to_string(event.window.data1) + "," + std::to_string(event.window.data2));
                     break;
                 case SDL_EVENT_WINDOW_FOCUS_LOST: setActive(false); break;
                 case SDL_EVENT_WINDOW_FOCUS_GAINED: setActive(true); break;
