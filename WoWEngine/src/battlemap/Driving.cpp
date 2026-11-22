@@ -924,8 +924,12 @@ namespace wow
 
     // 0x47FE10 -> 0x47FD40: in each of the four buckets round the point in turn, the nearest object that gets in the
     // unit's way (vt+0xBC) and is nearer (octagonal) than its radius (+0xAC) + the reach; the first bucket with one
-    // answers. The grid holds the units and the scenery (not a tree circle's trees nor a building's parts, which
-    // are children, 0x48AAA0).
+    // answers. The grid holds every object whose position was set through 0x48AA80 (vt+0x40) but a child with
+    // +0xB8 bit 2 (a tree circle's trees): the units once started, the scenery, and the children too, each put
+    // in as it's made (0x47EE4E, a part; 0x497A6C, a bridge's segment) at its own point with its own radius
+    // (+0xAC: the type's +0x44, an IOB object's model radius). So a building's parts and a bridge's segments get
+    // in a vehicle's way by themselves. *Provisional*: the parts of the scenery's objects and of vehicles (which
+    // move with them) aren't put in here.
     bool BattleMap::ObjectAt(const Unit& u, int px, int py, int reach, Obstacle& out) const
     {
         const int size = setup.zMapRes;
@@ -946,10 +950,52 @@ namespace wow
             };
             for (const Unit& o : units)
             {
-                if (&o == &u || !Collides(u, o)) continue;
+                if (&o == &u || !o.started || !Collides(u, o)) continue;
                 if (!consider(int(o.x), int(o.y), o.drive.radius)) continue;
                 any = true;
                 out = { &o, o.x, o.y, o.drive.radius, land.HeightAt(int(o.x), int(o.y)) + int(o.drive.lift), o.type };
+            }
+            // a building's parts still standing (its children, lost from the last: LoseParts)
+            for (const Unit& o : units)
+            {
+                if (&o == &u || !o.started || o.vehicle) continue;
+                auto ot = setup.units->find(o.type);
+                if (ot == setup.units->end()) continue;
+                const int count = std::min(o.partsLeft, int(ot->second.parts.size()));
+                for (int k = 0; k < count; k++)
+                {
+                    const auto& part = ot->second.parts[size_t(k)];
+                    Prop child;
+                    child.type = part.a;
+                    child.x = o.x + float(int16_t(part.b));
+                    child.y = o.y + float(int16_t(part.c));
+                    if (!CollidesProp(u, child)) continue;
+                    const int radius = Radius44(part.a);
+                    if (!consider(int(child.x), int(child.y), radius)) continue;
+                    any = true;
+                    out = { nullptr, child.x, child.y, radius, land.HeightAt(int(o.x), int(o.y)) + int16_t(part.d), part.a };
+                }
+            }
+            // a bridge (at its own point) and its segments (each at its own)
+            for (const BridgeLink& b : bridgeLinks)
+            {
+                if (b.gone) continue;
+                Prop child;
+                child.type = b.type;
+                if (CollidesProp(u, child) && consider(b.x, b.y, Radius44(b.type)))
+                {
+                    any = true;
+                    out = { nullptr, float(b.x), float(b.y), Radius44(b.type), land.HeightAt(b.x, b.y), b.type };
+                }
+                child.type = b.segmentType;
+                if (!CollidesProp(u, child)) continue;
+                const int radius = Radius44(b.segmentType);
+                for (const auto& [sx, sy] : b.segmentAt)
+                {
+                    if (!consider(sx, sy, radius)) continue;
+                    any = true;
+                    out = { nullptr, float(sx), float(sy), radius, land.HeightAt(sx, sy), b.segmentType };
+                }
             }
             for (const Prop& p : props)
             {

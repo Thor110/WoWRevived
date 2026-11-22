@@ -732,7 +732,14 @@ namespace wow
         // after the base start (0x495785 -> 0x48A8B0) has started the parts, the light parts' rolls among them
         units[index].scanCount = random::Rand() % 30;
         if (IsBuilding(u) && unfinished && u.players) AddCorners(index);
-        Occupy(u.type, u.x, u.y);
+        // vt+0xE4: the mines' class (0x273-0x276, 0x48C8E0) has its own (0x48CB10): only once built (+0xC0 bit 0),
+        // the vertices within its type's +0x46 get flag 8, not 2, which the ground's cost refuses to the groups
+        // of the sector's owner (0x480680): a side keeps off its own minefield
+        if (units[index].type >= 0x273 && units[index].type <= 0x276)
+        {
+            if (!unfinished) land.MarkOccupied(int(units[index].x), int(units[index].y), Radius46(units[index].type), 8);
+        }
+        else Occupy(units[index].type, units[index].x, units[index].y);
     }
 
     // 0x4222C0: a war map object's units. They keep their saved places unless the first stands at (0, 0), or is a
@@ -810,24 +817,14 @@ namespace wow
                     for (int y = y0; y < y1 && ok; y++)
                         for (int x = x0; x < x1 && ok; x++)
                             if (CellCost(head.group, x, y, false) == 0) ok = false;
-                    // each member's place in the block, against the objects in the world so far (0x47FE10)
+                    // each member's place in the block, asked by that member of the world's grid (0x4225B5 ->
+                    // 0x47FE10: ObjectAt): the units started so far, the scenery, the buildings' parts and the
+                    // bridges' segments
                     int bx = size + tx - span, by = size + ty - span, col = 0;
                     for (int j = 0; j < n && ok; j++)
                     {
-                        for (size_t oi = 0; oi < units.size(); oi++)
-                        {
-                            const Unit& other = units[oi];
-                            if (!other.started || oi == members[0] || !Collides(head, other)) continue;
-                            if (Octagonal(bx, by, int(other.x), int(other.y)) < other.drive.radius + size) { ok = false; break; }
-                        }
-                        // the scenery is in the same grid (dword_4D2550's +0x118, which 0x47FC50 searches for an
-                        // explosion's victims too); a tree doesn't get in a vehicle's way (+0xB8 bit 2, 0x4929A0)
-                        for (size_t pi = 0; pi < props.size() && ok; pi++)
-                        {
-                            const Prop& p = props[pi];
-                            if (!p.alive || p.tree) continue;   // (+0xB8 bit 2: made as 0xCF-0xE5, 0x47D828)
-                            if (Octagonal(bx, by, int(p.x), int(p.y)) < Radius44(p.type) + size) ok = false;
-                        }
+                        Obstacle found;
+                        if (ObjectAt(units[members[size_t(j)]], bx, by, size, found)) ok = false;
                         bx += 2 * size;
                         if (++col == k) { col = 0; by += 2 * size; bx = size + tx - span; }
                     }

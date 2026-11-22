@@ -464,6 +464,21 @@ Martian start's units turned differently)
 - **Open, tracked in PLAN.md**: the deployed units' facing. The owner: units do sometimes turn on after a level
   loads, not every time; possibly the computer player.
 
+**Update 148** (PLAN.md's N2 and N3)
+- [x] The world's grid holds the children too. Every object's position goes through 0x48AA80 (vt+0x40), which
+      puts it in the grid unless it's a child with +0xB8 bit 2 (a tree circle's tree): a part as it's made
+      (0x47EE4E), a bridge's segment likewise (0x497A6C; the segments' class, 0x48CFB0, has 0x48AA80 at vt+0x40
+      too, 0x4AEEC0). So the grid search (0x47FE10, `ObjectAt`) now finds a building's parts still standing, each
+      at its own point with its own radius (an IOB part's model radius), and a bridge and its segments (radius
+      48), through the same test as the scenery (0x4929A0). The look ahead sees them; the deployment's check now
+      asks the same routine, each member for itself (0x4225B5), in place of its own loop.
+      Checked against the owner's frames: sector 28's and the Martian start's minimap dots are still on the
+      original's pixels. London is unchanged (still the 72 degree spot).
+- [x] A built mine (0x273-0x276) marks the vertices within its +0x46 with flag 8, not the footprint's 2 (its own
+      vt+0xE4 / vt+0xE8, 0x48CB10 / 0x48CB60), which the ground's cost refuses to the sector owner's groups.
+- *Not yet*: an explosion's victims by part (0x47FC50); the parts of scenery objects and vehicles in the grid;
+  the line-linked objects' flag 8 (0x48B690, radius 32); a mine finished during the battle.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

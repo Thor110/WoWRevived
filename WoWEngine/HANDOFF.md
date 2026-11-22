@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 147
+# Handoff: WoWEngine after update 148
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -110,7 +110,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 147
+## State after update 148
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -145,7 +145,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **148**.
+  - The next number is **149**.
   - Work only in `WoWEngine/`. For a file format, `WoWViewer/` has the owner's own readers in C#.
   - Commit locally but don't push unless asked; a stop hook may ask to push, and the owner's answer has been no.
 - At the start of each update, merge `origin/main` (the owner's merged copy) first.
