@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 160
+# Handoff: WoWEngine after update 161
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -117,7 +117,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 160
+## State after update 161
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -152,9 +152,11 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **161**.
+  - The next number is **162**.
   - The owner's install starts new games from its own `Martian.000` (a day in, a pod down in sector 6, the
-    clock at 0001 01) and `Human.000`; the Italian discs' differ. Use the owner's for comparing frames (update 160).
+    clock at 0001 01) and `Human.000`: saves written over the start files, it seems; all four continental
+    releases have the 1998 ones (docs/ODDITIES.md). Use the owner's pair only to compare with frames taken on
+    their install; the 1998 pair is the real start.
   - Frames from the owner: check they were taken with WoWRevived's **Enhanced Assets off** before chasing a
     difference in a sprite's pixels (update 158 lost time to this).
   - Work only in `WoWEngine/`. For a file format, `WoWViewer/` has the owner's own readers in C#.

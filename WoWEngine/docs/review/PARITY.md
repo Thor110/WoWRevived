@@ -649,6 +649,16 @@ Martian start's units turned differently)
       and draws right, and update 159's question about where the first pod lands falls away.
 - The test install now uses the owner's two start files (the discs' are kept beside it).
 
+**Update 161** (the five regions' start files; docs/ODDITIES.md; no code changed)
+- [x] The German, Spanish, French and Italian `Human.000` / `Martian.000` are byte for byte the same (26 Oct
+      1998). The English install's pair alone differs and was written the day its frames were taken: a save over
+      the start file, by the look of it, not another release's data. Catalogued in ODDITIES.md.
+- [x] **A check of the war map's computer player against the original.** The English `Martian.000` is the
+      campaign a day on. The engine run a day from the continental file makes the same twelve moves, the same
+      construction (type 35, sector 8) and starts the same research.
+- *Open*: the first pod (sector 6, types 62 and 89, in the original's file; sector 10 in the engine): a draw from
+  rand() the engine doesn't make, or makes at another time. In PLAN.md.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
