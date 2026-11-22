@@ -44,6 +44,10 @@ namespace wow
         // byte_4D1279: the [Debug] "Mat" setting's own value, which the curtains cheat also sets (0x401372)
         bool Mat() const { return cheats.mat || ini.GetBool("Debug", "Mat", false); }
         int PlaybackFiles() const { return ini.GetInt("Demo", "Playback Files", 4); }   // dword_4BAAD8
+        // the Modern Options menu's playback switches: what the menu asks for, which the main loop carries out
+        bool RecordWanted() const { return recordWanted; }
+        bool PlayWanted() const { return playWanted; }
+        void SetPlaybackState(bool recording, bool playing) { recordWanted = recording; playWanted = playing; }
         void OnKey(int sdlKey);
         void OnKeyUp(int sdlKey) { if (screen) screen->OnKeyUp(sdlKey); }
         void OnText(const char* utf8) { if (screen) screen->OnText(utf8); }
@@ -82,6 +86,7 @@ namespace wow
         std::unique_ptr<Screen> DisplaySettings(int previous); // 0x3EF, 0x4096D0
         std::unique_ptr<Screen> CriticalEvents(int previous);
         std::unique_ptr<Screen> ModernOptions(int previous);
+        bool recordWanted = false, playWanted = false;
         void ApplyModernOptions();  // 0x8117, 0x409DE0
         std::unique_ptr<Screen> LoadGame(int previous);     // 0x6F, 0x409560
         std::unique_ptr<Screen> SaveGame(int previous);     // 0x6E, 0x4090A0 (also "Select Campaign to Replace")

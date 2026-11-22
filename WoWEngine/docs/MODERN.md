@@ -63,6 +63,9 @@ check boxes, and each box is a setting in WoWRevived.ini that can be set there a
 | System mouse pointer | `[WoW Engine]` "System Cursor" | off | at once |
 | CD player music continues | `[WoW Engine]` "CD Player Music Continues" | off | at once |
 
+Two more boxes aren't settings: **Record input** and **Play a recording** switch the game's playback recordings
+(below) on and off while playing.
+
 The captions are the engine's own English text (there are no strings for them in TEXT.ojd).
 
 ### Resolution (agreed with the owner, update 192)
@@ -190,7 +193,10 @@ The original's self-running demo (docs/PLAN.md 4.6, `core/Playback.h`) can't be 
 The engine has it as the game does, the files and their format the game's own, and for now switches it from the
 command line: `--record` writes the session's input to `Playback.1` in the game folder, `--playback` plays
 `playback.1` to `playback.N` (`[Demo]` "Playback Files", 4), one file each time, and drops real input until the
-file ends. To come here: a way to start and stop both from the menus. Two things the engine adds, because a
+file ends. Since update 197 both can also be switched from the Modern Options menu: "Record input" starts
+writing `Playback.1` with the next input and stops when unticked; "Play a recording" plays the next file. A
+recording made from the menu begins with the menu open, so it plays right when started from the same menu in
+the same place. Escape ends a playback (the engine's own; the game drops every key until the file ends). Two things the engine adds, because a
 recording is only raw input by frame number: with either switch the random numbers start from 1, so a recording
 meets the same game it was made in; and a key the game has no virtual key for is kept as its own code with the
 top bit set. A recording is only good from the state it was made from (the same start, the same save).

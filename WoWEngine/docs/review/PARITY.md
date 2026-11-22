@@ -1038,6 +1038,13 @@ transparency")
 - Seen: the menu on the menu backdrop and over the war map; a box clicked over the war map written to the ini;
   both battles the same picture as before. Not seen: the window switches on a real screen.
 
+**Update 197** (modern option C2; nothing of the original's changed)
+- The Modern Options menu has "Record input" and "Play a recording", which switch the playback recordings
+  (0x42D2D0 / 0x42D520) while playing; the random numbers start from 1 at either, as with the command line's
+  switches. Escape ends a playback.
+- Seen: the menu with the box ticked; the interactive loop starting; both battles the same picture as before.
+  Not seen: a recording made and played from the menu (the test runs don't go through the interactive loop).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

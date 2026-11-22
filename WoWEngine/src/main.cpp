@@ -490,6 +490,24 @@ int main(int argc, char** argv)
         playback.SetFiles(files->Root(), [&](const std::string& name) { return files->Resolve(name); }, frontEnd.PlaybackFiles());
         playback.SetRecording(options.record);
         playback.SetPlaying(options.playback);
+        frontEnd.SetPlaybackState(options.record, options.playback);
+        // the Modern Options menu's switches: a recording or a playback started there starts the random numbers
+        // from 1 as the command line's do, so a recording made from the menu meets the same game when it is
+        // played from the menu in the same place
+        auto followMenu = [&]() {
+            if (frontEnd.RecordWanted() != playback.Recording())
+            {
+                playback.SetRecording(frontEnd.RecordWanted());
+                if (playback.Recording()) { wow::random::Seed(1); wow::random::FillTable(); }
+                SDL_Log(playback.Recording() ? "Recording input to Playback.1" : "Recording stopped");
+            }
+            if (frontEnd.PlayWanted() != playback.Playing())
+            {
+                playback.SetPlaying(frontEnd.PlayWanted());
+                if (playback.Playing()) { wow::random::Seed(1); wow::random::FillTable(); }
+                SDL_Log(playback.Playing() ? "Playing back recorded input" : "Playback stopped");
+            }
+        };
         if (options.record) SDL_Log("Recording input to Playback.1");
         if (options.playback) SDL_Log("Playing back recorded input (playback.1 to playback.%d)", frontEnd.PlaybackFiles());
         auto act = [&](const wow::Playback::Message& m) {
@@ -523,6 +541,8 @@ int main(int argc, char** argv)
                 case SDL_EVENT_KEY_DOWN:
                     if (event.key.key == SDLK_RETURN && (event.key.mod & SDL_KMOD_ALT)) { if (!event.key.repeat) { video.ToggleFullScreen(); wow::Screen::windowed = !(SDL_GetWindowFlags(video.Window()) & SDL_WINDOW_FULLSCREEN); } }
                     else if (event.key.key == SDLK_PAUSE) { if (!event.key.repeat) setActive(!active); }
+                    // (the engine's own: Escape ends a playback; the game drops all input until the file ends)
+                    else if (playback.Playing() && event.key.key == SDLK_ESCAPE) frontEnd.SetPlaybackState(playback.Recording(), false);
                     else if (active) input(0x100, VirtualFromKey(int(event.key.key)), 0, 0);
                     break;
                 case SDL_EVENT_WINDOW_FOCUS_LOST: setActive(false); break;
@@ -572,9 +592,10 @@ int main(int argc, char** argv)
                 if (active)
                 {
                     // 0x403680: the playback's messages for this frame, then the frame
+                    followMenu();
                     const bool was = playback.Playing();
                     for (const wow::Playback::Message& m : playback.Pump(frontEnd.Frames())) act(m);
-                    if (was && !playback.Playing()) SDL_Log("Playback finished");
+                    if (was && !playback.Playing()) { SDL_Log("Playback finished"); frontEnd.SetPlaybackState(playback.Recording(), false); }
                     frontEnd.Update();
                 }
                 lag -= TickNs;

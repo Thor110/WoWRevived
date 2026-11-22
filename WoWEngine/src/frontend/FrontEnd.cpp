@@ -420,13 +420,19 @@ namespace wow
         m->AddHeadingText("Modern Options");
         for (size_t i = 0; i < std::size(Options); i++)
         {
-            if (i == 4) m->NextColumn();
+            if (i == 4)
+            {
+                // the game's playback recordings (core/Playback.h), which the retail game never switches on
+                m->AddEventCheckText("Record input", recordWanted, [this](Button& b) { recordWanted = b.value != 0; });
+                m->NextColumn();
+            }
             const Option& o = Options[i];
             m->AddEventCheckText(o.text, ini.GetBool(o.section, o.name, o.on), [this, o](Button& b) {
                 ini.SetBool(o.section, o.name, b.value != 0);
                 ApplyModernOptions();
             });
         }
+        m->AddEventCheckText("Play a recording", playWanted, [this](Button& b) { playWanted = b.value != 0; });
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         m->FocusLast();
         return m;
