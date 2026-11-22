@@ -729,6 +729,12 @@ Martian start's units turned differently)
 - Next with the recipe (5.2): the items only checked by reading, one at a time, against what the log and the
   frames show.
 
+**Update 169** (5.2 begun: the fight looked at)
+- Frames of the recipe's battle 250, 500 and 900 updates in, with the view put on the Command Post: three Scout
+  Machines against the Human vehicles there, heat rays, shell bursts, vehicles alight, smoke. Nothing in them is
+  plainly wrong, but there is no frame of the original's fight to set beside them; sent to the owner to say
+  what looks off. No code changed.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

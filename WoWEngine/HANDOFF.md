@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 168
+# Handoff: WoWEngine after update 169
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -104,6 +104,9 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   button (`298:439`, a Martian game's) is clicked several times 400 updates apart; then the popup
   (`rdown:300:150`), its Return to Warmap (`click:300:192`), the Debriefing (stop here for its figures), and a
   click back to the war map. About two minutes of real time. Cut the script short for a frame of any stage.
+  The fighting is west of where the view opens: `click:566:430` on the mini-map straight after the Briefing
+  puts the view on it (the Command Post), where frames 250, 500 and 900 updates on show the three Scouts and
+  the Human vehicles at it.
 - The headless battle recipe: after `--open 0x8A` and the script's opening clicks the Briefing is still up for
   some updates; wait about 80 before scripting clicks on the battle itself (`wait:80,down:45:45,wait:2,up:45:45`
   clicks the first group icon). `click:x:y` is a press and release in one step.
@@ -134,7 +137,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 168
+## State after update 169
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -169,7 +172,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **169**.
+  - The next number is **170**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.
