@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 167) and what is next
+## Where things stand (update 168) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -158,8 +158,9 @@ Small and independent; most need one routine traced.
 Not a block of work but a standing need: neither test battle has an enemy in range, and combat only comes by
 playing or waiting until the sides meet.
 
-- [ ] 5.1 A headless script that runs a campaign's clock on the war map until a battle is announced, opens it and
-      saves the screenshots and the log; kept as a recipe in HANDOFF.md.
+- [x] 5.1 A headless script that runs a campaign's clock on the war map until a battle is announced, opens it and
+      saves the screenshots and the log; kept as a recipe in HANDOFF.md. Done in update 168: a new Martian
+      campaign's first pod, fought through to the Debriefing and back to the war map.
 - [ ] 5.2 With it, the items only checked by reading: quiet vanishing kills, damage rounding, the firer's sparing,
       retaliation, the look round, deaths, the pod's landing, the forfeit's return.
 - [ ] 5.3 The owner's reports from play, checked against the disassembly first as before.

@@ -41,10 +41,11 @@ namespace wow
         auto it = sprites.find(id);
         if (it != sprites.end()) return it->second.get();
         std::unique_ptr<Sprite> sprite;
-        if (const GType* g = FindGType(id); g && (g->gclass == 1 || g->gclass == 2))
+        if (const GType* g = FindGType(id); g && (g->gclass == 1 || g->gclass == 2 || g->gclass == 14))
         {
-            // an IOB or WOF model, not a sprite: asked of every type for its picture's size (the vehicles'
-            // "is it low enough to pass over"); nothing to load, and nothing missing
+            // an IOB or WOF model, or a shadow part's raw mask (class 14, dat\\b-shad01.raw), not a sprite: asked
+            // of every type for its picture's size (the vehicles' "is it low enough to pass over"); nothing to
+            // load, and nothing missing
         }
         else if (g)
         {

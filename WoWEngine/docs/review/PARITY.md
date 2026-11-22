@@ -715,6 +715,20 @@ Martian start's units turned differently)
       a Scout group: one unit left, 104 bytes shorter, one pip.
 - Not seen running: neither test battle has a kill in it (Stage 5).
 
+**Update 168** (Stage 5.1: a battle with fighting in it, headless)
+- [x] **The recipe** (HANDOFF.md): a new Martian campaign run a day, the pod landing in Human sector 9, Attack,
+      the Briefing, the battle left to the two sides, the end box, Return to Warmap, the Debriefing, the war
+      map. It runs through without a fault in about two minutes.
+- [x] **Update 167 seen working in it.** The Scout group lost two of its three machines and won: the
+      Debriefing reads VICTORY!, "The Humans in this sector were eliminated.", Forces lost: Units (Machines) 0
+      (2), Facilities 0; Enemy forces destroyed: Units (Machines) 2 (10), Facilities 1. Back on the war map the
+      group's counter has one pip where it had three, and the sector is the Martians'.
+- [x] The log's "Missing: dat\\b-shad01.raw" was a false alarm: a shadow part's mask (GType class 14) asked for
+      as a sprite when a type's picture size is wanted. Such a type has no sprite, like a model; no longer
+      reported.
+- Next with the recipe (5.2): the items only checked by reading, one at a time, against what the log and the
+  frames show.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
