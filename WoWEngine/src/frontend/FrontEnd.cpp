@@ -53,6 +53,7 @@ namespace wow
         constexpr int CmdSoundControl = 0x3ED;
         constexpr int CmdDisplaySettings = 0x3EF;
         constexpr int CmdCriticalEvents = 0x8117;
+        constexpr int CmdModernOptions = 0x9001;  // the engine's own menu (no such command in the game)
         constexpr int CmdSaveMenu = 0x6E;
         constexpr int CmdLoadSlot = 0x80B3;  // + slot: load that save (starts the campaign)
         constexpr int CmdSaveSlot = 0x8142;  // + slot: save the campaign there
@@ -276,6 +277,7 @@ namespace wow
         m->AddButton(0x3ED, 0x411);   // Sound Control
         m->AddButton(0x8117, 0x412);  // Critical event options
         m->AddButton(0x80CA, 0x534);  // Credits
+        m->AddButtonText(CmdModernOptions, "Modern Options");   // the engine's own (docs/MODERN.md)
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         return m;
     }
@@ -396,6 +398,49 @@ namespace wow
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         m->FocusLast();                               // 0x42EBE0 on the bottom button
         return m;
+    }
+
+    // The engine's own menu: the switches for what the original doesn't have. Each is a setting in WoWRevived.ini
+    // ([Modern] or [WoW Engine]) and can be set there as well. Laid out as the critical event menu is, in two
+    // columns.
+    std::unique_ptr<Screen> FrontEnd::ModernOptions(int previous)
+    {
+        struct Option { const char* section; const char* name; const char* text; bool on; };
+        static const Option Options[] = {
+            { "Modern", "Upgraded buildings in battle", "Upgraded buildings in battle", true },
+            { "Modern", "Sticky popup menus", "Popup menus stay open", false },
+            { "Modern", "War map status strip", "War map status strip", false },
+            { "Modern", "Original Display Settings", "Original display settings", false },
+            { "WoW Engine", "Windowed", "Play in a window", false },
+            { "WoW Engine", "Stretch", "Stretch the picture", false },
+            { "WoW Engine", "System Cursor", "System mouse pointer", false },
+            { "WoW Engine", "CD Player Music Continues", "CD player music continues", false },
+        };
+        auto m = MenuOver(CmdModernOptions, previous, 2);
+        m->AddHeadingText("Modern Options");
+        for (size_t i = 0; i < std::size(Options); i++)
+        {
+            if (i == 4) m->NextColumn();
+            const Option& o = Options[i];
+            m->AddEventCheckText(o.text, ini.GetBool(o.section, o.name, o.on), [this, o](Button& b) {
+                ini.SetBool(o.section, o.name, b.value != 0);
+                ApplyModernOptions();
+            });
+        }
+        m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
+        m->FocusLast();
+        return m;
+    }
+
+    // the switches that act on a map that is already up (the window's are taken by the main loop)
+    void FrontEnd::ApplyModernOptions()
+    {
+        if (WarMap* map = ActiveWarMap())
+        {
+            map->SetStickyPopup(ini.GetBool("Modern", "Sticky popup menus", false));
+            map->SetUpgradedInBattle(ini.GetBool("Modern", "Upgraded buildings in battle", true));
+            map->SetStatusStrip(ini.GetBool("Modern", "War map status strip", false));
+        }
     }
 
     std::unique_ptr<Screen> FrontEnd::CriticalEvents(int previous)
@@ -773,6 +818,7 @@ namespace wow
         m->AddButton(CmdMainMenu, 0x40A);              // "Return to Main Menu"
         m->AddButton(CmdCriticalEvents, 0x412);
         m->AddButton(CmdSoundControl, 0x411);
+        m->AddButtonText(CmdModernOptions, "Modern Options");   // the engine's own (docs/MODERN.md)
         m->AddBottomButton(CmdQuitMenu, 0x404);        // "Save & Exit Game"
         m->SetPrevious(WarMap::Id);
         return m;
@@ -823,6 +869,7 @@ namespace wow
         case CmdSoundControl: { int back = BackTo(command.id, current); ShowMenu(SoundControl(back), back); } break;
         case CmdDisplaySettings: { int back = BackTo(command.id, current); ShowMenu(DisplaySettings(back), back); } break;
         case CmdCriticalEvents: { int back = BackTo(command.id, current); ShowMenu(CriticalEvents(back), back); } break;
+        case CmdModernOptions: { int back = BackTo(command.id, current); ShowMenu(ModernOptions(back), back); } break;
         case CmdLoadGame: networkLoad = false; { int back = BackTo(command.id, current); ShowMenu(LoadGame(back), back); } break;
         case CmdLoadNetworkGame: networkLoad = true; { int back = BackTo(command.id, current); ShowMenu(LoadGame(back), back); } break;
         case CmdSaveMenu: { int back = BackTo(command.id, current); ShowMenu(SaveGame(back), back); } break;

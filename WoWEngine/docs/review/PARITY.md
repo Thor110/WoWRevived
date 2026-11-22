@@ -1031,6 +1031,13 @@ transparency")
   credits in its boxes, the research cabinet in its drawer; both battles at 640 x 480 the same picture as
   before. Not seen: the debriefing on a large view (same background and rule as the briefing).
 
+**Update 196** (modern option C1; nothing of the original's changed)
+- A Modern Options menu (command 0x9001, the engine's own) reached from Game Options and the war map's Campaign
+  Options, with a check box for each modern switch (MODERN.md has the table). The window's switches (window,
+  stretch, pointer) are taken by the main loop as they change.
+- Seen: the menu on the menu backdrop and over the war map; a box clicked over the war map written to the ini;
+  both battles the same picture as before. Not seen: the window switches on a real screen.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

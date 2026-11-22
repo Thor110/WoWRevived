@@ -46,6 +46,25 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
   The save is still written the game's way (the battle object's type untouched), so it loads in the original.
   Off, a building fights as the level it was built as, as the original has it.
 
+### The Modern Options menu (update 196)
+
+The engine's own menu, command 0x9001 (no such command in the game), opened by a "Modern Options" button in
+Game Options and in the war map's Campaign Options. It is laid out as the critical event menu is, two columns of
+check boxes, and each box is a setting in WoWRevived.ini that can be set there as well:
+
+| Box | Setting | Default | Takes effect |
+|---|---|---|---|
+| Upgraded buildings in battle | `[Modern]` "Upgraded buildings in battle" | on | at once (the next battle) |
+| Popup menus stay open | `[Modern]` "Sticky popup menus" | off | at once on the war map, the next battle |
+| War map status strip | `[Modern]` "War map status strip" | off | at once |
+| Original display settings | `[Modern]` "Original Display Settings" | off | the next time Display Settings opens |
+| Play in a window | `[WoW Engine]` "Windowed" | off | at once |
+| Stretch the picture | `[WoW Engine]` "Stretch" | off | at once |
+| System mouse pointer | `[WoW Engine]` "System Cursor" | off | at once |
+| CD player music continues | `[WoW Engine]` "CD Player Music Continues" | off | at once |
+
+The captions are the engine's own English text (there are no strings for them in TEXT.ojd).
+
 ### Resolution (agreed with the owner, update 192)
 
 - **The view size** (`[Screen]` "Size") is one of the thirteen sizes WoWRevived has menu backgrounds for, 640 x

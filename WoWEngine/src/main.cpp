@@ -408,7 +408,21 @@ int main(int argc, char** argv)
         wow::Canvas canvas(video.Pixels(), video.Width(), video.Height(), resources);
         // the picture is the size the front end asks for (the view size for the menus, 640 x 480 for the maps and
         // movies until their views take the size too); it changes with the screen and with the setting, at once
+        bool windowSetting = frontEnd.WindowedSetting(), cursorSetting = frontEnd.GameCursor();
         auto fitPicture = [&]() {
+            // the Modern Options menu's window switches, taken as they change
+            if (options.screenshot.empty() && frontEnd.WindowedSetting() != windowSetting)
+            {
+                windowSetting = frontEnd.WindowedSetting();
+                video.SetFullScreen(!windowSetting);
+                wow::Screen::windowed = windowSetting;
+            }
+            video.SetStretch(frontEnd.StretchSetting());
+            if (frontEnd.GameCursor() != cursorSetting)
+            {
+                cursorSetting = frontEnd.GameCursor();
+                if (cursorSetting) SDL_HideCursor(); else SDL_ShowCursor();
+            }
             int w = GameWidth, h = GameHeight;
             frontEnd.ViewSize(w, h);
             if (w == video.Width() && h == video.Height()) return;

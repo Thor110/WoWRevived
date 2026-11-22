@@ -51,6 +51,9 @@ namespace wow
         void OnMouseLeave() { mouseInside = false; }
         // Draw the game's own mouse cursor (on by default; [WoW Engine] "System Cursor" = 1 uses the system's)
         bool GameCursor() const { return !ini.GetBool("WoW Engine", "System Cursor", false); }
+        // [WoW Engine] "Windowed" and "Stretch", which the Modern Options menu can change while playing
+        bool WindowedSetting() const { return ini.GetBool("WoW Engine", "Windowed", false); }
+        bool StretchSetting() const { return ini.GetBool("WoW Engine", "Stretch", false); }
         void OnMouseButton(int x, int y, bool down);
         void OnRightButton(int x, int y, bool down);
         // The game deactivated (the window lost the focus, or the Pause key, 0x42CD40): no updates come, the music
@@ -77,7 +80,9 @@ namespace wow
         std::unique_ptr<Screen> QuitGame(int previous);     // 0x70, 0x409460
         std::unique_ptr<Screen> SoundControl(int previous); // 0x3ED, 0x4057F0
         std::unique_ptr<Screen> DisplaySettings(int previous); // 0x3EF, 0x4096D0
-        std::unique_ptr<Screen> CriticalEvents(int previous);  // 0x8117, 0x409DE0
+        std::unique_ptr<Screen> CriticalEvents(int previous);
+        std::unique_ptr<Screen> ModernOptions(int previous);
+        void ApplyModernOptions();  // 0x8117, 0x409DE0
         std::unique_ptr<Screen> LoadGame(int previous);     // 0x6F, 0x409560
         std::unique_ptr<Screen> SaveGame(int previous);     // 0x6E, 0x4090A0 (also "Select Campaign to Replace")
         std::unique_ptr<Screen> SinglePlayer(int previous); // 0xA0, 0x4068F0

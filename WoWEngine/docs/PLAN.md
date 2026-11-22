@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 195) and what remains
+## Where things stand (update 196) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -71,8 +71,10 @@ inventory with the history. Tick here and there as each is done.
 
 ### C. Modern options (Stage 6.7, 6.8)
 
-- [ ] **C1** A Modern Options menu, holding what is in already (the war map status strip, sticky popup menus,
-      upgraded buildings in battle) and what follows.
+- [x] **C1** (196) A Modern Options menu (from Game Options and the war map's Campaign Options), holding what is
+      in already: upgraded buildings in battle, sticky popup menus, the war map status strip, the original
+      Display Settings, playing in a window, stretching the picture, the system pointer, the CD player's music
+      carrying on. What follows is added to it.
 - [ ] **C2** Playback recordings started and stopped from the menus (they are in, by --record / --playback, 183).
 - [ ] **C3** Group keys (Ctrl + digit) and Shift adding to the selection (not in the original).
 - [ ] **C4** HUD scaling, windowed mode with its size kept, wheel zoom, key bindings.

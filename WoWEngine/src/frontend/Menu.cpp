@@ -67,6 +67,12 @@ namespace wow
         onChange[buttons.size() - 1] = std::move(changed);
     }
 
+    void Menu::AddEventCheckText(std::string text, bool value, OnChange changed)
+    {
+        AddEventCheck(0, value, std::move(changed));
+        buttons.back().text = std::move(text);
+    }
+
     void Menu::AddRadio(int textId, int group, bool value, OnChange changed, int tooltip)
     {
         AddCheck(textId, value, std::move(changed), tooltip);

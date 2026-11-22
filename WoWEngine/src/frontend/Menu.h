@@ -57,6 +57,7 @@ namespace wow
         // The critical event menu's rows (0x40A480, style 2): two columns either side of the screen's centre,
         // the label left-aligned 37 pixels in (0x4B8E00 + 0x4B8E04 + 0x4B8E08). NextColumn starts the second.
         void AddEventCheck(int textId, bool value, OnChange changed);
+        void AddEventCheckText(std::string text, bool value, OnChange changed);   // a caption that isn't a TEXT.ojd string
         void NextColumn();
 
 

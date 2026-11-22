@@ -40,6 +40,7 @@ namespace wow
 
     void Video::SetStretch(bool on)
     {
+        if (on == stretch) return;
         stretch = on;
         if (renderer) SDL_SetRenderLogicalPresentation(renderer, width, height, on ? SDL_LOGICAL_PRESENTATION_STRETCH : SDL_LOGICAL_PRESENTATION_LETTERBOX);
     }
