@@ -164,6 +164,29 @@ namespace wow
         return false;
     }
 
+    size_t SaveObject::BattleUnitCount() const
+    {
+        size_t list = std::string::npos;
+        for (size_t j = 0; j + 8 <= bytes.size(); j++) if (std::memcmp(&bytes[j], "BMOL", 4) == 0) { list = j; break; }
+        return list == std::string::npos ? 0 : Get32(bytes, list + 4);
+    }
+
+    // A vehicle's entry is 52 bytes (RemoveBattleUnit): the last one is copied onto the end of the list
+    bool SaveObject::DuplicateLastVehicle()
+    {
+        size_t list = std::string::npos, last = std::string::npos;
+        for (size_t j = 0; j + 8 <= bytes.size(); j++) if (std::memcmp(&bytes[j], "BMOL", 4) == 0) { list = j; break; }
+        if (list == std::string::npos) return false;
+        for (size_t i = 20; i + 32 <= bytes.size(); i++)
+            if (std::memcmp(&bytes[i], "BAMO", 4) == 0 && std::memcmp(&bytes[i - 16], "SELO", 4) == 0 &&
+                std::memcmp(&bytes[i + 24], "BATPVEHI", 8) == 0) last = i - 20;
+        if (last == std::string::npos) return false;
+        const std::vector<uint8_t> entry(bytes.begin() + std::ptrdiff_t(last), bytes.begin() + std::ptrdiff_t(last + 52));
+        bytes.insert(bytes.begin() + std::ptrdiff_t(last + 52), entry.begin(), entry.end());
+        Put32(bytes, list + 4, Get32(bytes, list + 4) + 1);
+        return true;
+    }
+
     void SaveObject::SetBattlePosition(float x, float y)
     {
         const size_t at = LastBatp(bytes);

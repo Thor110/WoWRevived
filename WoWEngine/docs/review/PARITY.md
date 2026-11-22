@@ -873,6 +873,21 @@ transparency")
 - *4.3 settled*: Search Libraries First and Unload Limit change nothing a player sees.
 - MODERN.md: the hidden end must stay in any edited credits picture (the owner).
 
+**Update 182** (Stage 4.4: a new object's battle units)
+- [x] **A new unit's vehicles are its own.** The engine makes a new war map object by copying a saved one of
+      its type (or, with none, one of its kind with the type changed), and the copy kept the other's
+      battle units as they stood: its damage, where each last stood on a battle map, and its number of
+      vehicles (one short after a loss; another type's count). Now a new unit has as many vehicles as its type
+      stands for (+0x58), each at its type's full health with heading, place and height 0. That is what the
+      game's saves hold for a unit not yet in a battle: of 1241 such vehicles in the owner's saves, all have a
+      place and height of 0 and all but a few a heading of 0 and full health (the engine's figure for full
+      health is never under a saved one, in three saves checked).
+- [x] A new construction's or resource's battle objects start at full health too; their places stay the
+      copy's (the computer player's site matching sets them, 0x440F80).
+- *What a vehicle's battle record is*, from the saves: 52 bytes: its type, SELO, its id and two more values,
+  BAMO, heading, x, y, height, health, BATP, VEHI. A building's goes on after BATP with no class tag.
+- *Playback recordings* read out for the owner (PLAN.md 4.6).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

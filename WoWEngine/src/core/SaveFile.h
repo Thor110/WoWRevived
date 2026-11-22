@@ -56,6 +56,25 @@ namespace wow
         std::vector<int> BattleHealths() const;
         void SetBattleHealth(size_t unit, int health);
         bool RemoveBattleUnit(size_t unit);     // a vehicle destroyed: its entry out of the object's list (+0x4C)
+        // A new object's battle units as the game makes them: every one at the full health its type gives
+        // (health(type); 0 leaves it), and a vehicle with no place yet: heading, x, y and height 0, which is what
+        // the game's saves hold for a unit that has never stood on a battle map (the owner's saves, update 182)
+        template <class Health> void Freshen(Health health)
+        {
+            for (size_t i = 20; i + 32 <= bytes.size(); i++)
+            {
+                if (bytes[i] != 'B' || bytes[i + 1] != 'A' || bytes[i + 2] != 'M' || bytes[i + 3] != 'O') continue;
+                if (bytes[i - 16] != 'S' || bytes[i - 15] != 'E' || bytes[i - 14] != 'L' || bytes[i - 13] != 'O') continue;
+                auto get = [&](size_t at) { return uint32_t(bytes[at]) | uint32_t(bytes[at + 1]) << 8 | uint32_t(bytes[at + 2]) << 16 | uint32_t(bytes[at + 3]) << 24; };
+                auto put = [&](size_t at, uint32_t v) { for (int b = 0; b < 4; b++) bytes[at + size_t(b)] = uint8_t(v >> (8 * b)); };
+                const bool vehicle = bytes[i + 24] == 'B' && bytes[i + 25] == 'A' && bytes[i + 26] == 'T' && bytes[i + 27] == 'P' &&
+                                     bytes[i + 28] == 'V' && bytes[i + 29] == 'E' && bytes[i + 30] == 'H' && bytes[i + 31] == 'I';
+                if (vehicle) for (size_t at = i + 4; at < i + 20; at += 4) put(at, 0);
+                if (const int full = health(int(get(i - 20))); full > 0) put(i + 20, uint32_t(full));
+            }
+        }
+        size_t BattleUnitCount() const;         // the count after BMOL (0 with none)
+        bool DuplicateLastVehicle();            // one more vehicle, a copy of the last (its ids to be made its own)
         // The type changed where it's written: at the start, and before each of its battle objects' SELO tags
         // (the rest, its hit points among them, stay the copied object's)
         void SetType(int type);

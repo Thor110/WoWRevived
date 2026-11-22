@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 181) and what is next
+## Where things stand (update 182) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -197,10 +197,19 @@ wrong name: what is left of it is what the war map's save keeps of a battle's ob
       class tags read and written as fields, not carried as bytes; the sector's battle and pod flags; a route's
       progress in the save (done, 178: five of the owner's saves have a route; they read as the engine wrote
       them, and the route's +0x34 is a count, not a float).
+      Done in 182 for a new unit's vehicles: the type's own number of them, each at full health and with no
+      battle place (what the owner's saves hold for a unit that has never fought). Left: a new object's
+      bytes are still a saved one's of its type or kind with those parts put right, so a type with no like
+      object in the save can't be made; a building's battle record after BATP (its parts and their state) is
+      carried as bytes; the two values after a battle unit's SELO id aren't understood.
 - [ ] 4.5 **The players and their commands**: the local, computer and network player objects, the command
       records (0x4460A0), and the commands the world handles one queue pass later (0x95, 0x419A24; was 3.7).
-- [ ] 4.6 **Playback recordings** (`playback.%d`, 0x42D290, `[Demo]` Playback Files): they are recorded
-      commands, so they come after 4.5.
+- [ ] 4.6 **Playback recordings**: the game's self-running demo. Every input message goes through one routine
+      (0x42D520) that can append it, with its tick, to `Playback.1`; another (0x42D2D0, each frame) reads
+      `playback.1` to `playback.N` (`[Demo]` Playback Files, 4) and posts the messages back on their ticks.
+      Playback is turned on by the world's command 0x808F (0x419C22); nothing in the retail listing turns
+      recording on (byte_4EA3F4 has no writer). They are raw input, not the players' command records, so
+      they don't wait for 4.5.
 - [ ] 4.7 **The network game**: the menus' lists and the lockstep packets. The owner wants it tried, last or
       nearly last (update 178). Their reading of what the network build needs to play a campaign: its timer
       taken out, network play itself, and the start files no longer saved over (the engine already doesn't,

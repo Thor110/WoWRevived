@@ -881,6 +881,20 @@ namespace wow
                 SaveObject o = *model;
                 if (retype) o.SetType(type);
                 o.list = kind + (players ? 0 : 1);
+                // A unit's vehicles as the game makes them for a new object (0x42A030 -> 0x446B30): as many as its
+                // type stands for (+0x58), each at full health with no place on a battle map yet. The copy's own
+                // (one fewer after a loss, or another type's number; its damage; where it last stood) aren't the
+                // new object's.
+                if (kind == 0)
+                {
+                    if (auto u = unitData.find(type); u != unitData.end())
+                    {
+                        const size_t want = size_t(std::max(1, u->second.battleUnits));
+                        while (o.BattleUnitCount() > want && o.RemoveBattleUnit(o.BattleUnitCount() - 1)) {}
+                        while (o.BattleUnitCount() < want && o.DuplicateLastVehicle()) {}
+                    }
+                }
+                o.Freshen([&](int t) { return UnitMaxHealth(t); });
                 // the ids in use: the sectors' own data as saved, and every object the map has now
                 std::vector<bool> used = save->UsedIds();
                 for (const SaveObject& t : table) SaveFile::MarkIds(t.bytes, used);
