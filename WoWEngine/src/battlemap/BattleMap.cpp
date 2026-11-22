@@ -825,7 +825,7 @@ namespace wow
                         for (size_t pi = 0; pi < props.size() && ok; pi++)
                         {
                             const Prop& p = props[pi];
-                            if (!p.alive || (p.type >= 0xCF && p.type <= 0xE5)) continue;   // (+0xB8 bit 2: 0xCF-0xE5 only, 0x47D828)
+                            if (!p.alive || p.tree) continue;   // (+0xB8 bit 2: made as 0xCF-0xE5, 0x47D828)
                             if (Octagonal(bx, by, int(p.x), int(p.y)) < Radius44(p.type) + size) ok = false;
                         }
                         bx += 2 * size;
@@ -1766,21 +1766,22 @@ namespace wow
         {
             auto u = setup.units->find(o.type);
             if (u == setup.units->end()) continue;
-            if (o.type >= 445 && o.type <= 447) { Occupy(o.type, o.x, o.y); PlaceBridge(o); continue; }
+            if (o.type >= 445 && o.type <= 447) { Occupy(o.type, o.x, o.y, o.tree); PlaceBridge(o); continue; }
             const int gtype = u->second.field28;
             const GType* g = res.FindGType(gtype);
-            if (!g || (g->gclass != 0 && g->gclass != 1)) { Occupy(o.type, o.x, o.y); continue; }
+            if (!g || (g->gclass != 0 && g->gclass != 1)) { Occupy(o.type, o.x, o.y, o.tree); continue; }
             if (g->gclass == 0)
             {
                 // a sprite (RType 0x40EC50, the street lamps): drawn from its hot spot at the renderer's point, its
                 // +0x26 1; the half width its shadow takes is half the sprite's width
                 const IndexedImage* image = res.GetFrame(gtype, 0);
-                Occupy(o.type, o.x, o.y);
+                Occupy(o.type, o.x, o.y, o.tree);
                 if (!image) continue;
                 const int ix = int(o.x), iy = int(o.y);
                 const int h = int(float(land.HeightAt(ix, iy)) + o.z);
                 props.push_back({ o.type, o.x, o.y, o.z, MaxHealth(o.type) });
                 props.back().circle = o.circle;
+                props.back().tree = o.tree;
                 objects.push_back({ iy + 1, ix, land.ProjectY(iy, h), nullptr, nullptr, g->paletteSlot, gtype, -1, -1, 0, -1, int(props.size()) - 1 });
                 // its level (+0x34, the sprite's vt+0x18 0x40F040 keeps the argument >> 2): WScenery's 0x4897D0 gives
                 // ftol(255 x the fog level), a street lamp's (type 0x110, 0x48F2E0) and type 0x1C0's (0x48D000)
@@ -1796,14 +1797,14 @@ namespace wow
             {
                 IsoModel im;
                 auto file = res.LoadFile(g->file);
-                if (!file) { models[gtype]; Occupy(o.type, o.x, o.y); continue; }
+                if (!file) { models[gtype]; Occupy(o.type, o.x, o.y, o.tree); continue; }
                 try { im.model = IobModel::Load(*file); }
-                catch (const std::exception&) { models[gtype]; Occupy(o.type, o.x, o.y); continue; }
+                catch (const std::exception&) { models[gtype]; Occupy(o.type, o.x, o.y, o.tree); continue; }
                 im.lights = IsoObject::BaseLights(im.model, sun, levels);
                 im.slot = g->paletteSlot;
                 m = models.emplace(gtype, std::move(im)).first;
             }
-            if (m->second.model.patches.empty()) { Occupy(o.type, o.x, o.y); continue; }
+            if (m->second.model.patches.empty()) { Occupy(o.type, o.x, o.y, o.tree); continue; }
             const IobModel& model = m->second.model;
             // 0x47EB10: the collision radius, max(2 x half width, depth) x [Tweak] "ISO obj col rad mul" (0.66);
             // 0x47F960 keeps the object that far inside the map
@@ -1815,12 +1816,13 @@ namespace wow
             if (float(worldH - r) < y) y = float(worldH - r);
             if (float(r) > x) x = float(r);
             if (float(r) > y) y = float(r);
-            Occupy(o.type, x, y);
+            Occupy(o.type, x, y, o.tree);
             // 0x47F480: the renderer's point, the ground's height there plus the object's own (+0x80)
             const int ix = int(x), iy = int(y);
             const int h = int(float(land.HeightAt(ix, iy)) + o.z);
             props.push_back({ o.type, x, y, o.z, MaxHealth(o.type) });
             props.back().circle = o.circle;
+            props.back().tree = o.tree;
             objects.push_back({ iy + IsoObject::Depth(model), ix, land.ProjectY(iy, h), &m->second, nullptr, 0, 0, -1, -1, 0, -1, int(props.size()) - 1 });
             shadows(u->second, x, y, (IsoObject::HalfWidth(model) - -IsoObject::HalfWidth(model)) / 2, IsoObject::Depth(model));
             if (const size_t before = lights.size(); addLight(PlacedObject{ o.type, x, y, o.z, {}, o.roll }, u->second), lights.size() > before)
@@ -1861,14 +1863,14 @@ namespace wow
     }
 
     // vt+0xE4 (0x48A950) as an object is added to the world (0x48A8B0): an object whose type is of class 0, 2 or 3
-    // (+0xB8 bit 1, 0x47D828) and not a tree (0xCF-0xE5, bit 2) marks the vertices within its type's +0x46 word of
+    // (+0xB8 bit 1, 0x47D828) and not a tree (made as 0xCF-0xE5, bit 2: a tree made burnt too) marks the vertices within its type's +0x46 word of
     // it blocked (0x47C280 with 2: QuickDistance from the vertex nearest it, in whole cells), which the ground's
     // cost (0x480680) then refuses.
     // An IOB object's +0x46 is its model's radius when it has a parent or is of a scenery class (Radius46); taken
     // off again as it goes (vt+0xE8, 0x48A9A0).
-    void BattleMap::Occupy(int type, float x, float y)
+    void BattleMap::Occupy(int type, float x, float y, bool tree)
     {
-        if (type >= 0xCF && type <= 0xE5) return;
+        if (tree || (type >= 0xCF && type <= 0xE5)) return;
         auto u = setup.units->find(type);
         if (u == setup.units->end()) return;
         const int c = u->second.category;

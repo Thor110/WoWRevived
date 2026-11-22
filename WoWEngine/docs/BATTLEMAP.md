@@ -1571,7 +1571,8 @@ is (so a group that can't use bridges can't take that step). In sector 30, acros
 144,180: 11 nodes over the second bridge.
 
 **Footprints** (vt+0xE4, 0x48A950, as each object is added to the world, 0x48A8B0): an object whose type is of class
-0, 2 or 3 (+0xB8 bit 1, 0x47D828) and not a tree (0xCF-0xE5, bit 2) marks the vertices within its type's +0x46 word of
+0, 2 or 3 (+0xB8 bit 1, 0x47D828) and not a tree (made as 0xCF-0xE5, bit 2; a tree rolled burnt as it's made, 0x489380,
+keeps the bit though its type becomes 0x399-0x3A9) marks the vertices within its type's +0x46 word of
 it (0x47C280: QuickDistance in whole cells from the vertex nearest it) with flag 2, which the ground's cost refuses.
 Since buildings and scenery do, an order west from the start in sector 30 now finds a 4-node route round them.
 

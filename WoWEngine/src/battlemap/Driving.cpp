@@ -911,7 +911,7 @@ namespace wow
     // (0x1BC-0x1BF, 0x1CC-0x1CE) nor 0x1C0; else whether it has +0xB8 bit 1 (category 0, 2 or 3).
     bool BattleMap::CollidesProp(const Unit& u, const Prop& p) const
     {
-        if (p.type >= 0xCF && p.type <= 0xE5) return false;     // +0xB8 bit 2 (0x47D828: these types only, not the burnt trees)
+        if (p.tree) return false;     // +0xB8 bit 2 (0x47D828: made as 0xCF-0xE5, burnt since or not)
         auto t = setup.units->find(u.type);
         const int moveClass = t == setup.units->end() ? 0 : t->second.field52;
         if ((moveClass == 3 || moveClass == 4) && RendererHeight(p.type) < (moveClass == 3 ? 0x30 : 0x20)) return false;

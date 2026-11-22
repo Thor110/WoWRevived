@@ -169,7 +169,8 @@ namespace wow
         // (+0x84), its health (+0xC4, the type's +0x4A to start with, bit 7 set), a 0x80A0 on its way, its light
         // updating: on the world's update list (dword_4D2550 +0x20), so its update (the smoulder, 0x48AEF0) runs
         struct Prop { int type = 0; float x = 0, y = 0, z = 0; int health = 0, dieAt = -1, light = -1; bool alive = true; bool updating = false;
-                      int circle = -1; };   // circle: the tree circle (circles' index) a tree is a child of
+                      int circle = -1;      // circle: the tree circle (circles' index) a tree is a child of
+                      bool tree = false; }; // +0xB8 bit 2, from the type it was made as (PlacedObject::tree)
         // The tree circles (0xCF-0xD4, 0x48F330): objects of the scenery list with no picture, their trees their
         // children. One taken out (vt+0x78, 0x4895A0, by a building starting over it) takes its trees with it.
         // A circle is in the world's grid (its vt+0x40, 0x48AA80, as it's loaded), its trees aren't (a child with
@@ -237,7 +238,7 @@ namespace wow
         Landscape::Sun sun;
         void LoadScenery(const Landscape::Sun& sun, char letter);
         void PlaceBridge(const PlacedObject& o);
-        void Occupy(int type, float x, float y);                // vt+0xE4, 0x48A950
+        void Occupy(int type, float x, float y, bool tree = false);   // vt+0xE4, 0x48A950
         // 0x47EB10, as an object's renderer is made: an IOB model's radius, ftol(max(2 x its half width, its depth) x
         // [Tweak] "ISO obj col rad mul" (0.66)), is the object's +0xAC and is written over its type's +0x44 word in
         // the unit table; for an object with a parent, or of a class whose vt+0xB8 says so (WScenery 0x489380 and

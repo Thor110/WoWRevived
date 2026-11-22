@@ -431,6 +431,27 @@ Martian start's units turned differently)
   0x417DA3), which the engine doesn't reproduce: if the original's facings are the same on every fresh start,
   that run is what to trace next (the constructors after 0x417DA3, the pods' 0x41A330, the music's 0x41B070).
 
+**Update 146** (the owner: a fresh Martian game puts the units in the same places every time)
+- [x] A tree made burnt is still a tree. The base constructor (0x489E20 -> 0x47D828) sets +0xB8 bit 2 from the
+      type the object is made as (0xCF-0xE5); only then does WScenery's constructor (0x489380) roll it burnt and
+      change the type to 0x399-0x3A9. So in a sector the Martians hold, the burnt trees leave no footprint
+      (0x48A950), aren't in a vehicle's way (0x4929A0) and don't refuse a deployment spot. Update 143 had taken
+      every burnt tree for a solid object; an object placed as a burnt type in a map file still is one. The
+      flag is now kept from the type each object was made as (`PlacedObject::tree`, `Prop::tree`).
+      Seen in the owner's Martian frame: the minimap showed the second group of three (type 65) north-east of
+      the first, where the engine had it to the west, refused at ring 380's fifth spot (3748, 788) by two tree
+      circles' burnt trees. After the fix every dot of the engine's minimap is on the same pixel as the
+      original's.
+- **Open: the facing of the deployed units.** Measured from the owner's frame by drawing the engine's units at
+  32 headings and taking the nearest: the two units that stand alone (types 89 and 91) both face about 3330 to
+  3450 of 4096 in the original, the same for both, where the engine has them at about 4057 and their rand()
+  headings were 2467 and 2571. So it is neither the random heading nor the muster's 0. A common heading for
+  two units in different places fits a turn at a steady rate for the same time: about 12 a step (the turn
+  limit at speed 0.2, 0x493233) from 0 for some 55 to 60 updates. That would mean the mustered units stay
+  active at speed 0.2 and go on turning, where by the listing as read so far the start leaves them stopped
+  (+0x188 = 0x801, 0x490EDC) and the speed dies away in ten updates (0x492EF5). Not found: what sets them
+  going. To check with the owner: whether the units of a fresh battle keep turning slowly if left alone.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

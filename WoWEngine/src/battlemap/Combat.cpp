@@ -449,7 +449,7 @@ namespace wow
         auto t = setup.units->find(p.type);
         if (t == setup.units->end()) return;
         const int c = t->second.category;
-        if ((c == 0 || c == 2 || c == 3) && !(p.type >= 0xCF && p.type <= 0xE5))
+        if ((c == 0 || c == 2 || c == 3) && !p.tree)
             land.ClearOccupied(int(p.x), int(p.y), Radius46(p.type), 2);
     }
 

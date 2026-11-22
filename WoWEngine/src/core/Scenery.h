@@ -34,6 +34,10 @@ namespace wow
         int extra[4] = {};      // a bridge's two ends (x1, y1, x2, y2)
         int roll = -1;          // the rand() % 100 its light part took as it started (0x48DE80), or -1
         int circle = -1;        // a circle's tree: which circle (counted in the list's order), its parent
+        // +0xB8 bit 2: set by the base constructor (0x489E20 -> 0x47D828) for the type the object is made as,
+        // 0xCF-0xE5, before WScenery's constructor (0x489380) rolls it burnt and changes the type: a tree made
+        // burnt is still a tree (no footprint, in nothing's way)
+        bool tree = false;
     };
 
     // What the battle map makes of the list (0x47D240 then ActivateAll 0x47D030), with the game's rand():
@@ -98,6 +102,7 @@ namespace wow
                 continue;
             }
             PlacedObject p{ type, float(o.x), float(o.y), 0.0f };
+            p.tree = o.type >= 0xCF && o.type <= 0xE5;
             if (o.type >= 445 && o.type <= 447) std::copy(o.extra, o.extra + 4, p.extra);
             if (rolls(type)) starts.push_back({ nullptr, out.size() });
             out.push_back(p);
@@ -130,6 +135,7 @@ namespace wow
                 type = scenery::Burnt(type, enemyCount);
                 PlacedObject tree{ type, float(c->x) + dx, float(c->y) + dy, 0.0f };
                 tree.circle = circle;
+                tree.tree = true;
                 out.push_back(tree);
             }
         }
