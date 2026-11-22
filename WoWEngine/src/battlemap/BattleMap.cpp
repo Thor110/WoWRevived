@@ -405,6 +405,9 @@ namespace wow
         if (InMinimap(x, y)) return 0;
         const bool ctrl = (SDL_GetModState() & SDL_KMOD_CTRL) != 0;
         const int mode = Mode();
+        // over a group icon (its 0x20, 0x4844CD): the select cursor in modes 0 and 1 (the icon's object is the
+        // player's), cursor 0xC in the others
+        if (GroupIconAt(x, y) >= 0) return lastCursor = (mode == 0 || mode == 1) ? 1 : 0xC;
         int cursor = mode == 1 ? (ctrl ? 5 : 4) : 0;
         if (const Unit* u = HotspotAt(x, y))
         {
@@ -1523,6 +1526,45 @@ namespace wow
         groupRange[size_t(group)] = int16_t(range);    // a word (+0x4E): a group with no vehicle keeps 100000 as 0x86A0
         if (n) groupInterval[size_t(group)] = sum / n;
         if (n && size_t(group) >= setup.groups.size()) groupStance[size_t(group)] = int(double(stances) + 0.5) / n;
+    }
+
+    // The label of a unit gone under (vt+0x17C, 0x4991D0, made as vt+0x188(1) hides one of the player's, 0x499150;
+    // gone again as it comes up, vt+0x180): a BoxedText (0x49D260, the tool tip's class) of the unit's name
+    // (0x440720) in font 0x6F at its screen point (+0x2C / +0x30), made with grey (dword_4DAF90) in a Human game
+    // and black (dword_4DAF88) in a Martian one, its box 2 out on the left and top and 1 on the right and bottom
+    // (0x4163C0); it draws as the tool tip does (0x49D300: the box filled, a 1 pixel outline).
+    // *Provisional*: taken as centred on the screen point, like the tool tip on its own.
+    void BattleMap::DrawLabels(Canvas& canvas) const
+    {
+        if (!setup.units) return;
+        const Font* font = res.GetFont(0x6F);
+        if (!font) return;
+        for (const Unit& u : units)
+        {
+            if (!u.players || !u.under || !Sinker(u.type)) continue;
+            auto t = setup.units->find(u.type);
+            if (t == setup.units->end() || !t->second.nameText) continue;
+            const std::string& name = res.String(t->second.nameText);
+            if (name.empty()) continue;
+            int sx = 0, sy = 0;
+            UnitScreen(u, sx, sy);
+            const int tw = font->Measure(name), th = font->Height();
+            const int w = tw + 2, h = th + 2;
+            const Rect text{ sx - w / 2 + 1, sy - h / 2 + 1, tw, th };
+            const Rect box{ sx - w / 2 - 2, sy - h / 2 - 2, w + 3, h + 3 };
+            const uint32_t fill = res.Human() ? 0xC0C0C0 : 0;
+            auto six = [](int v) { return uint32_t((v * 255 + 31) / 63); };
+            const uint32_t outline = res.Human() ? 0 : (six(12) << 16 | six(42) << 8 | six(4));
+            uint32_t* out = canvas.Pixels();
+            for (int y = box.y; y < box.y + box.h; y++)
+                for (int x = box.x; x < box.x + box.w; x++)
+                {
+                    if (x < 0 || y < 0 || x >= canvas.Width() || y >= canvas.Height()) continue;
+                    const bool edge = x == box.x || y == box.y || x == box.x + box.w - 1 || y == box.y + box.h - 1;
+                    out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = edge ? outline : fill;
+                }
+            canvas.DrawString(0x6F, name, text, TextCentreX | TextCentreY);
+        }
     }
 
     // 0x422910 / 0x483F90 / 0x484070: an icon for the first of the list's objects that is the sector's command
@@ -2776,6 +2818,7 @@ namespace wow
         beamsTo(0x7FFFFFFF);
         DrawSelection(canvas);
         DrawGroupIcons(canvas);
+        DrawLabels(canvas);
         // the minimap (0x486CB0): the picture, the dots (2 x 2 each, 0x4A1DD0), the view's rectangle (0x49C7C0)
         if (miniShown && miniPicture)
             if (const ShadeTable* shade = res.GetShade(21))

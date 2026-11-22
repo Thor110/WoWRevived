@@ -496,6 +496,19 @@ Martian start's units turned differently)
   down (0x8111 and the other messages of 0x4844A0's table); the cursor shapes it asks for (0x20); the windowed
   game's left margin (dword_4BA05C).
 
+**Update 150** (the rest of Stage 2.6)
+- [x] The label on a unit gone under (a tunnelled Track Layer, a submerged boat). 0x4991D0 (vt+0x17C, as
+      vt+0x188(1) hides one of the player's) makes a BoxedText (0x49D260, the tool tip's class) of the unit's
+      name (0x440720) in font 0x6F at its screen point, grey in a Human game and black in a Martian one, its
+      box grown by 2 / 2 / 1 / 1 (0x4163C0); it goes as the unit comes up (vt+0x180). The "0x6F" the earlier
+      notes took for a string is the font. Drawn now (`DrawLabels`); not seen running (neither test battle has
+      one).
+- [x] The cursor over a group icon (its 0x20, 0x4844CD): the select cursor in modes 0 and 1, 0xC otherwise.
+- Checked, and not things the game does: the group keys (packet 0x12 has no handler); Shift adding to the
+  selection (0x497680 sends packet 5 only with the debug flag byte_4D1279, or a class whose vt+0xEC says yes,
+  and all 182 vtables have 0x48D7C0, no, there); the hotspot's cursor asking vt+0x6C (0x497110 doesn't).
+  TASKS.md's and BATTLEMAP.md's notes that listed them as missing are corrected.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

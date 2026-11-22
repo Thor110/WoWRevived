@@ -543,7 +543,8 @@ Each is GType 0x76 at the type's counter frame, with its strength pips under it 
 ftol(0.5 + 9 x health / the type's), 0x449150) and GType 5's corners on it while its object is selected. Letting
 the left button go on one selects its object alone; a second click inside 10 frames in cursor mode 1 centres the
 view on the selection. An icon goes when its object leaves the battle (0x483FF0) and the rest close up.
-*Provisional*: the lit and flashing states and the cursor shapes aren't in.
+The cursor over one is the select cursor in modes 0 and 1, 0xC in the others (0x4844CD).
+*Provisional*: the lit and flashing states aren't in.
 
 ## Minimap ("BattleMap miniMap view" 0x4868B0, RTypeMiniBattleMap 0x4A1F90, dots 0x4A1CD0)
 
@@ -622,8 +623,9 @@ its lift, +0x80) less its type's +0x41 byte (byte_51A131), so on a walker the br
 are up at its body (update 131; the engine had used the ground under it).
 *Provisional*: the hotspot is taken as centred on the object's screen point; +0x3C isn't read
 (only vehicles count for the box); the frontmost hotspot is the one lowest on screen; no damage yet, so the power
-bar is full. The orders themselves (move, attack, force fire), Shift adding to the selection (packet 5) and the
-group keys aren't in.
+bar is full. Two things the game doesn't have, checked in the listing: group keys (the digits send packet 0x12,
+which nothing handles) and Shift adding to the selection (0x497680 sends packet 5 with Shift's state only with
+the debug flag byte_4D1279 set, or for a class whose vt+0xEC answers yes, and every class's is 0x48D7C0, no).
 
 ## A group's target gone, and its engage (0x4821F0, 0x483760; `BattleMap::TargetGone`, `BattleMap::Engage`)
 
@@ -1054,7 +1056,8 @@ in the game's graphics (checked); no mines were on the test map, so the marker h
 
 *Provisional*: byte_589130 / byte_589134 are taken as the Martian research items 132 / 133 done; the renderer's +0x26
 (0x20) isn't known (the marker is frame 0 of the sprite, one row nearer than the unit, at ground level); the
-cursor's use of vt+0x6C isn't in.
+hotspot's cursor routine (0x497110) doesn't ask vt+0x6C: the cursor over an object is by the mode, its side and
+Ctrl alone.
 
 **Research in the fighting.** As a gun starts (vt+0x14 = 0x494AF0) its owner's side (vt+0xDC, 0x4406E0) picks
 the enhancements that set its +0xC8 (the range's multiplier) and +0xCC (the spread's divisor), each one done

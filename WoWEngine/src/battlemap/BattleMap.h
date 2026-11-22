@@ -635,6 +635,7 @@ namespace wow
         int GroupIconAt(int x, int y) const;
         void ClickGroupIcon(size_t icon);                       // 0x484920
         void DrawGroupIcons(Canvas& canvas) const;              // 0x4842E0
+        void DrawLabels(Canvas& canvas) const;                  // 0x4991D0's label on a unit gone under
         void RecomputeGroup(int group);                     // 0x800F -> 0x4802E0 when its members change
         bool dragging = false, boxActive = false;
         int dragX0 = 0, dragY0 = 0, dragX1 = 0, dragY1 = 0;

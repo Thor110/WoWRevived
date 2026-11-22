@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 149) and what is next
+## Where things stand (update 150) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -16,11 +16,14 @@ the working order; the stages further down stay the full inventory.
 - [x] N3 (148, the mines) Ground flag 8: a built mine (0x273-0x276, 0x48CB10) marks the ground its own side
       won't cross. Left: the line-linked objects (0x48B690), which the engine doesn't have, and a mine that
       finishes building during a battle.
-- [~] N4 Stage 2.6. Done in 149: the group panel top left (an icon for each of the player's groups with its
-      strength pips, the selection's corners on it, a click selecting the group). Left: the icon's lit state
-      under the mouse and its flashing, the order panel, the group keys, the label 0x6F, the combined panel.
-- [ ] N5 The unfinished building's corner markers lit grey, not yellow; Big Ben and Parliament lit as the
-      original (London's frame).
+- [x] N4 Stage 2.6 (149, 150): the group panel top left; the name label on a unit gone under; the icons'
+      cursor. Checked and not in the game: group keys, Shift adding to the selection. Left as provisional:
+      the icon's lit state under the mouse and its flashing (what level 1 of its sprite looks like isn't known).
+- [ ] N5 Objects under a light pool are brighter in the engine than in the original. Measured in the owner's
+      sector 28 frame (update 150): the Command Post's tower top 110, 121, 161 against 80, 98, 159; the corner
+      markers in the pools 126, 116, 76 and 112, 106, 75 against 74, 79, 71 and 90, 88, 68; the two out of the
+      pools match. So the markers aren't a case of their own (the original's are tinted too): it is how much a
+      point light adds to an IOB object's faces. London's Big Ben is the other way (brighter in the original).
 - [ ] N6 Stage 2.7: reinforcements arriving, the zoomer, the battle info and battle-end dialogs.
 - [ ] N7 Stage 2.8 and 2.9, then Stages 3 to 5 as listed below.
 
@@ -94,8 +97,9 @@ Small and independent; most need one routine traced.
 - [x] 2.4 The walker subclass: the leg animation's rate, footprints (0x48FDD0, 0x490070).
 - [x] 2.5 Fliers and boats checked against their classes; the units' headlights; the scenery's and bridges' object
       scale.
-- [ ] 2.6 The order panel (0x484A30), the group keys, the label 0x6F, the combined panel (0x448500), the cursor's
-      vt+0x6C; cursor modes 2-7 where the game (not the editor) uses them.
+- [x] 2.6 The group panel (0x483DF0 / 0x484120), the label on a unit gone under (font 0x6F, 0x4991D0), the
+      combined panel (0x448500, PARITY battle-ui 7). The group keys and Shift-select aren't in the game. Left:
+      cursor modes 2-7 where the game (not the editor) uses them.
 - [ ] 2.7 Reinforcements arriving during a battle; the zoomer, the battle info and the battle-end dialogs.
 - [ ] 2.8 The rest of the computer player in battle.
 - [ ] 2.9 Renderers still provisional: the WOF triangle filler, the blitter modes, the rest of the bm shade

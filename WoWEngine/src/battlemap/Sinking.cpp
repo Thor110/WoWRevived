@@ -44,7 +44,7 @@ namespace wow
     // vt+0x188 (0x499150) with under: down, the player's gets its label (vt+0x17C, 0x4991D0: string 0x6F at its screen
     // point, +0x198) and its marker (vt+0x174, 0x4992D0: GType 0x359, +0x19C); up, both go (vt+0x180, vt+0x178), its
     // group's mode is 0 (0x4807E0) and bit 1 is cleared; bit 0 is set to under.
-    // *Provisional*: the label (a 0x2AC-byte text object, 0x49D260) isn't drawn.
+    // The label is drawn by DrawLabels while the unit is under.
     void BattleMap::EndSink(size_t index, bool under)
     {
         Unit& u = units[index];
