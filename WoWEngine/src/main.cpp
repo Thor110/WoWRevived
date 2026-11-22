@@ -126,6 +126,8 @@ namespace
                         else if (k == "right") o.keys.push_back(SDLK_RIGHT);
                         else if (k == "backspace") o.keys.push_back(SDLK_BACKSPACE);
                         else if (k == "home") o.keys.push_back(SDLK_HOME);
+                        else if (k == "plus") o.keys.push_back(SDLK_EQUALS);
+                        else if (k == "minus") o.keys.push_back(SDLK_MINUS);
                         // shift / ctrl hold that key for the steps after it, nomods lets go
                         else if (k == "shift") o.keys.push_back(SDLK_LSHIFT);
                         else if (k == "ctrl") o.keys.push_back(SDLK_LCTRL);
@@ -577,6 +579,10 @@ int main(int argc, char** argv)
                     else if (!playback.Playing()) frontEnd.OnMouseLeave();
                     break;
                 case SDL_EVENT_WINDOW_MOUSE_LEAVE: if (!playback.Playing()) frontEnd.OnMouseLeave();
+                    break;
+                // MODERN: the wheel zooms the battle map (the game has no use for the wheel; it isn't recorded)
+                case SDL_EVENT_MOUSE_WHEEL:
+                    if (active && !playback.Playing()) frontEnd.OnWheel(event.wheel.y > 0 ? 1 : event.wheel.y < 0 ? -1 : 0);
                     break;
                 case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 case SDL_EVENT_MOUSE_BUTTON_UP:

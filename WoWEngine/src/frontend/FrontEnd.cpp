@@ -473,6 +473,7 @@ namespace wow
             { "Modern", "War map status strip", "War map status strip", false },
             { "Modern", "Selection keys", "Group keys and Shift select", true },
             { "Modern", "More save slots", "More save slots", true },
+            { "Modern", "Battle zoom", "Battle zoom (+, -, wheel, R)", true },
             { "Modern", "Original Display Settings", "Original display settings", false },
             { "WoW Engine", "Windowed", "Play in a window", false },
             { "WoW Engine", "Stretch", "Stretch the picture", false },
@@ -483,7 +484,7 @@ namespace wow
         m->AddHeadingText("Modern Options");
         for (size_t i = 0; i < std::size(Options); i++)
         {
-            if (i == 6)
+            if (i == 7)
             {
                 // the game's playback recordings (core/Playback.h), which the retail game never switches on
                 m->AddEventCheckText("Record input", recordWanted, [this](Button& b) { recordWanted = b.value != 0; });
@@ -1218,6 +1219,7 @@ namespace wow
             {
                 int w = 640, h = 480;
                 for (const Mode& mode : Modes) if (mode.w == sizedW && mode.h == sizedH) { w = mode.w; h = mode.h; }
+                if (sc == screen.get()) BattlePicture(w, h);        // (MODERN: its zoom, while it is the screen)
                 static_cast<BattleMap*>(sc)->SetViewSize(w, h);
             }
         // the war map's view is the view size (one of the sizes, else 640 x 480)
@@ -1354,6 +1356,7 @@ namespace wow
     // sound stopped (0x41B360), then the count for the next battle (0x43983E)
     std::unique_ptr<BattleMap> FrontEnd::BuildBattleMap()
     {
+        battleZoom = 0;     // (MODERN: each battle starts unzoomed)
         WarMap* map = ActiveWarMap();
         if (!map) return nullptr;
         BriefingInfo b = map->Briefing();
@@ -1670,8 +1673,42 @@ namespace wow
         int w = std::atoi(size.c_str()), h = 0;
         if (auto comma = size.find(','); comma != std::string::npos) h = std::atoi(size.c_str() + comma + 1);
         for (const Mode& mode : Modes)
-            if (mode.w == w && mode.h == h) { width = w; height = h; return; }
+            if (mode.w == w && mode.h == h) { width = w; height = h; break; }
+        // (the battle map on its own is drawn at its zoom's size; a menu over it at the view size)
+        if (screen && screen->Id() == BattleMap::Id) BattlePicture(width, height);
     }
+
+    // MODERN: the battle's picture at its zoom. Each step is 1.25 times: closer draws less of the land in a smaller
+    // picture, which the window scales up; further draws more in a larger one. Never smaller than 640 x 480 (the
+    // battle's panels are made for that), never more than twice the view size, never more than the land.
+    void FrontEnd::BattlePicture(int& width, int& height) const
+    {
+        const BattleMap* battle = nullptr;
+        for (const Screen* sc : { battleMap.get(), screen.get() })
+            if (sc && sc->Id() == BattleMap::Id) battle = static_cast<const BattleMap*>(sc);
+        if (!battle || !battleZoom) return;
+        const double f = std::pow(1.25, -battleZoom);
+        int w = int(width * f + 0.5) & ~1, h = int(height * f + 0.5) & ~1;
+        if (w < 640 || h < 480 || w > width * 2 || h > height * 2 || w > battle->WorldW() - 2 || h > battle->WorldH() - 2) return;
+        width = w;
+        height = h;
+    }
+
+    void FrontEnd::ZoomBattle(int steps)
+    {
+        if (!screen || screen->Id() != BattleMap::Id || !ini.GetBool("Modern", "Battle zoom", true)) return;
+        if (!steps) { battleZoom = 0; return; }
+        // a step is taken only if its picture is allowed (BattlePicture leaves the size alone when it isn't)
+        const int was = battleZoom;
+        int w0 = 0, h0 = 0, w1 = 0, h1 = 0;
+        ViewSize(w0, h0);
+        battleZoom += steps > 0 ? 1 : -1;
+        ViewSize(w1, h1);
+        const bool closer = battleZoom > was;
+        if (battleZoom != 0 && (closer ? w1 >= w0 : w1 <= w0)) battleZoom = was;
+    }
+
+    void FrontEnd::OnWheel(int steps) { if (steps) ZoomBattle(steps); }
 
     void FrontEnd::ViewSizeFor(int desktopW, int desktopH, int& width, int& height)
     {
@@ -1771,6 +1808,13 @@ namespace wow
         if (!screen) return;
         // a key's command fades out as a click does: Escape's back too (0x40A1B0 sends 0x8123, then the previous
         // command, which the menu hands its Fullscreen View, 0x40A1ED -> 0x40A272 -> 0x40A245 -> 0x4065E0)
+        // MODERN: the battle's zoom
+        if (screen->Id() == BattleMap::Id)
+        {
+            if (key == SDLK_EQUALS || key == SDLK_PLUS || key == SDLK_KP_PLUS) ZoomBattle(1);
+            else if (key == SDLK_MINUS || key == SDLK_KP_MINUS) ZoomBattle(-1);
+            else if (key == SDLK_R) ZoomBattle(0);
+        }
         if (auto command = screen->OnKey(key)) Dispatch(*command, true);
     }
 

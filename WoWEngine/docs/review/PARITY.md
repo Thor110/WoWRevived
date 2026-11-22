@@ -1070,6 +1070,15 @@ transparency")
 - Seen with saves in slots 1, 500 and 999: the Load menu with the three on one page; the Save menu's first
   page as the game's with "Next Saves", its second with the empty slot 6 and the two saves.
 
+**Update 202** (modern option: the battle's zoom; nothing of the original's changed without the keys)
+- `+` / `-` / the wheel zoom the battle map, `R` puts it back (`[Modern]` "Battle zoom"): the battle drawn at
+  another size and the picture scaled, panels and all.
+- The test script has `plus` and `minus` steps.
+- Seen (Martian test battle, also under the checkers): two steps out a 1000 x 750 picture; six out and eight
+  in ending at 640 x 480 (the limits hold); out, the menu opened and closed, R, then a step in refused at 640
+  x 480; both battles without the keys the same picture as before. Not seen: the wheel, and the scaled picture
+  on a real screen.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

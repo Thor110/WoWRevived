@@ -148,6 +148,8 @@ namespace wow
         // the view's size changed (Display Settings while the battle is on): its middle stays where it was
         void SetViewSize(int w, int h);
         int ViewW() const { return viewW; }
+        int WorldW() const { return land.WorldWidth(); }
+        int WorldH() const { return land.WorldHeight(); }
         int ViewH() const { return viewH; }
         int ScrollY() const { return scrollY; }
         void ScrollTo(int x, int y);

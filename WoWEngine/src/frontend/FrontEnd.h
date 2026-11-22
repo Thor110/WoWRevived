@@ -36,6 +36,8 @@ namespace wow
         // made for the size; 640 x 480 still for the war map, the battle map, their menus and the movies, which
         // the window scales up (the maps' own views come next).
         void ViewSize(int& width, int& height) const;
+        // MODERN: the battle map's zoom ([Modern] "Battle zoom"): + and - or the wheel, R to put it back
+        void OnWheel(int steps);
         // The view size for a desktop of this size (the first start, with no [Screen] "Size" yet): the desktop's
         // own if it is one of the sizes there are backgrounds for; past 1920 x 1080 the one nearest its shape;
         // else the largest that fits, of its shape if there is one
@@ -127,6 +129,11 @@ namespace wow
         int campaignSlot = 0;      // dword_4D2578: the save slot the new campaign goes in
         // MODERN: the page of five slots the Load and Save menus show, and the highest slot with a save
         int slotPage = 0;
+        // MODERN: the battle's zoom in steps (0 none, more is closer): the battle is drawn 1.25 times smaller or
+        // larger a step and the picture scaled to the screen
+        int battleZoom = 0;
+        void BattlePicture(int& width, int& height) const;
+        void ZoomBattle(int steps);
         int LastSlot() const;
         int HighestSave() const;
         std::vector<int> SavedSlots() const;

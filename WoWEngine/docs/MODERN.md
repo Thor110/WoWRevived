@@ -59,6 +59,7 @@ check boxes, and each box is a setting in WoWRevived.ini that can be set there a
 | War map status strip | `[Modern]` "War map status strip" | off | at once |
 | Group keys and Shift select | `[Modern]` "Selection keys" | on | the next battle |
 | More save slots | `[Modern]` "More save slots" | on | the next time the Load or Save menu opens |
+| Battle zoom (+, -, wheel, R) | `[Modern]` "Battle zoom" | on | at once |
 | Original display settings | `[Modern]` "Original Display Settings" | off | the next time Display Settings opens |
 | Play in a window | `[WoW Engine]` "Windowed" | off | at once |
 | Stretch the picture | `[WoW Engine]` "Stretch" | off | at once |
@@ -85,6 +86,21 @@ In battle, with `[Modern]` "Selection keys" on (it is unless turned off):
 
 Both work through the game's own selection (0x439000): the war map objects picked become one battle group, as
 a drag box over several makes them.
+
+### Battle zoom (update 202)
+
+In battle, with `[Modern]` "Battle zoom" on (it is unless turned off): `+` (or `=`) and the wheel forward go
+closer, `-` and the wheel back go further, `R` puts it back. Each step is 1.25 times, about the view's middle.
+
+How it is done: the battle is drawn at a different size and the window scales the picture to the screen
+(`FrontEnd::BattlePicture`, `BattleMap::SetViewSize`). Further out draws more of the land in a larger picture;
+closer draws less in a smaller one. The limits: never smaller than 640 x 480 (so at a 640 x 480 view size
+there is no going closer than the game's own view, only further), never more than twice the view size, never
+more than the land. A new battle starts unzoomed, and a menu over the battle is drawn unzoomed.
+
+What it doesn't do yet: the panels (the minimap, the group icons, the popup menu, the end box) are part of the
+picture, so they shrink and grow with the land. Keeping them at their size is the HUD scaling of PLAN.md C4.
+The wheel isn't written to a playback recording (the keys are).
 
 ### Resolution (agreed with the owner, update 192)
 
@@ -298,9 +314,8 @@ once the engine is complete.
   language's TEXT.ojd, so each language can have its own. To settle when it is done: the ids they get (past
   the last the game uses, so nothing of the game's moves), the engine falling back to its built-in English
   when a TEXT.ojd doesn't have them, and who supplies the other languages' wording.
-- **Zoom controls.** The planned keys for the battle map's zoom (already listed under Controls as wheel zoom):
-  `+` and `-` or the mouse wheel to zoom, `R` to reset. (`R` is free in battle. Typing a cheat with an R in
-  it would also reset the zoom, which does no harm.)
+- **Zoom controls.** *In (update 202)*: `+` and `-` or the mouse wheel to zoom the battle map, `R` to reset
+  ("Battle zoom" above).
 - **A trailer for the project.** The very last thing: once the engine is at 1:1 parity and the modern options
   are in, and everything else is done.
 - **The log.** Whether WoWEngine.log should only be written when there is a crash. *Decided for now*: it stays
