@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 180) and what is next
+## Where things stand (update 181) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -160,11 +160,12 @@ Stage 3's open boxes were checked in updates 174 to 176 and are stale but for 3.
 A battle is never saved part way (the battle map's menu has no save, 0x49BD50), so "saving a battle" was the
 wrong name: what is left of it is what the war map's save keeps of a battle's objects (4.4).
 
-- [~] 4.1 **The settings, all of them.** The listing defines 225 (found by their constructors' section and key
+- [x] 4.1 **The settings, all of them** (closed in 181: what is left unread is never read by the game, or is
+      the window's, the developers' or another stage's). The listing defines 225 (found by their constructors' section and key
       strings); 62 weren't named anywhere in the engine at update 176. By what they are:
-      - *Read by the game, to port*: `[Colours]` Credits Heading (17), Credits Detail (6) (the engine's credits
-        are the scrolling picture; where the text ones are used isn't traced); `[Options]` Show simple tooltips
-        (on); `[Tweak]` AI Oracle (0x442D8A); `[Fun]` Veh Speed, Veh Rot Speed; `[English]` Language.
+      - *Defined and never read* (181: neither the value nor the setting's object is referenced again):
+        `[Colours]` Credits Heading, Credits Detail; `[Options]` Show simple tooltips; `[Tweak]` AI Oracle;
+        `[Fun]` Veh Speed, Veh Rot Speed; `[English]` Language.
       - *Done in 179*: `[Colours]` Messagebox Command (22); `[Game]` Time Of Day (the battle's light forced to
         that hour with the curtains cheat on, 0x40B030); `[Sound]` the four borders. Not missing after all:
         InsulatedHighEnergyResistantArmourMultiplier (the listing's comment cuts the name short).
@@ -172,7 +173,7 @@ wrong name: what is left of it is what the war map's save keeps of a battle's ob
         (4 / 16).
       - *With 4.3*: `[Sound]` Search Libraries First, Unload Limit; the borders scaled by the screen's size
         (0x464B10), which only matters past 640 x 480 (Stage 6.5).
-      - *No reader found in the listing* (to confirm, then leave): `[Tweak]` AI Hours Per Turn, IMap Iteration
+      - *No reader found in the listing* (confirmed the same way, 181): `[Tweak]` AI Hours Per Turn, IMap Iteration
         Count; `[Vehicles]` stopTurnRate.
       - *The window and DirectDraw* (Stage 6's, or nothing): `[Screen]` Use DDraw surfaces, BLIT instead of
         FLIP, Damage map VRAM, Top left, Support screen size, Support screen BPP, AllowResize, FixedAspect,
@@ -183,7 +184,11 @@ wrong name: what is left of it is what the war map's save keeps of a battle's ob
       cursor (cursor 13) shown by the busy object (0x40E680) while a game is saved (0x4042D0), loaded
       (0x408B70) and the war map built (0x418500); the engine does these inside one frame, so it is a question
       of whether anything would be seen.
-- [~] 4.3 **Sound's leftovers** (the borders are settings now, 179): the borders as settings and by screen size (above), the library before loose
+- [x] 4.3 **Sound's leftovers** (the borders are settings, 179; Minimum Audible Volume was read already.
+      Looked at in 181 and left: Search Libraries First only chooses between the library and a loose file,
+      and the loose file is only looked for with a developers' flag on, 0x4660D4 / 0x466910, so it goes
+      with Stage 6's loose files; Unload Limit frees a sample not used for that long, 0x4666DC, which
+      nothing shows): the borders as settings and by screen size (above), the library before loose
       files, the unload limit, Minimum Audible Volume.
 - [~] 4.4 **War map objects written field by field** (was 4.0 and 4.1; begun in 178 with the owner's 24 saves:
       a save read and written straight back now matches the game's but for the view, the message list and a

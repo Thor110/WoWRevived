@@ -864,6 +864,15 @@ transparency")
 - The four developers' flags of `[Debug]` read out in full in docs/ODDITIES.md: Mat (the curtains cheat),
   Charlie, Dave, Edit functionality, and the flag the first three set at start-up. Nothing changed in the code.
 
+**Update 181** (checking, no code changed)
+- *Seen running*: the credits' hidden end. With the egg's flag forced, the scroll goes on to the team's
+  picture at the foot of credits.spr and holds, as 0x40574C has it. `englishrose` typed in the credits is
+  taken ("Cheat: englishrose" in the log).
+- *The last settings of 4.1 settled*: Credits Heading / Detail, Show simple tooltips, AI Oracle, Veh Speed,
+  Veh Rot Speed, Language, AI Hours Per Turn, IMap Iteration Count and stopTurnRate are set up and never read.
+- *4.3 settled*: Search Libraries First and Unload Limit change nothing a player sees.
+- MODERN.md: the hidden end must stay in any edited credits picture (the owner).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

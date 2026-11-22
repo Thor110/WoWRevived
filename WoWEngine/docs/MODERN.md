@@ -126,6 +126,17 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
 
 ## From the earlier patched game
 
+**The credits' hidden end must be kept** (the owner, update 181; they rate it near the top of this list). The
+credits picture (GType 0x2F3, credits.spr) ends with a screen the scroll normally stops short of: the team
+outside the St Martins Tavern (Dave, James, Mat, Dobbin, Craig, Charlie, Andy; three of the `[Debug]` flags
+are named after them, docs/ODDITIES.md). The scroll ends 960 rows from the picture's bottom, and with the
+`englishrose` cheat 480 rows from it, holding there 300 ticks (0x40574C, 0x40577C; `Credits`). The engine shows
+it from the original file (seen in update 181). WoWRevived's edited credits picture took that screen off and
+put "WoWRevived - Thor110" at the end, not knowing it could be reached. For any edited or enhanced credits
+picture: keep the team's screen as the last 480 rows, and put added lines above it, where the normal scroll
+ends, so both the line and the hidden end are seen.
+
+
 The repository's earlier work on the original executable (unit fixes, asset updates and so on; see the readme
 and the repository) has much that can be carried over: fixes to units' data and updated assets. To go through
 once the engine is complete.
