@@ -282,12 +282,17 @@ once the engine is complete.
 
 ## Ideas from the owner (noted at update 199; not planned in detail yet)
 
-- **More save slots.** *In (update 200), as pages*: the game has five slots; the Load and Save menus keep
-  their five rows and get "Next Saves" and "Previous Saves" rows that turn to the next or last five, up to
-  slot 999 (the three digits of `Human.001`), so the menu is the same at every view size. The Save menu
-  always offers the next page; the Load menu only when there is a save further on, so with saves in the first
-  five only it is the game's menu as it was. The files are the game's own, numbered on: the original game
-  only lists the first five. `SaveSlot::Max`, `FrontEnd::AddSlotPageButtons`, command 0x9002.
+- **More save slots.** *In (updates 200 and 201), as pages*: the game has five slots; the Load and Save menus
+  keep their five rows and get "Next Saves" and "Previous Saves" rows, up to slot 999 (the three digits of
+  `Human.001`), so the menu is the same at every view size. The pages go by what there is, not by the slots'
+  numbers (the owner, update 201: a save dropped in as `.999` beside a `.001` must not be 199 pages away):
+  - *Load* lists the slots that have saves, lowest first, five to a page. With no more than five saves it is
+    the game's menu as it was.
+  - *Save* (the slot for a new campaign) lists the game's five, empty or not, then the slots past them that
+    have saves, and one "Empty": the lowest free slot past the five. So there is always room for one more
+    campaign, and its first page is the game's with a "Next Saves" row.
+  The files are the game's own, numbered on: the original game only lists the first five.
+  `FrontEnd::MenuSlots`, `AddSlotPageButtons`, command 0x9002.
 - **New strings added to TEXT.ojd by the installer.** "Modern Options" and every other caption the engine adds
   are plain English text in the code now. Better: the install routine appends them to the end of each
   language's TEXT.ojd, so each language can have its own. To settle when it is done: the ids they get (past

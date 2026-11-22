@@ -224,12 +224,12 @@ namespace wow
     // MODERN ([Modern] "More save slots", on unless turned off): the slots the menus reach. Off, the game's five.
     int FrontEnd::LastSlot() const { return ini.GetBool("Modern", "More save slots", true) ? SaveSlot::Max : SaveSlot::Last; }
 
-    // the highest slot with a save in it (0 for none), by the SaveGame folder's files
-    int FrontEnd::HighestSave() const
+    // the slots with a save in them, lowest first, by the SaveGame folder's files
+    std::vector<int> FrontEnd::SavedSlots() const
     {
-        int highest = 0;
+        std::vector<int> slots;
         auto folder = files.Resolve("SaveGame");
-        if (!folder) return 0;
+        if (!folder) return slots;
         const std::string side = res.Human() ? "human." : "martian.";
         std::error_code ec;
         for (const auto& entry : std::filesystem::directory_iterator(*folder, ec))
@@ -239,16 +239,40 @@ namespace wow
             if (name.size() != side.size() + 3 || name.compare(0, side.size(), side) != 0) continue;
             if (!std::all_of(name.begin() + long(side.size()), name.end(), [](char c) { return c >= '0' && c <= '9'; })) continue;
             const int slot = std::atoi(name.c_str() + side.size());
-            if (slot >= SaveSlot::First && slot <= LastSlot()) highest = std::max(highest, slot);
+            if (slot >= SaveSlot::First && slot <= LastSlot() && std::find(slots.begin(), slots.end(), slot) == slots.end()) slots.push_back(slot);
         }
-        return highest;
+        std::sort(slots.begin(), slots.end());
+        return slots;
     }
 
-    // "Next Saves" when there is a page after this one worth turning to, "Previous Saves" after the first
-    void FrontEnd::AddSlotPageButtons(Menu& m, bool anyFurther)
+    int FrontEnd::HighestSave() const
     {
-        const int first = slotPage * SaveSlot::PerPage + SaveSlot::First;
-        if (anyFurther && first + SaveSlot::PerPage <= LastSlot()) m.AddButtonText(CmdSlotPage, "Next Saves", 1);
+        const std::vector<int> slots = SavedSlots();
+        return slots.empty() ? 0 : slots.back();
+    }
+
+    // MODERN: the slots a menu lists, which it shows five to a page. The pages go by what there is, not by the
+    // slots' numbers, so a save dropped in as .999 is on the page after the last save before it, not 199 pages on.
+    //   Load: the slots with saves.
+    //   Save: the game's five (empty or not), then the slots past them with saves, then one empty slot, the
+    //         lowest free one past the five, so there is always room for one more campaign.
+    std::vector<int> FrontEnd::MenuSlots(bool load) const
+    {
+        const std::vector<int> saved = SavedSlots();
+        if (load) return saved;
+        std::vector<int> slots;
+        for (int slot = SaveSlot::First; slot <= SaveSlot::Last; slot++) slots.push_back(slot);
+        for (int slot : saved) if (slot > SaveSlot::Last) slots.push_back(slot);
+        for (int slot = SaveSlot::Last + 1; slot <= LastSlot(); slot++)
+            if (!std::binary_search(saved.begin(), saved.end(), slot)) { slots.push_back(slot); break; }
+        std::sort(slots.begin(), slots.end());
+        return slots;
+    }
+
+    // "Next Saves" when there is a page after this one, "Previous Saves" after the first
+    void FrontEnd::AddSlotPageButtons(Menu& m, size_t listed)
+    {
+        if (size_t(slotPage + 1) * SaveSlot::PerPage < listed) m.AddButtonText(CmdSlotPage, "Next Saves", 1);
         if (slotPage > 0) m.AddButtonText(CmdSlotPage, "Previous Saves", -1);
     }
 
@@ -256,11 +280,12 @@ namespace wow
     {
         auto m = std::make_unique<Menu>(CmdLoadGame, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, 2);
         m->AddHeading(AnySaveGame() ? 0x406 : 0x434); // "Resume Campaign" or "No Saved Campaigns"
-        // (MODERN: a page of five; the first page with no saves past it is the game's menu as it was)
-        const int first = slotPage * SaveSlot::PerPage + SaveSlot::First;
-        for (int slot = first; slot < first + SaveSlot::PerPage && slot <= LastSlot(); slot++)
-            if (auto name = SaveSlot::Name(files, res.Human(), slot)) m->AddButtonText(CmdLoadSlot, *name, slot);
-        AddSlotPageButtons(*m, HighestSave() >= first + SaveSlot::PerPage);
+        // (MODERN: a page of five; with no more than five saves it is the game's menu as it was)
+        const std::vector<int> slots = MenuSlots(true);
+        slotPage = std::clamp(slotPage, 0, slots.empty() ? 0 : int(slots.size() - 1) / SaveSlot::PerPage);
+        for (size_t i = size_t(slotPage) * SaveSlot::PerPage; i < slots.size() && i < size_t(slotPage + 1) * SaveSlot::PerPage; i++)
+            if (auto name = SaveSlot::Name(files, res.Human(), slots[i])) m->AddButtonText(CmdLoadSlot, *name, slots[i]);
+        AddSlotPageButtons(*m, slots.size());
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         m->FocusLast();                               // 0x42EBE0 on the bottom button
         return m;
@@ -270,13 +295,14 @@ namespace wow
     {
         auto m = std::make_unique<Menu>(CmdSaveMenu, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, 2);
         m->AddHeading(0x52D);
-        const int first = slotPage * SaveSlot::PerPage + SaveSlot::First;
-        for (int slot = first; slot < first + SaveSlot::PerPage && slot <= LastSlot(); slot++)
+        const std::vector<int> slots = MenuSlots(false);
+        slotPage = std::clamp(slotPage, 0, int(slots.size() - 1) / SaveSlot::PerPage);
+        for (size_t i = size_t(slotPage) * SaveSlot::PerPage; i < slots.size() && i < size_t(slotPage + 1) * SaveSlot::PerPage; i++)
         {
-            auto name = SaveSlot::Name(files, res.Human(), slot);
-            m->AddButtonText(CmdSaveSlot, name ? *name : res.String(0x408), slot); // "Empty"
+            auto name = SaveSlot::Name(files, res.Human(), slots[i]);
+            m->AddButtonText(CmdSaveSlot, name ? *name : res.String(0x408), slots[i]); // "Empty"
         }
-        AddSlotPageButtons(*m, true);     // (MODERN: there is always room for a new campaign on the next page)
+        AddSlotPageButtons(*m, slots.size());
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         return m;
     }
@@ -935,7 +961,7 @@ namespace wow
             {
                 const bool load = screen->Id() == CmdLoadGame;
                 const int back = screen->Previous();
-                slotPage = std::clamp(slotPage + command.param, 0, (LastSlot() - SaveSlot::First) / SaveSlot::PerPage);
+                slotPage = std::max(0, slotPage + command.param);   // (the menu keeps it to its pages)
                 if (load) ShowMenu(LoadGame(back), back);
                 else if (back) ShowMenu(SaveGame(back), back);
                 else Show(SaveGame(topMenu));

@@ -129,7 +129,9 @@ namespace wow
         int slotPage = 0;
         int LastSlot() const;
         int HighestSave() const;
-        void AddSlotPageButtons(Menu& m, bool anyFurther);
+        std::vector<int> SavedSlots() const;
+        std::vector<int> MenuSlots(bool load) const;
+        void AddSlotPageButtons(Menu& m, size_t listed);
         std::string campaignName;  // byte_4D1448: its name, up to 36 characters
         int insertCdNext = 0;      // the command the Insert CD menu sends once the disc is there
         bool networkLoad = false;  // byte_4D256C: the load menu was opened for a network game

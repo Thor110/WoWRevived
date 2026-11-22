@@ -1064,6 +1064,12 @@ transparency")
 - Seen: the Save menu turned to its second page, a campaign begun in slot 6 (`Human.006` written), the Load
   menu offering the next page and loading it from there; both battles the same picture as before.
 
+**Update 201** (the save pages condensed; nothing of the original's changed)
+- The Load and Save menus' pages go by the slots there are, not by their numbers: Load lists the saves; Save
+  lists the game's five, the saves past them and one empty slot.
+- Seen with saves in slots 1, 500 and 999: the Load menu with the three on one page; the Save menu's first
+  page as the game's with "Next Saves", its second with the empty slot 6 and the two saves.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
