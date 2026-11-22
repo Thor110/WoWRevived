@@ -1000,6 +1000,19 @@ transparency")
   where the mouse is; the war map and both battles unchanged at 640 x 480. Not seen: a real screen (full
   screen, a 4K desktop, the smoothed scaling), which can't be run here.
 
+**Update 193** (the second step of B5, the war map's part; nothing of the original's changed at 640 x 480)
+- The war map is drawn at the view size (`WarMap::SetViewSize`): the panels at the picture's edges, the menus
+  over it centred, the mini-map's outline the view's share of the map. The camera is saved as the original's
+  640 x 480 view of the same middle.
+- Its background is the original picture unless the view is wider than it (1498); then the extended pictures
+  are read from `DAT\warmap\`. `Resources` picks each entry's file: a named override, then the size's folder,
+  then the game's own.
+- Fixed while testing under the checkers: a view wider than the picture with no extended files read outside
+  the picture; it is now drawn in the middle.
+- Seen: the Martian war map at 1024 x 768 (original picture) and at 1920 x 1080 (extended, as the owner's
+  reference frame); the Human one at 1280 x 800 with Campaign Options centred, and at 1600 x 900 without the
+  extended files; both battles and both war maps unchanged at 640 x 480. The battle map is still 640 x 480.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

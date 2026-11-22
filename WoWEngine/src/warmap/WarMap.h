@@ -72,6 +72,9 @@ namespace wow
         std::optional<Command> OnMouseButton(int x, int y, bool down) override;
         std::optional<Command> OnRightButton(int x, int y, bool down) override;
         void SetQuickCancelTimeout(int ticks) { quickCancelTimeout = ticks; }
+        void SetViewSize(int width, int height);    // MODERN FIX: the view at the view size (docs/MODERN.md "Resolution")
+        int PictureW() const { return viewW; }
+        int PictureH() const { return viewH; }
         // [Tweak] "Res Stack XO" / "Res Stack YO" (dword_4EA154 / 4EA16C: 4, 16): the Resource view's facility stack
         void SetResourceStack(int xo, int yo) { resStackX = xo; resStackY = yo; }
         // [Colours] "Info Page Text" (word_4B9424, 15) and "Messagebox Detail" (word_4B9428, 21)
@@ -198,6 +201,9 @@ namespace wow
         Rect MiniMapRect() const;
         int ViewW() const;
         int ViewH() const;
+        int viewW = 640, viewH = 480;
+        int MapW() const;
+        int MapH() const;
 
         MenuColours colours;
         SaveInfo game;

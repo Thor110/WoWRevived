@@ -1,4 +1,5 @@
 #include "frontend/Resources.h"
+#include <cctype>
 #include "core/ShadeGroups.h"
 
 #include <SDL3/SDL_log.h>
@@ -51,14 +52,8 @@ namespace wow
         {
             try
             {
-                // the copy made for the view size, if there is one (the name after its folder)
-                std::string file = g->file;
-                if (!sizeFolder.empty())
-                {
-                    const size_t slash = file.find_last_of("\\/");
-                    const std::string sizedFile = sizeFolder + (slash == std::string::npos ? file : file.substr(slash + 1));
-                    if (vfs.Exists(sizedFile)) { file = sizedFile; sized.push_back(id); }
-                }
+                const std::string file = FileFor(*g);
+                readFrom[id] = file;
                 if (auto data = vfs.Load(file)) sprite = std::make_unique<Sprite>(std::move(*data));
                 else Missing(file);
             }
@@ -68,25 +63,46 @@ namespace wow
         return (sprites[id] = std::move(sprite)).get();
     }
 
+    // The file a graphics entry is read from: one named for it (SetFileOverrides), else the copy made for the view
+    // size if there is one (the name after its folder), else the game's own
+    std::string Resources::FileFor(const GType& g)
+    {
+        const size_t slash = g.file.find_last_of("\\/");
+        std::string name = slash == std::string::npos ? g.file : g.file.substr(slash + 1);
+        std::string lower = name;
+        for (char& c : lower) c = char(std::tolower(static_cast<unsigned char>(c)));
+        if (auto o = overrides.find(lower); o != overrides.end() && vfs.Exists(o->second)) return o->second;
+        if (!sizeFolder.empty() && vfs.Exists(sizeFolder + name)) return sizeFolder + name;
+        return g.file;
+    }
+
+    void Resources::Refresh()
+    {
+        std::vector<int> stale;
+        for (const auto& [id, file] : readFrom)
+            if (const GType* g = FindGType(id); g && FileFor(*g) != file) stale.push_back(id);
+        for (int id : stale)
+        {
+            sprites.erase(id);
+            raws.erase(id);
+            readFrom.erase(id);
+            for (auto it = frames.begin(); it != frames.end();) it = it->first.first == id ? frames.erase(it) : std::next(it);
+        }
+    }
+
     void Resources::SetViewSize(int width, int height)
     {
         const std::string folder = "dat\\extra\\" + std::to_string(width) + "x" + std::to_string(height) + "\\";
         if (folder == sizeFolder) return;
-        // let go of what came from the old size's folder, and of anything the new one has a copy of
-        for (const auto& [id, sprite] : sprites)
-        {
-            const GType* g = FindGType(id);
-            if (!g) continue;
-            const size_t slash = g->file.find_last_of("\\/");
-            if (vfs.Exists(folder + (slash == std::string::npos ? g->file : g->file.substr(slash + 1)))) sized.push_back(id);
-        }
-        for (int id : sized)
-        {
-            sprites.erase(id);
-            for (auto it = frames.begin(); it != frames.end();) it = it->first.first == id ? frames.erase(it) : std::next(it);
-        }
-        sized.clear();
         sizeFolder = folder;
+        Refresh();
+    }
+
+    void Resources::SetFileOverrides(std::map<std::string, std::string> files)
+    {
+        if (files == overrides) return;
+        overrides = std::move(files);
+        Refresh();
     }
 
     const IndexedImage* Resources::GetFrame(int id, int frame)
@@ -124,8 +140,10 @@ namespace wow
             std::optional<std::vector<uint8_t>> data;
             if (const GType* g = FindGType(id))
             {
-                data = vfs.Load(g->file);
-                if (!data) Missing(g->file);
+                const std::string file = FileFor(*g);
+                readFrom[id] = file;
+                data = vfs.Load(file);
+                if (!data) Missing(file);
             }
             else Missing("graphics entry " + std::to_string(id));
             it = raws.emplace(id, std::move(data)).first;

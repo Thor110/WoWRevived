@@ -36,6 +36,10 @@ namespace wow
         // dat\extra\<width>x<height>\ beside the game's files (WoWRevived's menu backgrounds: humanbd, martbd,
         // legal1, legal2), is read from there. Changing it lets go of the sprites that were, or now are, such copies.
         void SetViewSize(int width, int height);
+        // Files read in place of the game's own, by name without its folder (lower case) to a game path: the war
+        // map's wider pictures for a view wider than the original's (WarMap::SetViewSize). Replaces the last set.
+        void SetFileOverrides(std::map<std::string, std::string> files);
+        bool HasFile(const std::string& gamePath) { return vfs.Exists(gamePath); }
         const Font* GetFont(int gtype);
         // A graphics entry's file as it is (class 6 entries are raw 8-bit images, like the route arrows' 256 x 64)
         const std::vector<uint8_t>* GetRaw(int gtype);
@@ -57,8 +61,11 @@ namespace wow
         TextTable text;
         std::map<int, GType> gtypes;
         std::map<int, std::unique_ptr<Sprite>> sprites;
+        std::map<std::string, std::string> overrides;
+        std::map<int, std::string> readFrom;   // each graphics entry's file as it was read
+        std::string FileFor(const GType& g);
+        void Refresh();                        // lets go of every entry whose file would now be another
         std::string sizeFolder;              // "dat\\extra\\800x600\\", empty until a size is set
-        std::vector<int> sized;              // the graphics entries read from a size's folder
         std::map<std::pair<int, int>, IndexedImage> frames;
         std::map<int, std::unique_ptr<Font>> fonts;
         std::map<int, std::optional<std::vector<uint8_t>>> raws;

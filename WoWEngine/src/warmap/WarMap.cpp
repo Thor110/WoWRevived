@@ -22,7 +22,7 @@ namespace wow
 {
     namespace
     {
-        constexpr int ScreenW = 640, ScreenH = 480;
+        constexpr int GameW = 640, GameH = 480;      // the game's own screen, which the save's view is measured from
         // [Screen] "Scroll Border" (dword_4BA05C) full screen; 32 in a window (byte dword_4EA364 clear)
         inline int EdgeZoneNow() { return Screen::windowed ? 32 : 4; }
         // The map's shade table has 89 levels: ramps of tints either side of the normal 11, then solid colours at
@@ -125,8 +125,43 @@ namespace wow
         MakeViews();
     }
 
-    int WarMap::ViewW() const { return ScreenW; }
-    int WarMap::ViewH() const { return ScreenH; }
+    int WarMap::ViewW() const { return viewW; }
+    int WarMap::ViewH() const { return viewH; }
+
+    // MODERN FIX (docs/MODERN.md "Resolution"): the view is the view size, not always 640 x 480. The game's picture
+    // is 1498 wide; for a view wider than that WoWRevived's wider ones (1921, the original at their left) are read
+    // from DAT\warmap\ when they are there, and only then, so a smaller view has no empty map to scroll into.
+    // The view's middle stays where it was.
+    void WarMap::SetViewSize(int w, int h)
+    {
+        w = std::max(GameW, w);
+        h = std::max(GameH, h);
+        const int cx = cameraX + viewW / 2, cy = cameraY + viewH / 2;
+        viewW = w;
+        viewH = h;
+        std::map<std::string, std::string> wide;
+        if (w > warmap::MapWidth)
+        {
+            static constexpr const char* Files[][2] = {
+                { "hwm.spr", "dat\\warmap\\TEMP-HWM.SPR" }, { "hwmhi.spr", "dat\\warmap\\TEMP-HWMHI.SPR" },
+                { "mwm.spr", "dat\\warmap\\TEMP-MWM.SPR" }, { "mwmhi.spr", "dat\\warmap\\TEMP-MWMHI.SPR" },
+                { "mmini.spr", "dat\\warmap\\mmini.spr" },
+            };
+            for (const auto& f : Files) if (res.HasFile(f[1])) wide[f[0]] = f[1];
+        }
+        res.SetFileOverrides(std::move(wide));
+        map = sectorMap = nullptr;      // read again (the lazy load in Update), whichever they now are
+        map = res.GetFrame(warmap::MapGType);
+        sectorMap = res.GetFrame(warmap::SectorMapGType);
+        cameraX = cx - viewW / 2;
+        cameraY = cy - viewH / 2;
+        Clamp();
+        LayoutAll();
+    }
+
+    // the picture's size (the wider one's when it is the one read)
+    int WarMap::MapW() const { return map ? map->width : warmap::MapWidth; }
+    int WarMap::MapH() const { return map ? map->height : warmap::MapHeight; }
 
     void WarMap::CentreOn(int x, int y)
     {
@@ -137,8 +172,8 @@ namespace wow
 
     void WarMap::GlideTo(int x, int y)
     {
-        const int tx = std::clamp(x - ViewW() / 2, 0, warmap::MapWidth - ViewW());
-        const int ty = std::clamp(y - ViewH() / 2, 0, warmap::MapHeight - ViewH());
+        const int tx = MapW() > ViewW() ? std::clamp(x - ViewW() / 2, 0, MapW() - ViewW()) : (MapW() - ViewW()) / 2;
+        const int ty = MapH() > ViewH() ? std::clamp(y - ViewH() / 2, 0, MapH() - ViewH()) : (MapH() - ViewH()) / 2;
         zoomer = Zoomer{};
         zoomer.active = true;
         zoomer.x = float(cameraX);
@@ -168,8 +203,10 @@ namespace wow
 
     void WarMap::Clamp()
     {
-        cameraX = std::clamp(cameraX, 0, warmap::MapWidth - ViewW());
-        cameraY = std::clamp(cameraY, 0, warmap::MapHeight - ViewH());
+        // (a view larger than the picture, which only comes with a wide view and no wider picture to read, has
+        // the picture in its middle)
+        cameraX = MapW() > ViewW() ? std::clamp(cameraX, 0, MapW() - ViewW()) : (MapW() - ViewW()) / 2;
+        cameraY = MapH() > ViewH() ? std::clamp(cameraY, 0, MapH() - ViewH()) : (MapH() - ViewH()) / 2;
     }
 
     // The mini-map panel, "WarMap miniMap frame" (0x423420) around "WarMap miniMap view" (0x422C70). Each first
@@ -186,8 +223,8 @@ namespace wow
         if (!panelShown) return p; // hidden with Tab: nothing to hit
         bool human = res.Human();
         Rect frameSize = SpriteRect(0x80, 0, 0);
-        const int frameX = ScreenW - frameSize.w - 4;                          // 0x42371A
-        const int miniY = ScreenH - MiniH - 4 - (human ? 8 : 0);               // 0x422EC9
+        const int frameX = viewW - frameSize.w - 4;                          // 0x42371A
+        const int miniY = viewH - MiniH - 4 - (human ? 8 : 0);               // 0x422EC9
         p.mini = { frameX + (human ? 9 : 10), miniY, MiniW, MiniH };           // 0x418C35 / 0x418C70
         p.frame = { frameX, miniY - (human ? 0x50 + 0x20 : 0x44 + 0x28), frameSize.w, frameSize.h }; // 0x418C14 / 0x418C4F
         static constexpr int Gtypes[3] = { 0x33, 0x35, 0x34 };        // Unit View, Construction View, Resource View
@@ -1103,8 +1140,9 @@ namespace wow
             (research[0]->Human() ? research[0] : research[1])->Save(s.research);
             (research[0]->Human() ? research[1] : research[0])->Save(s.research);
         }
-        s.warMap[0] = uint32_t(cameraX);
-        s.warMap[1] = uint32_t(cameraY);
+        // (the view's corner as the game's 640 x 480 screen would have it about the same middle)
+        s.warMap[0] = uint32_t(cameraX + viewW / 2 - GameW / 2);
+        s.warMap[1] = uint32_t(cameraY + viewH / 2 - GameH / 2);
         s.warMap[2] = uint32_t(selected);
         s.warMap[3] = uint32_t(viewMode);
         s.hours = game.ticks;
@@ -1404,11 +1442,11 @@ namespace wow
         // mouse's distance from the centre over (half the width / Scroll Speed), both ways at once (0x7A)
         // *Provisional*: the border is the full-screen one (4); in a window the game uses 32
         if (mouseX >= 0 && !dragging &&
-            !(mouseX > EdgeZoneNow() && mouseX < ScreenW - EdgeZoneNow() && mouseY > EdgeZoneNow() && mouseY < ScreenH - EdgeZoneNow()))
+            !(mouseX > EdgeZoneNow() && mouseX < viewW - EdgeZoneNow() && mouseY > EdgeZoneNow() && mouseY < viewH - EdgeZoneNow()))
         {
-            const int div = std::max(1, (ScreenW / 2) / scrollStep);
-            cameraX -= (ScreenW / 2 - mouseX) / div;
-            cameraY -= (ScreenH / 2 - mouseY) / div;
+            const int div = std::max(1, (viewW / 2) / scrollStep);
+            cameraX -= (viewW / 2 - mouseX) / div;
+            cameraY -= (viewH / 2 - mouseY) / div;
             Clamp();
         }
         PanelLayout panel = Panel();
@@ -1463,12 +1501,18 @@ namespace wow
             const uint32_t* palettes[256];
             for (int v = 0; v < 256; v++) palettes[v] = shade->Level(lv[size_t(v)]);
             uint32_t* out = canvas.Pixels();
-            int w = std::min(canvas.Width(), m->width - cameraX), h = std::min(canvas.Height(), m->height - cameraY);
+            // (the camera is negative when the picture is narrower than the view: the picture sits in the middle
+            // with black around it)
+            const int dx = cameraX < 0 ? -cameraX : 0, dy = cameraY < 0 ? -cameraY : 0;
+            const int sx = std::max(cameraX, 0), sy = std::max(cameraY, 0);
+            const int w = std::min(canvas.Width() - dx, m->width - sx), h = std::min(canvas.Height() - dy, m->height - sy);
+            if (dx || dy || w < canvas.Width() || h < canvas.Height())
+                std::fill(out, out + size_t(canvas.Width()) * size_t(canvas.Height()), 0xFF000000u);
             for (int y = 0; y < h; y++)
             {
-                const uint8_t* src = &m->pixels[size_t(cameraY + y) * size_t(m->width) + size_t(cameraX)];
-                const uint8_t* sec = &s->pixels[size_t(cameraY + y) * size_t(s->width) + size_t(cameraX)];
-                uint32_t* dst = out + size_t(y) * size_t(canvas.Width());
+                const uint8_t* src = &m->pixels[size_t(sy + y) * size_t(m->width) + size_t(sx)];
+                const uint8_t* sec = &s->pixels[size_t(sy + y) * size_t(s->width) + size_t(sx)];
+                uint32_t* dst = out + size_t(dy + y) * size_t(canvas.Width()) + size_t(dx);
                 for (int x = 0; x < w; x++) dst[x] = palettes[sec[x]][src[x]];
             }
         }
@@ -1700,7 +1744,9 @@ namespace wow
                 // 0x423244 (the view told where it is, 0x8004): the corner scaled down, not below 0 and kept 2 inside
                 // the far edges, then 1 more each way; the box is its rectangle, so its last column and row are one
                 // short of the size (the owner's frame: 42 x 32 pixels, its top 121 down)
-                const int bw = MiniW * 640 / warmap::MapWidth, bh = MiniH * 480 / warmap::MapHeight;
+                // (the mini-map is the game's picture's width, 1498, whatever is read: a wider view's box is cut off
+                // at its edge)
+                const int bw = std::min(MiniW - 2, MiniW * viewW / warmap::MapWidth), bh = std::min(MiniH - 2, MiniH * viewH / warmap::MapHeight);
                 int bx = std::max(0, cameraX * MiniW / warmap::MapWidth), by = std::max(0, cameraY * MiniH / warmap::MapHeight);
                 if (bx + bw > MiniW - 2) bx = MiniW - bw - 2;
                 if (by + bh > MiniH - 2) by = MiniH - bh - 2;
@@ -1722,7 +1768,7 @@ namespace wow
             // [Colours] "Message Text" (19, 0x4288A3)
             int y = 4 + logScroll;
             for (const LogLine& line : log)
-                if (line.life > 0 || line.state == 1) { canvas.DrawString(0x72, line.text, { 0x28, y, ScreenW - 0x28, 14 }, 0, colours.messageText); y += 16; }
+                if (line.life > 0 || line.state == 1) { canvas.DrawString(0x72, line.text, { 0x28, y, viewW - 0x28, 14 }, 0, colours.messageText); y += 16; }
         }
 
         // the sector under the mouse or the panel button's name, and the engine's own notes: a strip the game doesn't
@@ -1738,14 +1784,14 @@ namespace wow
             // a darkened strip behind the text so it reads on either map
             uint32_t* out = canvas.Pixels();
             int rows = status.empty() || !statusStrip ? 0 : 16;
-            for (int y = ScreenH - 20; y < ScreenH - 20 + rows; y++)
+            for (int y = viewH - 20; y < viewH - 20 + rows; y++)
                 for (int x = 4; x < 240; x++)
                 {
                     uint32_t& p = out[size_t(y) * size_t(canvas.Width()) + size_t(x)];
                     p = (p >> 2) & 0x3F3F3F;
                 }
         }
-        if (statusStrip && !status.empty()) canvas.DrawString(0x72, status, { 8, ScreenH - 18, 300, 14 }, 0, colours.items);
+        if (statusStrip && !status.empty()) canvas.DrawString(0x72, status, { 8, viewH - 18, 300, 14 }, 0, colours.items);
         DrawBuildWindow(canvas);
         // the popup menu over everything (z 0x61B2): each item's icon, the next frame while the mouse is on it
         // (*provisional*: the hot button's frames aren't traced)
@@ -2688,7 +2734,7 @@ namespace wow
     Rect WarMap::BoxRect() const
     {
         Rect b = SpriteRect(0x68, 0, 0);
-        return { (ScreenW - b.w) / 2, ScreenH - b.h - 4, b.w, b.h };
+        return { (viewW - b.w) / 2, viewH - b.h - 4, b.w, b.h };
     }
 
     Rect WarMap::BoxButtonRect() const
@@ -2863,7 +2909,7 @@ namespace wow
         // original a unit on its way shows Cancel, Cancel move and Information, and no View map.
         const bool hotAnswered = hot >= 0 && counters[size_t(hot)].players;
         if (!hotAnswered && selected >= 1 && selected <= warmap::SectorCount) add(0x8133, 0x8019, 0x2E, 0x475);
-        LayOutPopupRows(popup, x, y, ScreenW, ScreenH);
+        LayOutPopupRows(popup, x, y, viewW, viewH);
         popupOpenRow = -1;
         sounds.push_back(0x193);
     }
@@ -3205,7 +3251,7 @@ namespace wow
     Rect WarMap::CalendarRect() const
     {
         Rect size = SpriteRect(0x93, 0, 0);
-        return { ScreenW - size.w - 4, 4, size.w, size.h };
+        return { viewW - size.w - 4, 4, size.w, size.h };
     }
 
     // The speed slider (0x431E30 with GType 0x97: hu_speed.spr 120 x 58, ma_speed.spr 65 x 26, 22 frames: 11

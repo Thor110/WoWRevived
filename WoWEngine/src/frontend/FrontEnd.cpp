@@ -1061,6 +1061,13 @@ namespace wow
             if (auto comma = size.find(','); comma != std::string::npos) h = std::atoi(size.c_str() + comma + 1);
             if (w != sizedW || h != sizedH) { sizedW = w; sizedH = h; res.SetViewSize(w, h); }
         }
+        // the war map's view is the view size (one of the sizes, else 640 x 480)
+        if (WarMap* map = ActiveWarMap())
+        {
+            int w = 640, h = 480;
+            for (const Mode& mode : Modes) if (mode.w == sizedW && mode.h == sizedH) { w = mode.w; h = mode.h; }
+            if (map->PictureW() != w || map->PictureH() != h) map->SetViewSize(w, h);
+        }
         // the cursor animates (0x403890 -> 0x40CDC0 -> 0x40EF20(0x80, loop)): the wait cursor's frames go round, a
         // one-frame cursor stays as it is
         cursorFrame += 0x80;
@@ -1463,9 +1470,16 @@ namespace wow
         else if (warMap && !screen->Background()) warMap->Draw(canvas);
         // the background from the picture's top left, at its own size (the one made for the view size, if any);
         // everything else from the screen's 0, 0, which is the middle 640 x 480 of a larger picture
-        if (screen->Background()) canvas.DrawSprite(screen->Background(), 0, 0, 0);
         int ox = 0, oy = 0;
         Origin(ox, oy);
+        // (a background no larger than 640 x 480 is the game's own, drawn for controls at fixed places: it goes
+        // in the middle with them)
+        if (screen->Background())
+        {
+            const IndexedImage* back = res.GetFrame(screen->Background(), 0);
+            const bool own = back && back->width <= 640 && back->height <= 480;
+            canvas.DrawSprite(screen->Background(), 0, own ? ox : 0, own ? oy : 0);
+        }
         canvas.SetOrigin(ox, oy);
         screen->Draw(canvas);
         DrawTooltip(canvas);
@@ -1478,13 +1492,13 @@ namespace wow
 
     namespace
     {
-        // a screen that is still drawn at 640 x 480 and scaled by the window: the war map, the battle map, their
-        // menus (no background of their own) and the movies
-        bool SmallPicture(const Screen* screen, bool overMap)
+        // a screen that is still drawn at 640 x 480 and scaled by the window: the battle map, its menu (no
+        // background of its own) and the movies. The war map's view is the view size.
+        bool SmallPicture(const Screen* screen, bool overBattle)
         {
             if (!screen) return false;
             const int id = screen->Id();
-            return id == WarMap::Id || id == BattleMap::Id || id == MovieScreen::Id || (overMap && !screen->Background());
+            return id == BattleMap::Id || id == MovieScreen::Id || (overBattle && !screen->Background());
         }
     }
 
@@ -1492,7 +1506,7 @@ namespace wow
     {
         width = 640;
         height = 480;
-        if (SmallPicture(screen.get(), warMap || battleMap)) return;
+        if (SmallPicture(screen.get(), battleMap != nullptr)) return;
         const std::string size = ini.GetString("Screen", "Size", "640,480");
         int w = std::atoi(size.c_str()), h = 0;
         if (auto comma = size.find(','); comma != std::string::npos) h = std::atoi(size.c_str() + comma + 1);
@@ -1532,7 +1546,8 @@ namespace wow
     void FrontEnd::Origin(int& x, int& y) const
     {
         x = y = 0;
-        if (SmallPicture(screen.get(), warMap || battleMap)) return;
+        // the maps are the whole picture; their menus, like every other 640 x 480 screen, sit in its middle
+        if (SmallPicture(screen.get(), battleMap != nullptr) || (screen && screen->Id() == WarMap::Id)) return;
         x = std::max(0, (pictureW - 640) / 2);
         y = std::max(0, (pictureH - 480) / 2);
     }
