@@ -172,5 +172,8 @@ place (0x442D80). What is changed is the war map object's type (+0x20, 0x442E06)
 battle map object, made when the building was, keeps the type it was made with, and the save writes each with
 its own type: in the owner's saves all 535 upgraded buildings are a higher level on the war map over a first
 level battle object. So on the battle map an upgraded building is the old one: its model, its health, its guns.
-Whether that was meant isn't known; it reads like a step left out. The engine does the same from update 185.
+Whether that was meant isn't known; it reads like a step left out: every level has parts, armour and guns of its
+own (update 186), and nothing found passes the new type on to the battle object (its type setter, 0x47EB10, is
+only called by itself). The player's buildings go the same way as the computer player's (140 and 395 of the
+535). The engine has a modern fix for it, on unless turned off (docs/MODERN.md).
 

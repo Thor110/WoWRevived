@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 185) and what is next
+## Where things stand (update 186) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is

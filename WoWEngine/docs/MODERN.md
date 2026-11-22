@@ -35,6 +35,17 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
   its own state (0x4042D0; docs/ODDITIES.md): what happens in the original whenever a new campaign is started
   with the network version enabled. The engine doesn't save a campaign that has no slot from 1 to 5.
 
+- **Upgraded buildings fight as their new level** (update 186; `[Modern]` "Upgraded buildings in battle", on;
+  `WarMap::FightType`). The game upgrades a building's war map object and leaves its battle object the first
+  level's (docs/ODDITIES.md), so a Vehicle Factory Level 3 stands on the battle map as a Level 1. Every level
+  has data of its own, checked for all of them: the factories, ship yards, hangars, constructors, suspension
+  field sites and training centres add parts and armour by level (the Martian training centre a new main
+  model too); each gun post, emplacement, anti-aircraft array, heat ray, turret and launcher level has its
+  own model, gun and armour; the fences and mines their own part or marker. The fix uses the war map type in
+  a battle when it is the battle type's upgrade, with the saved health scaled to the new level's and back.
+  The save is still written the game's way (the battle object's type untouched), so it loads in the original.
+  Off, a building fights as the level it was built as, as the original has it.
+
 ## Options
 
 ### Graphics
@@ -120,6 +131,23 @@ file ends. To come here: a way to start and stop both from the menus. Two things
 recording is only raw input by frame number: with either switch the random numbers start from 1, so a recording
 meets the same game it was made in; and a key the game has no virtual key for is kept as its own code with the
 top bit set. A recording is only good from the state it was made from (the same start, the same save).
+
+### Buildings the game names and never offers (the owner, update 186)
+
+To be restored as options once the rest is done. What the data holds:
+
+- **Matter Transfer Station** (type 122, Martian). A whole building: its model `dat\MT_Main.iob` (GType 499)
+  with six more parts (`MT_leg1`-`4`, `MT_mainb`, `MT_maint`, all in Dat.wow), armour 1500, 30 days to build,
+  80 to research, an information page (0x258: "Matter transfer stations allow the rapid distribution of
+  materials over great distances.") and its research strings (0x208-0x20A). What it lacks is a builder
+  (records 49 to 51), so nothing can be told to make it, and there is no code traced that would act on having
+  one. To do: give it the constructors as builders behind an option, and decide what "rapid distribution"
+  does to the economy's distance cost (`[Tweak]` Distance Crippler).
+- **Railway Platform** (type 59, Human). A name and nothing else: the strings 0x194-0x197 (its name,
+  "Researching ...", "Completed research for ...") and the page 0x237 ("Construction of a temporary rail
+  depot helps to speed up transportation."), but in the unit table no side, no model, no armour, no building or
+  research time and no builder. There are no railway tracks either. It needs a model made before it can be
+  anything; until then it stays behind a testing option.
 
 ## Game modes
 

@@ -71,7 +71,7 @@ namespace wow
                     BattleGroup g;
                     // the battle's objects are the object's own, with the type they were made with: an upgraded
                     // building's is still its first level's (SaveObject::BattleType)
-                    g.type = o.BattleType();
+                    g.type = FightType(o);      // (BattleType, or with the modern fix the level it was upgraded to)
                     g.list = list;
                     g.previous = k.previous;
                     g.ref = ref;
@@ -79,6 +79,8 @@ namespace wow
                     g.aiClass = AiClass(o.Type());
                     g.places = o.BattlePositions();
                     g.healths = o.BattleHealths();
+                    if (const float scale = FightHealthScale(o); scale != 1.0f)
+                        for (int& h : g.healths) h = int(float(h) * scale + 0.5f);
                     if (list >= 2 && o.Value(0) != 0.0f) g.progress = o.Value(1) / o.Value(0);
                     out.push_back(std::move(g));
                 }

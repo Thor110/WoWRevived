@@ -591,9 +591,38 @@ namespace wow
         }
     }
 
+    // MODERN FIX (SetUpgradedInBattle): a construction or resource whose war map type has moved on from its battle
+    // object's by upgrades (the battle type's +0x88 chain reaches it) fights as the war map type. The save keeps
+    // the battle object as the game writes it, its health on the old type's scale, so the health is scaled going
+    // into a battle and back coming out.
+    int WarMap::FightType(const SaveObject& o) const
+    {
+        const int saved = o.BattleType(), now = o.Type();
+        if (!upgradedInBattle || saved == now || o.list < 2) return saved;
+        int t = saved;
+        for (int step = 0; step < 4; step++)
+        {
+            auto u = unitData.find(t);
+            if (u == unitData.end() || u->second.upgrade == 0 || u->second.upgrade == t) break;
+            t = u->second.upgrade;
+            if (t == now) return now;
+        }
+        return saved;
+    }
+
+    float WarMap::FightHealthScale(const SaveObject& o) const
+    {
+        const int fights = FightType(o), saved = o.BattleType();
+        if (fights == saved) return 1.0f;
+        const int a = UnitMaxHealth(fights), b = UnitMaxHealth(saved);
+        return a > 0 && b > 0 ? float(a) / float(b) : 1.0f;
+    }
+
     void WarMap::SetUnitHealth(int ref, int slot, int health)
     {
         if (ref < 0 || size_t(ref) >= table.size() || slot < 0) return;
+        const float scale = FightHealthScale(table[size_t(ref)]);
+        if (scale != 1.0f) health = std::max(health > 0 ? 1 : 0, int(float(health) / scale + 0.5f));
         table[size_t(ref)].SetBattleHealth(size_t(slot), health);
     }
 

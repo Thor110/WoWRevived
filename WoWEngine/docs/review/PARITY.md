@@ -933,6 +933,18 @@ transparency")
   the save and the upgrade's code; a frame of the original with an upgraded building would settle it.
 - *The layouts of constructions and resources* noted in PLAN.md 4.4 for writing them whole later.
 
+**Update 186** (the owner's questions on update 185)
+- *Do the upgraded levels have data of their own?* Yes, every one (the building table read out for both
+  sides): more parts and armour by level, or another model and gun. So the original's battles never show a
+  building that was upgraded where it stood, though one built at the higher level is that level (56 of the
+  151 six inch gun posts in the saves were).
+- *Is the battle object's type ever brought up to date?* Nothing found: its setter (vt+0x28, 0x47EB10) has no
+  caller that passes the war map object's type.
+- [x] **MODERN FIX**: an upgraded building fights as its new level (`[Modern]` "Upgraded buildings in battle",
+      on). MODERN.md. With it off the engine is as update 185, the original's way.
+- *The Matter Transfer Station and the Railway Platform* read out (MODERN.md): the first is a whole building
+  with no builder, the second a name only.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

@@ -644,6 +644,7 @@ namespace wow
         map->SetArrowTypes(std::move(arrows));
         map->SetEventOptions([this](const char* name, bool on) { return ini.GetBool("Event", name, on); });
         map->SetStickyPopup(ini.GetBool("Modern", "Sticky popup menus", false));   // a modern option (docs/MODERN.md)
+        map->SetUpgradedInBattle(ini.GetBool("Modern", "Upgraded buildings in battle", true));   // MODERN FIX (docs/MODERN.md)
         {
             ObjOjd::ArmourModifiers armour;     // the same [Tweak] values the battle map takes (0x4373D0)
             armour.visRadMul = ini.GetFloat("Tweak", "VisRadMul", 1.5f);

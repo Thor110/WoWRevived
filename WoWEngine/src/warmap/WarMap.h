@@ -152,6 +152,10 @@ namespace wow
         // A sound's length in ticks (the victory's wait, 0x41F400)
         void SetSoundLength(std::function<int(int)> length) { soundLength = std::move(length); }
         void SetStickyPopup(bool on) { stickyPopup = on; }   // [Modern] "Sticky popup menus"
+        // MODERN FIX, [Modern] "Upgraded buildings in battle" (on): a building upgraded in place fights as its new
+        // level. The game upgrades the war map object alone and leaves its battle object the first level's
+        // (docs/ODDITIES.md), though every level has its own parts, armour and guns. Off is the game's way.
+        void SetUpgradedInBattle(bool on) { upgradedInBattle = on; }
         void SetArmour(const ObjOjd::ArmourModifiers& a) { armour = a; }
         // a battle unit's health (+0xC4) put back in its war map object as a battle leaves it
         void SetUnitHealth(int ref, int slot, int health);
@@ -278,6 +282,9 @@ namespace wow
         // popup's Information item (0x808C) of an object whose type has a page (+0x18), and the box it opens
         struct InfoPage { std::string text; int x = 0, y = 0; int textId = 0, speechIn = 15; };
         std::optional<InfoPage> infoPage;
+        bool upgradedInBattle = true;
+        int FightType(const SaveObject& o) const;       // the type its battle objects fight as
+        float FightHealthScale(const SaveObject& o) const;  // full health as it fights over full health as saved
         int resStackX = 4, resStackY = 16, infoPageLevel = 15, boxDetailLevel = 21, boxCommandLevel = 22;
         int infoSpeechStart = 0;        // a sound for the front end to start and keep (the page's speech)
         bool infoSpeechFade = false;    // the page has gone: its speech fades over 30
