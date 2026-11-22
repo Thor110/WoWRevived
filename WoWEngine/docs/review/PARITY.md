@@ -667,6 +667,16 @@ Martian start's units turned differently)
 - The engine doesn't write the start files: its save leaves a campaign without a slot alone, now marked
   `MODERN FIX` in the code and listed in MODERN.md.
 
+**Update 163** (how a campaign gets slot 0; notes only)
+- The slot global (dword_4D2578) is written only by a slot button (0x4043FA), the buttons carry 1 to 5, and the
+  overwritten start file still has the developers' name, so the campaign that wrote it never went through the
+  slot and name menus. Full slots alone don't do it. Saves are opened "wb". In ODDITIES.md.
+
+**Update 164** (the cause of slot 0, from the owner; notes only)
+- [x] **Closed: how a campaign gets slot 0.** With "Enable Network Version" on, the Main Menu's Single Player
+      Campaign menu starts a new campaign with no slot or name step (0x4068F0), so its slot is 0 and its saves
+      go over the start file. The owner's install has the network version on. In ODDITIES.md.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

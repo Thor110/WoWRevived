@@ -30,6 +30,35 @@ from wherever that one stopped. The owner made no edits by hand; this is how the
 be a day old. **To put it right, copy the two files from the disc again.** The engine doesn't do this: a
 campaign with no slot isn't saved (a `MODERN FIX`, docs/MODERN.md).
 
+How a campaign comes to have slot 0 (updates 163, 164). What the listing says:
+
+- The slot is one global (dword_4D2578), 0 when the game starts, and written in one place only: when a slot
+  button is pressed in Select Campaign to Replace (0x4043FA). Those five buttons carry 1 to 5 (0x409110), full
+  or empty alike; a full slot only adds the "Replace Existing Campaign?" question. So full slots don't lead to
+  slot 0 by themselves.
+- The new campaign (0x8139) and the war map's start both read that global. If the war map is started in a run
+  of the game where no slot button has been pressed yet, the slot is still 0: the campaign plays from the start
+  file and saves back onto it.
+- The overwritten `Martian.000` agrees: its name field still reads `SaveGame\Martian.001`, the developers'
+  name. A campaign made through the menus has the name typed in Edit Campaign there (0x404660), so this one
+  never passed the slot and name steps.
+
+**The way in is the network version's menu** (update 164; the owner's install has it on). With `[Screen]`
+"Enable Network Version" set (0x4016F0, byte_4D12FC) the Main Menu doesn't offer New Campaign with its slot
+menu (0x8138); it offers Single Player Campaign (0xA0), and that menu's "Start New Campaign" sends 0x8133 with
+0x8037 at once: the disc check, the intro and the war map, **without Select Campaign to Replace or Edit
+Campaign** (0x4068F0; docs/FRONTEND.md). The slot global is never set, so the campaign has slot 0, plays from
+`Human.000` / `Martian.000` and is saved back over it the first time the war map is left or a battle comes
+back. From then on that install's new campaigns start from the last one's state, under the developers' name.
+It is a fault of the original with the network version on, in an unpatched game as much as a patched one, and
+a likely source of "the new campaign started strangely" reports. The engine doesn't save a campaign without a
+slot (`MODERN FIX`), so the same menu there leaves the start files alone.
+
+Two other things checked for the owner. A save is written with `fopen(..., "wb")` (0x44EA20), so a shorter save
+doesn't leave the tail of a longer one behind. And none of the twelve saves to hand has a section tag out of
+place (one `GAME`, `WMAP` and `CALN` each). The owner remembers finding stray `WMAP` tags in saves while
+writing the save editor; nothing here shows it, so it wants a file that does before anything is said about it.
+
 Every one of the ten files, the 1998 ones included, carries the name of a slot 1 save inside it
 (`SaveGame\Human.001`, `SaveGame\Martian.001`): the developers made the start files by saving a game in slot 1
 and renaming it.

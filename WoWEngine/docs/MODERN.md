@@ -32,7 +32,8 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
 
 - **The start files are never saved over**: the game's save writes slot 0 to `Human.000` / `Martian.000`, the
   files every new campaign starts from, so a campaign that reached the war map without a slot replaced them with
-  its own state (0x4042D0; docs/ODDITIES.md). The engine doesn't save a campaign that has no slot from 1 to 5.
+  its own state (0x4042D0; docs/ODDITIES.md): what happens in the original whenever a new campaign is started
+  with the network version enabled. The engine doesn't save a campaign that has no slot from 1 to 5.
 
 ## Options
 
