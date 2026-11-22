@@ -1844,12 +1844,14 @@ namespace wow
         auto u = setup.units->find(o.type);
         const GType* g = nullptr;
         int gtype = 0;
+        float objectScale = 1.0f;
         for (const auto& part : u->second.parts)
         {
             auto pu = setup.units->find(part.a);
             if (pu == setup.units->end()) continue;
             const GType* pg = res.FindGType(pu->second.field28);
-            if (pg && pg->gclass == 2) { g = pg; gtype = pu->second.field28; break; }
+            // the segment's own scale (+0xA4): the part's float (0x47EEC0) times its type's (+0xA8, 0x47EE24)
+            if (pg && pg->gclass == 2) { g = pg; gtype = pu->second.field28; objectScale = part.f * pu->second.scale; break; }
         }
         if (!g) return;
         auto file = res.LoadFile(g->file);
@@ -1862,6 +1864,9 @@ namespace wow
                 scale = six->second.a;
                 follow = six->second.c;
             }
+        // the model's scales are ftol(ftol(the GType's float) x the object's) (0x47ED08), as a unit's parts'
+        // (*provisional*: the segments made after the first, 0x497900, are given the first's)
+        scale = float(int(float(int(scale)) * objectScale));
         const Bridge bridge = Bridge::Create(land, o.extra[0], o.extra[1], o.extra[2], o.extra[3]);
         AddBridgeNodes(bridge);
         const size_t link = bridgeLinks.size() - 1;

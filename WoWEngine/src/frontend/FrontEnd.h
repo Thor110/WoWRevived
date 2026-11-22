@@ -164,6 +164,10 @@ namespace wow
         bool inBattle = false;
         int musicTimer = -1;       // ticks until the next music step, -1 with no war map
         int musicTrack = 1;        // dword_4B9DE0: 0 for track 2, 1 for track 3 (the first step goes to track 2)
+        // the battle map's music (0x4861E0, its 0x813C): CD tracks 4 and 5 in turn (dword_4D0118), from 4
+        int battleMusicTimer = -1; // ticks until its next step, -1 off the battle map
+        int battleTrack = 1;       // dword_4D0124
+        void BattleMusicStep();
         int warAmbient = 0;        // world +0x12C
         int clockSound = 0;        // the calendar's +0x34
         int clockSpeed = -1;       // the speed it was last set for

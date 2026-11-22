@@ -48,9 +48,9 @@ Small and independent; most need one routine traced.
 - [x] 2.1 The route finder as a stateful object, its search spread over updates, a second group's held off 10
       updates (movement A3, 17).
 - [x] 2.2 Bridges as objects that break; broken links; the ground under them redone (movement A5, 21).
-- [ ] 2.3 Footprints taken off and route nodes removed as objects go; crushing.
-- [ ] 2.4 The walker subclass: the leg animation's rate, footprints (0x48FDD0, 0x490070).
-- [ ] 2.5 Fliers and boats checked against their classes; the units' headlights; the scenery's and bridges' object
+- [x] 2.3 Footprints taken off and route nodes removed as objects go; crushing.
+- [x] 2.4 The walker subclass: the leg animation's rate, footprints (0x48FDD0, 0x490070).
+- [x] 2.5 Fliers and boats checked against their classes; the units' headlights; the scenery's and bridges' object
       scale.
 - [ ] 2.6 The order panel (0x484A30), the group keys, the label 0x6F, the combined panel (0x448500), the cursor's
       vt+0x6C; cursor modes 2-7 where the game (not the editor) uses them.
@@ -58,7 +58,7 @@ Small and independent; most need one routine traced.
 - [ ] 2.8 The rest of the computer player in battle.
 - [ ] 2.9 Renderers still provisional: the WOF triangle filler, the blitter modes, the rest of the bm shade
       group's slots.
-- [ ] 2.10 Battle music (CD tracks 4 / 5).
+- [x] 2.10 Battle music (CD tracks 4 / 5).
 
 ## Stage 3: the war map's missing pieces
 

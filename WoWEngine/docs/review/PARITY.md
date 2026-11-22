@@ -331,6 +331,23 @@ settled: battle-ui 8, combat 4 and 9, movement 15, 16 and 24, battle-setup 4, 11
       *Provisional*: a bridge broken but still standing (segments lost at its start, 0x4865A0: only from a
       saved battle), which drops its riders or drowns them (0x4933D0), waits for battle saving.
 
+**Update 142** (PLAN.md Stage 2, continued)
+- [x] PLAN 2.3: the vehicles' look ahead (0x492350 -> 0x47FE10) finds the scenery as well as the units, the world's
+      grid holding both: a scenery object in the way (0x4929A0: not a tree; a walker passes one under 0x30 /
+      0x20 tall, the renderer's +0x2E less +0x2C, an IOB's being its header's 0x12; on a bridge link not the
+      bridges' pieces; else category 0, 2 or 3) is steered round and, at the unit's own place, pushes it off by
+      its radius. Crushing (the mines) and the footprints' and route nodes' removal were already in (updates
+      131, 136, 140, 141); the plan's wording was stale. The line-linked crushable scenery (0x1D0-0x1D3, 0x2B6,
+      0x2B7) still isn't made by the engine.
+- [x] PLAN 2.4: nothing to do; the walkers' leg animation and feet (0x490070, 0x48FDD0) have been in since
+      updates 113 and 128.
+- [x] PLAN 2.5: a bridge's segments take their object scale (the part's float x the type's +0xA8, 0x47EE24 /
+      0x47EEC0) like a unit's parts. IOB and sprite renderers have no scale (0x47EB10), so the scenery has
+      none to apply; the lorries' headlights were already in (their light parts).
+- [x] PLAN 2.10: the battle map's music (0x4861E0, its 0x813C from 0x439DBE): CD tracks 4 and 5 in turn from 4,
+      the next step at the track's end, nothing with the CD option off. *Provisional*: where the track is stopped
+      on leaving the battle.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

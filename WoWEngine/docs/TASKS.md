@@ -217,7 +217,7 @@ docs/REVIEW.md, with the full per-range reports in docs/review/.
 - [~] **Battle AI** (0x445010): the computer player's battle part (threats, own list, the planner 0x4456B0, tasks,
       objects gone) and the groups' periodic stance work (0x483B70: roaming, going home) are in; the computer's
       specials (0x482570) are in too — 07
-- [~] **Battle map music**: CD tracks 4 / 5 (the war map's is done) — 11
+- [x] **Battle map music**: CD tracks 4 / 5 in turn (0x4861E0, update 142) — 11
 - [~] **Reported**: the power bars' colour (frame 0 at full health), the units' size (the object's scale,
       +0xA4 from record 25), the briefing sound's 120-tick fade into the battle map, the popup items' hover and click sounds (0x194 / 0x195,
       the click into the battle map), the popup held open by the right button as the game's (the old way kept as

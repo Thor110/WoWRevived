@@ -905,6 +905,10 @@ namespace wow
             if (WarMap* map = ActiveWarMap())
             {
                 sound.FadeOutAll(30);   // 0x43A13F: leaving the battle map (0x439ED0) every sound fades over 30
+                // (*provisional*: the battle's track is stopped here; where the game stops the CD on the way out
+                // isn't traced. The war map's music comes back 30 ticks after 0x8017.)
+                if (battleMusicTimer >= 0) music.Stop();
+                battleMusicTimer = -1;
                 briefingSound = 0;
                 map->FightBattle(lost ? &*lost : nullptr, lost ? &retreated : nullptr, controlLevel, controlByPlayer, forfeit);
                 auto d = std::make_unique<Debriefing>(res, BattleColoursFromIni(), map->Debriefing(), ini.GetInt("Debriefing", "Delay", 300));
@@ -1024,6 +1028,7 @@ namespace wow
                 rs->SetSpeech(sound.Play(id));
             }
         }
+        if (battleMusicTimer > 0 && screen->Id() == BattleMap::Id && --battleMusicTimer == 0) BattleMusicStep();
         if (WarMap* map = ActiveWarMap()) { if (!inBattle) WarMapSounds(*map); }
         else if (musicTimer >= 0) StopWarMapSounds();
         // a screen's own commands fade out as a click's do; the credits' exit too (0x405689 -> 0x4065E0)
@@ -1240,7 +1245,34 @@ namespace wow
         lastEnemyCount = map->MartianInfestation(map->Briefing().sector, res.Human());
         battle->Begin();
         Show(std::move(battle));
+        BattleMusicStep();      // 0x439DBE: 0x813C to the battle's view as the battle map is entered
         return true;
+    }
+
+    // The battle map's music step (0x4861E0, on 0x813C): with [Sound\Volume] "CD" on (byte dword_4B8A88), a
+    // track still playing is stopped (0x412960) and it looks again in 10 seconds; else the next of tracks 4 and 5
+    // (dword_4D0118, the index dword_4D0124 from 1, so 4 first) is played if it's over 10 seconds long, and the
+    // next step comes at its end (its seconds x "Game Frequency" ticks), or in 10 seconds if it isn't. With the
+    // CD off nothing happens, and no step is posted again (0x4862B0).
+    void FrontEnd::BattleMusicStep()
+    {
+        constexpr int TenSeconds = 10 * 30;
+        battleMusicTimer = -1;
+        if (!ini.GetBool(SoundSection, "CD", true)) return;
+        if (music.Playing() && !music.Finished()) { music.Stop(); battleMusicTimer = TenSeconds; return; }
+        static constexpr int Tracks[2] = { 4, 5 };
+        battleTrack = (battleTrack + 1) % 2;
+        const int track = Tracks[battleTrack];
+        char name[64];
+        std::snprintf(name, sizeof(name), "Music-%s\\%02d Track%02d.wav", res.Human() ? "Human" : "Martian", track, track);
+        auto path = files.Resolve(name);
+        battleMusicTimer = TenSeconds;
+        if (path && music.Play(*path) && music.LengthMs() / 1000 > 10)
+        {
+            music.SetTrack(track);
+            SDL_Log("Playing track %d for %u seconds", track, unsigned(music.LengthMs() / 1000));
+            battleMusicTimer = int(music.LengthMs() / 1000) * 30;
+        }
     }
 
     WarMap* FrontEnd::ActiveWarMap() const

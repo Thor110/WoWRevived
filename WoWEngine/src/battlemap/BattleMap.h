@@ -575,7 +575,11 @@ namespace wow
         struct Neighbours { float sepX = 0, sepY = 0, stepX = 0, stepY = 0, posX = 0, posY = 0; int matched = 0, count = 0; };
         Neighbours Gather(const Unit& u) const;
         std::vector<std::pair<int, int>> BucketCells(int px, int py) const;  // 0x449920 q 0 to 3
-        const Unit* ObjectAt(const Unit& u, int px, int py, int reach) const; // 0x47FE10
+        // What 0x47FE10 finds in the world's grid: a unit, or a scenery object (unit null)
+        struct Obstacle { const Unit* unit = nullptr; float x = 0, y = 0; int radius = 0, z = 0, type = 0; };
+        bool ObjectAt(const Unit& u, int px, int py, int reach, Obstacle& found) const;    // 0x47FE10
+        bool CollidesProp(const Unit& u, const Prop& p) const;                              // 0x4929A0 for scenery
+        int RendererHeight(int type) const;     // a type's renderer's +0x2E less +0x2C
         bool LookAhead(Unit& u);                                              // 0x492350
         // A group's ground (WBMGroup 0x4802E0): the flags, the max slope (+0x4C), the move class whose slope base is
         // largest (+0x52), the terrain costs (+0x70) and the slope costs (+0xB4)

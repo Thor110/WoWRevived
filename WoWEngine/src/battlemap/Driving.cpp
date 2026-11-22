@@ -861,9 +861,10 @@ namespace wow
     // in it that aren't the unit and pass its vt+0xBC, the nearest by the octagonal distance (the larger difference
     // and half the smaller, from the object's position as whole numbers) that's under the object's radius + reach,
     // starting from 10000.
-    // *Provisional*: only units are in the grid, placed by where they are now.
+    // The grid's objects are the units and the scenery (update 142), placed by where they are now.
     // Crushable (vt+0xD8, 0x486340: +0xC0 bit 2): the mines (0x48C940 sets it on them as they're placed) and the
-    // line-linked objects 0x1D0-0x1D3, 0x2B6, 0x2B7 (0x48A8B0), which aren't in the engine yet
+    // line-linked objects 0x1D0-0x1D3, 0x2B6, 0x2B7 (0x48A8B0), which aren't in the engine yet (as scenery they'd
+    // be crushed the same way)
     bool BattleMap::Crushable(const Unit& o) const
     {
         return o.type >= 0x273 && o.type <= 0x276;
@@ -888,7 +889,44 @@ namespace wow
         return true;
     }
 
-    const BattleMap::Unit* BattleMap::ObjectAt(const Unit& u, int px, int py, int reach) const
+    // A renderer's height as 0x4929A0 takes it (+0x2E less +0x2C): an IOB model's is its header's 0x12 (0x49E1E0:
+    // +0x2E half its depth, +0x2C that less 0x12), a sprite's its first frame's.
+    // *Provisional*: a WOF model's (its posed bounds) is taken as tall.
+    int BattleMap::RendererHeight(int type) const
+    {
+        auto t = setup.units->find(type);
+        if (t == setup.units->end() || !t->second.field28) return 10000;
+        const GType* g = res.FindGType(t->second.field28);
+        if (g && g->gclass == 1)
+        {
+            auto m = models.find(t->second.field28);
+            return m != models.end() && !m->second.model.patches.empty() ? m->second.model.field12 : 10000;
+        }
+        if (const IndexedImage* image = res.GetFrame(t->second.field28, 0)) return image->height;
+        return 10000;
+    }
+
+    // 0x4929A0 for a scenery object: not a tree (+0xB8 bit 2); a walker (+0x52 3 or 4) passes over one under 0x30
+    // (0x20) tall that can't be crushed; then (it isn't a vehicle, bit 0) on a bridge link not the bridges' pieces
+    // (0x1BC-0x1BF, 0x1CC-0x1CE) nor 0x1C0; else whether it has +0xB8 bit 1 (category 0, 2 or 3).
+    bool BattleMap::CollidesProp(const Unit& u, const Prop& p) const
+    {
+        if ((p.type >= 0xCF && p.type <= 0xE5) || (p.type >= 0x399 && p.type <= 0x3A9)) return false;
+        auto t = setup.units->find(u.type);
+        const int moveClass = t == setup.units->end() ? 0 : t->second.field52;
+        if ((moveClass == 3 || moveClass == 4) && RendererHeight(p.type) < (moveClass == 3 ? 0x30 : 0x20)) return false;
+        if (u.drive.link && ((p.type >= 0x1BC && p.type <= 0x1BF) || (p.type >= 0x1CC && p.type <= 0x1CE) || p.type == 0x1C0)) return false;
+        auto pt = setup.units->find(p.type);
+        if (pt == setup.units->end()) return false;
+        const int c = pt->second.category;
+        return c == 0 || c == 2 || c == 3;
+    }
+
+    // 0x47FE10 -> 0x47FD40: in each of the four buckets round the point in turn, the nearest object that gets in the
+    // unit's way (vt+0xBC) and is nearer (octagonal) than its radius (+0xAC) + the reach; the first bucket with one
+    // answers. The grid holds the units and the scenery (not a tree circle's trees nor a building's parts, which
+    // are children, 0x48AAA0).
+    bool BattleMap::ObjectAt(const Unit& u, int px, int py, int reach, Obstacle& out) const
     {
         const int size = setup.zMapRes;
         const int cols = (land.WorldWidth() + size - 1) / size;
@@ -896,24 +934,34 @@ namespace wow
         auto clampTo = [](int v, int count) { return v < 0 ? 0 : v >= count ? count - 1 : v; };
         for (auto [gx, gy] : BucketCells(px, py))
         {
-            const Unit* found = nullptr;
+            bool any = false;
             int best = 10000;
+            auto consider = [&](int ox, int oy, int radius) {
+                if (clampTo(ox / size, cols) != gx || clampTo(oy / size, rows) != gy) return false;
+                const int a = std::abs(px - ox), b = std::abs(py - oy);
+                const int d = b - (std::min(a, b) >> 1) + a;
+                if (!(d < radius + reach && d < best)) return false;
+                best = d;
+                return true;
+            };
             for (const Unit& o : units)
             {
                 if (&o == &u || !Collides(u, o)) continue;
-                const int ox = int(o.x), oy = int(o.y);
-                if (clampTo(ox / size, cols) != gx || clampTo(oy / size, rows) != gy) continue;
-                const int a = std::abs(px - ox), b = std::abs(py - oy);
-                const int d = b - (std::min(a, b) >> 1) + a;
-                if (d < o.drive.radius + reach && d < best)
-                {
-                    best = d;
-                    found = &o;
-                }
+                if (!consider(int(o.x), int(o.y), o.drive.radius)) continue;
+                any = true;
+                out = { &o, o.x, o.y, o.drive.radius, land.HeightAt(int(o.x), int(o.y)) + int(o.drive.lift), o.type };
             }
-            if (found) return found;
+            for (const Prop& p : props)
+            {
+                if (!p.alive || p.circle >= 0 || !CollidesProp(u, p)) continue;
+                const int radius = Radius44(p.type);
+                if (!consider(int(p.x), int(p.y), radius)) continue;
+                any = true;
+                out = { nullptr, p.x, p.y, radius, land.HeightAt(int(p.x), int(p.y)) + int(p.z), p.type };
+            }
+            if (any) return true;
         }
-        return nullptr;
+        return false;
     }
 
     // 0x492350, before the behaviours: bit 3 cleared, then four points looked at, the first the unit's position and
@@ -964,25 +1012,27 @@ namespace wow
                 d.flags = (d.flags & ~0x10u) | 8u;
                 if (i == 0 && (moveClass == 5 || moveClass == 6)) return true;
             }
-            const Unit* o = ObjectAt(u, int(px), int(py), d.radius);
-            if (o && std::abs(land.HeightAt(int(o->x), int(o->y)) + int(o->drive.lift) - z) > 64) o = nullptr;
-            if (o)
+            Obstacle o;
+            bool hit = ObjectAt(u, int(px), int(py), d.radius, o);
+            if (hit && std::abs(o.z - z) > 64) hit = false;
+            if (hit)
             {
-                d.ax = float(double(o->x) - px);
-                d.ay = float(double(o->y) - py);
+                d.ax = float(double(o.x) - px);
+                d.ay = float(double(o.y) - py);
                 d.flags &= ~0x10u;
-                if (o->group == u.group && o->players == u.players && !(o->vehicle && !(o->drive.flags & 1))) d.flags |= 0x10;
+                if (o.unit && o.unit->group == u.group && o.unit->players == u.players && !(o.unit->vehicle && !(o.unit->drive.flags & 1)))
+                    d.flags |= 0x10;
                 d.flags |= 8;
                 if (i != 0) return false;
                 // one that can be crushed (vt+0xD8), at the unit's own position: 1 in 4 (rand() < 0x2000) its type's
                 // +0x98 goes off at the unit's point, ftol(+0x84 + its +0x41 byte x 1.414) up, with no firer, and the
                 // type is met (byte_51A19C)
-                if (Crushable(*o))
+                if (o.unit && Crushable(*o.unit))
                 {
                     if (random::Rand() < 0x2000)
-                        if (auto ot = setup.units->find(o->type); ot != setup.units->end())
+                        if (auto ot = setup.units->find(o.type); ot != setup.units->end())
                         {
-                            const int crushedType = o->type;
+                            const int crushedType = o.type;
                             Explode(ot->second.field98, int(u.x), int(u.y), int(double(d.lift) - double(ot->second.size41) * -1.414));
                             encountered.insert(crushedType);
                         }
@@ -990,7 +1040,7 @@ namespace wow
                 }
                 const int dist = (std::abs(int(d.ay)) - (std::min(std::abs(int(d.ax)), std::abs(int(d.ay))) >> 1)) + std::abs(int(d.ax));
                 const float fd = float(dist);
-                const float gap = float(double(fd) - o->drive.radius - u.drive.radius);
+                const float gap = float(double(fd) - o.radius - u.drive.radius);
                 if (!(fd > 0.0f)) return false;
                 const float pushY = float(double(d.ay) / fd * gap);
                 const float pushX = float(double(d.ax) / fd * gap);
