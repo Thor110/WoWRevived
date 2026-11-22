@@ -639,7 +639,7 @@ namespace wow
         int hudMouseX = -1, hudMouseY = -1;               // the mouse in the panels' space (mouseX / mouseY: the land's view)
         void DrawLand(Canvas& canvas) const;
         void DrawPanels(Canvas& canvas) const;
-        mutable std::vector<uint32_t> landPixels, panelPixels;
+        mutable std::vector<uint32_t> landPixels, panelPixels, panelUnder;
         std::vector<Dot> dots;
         int miniFrames = 0;                                 // +0x88
         bool miniShown = true, miniDrag = false;

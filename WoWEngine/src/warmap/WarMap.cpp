@@ -1,4 +1,5 @@
 #include "warmap/WarMap.h"
+#include "frontend/PanelLayer.h"
 #include "frontend/PopupRows.h"
 
 #include "core/Random.h"
@@ -132,11 +133,24 @@ namespace wow
     // is 1498 wide; for a view wider than that WoWRevived's wider ones (1921, the original at their left) are read
     // from DAT\warmap\ when they are there, and only then, so a smaller view has no empty map to scroll into.
     // The view's middle stays where it was.
+    void WarMap::SetHudSize(int w, int h)
+    {
+        w = std::max(GameW, w);
+        h = std::max(GameH, h);
+        if (w == hudW && h == hudH) return;
+        hudW = w;
+        hudH = h;
+        mouseX = mouseY = -1;
+        popup.clear();          // laid out for the old size
+        LayoutAll();
+    }
+
     void WarMap::SetViewSize(int w, int h)
     {
         w = std::max(GameW, w);
         h = std::max(GameH, h);
         const int cx = cameraX + viewW / 2, cy = cameraY + viewH / 2;
+        if (hudW == viewW && hudH == viewH) { hudW = w; hudH = h; }     // (the panels' space follows unless scaled)
         viewW = w;
         viewH = h;
         std::map<std::string, std::string> wide;
@@ -223,8 +237,8 @@ namespace wow
         if (!panelShown) return p; // hidden with Tab: nothing to hit
         bool human = res.Human();
         Rect frameSize = SpriteRect(0x80, 0, 0);
-        const int frameX = viewW - frameSize.w - 4;                          // 0x42371A
-        const int miniY = viewH - MiniH - 4 - (human ? 8 : 0);               // 0x422EC9
+        const int frameX = hudW - frameSize.w - 4;                           // 0x42371A
+        const int miniY = hudH - MiniH - 4 - (human ? 8 : 0);                // 0x422EC9
         p.mini = { frameX + (human ? 9 : 10), miniY, MiniW, MiniH };           // 0x418C35 / 0x418C70
         p.frame = { frameX, miniY - (human ? 0x50 + 0x20 : 0x44 + 0x28), frameSize.w, frameSize.h }; // 0x418C14 / 0x418C4F
         static constexpr int Gtypes[3] = { 0x33, 0x35, 0x34 };        // Unit View, Construction View, Resource View
@@ -245,7 +259,7 @@ namespace wow
     int WarMap::SectorAt(int x, int y) const
     {
         if (!sectorMap) return 0;
-        int mx = cameraX + x, my = cameraY + y;
+        int mx = cameraX + MapX(x), my = cameraY + MapY(y);      // (x, y are in the panels' space, as the mouse is)
         if (mx < 0 || my < 0 || mx >= sectorMap->width || my >= sectorMap->height) return 0;
         int value = sectorMap->pixels[size_t(my) * size_t(sectorMap->width) + size_t(mx)];
         if (value <= warmap::SectorCount) return warmap::SectorOfValue(value);
@@ -1442,11 +1456,11 @@ namespace wow
         // mouse's distance from the centre over (half the width / Scroll Speed), both ways at once (0x7A)
         // *Provisional*: the border is the full-screen one (4); in a window the game uses 32
         if (mouseX >= 0 && !dragging &&
-            !(mouseX > EdgeZoneNow() && mouseX < viewW - EdgeZoneNow() && mouseY > EdgeZoneNow() && mouseY < viewH - EdgeZoneNow()))
+            !(MapX(mouseX) > EdgeZoneNow() && MapX(mouseX) < viewW - EdgeZoneNow() && MapY(mouseY) > EdgeZoneNow() && MapY(mouseY) < viewH - EdgeZoneNow()))
         {
             const int div = std::max(1, (viewW / 2) / scrollStep);
-            cameraX -= (viewW / 2 - mouseX) / div;
-            cameraY -= (viewH / 2 - mouseY) / div;
+            cameraX -= (viewW / 2 - MapX(mouseX)) / div;
+            cameraY -= (viewH / 2 - MapY(mouseY)) / div;
             Clamp();
         }
         PanelLayout panel = Panel();
@@ -1463,9 +1477,20 @@ namespace wow
         if (hovered != previewSector) BuildPreview(hovered);
     }
 
+    // The map and what is on it, then the panels. MODERN: with a HUD scale the panels are drawn in their space and
+    // laid on the picture (frontend/PanelLayer.h); without, straight onto it as the game does.
     void WarMap::Draw(Canvas& canvas) const
     {
         Crumb("war map: drawing");
+        DrawMap(canvas);
+        LayPanels(canvas.Pixels(), canvas.Width(), canvas.Height(), hudW, hudH, panelUnder, panelOver, [&](uint32_t* pixels, int w, int h) {
+            Canvas panels(pixels, w, h, res);
+            DrawPanels(panels);
+        });
+    }
+
+    void WarMap::DrawMap(Canvas& canvas) const
+    {
         const IndexedImage* m = map;
         const IndexedImage* s = sectorMap;
         const ShadeTable* shade = res.ShadeFor(warmap::MapGType);
@@ -1672,7 +1697,7 @@ namespace wow
         // least 0x17 wide, the top and bottom the same way from 12 in at each end. The corners stay open.
         if (rubberBand)
         {
-            int l = std::min(dragX, mouseX), r = std::max(dragX, mouseX), t = std::min(dragY, mouseY), b = std::max(dragY, mouseY);
+            int l = MapX(std::min(dragX, mouseX)), r = MapX(std::max(dragX, mouseX)), t = MapY(std::min(dragY, mouseY)), b = MapY(std::max(dragY, mouseY));
             uint32_t* out = canvas.Pixels();
             // the screen is 16-bit (5, 6, 5): red and blue lose their lowest bit (the view's outline measures 0, 0,
             // 189 in the owner's frame, 0x2F through five bits)
@@ -1696,6 +1721,10 @@ namespace wow
                 }
         }
 
+    }
+
+    void WarMap::DrawPanels(Canvas& canvas) const
+    {
         // the panel: its frame, the three view buttons, then the mini-map: the whole map at a fifteenth, the sector under the
         // mouse lit, and the view's outline
         PanelLayout panel = Panel();
@@ -1768,7 +1797,7 @@ namespace wow
             // [Colours] "Message Text" (19, 0x4288A3)
             int y = 4 + logScroll;
             for (const LogLine& line : log)
-                if (line.life > 0 || line.state == 1) { canvas.DrawString(0x72, line.text, { 0x28, y, viewW - 0x28, 14 }, 0, colours.messageText); y += 16; }
+                if (line.life > 0 || line.state == 1) { canvas.DrawString(0x72, line.text, { 0x28, y, hudW - 0x28, 14 }, 0, colours.messageText); y += 16; }
         }
 
         // the sector under the mouse or the panel button's name, and the engine's own notes: a strip the game doesn't
@@ -1784,14 +1813,14 @@ namespace wow
             // a darkened strip behind the text so it reads on either map
             uint32_t* out = canvas.Pixels();
             int rows = status.empty() || !statusStrip ? 0 : 16;
-            for (int y = viewH - 20; y < viewH - 20 + rows; y++)
+            for (int y = hudH - 20; y < hudH - 20 + rows; y++)
                 for (int x = 4; x < 240; x++)
                 {
                     uint32_t& p = out[size_t(y) * size_t(canvas.Width()) + size_t(x)];
                     p = (p >> 2) & 0x3F3F3F;
                 }
         }
-        if (statusStrip && !status.empty()) canvas.DrawString(0x72, status, { 8, viewH - 18, 300, 14 }, 0, colours.items);
+        if (statusStrip && !status.empty()) canvas.DrawString(0x72, status, { 8, hudH - 18, 300, 14 }, 0, colours.items);
         DrawBuildWindow(canvas);
         // the popup menu over everything (z 0x61B2): each item's icon, the next frame while the mouse is on it
         // (*provisional*: the hot button's frames aren't traced)
@@ -1811,8 +1840,9 @@ namespace wow
     // The right button on the map (0x41C5E0): let go within [Tweak] "Quick Cancel Timeout" (5) updates of pressing
     // it, without Ctrl, it's command 0x73, Cancel. (Held longer it opens the
     // "Warmap menu" popup, 0x41D120, which isn't in yet.) Cancel drops the selection (the player's action 2).
-    std::optional<Command> WarMap::OnRightButton(int x, int y, bool down)
+    std::optional<Command> WarMap::OnRightButton(int px, int py, bool down)
     {
+        int x = HudX(px), y = HudY(py);
         if (infoPage) { if (!down) CloseInfoPage(); return std::nullopt; }   // (0x205 closes the page, 0x4A41EF)
         if (!popup.empty() && !infoBox)
         {
@@ -1832,8 +1862,9 @@ namespace wow
         return std::nullopt;
     }
 
-    int WarMap::TipOwner(int x, int y) const
+    int WarMap::TipOwner(int px, int py) const
     {
+        int x = HudX(px), y = HudY(py);
         if (infoBox) return BoxButtonRect().Contains(x, y) ? 99 : -1;
         if (const int i = PopupItemAt(x, y); i >= 0) return 100 + i;
         if (int hit = BuildWindowHit(x, y); hit >= 0) return hit >= 200 && hit < 400 ? 10000 + hit : -1;
@@ -1848,6 +1879,9 @@ namespace wow
         {
             static constexpr int FacilityTypes[6] = { 47, 48, 49, 108, 109, 110 };
             const bool human = res.Human();
+            const int hudX = x, hudY = y;
+            x = MapX(x);        // (the widgets are on the map)
+            y = MapY(y);
             for (int s = 1; s <= warmap::SectorCount; s++)
             {
                 const warmap::Point wp = warmap::Waypoint(s);
@@ -1871,6 +1905,8 @@ namespace wow
                     if (any) return 20000 + s * 8 + kind * 2 + 1;
                 }
             }
+            x = hudX;
+            y = hudY;
         }
         // a counter of the player's answers 0x807C (the other side's don't)
         int counter = CounterAt(x, y);
@@ -2734,7 +2770,7 @@ namespace wow
     Rect WarMap::BoxRect() const
     {
         Rect b = SpriteRect(0x68, 0, 0);
-        return { (viewW - b.w) / 2, viewH - b.h - 4, b.w, b.h };
+        return { (hudW - b.w) / 2, hudH - b.h - 4, b.w, b.h };
     }
 
     Rect WarMap::BoxButtonRect() const
@@ -2897,8 +2933,8 @@ namespace wow
             if (auto t = unitData.find(c.type); t != unitData.end() && t->second.infoPage)
             {
                 popupInfoText = t->second.infoPage;
-                popupInfoX = c.x + 16 - cameraX;   // the object's point, the middle of its counter
-                popupInfoY = c.y + 16 - cameraY;
+                popupInfoX = HudX(c.x + 16 - cameraX);   // the object's point, the middle of its counter
+                popupInfoY = HudY(c.y + 16 - cameraY);
                 add(0x808C, 0, 0x2A, 0x478);
             }
         }
@@ -2909,7 +2945,7 @@ namespace wow
         // original a unit on its way shows Cancel, Cancel move and Information, and no View map.
         const bool hotAnswered = hot >= 0 && counters[size_t(hot)].players;
         if (!hotAnswered && selected >= 1 && selected <= warmap::SectorCount) add(0x8133, 0x8019, 0x2E, 0x475);
-        LayOutPopupRows(popup, x, y, viewW, viewH);
+        LayOutPopupRows(popup, x, y, hudW, hudH);
         popupOpenRow = -1;
         sounds.push_back(0x193);
     }
@@ -2959,8 +2995,9 @@ namespace wow
         }
     }
 
-    void WarMap::OnMouseMove(int x, int y)
+    void WarMap::OnMouseMove(int px, int py)
     {
+        int x = HudX(px), y = HudY(py);     // the mouse comes in the picture's pixels and is kept in the panels' space
         mouseX = x;
         mouseY = y;
         if (!popup.empty())
@@ -2996,8 +3033,8 @@ namespace wow
     // and counted (world +0x114).
     void WarMap::UpdateBand()
     {
-        int left = std::min(dragX, mouseX) + cameraX, right = std::max(dragX, mouseX) + cameraX;
-        int top = std::min(dragY, mouseY) + cameraY, bottom = std::max(dragY, mouseY) + cameraY;
+        int left = MapX(std::min(dragX, mouseX)) + cameraX, right = MapX(std::max(dragX, mouseX)) + cameraX;
+        int top = MapY(std::min(dragY, mouseY)) + cameraY, bottom = MapY(std::max(dragY, mouseY)) + cameraY;
         highlighted = 0;
         for (Counter& k : counters)
         {
@@ -3060,8 +3097,9 @@ namespace wow
         else if (cursorMode == 2) cursorMode = 0;
     }
 
-    std::optional<Command> WarMap::OnMouseButton(int x, int y, bool down)
+    std::optional<Command> WarMap::OnMouseButton(int px, int py, bool down)
     {
+        int x = HudX(px), y = HudY(py);
         if (infoPage) { if (!down) CloseInfoPage(); return std::nullopt; }   // (0x202 closes the page)
         // the box is modal and has the mouse: only its button answers
         if (infoBox)
@@ -3228,8 +3266,9 @@ namespace wow
     // the player's (0x42BEB0) 1, or in mode 1 with Shift 3 if it's selected and 2 if not, and 12 in modes 2 and
     // 3; over a sector (0x43ADA0) in mode 0 the default if it's the player's and 12 if not, in mode 2 4 to move
     // into one of the player's or no one's and 5 into the other side's.
-    int WarMap::CursorAt(int x, int y) const
+    int WarMap::CursorAt(int px, int py) const
     {
+        int x = HudX(px), y = HudY(py);
         PanelLayout panel = Panel();
         if (panel.frame.Contains(x, y) || panel.mini.Contains(x, y) || CalendarRect().Contains(x, y)) return 0;
         int counter = CounterAt(x, y);
@@ -3251,7 +3290,7 @@ namespace wow
     Rect WarMap::CalendarRect() const
     {
         Rect size = SpriteRect(0x93, 0, 0);
-        return { viewW - size.w - 4, 4, size.w, size.h };
+        return { hudW - size.w - 4, 4, size.w, size.h };
     }
 
     // The speed slider (0x431E30 with GType 0x97: hu_speed.spr 120 x 58, ma_speed.spr 65 x 26, 22 frames: 11
@@ -3446,6 +3485,8 @@ namespace wow
     int WarMap::CounterAt(int x, int y) const
     {
         if (viewMode == 3) return -1;   // the Resource view has no counters laid out
+        x = MapX(x);                    // (x, y are in the panels' space, as the mouse is)
+        y = MapY(y);
         for (size_t i = counters.size(); i-- > 0;)
         {
             const Counter& k = counters[i];

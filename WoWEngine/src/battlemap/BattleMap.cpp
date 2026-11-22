@@ -1,4 +1,5 @@
 #include "battlemap/BattleMap.h"
+#include "frontend/PanelLayer.h"
 #include "frontend/PopupRows.h"
 #include "platform/Sound.h"
 #include "frontend/Canvas.h"
@@ -2863,84 +2864,25 @@ namespace wow
         return {};
     }
 
-    namespace
-    {
-        // one picture into another of a different size: each pixel the nearest when the sizes divide evenly or the
-        // target is the smaller by more than half, else the four around it mixed
-        void ScaleInto(const uint32_t* src, int sw, int sh, uint32_t* dst, int dw, int dh)
-        {
-            if (sw == dw && sh == dh) { std::copy(src, src + size_t(sw) * size_t(sh), dst); return; }
-            const bool whole = dw % sw == 0 && dh % sh == 0 && dw / sw == dh / sh;
-            if (whole)
-            {
-                const int n = dw / sw;
-                for (int y = 0; y < dh; y++)
-                {
-                    const uint32_t* in = src + size_t(y / n) * size_t(sw);
-                    uint32_t* out = dst + size_t(y) * size_t(dw);
-                    for (int x = 0; x < dw; x++) out[x] = in[x / n];
-                }
-                return;
-            }
-            // 16.16 steps through the source, sampled at the pixels' middles
-            const int64_t stepX = (int64_t(sw) << 16) / dw, stepY = (int64_t(sh) << 16) / dh;
-            for (int y = 0; y < dh; y++)
-            {
-                int64_t fy = stepY * y + stepY / 2 - 0x8000;
-                if (fy < 0) fy = 0;
-                const int y0 = int(fy >> 16), y1 = std::min(sh - 1, y0 + 1);
-                const uint32_t wy = uint32_t(fy & 0xFFFF) >> 8;
-                const uint32_t* r0 = src + size_t(y0) * size_t(sw);
-                const uint32_t* r1 = src + size_t(y1) * size_t(sw);
-                uint32_t* out = dst + size_t(y) * size_t(dw);
-                for (int x = 0; x < dw; x++)
-                {
-                    int64_t fx = stepX * x + stepX / 2 - 0x8000;
-                    if (fx < 0) fx = 0;
-                    const int x0 = int(fx >> 16), x1 = std::min(sw - 1, x0 + 1);
-                    const uint32_t wx = uint32_t(fx & 0xFFFF) >> 8;
-                    auto mix = [&](int shift) {
-                        const uint32_t a = (r0[x0] >> shift) & 0xFF, b = (r0[x1] >> shift) & 0xFF;
-                        const uint32_t c = (r1[x0] >> shift) & 0xFF, d = (r1[x1] >> shift) & 0xFF;
-                        const uint32_t top = a * (256 - wx) + b * wx, bottom = c * (256 - wx) + d * wx;
-                        return ((top * (256 - wy) + bottom * wy) >> 16) << shift;
-                    };
-                    out[x] = 0xFF000000u | mix(16) | mix(8) | mix(0);
-                }
-            }
-        }
-    }
-
-    // The land and what stands on it, then the panels over it. MODERN: with a zoom or a HUD scale the land is drawn
-    // at its view's size and the panels in their space, each then scaled to the picture; with neither it is the
-    // game's one pass, straight onto the picture.
+    // The land and what stands on it, then the panels over it. MODERN: with a zoom the land is drawn at its view's
+    // size and scaled to the picture; with a HUD scale the panels are drawn in their space and laid on the picture
+    // (frontend/PanelLayer.h); with neither it is the game's one pass, straight onto the picture.
     void BattleMap::Draw(Canvas& canvas) const
     {
         Crumb("battle map: drawing");
         const int cw = canvas.Width(), ch = canvas.Height();
-        if (viewW == cw && viewH == ch && hudW == cw && hudH == ch)
+        if (viewW == cw && viewH == ch) DrawLand(canvas);
+        else
         {
-            DrawLand(canvas);
-            DrawPanels(canvas);
-            return;
-        }
-        // the land at its view's size
-        landPixels.resize(size_t(viewW) * size_t(viewH));
-        Canvas landCanvas(landPixels.data(), viewW, viewH, res);
-        DrawLand(landCanvas);
-        if (hudW == cw && hudH == ch)
-        {
+            landPixels.resize(size_t(viewW) * size_t(viewH));
+            Canvas landCanvas(landPixels.data(), viewW, viewH, res);
+            DrawLand(landCanvas);
             ScaleInto(landPixels.data(), viewW, viewH, canvas.Pixels(), cw, ch);
-            DrawPanels(canvas);
-            return;
         }
-        // the panels' space: the land scaled into it, the panels on it, the whole scaled to the picture (so the
-        // panels' see-through parts mix with the land as they do in the game)
-        panelPixels.resize(size_t(hudW) * size_t(hudH));
-        ScaleInto(landPixels.data(), viewW, viewH, panelPixels.data(), hudW, hudH);
-        Canvas panelCanvas(panelPixels.data(), hudW, hudH, res);
-        DrawPanels(panelCanvas);
-        ScaleInto(panelPixels.data(), hudW, hudH, canvas.Pixels(), cw, ch);
+        LayPanels(canvas.Pixels(), cw, ch, hudW, hudH, panelUnder, panelPixels, [&](uint32_t* pixels, int w, int h) {
+            Canvas panels(pixels, w, h, res);
+            DrawPanels(panels);
+        });
     }
 
     void BattleMap::DrawLand(Canvas& canvas) const

@@ -132,6 +132,7 @@ namespace wow
         // MODERN: the battle's zoom in steps (0 none, more is closer): the land is drawn 1.25 times smaller or
         // larger a step and scaled to the picture; the panels keep to the HUD scale
         int battleZoom = 0;
+        void PanelSize(int w, int h, int& panelW, int& panelH) const;
         void BattleView(const BattleMap& battle, int zoom, int w, int h, int& landW, int& landH, int& panelW, int& panelH) const;
         void ZoomBattle(int steps);
         int LastSlot() const;

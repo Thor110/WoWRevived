@@ -101,7 +101,7 @@ the end box) keep their size, which is the **HUD scale**: a slider in Modern Opt
 How it is done (`FrontEnd::BattleView`, `BattleMap::SetView`, `BattleMap::Draw`): the picture stays the view
 size. The battle map has three sizes: the picture's, the land's view (the picture's over the zoom) and the
 panels' space (the picture's over the HUD scale). The land is drawn at its view's size and scaled to the
-picture; the panels are drawn in their space over it and that scaled to the picture. The mouse comes in the
+picture; the panels are drawn in their space and laid on it (below). The mouse comes in the
 picture's pixels and is turned into the land's or the panels' as each is hit. With no zoom and the HUD at
 100% it is the game's one pass straight onto the picture, the same picture as before.
 
@@ -113,10 +113,19 @@ HUD can be made smaller but not larger; at 1920 x 1080 it goes up to 225%). A ne
 so they grow and shrink with the zoom and look a little smudged when scaled. That is probably right (kept
 small they would sit on top of a zoomed unit); to be decided when a build has been tried.
 
-What it doesn't do yet: the war map's panels don't follow the HUD scale; the drag box is drawn with the land,
-so it thickens and thins with the zoom; with the HUD not at 100% the land is
-scaled twice (to the panels' space, then to the picture), which softens it a little. The wheel isn't written to
-a playback recording (the keys are).
+**The war map** (update 207) follows the HUD scale too: its panels (the calendar, the view buttons and
+mini-map, the messages, the Build List, the popup menu, the information page, the boxes) are laid out in the
+panels' space (`WarMap::SetHudSize`) and the map, its counters, routes and rubber band stay at the picture's
+size. The war map keeps the mouse in the panels' space and turns it into the picture's pixels where it meets
+the map (`MapX` / `MapY`: the sector and the counter under it, the rubber band, edge scrolling).
+
+**How the panels are laid on** (`frontend/PanelLayer.h`, both maps): the picture under them is scaled into a
+buffer of the panels' size, the panels are drawn on that as the game draws them (so their see-through parts mix
+with what is under), and only the pixels the panels changed are put back on the picture, scaled. The rest of
+the picture is untouched, so the map or the land is not softened by the HUD scale.
+
+What it doesn't do yet: the battle's drag box is drawn with the land, so it thickens and thins with the zoom.
+The wheel isn't written to a playback recording (the keys are).
 
 ### Resolution (agreed with the owner, update 192)
 

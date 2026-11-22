@@ -1245,6 +1245,10 @@ namespace wow
             int w = 640, h = 480;
             for (const Mode& mode : Modes) if (mode.w == sizedW && mode.h == sizedH) { w = mode.w; h = mode.h; }
             if (map->PictureW() != w || map->PictureH() != h) map->SetViewSize(w, h);
+            // (MODERN: the HUD scale)
+            int pw = w, ph = h;
+            PanelSize(w, h, pw, ph);
+            map->SetHudSize(pw, ph);
         }
         // the cursor animates (0x403890 -> 0x40CDC0 -> 0x40EF20(0x80, loop)): the wait cursor's frames go round, a
         // one-frame cursor stays as it is
@@ -1722,18 +1726,21 @@ namespace wow
             const int lw = int(w * f + 0.5) & ~1, lh = int(h * f + 0.5) & ~1;
             if (lw >= w / 2 && lh >= h / 2 && lw <= w * 2 && lh <= h * 2 && lw <= battle.WorldW() - 2 && lh <= battle.WorldH() - 2) { landW = lw; landH = lh; }
         }
+        PanelSize(w, h, panelW, panelH);
+    }
+
+    // MODERN: the space the maps' panels are laid out in, the picture's size over the HUD scale
+    void FrontEnd::PanelSize(int w, int h, int& panelW, int& panelH) const
+    {
+        panelW = w;
+        panelH = h;
         const int percent = std::clamp(ini.GetInt("Modern", "HUD scale", 100), 50, 300);
-        if (percent != 100)
-        {
-            const int pw = (w * 100 / percent) & ~1, ph = (h * 100 / percent) & ~1;
-            if (pw >= 640 && ph >= 480) { panelW = pw; panelH = ph; }
-            else
-            {
-                // as large as the panels' 640 x 480 allows, the picture's shape kept
-                const double most = std::min(w / 640.0, h / 480.0);
-                if (most > 1.0) { panelW = int(w / most + 0.5) & ~1; panelH = int(h / most + 0.5) & ~1; }
-            }
-        }
+        if (percent == 100) return;
+        const int pw = (w * 100 / percent) & ~1, ph = (h * 100 / percent) & ~1;
+        if (pw >= 640 && ph >= 480) { panelW = pw; panelH = ph; return; }
+        // as large as the panels' 640 x 480 allows, the picture's shape kept
+        const double most = std::min(w / 640.0, h / 480.0);
+        if (most > 1.0) { panelW = int(w / most + 0.5) & ~1; panelH = int(h / most + 0.5) & ~1; }
     }
 
     void FrontEnd::ZoomBattle(int steps)

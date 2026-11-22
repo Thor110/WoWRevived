@@ -74,6 +74,8 @@ namespace wow
         void SetQuickCancelTimeout(int ticks) { quickCancelTimeout = ticks; }
         void SetViewSize(int width, int height);    // MODERN FIX: the view at the view size (docs/MODERN.md "Resolution")
         int PictureW() const { return viewW; }
+        // MODERN: the panels' space (the view's size over the HUD scale)
+        void SetHudSize(int w, int h);
         int PictureH() const { return viewH; }
         // [Tweak] "Res Stack XO" / "Res Stack YO" (dword_4EA154 / 4EA16C: 4, 16): the Resource view's facility stack
         void SetResourceStack(int xo, int yo) { resStackX = xo; resStackY = yo; }
@@ -202,6 +204,16 @@ namespace wow
         int ViewW() const;
         int ViewH() const;
         int viewW = 640, viewH = 480;
+        // MODERN (the HUD scale): the space the panels are laid out in; the view's size unless the scale is set.
+        // The mouse is kept in the panels' space; MapX / MapY turn it into the view's pixels for what is on the map.
+        int hudW = 640, hudH = 480;
+        int HudX(int px) const { return px < 0 ? px : int(int64_t(px) * hudW / viewW); }
+        int HudY(int py) const { return py < 0 ? py : int(int64_t(py) * hudH / viewH); }
+        int MapX(int hx) const { return hx < 0 ? hx : int(int64_t(hx) * viewW / hudW); }
+        int MapY(int hy) const { return hy < 0 ? hy : int(int64_t(hy) * viewH / hudH); }
+        void DrawMap(Canvas& canvas) const;
+        void DrawPanels(Canvas& canvas) const;
+        mutable std::vector<uint32_t> panelUnder, panelOver;
         int MapW() const;
         int MapH() const;
 

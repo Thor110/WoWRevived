@@ -1113,6 +1113,16 @@ transparency")
 - Two spaces before each check box caption, so the text clears the tick or cross. The zoomed selection
   brackets noted in MODERN.md as waiting on the testers.
 
+**Update 207** (modern option: the HUD scale on the war map; nothing changed at its default)
+- The war map's draw is two passes, the map (the picture, routes, counters, resource widgets, rubber band)
+  and the panels (the panel and mini-map, messages, calendar, status strip, Build List, popup, information
+  page, box); the panels are laid out in their own space and laid on the picture scaled
+  (frontend/PanelLayer.h, which the battle map now uses as well, so its land is no longer scaled twice).
+- Seen at 1920 x 1080 with the HUD at 200% (also under the checkers): a counter picked where it is drawn, the
+  mini-map clicked, the view buttons, the calendar, a rubber band, the popup opened at the mouse and used,
+  edge scrolling; the battle's panels the same way; at the defaults both war maps and both battles the same
+  picture as before, byte for byte.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
