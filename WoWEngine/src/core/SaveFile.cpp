@@ -189,6 +189,30 @@ namespace wow
         return o;
     }
 
+    SaveObject SaveObject::MakeBuilding(int type, int list, int sector, int health, bool factory, BuildingClass cls)
+    {
+        SaveObject o;
+        o.list = list;
+        std::vector<uint8_t>& b = o.bytes;
+        auto word = [&](uint32_t v) { for (int i = 0; i < 4; i++) b.push_back(uint8_t(v >> (8 * i))); };
+        auto tag = [&](const char* t) { b.insert(b.end(), t, t + 4); };
+        word(uint32_t(type));
+        word(0); word(0);
+        tag("SELO"); word(0); word(0); word(0);
+        tag("WMOB"); word(uint32_t(sector));
+        tag("BMOL"); word(1);
+        word(uint32_t(type));
+        tag("SELO"); word(0); word(0xCDCDCDCDu); word(0xCDCDCDCDu);
+        tag("BAMO"); word(0); word(0); word(0); word(0); word(uint32_t(health));
+        tag("BATP");
+        if (cls == BuildingClass::Emplacement) tag("VEHI");
+        if (cls == BuildingClass::Line) for (int i = 0; i < 4; i++) word(0);
+        word(factory ? 1 : 0);
+        if (factory) word(0);
+        word(0);
+        return o;
+    }
+
     size_t SaveObject::BattleUnitCount() const
     {
         size_t list = std::string::npos;

@@ -86,6 +86,14 @@ namespace wow
         // heading, x, y and height 0 and the health, BATP, VEHI; then whether it has a factory, an empty queue if
         // so, its +0x3C (0), and VEHU. The ids are 0, to be given.
         static SaveObject MakeUnit(int type, int list, int sector, int vehicles, int health, bool factory);
+        // A construction's or a resource's object as the game writes a new one (the owner's saves, update 189): its
+        // type, the two values (the work it takes and the work done), SELO with an id and its place, WMOB and its
+        // sector, BMOL 1, then its one battle object: the type, SELO with an id and two values never set
+        // (0xCDCDCDCD), BAMO with heading, x, y and height 0 and the health, BATP. After that by its class:
+        // a gun emplacement's VEHI (Emplacement); the two points a fence runs between (Line: types 451-456);
+        // then whether it has a factory, an empty queue if so, and its +0x3C (0). No VEHU.
+        enum class BuildingClass { Plain, Emplacement, Line };
+        static SaveObject MakeBuilding(int type, int list, int sector, int health, bool factory, BuildingClass cls);
         bool DuplicateLastVehicle();            // one more vehicle, a copy of the last (its ids to be made its own)
         // The type changed where it's written: at the start, and before each of its battle objects' SELO tags
         // (the rest, its hit points among them, stay the copied object's)

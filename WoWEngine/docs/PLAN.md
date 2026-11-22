@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 188) and what remains
+## Where things stand (update 189) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -9,9 +9,12 @@ inventory with the history. Tick here and there as each is done.
 
 ### A. The original, finished (parity first, as always)
 
-- [ ] **A1 Constructions and resources written whole** (4.4's last part). Units are (184). The layouts are known
-      from the saves (4.4 below); left to find: the extra value some resources carry, and the right battle
-      place for a new building. Then a building of a kind the save lacks can be made.
+- [x] **A1 Constructions and resources written whole** (189). Every new war map object is now made from
+      nothing in the game's layout (`SaveObject::MakeUnit` / `MakeBuilding`), checked against every object in
+      the owner's saves; nothing is copied any more. The "extra value" on some resources was the sector's
+      owner, which follows the last list. Left for later: a fence's two ends are written as 0 (the war map
+      can't place one); a new building has no battle place until the deployment or the computer player's site
+      gives it one, as in the game.
 - [ ] **A2 The players and their commands** (4.5): the local, computer and network player objects; the command
       records (0x4460A0); the commands the world handles one queue pass later (0x95, 0x419A24; was 3.7).
       Needed before the network game.
@@ -245,7 +248,7 @@ wrong name: what is left of it is what the war map's save keeps of a battle's ob
       with Stage 6's loose files; Unload Limit frees a sample not used for that long, 0x4666DC, which
       nothing shows): the borders as settings and by screen size (above), the library before loose
       files, the unload limit, Minimum Audible Volume.
-- [~] 4.4 **War map objects written field by field** (was 4.0 and 4.1; begun in 178 with the owner's 24 saves:
+- [x] 4.4 **War map objects written field by field** (closed in 189; see A1) (was 4.0 and 4.1; begun in 178 with the owner's 24 saves:
       a save read and written straight back now matches the game's but for the view, the message list and a
       few rounded numbers; the routes' layout is confirmed and the Damage Layer's corrected): a new object made as the game makes it
       (0x43CD10 / 0x42A030) and not copied from a saved one of its type; each battle unit's BAMO / BATP and

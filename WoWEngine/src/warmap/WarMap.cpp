@@ -888,47 +888,29 @@ namespace wow
         int ref = -1;
         if (save)
         {
-            // A unit is written as the game writes a new one (SaveObject::MakeUnit): as many vehicles as its type
-            // stands for (+0x58), each at full health with no place on a battle map yet, and a factory with nothing
-            // queued if its type builds anything (0x429DB0: it is one of some type's builders, records 49-51).
-            std::optional<SaveObject> made;
-            if (kind == 0)
+            // The object is written as the game writes a new one, from nothing (SaveObject::MakeUnit / MakeBuilding;
+            // each layout checked against every object of the owner's saves, updates 184 and 189), so any type can
+            // be made whether or not the save has one like it. A factory with nothing queued if its type builds
+            // anything (0x429DB0: it is one of some type's builders, records 49-51); full health; no place on a
+            // battle map yet (the deployment, or the computer player's site, gives it one).
             {
                 auto u = unitData.find(type);
                 bool factory = false;
                 for (const auto& [t, d] : unitData)
                     if (d.builders[0] == type || d.builders[1] == type || d.builders[2] == type) { factory = true; break; }
-                made = SaveObject::MakeUnit(type, players ? 0 : 1, sector, u == unitData.end() ? 1 : std::max(1, u->second.battleUnits),
-                                            UnitMaxHealth(type), factory);
-            }
-            // A construction or a resource is still a copy of a saved one of the type in the same kind of list
-            // (*provisional*: what follows a building's BATP isn't written field by field yet), or with none of the
-            // type, of another of the same kind and category with its type changed
-            const SaveObject* model = nullptr;
-            if (!made) for (const SaveObject& o : table) if (o.list / 2 == kind / 2 && o.Type() == type) { model = &o; break; }
-            // none of the type saved: another of the same kind and category, its type changed (*provisional*: what
-            // the game writes for a new object of the type isn't known; its battle data stays the copy's)
-            bool retype = false;
-            if (!model && !made)
-            {
-                auto want = unitData.find(type);
-                for (const SaveObject& o : table)
+                const int list = kind + (players ? 0 : 1);
+                SaveObject o;
+                if (kind == 0)
+                    o = SaveObject::MakeUnit(type, list, sector, u == unitData.end() ? 1 : std::max(1, u->second.battleUnits),
+                                             UnitMaxHealth(type), factory);
+                else
                 {
-                    auto u = unitData.find(o.Type());
-                    if (o.list / 2 != kind / 2 || u == unitData.end() || want == unitData.end()) continue;
-                    if (u->second.category != want->second.category) continue;
-                    if (!model || (o.list % 2 == (players ? 0 : 1) && model->list % 2 != (players ? 0 : 1))) model = &o;
+                    // a gun emplacement's battle object is a vehicle's class (0x48F750), a fence's has its two ends
+                    const bool emplacement = (type >= 0x32 && type <= 0x39) || (type >= 0x6F && type <= 0x76);
+                    const auto cls = emplacement ? SaveObject::BuildingClass::Emplacement
+                                   : (type >= 451 && type <= 456) ? SaveObject::BuildingClass::Line : SaveObject::BuildingClass::Plain;
+                    o = SaveObject::MakeBuilding(type, list, sector, UnitMaxHealth(type), factory, cls);
                 }
-                retype = model != nullptr;
-            }
-            if (model || made)
-            {
-                SaveObject o = made ? *made : *model;
-                if (retype) o.SetType(type);
-                o.list = kind + (players ? 0 : 1);
-                // a copied construction's or resource's battle objects start at full health (their places stay the
-                // copy's: the computer player's site matching sets them, 0x440F80)
-                if (!made) o.Freshen([&](int t) { return UnitMaxHealth(t); });
                 // the ids in use: the sectors' own data as saved, and every object the map has now
                 std::vector<bool> used = save->UsedIds();
                 for (const SaveObject& t : table) SaveFile::MarkIds(t.bytes, used);
@@ -950,7 +932,6 @@ namespace wow
                 ref = int(table.size()) - 1;
                 if (tail && tail->hasFactory) factories[ref] = *tail;
             }
-            else SDL_Log("War map: no saved object of type %d to copy, so the new one won't be saved", type);
         }
         int k = AddCounter(type, sector, players, ref, kind / 2);
         RecomputeOwner(sector); // 0x43CEB0 -> 0x43CA40

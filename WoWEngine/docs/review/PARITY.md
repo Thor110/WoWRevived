@@ -956,6 +956,23 @@ transparency")
 - PLAN.md's head is now the whole list of what remains, A to G, with what is waiting on the owner. Nothing in
   the code changed.
 
+**Update 189** (A1: constructions and resources made from nothing)
+- [x] **A new construction or resource is written whole** (`SaveObject::MakeBuilding`): its type, the two
+      values, SELO, WMOB, BMOL 1, its one battle object (type, SELO, BAMO with heading, x, y, height 0 and full
+      health, BATP), then by its class a gun emplacement's VEHI or a fence's two ends, whether it has a
+      factory with an empty queue, and its +0x3C. Checked against the owner's saves: of some 9000
+      constructions and resources in ten saves every one has the length this gives (124 longer by their
+      queues).
+- [x] **Nothing is copied any more.** A new object used to be a saved one of its type with parts put right, or
+      of another type with the number changed. A player's new building therefore took another building's
+      place on the battle map; now it has none until it is given one, as the game's has (14 such in the
+      saves).
+- *Cleared up*: the extra value some resources seemed to carry is the sector's owner, which comes after the
+  last list.
+- *Seen running*: a Training Centre, a gun post and a fence made in London and its battle opened, and a
+  Martian campaign run on with the computer player building, both clean under the checkers. Where the
+  deployment stands a new building wasn't looked at.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
