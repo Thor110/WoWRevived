@@ -239,7 +239,18 @@ namespace wow
             const bool vehicle = d != setup.units->end() && d->second.category == 1;
             const uint32_t colour = !u.players ? enemyColour : vehicle ? vehicleColour : otherColour;
             const int x = int(int16_t(miniW * int(u.x) / W)), y = int(int16_t(miniH * int(u.y) / H));
-            dots.push_back({ x & 0xFF, y & 0xFF, colour });
+            // 0x4A1D80 keeps the dot as x, y and a colour word, and builds the word as the 16-bit colour OR its
+            // own low byte moved up (mov dh, al; or edx, eax). A colour with nothing in its low byte is unchanged
+            // (the Martian game's red and orange); the Human game's green 0x07E0 becomes 0xE7E0, the yellow the
+            // original's Human dots are (#E7FF00 in the owner's screenshots).
+            auto stored = [](uint32_t rgb) {
+                const uint32_t r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+                uint32_t c = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+                c = (c | ((c & 0xFF) << 8)) & 0xFFFF;
+                const uint32_t r5 = c >> 11, g6 = (c >> 5) & 0x3F, b5 = c & 0x1F;
+                return ((r5 << 3 | r5 >> 2) << 16) | ((g6 << 2 | g6 >> 4) << 8) | (b5 << 3 | b5 >> 2);
+            };
+            dots.push_back({ x & 0xFF, y & 0xFF, stored(colour) });
         }
     }
 

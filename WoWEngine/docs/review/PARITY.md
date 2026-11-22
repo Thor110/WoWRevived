@@ -373,9 +373,39 @@ settled: battle-ui 8, combat 4 and 9, movement 15, 16 and 24, battle-setup 4, 11
   object.
 - **Seen in the screenshot, not yet traced**: Big Ben and Parliament are lit brighter and warmer than the
   engine's; the road has light pools the engine doesn't draw, and the engine draws one round the lorries that the
-  original doesn't show; the bridge's deck is much darker. The lorries' dots are #E7FF00, which no 16-bit side
-  colour gives: the screenshot looks to be from an 8-bit display, where the side colours are the palette's
-  nearest entries (0x40B42F); if so the lighting differences may be the 8-bit tables' too.
+  original doesn't show; the bridge's deck is much darker. The lorries' dots are #E7FF00 (explained in update
+  144; the screenshot is 16-bit colour, the owner's word).
+
+**Update 144** (from two more of the owner's screenshots of the original: a new Human game's sector 28 and a
+new Martian game's first battle, nothing moved; 16-bit colour, `ISO obj col rad mul` 0.66)
+- [x] The minimap's dots. 0x4A1D80 keeps each dot as x, y and a colour word, and makes the word as the 16-bit
+      colour OR its own low byte moved up a byte (mov dh, al; or edx, eax). A colour with an empty low byte
+      comes through unchanged: the Martian game's red (0xF800) and orange (0xFC00). The Human game's green,
+      0x07E0, becomes 0xE7E0: the yellow the original's Human dots are (#E7FF00 in all three screenshots), where
+      the engine drew green. Its other colour 0x07F0 becomes 0xF7F0 and the enemy's 0xF800 stays red.
+- Confirmed by the two frames: sector 28's deployment (the Command Post 58, its corner markers and the units'
+  block are where the original puts them) and the Martian start (each walker where the original has it). So
+  deployment is right in general and London's spot (below) is particular to that sector.
+- **London's spot, still open.** More was ruled out. The centre is right (0x421FE0: the last object of the
+  sector's command type in the world's list, 278 in sector 30, at its +0x78 / +0x7C). The object check
+  (0x47FD40) uses each object's own radius (+0xAC: the type's +0x44 as it's made, 0x47D7A2, or the IOB model's)
+  and is asked by each member in turn; with the HQ's six parts put in as obstacles at their own radii the
+  72 degree spot still passes. The bridges' segments look to be in the grid too (each is placed with vt+0x40
+  as it's made, 0x497A6C; the bridge class's own vt+0x40 is 0x48AA80, the segments' class wasn't checked, but
+  the collision test 0x4929A0 names their types), and Westminster Bridge's last (type 462, radius 48, at
+  4407, 2978) comes within 3 of refusing the block's fourth member (4345, 2984: 65 against 48 + 14), but
+  doesn't. The ground round the spot is nowhere 0 for a lorry in the 3 x 3 the area check reads. The
+  two other footprint routines (0x48B690, the line-linked objects 0x128 / 0x1D0-0x1D3 / 0x2B6 / 0x2B7: radius
+  32, flag 8; 0x48CB10, the mines 0x273-0x276: their +0x46, flag 8; both only once built) don't come into
+  it: London starts with the HQ and five lorries only. What's left untested is anything that would move the
+  bridge's last segment or widen it by 3, and the rand() order (a different heading doesn't move a spot).
+- **Not yet in the engine, noted while reading**: flag 8 on the ground from the mines and the line-linked
+  objects (the cost routine already refuses it for the sector owner's groups); the bridges' segments and the
+  buildings' parts as objects in the grid.
+- **Seen in the two frames, not yet done**: the buildings' ground shadows (part type 331, class 14,
+  `dat\b-shad01.raw`) and the vehicles' are missing or fainter in the engine; the group panel top left (icons
+  with strength pips, Stage 2.6); the engine lights an unfinished building's corner markers yellow where the
+  original's are grey.
 
 ## Deferred (with the reason each is still open)
 

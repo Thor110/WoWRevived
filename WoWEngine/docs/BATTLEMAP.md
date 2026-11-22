@@ -548,11 +548,14 @@ EnterBattleMap makes it with the sector (+0x8C). Its parts:
   picture's width / the world's width, y x its height / the rows' extent), then those of type 987's list
   (0x487380, colour dword_4DAFB4).
 - **Colours** (system colours 0x40B120, each a 6-bit RGB made by 0x40B3B0: the nearest palette entry in 8-bit,
-  565 or 555 packed twice in 16-bit): the rectangle dword_4DAF9C 47, 0, 0 (Human) or 12, 42, 4 (Martian). A dot
+  565 or 555 packed twice in 16-bit; its callers push b, g, r): the rectangle dword_4DAF9C 0, 0, 47 (Human) or
+  12, 42, 4 (Martian). A dot
   (0x480070, every object's): dword_4DAFA0 for a category 1 object (a vehicle) else dword_4DAFA4, and dword_4DAFA8
-  for the other side's (+0x24 not 0): Human 0, 63, 0 / 32, 63, 0 / 0, 0, 63; Martian 63, 0, 0 / 63, 32, 0 /
-  0, 63, 0. Types 694 / 695 (0x48C870) use dword_4DAFAC / 4DAFB0 (Human 0, 48, 0 / 0, 0, 48) and show none while
-  their vtbl+0x9C says so.
+  for the other side's (+0x24 not 0): Human 0, 63, 0 / 0, 63, 32 / 63, 0, 0; Martian 63, 0, 0 / 63, 32, 0 /
+  0, 63, 0. Types 694 / 695 (0x48C870) use dword_4DAFAC / 4DAFB0 and show none while their vtbl+0x9C says so.
+- **A dot's stored colour** (0x4A1D80): the dot is kept as x, y and a colour word, and the word is the colour OR
+  its own low byte moved up a byte. Red 0xF800 and orange 0xFC00 have nothing there and stay; the Human game's
+  green 0x07E0 becomes 0xE7E0, so the Human side's dots are yellow (#E7FF00 on screen), and its 0x07F0 0xF7F0.
 - **Mouse** (0x486E80): the left button down on it scrolls the view to the point's share of the world less half
   the view (0x7A) and keeps the mouse (0x42E9B0); moving with the button held does the same.
 - **Tab** (0x80C8): hides it, or makes the dots again and shows it.
