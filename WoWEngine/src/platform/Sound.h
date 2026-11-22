@@ -33,6 +33,11 @@ namespace wow
         int Play(int id, float volume = 1.0f, int group = 0, int x = 0, int y = 0);
         // The listener (dword_4E9250 / dy): the view's centre in the same screen space.
         void SetListener(int x, int y);
+        // [Sound] "Inner border", "Outer border", "Inner Ambient border", "Outer Ambient border" (0x464580-0x464640):
+        // each left, top, right, bottom about the listener. A sound is at full volume inside the inner one and
+        // silent outside the outer one (0x464FF0); ambient sounds use the larger pair.
+        struct Border { int left, top, right, bottom; };
+        void SetBorders(const Border& inner, const Border& outer, const Border& innerAmbient, const Border& outerAmbient);
         void Stop(int handle);
         // How many game ticks (30 a second) the sample the sound would play next lasts (its first group), 0 if none.
         int LengthTicks(int id);
@@ -114,6 +119,10 @@ namespace wow
         static float Curve(float volume);     // the 128-step decibel table (0x465B20)
         float master = 1.0f, typeVolume[6] = { 1, 1, 1, 1, 1, 1 };
         int listenerX = 0, listenerY = 0;
+        Border inner{ -320, -200, 320, 200 }, outer{ -640, -400, 640, 400 };
+        Border innerAmbient{ -640, -400, 640, 400 }, outerAmbient{ -960, -600, 960, 600 };
+        float Attenuation(int type, int dx, int dy) const;
+        bool Beyond(int type, int dx, int dy) const;   // outside the outer border
         void Place(Voice& v) const;
         std::vector<float> mixBuffer;
     };

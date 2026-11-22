@@ -180,7 +180,8 @@ The menus use cursor 0; the text field (0x431500) asks for 0x11. Each side has i
   - `englishrose`: byte_4D25A4, the credits' hidden end;
   - `shym`: byte_4D25A0, the next battle's Damage Layer cleared first (0x405039, then the flag's cleared);
   - `datsun`: byte_4BAD38 0, no fog of war (0x434744);
-  - `curtains`: byte_4D1279, the `[Debug] "Mat"` flag (what it does isn't traced);
+  - `curtains`: byte_4D1279, the `[Debug] "Mat"` flag: `[Game] "Time Of Day"` lights the battle map (in, 179);
+    enemy units and sectors can be picked and the reinforcement points made with no battle on (PLAN.md 4.9);
   - `icomeback`: the local player's research all done (0x458460 on dword_4E9B88);
   - `punyhumans` / `atchooo`, with a war map: 0x806C / 0x806D to the sector (0x43B15C), the other side's (0x806C) or
     the player's own (0x806D) units, constructions and resources each taking every battle object out (0x421F50 ->

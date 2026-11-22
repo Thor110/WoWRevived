@@ -109,6 +109,15 @@ namespace wow
         float master = ini.GetFloat(SoundSection, "Master", 1.0f);
         sound.SetVolumes(master, types);
         sound.SetMinimumAudible(ini.GetFloat("Sound", "Minimum Audible Volume", 0.05f));   // 0x4646C0
+        // the four borders (the settings' text is "%d,%d,%d,%d", 0x411C7C; numbers left out keep the default, so
+        // WoWRevived's launcher, which writes the left and top only, leaves the right and bottom as they were)
+        auto border = [&](const char* name, Sound::Border b) {
+            const std::string text = ini.GetString("Sound", name, "");
+            std::sscanf(text.c_str(), "%d,%d,%d,%d", &b.left, &b.top, &b.right, &b.bottom);
+            return b;
+        };
+        sound.SetBorders(border("Inner border", { -320, -200, 320, 200 }), border("Outer border", { -640, -400, 640, 400 }),
+                         border("Inner Ambient border", { -640, -400, 640, 400 }), border("Outer Ambient border", { -960, -600, 960, 600 }));
         music.SetVolume(master);
     }
 
@@ -656,7 +665,8 @@ namespace wow
                         ini.GetFloat("Tweak", "Resource Buffer", 30.0f));
         map->SetQuickCancelTimeout(ini.GetInt("Tweak", "Quick Cancel Timeout", 5));
         map->SetResourceStack(ini.GetInt("Tweak", "Res Stack XO", 4), ini.GetInt("Tweak", "Res Stack YO", 16));
-        map->SetTextLevels(ini.GetInt("Colours", "Info Page Text", 15), ini.GetInt("Colours", "Messagebox Detail", 21));
+        map->SetTextLevels(ini.GetInt("Colours", "Info Page Text", 15), ini.GetInt("Colours", "Messagebox Detail", 21),
+                           ini.GetInt("Colours", "Messagebox Command", 22));
         map->SetSectorLimits(ini.GetInt("Tweak", "Max units in sector", 15), ini.GetInt("Tweak", "Max boats in sector", 5));
         ObjOjd::ManufactureModifiers manufacture;
         manufacture.humanFriend = ini.GetFloat("Tweak", "HumanFriend Manufacture Modifier", 1.0f);
@@ -1175,7 +1185,10 @@ namespace wow
         s.fogDamageDelta = ini.GetInt("BattleMap", "Fog damage delta", 0);
         s.fogDamageRadius = ini.GetInt("BattleMap", "Fog vert damage radius", 16);
         s.hours = b.hours;
-        if (auto d = dayTimes.find(int(b.hours) % 24); d != dayTimes.end()) s.dayTime = &d->second;
+        // 0x40B030: with the curtains cheat on (byte_4D1279) and [Game] "Time Of Day" not 0, that hour lights the map
+        int lightHour = int(b.hours) % 24;
+        if (const int forced = ini.GetInt("Game", "Time Of Day", 0); cheats.mat && forced != 0) lightHour = forced;
+        if (auto d = dayTimes.find(lightHour); d != dayTimes.end()) s.dayTime = &d->second;
         s.shadeClass = Landscape::ShadeClass(lastEnemyCount);
         s.human = res.Human();
         s.quickCancelTimeout = ini.GetInt("Tweak", "Quick Cancel Timeout", 5);

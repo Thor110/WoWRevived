@@ -2709,7 +2709,7 @@ namespace wow
             y += lineH;
         }
         if (!infoBox->text2.empty())
-            canvas.DrawString(0x73, infoBox->text2, { ox, y + 16, b.w, lineH }, TextCentreX, 22);
+            canvas.DrawString(0x73, infoBox->text2, { ox, y + 16, b.w, lineH }, TextCentreX, boxCommandLevel);
         Rect bt = BoxButtonRect();
         bool over = bt.Contains(mouseX, mouseY);
         canvas.DrawSprite(0x6A, over && res.GetFrame(0x6A, 1) ? 1 : 0, bt.x, bt.y);

@@ -52,23 +52,38 @@ namespace wow
     // 0x464FF0: 1 for a sound not at a point; else, against the listener, 0 outside the outer border, 1 inside the
     // inner, and between them each way 1 - (the distance past the inner) / (outer - inner), 0 when the across one is
     // under 0.05; the two multiplied. Ambient sounds have the larger borders.
-    namespace
+    float Sound::Attenuation(int type, int dx, int dy) const
     {
-        float Attenuation(int type, int dx, int dy)
-        {
-            const bool ambient = type == SoundDef::Ambient;
-            const int innerX = ambient ? 640 : 320, innerY = ambient ? 400 : 200;
-            const int outerX = ambient ? 960 : 640, outerY = ambient ? 600 : 400;
-            auto axis = [](int d, int inner, int outer) {
-                d = std::abs(d);
-                if (d >= outer) return 0.0f;
-                if (d <= inner) return 1.0f;
-                return 1.0f - float(d - inner) / float(outer - inner);
-            };
-            const float fx = axis(dx, innerX, outerX), fy = axis(dy, innerY, outerY);
-            if (fx < 0.05f) return 0.0f;
-            return fx * fy;
-        }
+        const bool ambient = type == SoundDef::Ambient;
+        const Border& in = ambient ? innerAmbient : inner;
+        const Border& out = ambient ? outerAmbient : outer;
+        // each way by the side it is on: left and top for a point before the listener, right and bottom after
+        auto axis = [](int d, int innerBefore, int innerAfter, int outerBefore, int outerAfter) {
+            const int innerEdge = d < 0 ? -innerBefore : innerAfter, outerEdge = d < 0 ? -outerBefore : outerAfter;
+            d = std::abs(d);
+            if (d >= outerEdge) return 0.0f;
+            if (d <= innerEdge) return 1.0f;
+            return 1.0f - float(d - innerEdge) / float(outerEdge - innerEdge);
+        };
+        const float fx = axis(dx, in.left, in.right, out.left, out.right), fy = axis(dy, in.top, in.bottom, out.top, out.bottom);
+        if (fx < 0.05f) return 0.0f;
+        return fx * fy;
+    }
+
+    bool Sound::Beyond(int type, int dx, int dy) const
+    {
+        const Border& out = type == SoundDef::Ambient ? outerAmbient : outer;
+        return (dx < 0 ? -dx >= -out.left : dx >= out.right) || (dy < 0 ? -dy >= -out.top : dy >= out.bottom);
+    }
+
+    void Sound::SetBorders(const Border& in, const Border& out, const Border& inAmbient, const Border& outAmbient)
+    {
+        std::lock_guard<std::mutex> l(lock);
+        inner = in;
+        outer = out;
+        innerAmbient = inAmbient;
+        outerAmbient = outAmbient;
+        for (Voice& v : voices) Place(v);
     }
 
     void Sound::Place(Voice& v) const
@@ -110,8 +125,7 @@ namespace wow
         // opcode 18: not even made when its point is beyond the outer border
         if (def->positional && placed)
         {
-            const bool ambient = def->type == SoundDef::Ambient;
-            if (std::abs(x - listenerX) >= (ambient ? 960 : 640) || std::abs(y - listenerY) >= (ambient ? 600 : 400)) return 0;
+            if (Beyond(def->type, x - listenerX, y - listenerY)) return 0;
         }
         // the sound's samples are taken in turn, not at random (0x466BC0): the group's cursor (+0x4C, 0 at load)
         // moves on before it's used, so a three-sample sound plays 1, 2, 0, 1 ...

@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 178) and what is next
+## Where things stand (update 179) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -162,15 +162,16 @@ wrong name: what is left of it is what the war map's save keeps of a battle's ob
 
 - [~] 4.1 **The settings, all of them.** The listing defines 225 (found by their constructors' section and key
       strings); 62 weren't named anywhere in the engine at update 176. By what they are:
-      - *Read by the game, to port*: `[Colours]` Messagebox Command (22, the box's button text, 0x432852),
-        Credits Heading, Credits Detail; `[Options]` Show simple tooltips (on); `[Game]` Time Of Day (the hour
-        forced, under byte_4D1279, 0x40B030); `[Tweak]` InsulatedHighEnergyResistantArmourMulti (0.75,
-        0x45A317), AI Oracle (0x442D8A); `[Fun]` Veh Speed, Veh Rot Speed; `[English]` Language.
+      - *Read by the game, to port*: `[Colours]` Credits Heading (17), Credits Detail (6) (the engine's credits
+        are the scrolling picture; where the text ones are used isn't traced); `[Options]` Show simple tooltips
+        (on); `[Tweak]` AI Oracle (0x442D8A); `[Fun]` Veh Speed, Veh Rot Speed; `[English]` Language.
+      - *Done in 179*: `[Colours]` Messagebox Command (22); `[Game]` Time Of Day (the battle's light forced to
+        that hour with the curtains cheat on, 0x40B030); `[Sound]` the four borders. Not missing after all:
+        InsulatedHighEnergyResistantArmourMultiplier (the listing's comment cuts the name short).
       - *Done in 177*: `[Colours]` Info Page Text (15) and Messagebox Detail (21); `[Tweak]` Res Stack XO / YO
         (4 / 16).
-      - *With 4.3*: `[Sound]` Inner / Outer border, Inner / Outer Ambient border (four numbers each, scaled by
-        the screen's size at 0x464B10; the engine has the 640 x 480 numbers fixed), Search Libraries First,
-        Unload Limit.
+      - *With 4.3*: `[Sound]` Search Libraries First, Unload Limit; the borders scaled by the screen's size
+        (0x464B10), which only matters past 640 x 480 (Stage 6.5).
       - *No reader found in the listing* (to confirm, then leave): `[Tweak]` AI Hours Per Turn, IMap Iteration
         Count; `[Vehicles]` stopTurnRate.
       - *The window and DirectDraw* (Stage 6's, or nothing): `[Screen]` Use DDraw surfaces, BLIT instead of
@@ -182,7 +183,7 @@ wrong name: what is left of it is what the war map's save keeps of a battle's ob
       cursor (cursor 13) shown by the busy object (0x40E680) while a game is saved (0x4042D0), loaded
       (0x408B70) and the war map built (0x418500); the engine does these inside one frame, so it is a question
       of whether anything would be seen.
-- [ ] 4.3 **Sound's leftovers**: the borders as settings and by screen size (above), the library before loose
+- [~] 4.3 **Sound's leftovers** (the borders are settings now, 179): the borders as settings and by screen size (above), the library before loose
       files, the unload limit, Minimum Audible Volume.
 - [~] 4.4 **War map objects written field by field** (was 4.0 and 4.1; begun in 178 with the owner's 24 saves:
       a save read and written straight back now matches the game's but for the view, the message list and a
@@ -199,6 +200,10 @@ wrong name: what is left of it is what the war map's save keeps of a battle's ob
       nearly last (update 178). Their reading of what the network build needs to play a campaign: its timer
       taken out, network play itself, and the start files no longer saved over (the engine already doesn't,
       docs/ODDITIES.md). The retail network code doesn't work; WoWRevived ships another build for it.
+- [ ] 4.9 **The curtains cheat** (byte_4D1279, found used in 179; the engine set the flag and did nothing with
+      it but the time of day): enemy units can be picked in a battle and Shift adds to the selection
+      (0x497680, 0x4976F5), a sector that isn't the player's can be selected on the war map (0x41D24A,
+      0x41D430), and the reinforcement points are made without a battle on (0x43D171).
 - [ ] 4.8 **The developers' aids** (optional): the debug log (`[Debug]` Log Debug Output, 0x417C30; WoWEngine.log
       stands in), the overlays (Show Radii, Show Arrival, Show Orders, Show Accelerations), `[Stats]`.
 

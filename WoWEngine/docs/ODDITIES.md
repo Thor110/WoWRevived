@@ -111,3 +111,19 @@ Every counter the war map makes draws one number from the game's rand() (0x42B34
 production icon), and the map makes the view's counters afresh each time the view is changed (0x41C2E0).
 The computer player's moves, the pods and a battle's deployment draw from the same sequence. So flicking between
 the Unit and Construction views changes what the computer does next. Harmless, and almost certainly not meant.
+
+## Section headers with nothing under them in a save (update 179)
+
+The owner's note from hex-editing saves: section headers seem to be left lying about with their contents gone.
+What the 24 saves show is the format, not a fault. Every sector writes all six of its lists every time, each as
+its tag (HUNI, AUNI, HCON, ACON, HRES, ARES), then "WMOB" and a count, whether or not it holds anything: 180
+list headers a save, and between 94 and 168 of them empty (12 bytes each, the count 0). A sector that has seen
+no battle writes "DMGL" with a width and height of 0 the same way, and one whose battle left no mark writes a
+whole layer packed down to one byte. When an object goes its list's count drops and its bytes go with it; the
+header stays because it was never the object's.
+
+So there is nothing to clean. The check that nothing else is stray: the engine reads each of the 24 saves to
+its last byte with every tag where its reader expects one, and written straight back the sectors come out the
+same size and, but for a few rounded numbers, the same bytes (update 178). If a save turns up that the reader
+stops on, it goes here.
+

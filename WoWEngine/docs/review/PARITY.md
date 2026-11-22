@@ -847,6 +847,19 @@ transparency")
   bit of a recomputed float).
 - The load line's view is logged signed.
 
+**Update 179**
+- [x] **The sound borders are settings** (`[Sound]` Inner border, Outer border, Inner Ambient border, Outer
+      Ambient border; 0x464580-0x464640): each "left,top,right,bottom" about the listener, numbers left out
+      keeping their defaults (-320,-200,320,200; -640,-400,640,400; the same; -960,-600,960,600). The engine
+      had the defaults fixed. WoWRevived's launcher writes them by resolution, so this is what lets its
+      values reach the engine. Not yet: the scaling by the screen's size (0x464B10), which is 1 at 640 x 480.
+- [x] `[Colours]` **Messagebox Command** (22) read for the box's second line.
+- [x] `[Game]` **Time Of Day**: with the curtains cheat on (byte_4D1279) and the setting not 0, the battle map
+      is lit for that hour (0x40B030).
+- *Found*: what the curtains cheat does besides (PLAN.md 4.9). FRONTEND.md said it wasn't traced.
+- *The owner's question of stray headers in saves*: they are each sector's six lists, always written
+  (docs/ODDITIES.md).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
