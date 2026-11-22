@@ -136,18 +136,31 @@ top bit set. A recording is only good from the state it was made from (the same 
 
 To be restored as options once the rest is done. What the data holds:
 
-- **Matter Transfer Station** (type 122, Martian). A whole building: its model `dat\MT_Main.iob` (GType 499)
-  with six more parts (`MT_leg1`-`4`, `MT_mainb`, `MT_maint`, all in Dat.wow), armour 1500, 30 days to build,
-  80 to research, an information page (0x258: "Matter transfer stations allow the rapid distribution of
-  materials over great distances.") and its research strings (0x208-0x20A). What it lacks is a builder
-  (records 49 to 51), so nothing can be told to make it, and there is no code traced that would act on having
-  one. To do: give it the constructors as builders behind an option, and decide what "rapid distribution"
-  does to the economy's distance cost (`[Tweak]` Distance Crippler).
-- **Railway Platform** (type 59, Human). A name and nothing else: the strings 0x194-0x197 (its name,
-  "Researching ...", "Completed research for ...") and the page 0x237 ("Construction of a temporary rail
-  depot helps to speed up transportation."), but in the unit table no side, no model, no armour, no building or
-  research time and no builder. There are no railway tracks either. It needs a model made before it can be
-  anything; until then it stays behind a testing option.
+- **Matter Transfer Station** (type 122, Martian). A whole building in the data, never offered:
+  - *It has*: its model `dat\MT_Main.iob` (GType 499) and six more parts (`MT_leg1`-`4`, `MT_mainb`,
+    `MT_maint`, all in Dat.wow); armour 1500; 30 days to build; 80 days of research; its own war map counter
+    (frame 124); its own standing sound (the type's +0xA2, sound 50, as the Repair Facility beside it has 49);
+    an information page (text 600: "Matter transfer stations allow the rapid distribution of materials over
+    great distances.") with its spoken version (sound 390); its name on the research screen (521) and
+    "Researching Matter Transfer Station" (522).
+  - *It lacks*: a builder (records 49 to 51), so nothing can be told to make it; and its "research done" text
+    is string 523, which reads "Unused": the developers' own mark that it was dropped.
+  - *From the owner* (update 187): it can't be made buildable in the original, but hex-edited into a save it
+    exists; it doesn't seem to do anything. Their understanding of what it was for: helping the economy by
+    evening out or linking resources between sectors, which is what the page's text says.
+  - *Not yet looked at*: whether it is anywhere in the research tree's data; whether any code names type
+    122; what the economy's distance cost (`[Tweak]` Distance Crippler VX / VY, the spread of supply between
+    sectors) would have to do for a station to "distribute over great distances".
+  - *To do, after everything regular works*: the constructors as its builders behind an option; its research
+    item; an effect on the economy designed and agreed with the owner; its "research done" line written.
+- **Railway Platform** (type 59, Human). Little more than a name: the strings 404 to 407 (its name twice,
+  "Researching Railway Platform", "Completed research for Railway Platform"), a war map counter frame (95),
+  and a page's text that nothing points to (567: "Construction of a temporary rail depot helps to speed up
+  transportation."; the type's own page is 0, so no spoken version is tied to it). In the unit table it has
+  no side, no model, no armour, no building or research time and no builder, and there are no railway tracks
+  in the data. It needs a model made before it can be anything; until then it stays behind a testing option.
+  By its text it would have sped up the Humans' movement between sectors, as the station was to speed up the
+  Martians' materials.
 
 ## Game modes
 

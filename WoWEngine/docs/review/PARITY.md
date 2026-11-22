@@ -945,6 +945,13 @@ transparency")
 - *The Matter Transfer Station and the Railway Platform* read out (MODERN.md): the first is a whole building
   with no builder, the second a name only.
 
+**Update 187** (notes only)
+- A player's report agrees with update 185's finding (ODDITIES.md), and the owner confirms the modern fix of
+  186 is what's wanted: upgraded buildings shown as they are for both sides.
+- The Matter Transfer Station and Railway Platform read out in full for later (MODERN.md): the station has a
+  model, a counter, a sound, a spoken information page and research strings, no builder, and "Unused" for its
+  research-done line.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

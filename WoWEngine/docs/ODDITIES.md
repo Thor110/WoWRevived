@@ -177,3 +177,10 @@ own (update 186), and nothing found passes the new type on to the battle object 
 only called by itself). The player's buildings go the same way as the computer player's (140 and 395 of the
 535). The engine has a modern fix for it, on unless turned off (docs/MODERN.md).
 
+A player who knows the game well (reported to the owner, update 187): in a Martian game a Level 3 Suspension
+Field Site and Level 3 turrets are seen as such, while playing as the Humans one only ever sees the Level 1
+models. That fits: what the player builds at a level is that level, and what was upgraded where it stood,
+which is how the computer player's buildings get their levels, stays its first. (The owner's saves have the
+player's own lists mismatched too, but several of those are saves renamed to play the other side.) The owner's
+decision: the buildings are to show as what they are for both sides, which is the modern fix.
+
