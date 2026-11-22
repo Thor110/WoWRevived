@@ -121,6 +121,7 @@ namespace wow
         // the WMAP block's 4th value is the view (0x41AC40 into world +0x70, set up by 0x419810 at 0x418CA4)
         viewMode = std::clamp(int(game.warMap[3]), 1, 3);
         LayoutAll();
+        MakeViews();
     }
 
     int WarMap::ViewW() const { return ScreenW; }
@@ -898,8 +899,10 @@ namespace wow
         if (ref >= 0) k.refs.push_back(ref);
         counters.push_back(k);
         int index = int(counters.size()) - 1;
-        // added to the sector (0x43CEB0 -> 0x43CD88): placed when the view shows its kind
-        if (viewMode == kind + 1 && Visible(index)) PlaceCounter(index);
+        // added to the sector (0x43CD10 / 0x43CEB0): when the view shows its kind and it is the player's (+0x24
+        // clear; intel doesn't count here, only the cheat 0x54604C does) it is placed (0x4205F0) and its counter
+        // made (vtbl +0x14), which draws from rand()
+        if (viewMode == kind + 1 && players) { PlaceCounter(index); MakeCounterView(index, 1); }
         return index;
     }
 
@@ -3792,6 +3795,40 @@ namespace wow
         if (mode == viewMode) return;
         viewMode = mode;
         LayoutAll();
+        MakeViews();
+    }
+
+    // A counter made for an object (the object's view, 0x429F20 -> WWarMapObject 0x42B2F0): its production icon
+    // starts in its pause (+0x94 = 8) from now plus rand() & 7 updates (+0x98, 0x42B34B). That is a draw from the
+    // game's rand() for every counter made, which moves on everything that draws after it: the computer player's
+    // moves, the pods, a battle's deployment.
+    void WarMap::MakeCounterView(int index, int objects)
+    {
+        Counter& k = counters[size_t(index)];
+        for (int n = 0; n < objects; n++)
+        {
+            k.iconPhase = 8;
+            k.iconSince = animation + (random::Rand() & 7);
+        }
+    }
+
+    // A view's counters made (0x419810 -> 0x41C2E0, when the map is built and on every change of view): in the Unit
+    // and Construction views each sector in turn has the view's two lists make theirs (0x43CBB0), the player's
+    // then the other side's, and a list makes one for each object that is the player's or has intel on it
+    // (0x421630: +0x24 clear, or +0x3C set, or the cheat 0x54604C). The Resource view makes its own widgets
+    // instead (0x41C329) and no counters. *Provisional*: objects on their way aren't in a sector's lists; what
+    // their routes make isn't traced.
+    void WarMap::MakeViews()
+    {
+        if (viewMode != 1 && viewMode != 2) return;
+        for (int s = 1; s <= warmap::SectorCount; s++)
+            for (bool players : { true, false })
+                for (size_t i = 0; i < counters.size(); i++)
+                {
+                    const Counter& k = counters[i];
+                    if (k.count > 0 && k.sector == s && k.players == players && k.kind == viewMode - 1 && !k.Travelling() && Visible(int(i)))
+                        MakeCounterView(int(i), k.count);
+                }
     }
 
     // Each tick (0x4209E0): a sliding counter steps on (0x428730) until what's left is less than a step, then

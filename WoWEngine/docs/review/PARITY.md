@@ -677,6 +677,21 @@ Martian start's units turned differently)
       Campaign menu starts a new campaign with no slot or name step (0x4068F0), so its slot is 0 and its saves
       go over the start file. The owner's install has the network version on. In ODDITIES.md.
 
+**Update 165** (what draws from rand() on the war map)
+- [x] **A counter made draws rand() & 7** (0x42B34B, the production icon's first pause). The engine made no
+      such draw, so everything after it on the war map drew other numbers than the game's. In now at the traced
+      points: the view's counters when the map is built and on each change of view (0x41C2E0 -> 0x43CBB0 ->
+      0x421630: the player's objects and those with intel, sector by sector), and each of the player's objects
+      added to a sector while the view shows its kind (0x43CD10 / 0x43CEB0).
+- [x] An object of the other side added to a sector isn't placed or given a counter, intel or not (0x43CD6A,
+      0x43CEF5); the engine placed it when there was intel.
+- [x] **Closed: where the first pod lands.** It follows from the above and from the ambient sound's draw by
+      real time (0x41B17C): not fixed in the original either. The engine's first Martian day still matches the
+      owner's day-old file move for move with the new draws.
+- [x] 3.3 checked: the hourly step's fan-out (0x419E9D) is all in and in order.
+- Looked at and not it: how deployed units face. The two lone Martian units face the same way in the owner's
+  frame, so it isn't the rand() heading (0x422738) but what 0x80C3 makes of it; London's spot is unchanged too.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

@@ -465,6 +465,8 @@ namespace wow
         void RefreshSector(int sector);  // 0x43CB60
         void LayoutAll();                // a view change: 0x4204A0, then 0x43CB20 for every sector
         void SetView(int mode);
+        void MakeCounterView(int index, int objects); // 0x429F20 -> 0x42B2F0: a rand() & 7 for each
+        void MakeViews();                // 0x41C2E0 -> 0x43CBB0: the view's counters made, sector by sector
 
         // The war map's events (0x41E5B0, the table at 0x4BA0E8: handler, "is it critical" test, name). A
         // critical event while a box is up waits in a queue (0x4EA064) and comes when the box goes (0x41E730);

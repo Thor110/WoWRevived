@@ -126,6 +126,21 @@ counter a type and sector (0x4282A0 / 0x428270) with a count in the counter font
 for such a counter, its bottom right on the counter's. Each view mode shows one kind: Unit View the units,
 Construction View the buildings, Resource View the resources.
 
+**Making a counter draws from rand()** (update 165). A counter is its object's view (vtbl +0x14, 0x429F20 ->
+WWarMapObject 0x42B2F0), and its constructor sets the production icon's pause from now plus `rand() & 7`
+updates (+0x94 = 8, +0x98, 0x42B34B). Counters are made:
+
+- when the map is built and on every change of view (0x419810 -> 0x41C2E0): in the Unit and Construction views
+  each sector in turn has the view's two lists make theirs (0x43CBB0), the player's first, and a list makes one
+  for each object that is the player's or has intel on it (0x421630: +0x24 clear, or +0x3C set, or the cheat
+  0x54604C). The Resource view makes its own widgets and no counters (0x41C329);
+- when an object is added to a sector (0x43CD10 a thing built, 0x43CEB0 a unit: pods, the sector's 0x8043)
+  while the view shows its kind, and only if it is the player's (or the cheat is on): it is placed (0x4205F0)
+  and its counter made. An object of the other side isn't, intel or not, until the view is made again.
+
+So the same campaign's later draws (the computer player's, the pods', a battle's deployment) depend on how
+many times the player has changed view. *Provisional*: what a route makes for objects on their way.
+
 A counter of the player's has a tool tip (0x807C; the other side's have none), its level going up the longer the
 mouse stays:
 
@@ -494,9 +509,15 @@ in a Human sector the sector is marked (+0x64) for the battle check; otherwise i
 in a Martian sector (so also one no one held) sound 0x1B2 and only the note "Pod landed: <sector>" (0x41E, the
 button 0x8122); in any other, a battle there (+0x124), sound 0x1B3 and "Pod landed in our territory" (0x420, Human)
 or "Pod landed in enemy sector" (0x41F, Martian), with command 0x8072 to go to it: the case of a marked Human
-sector the battle check raises. The
-war map seeds rand() with 1 when it's built (0x417DA3), so the first pod of a new Human campaign lands in sector
-4, Strathmore.
+sector the battle check raises.
+
+Where the first pod lands isn't fixed. The war map seeds rand() with 1 when it's built (0x417DA3), but the pod's
+two draws come after everything else that has drawn since: a counter made (below, "Counters": the view's
+counters when the map opens, again on every change of view, and each of the player's objects added), the
+computer player's moves and research, and the ambient sound, which draws each time it starts when no CD track
+is playing (0x41B17C) and so goes by the clock on the wall. The owner sees the first pod's sector vary between
+games; their day-old save has it in sector 6 (docs/ODDITIES.md). With no change of view and no ambient draw
+the engine's first Martian pod lands in sector 9 and its first Human one in Edinburgh (update 165).
 
 A sector with a battle pulses (0x41DE70): the view's frame count 0-22 as 0-11-0 on level 36 for ours, 47 for the
 rest.

@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 164) and what is next
+## Where things stand (update 165) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -55,11 +55,6 @@ the working order; the stages further down stay the full inventory.
 - **Lighting in London** (update 143): Big Ben and Parliament are brighter in the original because its lorries
   stand beside them with their headlights on; the engine's stand to the south. It goes with the deployment
   spot above, not a lighting fault (update 151).
-- **What draws from rand() before the first pod** (update 161, docs/ODDITIES.md). From the continental
-  `Martian.000` the engine's first day matches the owner's day-old file move for move (the computer's twelve
-  moves, its construction, its research), but the pod lands in sector 10, not 6. The owner: its place varies
-  somewhat between games. So some draw that isn't fixed (per update shown, per sound, the mouse?) comes before
-  0x41A330's; find it rather than matching sector 6.
 - **The route save layout** against a real save of the original with units in transit (asked of the owner).
 
 Ask the owner for a frame of the original whenever a change is visible: a fresh game, the battle opened,
@@ -135,7 +130,9 @@ Small and independent; most need one routine traced.
       what 0x8124 asks of a workshop, and a counter's pips.
 - [ ] 3.2 Construction's remaining fields, CommandCentreBuilt, the context buttons (factory panel, Suspend /
       Resume, Retreat).
-- [ ] 3.3 The hourly step's remaining fan-out; damaged facilities and work demand in the economy.
+- [x] 3.3 The hourly step's fan-out, checked against 0x419E9D in update 165: the routes, the players, both
+      sides' research, the pods, each sector and the resource warnings are all in, in that order. Damaged
+      facilities: 155. (Work demand in the economy: not looked at again.)
 - [ ] 3.4 Several units sent as one route; the world's 0x802C when no routes are left.
 - [ ] 3.5 The popup as child windows; the sector's and objects' remaining items; the remaining tool tips.
 - [ ] 3.6 The battle report's own counters in place of the auto-resolve's.

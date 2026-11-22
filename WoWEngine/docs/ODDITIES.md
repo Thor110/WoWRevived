@@ -97,8 +97,17 @@ The Human computer player's first day, read off the two files (object type: from
 construction and the same research** (its log, update 161). That is a check of the war map's computer player
 against a save the original wrote, and it passes move for move.
 
-The one difference is the pod: the original's first pod came down in sector 6 carrying types 62 and 89, the
-engine's in sector 10. The sector is `byte_4B9DE8[rand() & 7]` over 2, 4, 6, 7, 8, 9, 10, 11 and the load
-`off_4B9E28[rand() % 4]` (0x41A330), with rand() seeded with 1 when the world is built (0x417DA3). The owner
-says the first pod's place varies somewhat from game to game, so something that isn't the same every run draws
-from rand() before the 24th hour. Open; in docs/PLAN.md.
+The one difference is the pod: the original's first pod came down in sector 6 carrying types 62 and 89. That
+can't be reproduced from the file, and needn't be. The sector is `byte_4B9DE8[rand() & 7]` over 2, 4, 6, 7, 8,
+9, 10, 11 and the load `off_4B9E28[rand() % 4]` (0x41A330), with rand() seeded with 1 when the world is built
+(0x417DA3), but before the pod's turn rand() has also been drawn from for every counter made (once a counter
+when the map opens, again on each change of view; update 165) and by the ambient sound each time it starts
+with no CD track playing, which goes by real time. So the first pod's place changes with what the player
+looked at and how long they took, as the owner had noticed.
+
+## The player's view changes move the dice (update 165)
+
+Every counter the war map makes draws one number from the game's rand() (0x42B34B, for the timing of its
+production icon), and the map makes the view's counters afresh each time the view is changed (0x41C2E0).
+The computer player's moves, the pods and a battle's deployment draw from the same sequence. So flicking between
+the Unit and Construction views changes what the computer does next. Harmless, and almost certainly not meant.
