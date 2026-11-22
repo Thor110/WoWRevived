@@ -31,6 +31,15 @@ namespace wow
 
         void Update();
         void Draw(Canvas& canvas) const;
+        // The size the picture is to be for what is showing now (docs/MODERN.md "Resolution"): the view size of
+        // [Screen] "Size" for the menus and the other 640 x 480 screens, which are centred in it over a background
+        // made for the size; 640 x 480 still for the war map, the battle map, their menus and the movies, which
+        // the window scales up (the maps' own views come next).
+        void ViewSize(int& width, int& height) const;
+        // The view size for a desktop of this size (the first start, with no [Screen] "Size" yet): the desktop's
+        // own if it is one of the sizes there are backgrounds for; past 1920 x 1080 the one nearest its shape;
+        // else the largest that fits, of its shape if there is one
+        static void ViewSizeFor(int desktopW, int desktopH, int& width, int& height);
         uint32_t Frames() const { return uint32_t(frames); }    // dword_4D2558
         // byte_4D1279: the [Debug] "Mat" setting's own value, which the curtains cheat also sets (0x401372)
         bool Mat() const { return cheats.mat || ini.GetBool("Debug", "Mat", false); }
@@ -39,7 +48,7 @@ namespace wow
         void OnKeyUp(int sdlKey) { if (screen) screen->OnKeyUp(sdlKey); }
         void OnText(const char* utf8) { if (screen) screen->OnText(utf8); }
         void OnMouseMove(int x, int y);
-        void OnMouseLeave() { mouseX = mouseY = -1; }
+        void OnMouseLeave() { mouseInside = false; }
         // Draw the game's own mouse cursor (on by default; [WoW Engine] "System Cursor" = 1 uses the system's)
         bool GameCursor() const { return !ini.GetBool("WoW Engine", "System Cursor", false); }
         void OnMouseButton(int x, int y, bool down);
@@ -96,7 +105,11 @@ namespace wow
 
         bool AnySaveGame() const;
         void DrawCursor(Canvas& canvas) const;
-        int mouseX = -1, mouseY = -1; // -1: outside the picture
+        int mouseX = -1, mouseY = -1; // where the mouse is, from the showing screen's 0, 0 (it can be off its edges)
+        bool mouseInside = false;     // false: outside the picture
+        int sizedW = 0, sizedH = 0;   // the view size the resources were last told
+        void Origin(int& x, int& y) const;   // the showing screen's 0, 0 in the picture
+        mutable int pictureW = 640, pictureH = 480;   // the picture's size, as last drawn
         bool CorrectCdInserted() const;
 
         // what the game keeps in globals between menus

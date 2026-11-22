@@ -24,6 +24,38 @@ namespace wow
         return true;
     }
 
+    bool Video::Resize(int w, int h)
+    {
+        if (w == width && h == height) return true;
+        SDL_Texture* next = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, w, h);
+        if (!next) return false;
+        if (texture) SDL_DestroyTexture(texture);
+        texture = next;
+        width = w;
+        height = h;
+        pixels.assign(size_t(w) * size_t(h), 0);
+        SDL_SetRenderLogicalPresentation(renderer, w, h, stretch ? SDL_LOGICAL_PRESENTATION_STRETCH : SDL_LOGICAL_PRESENTATION_LETTERBOX);
+        return true;
+    }
+
+    void Video::SetStretch(bool on)
+    {
+        stretch = on;
+        if (renderer) SDL_SetRenderLogicalPresentation(renderer, width, height, on ? SDL_LOGICAL_PRESENTATION_STRETCH : SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    }
+
+    void Video::SetFullScreen(bool on) { if (window) SDL_SetWindowFullscreen(window, on); }
+
+    // Sharp pixels when the picture goes into the window a whole number of times, smoothed when it doesn't (pixels
+    // of uneven sizes look worse than a little softness)
+    void Video::Present_Filter()
+    {
+        int ow = 0, oh = 0;
+        if (!SDL_GetCurrentRenderOutputSize(renderer, &ow, &oh) || width <= 0 || height <= 0) return;
+        const bool whole = ow >= width && oh >= height && ow % width == 0 && oh % height == 0 && ow / width == oh / height;
+        SDL_SetTextureScaleMode(texture, whole || (ow == width && oh == height) ? SDL_SCALEMODE_NEAREST : SDL_SCALEMODE_LINEAR);
+    }
+
     void Video::ToggleFullScreen()
     {
         bool isFull = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
@@ -41,6 +73,7 @@ namespace wow
 
     void Video::Present()
     {
+        Present_Filter();
         SDL_UpdateTexture(texture, nullptr, pixels.data(), width * int(sizeof(uint32_t)));
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);

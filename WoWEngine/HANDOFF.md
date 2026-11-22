@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 191
+# Handoff: WoWEngine after update 192
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -137,7 +137,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 191
+## State after update 192
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -172,7 +172,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **192**.
+  - The next number is **193**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.
@@ -183,6 +183,9 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     as the mouse does; a digit does it the keyboard's way.
   - The log file, with its CRASH and STALL lines, stays in for release (the owner, update 176): don't take it
     out as debugging.
+  - To try a view size here: copy `WoWEngine/dat/extra` into the test install's `DAT`, add `[Screen]` `Size=1024,768`
+    to its `WoWRevived.ini`, and take a screenshot of a menu (`--open 0x3EF` is Display Settings). Put both back
+    after: the parity checks are at 640 x 480 with the game's own files. A screenshot run never writes the size.
   - WoWEngine.log's own lines to look for in a report from the owner: `CRASH:` (a fault, with what the
     engine was doing) and `STALL:` (the main loop stopped for 5 s). Neither can be built or run here on the
     Windows side, so a compile error in `main.cpp`'s `_WIN32` parts is possible: ask.

@@ -31,6 +31,12 @@ namespace wow
         Canvas(uint32_t* pixels, int width, int height, Resources& resources)
             : pixels(pixels), width(width), height(height), res(resources) {}
 
+        // The frame buffer changed (a new view size)
+        void Rebind(uint32_t* p, int w, int h) { pixels = p; width = w; height = h; }
+        // Where 0, 0 is drawn: the 640 x 480 screens are centred in a larger view, their backgrounds are not
+        void SetOrigin(int x, int y) { originX = x; originY = y; }
+        int OriginX() const { return originX; }
+        int OriginY() const { return originY; }
         int Width() const { return width; }
         // The frame buffer, for screens that draw their own way (the war map's per-pixel shade levels).
         uint32_t* Pixels() const { return pixels; }
@@ -65,6 +71,7 @@ namespace wow
     private:
         uint32_t* pixels;
         int width, height;
+        int originX = 0, originY = 0;
         Resources& res;
     };
 }

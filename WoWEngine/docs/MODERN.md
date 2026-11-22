@@ -17,8 +17,8 @@ code each is to be marked `MODERN FIX`. A parity pass must leave them alone. The
 | Volume sliders saved | The Sound Control sliders never write the registry, so the volumes are lost | **In** (marked, 191): Master as it moves, Ambient and Speech as the menu closes, written to `WoWRevived.ini` |
 | Music toggle | The Sound Control check box only saves the setting; the music steps read it when they next come round | **In** (191): off stops the track at once, and either way the music step of the map behind the menu is brought forward |
 | Master volume on the music | Master doesn't reach the music's playback | **In** (marked, 191): Master scales the music |
-| Resolution applied at once | The slider only takes effect after a restart | *To do*: the engine saves `[Screen] Size` but always draws 640 x 480 |
-| Desktop resolution on the first start | (no such thing) | *To do*: with no `[Screen] Size` yet, the desktop's is taken; afterwards the player's choice stands |
+| Resolution applied at once | The slider only takes effect after a restart | **Begun** (192): the menus and the other 640 x 480 screens take the view size at once; the maps' views are next. See "Resolution" below |
+| Desktop resolution on the first start | (no such thing) | **In** (192): with no `[Screen] Size` yet, the view size is worked out from the desktop's and kept; afterwards the player's choice stands |
 | No 8 / 16-bit colour choice | Two radios in Display Settings; 8-bit doesn't work on modern systems | **In** (191): not offered; `[Modern]` "Original Display Settings" = 1 puts them and the lights toggle back |
 | Loose map files | The game marks MAPS.WoW's entries by looking for `Map\<name>` (0x414FAB), a folder it doesn't have, then reads `maps\<name>`: a loose map file is never used | **In** (update 140): `core/Vfs` looks in `maps\`, so a loose file in `MAPS` replaces the archive's, as in `DAT` |
 | No "Lights" toggle, lights always on | With lights off, Infiltrate, which makes a light, crashes the game | **In** (191): the toggle not offered and the lights always on, unless `[Modern]` "Original Display Settings" = 1 |
@@ -45,6 +45,32 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
   a battle when it is the battle type's upgrade, with the saved health scaled to the new level's and back.
   The save is still written the game's way (the battle object's type untouched), so it loads in the original.
   Off, a building fights as the level it was built as, as the original has it.
+
+### Resolution (agreed with the owner, update 192)
+
+- **The view size** (`[Screen]` "Size") is one of the thirteen sizes WoWRevived has menu backgrounds for, 640 x
+  480 to 1920 x 1080. Nothing is drawn larger: past 1920 x 1080 everything would be too small to play, so a
+  bigger screen gets the finished picture scaled up.
+- **The first start** (no "Size" yet): the desktop's own size if it is one of the thirteen; past 1920 x 1080 the
+  size nearest the desktop's shape (a 4K screen gets 1920 x 1080 at twice the size); any other, the largest
+  that fits, of the desktop's shape if there is one. `FrontEnd::ViewSizeFor`.
+- **The picture on the screen**: its shape kept, with bars where it doesn't fill (`[WoW Engine]` "Stretch" = 1
+  fills instead); sharp pixels when it goes in a whole number of times, smoothed when it doesn't. Full screen
+  unless `[WoW Engine]` "Windowed" = 1; Alt + Enter changes it while playing.
+- **Backgrounds are never scaled.** The main menu's and the legal screens' (`humanbd`, `martbd`, `legal1`,
+  `legal2`) are read from `DAT\extra\<width>x<height>\` in the game folder when the size has them there
+  (`Resources::SetViewSize`), and drawn from the top left at their own size. The briefing, research and CD
+  player backgrounds are the owner's 1920 x 1080 ones, loose in `DAT`, drawn from the top left and cut off by
+  the picture's edges.
+- **The controls are centred** both ways: a 640 x 480 screen is drawn from the middle 640 x 480 of the picture
+  (`Canvas::SetOrigin`, `FrontEnd::Origin`), and the mouse is taken from there.
+- **The war map's background** (to come with the maps' views): the original picture (1498 wide) while the view
+  is no wider than it, so there is no empty map to scroll into; the extended ones (1921 wide, with the Martians'
+  coast of Europe) only for a view wider than that. Both are 2544 high.
+- **The maps and the movies** are still drawn at 640 x 480 and scaled by the window until their views take the
+  size.
+- **Where the files go**: the engine looks for `extra\<size>\` inside the game's `DAT` folder, so the
+  installer has to put `WoWEngine/dat/extra` there (PLAN.md D2).
 
 ## Options
 

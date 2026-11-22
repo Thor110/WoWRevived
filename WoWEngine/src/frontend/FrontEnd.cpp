@@ -327,7 +327,8 @@ namespace wow
         auto m = std::make_unique<Menu>(CmdDisplaySettings, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, 1);
         m->AddHeading(0x410);
 
-        // TODO: the engine draws at 640 x 480 for now; these are saved for the launcher and for later
+        // MODERN FIX: the size is used at once (the game's slider only takes effect at the next start). The sizes
+        // are the ones WoWRevived has menu backgrounds for; the menus take it now, the maps' views next.
         std::vector<Mode> modes;
         SDL_DisplayID display = SDL_GetPrimaryDisplay();
         const SDL_DisplayMode* desktop = display ? SDL_GetDesktopDisplayMode(display) : nullptr;
@@ -1053,6 +1054,13 @@ namespace wow
     void FrontEnd::Update()
     {
         frames++;                // 0x403749, before the screens' updates
+        // the sprites made for the view size are the ones read (the setting can change in Display Settings)
+        {
+            const std::string size = ini.GetString("Screen", "Size", "640,480");
+            int w = std::atoi(size.c_str()), h = 0;
+            if (auto comma = size.find(','); comma != std::string::npos) h = std::atoi(size.c_str() + comma + 1);
+            if (w != sizedW || h != sizedH) { sizedW = w; sizedH = h; res.SetViewSize(w, h); }
+        }
         // the cursor animates (0x403890 -> 0x40CDC0 -> 0x40EF20(0x80, loop)): the wait cursor's frames go round, a
         // one-frame cursor stays as it is
         cursorFrame += 0x80;
@@ -1105,7 +1113,7 @@ namespace wow
     // "Slow Tool Tip Delay" (150), which is asked for (then the levels below it) and shown if there's any text.
     void FrontEnd::UpdateTooltip()
     {
-        if (!ini.GetBool("Screen", "Tool Tip Enable", true) || !screen || mouseX < 0 || screen->Id() == MovieScreen::Id)
+        if (!ini.GetBool("Screen", "Tool Tip Enable", true) || !screen || !mouseInside || screen->Id() == MovieScreen::Id)
         {
             tip.reset();
             return;
@@ -1154,8 +1162,8 @@ namespace wow
         int w = tw + 2, h = th + 2;
         int offset = ini.GetInt("Screen", "Tool Tip Offset", 16);
         int cx = tip->x + 32 + w / 2, cy = tip->y - offset + 32 + h / 2;
-        if (cx + w / 2 > canvas.Width()) cx = canvas.Width() - w / 2 - 4;
-        if (cy < 4) cy = 4;
+        if (cx + w / 2 > canvas.Width() - canvas.OriginX()) cx = canvas.Width() - canvas.OriginX() - w / 2 - 4;
+        if (cy < 4 - canvas.OriginY()) cy = 4 - canvas.OriginY();
         Rect text{ cx - w / 2 + 1, cy - h / 2 + 1, tw, th };
         Rect box{ cx - w / 2 - 2, cy - h / 2 - 2, w + 3, h + 3 };
         // BoxedText's draw (0x49D300): the box filled with the colour it was made with, then a 1-pixel outline
@@ -1167,9 +1175,10 @@ namespace wow
         for (int y = box.y; y < box.y + box.h; y++)
             for (int x = box.x; x < box.x + box.w; x++)
             {
-                if (x < 0 || y < 0 || x >= canvas.Width() || y >= canvas.Height()) continue;
+                const int px = x + canvas.OriginX(), py = y + canvas.OriginY();
+                if (px < 0 || py < 0 || px >= canvas.Width() || py >= canvas.Height()) continue;
                 bool edge = x == box.x || y == box.y || x == box.x + box.w - 1 || y == box.y + box.h - 1;
-                out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = edge ? outline : fill;
+                out[size_t(py) * size_t(canvas.Width()) + size_t(px)] = edge ? outline : fill;
             }
         canvas.DrawString(0x6F, tip->text, text, TextCentreX | TextCentreY);
     }
@@ -1445,15 +1454,87 @@ namespace wow
     void FrontEnd::Draw(Canvas& canvas) const
     {
         canvas.Clear(0);
+        canvas.SetOrigin(0, 0);
+        pictureW = canvas.Width();
+        pictureH = canvas.Height();
         if (!screen) return;
         // the war map's menus are drawn over the map
         if (battleMap && !screen->Background()) battleMap->Draw(canvas);
         else if (warMap && !screen->Background()) warMap->Draw(canvas);
+        // the background from the picture's top left, at its own size (the one made for the view size, if any);
+        // everything else from the screen's 0, 0, which is the middle 640 x 480 of a larger picture
         if (screen->Background()) canvas.DrawSprite(screen->Background(), 0, 0, 0);
+        int ox = 0, oy = 0;
+        Origin(ox, oy);
+        canvas.SetOrigin(ox, oy);
         screen->Draw(canvas);
         DrawTooltip(canvas);
+        canvas.SetOrigin(0, 0);
         if (overlay) canvas.DrawSprite(0x5C, 0, 0, 0, 0, overlay == 1 ? Canvas::Blend::Translucent : Canvas::Blend::Opaque);
+        canvas.SetOrigin(ox, oy);
         DrawCursor(canvas);
+        canvas.SetOrigin(0, 0);
+    }
+
+    namespace
+    {
+        // a screen that is still drawn at 640 x 480 and scaled by the window: the war map, the battle map, their
+        // menus (no background of their own) and the movies
+        bool SmallPicture(const Screen* screen, bool overMap)
+        {
+            if (!screen) return false;
+            const int id = screen->Id();
+            return id == WarMap::Id || id == BattleMap::Id || id == MovieScreen::Id || (overMap && !screen->Background());
+        }
+    }
+
+    void FrontEnd::ViewSize(int& width, int& height) const
+    {
+        width = 640;
+        height = 480;
+        if (SmallPicture(screen.get(), warMap || battleMap)) return;
+        const std::string size = ini.GetString("Screen", "Size", "640,480");
+        int w = std::atoi(size.c_str()), h = 0;
+        if (auto comma = size.find(','); comma != std::string::npos) h = std::atoi(size.c_str() + comma + 1);
+        for (const Mode& mode : Modes)
+            if (mode.w == w && mode.h == h) { width = w; height = h; return; }
+    }
+
+    void FrontEnd::ViewSizeFor(int desktopW, int desktopH, int& width, int& height)
+    {
+        width = 640;
+        height = 480;
+        if (desktopW <= 0 || desktopH <= 0) return;
+        auto shapeOff = [&](const Mode& m) { return std::abs(m.w * desktopH - m.h * desktopW); };
+        const Mode* best = nullptr;
+        if (desktopW > 1920 || desktopH > 1080)
+        {
+            // past the largest: the size nearest the desktop's shape, the larger of equals
+            for (const Mode& m : Modes)
+                if (!best || shapeOff(m) * int64_t(best->w) * best->h < shapeOff(*best) * int64_t(m.w) * m.h ||
+                    (shapeOff(m) == 0 && shapeOff(*best) == 0 && m.w > best->w)) best = &m;
+        }
+        else
+        {
+            for (const Mode& m : Modes) if (m.w == desktopW && m.h == desktopH) best = &m;
+            // not one of them: the largest that fits, one of the desktop's shape first
+            if (!best)
+                for (const Mode& m : Modes)
+                {
+                    if (m.w > desktopW || m.h > desktopH) continue;
+                    const bool same = shapeOff(m) == 0, bestSame = best && shapeOff(*best) == 0;
+                    if (!best || (same && !bestSame) || (same == bestSame && m.w * m.h > best->w * best->h)) best = &m;
+                }
+        }
+        if (best) { width = best->w; height = best->h; }
+    }
+
+    void FrontEnd::Origin(int& x, int& y) const
+    {
+        x = y = 0;
+        if (SmallPicture(screen.get(), warMap || battleMap)) return;
+        x = std::max(0, (pictureW - 640) / 2);
+        y = std::max(0, (pictureH - 480) / 2);
     }
 
     void FrontEnd::DrawCursor(Canvas& canvas) const
@@ -1466,7 +1547,7 @@ namespace wow
             { 0x1, -8, -8 },   { 0x1, -8, -8 },   { 0x1, -8, -8 },   { 0x1, -8, -8 },   { 0x1, -8, -8 },   { 0x1, -8, -8 },
             { 0xB, 0, 0 },     { 0xC, -16, -16 }, { 0xD, 0, 0 },     { 0xE, 0, 0 },     { 0xF, 0, 0 },     { 0x10, 0, 0 },
         };
-        if (!GameCursor() || mouseX < 0 || !screen) return;
+        if (!GameCursor() || !mouseInside || !screen) return;
         if (screen->Id() == MovieScreen::Id) return; // no cursor over a movie
         int index = screen->CursorAt(mouseX, mouseY);
         if (index < 0 || index >= int(std::size(Cursors))) index = 0;
@@ -1545,9 +1626,14 @@ namespace wow
 
     void FrontEnd::OnMouseMove(int x, int y)
     {
+        int ox = 0, oy = 0;
+        Origin(ox, oy);
+        x -= ox;
+        y -= oy;
         if (x != mouseX || y != mouseY) stillTicks = 0; // dword_4D14A4: the UI time of the last move
         mouseX = x;
         mouseY = y;
+        mouseInside = true;
         if (screen) screen->OnMouseMove(x, y);
     }
 
@@ -1563,6 +1649,9 @@ namespace wow
     {
         rightHeld = down;
         if (!screen) return;
+        int ox = 0, oy = 0;
+        Origin(ox, oy);
+        if (x >= 0) { x -= ox; y -= oy; }    // (-1, -1 is a release off the picture)
         if (auto command = screen->OnRightButton(x, y, down)) Dispatch(*command, true);
     }
 
@@ -1570,6 +1659,9 @@ namespace wow
     {
         mouseHeld = down;
         if (!screen) return;
+        int ox = 0, oy = 0;
+        Origin(ox, oy);
+        if (x >= 0) { x -= ox; y -= oy; }
         if (auto command = screen->OnMouseButton(x, y, down)) Dispatch(*command, true);
     }
 }

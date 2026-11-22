@@ -51,13 +51,42 @@ namespace wow
         {
             try
             {
-                if (auto data = vfs.Load(g->file)) sprite = std::make_unique<Sprite>(std::move(*data));
-                else Missing(g->file);
+                // the copy made for the view size, if there is one (the name after its folder)
+                std::string file = g->file;
+                if (!sizeFolder.empty())
+                {
+                    const size_t slash = file.find_last_of("\\/");
+                    const std::string sizedFile = sizeFolder + (slash == std::string::npos ? file : file.substr(slash + 1));
+                    if (vfs.Exists(sizedFile)) { file = sizedFile; sized.push_back(id); }
+                }
+                if (auto data = vfs.Load(file)) sprite = std::make_unique<Sprite>(std::move(*data));
+                else Missing(file);
             }
             catch (const std::exception& ex) { Missing(g->file + " (" + ex.what() + ")"); }
         }
         else Missing("graphics entry " + std::to_string(id));
         return (sprites[id] = std::move(sprite)).get();
+    }
+
+    void Resources::SetViewSize(int width, int height)
+    {
+        const std::string folder = "dat\\extra\\" + std::to_string(width) + "x" + std::to_string(height) + "\\";
+        if (folder == sizeFolder) return;
+        // let go of what came from the old size's folder, and of anything the new one has a copy of
+        for (const auto& [id, sprite] : sprites)
+        {
+            const GType* g = FindGType(id);
+            if (!g) continue;
+            const size_t slash = g->file.find_last_of("\\/");
+            if (vfs.Exists(folder + (slash == std::string::npos ? g->file : g->file.substr(slash + 1)))) sized.push_back(id);
+        }
+        for (int id : sized)
+        {
+            sprites.erase(id);
+            for (auto it = frames.begin(); it != frames.end();) it = it->first.first == id ? frames.erase(it) : std::next(it);
+        }
+        sized.clear();
+        sizeFolder = folder;
     }
 
     const IndexedImage* Resources::GetFrame(int id, int frame)

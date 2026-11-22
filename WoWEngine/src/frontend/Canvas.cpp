@@ -37,6 +37,8 @@ namespace wow
 
     void Canvas::DrawImage(const IndexedImage& image, const uint32_t* colours, int x, int y, Blend blend)
     {
+        x += originX;
+        y += originY;
         int x0 = std::max(0, -x), y0 = std::max(0, -y);
         int x1 = std::min(image.width, width - x), y1 = std::min(image.height, height - y);
         for (int iy = y0; iy < y1; iy++)
@@ -71,6 +73,8 @@ namespace wow
         const ShadeTable* shade = res.ShadeFor(gtype);
         const GType* g = res.FindGType(gtype);
         if (!image || !shade || !g || rows <= 0) return;
+        x += originX;
+        y += originY;
         firstRow = std::clamp(firstRow, 0, image->height);
         rows = std::min(rows, image->height - firstRow);
         const uint32_t* colours = shade->Level(level);
@@ -86,8 +90,9 @@ namespace wow
         }
     }
 
-    void Canvas::DrawString(int fontGType, std::string_view text, const Rect& box, int flags, int level, int lineSpacing)
+    void Canvas::DrawString(int fontGType, std::string_view text, const Rect& at, int flags, int level, int lineSpacing)
     {
+        const Rect box{ at.x + originX, at.y + originY, at.w, at.h };
         const Font* font = res.GetFont(fontGType);
         const ShadeTable* shade = res.ShadeFor(fontGType);
         if (!font || !shade) return;

@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 191) and what remains
+## Where things stand (update 192) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -53,11 +53,17 @@ inventory with the history. Tick here and there as each is done.
 - [x] **B2** (191) The music toggle acts at once.
 - [x] **B3** (191) Display Settings without the colour radios and the lights toggle; the lights always on.
       `[Modern]` "Original Display Settings" = 1 gives the original's menu.
-- [ ] **B4** First start takes the desktop's resolution (6.4). To be done with B5: until the size is used it
-      would only be a number written down, and the slider can't show a size past the original's list.
-- [ ] **B5** The resolution applied (6.5), the large one: (a) the window, back buffer and the 640 x 480 screens;
-      (b) the war map's and battle map's views at the chosen size, with the sound borders scaled (0x464B10);
-      (c) WoWRevived's larger sizes and the launcher's per-resolution values, the HD menu backgrounds.
+- [x] **B4** (192) The first start takes the desktop's resolution, by the rule agreed with the owner
+      (MODERN.md "Resolution").
+- [~] **B5** The resolution applied (6.5), in three steps:
+      - [x] (a, 192) the picture is the view size; the menus and the other 640 x 480 screens are centred in it
+        over the backgrounds made for the size, never scaled; the slider acts at once; the picture is scaled
+        to the screen with its shape kept;
+      - [ ] (b) the war map's and the battle map's views at the view size: the view rectangles, edge
+        scrolling, the panels' and minimap's anchors, the Build List's place, the sound borders (0x464B10),
+        the war map's background chosen by the view's width;
+      - [ ] (c) the movies and the briefing / research / CD player screens looked at on a large view; the
+        installer putting `dat/extra` in place.
 - [x] Already in: the start files never saved over (160); upgraded buildings fight as their level (186).
 
 ### C. Modern options (Stage 6.7, 6.8)

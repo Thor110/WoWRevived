@@ -385,11 +385,35 @@ int main(int argc, char** argv)
         TickNs = uint64_t(1000 / settings.gameFrequency) * 1'000'000ull;
         wow::FrontEnd frontEnd(resources, settings, ini, vfs.Files());
 
+        // MODERN FIX: the first start takes the desktop's resolution (docs/MODERN.md "Resolution"). With no [Screen]
+        // "Size" yet, the view size is worked out from the desktop's and kept; after that the setting is the
+        // player's. (Not when a screenshot is asked for: those runs leave the settings alone.)
+        if (options.screenshot.empty() && ini.GetString("Screen", "Size", "").empty())
+        {
+            const SDL_DisplayID display = SDL_GetPrimaryDisplay();
+            const SDL_DisplayMode* desktop = display ? SDL_GetDesktopDisplayMode(display) : nullptr;
+            int w = GameWidth, h = GameHeight;
+            if (desktop) wow::FrontEnd::ViewSizeFor(desktop->w, desktop->h, w, h);
+            ini.SetString("Screen", "Size", std::to_string(w) + "," + std::to_string(h));
+            SDL_Log("First start: the desktop is %d x %d, the view size %d x %d", desktop ? desktop->w : 0, desktop ? desktop->h : 0, w, h);
+        }
         wow::Video video;
         std::string error;
-        if (!video.Open("Jeff Wayne's 'The War Of The Worlds' - WoW Engine v" WOWENGINE_VERSION, GameWidth, GameHeight, false, error))
+        // the picture fills the screen unless [WoW Engine] "Windowed" = 1 (Alt + Enter changes it while playing)
+        const bool windowed = !options.screenshot.empty() || ini.GetBool("WoW Engine", "Windowed", false);
+        if (!video.Open("Jeff Wayne's 'The War Of The Worlds' - WoW Engine v" WOWENGINE_VERSION, GameWidth, GameHeight, !windowed, error))
             throw std::runtime_error(error);
+        wow::Screen::windowed = windowed;
+        video.SetStretch(ini.GetBool("WoW Engine", "Stretch", false));
         wow::Canvas canvas(video.Pixels(), video.Width(), video.Height(), resources);
+        // the picture is the size the front end asks for (the view size for the menus, 640 x 480 for the maps and
+        // movies until their views take the size too); it changes with the screen and with the setting, at once
+        auto fitPicture = [&]() {
+            int w = GameWidth, h = GameHeight;
+            frontEnd.ViewSize(w, h);
+            if (w == video.Width() && h == video.Height()) return;
+            if (video.Resize(w, h)) canvas.Rebind(video.Pixels(), video.Width(), video.Height());
+        };
 
         // typed text for the campaign name field (Edit Campaign)
         SDL_StartTextInput(video.Window());
@@ -427,6 +451,7 @@ int main(int argc, char** argv)
             }
             for (int t = 0; t < options.ticks; t++) frontEnd.Update();
             if (options.then) { frontEnd.Open(options.then); for (int t = 0; t < 10; t++) frontEnd.Update(); }
+            fitPicture();
             frontEnd.Draw(canvas);
             wow::WriteBmp(options.screenshot, video.Pixels(), video.Width(), video.Height());
             SDL_Log("Saved %s", options.screenshot.string().c_str());
@@ -541,6 +566,7 @@ int main(int argc, char** argv)
                 lag -= TickNs;
             }
 
+            fitPicture();
             frontEnd.Draw(canvas);
             video.Present();
         }

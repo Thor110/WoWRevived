@@ -990,6 +990,16 @@ transparency")
 - Display Settings without the 8 / 16 bit radios and "Show lights"; the lights always on. `[Modern]` "Original
   Display Settings" = 1 is the original's menu and setting, for checking against it.
 
+**Update 192** (modern fixes B4 and the first step of B5; nothing of the original's changed at 640 x 480)
+- The view size (`[Screen]` "Size") is used: the picture is that size for the menus and the other 640 x 480
+  screens, their controls centred, their backgrounds the ones WoWRevived made for the size, read from
+  `DAT\extra\<size>\` and never scaled. The maps and movies stay 640 x 480, scaled by the window, until the
+  next step.
+- The first start works the size out from the desktop. The picture is scaled to the screen with its shape kept.
+- Seen: Display Settings at 1024 x 768 over the owner's background, the controls in the middle and the cursor
+  where the mouse is; the war map and both battles unchanged at 640 x 480. Not seen: a real screen (full
+  screen, a 4K desktop, the smoothed scaling), which can't be run here.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

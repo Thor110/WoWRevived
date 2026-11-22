@@ -25,6 +25,11 @@ namespace wow
         int Height() const { return height; }
         uint32_t* Pixels() { return pixels.data(); }
 
+        // The picture's size changed (the view size, docs/MODERN.md "Resolution"): a new frame buffer and texture
+        bool Resize(int width, int height);
+        // Stretched over the whole window, or its shape kept with bars (the default)
+        void SetStretch(bool on);
+        void SetFullScreen(bool on);
         void ToggleFullScreen();
         void Present();
 
@@ -38,6 +43,8 @@ namespace wow
         SDL_Renderer* renderer = nullptr;
         SDL_Texture* texture = nullptr;
         int width = 0, height = 0;
+        bool stretch = false;
+        void Present_Filter();
         std::vector<uint32_t> pixels;
     };
 }

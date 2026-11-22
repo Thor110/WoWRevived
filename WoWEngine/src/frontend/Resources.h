@@ -32,6 +32,10 @@ namespace wow
         const GType* FindGType(int id) const;
         const Sprite* GetSprite(int gtype);
         const IndexedImage* GetFrame(int gtype, int frame = 0);
+        // The view size (docs/MODERN.md "Resolution"). A sprite that has a copy made for the size, in
+        // dat\extra\<width>x<height>\ beside the game's files (WoWRevived's menu backgrounds: humanbd, martbd,
+        // legal1, legal2), is read from there. Changing it lets go of the sprites that were, or now are, such copies.
+        void SetViewSize(int width, int height);
         const Font* GetFont(int gtype);
         // A graphics entry's file as it is (class 6 entries are raw 8-bit images, like the route arrows' 256 x 64)
         const std::vector<uint8_t>* GetRaw(int gtype);
@@ -53,6 +57,8 @@ namespace wow
         TextTable text;
         std::map<int, GType> gtypes;
         std::map<int, std::unique_ptr<Sprite>> sprites;
+        std::string sizeFolder;              // "dat\\extra\\800x600\\", empty until a size is set
+        std::vector<int> sized;              // the graphics entries read from a size's folder
         std::map<std::pair<int, int>, IndexedImage> frames;
         std::map<int, std::unique_ptr<Font>> fonts;
         std::map<int, std::optional<std::vector<uint8_t>>> raws;
