@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 184) and what is next
+## Where things stand (update 185) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -201,8 +201,13 @@ wrong name: what is left of it is what the war map's save keeps of a battle's ob
       battle place (what the owner's saves hold for a unit that has never fought). Done in 184: a new unit
       is written whole, from nothing (`SaveObject::MakeUnit`), so any unit type can be made whether or not
       the save has one; the layout matches every unit in the owner's saves. Left: a construction or a
-      resource is still a copy of a saved one (a building's battle record after BATP, its parts and their
-      state, is carried as bytes), so one whose kind and category the save lacks can't be made.
+      resource is still a copy of a saved one, so one whose kind and category the save lacks can't be made.
+      What their records are, from the saves (185), for when they are written whole: the type, two floats,
+      SELO (id, place), WMOB (sector), BMOL 1, then one battle object (type, SELO, BAMO's five values, BATP)
+      and the tail: for a building, whether it has a factory, its queue, its +0x3C (100 bytes with no
+      factory, 104 with an empty one, 33 more for each thing queued); a gun emplacement's has VEHI before
+      that; types 451 to 456 have four more values first, two points (they run between two places); some
+      resources have one more value that isn't understood (0 or 1).
 - [ ] 4.5 **The players and their commands**: the local, computer and network player objects, the command
       records (0x4460A0), and the commands the world handles one queue pass later (0x95, 0x419A24; was 3.7).
 - [x] 4.6 **Playback recordings** (in, update 183: `core/Playback.h`, with the switches `--record` and

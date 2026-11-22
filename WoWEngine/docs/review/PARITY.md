@@ -917,6 +917,22 @@ transparency")
 - *Seen running*: the first pod's units, now made this way, land, deploy and attack as before; a Human
   campaign run on with five pods landing, clean under the checkers.
 
+**Update 185** (found in the owner's saves: an upgraded building's battle object)
+- [x] **An upgrade changes the war map object's type alone** (0x442E06 sets its +0x20). The engine changed the
+      type of the object's battle object with it. In the owner's saves every upgraded building has its first
+      level's battle object still: 36 and 37 over 35, 40 and 41 over 39, 51 over 50, 53 and 54 over 52, 57 over
+      55, 97 over 96, 102 over 100, 114 over 113, 117 over 116, 452 and 453 over 451, 456 over 454, 630 over
+      627 (535 buildings, no exception). `SaveObject::SetOwnType`.
+- [x] **A battle is fought with the battle objects' own types** (`SaveObject::BattleType`): an upgraded
+      building stands on the battle map as the building it was made as, as the game's own objects do. The
+      engine took the war map object's type, so it showed and fought the upgraded one. The computer player's
+      weight and class of it are still the war map type's.
+- [x] Full health for repair and the counters' pips is the battle object's type's (0x47DA20), not the war map
+      object's.
+- *Not seen in the original*: that an upgraded building looks like its first level in a battle follows from
+  the save and the upgrade's code; a frame of the original with an upgraded building would settle it.
+- *The layouts of constructions and resources* noted in PLAN.md 4.4 for writing them whole later.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

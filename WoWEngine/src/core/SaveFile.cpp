@@ -223,6 +223,15 @@ namespace wow
         Put32(bytes, at - 12, b);
     }
 
+    int SaveObject::BattleType() const
+    {
+        for (size_t i = 20; i + 4 <= bytes.size(); i++)
+            if (std::memcmp(&bytes[i], "BAMO", 4) == 0 && std::memcmp(&bytes[i - 16], "SELO", 4) == 0) return int(Get32(bytes, i - 20));
+        return Type();
+    }
+
+    void SaveObject::SetOwnType(int type) { Put32(bytes, 0, uint32_t(type)); }
+
     void SaveObject::SetType(int type)
     {
         const uint32_t old = Get32(bytes, 0);

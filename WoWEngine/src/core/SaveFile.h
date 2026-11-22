@@ -38,6 +38,12 @@ namespace wow
         std::vector<uint8_t> bytes;    // the object as written, from its type on
 
         int Type() const;
+        // Its battle objects' type: the one written before the first of them (Type() with none). They are made with
+        // the object's type and keep it: a building the computer player upgrades changes its own type only
+        // (0x442E06 sets the war map object's +0x20), so in the owner's saves every upgraded building (36 and 37
+        // from 35, 51 from 50, 452 from 451 ...) still has its first level's battle object.
+        int BattleType() const;
+        void SetOwnType(int type);      // the object's type alone (an upgrade, 0x442E06)
         int Id() const;
         int X() const;
         int Y() const;

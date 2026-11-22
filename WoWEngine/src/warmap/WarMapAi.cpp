@@ -69,12 +69,14 @@ namespace wow
                     if (std::find(destroyed.begin(), destroyed.end(), ref) != destroyed.end()) continue;
                     const SaveObject& o = table[size_t(ref)];
                     BattleGroup g;
-                    g.type = o.Type();
+                    // the battle's objects are the object's own, with the type they were made with: an upgraded
+                    // building's is still its first level's (SaveObject::BattleType)
+                    g.type = o.BattleType();
                     g.list = list;
                     g.previous = k.previous;
                     g.ref = ref;
-                    if (auto w = aiWeights.find(g.type); w != aiWeights.end()) g.aiWeight = w->second;
-                    g.aiClass = AiClass(g.type);
+                    if (auto w = aiWeights.find(o.Type()); w != aiWeights.end()) g.aiWeight = w->second;
+                    g.aiClass = AiClass(o.Type());
                     g.places = o.BattlePositions();
                     g.healths = o.BattleHealths();
                     if (list >= 2 && o.Value(0) != 0.0f) g.progress = o.Value(1) / o.Value(0);
@@ -854,7 +856,7 @@ namespace wow
                 k.type = type;
                 k.frame = t->second.counterFrame;
                 for (int ref : k.refs)
-                    if (ref >= 0 && size_t(ref) < table.size()) table[size_t(ref)].SetType(type);
+                    if (ref >= 0 && size_t(ref) < table.size()) table[size_t(ref)].SetOwnType(type);   // +0x20 alone (0x442E06)
             }
             RefreshSector(s);
         }

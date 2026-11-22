@@ -608,7 +608,7 @@ namespace wow
             {
                 if (r < 0 || size_t(r) >= table.size()) continue;
                 if (std::find(destroyed.begin(), destroyed.end(), r) != destroyed.end()) continue;
-                const int most = UnitMaxHealth(table[size_t(r)].Type());
+                const int most = UnitMaxHealth(table[size_t(r)].BattleType());
                 if (most <= 0) continue;
                 const std::vector<int> healths = table[size_t(r)].BattleHealths();
                 for (size_t i = 0; i < healths.size(); i++)
@@ -640,7 +640,7 @@ namespace wow
         const bool players = (table[size_t(ref)].list & 1) == 0;
         const int type = table[size_t(ref)].Type();
         auto whole = [&](int r, int u) {    // health / full health, whole (0x429883: cdq, idiv)
-            const int most = UnitMaxHealth(table[size_t(r)].Type());
+            const int most = UnitMaxHealth(table[size_t(r)].BattleType());
             const std::vector<int> healths = table[size_t(r)].BattleHealths();
             return most > 0 && size_t(u) < healths.size() ? healths[size_t(u)] / most : 1;
         };
@@ -710,7 +710,7 @@ namespace wow
             health += add;
             now.hours = int(float(now.hours) - period);
         }
-        const int most = UnitMaxHealth(o.Type());
+        const int most = UnitMaxHealth(o.BattleType());
         if (health >= most)
         {
             o.SetBattleHealth(size_t(now.unit), most);
@@ -1574,7 +1574,7 @@ namespace wow
                 const int ref = k.refs.front();
                 if (ref >= 0 && size_t(ref) < table.size())
                 {
-                    const int most = UnitMaxHealth(table[size_t(ref)].Type());
+                    const int most = UnitMaxHealth(table[size_t(ref)].BattleType());
                     std::vector<int> frames;
                     for (int health : table[size_t(ref)].BattleHealths())
                         frames.push_back(most > 0 ? int(0.5 - double(float(health) / float(most)) * -9.0) : 0);

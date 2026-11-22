@@ -165,3 +165,12 @@ loader look for a sound as a loose file before the library (0x466910).
 The engine: Mat's time of day is in (179); the rest of Mat is PLAN.md 4.9; Charlie, Dave and Edit functionality
 are with the developers' aids, 4.8.
 
+## An upgraded building fights as the building it was (update 185)
+
+When research gives the computer player a better level of a building, every such building it has is changed in
+place (0x442D80). What is changed is the war map object's type (+0x20, 0x442E06) and nothing else. The object's
+battle map object, made when the building was, keeps the type it was made with, and the save writes each with
+its own type: in the owner's saves all 535 upgraded buildings are a higher level on the war map over a first
+level battle object. So on the battle map an upgraded building is the old one: its model, its health, its guns.
+Whether that was meant isn't known; it reads like a step left out. The engine does the same from update 185.
+
