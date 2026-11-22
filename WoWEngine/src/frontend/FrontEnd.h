@@ -120,6 +120,8 @@ namespace wow
         bool Fades(const Screen& s) const;
         std::optional<Command> delayed;
         int delayTicks = 0;
+        // the cursor's sprite and its frame, 8.8 (0x40CD30 / 0x40CDC0): half a frame a tick, round again at the end
+        mutable int cursorGtype = 0, cursorFrame = 0;
         int frames = 0;          // dword_4D2558: the game's frame counter (0x403749), carried from screen to screen
         int fadeIn = 0;
         int overlay = 0;

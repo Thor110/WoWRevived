@@ -2024,7 +2024,7 @@ namespace wow
         for (int y = box.y; y < box.y + box.h; y++)
             for (int x = box.x; x < box.x + box.w; x++)
                 if (x >= 0 && y >= 0 && x < canvas.Width() && y < canvas.Height()) out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = 0;
-        canvas.DrawString(0x73, text, { box.x + 4, box.y + 4, tw, th }, TextCentreX, 15, spacing);
+        canvas.DrawString(0x73, text, { box.x + 4, box.y + 4, tw, th }, TextCentreX, infoPageLevel, spacing);
     }
 
     // A battle (0x8072, the box's Defend / Attack): the world's selected sector becomes the battle's (+0x60 =
@@ -2692,7 +2692,7 @@ namespace wow
         int y = oy + (human ? 0x2B : 0x17);
         for (const std::string& line : lines)
         {
-            canvas.DrawString(0x73, line, { ox, y, b.w, lineH }, TextCentreX, 21);
+            canvas.DrawString(0x73, line, { ox, y, b.w, lineH }, TextCentreX, boxDetailLevel);
             y += lineH;
         }
         if (!infoBox->text2.empty())
@@ -3304,9 +3304,8 @@ namespace wow
     //  - "RFHS" (0x426140 -> 0x425E80), the player's facilities of the kind's type in the sector's resource list
     //    (+0x5C), a counter (GType 0x77, the type's counter frame) each, the unfinished ones (0x42AA70) at 50%, in a
     //    rect the first's size moved by kind x 32 - w / 2 - 32 and 8 from the waypoint, depth 6.
-    // *Provisional*: the facilities' counters are drawn where the rect starts (no offsets of their own are set; the
-    // widget's draw isn't traced); the facility row's click (0x80A3 -> 0x425E80, the row made again) isn't needed
-    // here, the row being worked out as it's drawn. The tool tips are in (TipText).
+    // The facility row's click (0x80A3 -> 0x425E80, the row made again) isn't needed here, the row being worked out
+    // as it's drawn. The tool tips are in (TipText).
     void WarMap::DrawResourceWidgets(Canvas& canvas) const
     {
         static constexpr int FacilityTypes[6] = { 47, 48, 49, 108, 109, 110 };
@@ -3347,8 +3346,11 @@ namespace wow
                         (table[size_t(ref)].Value(1) >= table[size_t(ref)].Value(0) ? done : going)++;
                     }
                 }
-                for (int i = 0; i < done; i++) canvas.DrawSprite(0x77, frame, fx, fy);
-                for (int i = 0; i < going; i++) canvas.DrawSprite(0x77, frame, fx, fy, 0, Canvas::Blend::Translucent);
+                // the row's draw (0x4263B0): each counter in turn, the finished (+0x88) then the unfinished (+0x8C), the
+                // next one [Tweak] "Res Stack XO" right and "Res Stack YO" down of the last (4 and 16)
+                for (int i = 0; i < done; i++) canvas.DrawSprite(0x77, frame, fx + i * resStackX, fy + i * resStackY);
+                for (int i = 0; i < going; i++)
+                    canvas.DrawSprite(0x77, frame, fx + (done + i) * resStackX, fy + (done + i) * resStackY, 0, Canvas::Blend::Translucent);
             }
         }
     }

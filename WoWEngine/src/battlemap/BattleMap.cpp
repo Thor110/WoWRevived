@@ -2502,7 +2502,7 @@ namespace wow
         for (int y = box.y; y < box.y + box.h; y++)
             for (int x = box.x; x < box.x + box.w; x++)
                 if (x >= 0 && y >= 0 && x < canvas.Width() && y < canvas.Height()) out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = 0;
-        canvas.DrawString(0x73, text, { box.x + 4, box.y + 4, tw, th }, TextCentreX, 15, spacing);
+        canvas.DrawString(0x73, text, { box.x + 4, box.y + 4, tw, th }, TextCentreX, setup.infoPageLevel, spacing);
     }
 
     // the rows and the placement: frontend/PopupRows.h
@@ -2986,7 +2986,7 @@ namespace wow
             int y = (human ? b.y : b.y - 0x5E) + (human ? 0x2B : 0x17);
             for (const std::string& l : lines)
             {
-                canvas.DrawString(0x73, l, { ox, y, b.w, lineH }, TextCentreX, 21);
+                canvas.DrawString(0x73, l, { ox, y, b.w, lineH }, TextCentreX, setup.boxDetailLevel);
                 y += lineH;
             }
             const Rect bt = EndBoxButtonRect();

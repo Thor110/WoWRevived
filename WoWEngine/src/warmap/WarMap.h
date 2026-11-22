@@ -72,6 +72,10 @@ namespace wow
         std::optional<Command> OnMouseButton(int x, int y, bool down) override;
         std::optional<Command> OnRightButton(int x, int y, bool down) override;
         void SetQuickCancelTimeout(int ticks) { quickCancelTimeout = ticks; }
+        // [Tweak] "Res Stack XO" / "Res Stack YO" (dword_4EA154 / 4EA16C: 4, 16): the Resource view's facility stack
+        void SetResourceStack(int xo, int yo) { resStackX = xo; resStackY = yo; }
+        // [Colours] "Info Page Text" (word_4B9424, 15) and "Messagebox Detail" (word_4B9428, 21)
+        void SetTextLevels(int infoPage, int boxDetail) { infoPageLevel = infoPage; boxDetailLevel = boxDetail; }
         void SetResourceCheat(bool on) { resourceCheat = on; }  // byte_58913C, youlikeit
         // A sector's Damage Layer ("Damage Layer", vtable 0x4A92E8, the sector's +0x8C): the battle map's scorch, a
         // byte a landscape vertex, kept between battles and saved as DMGL; empty (0 x 0) until its first battle
@@ -273,6 +277,7 @@ namespace wow
         // popup's Information item (0x808C) of an object whose type has a page (+0x18), and the box it opens
         struct InfoPage { std::string text; int x = 0, y = 0; int textId = 0, speechIn = 15; };
         std::optional<InfoPage> infoPage;
+        int resStackX = 4, resStackY = 16, infoPageLevel = 15, boxDetailLevel = 21;
         int infoSpeechStart = 0;        // a sound for the front end to start and keep (the page's speech)
         bool infoSpeechFade = false;    // the page has gone: its speech fades over 30
         void CloseInfoPage();

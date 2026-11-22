@@ -1022,8 +1022,8 @@ battle map.
   kinds, a bar (ROHS, 0x426590: GType 0xB9 + kind, its bottom ftol(spread supply / 3) rows, at the sector's
   waypoint moved by kind x 32 - w / 2 - 32 and -8 - h), a demand marker on it (GType 0xBC at h - ftol(spread demand /
   3) down, frame 1 under 0) and a row of the player's facilities of the kind (RFHS, 0x425E80: counters 8 below the
-  waypoint, the unfinished at 50%). *Provisional*: the facilities' counters are drawn at the row's start; the tool
-  tips and the row's click (0x80A3) aren't in.
+  waypoint, the unfinished at 50%), each one `[Tweak]` Res Stack XO (4) right and Res Stack YO (16) down of the
+  one before (0x4263B0, update 177). The tool tips are in (155); the row's click (0x80A3) isn't needed.
 - **The production icon** (0x42BC90, GType 0x76) at a counter's bottom right while its object's factory has
   something queued: busy, the head entry's counter frame blinking (phases 1 and 6 at 50%, 2-5 solid, then a pause
   of (10 - ftol(eff x 10)) x 6 ticks, eff 1 / the sector's three supply ratios); suspended, the idle icon (0x94).

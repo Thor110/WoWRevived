@@ -103,6 +103,8 @@ namespace wow
             const std::map<int, std::array<int, 17>>* moveCosts = nullptr;      // OBJ.ojd record 10 (0x4F6E38)
             const std::map<int, std::pair<int, float>>* moveSlopes = nullptr;   // record 11 (0x4F04C0 / 0x4F0510)
             int zMapRes = 400;
+            int infoPageLevel = 15;     // [Colours] "Info Page Text" (word_4B9424, read at 0x4A3FEB)
+            int boxDetailLevel = 21;    // [Colours] "Messagebox Detail" (word_4B9428, 0x4327C7)
             Sound* sound = nullptr;
             ObjOjd::ArmourModifiers armour;     // [Tweak] the armour modifiers (0x4373D0-0x437510)
             // a research item's state is 2 (0x45B890), by side and its place in that side's tree (the globals from

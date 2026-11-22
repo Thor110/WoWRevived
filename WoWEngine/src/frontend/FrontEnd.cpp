@@ -655,6 +655,8 @@ namespace wow
         map->SetEconomy(ini.GetFloat("Tweak", "Distance Crippler VX", 0.5f), ini.GetFloat("Tweak", "Distance Crippler VY", 0.5f),
                         ini.GetFloat("Tweak", "Resource Buffer", 30.0f));
         map->SetQuickCancelTimeout(ini.GetInt("Tweak", "Quick Cancel Timeout", 5));
+        map->SetResourceStack(ini.GetInt("Tweak", "Res Stack XO", 4), ini.GetInt("Tweak", "Res Stack YO", 16));
+        map->SetTextLevels(ini.GetInt("Colours", "Info Page Text", 15), ini.GetInt("Colours", "Messagebox Detail", 21));
         map->SetSectorLimits(ini.GetInt("Tweak", "Max units in sector", 15), ini.GetInt("Tweak", "Max boats in sector", 5));
         ObjOjd::ManufactureModifiers manufacture;
         manufacture.humanFriend = ini.GetFloat("Tweak", "HumanFriend Manufacture Modifier", 1.0f);
@@ -1019,6 +1021,10 @@ namespace wow
     void FrontEnd::Update()
     {
         frames++;                // 0x403749, before the screens' updates
+        // the cursor animates (0x403890 -> 0x40CDC0 -> 0x40EF20(0x80, loop)): the wait cursor's frames go round, a
+        // one-frame cursor stays as it is
+        cursorFrame += 0x80;
+        if (cursorGtype && !res.GetFrame(cursorGtype, cursorFrame >> 8)) cursorFrame = 0;
         sound.Update();
         if (!screen) return;
         if (delayed)
@@ -1224,6 +1230,8 @@ namespace wow
         s.vehicles.startTurnRate = ini.GetInt("Vehicles", "startTurnRate", 12);
         s.vehicles.turnAnimRate = ini.GetFloat("Vehicles", "turnAnimRate", 0.02f);
         s.zMapRes = ini.GetInt("System", "ZMapRes", 400);
+        s.infoPageLevel = ini.GetInt("Colours", "Info Page Text", 15);
+        s.boxDetailLevel = ini.GetInt("Colours", "Messagebox Detail", 21);
         s.sound = &sound;
         s.armour.visRadMul = ini.GetFloat("Tweak", "VisRadMul", 1.5f);   // 0x4373D0 (flt_4F706C), record 32
         s.armour.scenery = ini.GetFloat("Tweak", "Scenery Armour Modifier", 1.2f);
@@ -1427,7 +1435,8 @@ namespace wow
         int index = screen->CursorAt(mouseX, mouseY);
         if (index < 0 || index >= int(std::size(Cursors))) index = 0;
         const CursorDef& c = Cursors[index];
-        canvas.DrawSprite(c.gtype, 0, mouseX + c.dx, mouseY + c.dy);
+        if (c.gtype != cursorGtype) { cursorGtype = c.gtype; cursorFrame = 0; }     // a new cursor starts at its first frame (0x40CD30)
+        canvas.DrawSprite(c.gtype, cursorFrame >> 8, mouseX + c.dx, mouseY + c.dy);
     }
 
     // The typed cheats (0x401000, every letter, not in a network game): with none under way (dword_4D1130 0) a

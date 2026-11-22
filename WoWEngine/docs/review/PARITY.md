@@ -818,6 +818,16 @@ transparency")
   Stage 4.1 is about what the war map's save keeps of a battle's objects, not a save in a battle.
 - *Stale notes found*: the counter's "power bar" in WARMAP.md is the strength pips of update 154.
 
+**Update 177** (Stage 4 begun; its list is in PLAN.md)
+- [x] **The settings audited**: the listing's 225 against the engine's; 62 unread, sorted in PLAN.md 4.1.
+- [x] **Three read that were fixed numbers**: `[Colours]` Info Page Text (word_4B9424, 15) and Messagebox Detail
+      (word_4B9428, 21), on both maps; `[Tweak]` Res Stack XO / YO (4 / 16).
+- [x] **The Resource view's facilities stack** (0x4263B0): each counter of a row is drawn Res Stack XO right and
+      Res Stack YO down of the one before, the finished first. The engine drew them all on one spot.
+- [x] **The cursor animates** (0x403890 -> 0x40CDC0 -> 0x40EF20(0x80, loop)): half a frame a tick, round again
+      at the end, from its first frame when the cursor changes (0x40CD30). Only a cursor with more than one
+      frame shows it (the wait cursors).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 176) and what is next
+## Where things stand (update 177) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -149,19 +149,50 @@ Small and independent; most need one routine traced.
       are every vehicle destroyed, and a destroyed vehicle leaves its war map object.
 - [ ] 3.7 Commands one queue pass later (0x95) where the order matters.
 
-## Stage 4: saving a battle, and the rest of the original
+## Stage 4: the rest of the original (laid out afresh in update 177)
 
-- [ ] 4.0 New war map objects made as the game makes them (0x43CD10 / 0x42A030), not copied from a saved one of
-      the type (was 1.12: it needs the whole object written field by field, which 4.1 brings).
-- [ ] 4.1 Battle saving and loading: each object's BAMO / BATP and class tags written and read (today carried as
-      blobs), the battle's own state, the sector's battle and pod flags.
-- [ ] 4.2 The players: local / AI / network player objects and the command records (0x4460A0); playback
-      recordings.
-- [ ] 4.3 The network game: the menus' lists, the lockstep packets. The retail network code doesn't work
-      (WoWRevived ships a different build for it), so what "parity" means here is the owner's call.
-- [~] 4.4 Speech attached to text ids (done, update 176: 0x414700 has six callers, the research events and
-      screen, which were in, and the information page, which is now); the `[Sound]` settings; animated cursors and the busy icon; the remaining
-      settings of the ~229; the debug log.
+Stage 3's open boxes were checked in updates 174 to 176 and are stale but for 3.7, which moves here as 4.5.
+A battle is never saved part way (the battle map's menu has no save, 0x49BD50), so "saving a battle" was the
+wrong name: what is left of it is what the war map's save keeps of a battle's objects (4.4).
+
+- [~] 4.1 **The settings, all of them.** The listing defines 225 (found by their constructors' section and key
+      strings); 62 weren't named anywhere in the engine at update 176. By what they are:
+      - *Read by the game, to port*: `[Colours]` Messagebox Command (22, the box's button text, 0x432852),
+        Credits Heading, Credits Detail; `[Options]` Show simple tooltips (on); `[Game]` Time Of Day (the hour
+        forced, under byte_4D1279, 0x40B030); `[Tweak]` InsulatedHighEnergyResistantArmourMulti (0.75,
+        0x45A317), AI Oracle (0x442D8A); `[Fun]` Veh Speed, Veh Rot Speed; `[English]` Language.
+      - *Done in 177*: `[Colours]` Info Page Text (15) and Messagebox Detail (21); `[Tweak]` Res Stack XO / YO
+        (4 / 16).
+      - *With 4.3*: `[Sound]` Inner / Outer border, Inner / Outer Ambient border (four numbers each, scaled by
+        the screen's size at 0x464B10; the engine has the 640 x 480 numbers fixed), Search Libraries First,
+        Unload Limit.
+      - *No reader found in the listing* (to confirm, then leave): `[Tweak]` AI Hours Per Turn, IMap Iteration
+        Count; `[Vehicles]` stopTurnRate.
+      - *The window and DirectDraw* (Stage 6's, or nothing): `[Screen]` Use DDraw surfaces, BLIT instead of
+        FLIP, Damage map VRAM, Top left, Support screen size, Support screen BPP, AllowResize, FixedAspect,
+        Use Reaper; `[System]` the six memory and frame-time ones.
+      - *The developers' own* (4.8, optional): `[Debug]` the twelve, `[Stats]` the eight.
+      - *With their stages*: `[Network]` the three (4.7), `[Demo]` Playback Files (4.6).
+- [~] 4.2 **Cursors.** Done in 177: the cursor's sprite animates (0x40CDC0, half a frame a tick). Left: the wait
+      cursor (cursor 13) shown by the busy object (0x40E680) while a game is saved (0x4042D0), loaded
+      (0x408B70) and the war map built (0x418500); the engine does these inside one frame, so it is a question
+      of whether anything would be seen.
+- [ ] 4.3 **Sound's leftovers**: the borders as settings and by screen size (above), the library before loose
+      files, the unload limit, Minimum Audible Volume.
+- [ ] 4.4 **War map objects written field by field** (was 4.0 and 4.1): a new object made as the game makes it
+      (0x43CD10 / 0x42A030) and not copied from a saved one of its type; each battle unit's BAMO / BATP and
+      class tags read and written as fields, not carried as bytes; the sector's battle and pod flags; a route's
+      progress in the save (needs a save of the original's with units on their way, asked of the owner).
+- [ ] 4.5 **The players and their commands**: the local, computer and network player objects, the command
+      records (0x4460A0), and the commands the world handles one queue pass later (0x95, 0x419A24; was 3.7).
+- [ ] 4.6 **Playback recordings** (`playback.%d`, 0x42D290, `[Demo]` Playback Files): they are recorded
+      commands, so they come after 4.5.
+- [ ] 4.7 **The network game**: the menus' lists and the lockstep packets. The retail network code doesn't work
+      (WoWRevived ships another build for it), so what parity means here is the owner's call. Last.
+- [ ] 4.8 **The developers' aids** (optional): the debug log (`[Debug]` Log Debug Output, 0x417C30; WoWEngine.log
+      stands in), the overlays (Show Radii, Show Arrival, Show Orders, Show Accelerations), `[Stats]`.
+
+Done before this list was redrawn: speech attached to text ids (176).
 
 ## Stage 5: combat seen running
 
