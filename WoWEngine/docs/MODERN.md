@@ -127,6 +127,51 @@ the picture is untouched, so the map or the land is not softened by the HUD scal
 What it doesn't do yet: the battle's drag box is drawn with the land, so it thickens and thins with the zoom.
 The wheel isn't written to a playback recording (the keys are).
 
+### Key bindings (update 209)
+
+The two maps' keys can be changed in WoWRevived.ini, section `[Keys]`: an entry for an action with the key's
+name (SDL's names: `Up`, `Backspace`, `F1`, `R`, `=`, `Keypad +` ...). An action with no entry keeps the
+game's key. The game's key for an action that has been given another does nothing, unless another action is
+given it. `FrontEnd::BoundKey`. There is no menu for it (the owner: the ini is enough for now).
+
+| War map action | Game's key | Battle action | Game's key |
+|---|---|---|---|
+| War map scroll up / down / left / right | the arrows | Battle scroll up / down / left / right | the arrows |
+| War map top / bottom | Page Up / Page Down | Battle top / bottom | Page Up / Page Down |
+| War map centre on sector | Home | Battle centre on selection | Home |
+| War map unit view / construction view | F1 / F2 | Battle previous unit / next unit | `,` / `.` |
+| War map resource view 1 / 2 / 3 | F3 / F4 / F5 | Battle halt | Backspace |
+| War map next view | Space | Battle minimap | Tab |
+| War map research | R | Battle zoom in / zoom out / zoom reset | `=` / `-` / R |
+| War map stop time | Backspace | | |
+| War map message history | M | | |
+| War map panel | Tab | | |
+
+Not bindable: Escape, Enter, the digits (the war map's speeds, the battle's group keys), Ctrl and Shift, and
+the menus' keys.
+
+### The engine's own files (update 209)
+
+The engine's loose files (`WoWEngine/dat` and `WoWEngine/maps`: the owner's fixed and enhanced files, the
+backgrounds for each view size in `dat/extra`, the wider war map in `dat/warmap`, the larger minimaps) are
+found without being copied by hand:
+
+- **A release** (`tools/make_release.py`) has them as `DAT` and `MAPS` in the release folder. The game is
+  installed into that same folder, so they sit beside the game's own files and are read as the game's loose
+  files are (a loose file replaces the archive's copy; in MAPS too, the engine's fix).
+- **A build run where it was made** looks in the source folder it was built from (`WOWENGINE_SOURCE_DIR`),
+  and any build looks in `dat` / `maps` beside the program, when the game is installed somewhere else
+  (`GameFiles::AddOverlay`: paths beginning DAT or MAPS look there first).
+- `--no-loose` on the command line leaves them out (the game's files only), which is what the parity checks
+  use. The log says which folder is used ("Loose files:") and, for each view size, which of its backgrounds
+  were found ("View size ...: backgrounds in ...").
+
+### Discord rich presence (the owner, update 209; to do next)
+
+As WoWRevived has it (`WoWPatches/_inmm/winmm_driver9x.cpp`): `discord-rpc.dll` loaded if it is there, the
+presence set for the main menu, a Human or a Martian campaign and the CD player's tracks, in the game's
+language, with the session's start time. To be done the same way, with the same texts and image keys.
+
 ### Resolution (agreed with the owner, update 192)
 
 - **The view size** (`[Screen]` "Size") is one of the thirteen sizes WoWRevived has menu backgrounds for, 640 x

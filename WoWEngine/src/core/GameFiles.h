@@ -19,6 +19,12 @@ namespace wow
 
         const std::filesystem::path& Root() const { return root; }
 
+        // MODERN (docs/MODERN.md "Files"): another folder whose DAT and MAPS files are used before the game's own:
+        // the engine's folder, where its loose files (the fixed and enhanced ones, the backgrounds made for each
+        // view size, the wider war map) are shipped. Only paths that begin DAT or MAPS look there.
+        void AddOverlay(std::filesystem::path folder) { overlays.push_back(std::move(folder)); }
+        const std::vector<std::filesystem::path>& Overlays() const { return overlays; }
+
         // A game path such as "DAT\\Dat.wow" (either slash) to the real file, or nothing if it doesn't exist.
         std::optional<std::filesystem::path> Resolve(std::string_view gamePath) const;
 
@@ -35,5 +41,7 @@ namespace wow
 
     private:
         std::filesystem::path root;
+        std::vector<std::filesystem::path> overlays;
+        static std::optional<std::filesystem::path> ResolveIn(const std::filesystem::path& folder, std::string_view gamePath);
     };
 }

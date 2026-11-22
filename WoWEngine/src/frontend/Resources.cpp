@@ -95,6 +95,11 @@ namespace wow
         const std::string folder = "dat\\extra\\" + std::to_string(width) + "x" + std::to_string(height) + "\\";
         if (folder == sizeFolder) return;
         sizeFolder = folder;
+        // (for players' reports: which of the size's backgrounds were found)
+        std::string found;
+        for (const char* name : { "humanbd.spr", "martbd.spr", "legal1.spr", "legal2.spr" })
+            if (vfs.Exists(sizeFolder + name)) found += std::string(found.empty() ? "" : ", ") + name;
+        SDL_Log("View size %d x %d: backgrounds in %s: %s", width, height, sizeFolder.c_str(), found.empty() ? "none found" : found.c_str());
         Refresh();
     }
 

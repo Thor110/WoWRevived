@@ -85,6 +85,7 @@ namespace
         int mouseX = -1, mouseY = -1;
         int side = -1; // 1 Human, 0 Martian, -1 not given
         bool record = false, playback = false;  // --record / --playback: the game's playback recordings (core/Playback.h)
+        bool noLoose = false;                   // --no-loose: the engine's own DAT and MAPS files aren't used (the game's files only)
     };
 
     Options ParseOptions(int argc, char** argv)
@@ -98,6 +99,7 @@ namespace
             else if (arg == "--open" && i + 1 < argc) o.open = int(std::strtol(argv[++i], nullptr, 0));
             else if (arg == "--ticks" && i + 1 < argc) o.ticks = std::atoi(argv[++i]);
             else if (arg == "--record") o.record = true;
+            else if (arg == "--no-loose") o.noLoose = true;
             else if (arg == "--playback") o.playback = true;
             else if (arg == "--load" && i + 1 < argc) { o.open = 0x80B3; o.openParam = std::atoi(argv[++i]); }
             else if (arg == "--then" && i + 1 < argc) o.then = int(std::strtol(argv[++i], nullptr, 0));
@@ -383,6 +385,27 @@ int main(int argc, char** argv)
         return 1;
     }
     SDL_Log("Game files: %s", files->Root().string().c_str());
+    // MODERN (docs/MODERN.md "Files"): the engine's own loose files, in "dat" and "maps" beside the program (a
+    // release) or in the source folder it was built from (a build run where it was made), are used before the
+    // game's. --no-loose leaves them out.
+    if (!options.noLoose)
+    {
+        std::vector<fs::path> places;
+        if (const char* base = SDL_GetBasePath()) places.emplace_back(base);
+#ifdef WOWENGINE_SOURCE_DIR
+        places.emplace_back(WOWENGINE_SOURCE_DIR);
+#endif
+        for (const fs::path& place : places)
+        {
+            std::error_code ec;
+            if (fs::equivalent(place, files->Root(), ec)) break;      // the game is installed there: its DAT is the one
+            if (!fs::is_directory(place / "dat", ec) && !fs::is_directory(place / "maps", ec) &&
+                !fs::is_directory(place / "DAT", ec) && !fs::is_directory(place / "MAPS", ec)) continue;
+            files->AddOverlay(place);
+            SDL_Log("Loose files: %s", place.string().c_str());
+            break;
+        }
+    }
 
     int exitCode = 0;
     try

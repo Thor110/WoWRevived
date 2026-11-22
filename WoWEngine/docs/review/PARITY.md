@@ -1129,6 +1129,19 @@ transparency")
 - Seen: the engine starting in a window; both battles as before. Not seen: a real window dragged and reopened
   (the test runs have no window to resize).
 
+**Update 209** (the owner's list; nothing of the original's changed with `--no-loose`)
+- The engine's own `dat` and `maps` are used without copying (MODERN.md "The engine's own files"); the
+  release script puts them in the release's `DAT` and `MAPS`.
+- `[Keys]`: the maps' keys can be changed in the ini.
+- Modern Options is above Credits in Game Options; its two columns are the same length (seven rows), so the
+  underlay has no hole.
+- WoWEngine.exe and WoWLauncher.exe have the game's icon (resources/WoWEngine.rc, Windows).
+- wowdump and wowinstall-cli are developer tools: built only with `-DWOW_BUILD_TOOLS=ON`, not in a release.
+- The log says which of a view size's backgrounds were found.
+- Seen: the legal screen at 1920 x 1080 read from the engine's own folder; zoom out bound to F9 (F9 zooms,
+  `-` no longer does); both battles with `--no-loose` the same picture as before, and running with the loose
+  files. Not seen: the icon and the release script (Windows).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

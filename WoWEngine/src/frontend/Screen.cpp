@@ -56,7 +56,7 @@ namespace wow
         }
         }
         if (b.glass) canvas.DrawSprite(b.glass, glassFrame, b.rect.x, b.rect.y, 0, Canvas::Blend::Translucent);
-        canvas.DrawSprite(b.plate, plateFrame, b.rect.x, b.rect.y);
+        if (b.plate) canvas.DrawSprite(b.plate, plateFrame, b.rect.x, b.rect.y);
         if (b.kind == Button::Kind::Edit)
         {
             // the text being typed, and while the field has the focus the caret (0x4312D0: caret8.spr, GType 0x52,

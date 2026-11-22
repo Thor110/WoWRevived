@@ -337,8 +337,8 @@ namespace wow
         m->AddButton(0x3EF, 0x410);   // Display Settings
         m->AddButton(0x3ED, 0x411);   // Sound Control
         m->AddButton(0x8117, 0x412);  // Critical event options
+        m->AddButtonText(CmdModernOptions, "Modern Options");   // the engine's own (docs/MODERN.md), above the credits
         m->AddButton(0x80CA, 0x534);  // Credits
-        m->AddButtonText(CmdModernOptions, "Modern Options");   // the engine's own (docs/MODERN.md)
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         return m;
     }
@@ -488,7 +488,6 @@ namespace wow
             if (i == 7)
             {
                 // the game's playback recordings (core/Playback.h), which the retail game never switches on
-                m->AddEventCheckText("Record input", recordWanted, [this](Button& b) { recordWanted = b.value != 0; });
                 m->NextColumn();
             }
             const Option& o = Options[i];
@@ -497,6 +496,8 @@ namespace wow
                 ApplyModernOptions();
             });
         }
+        // (the two columns are kept the same length, seven rows each: a shorter one leaves a hole in the underlay)
+        m->AddEventCheckText("Record input", recordWanted, [this](Button& b) { recordWanted = b.value != 0; });
         m->AddEventCheckText("Play a recording", playWanted, [this](Button& b) { playWanted = b.value != 0; });
         // the HUD scale ([Modern] "HUD scale", a percentage): the battle's panels from half size to three times,
         // a quarter a step; taken at once (BattleView)
@@ -1757,6 +1758,44 @@ namespace wow
         if (next == 0 || lw != w) battleZoom = next;
     }
 
+    // MODERN (docs/MODERN.md "Key bindings"): the keys of the two maps can be changed in WoWRevived.ini's [Keys], an
+    // entry for each action with the key's name ("Up", "Backspace", "F1", "R", "="; SDL's names). The game's
+    // key for an action is what the map itself answers to, so a binding is a translation: the key set for an
+    // action arrives as the game's key for it, and the game's key, once its action has another, as nothing
+    // (unless another action has been given it).
+    int FrontEnd::BoundKey(int key, bool battle) const
+    {
+        struct Action { const char* name; int key; };
+        static const Action War[] = {
+            { "War map scroll up", SDLK_UP }, { "War map scroll down", SDLK_DOWN }, { "War map scroll left", SDLK_LEFT },
+            { "War map scroll right", SDLK_RIGHT }, { "War map top", SDLK_PAGEUP }, { "War map bottom", SDLK_PAGEDOWN },
+            { "War map centre on sector", SDLK_HOME }, { "War map unit view", SDLK_F1 }, { "War map construction view", SDLK_F2 },
+            { "War map resource view 1", SDLK_F3 }, { "War map resource view 2", SDLK_F4 }, { "War map resource view 3", SDLK_F5 },
+            { "War map next view", SDLK_SPACE }, { "War map research", SDLK_R }, { "War map stop time", SDLK_BACKSPACE },
+            { "War map message history", SDLK_M }, { "War map panel", SDLK_TAB },
+        };
+        static const Action Battle[] = {
+            { "Battle scroll up", SDLK_UP }, { "Battle scroll down", SDLK_DOWN }, { "Battle scroll left", SDLK_LEFT },
+            { "Battle scroll right", SDLK_RIGHT }, { "Battle top", SDLK_PAGEUP }, { "Battle bottom", SDLK_PAGEDOWN },
+            { "Battle centre on selection", SDLK_HOME }, { "Battle previous unit", SDLK_COMMA }, { "Battle next unit", SDLK_PERIOD },
+            { "Battle halt", SDLK_BACKSPACE }, { "Battle minimap", SDLK_TAB }, { "Battle zoom in", SDLK_EQUALS },
+            { "Battle zoom out", SDLK_MINUS }, { "Battle zoom reset", SDLK_R },
+        };
+        const Action* actions = battle ? Battle : War;
+        const size_t count = battle ? std::size(Battle) : std::size(War);
+        bool freed = false;         // the key is the game's for an action that has been given another
+        for (size_t i = 0; i < count; i++)
+        {
+            const std::string name = ini.GetString("Keys", actions[i].name, "");
+            if (name.empty()) continue;
+            const int set = int(SDL_GetKeyFromName(name.c_str()));
+            if (!set || set == actions[i].key) continue;
+            if (key == set) return actions[i].key;
+            if (key == actions[i].key) freed = true;
+        }
+        return freed ? 0 : key;
+    }
+
     void FrontEnd::OnWheel(int steps) { if (steps) ZoomBattle(steps); }
 
     void FrontEnd::ViewSizeFor(int desktopW, int desktopH, int& width, int& height)
@@ -1857,6 +1896,12 @@ namespace wow
         if (!screen) return;
         // a key's command fades out as a click does: Escape's back too (0x40A1B0 sends 0x8123, then the previous
         // command, which the menu hands its Fullscreen View, 0x40A1ED -> 0x40A272 -> 0x40A245 -> 0x4065E0)
+        // MODERN: the maps' keys as [Keys] has them (a key with nothing bound to it any more does nothing)
+        if (screen->Id() == BattleMap::Id || screen->Id() == WarMap::Id)
+        {
+            key = BoundKey(key, screen->Id() == BattleMap::Id);
+            if (!key) return;
+        }
         // MODERN: the battle's zoom
         if (screen->Id() == BattleMap::Id)
         {

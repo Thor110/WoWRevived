@@ -83,8 +83,6 @@ def main():
     files = [
         (build_dir / ('WoWEngine' + EXE), True),
         (build_dir / ('WoWLauncher' + EXE), True),
-        (build_dir / ('wowinstall-cli' + EXE), True),
-        (build_dir / ('wowdump' + EXE), True),
         (build_dir / 'launcher.bmp', True),
         (ROOT / 'README.md', True),
         (REPO / 'LICENSE', False),
@@ -110,6 +108,13 @@ def main():
             missing.append(str(path))
     if missing:
         sys.exit('Missing from the build: ' + ', '.join(missing))
+
+    # the engine's loose files: into DAT and MAPS of the release folder, which is where the game is then installed
+    # (WoWLauncher adds the game's own files beside them), so they are read as the game's loose files are
+    for source, target in (('dat', 'DAT'), ('maps', 'MAPS')):
+        if (ROOT / source).is_dir():
+            shutil.copytree(ROOT / source, out / target, dirs_exist_ok=True)
+            print('  ' + target + '/')
 
     archive = ROOT / 'out' / (name + '.zip')
     if archive.exists():

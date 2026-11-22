@@ -1,0 +1,3 @@
+// The icon of WoWEngine.exe and WoWLauncher.exe: the game's own (the same file WoWRevived's launcher uses).
+// The first icon in a program is the one Windows shows for it and the one SDL gives its window.
+1 ICON "WoWEngine.ico"

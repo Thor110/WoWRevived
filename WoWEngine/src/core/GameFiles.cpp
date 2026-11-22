@@ -22,7 +22,23 @@ namespace wow
 
     std::optional<fs::path> GameFiles::Resolve(std::string_view gamePath) const
     {
-        fs::path current = root;
+        // the overlays' DAT and MAPS first (the first part of the path, whatever its case)
+        if (!overlays.empty())
+        {
+            const size_t skip = gamePath.find_first_not_of("\\/");
+            const std::string_view rest = skip == std::string_view::npos ? std::string_view() : gamePath.substr(skip);
+            const size_t end = rest.find_first_of("\\/");
+            const std::string_view first = rest.substr(0, end);
+            if (end != std::string_view::npos && (EqualsNoCase(std::string(first), "dat") || EqualsNoCase(std::string(first), "maps")))
+                for (const fs::path& folder : overlays)
+                    if (auto found = ResolveIn(folder, gamePath)) return found;
+        }
+        return ResolveIn(root, gamePath);
+    }
+
+    std::optional<fs::path> GameFiles::ResolveIn(const fs::path& folder, std::string_view gamePath)
+    {
+        fs::path current = folder;
         size_t start = 0;
         while (start <= gamePath.size())
         {

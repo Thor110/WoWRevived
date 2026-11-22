@@ -133,6 +133,7 @@ namespace wow
         // larger a step and scaled to the picture; the panels keep to the HUD scale
         int battleZoom = 0;
         void PanelSize(int w, int h, int& panelW, int& panelH) const;
+        int BoundKey(int key, bool battle) const;     // MODERN: [Keys], the maps' keys as the player set them
         void BattleView(const BattleMap& battle, int zoom, int w, int h, int& landW, int& landH, int& panelW, int& panelH) const;
         void ZoomBattle(int steps);
         int LastSlot() const;

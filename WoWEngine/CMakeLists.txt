@@ -57,13 +57,17 @@ add_library(wowinstall STATIC
     src/install/Installer.cpp
 )
 target_link_libraries(wowinstall PUBLIC wowcore)
-# command line version, for scripts and for seeing exactly what happens
-add_executable(wowinstall-cli tools/WoWInstall.cpp)
-target_link_libraries(wowinstall-cli PRIVATE wowinstall)
-
-# --- wowdump: command line archive lister / extractor ---
-add_executable(wowdump tools/wowdump.cpp)
-target_link_libraries(wowdump PRIVATE wowcore)
+# The two command line tools are for working on the engine, not for players: they aren't built unless asked for
+# (cmake -DWOW_BUILD_TOOLS=ON) and aren't in a release.
+#   wowinstall-cli: WoWLauncher's install from the discs, as a command with its steps printed
+#   wowdump:        lists and extracts the archives, prints the tables and saves, renders sprites and models
+option(WOW_BUILD_TOOLS "Build the developer command line tools (wowdump, wowinstall-cli)" OFF)
+if(WOW_BUILD_TOOLS)
+    add_executable(wowinstall-cli tools/WoWInstall.cpp)
+    target_link_libraries(wowinstall-cli PRIVATE wowinstall)
+    add_executable(wowdump tools/wowdump.cpp)
+    target_link_libraries(wowdump PRIVATE wowcore)
+endif()
 
 # --- the engine itself ---
 find_package(SDL3 CONFIG QUIET)
@@ -122,6 +126,12 @@ if(TARGET SDL3::SDL3)
     # IniStore.h is shared with the patch DLLs so the engine reads the same WoWRevived.ini
     target_include_directories(WoWEngine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../WoWPatches/Common)
     target_link_libraries(WoWEngine PRIVATE wowcore SDL3::SDL3)
+    # a build run where it was made finds the engine's loose files (dat, maps) in the source folder
+    target_compile_definitions(WoWEngine PRIVATE WOWENGINE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    if(WIN32)
+        # the programs' icon (the game's own, as WoWLauncher's C# build has it)
+        target_sources(WoWEngine PRIVATE resources/WoWEngine.rc)
+    endif()
 
     # WoWLauncher: installs the game from the discs, then starts it as the Human or Martian side
     add_executable(WoWLauncher WIN32 MACOSX_BUNDLE
@@ -130,6 +140,9 @@ if(TARGET SDL3::SDL3)
         src/platform/Video.cpp
     )
     target_link_libraries(WoWLauncher PRIVATE wowinstall SDL3::SDL3)
+    if(WIN32)
+        target_sources(WoWLauncher PRIVATE resources/WoWEngine.rc)
+    endif()
     # the launcher's picture, next to the programs
     add_custom_command(TARGET WoWLauncher POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources/launcher.bmp $<TARGET_FILE_DIR:WoWLauncher>/launcher.bmp)
@@ -139,5 +152,5 @@ if(TARGET SDL3::SDL3)
             COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL3::SDL3> $<TARGET_FILE_DIR:WoWEngine>)
     endif()
 else()
-    message(WARNING "SDL3 not available: only wowcore and wowdump will be built")
+    message(WARNING "SDL3 not available: only the libraries (and the tools, with WOW_BUILD_TOOLS) will be built")
 endif()
