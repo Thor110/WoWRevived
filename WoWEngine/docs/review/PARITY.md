@@ -952,6 +952,10 @@ transparency")
   model, a counter, a sound, a spoken information page and research strings, no builder, and "Unused" for its
   research-done line.
 
+**Update 188** (the plan redrawn)
+- PLAN.md's head is now the whole list of what remains, A to G, with what is waiting on the owner. Nothing in
+  the code changed.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

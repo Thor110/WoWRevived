@@ -1,47 +1,102 @@
 # Plan after update 136
 
-## Where things stand (update 187) and what is next
+## Where things stand (update 188) and what remains
 
-Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
-the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
-the working order; the stages further down stay the full inventory.
+Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
+start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
+settled. What follows is everything left, in the order to do it; the stages further down stay the full
+inventory with the history. Tick here and there as each is done.
 
-**Next, in this order**
+### A. The original, finished (parity first, as always)
 
-- [x] N1 (147) The buildings' ground shadows for units: the shadow part (331) of a unit building and of each of
-      its parts, as the scenery already had.
-- [x] N2 (148) Objects the collision grid was missing: a building's parts and a bridge's segments, each with
-      its own radius, for the deployment's check and the look ahead. Left: an explosion's victims (0x47FC50)
-      still take a building as one object; the parts of scenery objects and of vehicles.
-- [x] N3 (148, the mines) Ground flag 8: a built mine (0x273-0x276, 0x48CB10) marks the ground its own side
-      won't cross. Left: the line-linked objects (0x48B690), which the engine doesn't have, and a mine that
-      finishes building during a battle.
-- [x] N4 Stage 2.6 (149, 150): the group panel top left; the name label on a unit gone under; the icons'
-      cursor. Checked and not in the game: group keys, Shift adding to the selection. Left as provisional:
-      the icon's lit state under the mouse and its flashing (what level 1 of its sprite looks like isn't known).
-- [x] N5 (151) Objects under a light pool. Each part of a building is lit from its own point with its own
-      radius, and the lit point is a quarter of the model's height up (0x41141C). The Command Post in the
-      owner's sector 28 frame now measures as the original on every part checked (below).
-- [x] N6 Stage 2.7, looked into in 151 and found already in or not in the game: the zoomer is in (0x446690,
-      `ZoomTo`); the battle-end box is in (`EndBox`); "reinforcements arriving during a battle" has no routine
-      of its own (the deployment, 0x4222C0, is only called as a battle is entered, 0x439770; what the engine
-      has under that name is the retreat points, Reinforcements.cpp). Nothing left under 2.7.
-- [x] N7 Stage 2.8 (152): the battle AI was already in but for one message, 0x80B1 to the AI player (a threat
-      seen, 0x445D60), now ported with its sender (0x49668B).
-- [ ] N8 Stage 2.9: the renderers still marked provisional (the WOF triangle filler, the blitter modes, the bm
-      shade group's other slots). The owner's frames match closely, so this waits for a frame that shows a
-      difference.
-- [~] N9 Stage 3 (the war map's missing pieces). Done: 3.1 repair and the units' kept health (153); the
-      counters' strength pips and the tool tips' task lines (154); the Resource view's tool tips, the popup
-      asking the counter under the mouse, damaged facilities making nothing (155). Looked into and found in
-      already, or not things the game does: 3.2's context buttons, Suspend / Resume, CommandCentreBuilt; the
-      event boxes. Corrected in 156: the popup's Information item and the information page are real and are
-      in now (the owner's frames). 157: the menu on a unit in transit as the owner's frame (Cancel move, no
-      View map, the sector unselected, units in transit selectable). 158: the mini-map shaded by sector and
-      the panel where the game puts it. 159 (the owner's Martian frame): placed counters 16 up and left, the
-      view's start on the selected sector, the view button's held frame. Left: 3.3's
-      hourly fan-out (checked, 165), 3.4 (done, 166), 3.6 (done, 167); 3.7 is left, to be checked against the code first:
-      these lists have turned out stale more often than not.
+- [ ] **A1 Constructions and resources written whole** (4.4's last part). Units are (184). The layouts are known
+      from the saves (4.4 below); left to find: the extra value some resources carry, and the right battle
+      place for a new building. Then a building of a kind the save lacks can be made.
+- [ ] **A2 The players and their commands** (4.5): the local, computer and network player objects; the command
+      records (0x4460A0); the commands the world handles one queue pass later (0x95, 0x419A24; was 3.7).
+      Needed before the network game.
+- [ ] **A3 The wait cursor** (4.2's last part): shown by the busy object (0x40E680) during a save, a load and
+      the war map's building. Decide whether anything would be seen, do it or close it.
+- [ ] **A4 Stage 3's last boxes closed**: 3.2 (construction's remaining fields, CommandCentreBuilt, the context
+      buttons) and 3.5 (the popup's remaining items and tool tips) were found mostly stale in 174 to 176;
+      go through each line once more against the code and tick or do it.
+- [ ] **A5 Deployment's leftovers** (1.2): London's deployment spot (the lorries at ring 95's 288 degree spot in
+      the original, 72 in the engine); the update order of the start lists. *Needs the owner's frame* (below).
+- [ ] **A6 The provisional renderers** (2.9): the WOF triangle filler, the blitter modes, the bm shade group's
+      other slots. The owner's frames match closely, so each waits for a frame that shows a difference.
+- [ ] **A7 Combat checked by eye** (5.2, 5.3): quiet kills, damage rounding, the firer's sparing, retaliation,
+      deaths, the pod's landing, the forfeit's return; Force Fire and the specials ending after one shot (173).
+      A standing item: the owner's reports from play have found more than reading has.
+- [ ] **A8 The developers' switches, for the record** (4.8, 4.9; the owner: keep them, low priority): the rest of
+      the curtains cheat (enemy units and sectors picked, the reinforcement points); Charlie (three events
+      without their boxes); Edit functionality's picking; Dave's debug text and the debug log.
+- [ ] **A9 The network game** (4.7), last of the original: the menus' lists, the lockstep packets. The owner's
+      reading of what the network build needs: its timer out, network play itself, the start files not saved
+      over (already so).
+
+### B. Modern fixes (Stage 6.1 to 6.6; on by default, each marked MODERN FIX)
+
+- [ ] **B1** Mark the two sound fixes already in (the sliders saved, Master reaching the music) and save Ambient
+      and Speech as the menu closes (6.1).
+- [ ] **B2** The music toggle stops and starts the music at once (6.2).
+- [ ] **B3** Display Settings without the colour radios and the lights toggle; "Show lights" forced on (6.3).
+- [ ] **B4** First start takes the desktop's resolution (6.4).
+- [ ] **B5** The resolution applied (6.5), the large one: (a) the window, back buffer and the 640 x 480 screens;
+      (b) the war map's and battle map's views at the chosen size, with the sound borders scaled (0x464B10);
+      (c) WoWRevived's larger sizes and the launcher's per-resolution values, the HD menu backgrounds.
+- [x] Already in: the start files never saved over (160); upgraded buildings fight as their level (186).
+
+### C. Modern options (Stage 6.7, 6.8)
+
+- [ ] **C1** A Modern Options menu, holding what is in already (the war map status strip, sticky popup menus,
+      upgraded buildings in battle) and what follows.
+- [ ] **C2** Playback recordings started and stopped from the menus (they are in, by --record / --playback, 183).
+- [ ] **C3** Group keys (Ctrl + digit) and Shift adding to the selection (not in the original).
+- [ ] **C4** HUD scaling, windowed mode with its size kept, wheel zoom, key bindings.
+- [ ] **C5** The log kept for players' reports (it is: CRASH and STALL lines; nothing to do but not remove it).
+
+### D. Files and assets (Stage 6.9, 6.11)
+
+- [ ] **D1** Every data folder overridable by loose files (with `[Sound]` Search Libraries First), modern
+      formats for them.
+- [ ] **D2** The owner's fixed files (the text changes, the Cotton Factory's smokestacks, the Airship model's
+      name, sector 22's hole, the restored sprite pixels) and the data folder layout (`dat/warmap`,
+      `dat/extra/<res>`, `dat/extra/HD`, `dat/extra/UNITS`).
+- [ ] **D3** Enhanced Assets as an option; every `.spr` re-encoded by WoWViewer's packer.
+- [ ] **D4** The credits picture: the team's hidden screen kept as the last 480 rows of any edited one, added
+      lines above it (the owner rates this high).
+
+### E. Content the game names and never offers (after everything regular works)
+
+- [ ] **E1 Matter Transfer Station** (Martian, type 122: model, counter, sound, spoken page, research strings; no
+      builder; "Unused" for its research-done line). First: is it in the research tree's data, does any code
+      name it. Then builders behind an option, and an effect on the economy designed with the owner.
+- [ ] **E2 Railway Platform** (Human, type 59: a name, a counter frame, a page's text). Needs a model made;
+      behind a testing option until then.
+
+### F. Modes and tools (Stage 6.10)
+
+- [ ] **F1** Campaign extras (Martian against Martian, Human against Human); auto-resolving a battle.
+- [ ] **F2** Level editor; war map creator and new campaigns; save editor.
+
+### G. Release
+
+- [ ] **G1** The Windows-only code built and tried on Windows (the crash filter and the watchdog in main.cpp,
+      the Media Foundation movies): it can't be compiled here.
+- [ ] **G2** Unit tests for the decoders, the save's round trip and the war map's rules.
+- [ ] **G3** The release scripts tried from a clean checkout; the docs brought level (TASKS.md is stale in
+      places and should be redrawn from this list).
+
+### Waiting on the owner
+
+- A frame of the original: a new Human campaign's first look at London, on the discs' start files, Enhanced
+  Assets off (A5).
+- A frame of the original with a building that was upgraded where it stood, on the battle map (confirms 185).
+- A recording made at the keyboard with `--record` and played with `--playback` (183); whether ordinary input
+  still feels right since it all goes that way now.
+- An engine-written save loaded in the original (178).
+- `WoWEngine.log` if the crash after a battle comes back (172, 175).
+- Whether main.cpp builds on Windows (G1).
 
 **The owner's saves** (update 178): 24 saves of the original's, early to end game, some hex-edited for larger
 groups, are the test set for anything that reads or writes a save. In the scratchpad they are under `saves/`;
