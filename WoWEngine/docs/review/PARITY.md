@@ -902,6 +902,21 @@ transparency")
 - The plan's note that playback can't be reached in the retail game (the blueprint's 0x808F never gets to the
   world) is from the last turn.
 
+**Update 184** (Stage 4.4: a new unit written whole)
+- [x] **A new unit is made from nothing**, not copied (`SaveObject::MakeUnit`, as 0x42A220 writes one): its
+      type, SELO (id, place), WMOB (sector), BMOL and the count, each vehicle (type, SELO with its id and two
+      values, BAMO with heading, x, y, height 0 and full health, BATP, VEHI), whether it has a factory (its
+      type is one of some type's builders, 0x429DB0) with an empty queue if so, its +0x3C, VEHU. So the first
+      unit of a type the save has none of can be made, which the copy couldn't do rightly (it took another
+      type's and changed the number).
+- *Checked against the owner's saves*: built for every unit object in 24 saves (some 1100) and set beside it,
+  the length and every tag's place agree, but for the 35 whose factory has something queued (longer by the
+  queue, as it should be).
+- *Learnt*: the two values after a vehicle's SELO id are 0xCDCDCDCD in a unit that has never fought: memory
+  the game never sets (the debug heap's fill), which is why they read as nonsense.
+- *Seen running*: the first pod's units, now made this way, land, deploy and attack as before; a Human
+  campaign run on with five pods landing, clean under the checkers.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

@@ -74,6 +74,12 @@ namespace wow
             }
         }
         size_t BattleUnitCount() const;         // the count after BMOL (0 with none)
+        // A unit's object as the game writes a new one (0x42A220, with the owner's saves to check it by, update
+        // 184): its type, SELO with an id and its place, WMOB and its sector, BMOL and the count, then each vehicle:
+        // the type, SELO with an id and two values the game never sets (0xCDCDCDCD, the debug heap's fill), BAMO with
+        // heading, x, y and height 0 and the health, BATP, VEHI; then whether it has a factory, an empty queue if
+        // so, its +0x3C (0), and VEHU. The ids are 0, to be given.
+        static SaveObject MakeUnit(int type, int list, int sector, int vehicles, int health, bool factory);
         bool DuplicateLastVehicle();            // one more vehicle, a copy of the last (its ids to be made its own)
         // The type changed where it's written: at the start, and before each of its battle objects' SELO tags
         // (the rest, its hit points among them, stay the copied object's)
