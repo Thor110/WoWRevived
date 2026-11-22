@@ -380,15 +380,40 @@ namespace wow
         u.halted = false;
     }
 
-    // 0x8031 to a vehicle (0x4910C0): bit 5 cleared, bit 0 (stopped) set, bit 13 cleared (an 0x808B still to come
-    // dropped); then 0x496BC0: +0xDA (the look round's count) 0 and vt+0xAC(1), +0xE4 bit 0: halted
+    // 0x8031 to a vehicle (its handler's own case, 0x490C08): bit 0 (stopped) set, bits 5 and 13 cleared (an 0x808B
+    // still to come dropped). Nothing more: it isn't halted by it (+0xE4 bit 0 is only set through vt+0xD0, below).
     void BattleMap::Stop8031(Unit& u)
     {
         u.drive.flags |= 1;
         u.drive.flags &= ~0x2020u;
         u.drive.pendingAt = -1;
+    }
+
+    // vt+0xD0, called by a gun on what carries it when its shot is done (its cycle's state 3, 0x494F3D). A vehicle's
+    // and an emplacement's (0x4910C0): stopped (bit 0), not held (bit 5) and bit 13 cleared, then 0x496BC0; any other
+    // object's is 0x496BC0 alone: the look round's count (+0xDA) 0, halted (vt+0xAC(1), +0xE4 bit 0), and with its
+    // group in a mode (+0x1DC not 0: Force Fire or a special) the group's target goes (0x482880(0): the members
+    // 0x80B9 and 0x805A, bit 0 cleared, +0x56 0) and the mode is 0 (0x4807E0). A turret's (0x489D30) passes it to
+    // the vehicle and does its own.
+    // So a vehicle stops where its guns first fire from: this is what ends the drive toward what it aims at
+    // (0x491A0C, and the hold 0x808A that the look round gives a group whose members mostly haven't fired).
+    void BattleMap::ShotDone(Unit& u)
+    {
+        if (u.vehicle)
+        {
+            u.drive.flags |= 1;
+            u.drive.flags &= ~0x2020u;
+        }
         u.scanCount = 0;
         u.halted = true;
+        const int g = u.group;
+        if (g >= 0 && size_t(g) < groupMode.size() && groupMode[size_t(g)] != 0)
+        {
+            StopAttacking(g);
+            if (size_t(g) < groupBusy.size()) groupBusy[size_t(g)] = false;
+            if (size_t(g) < groupArrived.size()) groupArrived[size_t(g)] = 0;
+            groupMode[size_t(g)] = 0;
+        }
     }
 
     // 0x808B, posted to arrive after delay updates (an earlier one dropped, 0x435620): bit 0 its value (stopped), and

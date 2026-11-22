@@ -396,6 +396,7 @@ namespace wow
         void BuildingTick(Unit& u);                             // 0x48F130
         void LoseParts(size_t unit);
         void Stop8031(Unit& u);
+        void ShotDone(Unit& u);                                 // vt+0xD0 from a gun (0x494F4D): 0x4910C0 / 0x496BC0
         void MoveFlag(int x, int y);                            // 0x483590's flag, type 0x17C at level 0                                 // 0x8031 to a vehicle: 0x4910C0 -> 0x496BC0
         void StandDown(Unit& u);                                // 0x805A to a unit (its guns aside): vt+0xCC, vt+0xAC(0)                            // 0x48EF80's part after 0x48AB20
         const IsoModel* LoadIob(int gtype);                     // an IOB model and its lights, loaded once

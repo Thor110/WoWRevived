@@ -774,6 +774,17 @@ transparency")
 - *Not reproduced*: the crash itself. In PLAN.md.
 - *Reproduced, not fixed*: units walking into the building they attack. In PLAN.md with what was traced.
 
+**Update 173** (units walking into the building they attack)
+- [x] **A gun's shot done stops what carries it** (vt+0xD0 from the gun's cycle, 0x494F4D -> 0x4910C0 / 0x496BC0):
+      stopped, not held, halted; with the group in a mode, the target dropped and the mode 0. The engine's cycle
+      went from 3 to 4 and told nobody, so a vehicle aiming at a building was held (0x808A) for good and drove
+      on at its aim point, a third of the radius short of the building's middle. Now the Scouts sent at the
+      Command Post stop 160 to 230 away, where their Heat Rays first reach, and stay there firing.
+- [x] **0x8031 to a vehicle doesn't halt it** (its own case, 0x490C08: the steering bits only). The engine set
+      halted and zeroed the look round's count there, which belong to vt+0xD0.
+- *Changed with it*: Force Fire and the specials now end after the first shot (the group's mode 0 and its target
+  gone, 0x496BC0), as the listing has it. Not checked against the original by eye.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

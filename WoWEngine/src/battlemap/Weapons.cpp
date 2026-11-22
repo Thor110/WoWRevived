@@ -469,7 +469,9 @@ namespace wow
     // clear, or bit 2 set) it picks a target (0x496570), and the count goes back to 0).
     // 0x496890's first part: vt+0xAC(0) (not halted); aiming (+0xE4 bit 1) with a group, it posts itself 0x808A
     // when the group isn't mostly halted (+0x1D8 bit 1 clear; vt+0x128 = 0x4910B0: +0x188 bit 5, held: it steers on without arrival, separation,
-    // braking or matching), else 0x8031 (0x4910C0: stopped, bits 5 and 13 cleared). An emplacement (0x48F8A0) first,
+    // braking or matching), else 0x8031 (0x490C08: stopped, bits 5 and 13 cleared). Halted is set only by a gun's
+    // shot done (vt+0xD0, ShotDone), so the group is "mostly halted" once most have fired since they last looked
+    // round: until then its aiming members are driven on at what they aim at. An emplacement (0x48F8A0) first,
     // aiming and further from its aim point (+0xC8 / +0xCC) than its sight x the scale (1.0), stands its group's
     // guns down (0x805A to the group), which clears its aiming.
     // *Provisional*: the group's 0x805A is taken as each member's (no target cleared).
@@ -912,6 +914,7 @@ namespace wow
             break;
         case 3:
             g.state = 4;
+            ShotDone(u);    // its carrier's vt+0xD0 (0x494F4D)
             break;
         case 4:
         {

@@ -683,10 +683,24 @@ the debug flag byte_4D1279 set, or for a class whose vt+0xEC answers yes, and ev
   vt+0xAC(0). `BattleMap::StandDown`, with each member in `StopAttacking`.
 - **Look round** (vt+0x104, 0x496890, every +0x92 updates): aiming with a group, a unit posts itself 0x808A when the
   group's bit 1 is clear (vt+0x128 = 0x4910B0: +0x188 bit 5, held: vt+0x144 counts it as going, and its arrival,
-  separation, braking, matching and cohesion are off) or 0x8031 when set (0x4910C0: stopped, bits 5 and 13
-  cleared). It first clears its halted bit (vt+0xAC(0)). A gun emplacement's (0x48F8A0) first: aiming, further
+  separation, braking, matching and cohesion are off) or 0x8031 when set (the vehicle's own case, 0x490C08:
+  stopped, bits 5 and 13 cleared, and nothing more). It first clears its halted bit (vt+0xAC(0)). A gun
+  emplacement's (0x48F8A0) first: aiming, further
   from its goal than its sight x flt_59E44C (1.0), it stands its group's guns down (0x805A).
   *Provisional*: the group's 0x805A is taken as each member's (no target cleared).
+- **A shot done stops the vehicle** (update 173). A gun's cycle at state 3 (0x494F3D) goes to 4 and calls vt+0xD0
+  of what carries it. A vehicle's and an emplacement's is 0x4910C0: stopped (bit 0), not held (bit 5), bit 13
+  cleared, then 0x496BC0; any other object's is 0x496BC0 alone: the look round's count (+0xDA) 0, halted
+  (vt+0xAC(1), +0xE4 bit 0), and with the group in a mode (+0x1DC not 0: Force Fire or a special) the group's
+  target goes (0x482880(0)) and the mode is 0 (0x4807E0), so those fire once. A turret's (0x489D30) passes it to
+  its vehicle (and its vt+0xA8 / vt+0xAC are the vehicle's, 0x489DA0 / 0x489D80). `BattleMap::ShotDone`.
+  This is the whole of how an attack ends its approach. The group's move takes it into range (0x4826D0); a
+  vehicle that arrives takes the point it aims at as its goal (0x491A0C) and, aiming, is held (0x808A) each look
+  round while the group's bit 1 is clear, so it goes on toward the target, stopped or not. Bit 1 (0x483760) is
+  "more than half the members halted", and halted is only ever set here, so it means "most have fired since they
+  last looked round". A gun fires when its target is in its range and arc (0x494FD0), and the shot stops the
+  vehicle there. Without the call (to update 172) nothing ended the hold and vehicles walked into the building
+  they attacked.
 - **Retreating** (+0x188 bit 9): a vehicle's 0x80B9 (0x490CD5) sets it to its lparam. The senders that clear the
   target send 0 (0x4821A0, 0x482880, 0x481CA0, Retreat's first); Retreat's second, to each member (0x4810B4 /
   0x4811DA), sends 1. With it a move order beside the point still goes (0x483062: "ALREADY AT DESTINATION" only

@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 172) and what is next
+## Where things stand (update 173) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -50,13 +50,6 @@ the working order; the stages further down stay the full inventory.
   pod by the slider, the attack at hour 8, a win, a loss, the forfeit) comes back clean here, under the address
   and undefined-behaviour checkers too. The clock running on was a fault of its own and is fixed; the log now
   says what a fault was and what the engine was doing. Wait for the next one's log.
-- **Units walk into what they attack** (the owner, update 172; reproduced: the Scouts end up inside the Command
-  Post). What happens: a unit that arrives with an aim point takes that point as its goal (0x491A0C; the point
-  is a third of the target's radius short of its middle, 0x496300), and while it is aiming and its group isn't
-  mostly halted it is held (0x808A, 0x4968C4): it steers without arrival, separation or braking (0x492F40). Each
-  piece reads the same in the listing, so what stops the original's units short isn't found yet. To look at
-  next: the arrival radius and its growth (+0x118 / +0x11C) with real numbers, what clears +0xC8 / +0xCC, and
-  the push away from an object stood in (0x492350).
 - **London's deployment spot** (updates 143, 144). The original puts the lorries at ring 95's 288 degree spot,
   the engine at its 72 degree one. N2 (148) didn't settle it: with the parts and segments in the grid the engine
   still takes the 72 degree spot. Worth a fresh frame from the owner on the discs' start files, a new Human
