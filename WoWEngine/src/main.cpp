@@ -126,6 +126,10 @@ namespace
                         else if (k == "right") o.keys.push_back(SDLK_RIGHT);
                         else if (k == "backspace") o.keys.push_back(SDLK_BACKSPACE);
                         else if (k == "home") o.keys.push_back(SDLK_HOME);
+                        // shift / ctrl hold that key for the steps after it, nomods lets go
+                        else if (k == "shift") o.keys.push_back(SDLK_LSHIFT);
+                        else if (k == "ctrl") o.keys.push_back(SDLK_LCTRL);
+                        else if (k == "nomods") o.keys.push_back(SDLK_LALT);
                         else if (k == "comma") o.keys.push_back(SDLK_COMMA);
                         else if (k == "period") o.keys.push_back(SDLK_PERIOD);
                         else if (k.size() == 2 && k[0] == 'f' && k[1] >= '1' && k[1] <= '9') o.keys.push_back(int(SDLK_F1) + (k[1] - '1'));
@@ -440,6 +444,9 @@ int main(int argc, char** argv)
             if (options.mouseX >= 0) frontEnd.OnMouseMove(options.mouseX, options.mouseY);
             for (int key : options.keys)
             {
+                if (key == int(SDLK_LSHIFT)) { SDL_SetModState(SDL_KMOD_LSHIFT); continue; }
+                if (key == int(SDLK_LCTRL)) { SDL_SetModState(SDL_KMOD_LCTRL); continue; }
+                if (key == int(SDLK_LALT)) { SDL_SetModState(SDL_KMOD_NONE); continue; }
                 if (key <= MoveKey && key > WaitKey)
                 {
                     int base = key <= RightUpKey ? RightUpKey : key <= RightDownKey ? RightDownKey : key <= UpKey ? UpKey : key <= DownKey ? DownKey : MoveKey;

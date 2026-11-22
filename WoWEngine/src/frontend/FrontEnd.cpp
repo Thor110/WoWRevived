@@ -410,6 +410,7 @@ namespace wow
             { "Modern", "Upgraded buildings in battle", "Upgraded buildings in battle", true },
             { "Modern", "Sticky popup menus", "Popup menus stay open", false },
             { "Modern", "War map status strip", "War map status strip", false },
+            { "Modern", "Selection keys", "Group keys and Shift select", true },
             { "Modern", "Original Display Settings", "Original display settings", false },
             { "WoW Engine", "Windowed", "Play in a window", false },
             { "WoW Engine", "Stretch", "Stretch the picture", false },
@@ -420,7 +421,7 @@ namespace wow
         m->AddHeadingText("Modern Options");
         for (size_t i = 0; i < std::size(Options); i++)
         {
-            if (i == 4)
+            if (i == 5)
             {
                 // the game's playback recordings (core/Playback.h), which the retail game never switches on
                 m->AddEventCheckText("Record input", recordWanted, [this](Button& b) { recordWanted = b.value != 0; });
@@ -1332,6 +1333,7 @@ namespace wow
         s.isoBrightness = ini.GetFloat("Game", "ISO Brightness", 0.5f);
         s.showSmoke = ini.GetBool("Options", "Show Smoke & particles", true);
         s.stickyPopup = ini.GetBool("Modern", "Sticky popup menus", false);   // a modern option (docs/MODERN.md)
+        s.selectionKeys = ini.GetBool("Modern", "Selection keys", true);       // the same
         s.groups = map->BattleGroups(b.sector);
         for (const WarMap::ReinforcementSource& r : map->ReinforcementSources()) s.sources.push_back({ r.sector, r.players, r.hq });
         s.hasRoom = [this](bool land, int sector, int count) { WarMap* wm = ActiveWarMap(); return !wm || wm->HasRoom(land, sector, count); };

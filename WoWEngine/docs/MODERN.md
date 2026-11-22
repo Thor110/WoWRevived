@@ -57,6 +57,7 @@ check boxes, and each box is a setting in WoWRevived.ini that can be set there a
 | Upgraded buildings in battle | `[Modern]` "Upgraded buildings in battle" | on | at once (the next battle) |
 | Popup menus stay open | `[Modern]` "Sticky popup menus" | off | at once on the war map, the next battle |
 | War map status strip | `[Modern]` "War map status strip" | off | at once |
+| Group keys and Shift select | `[Modern]` "Selection keys" | on | the next battle |
 | Original display settings | `[Modern]` "Original Display Settings" | off | the next time Display Settings opens |
 | Play in a window | `[WoW Engine]` "Windowed" | off | at once |
 | Stretch the picture | `[WoW Engine]` "Stretch" | off | at once |
@@ -67,6 +68,22 @@ Two more boxes aren't settings: **Record input** and **Play a recording** switch
 (below) on and off while playing.
 
 The captions are the engine's own English text (there are no strings for them in TEXT.ojd).
+
+### Group keys and Shift select (update 198)
+
+In battle, with `[Modern]` "Selection keys" on (it is unless turned off):
+
+- **Ctrl + a digit** keeps the selection under that digit. **The digit** alone selects what was kept (those
+  still on the map), and pressed again with them already selected moves the view to them. In the game the
+  digits build a "select group n" packet (0x12) that nothing acts on, so they do nothing there; Ctrl with
+  the arrow keys is untouched.
+- **Shift** held while picking adds to the selection instead of replacing it: a drag box, a click on one of
+  the player's vehicles, or a click on a group icon. It only adds vehicles to vehicles; a building is still
+  selected on its own. Shift has no meaning in the game's battles (on the war map it has, and that is as it
+  was).
+
+Both work through the game's own selection (0x439000): the war map objects picked become one battle group, as
+a drag box over several makes them.
 
 ### Resolution (agreed with the owner, update 192)
 

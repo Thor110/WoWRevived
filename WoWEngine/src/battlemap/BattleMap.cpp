@@ -320,7 +320,8 @@ namespace wow
             }
             if (hits.empty()) return;
             // each object's war map object selected (0x8088 -> 0x439000): their units one group
-            SelectRefs(hits);
+            if (AddingToSelection()) SelectMore(hits);      // MODERN: Shift adds them to the selection
+            else SelectRefs(hits);
             for (size_t g = 0; g < selected.size(); g++) if (selected[g]) { SelectionSpeech(int(g)); break; }
             return;
         }
@@ -358,7 +359,7 @@ namespace wow
             if (!best->players) return;
             if (ctrl && !vehicle(*best)) return;
             const int ref = best->ref;
-            SelectRefs({ ref });
+            SelectRefs({ ref });      // (nothing is selected in mode 0, so Shift has nothing to add to)
             for (size_t g = 0; g < selected.size(); g++) if (selected[g]) { SelectionSpeech(int(g)); break; }
             return;
         }
@@ -373,7 +374,8 @@ namespace wow
         else if (best->players)
         {
             const int ref = best->ref;
-            SelectRefs({ ref });
+            if (AddingToSelection() && vehicle(*best)) SelectMore({ ref });     // MODERN: Shift adds it
+            else SelectRefs({ ref });
             for (size_t g = 0; g < selected.size(); g++) if (selected[g]) { SelectionSpeech(int(g)); break; }
         }
         else AttackObject(best->id);
@@ -1657,7 +1659,8 @@ namespace wow
             return;
         }
         if (Mode() != 0 && Mode() != 1) return;
-        SelectRefs({ icon.ref });
+        if (AddingToSelection()) SelectMore({ icon.ref });      // MODERN: Shift adds its group
+        else SelectRefs({ icon.ref });
         for (size_t g = 0; g < selected.size(); g++) if (selected[g]) { SelectionSpeech(int(g)); break; }
     }
 
@@ -1697,6 +1700,39 @@ namespace wow
             const int y0 = icon.y + icon.h - 3;     // (by eye: on the original's rows in the owner's frames)
             for (int i = 0; i < count; i++) canvas.DrawSprite(8, frames[size_t(i)], x0 + i * step, y0);
         }
+    }
+
+    // MODERN (not in the game): the war map objects the selection holds, in the units' order
+    std::vector<int> BattleMap::SelectedRefs() const
+    {
+        std::vector<int> refs;
+        for (const Unit& u : units)
+            if (u.players && u.group >= 0 && size_t(u.group) < selected.size() && selected[size_t(u.group)] &&
+                std::find(refs.begin(), refs.end(), u.ref) == refs.end()) refs.push_back(u.ref);
+        return refs;
+    }
+
+    // Shift held with vehicles selected: what is picked next joins them. (A building is selected on its own, as
+    // the game has it.)
+    bool BattleMap::AddingToSelection() const
+    {
+        if (!setup.selectionKeys || !(SDL_GetModState() & SDL_KMOD_SHIFT) || !setup.units) return false;
+        bool any = false;
+        for (const Unit& u : units)
+            if (u.players && u.group >= 0 && size_t(u.group) < selected.size() && selected[size_t(u.group)])
+            {
+                auto d = setup.units->find(u.type);
+                if (d == setup.units->end() || d->second.category != 1) return false;
+                any = true;
+            }
+        return any;
+    }
+
+    void BattleMap::SelectMore(std::vector<int> refs)
+    {
+        std::vector<int> all = SelectedRefs();
+        for (int r : refs) if (std::find(all.begin(), all.end(), r) == all.end()) all.push_back(r);
+        SelectRefs(all);
     }
 
     void BattleMap::SelectRefs(const std::vector<int>& refs)
@@ -2215,8 +2251,24 @@ namespace wow
         case SDLK_PERIOD: if (const int g = StepObject(true); g >= 0) ViewOnGroup(g, true); break;
         case SDLK_BACKSPACE: Halt(); break;
         // The digits build packet 0x12 (select group n, 0 as 10), but the selection that runs the packets (0x4812B0)
-        // has no case for it: in the game they do nothing, and so here.
-        default: break;
+        // has no case for it: in the game they do nothing.
+        // MODERN ([Modern] "Selection keys", docs/MODERN.md): Ctrl + a digit keeps the selection under it, the
+        // digit alone selects what was kept (those still on the map), and a second press looks at them.
+        default:
+            if (setup.selectionKeys && key >= int(SDLK_0) && key <= int(SDLK_9))
+            {
+                std::vector<int>& kept = keptSelections[key - int(SDLK_0)];
+                if (ctrl) kept = SelectedRefs();
+                else if (!kept.empty())
+                {
+                    const bool already = SelectedRefs() == kept;
+                    SelectRefs(kept);
+                    if (Mode() == 0) break;                 // none of them is left
+                    if (already) CentreOnSelection();
+                    else for (size_t g = 0; g < selected.size(); g++) if (selected[g]) { SelectionSpeech(int(g)); break; }
+                }
+            }
+            break;
         }
         return std::nullopt;
     }

@@ -71,6 +71,7 @@ namespace wow
             struct Source { int sector = 0; bool players = false, hq = false; };
             std::vector<Source> sources;
             bool stickyPopup = false;   // [Modern] "Sticky popup menus": the popup stays open once the right button's let go
+            bool selectionKeys = true;  // [Modern] "Selection keys": Ctrl + digit keeps a selection, the digit brings it back, Shift adds to it
             // 0x43AC40 on a sector: room there for `count` more of the player's land objects (else boats)
             std::function<bool(bool land, int sector, int count)> hasRoom;
             int noBuildBorder = 16;     // [Tweak] "No-build border width (vertices)" (dword_59D93C)
@@ -639,6 +640,12 @@ namespace wow
         // 0x439000 for each war map object selected (0x8088): its units into the player's selection group (0x4480F0,
         // out of their own), which is then the group the orders go to; that group stays theirs once deselected
         void SelectRefs(const std::vector<int>& refs);
+        // MODERN (the engine's own, [Modern] "Selection keys"): the selection's war map objects, the ten kept
+        // selections (Ctrl + digit), and a selection with more added to it (Shift)
+        std::vector<int> SelectedRefs() const;
+        std::vector<int> keptSelections[10];
+        bool AddingToSelection() const;
+        void SelectMore(std::vector<int> refs);
         // The group icons top left (WCmdTarget 0x483DF0 holding the icon windows 0x484120, made by 0x422910 as the
         // battle is set up): one for each of the player's war map objects with vehicles, in the list's order
         struct GroupIcon { int ref = 0, x = 0, y = 0, w = 0, h = 0, frame = 0; int clicked = -1000; };

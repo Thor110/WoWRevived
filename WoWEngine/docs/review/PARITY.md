@@ -1045,6 +1045,14 @@ transparency")
 - Seen: the menu with the box ticked; the interactive loop starting; both battles the same picture as before.
   Not seen: a recording made and played from the menu (the test runs don't go through the interactive loop).
 
+**Update 198** (modern option C3; nothing of the original's changed without the keys)
+- Battle: Ctrl + digit keeps the selection, the digit brings it back and a second press looks at it; Shift adds
+  to the selection (box, vehicle, group icon). `[Modern]` "Selection keys", in the Modern Options menu.
+- The test script has `shift`, `ctrl` and `nomods` steps.
+- Seen (Martian test battle, also under the checkers): two groups selected with Shift on their icons, kept
+  under 1, another kept under 2, 1 pressed twice selecting the two again and moving the view to them; both
+  battles without the keys the same picture as before.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
