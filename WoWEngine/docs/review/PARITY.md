@@ -1146,6 +1146,11 @@ transparency")
 - The HUD scale slider's row has the full-width underlay of the other rows (the slider's own glass is
   narrower), on both sides' menus.
 
+**Update 211** (the Modern Options menu)
+- The HUD scale row's backing is the slider's own, made as wide as the full rows: its left and right ends kept,
+  the middle repeated between them (`Canvas::DrawSpriteWidened`). The bottom button's backing used in 210 has
+  cut corners, which showed.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

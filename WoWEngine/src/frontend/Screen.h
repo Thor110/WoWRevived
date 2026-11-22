@@ -56,7 +56,7 @@ namespace wow
         bool visible = true;
         bool focusable = true;  // headings and similar are drawn like controls but don't take part in input
         int tooltip = 0;        // its tool tip's text id (the control's answer to 0x807C), 0 for none
-        int underlay = 0;       // MODERN: a see-through sprite drawn under the row, centred on it, in place of its glass
+        int widen = 0;          // MODERN: the width its glass is drawn at, centred on the row (0: its own)
     };
 
     class Screen

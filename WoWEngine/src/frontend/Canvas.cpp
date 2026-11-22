@@ -67,6 +67,30 @@ namespace wow
         DrawImage(*image, shade->Level(level), x - g->hotX, y - g->hotY, blend);
     }
 
+    void Canvas::DrawSpriteWidened(int gtype, int frame, int x, int y, int toWidth, Blend blend)
+    {
+        const IndexedImage* image = res.GetFrame(gtype, frame);
+        const ShadeTable* shade = res.ShadeFor(gtype);
+        const GType* g = res.FindGType(gtype);
+        if (!image || !shade || !g || image->width < 4) return;
+        if (toWidth <= image->width) { DrawImage(*image, shade->Level(0), x - g->hotX, y - g->hotY, blend); return; }
+        IndexedImage wide;
+        wide.width = toWidth;
+        wide.height = image->height;
+        wide.pixels.resize(size_t(toWidth) * size_t(image->height));
+        const int half = image->width / 2, extra = toWidth - image->width;
+        const int span = std::min(64, half);                // the columns about the middle that fill the gap
+        for (int r = 0; r < image->height; r++)
+        {
+            const uint8_t* src = image->pixels.data() + size_t(r) * size_t(image->width);
+            uint8_t* dst = wide.pixels.data() + size_t(r) * size_t(toWidth);
+            for (int c = 0; c < half; c++) dst[c] = src[c];
+            for (int c = 0; c < extra; c++) dst[half + c] = src[half - span / 2 + c % span];
+            for (int c = half; c < image->width; c++) dst[extra + c] = src[c];
+        }
+        DrawImage(wide, shade->Level(0), x - g->hotX, y - g->hotY, blend);
+    }
+
     void Canvas::DrawSpriteRows(int gtype, int frame, int x, int y, int firstRow, int rows, int level)
     {
         const IndexedImage* image = res.GetFrame(gtype, frame);
