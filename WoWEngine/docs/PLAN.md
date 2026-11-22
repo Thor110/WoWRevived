@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 148) and what is next
+## Where things stand (update 149) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -16,8 +16,9 @@ the working order; the stages further down stay the full inventory.
 - [x] N3 (148, the mines) Ground flag 8: a built mine (0x273-0x276, 0x48CB10) marks the ground its own side
       won't cross. Left: the line-linked objects (0x48B690), which the engine doesn't have, and a mine that
       finishes building during a battle.
-- [ ] N4 Stage 2.6: the group panel top left (icons with strength pips, seen in every frame of the original),
-      the order panel, the group keys.
+- [~] N4 Stage 2.6. Done in 149: the group panel top left (an icon for each of the player's groups with its
+      strength pips, the selection's corners on it, a click selecting the group). Left: the icon's lit state
+      under the mouse and its flashing, the order panel, the group keys, the label 0x6F, the combined panel.
 - [ ] N5 The unfinished building's corner markers lit grey, not yellow; Big Ben and Parliament lit as the
       original (London's frame).
 - [ ] N6 Stage 2.7: reinforcements arriving, the zoomer, the battle info and battle-end dialogs.

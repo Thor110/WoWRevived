@@ -479,6 +479,23 @@ Martian start's units turned differently)
 - *Not yet*: an explosion's victims by part (0x47FC50); the parts of scenery objects and vehicles in the grid;
   the line-linked objects' flag 8 (0x48B690, radius 32); a mine finished during the battle.
 
+**Update 149** (PLAN.md's N4, first part: the group panel)
+- [x] The group icons top left of a battle (seen in every frame of the original). As the battle is set up
+      (0x439A69) a holder is made (0x483DF0) and 0x422910 gives it an icon window (0x484120, 0xB8 bytes) for the
+      first of the player's unit list that is the sector's command building, then one for each of its objects
+      of category 1. The holder lays them out (0x484070) from 32, 32, each its width + 2 on from the last, a new
+      row the height + 2 down when one would pass the window's width less 32. An icon shows GType 0x76 at its
+      type's war map counter frame (+0x2C, 0x40F000); under it the strength pips (0x449150 / 0x449340): one for
+      each unit of the object, GType 8 at frame ftol(0.5 + 9 x health / the type's), the sprite's width - 1
+      apart, centred; with the object selected (0x8012 -> 0x484840) GType 5's four corners 8 in from its own.
+      The left button let go on one (0x484920) selects its object alone (0x8088); in cursor mode 1, on one
+      already selected, a second click within 10 frames centres the view on the selection (0x43A480).
+      Against the owner's frames: the Martian start's four icons (3, 3, 1 and 1 pips) and London's one (5 pips)
+      are on the original's pixels (the pips' row was set by eye, 3 up from the icon's foot).
+- *Not yet*: the icon lit under the mouse (its renderer's level 1, 0x4843D2) and flashing while +0x94 counts
+  down (0x8111 and the other messages of 0x4844A0's table); the cursor shapes it asks for (0x20); the windowed
+  game's left margin (dword_4BA05C).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

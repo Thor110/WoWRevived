@@ -535,6 +535,16 @@ glint, type 0x3CA + rand() % 3 (LE_1-LE_3, `twink1-3.spr`, 8 frames), at height 
 step (+0xC0) 100, drifting 0.5 by 0.5. Their sprites are in palette slot 20, the ground's `LANDR` table, which the
 engine hadn't registered for sprites: anything drawn through slot 20 was skipped until now.
 
+## Group icons (the holder 0x483DF0, the icon windows 0x484120, made by 0x422910; `BattleMap::DrawGroupIcons`)
+
+One icon for each of the player's war map objects with vehicles (and the sector's command building if it is in
+that list), in the list's order, from 32, 32 rightwards, width + 2 apart, wrapping at the window's width less 32.
+Each is GType 0x76 at the type's counter frame, with its strength pips under it (GType 8, one a unit, frame
+ftol(0.5 + 9 x health / the type's), 0x449150) and GType 5's corners on it while its object is selected. Letting
+the left button go on one selects its object alone; a second click inside 10 frames in cursor mode 1 centres the
+view on the selection. An icon goes when its object leaves the battle (0x483FF0) and the rest close up.
+*Provisional*: the lit and flashing states and the cursor shapes aren't in.
+
 ## Minimap ("BattleMap miniMap view" 0x4868B0, RTypeMiniBattleMap 0x4A1F90, dots 0x4A1CD0)
 
 EnterBattleMap makes it with the sector (+0x8C). Its parts:

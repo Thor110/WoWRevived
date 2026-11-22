@@ -1525,6 +1525,128 @@ namespace wow
         if (n && size_t(group) >= setup.groups.size()) groupStance[size_t(group)] = int(double(stances) + 0.5) / n;
     }
 
+    // 0x422910 / 0x483F90 / 0x484070: an icon for the first of the list's objects that is the sector's command
+    // building, then for each of its objects of category 1 (its vehicles), in the list's order; one whose object has
+    // left the battle is taken out (0x483FF0) and the rest laid out again. The layout: from 32, 32 (the windowed
+    // game's dword_4BA05C in place of 32), each icon its width + 2 on from the last; one that would pass the
+    // window's width less 32 starts a new row, the height + 2 down.
+    // The icon is a window of GType 0x76's size showing the type's war map counter frame (+0x2C, 0x40F000).
+    void BattleMap::LayOutGroupIcons() const
+    {
+        std::vector<GroupIcon> icons;
+        if (!setup.units) { groupIcons.clear(); return; }
+        auto add = [&](size_t gi) {
+            const BattleGroup& g = setup.groups[gi];
+            const bool alive = std::any_of(units.begin(), units.end(), [&](const Unit& u) { return u.ref == int(gi) && u.players; });
+            if (!alive) return;
+            GroupIcon icon;
+            icon.ref = int(gi);
+            auto t = setup.units->find(g.type);
+            icon.frame = t == setup.units->end() ? 0 : t->second.counterFrame;
+            const IndexedImage* image = res.GetFrame(0x76, icon.frame);
+            icon.w = image ? image->width : 32;
+            icon.h = image ? image->height : 32;
+            for (const GroupIcon& old : groupIcons)
+                if (old.ref == icon.ref) icon.clicked = old.clicked;
+            icons.push_back(icon);
+        };
+        // the list is the player's units' (the world's +0x4C as the battle is set up, 0x439A7E)
+        int list = -1;
+        for (const BattleGroup& g : setup.groups)
+            if (g.Players()) { auto t = setup.units->find(g.type); if (t != setup.units->end() && t->second.category == 1) { list = g.list; break; } }
+        for (size_t gi = 0; gi < setup.groups.size() && list >= 0; gi++)
+        {
+            const BattleGroup& g = setup.groups[gi];
+            if (g.list != list || !g.Players()) continue;
+            if (g.type == deploy::MartianHq(setup.sector) || g.type == deploy::HumanHq(setup.sector)) { add(gi); break; }
+        }
+        for (size_t gi = 0; gi < setup.groups.size() && list >= 0; gi++)
+        {
+            const BattleGroup& g = setup.groups[gi];
+            if (g.list != list || !g.Players()) continue;
+            auto t = setup.units->find(g.type);
+            if (t != setup.units->end() && t->second.category == 1) add(gi);
+        }
+        const int start = 32;
+        int x = start, y = start;
+        for (GroupIcon& icon : icons)
+        {
+            if (x + icon.w + 2 > 640 - start) { x = start; y += icon.h + 2; }
+            icon.x = x;
+            icon.y = y;
+            x += icon.w + 2;
+        }
+        groupIcons = std::move(icons);
+    }
+
+    int BattleMap::GroupIconAt(int x, int y) const
+    {
+        LayOutGroupIcons();     // (the icons are windows in the game; here they're laid out as they're asked for)
+        for (size_t i = 0; i < groupIcons.size(); i++)
+        {
+            const GroupIcon& g = groupIcons[i];
+            if (x >= g.x && y >= g.y && x < g.x + g.w && y < g.y + g.h) return int(i);
+        }
+        return -1;
+    }
+
+    // 0x484920, the left button let go on an icon: its object selected alone (0x8088 after the selection's cleared);
+    // in cursor mode 1, on one already selected, a second click under 10 frames after the last centres the view on
+    // the selection instead (0x43A480).
+    void BattleMap::ClickGroupIcon(size_t index)
+    {
+        GroupIcon& icon = groupIcons[index];
+        const int since = Frame() - icon.clicked;
+        icon.clicked = Frame();
+        const bool isSelected = std::any_of(units.begin(), units.end(), [&](const Unit& u) { return u.ref == icon.ref && u.players && selected[size_t(u.group)]; });
+        if (Mode() == 1 && isSelected)
+        {
+            if (since > 0 && since < 10) CentreOnSelection();
+            return;
+        }
+        if (Mode() != 0 && Mode() != 1) return;
+        SelectRefs({ icon.ref });
+        for (size_t g = 0; g < selected.size(); g++) if (selected[g]) { SelectionSpeech(int(g)); break; }
+    }
+
+    // 0x4842E0: the icon; with its object selected (0x8012 to the icon, 0x484840) the four corners of GType 5 8 in
+    // from its corners; under it the strength pips (0x449150 / 0x449340): one for each of the object's units, GType
+    // 8 (hwpower.spr) at frame ftol(0.5 + 9 x its health / its type's), each the sprite's width - 1 on from the
+    // last, the row centred under the icon.
+    // *Provisional*: the icon's lit state (its renderer's level 1 under the mouse, and flashing while +0x94 counts
+    // down) isn't drawn; the pips' row is placed by eye against the original (its sprite's own offsets aren't read).
+    void BattleMap::DrawGroupIcons(Canvas& canvas) const
+    {
+        LayOutGroupIcons();
+        for (const GroupIcon& icon : groupIcons)
+        {
+            canvas.DrawSprite(0x76, icon.frame, icon.x, icon.y);
+            bool isSelected = false;
+            std::vector<int> frames;
+            for (const Unit& u : units)
+            {
+                if (u.ref != icon.ref || !u.players) continue;
+                if (selected[size_t(u.group)]) isSelected = true;
+                const int max = MaxHealth(u.type);
+                frames.push_back(max > 0 ? int(0.5 - double(float(u.health) / float(max)) * -9.0) : 0);
+            }
+            if (isSelected)
+            {
+                canvas.DrawSprite(5, 0, icon.x + 8, icon.y + 8);
+                canvas.DrawSprite(5, 1, icon.x + icon.w - 8, icon.y + 8);
+                canvas.DrawSprite(5, 2, icon.x + 8, icon.y + icon.h - 8);
+                canvas.DrawSprite(5, 3, icon.x + icon.w - 8, icon.y + icon.h - 8);
+            }
+            const IndexedImage* pip = res.GetFrame(8, 0);
+            if (!pip || frames.empty()) continue;
+            const int step = pip->width - 1;
+            const int count = int(std::min<size_t>(frames.size(), 8));
+            const int x0 = icon.x + icon.w / 2 - (step * count) / 2;
+            const int y0 = icon.y + icon.h - 3;     // (by eye: on the original's rows in the owner's frames)
+            for (int i = 0; i < count; i++) canvas.DrawSprite(8, frames[size_t(i)], x0 + i * step, y0);
+        }
+    }
+
     void BattleMap::SelectRefs(const std::vector<int>& refs)
     {
         ClearSelection();
@@ -2405,8 +2527,22 @@ namespace wow
         {
             const bool wasMini = miniDrag;
             miniDrag = false;
+            // a group icon takes the mouse as it's pressed (0x42E9B0) and acts as it's let go (0x202, 0x484920)
+            if (iconDown >= 0)
+            {
+                const int at = GroupIconAt(x, y);
+                if (at == iconDown && size_t(at) < groupIcons.size()) ClickGroupIcon(size_t(at));
+                iconDown = -1;
+                dragging = false;
+                return std::nullopt;
+            }
             if (dragging && !wasMini) ReleaseLeft(x, y);
             dragging = false;
+            return std::nullopt;
+        }
+        if (const int at = GroupIconAt(x, y); at >= 0)
+        {
+            iconDown = at;
             return std::nullopt;
         }
         if (popup.empty() && down && InMinimap(x, y))
@@ -2639,6 +2775,7 @@ namespace wow
         TerrainView::Render(land, tiles, table, levels, dither, t, -scrollX, -scrollY, fog.enabled ? &fogView : nullptr, between, &window);
         beamsTo(0x7FFFFFFF);
         DrawSelection(canvas);
+        DrawGroupIcons(canvas);
         // the minimap (0x486CB0): the picture, the dots (2 x 2 each, 0x4A1DD0), the view's rectangle (0x49C7C0)
         if (miniShown && miniPicture)
             if (const ShadeTable* shade = res.GetShade(21))

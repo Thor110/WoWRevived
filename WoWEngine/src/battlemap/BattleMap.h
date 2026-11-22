@@ -626,6 +626,15 @@ namespace wow
         // 0x439000 for each war map object selected (0x8088): its units into the player's selection group (0x4480F0,
         // out of their own), which is then the group the orders go to; that group stays theirs once deselected
         void SelectRefs(const std::vector<int>& refs);
+        // The group icons top left (WCmdTarget 0x483DF0 holding the icon windows 0x484120, made by 0x422910 as the
+        // battle is set up): one for each of the player's war map objects with vehicles, in the list's order
+        struct GroupIcon { int ref = 0, x = 0, y = 0, w = 0, h = 0, frame = 0; int clicked = -1000; };
+        mutable std::vector<GroupIcon> groupIcons;
+        int iconDown = -1;                                      // the icon the left button went down on
+        void LayOutGroupIcons() const;                          // 0x484070
+        int GroupIconAt(int x, int y) const;
+        void ClickGroupIcon(size_t icon);                       // 0x484920
+        void DrawGroupIcons(Canvas& canvas) const;              // 0x4842E0
         void RecomputeGroup(int group);                     // 0x800F -> 0x4802E0 when its members change
         bool dragging = false, boxActive = false;
         int dragX0 = 0, dragY0 = 0, dragX1 = 0, dragY1 = 0;
