@@ -622,7 +622,23 @@ Martian start's units turned differently)
   into the other (one index of the engine's picture lies under several colours of the original's), so the
   picture files differ. Asked of the owner: whether their install's files are the same as the Italian discs'.
 - *Open*: the Martian panel's new place is from the listing alone.
-- *Open, from update 157*: the counter at a route's far end sits about 18 left and 13 up of the engine's.
+
+**Update 159** (from the owner's frame of the original's Martian war map, a new campaign, Enhanced Assets off)
+- [x] **Closed: the panel art of update 158.** The Human frame was taken with WoWRevived's Enhanced Assets on
+      (sprites scaled up and back down); nothing was wrong with the engine's. Noted in MODERN.md as an option.
+- [x] **The Martian panel's place is confirmed**: frame 515, 198 and view 525, 306 match the frame.
+- [x] **Placed counters sat 16 right and 16 down.** A cell's point is the object's point (0x4406A0 at 0x420875),
+      the middle of its counter; the engine put the counter's corner there. All four frames to hand agree
+      (this was also update 157's "counter at the route's far end").
+- [x] **Where the view starts**: centred on the selected sector's bounds (0x4189B9), 150, 324 for a new Martian
+      campaign; the engine used the save's 159, 298.
+- [x] **The current view's button** shows frame 3 (held, the mouse elsewhere), 2 under the mouse (0x433DB0); the
+      engine showed 2 always.
+- With these the engine's frame of a new Martian campaign differs from the owner's only in the clock (theirs had
+  run to 0001 01), their mouse pointer, and the first pod.
+- *Open*: **where the first pod lands.** In the owner's frame, just past the first day, a Martian counter stands
+  alone in sector 2 (south-west of the base, no one's before). The engine's first pod lands in Sector 10, a Human
+  sector, and asks to attack. Asked of the owner: whether the first pod always lands there.
 
 ## Deferred (with the reason each is still open)
 

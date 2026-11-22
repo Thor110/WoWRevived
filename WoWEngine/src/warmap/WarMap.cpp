@@ -107,7 +107,17 @@ namespace wow
         // The WMAP block holds the view's top-left corner, already less half of the game's 640 x 480 screen
         // (0x418980 subtracts it from the centre): Martian.000's 159, 298 centres on sector 3's units at 468, 540,
         // Human.000's 803, 1805 on London's at 1116, 2016. So the centre is that plus 320, 240.
-        CentreOn(int(game.warMap[0]) + 320, int(game.warMap[1]) + 240);
+        // 0x4189B9: with a selected sector the view is centred on its bounds instead (0x4BAE78: half of left +
+        // right, half of top + bottom, less half the screen), and a sector that isn't the player's is then
+        // unselected (0x418A00). A new Martian campaign so starts at 150, 324 (sector 3: 346, 413, 595, 715), as
+        // the owner's frame of the original, not at Martian.000's 159, 298.
+        if (selected)
+        {
+            const warmap::SectorInfo& b = warmap::Sectors[selected];
+            CentreOn((b.left + b.right) / 2, (b.top + b.bottom) / 2);
+            if (owner[size_t(selected)] != 0) selected = 0;
+        }
+        else CentreOn(int(game.warMap[0]) + 320, int(game.warMap[1]) + 240);
         // the WMAP block's 4th value is the view (0x41AC40 into world +0x70, set up by 0x419810 at 0x418CA4)
         viewMode = std::clamp(int(game.warMap[3]), 1, 3);
         LayoutAll();
@@ -1543,8 +1553,7 @@ namespace wow
                 }
         }
 
-        // the panel: its frame, the three view buttons (frame 2 for the one that's on, 1 under the mouse; the
-        // buttons' frames aren't confirmed), then the mini-map: the whole map at a fifteenth, the sector under the
+        // the panel: its frame, the three view buttons, then the mini-map: the whole map at a fifteenth, the sector under the
         // mouse lit, and the view's outline
         PanelLayout panel = Panel();
         if (panelShown)
@@ -1552,7 +1561,9 @@ namespace wow
             canvas.DrawSprite(0x80, 0, panel.frame.x, panel.frame.y);
             static constexpr int ButtonGtypes[3] = { 0x33, 0x35, 0x34 };
             for (int i = 0; i < 3; i++)
-                canvas.DrawSprite(ButtonGtypes[i], viewMode == i + 1 ? 2 : hotButton == i ? 1 : 0, panel.buttons[i].x, panel.buttons[i].y);
+                // the button's frames (0x433DB0): 0, 1 under the mouse, 2 held under the mouse, 3 held off it; the
+                // view's button stays held (the owner's Martian frame: frame 3 with the mouse elsewhere)
+                canvas.DrawSprite(ButtonGtypes[i], viewMode == i + 1 ? (hotButton == i ? 2 : 3) : hotButton == i ? 1 : 0, panel.buttons[i].x, panel.buttons[i].y);
             // a push button's frames (0x433DB0): 0, 1 under the mouse, 2 held under the mouse, 3 held off it
             int researchFrame = researchHeld ? (hotButton == 3 ? 2 : 3) : hotButton == 3 ? 1 : 0;
             canvas.DrawSprite(0x341, researchFrame, panel.research.x, panel.research.y);
@@ -2733,8 +2744,8 @@ namespace wow
             if (auto t = unitData.find(c.type); t != unitData.end() && t->second.infoPage)
             {
                 popupInfoText = t->second.infoPage;
-                popupInfoX = c.x - cameraX;
-                popupInfoY = c.y - cameraY;
+                popupInfoX = c.x + 16 - cameraX;   // the object's point, the middle of its counter
+                popupInfoY = c.y + 16 - cameraY;
                 add(0x808C, 0, 0x2A, 0x478);
             }
         }
@@ -3658,6 +3669,7 @@ namespace wow
                 if (o.sector != s || o.Travelling()) continue;
                 int ox, oy, ocell;
                 FindCell(s, ox, oy, ocell);
+                ox -= 16; oy -= 16;   // the cell's point is the object's (0x4406A0), the middle of its 32 x 32 counter
                 o.cell = ocell;
                 o.targetX = ox; o.targetY = oy;
                 o.slideX = float(o.x); o.slideY = float(o.y);
@@ -3672,8 +3684,11 @@ namespace wow
         placed.push_back(index);
         k.shown = true;
         k.cell = cell;
-        k.x = x; k.y = y;
-        k.targetX = x; k.targetY = y;
+        // the cell's point is the object's (0x4406A0 at 0x420875), which is the middle of its counter: the counter's
+        // corner is 16 up and left of it, as on a route (in the owner's frames every placed counter sat 16, 16 from
+        // the engine's)
+        k.x = x - 16; k.y = y - 16;
+        k.targetX = k.x; k.targetY = k.y;
         k.slideLeft = 0;
     }
 

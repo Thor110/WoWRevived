@@ -171,7 +171,9 @@ with:
   one it takes, so a cell given back behind it isn't used again until the grid is cleared. Mode 2 tests the
   step's row offset against the grid's height rather than the row, so the rows above the middle are never used
   for resources (and rows below the grid would be read past its end; the engine counts them as not free).
-- **Placing** (0x4205F0): the next free cell. When there's none, the sector's grid is made again with cells
+- **Placing** (0x4205F0): the next free cell. Its point is given to the object (0x4406A0), and an object's point is
+  the middle of its 32 x 32 counter, as on a route: the counter's corner is 16 up and left of it (update 159; the
+  engine had the corner at the point, and every placed counter in the owner's frames sat 16, 16 off). When there's none, the sector's grid is made again with cells
   `"WM clunting adj"` (4) pixels smaller, every counter already placed in the sector takes a new cell and slides
   to it at 5 pixels a tick (0x4286C0; each tick 0x4209E0 -> 0x428730, done under 0.0005 left), and then the new
   one is placed (in the game's 0, 0 if there's still no room; the next one shrinks the grid again).
@@ -196,6 +198,15 @@ Human games. The world then moves both (0x418C02): the frame keeps its x and goe
 height less 0x20 (Human) or 0x28 (Martian); the view goes to the frame's x + 9 (Human) or + 10 (Martian) at its
 own y. Human: frame 514, 186, view 523, 298 (the owner's frame). Martian: frame 515, 198, view 525, 306 (no frame
 of the original to hand).
+
+Both places are confirmed by the owner's frames (the Martian one in update 159). The three view buttons are push
+buttons whose frames are 0, 1 under the mouse, 2 held under the mouse and 3 held off it (0x433DB0); the current
+view's stays held, so it shows 3 with the mouse elsewhere (update 159, the Martian frame).
+
+Where the view starts (0x4189B9, update 159): with a selected sector, centred on its bounds (0x4BAE78: half of
+left + right and of top + bottom, less half the screen), and a sector that isn't the player's is then unselected;
+only without one, at the saved position. A new Martian campaign starts at 150, 324 (sector 3), not Martian.000's
+159, 298; London's bounds give Human.000's 803, 1805 either way.
 
 The view's outline (0x49C740 at 0x422E6C) is a rectangle 100 x 640 / the map's width by 170 x 480 / its height (42
 x 32, its last column and row inside that), in the side's colour (dword_4DAF9C: Human RGB6 0, 0, 0x2F; Martian 12,

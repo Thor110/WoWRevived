@@ -51,6 +51,12 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
   option would give `SFX` and `VOX` the same.
 - **Modern formats** accepted for the overriding files (PNG for sprites, WAV / OGG for sounds, and so on), so a
   fix or a mod needn't be encoded in the game's own formats.
+- **Enhanced Assets** (an option of the earlier patched game, WoWRevived): every sprite extracted, scaled up and
+  back down, which gives cleaner, more vivid colours. Off for parity work: a frame taken with it on doesn't match
+  the discs' sprites pixel for pixel (update 158 ran into this on the war map's panel). To offer as an option.
+- **Re-encoded sprites** (the owner's idea, a general enhancement): run every `.spr` through WoWViewer's RLE
+  encoder (`SprEncoder.cs`), which packs tighter than whatever the game's files were made with and decodes to
+  identical pictures, so the data gets smaller at no cost.
 - **The owner's fixed files** (`WoWEngine/dat`, `WoWEngine/maps`: the WoWRevived patches for this version of the
   game): `dat` holds re-encoded sprites (the owner's RLE encoder packs them better than the original tool did),
   the Cotton Factory and Airship model fixes and the alternative war map backgrounds; `maps` holds the sector 22
@@ -100,6 +106,8 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
 ## Tools
 
 - **Level editor**: the battle maps' ground and scenery, and the war map's sectors.
+- **War map creator and new campaigns** (the owner's idea): with the level editor, a tool to make a war map
+  (the map, its sectors, links and starting forces), so whole new campaigns can be built and played.
 - **Save editor**: the war map's objects, research and resources in a save.
 
 ## From the earlier patched game
