@@ -15,6 +15,9 @@ namespace wow
     struct SaveSlot
     {
         static constexpr int First = 1, Last = 5;
+        // MODERN (docs/MODERN.md "More save slots"): the engine's menus turn pages of five, up to the last number
+        // the file name's three digits hold
+        static constexpr int Max = 999, PerPage = 5;
         static constexpr size_t NameOffset = 0x0C, NameLength = 36;
 
         static std::string GamePath(bool human, int slot); // "SaveGame\Human.001"

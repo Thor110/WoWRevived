@@ -54,6 +54,7 @@ namespace wow
         constexpr int CmdDisplaySettings = 0x3EF;
         constexpr int CmdCriticalEvents = 0x8117;
         constexpr int CmdModernOptions = 0x9001;  // the engine's own menu (no such command in the game)
+        constexpr int CmdSlotPage = 0x9002;       // the engine's own: the Load / Save menu's page, param +1 or -1
         constexpr int CmdSaveMenu = 0x6E;
         constexpr int CmdLoadSlot = 0x80B3;  // + slot: load that save (starts the campaign)
         constexpr int CmdSaveSlot = 0x8142;  // + slot: save the campaign there
@@ -217,17 +218,49 @@ namespace wow
     bool FrontEnd::AnySaveGame() const
     {
         // the same check as the main menu's and load menu's constructors
-        for (int slot = SaveSlot::First; slot <= SaveSlot::Last; slot++)
-            if (SaveSlot::Exists(files, res.Human(), slot)) return true;
-        return false;
+        return HighestSave() >= SaveSlot::First;
+    }
+
+    // MODERN ([Modern] "More save slots", on unless turned off): the slots the menus reach. Off, the game's five.
+    int FrontEnd::LastSlot() const { return ini.GetBool("Modern", "More save slots", true) ? SaveSlot::Max : SaveSlot::Last; }
+
+    // the highest slot with a save in it (0 for none), by the SaveGame folder's files
+    int FrontEnd::HighestSave() const
+    {
+        int highest = 0;
+        auto folder = files.Resolve("SaveGame");
+        if (!folder) return 0;
+        const std::string side = res.Human() ? "human." : "martian.";
+        std::error_code ec;
+        for (const auto& entry : std::filesystem::directory_iterator(*folder, ec))
+        {
+            std::string name = entry.path().filename().string();
+            for (char& c : name) c = char(std::tolower(static_cast<unsigned char>(c)));
+            if (name.size() != side.size() + 3 || name.compare(0, side.size(), side) != 0) continue;
+            if (!std::all_of(name.begin() + long(side.size()), name.end(), [](char c) { return c >= '0' && c <= '9'; })) continue;
+            const int slot = std::atoi(name.c_str() + side.size());
+            if (slot >= SaveSlot::First && slot <= LastSlot()) highest = std::max(highest, slot);
+        }
+        return highest;
+    }
+
+    // "Next Saves" when there is a page after this one worth turning to, "Previous Saves" after the first
+    void FrontEnd::AddSlotPageButtons(Menu& m, bool anyFurther)
+    {
+        const int first = slotPage * SaveSlot::PerPage + SaveSlot::First;
+        if (anyFurther && first + SaveSlot::PerPage <= LastSlot()) m.AddButtonText(CmdSlotPage, "Next Saves", 1);
+        if (slotPage > 0) m.AddButtonText(CmdSlotPage, "Previous Saves", -1);
     }
 
     std::unique_ptr<Screen> FrontEnd::LoadGame(int previous)
     {
         auto m = std::make_unique<Menu>(CmdLoadGame, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, 2);
         m->AddHeading(AnySaveGame() ? 0x406 : 0x434); // "Resume Campaign" or "No Saved Campaigns"
-        for (int slot = SaveSlot::First; slot <= SaveSlot::Last; slot++)
+        // (MODERN: a page of five; the first page with no saves past it is the game's menu as it was)
+        const int first = slotPage * SaveSlot::PerPage + SaveSlot::First;
+        for (int slot = first; slot < first + SaveSlot::PerPage && slot <= LastSlot(); slot++)
             if (auto name = SaveSlot::Name(files, res.Human(), slot)) m->AddButtonText(CmdLoadSlot, *name, slot);
+        AddSlotPageButtons(*m, HighestSave() >= first + SaveSlot::PerPage);
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         m->FocusLast();                               // 0x42EBE0 on the bottom button
         return m;
@@ -237,11 +270,13 @@ namespace wow
     {
         auto m = std::make_unique<Menu>(CmdSaveMenu, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, 2);
         m->AddHeading(0x52D);
-        for (int slot = SaveSlot::First; slot <= SaveSlot::Last; slot++)
+        const int first = slotPage * SaveSlot::PerPage + SaveSlot::First;
+        for (int slot = first; slot < first + SaveSlot::PerPage && slot <= LastSlot(); slot++)
         {
             auto name = SaveSlot::Name(files, res.Human(), slot);
             m->AddButtonText(CmdSaveSlot, name ? *name : res.String(0x408), slot); // "Empty"
         }
+        AddSlotPageButtons(*m, true);     // (MODERN: there is always room for a new campaign on the next page)
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         return m;
     }
@@ -411,6 +446,7 @@ namespace wow
             { "Modern", "Sticky popup menus", "Popup menus stay open", false },
             { "Modern", "War map status strip", "War map status strip", false },
             { "Modern", "Selection keys", "Group keys and Shift select", true },
+            { "Modern", "More save slots", "More save slots", true },
             { "Modern", "Original Display Settings", "Original display settings", false },
             { "WoW Engine", "Windowed", "Play in a window", false },
             { "WoW Engine", "Stretch", "Stretch the picture", false },
@@ -421,7 +457,7 @@ namespace wow
         m->AddHeadingText("Modern Options");
         for (size_t i = 0; i < std::size(Options); i++)
         {
-            if (i == 5)
+            if (i == 6)
             {
                 // the game's playback recordings (core/Playback.h), which the retail game never switches on
                 m->AddEventCheckText("Record input", recordWanted, [this](Button& b) { recordWanted = b.value != 0; });
@@ -603,7 +639,7 @@ namespace wow
     bool FrontEnd::NewCampaignFile(int slot, const std::string& name)
     {
         auto start = files.Resolve(res.Human() ? "Human.000" : "Martian.000");
-        if (!start || slot < SaveSlot::First || slot > SaveSlot::Last) return false;
+        if (!start || slot < SaveSlot::First || slot > SaveSlot::Max) return false;
         std::ifstream in(*start, std::ios::binary);
         std::vector<uint8_t> data((std::istreambuf_iterator<char>(in)), {});
         try
@@ -631,7 +667,7 @@ namespace wow
         // MODERN FIX: the game's save (0x4042D0) writes slot 0 to Human.000 / Martian.000 in the game folder, the
         // files new campaigns start from, so a campaign with no slot saved over them (docs/ODDITIES.md). Here a
         // campaign without a slot from 1 to 5 isn't saved.
-        if (!map || playingSlot < SaveSlot::First || playingSlot > SaveSlot::Last) return;
+        if (!map || playingSlot < SaveSlot::First || playingSlot > SaveSlot::Max) return;
         auto data = map->SaveData();
         if (!data) { SDL_Log("The war map didn't come from a save it can write, so it isn't saved"); return; }
         bool ok = WriteSaveFile(SlotFile(playingSlot), *data);
@@ -877,9 +913,9 @@ namespace wow
         case CmdDisplaySettings: { int back = BackTo(command.id, current); ShowMenu(DisplaySettings(back), back); } break;
         case CmdCriticalEvents: { int back = BackTo(command.id, current); ShowMenu(CriticalEvents(back), back); } break;
         case CmdModernOptions: { int back = BackTo(command.id, current); ShowMenu(ModernOptions(back), back); } break;
-        case CmdLoadGame: networkLoad = false; { int back = BackTo(command.id, current); ShowMenu(LoadGame(back), back); } break;
-        case CmdLoadNetworkGame: networkLoad = true; { int back = BackTo(command.id, current); ShowMenu(LoadGame(back), back); } break;
-        case CmdSaveMenu: { int back = BackTo(command.id, current); ShowMenu(SaveGame(back), back); } break;
+        case CmdLoadGame: networkLoad = false; slotPage = 0; { int back = BackTo(command.id, current); ShowMenu(LoadGame(back), back); } break;
+        case CmdLoadNetworkGame: networkLoad = true; slotPage = 0; { int back = BackTo(command.id, current); ShowMenu(LoadGame(back), back); } break;
+        case CmdSaveMenu: slotPage = 0; { int back = BackTo(command.id, current); ShowMenu(SaveGame(back), back); } break;
         case CmdSinglePlayer: topMenu = CmdSinglePlayer; Show(SinglePlayer(CmdMainMenu)); break;
         case CmdNetwork: Show(ServiceProvider(CmdMainMenu, res.Human() ? CmdNetworkHost : CmdJoinNetwork)); break;
         case CmdNetworkHost: topMenu = CmdNetworkHost; Show(NetworkHost(CmdNetwork)); break;
@@ -888,7 +924,23 @@ namespace wow
 
         // Start New Campaign (0x404230): pick the save slot it goes in, with the save menu's "Select Campaign to
         // Replace", returning to the menu it was chosen from
-        case CmdNewCampaign: Show(SaveGame(topMenu)); break;
+        case CmdNewCampaign:
+            // (the first page when it is come to afresh; the page it was on when Replace or the name step goes back)
+            if (!screen || (screen->Id() != CmdReplaceCampaign && screen->Id() != CmdEditCampaign)) slotPage = 0;
+            Show(SaveGame(topMenu));
+            break;
+        // MODERN: the Load or Save menu turned a page (the same menu made again, going back where it went)
+        case CmdSlotPage:
+            if (screen && (screen->Id() == CmdLoadGame || screen->Id() == CmdSaveMenu))
+            {
+                const bool load = screen->Id() == CmdLoadGame;
+                const int back = screen->Previous();
+                slotPage = std::clamp(slotPage + command.param, 0, (LastSlot() - SaveSlot::First) / SaveSlot::PerPage);
+                if (load) ShowMenu(LoadGame(back), back);
+                else if (back) ShowMenu(SaveGame(back), back);
+                else Show(SaveGame(topMenu));
+            }
+            break;
         case CmdSaveSlot:
             // 0x4043D0: a slot that's in use asks first, an empty one goes straight to naming the campaign
             campaignSlot = command.param;

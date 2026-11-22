@@ -1058,6 +1058,12 @@ transparency")
   to TEXT.ojd by the installer, the zoom keys, a trailer last of all, the log.
 - The log of the run before is kept as WoWEngine.previous.log.
 
+**Update 200** (modern option; with saves in the first five slots only the Load menu is as it was)
+- The Load and Save menus turn pages of five slots, up to 999 ("Next Saves", "Previous Saves"; `[Modern]` "More
+  save slots", in the Modern Options menu). The Save menu's first page has the extra "Next Saves" row.
+- Seen: the Save menu turned to its second page, a campaign begun in slot 6 (`Human.006` written), the Load
+  menu offering the next page and loading it from there; both battles the same picture as before.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

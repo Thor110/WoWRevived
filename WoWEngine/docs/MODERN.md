@@ -58,6 +58,7 @@ check boxes, and each box is a setting in WoWRevived.ini that can be set there a
 | Popup menus stay open | `[Modern]` "Sticky popup menus" | off | at once on the war map, the next battle |
 | War map status strip | `[Modern]` "War map status strip" | off | at once |
 | Group keys and Shift select | `[Modern]` "Selection keys" | on | the next battle |
+| More save slots | `[Modern]` "More save slots" | on | the next time the Load or Save menu opens |
 | Original display settings | `[Modern]` "Original Display Settings" | off | the next time Display Settings opens |
 | Play in a window | `[WoW Engine]` "Windowed" | off | at once |
 | Stretch the picture | `[WoW Engine]` "Stretch" | off | at once |
@@ -281,11 +282,12 @@ once the engine is complete.
 
 ## Ideas from the owner (noted at update 199; not planned in detail yet)
 
-- **More save slots.** The game has five. More would need either a list that scrolls or a number that depends
-  on the view size, and the second is awkward (a save made at a large size would have no row at a small one).
-  *A third way, to weigh*: pages. The Load and Save menus keep their five rows and get a "More" row that
-  turns to the next five, so the menu is the same at every size and the number of slots is free. The slot
-  files already go by number (`.001` to `.005`), so higher numbers need no new format.
+- **More save slots.** *In (update 200), as pages*: the game has five slots; the Load and Save menus keep
+  their five rows and get "Next Saves" and "Previous Saves" rows that turn to the next or last five, up to
+  slot 999 (the three digits of `Human.001`), so the menu is the same at every view size. The Save menu
+  always offers the next page; the Load menu only when there is a save further on, so with saves in the first
+  five only it is the game's menu as it was. The files are the game's own, numbered on: the original game
+  only lists the first five. `SaveSlot::Max`, `FrontEnd::AddSlotPageButtons`, command 0x9002.
 - **New strings added to TEXT.ojd by the installer.** "Modern Options" and every other caption the engine adds
   are plain English text in the code now. Better: the install routine appends them to the end of each
   language's TEXT.ojd, so each language can have its own. To settle when it is done: the ids they get (past

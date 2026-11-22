@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 199) and what remains
+## Where things stand (update 200) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -79,6 +79,8 @@ inventory with the history. Tick here and there as each is done.
       recording"; Escape ends a playback). Not tried by hand yet.
 - [x] **C3** (198) Group keys (Ctrl + digit keeps, the digit brings back, again looks at them) and Shift adding to
       the selection in battle, `[Modern]` "Selection keys", on unless turned off.
+- [x] **C6** (200) More save slots: the Load and Save menus turn pages of five, up to slot 999 (the owner's
+      idea, update 199). `[Modern]` "More save slots", on unless turned off.
 - [ ] **C4** HUD scaling, windowed mode with its size kept, wheel zoom, key bindings.
 - [ ] **C5** The log kept for players' reports (it is: CRASH and STALL lines; nothing to do but not remove it).
 

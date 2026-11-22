@@ -125,6 +125,11 @@ namespace wow
         // what the game keeps in globals between menus
         int topMenu = 0x90;        // dword_4D2574: the menu "Start New Campaign" was chosen from
         int campaignSlot = 0;      // dword_4D2578: the save slot the new campaign goes in
+        // MODERN: the page of five slots the Load and Save menus show, and the highest slot with a save
+        int slotPage = 0;
+        int LastSlot() const;
+        int HighestSave() const;
+        void AddSlotPageButtons(Menu& m, bool anyFurther);
         std::string campaignName;  // byte_4D1448: its name, up to 36 characters
         int insertCdNext = 0;      // the command the Insert CD menu sends once the disc is there
         bool networkLoad = false;  // byte_4D256C: the load menu was opened for a network game
