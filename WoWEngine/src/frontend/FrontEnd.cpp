@@ -479,6 +479,7 @@ namespace wow
             { "WoW Engine", "Stretch", "Stretch the picture", false },
             { "WoW Engine", "System Cursor", "System mouse pointer", false },
             { "WoW Engine", "CD Player Music Continues", "CD player music continues", false },
+            { "Modern", "Menu fade", "Fade between menus", false },
         };
         auto m = MenuOver(CmdModernOptions, previous, 2);
         m->AddHeadingText("Modern Options");
@@ -1187,6 +1188,11 @@ namespace wow
         // war map itself and the movie player don't
         // nor the battle map (a WView, 0x484A30); the research view sets the view's +0x94 (0x45E6B8, its only writer),
         // which skips both the fade-in (0x40632E) and the fade-out (0x4065FB)
+        // MODERN FIX: no fade unless [Modern] "Menu fade" = 1. The game covers the view with bigBlack (dark red in
+        // the Human menus' palette, another colour in the Martians') for a few ticks at every change of menu,
+        // which on a modern display reads as a flash of colour between menus (the owner, update 204). Without it
+        // a control's command is carried out at once.
+        if (!ini.GetBool("Modern", "Menu fade", false)) return false;
         return s.Id() != WarMap::Id && s.Id() != MovieScreen::Id && s.Id() != BattleMap::Id && s.Id() != ResearchScreen::Id;
     }
 

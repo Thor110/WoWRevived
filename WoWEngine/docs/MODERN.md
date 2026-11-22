@@ -60,6 +60,7 @@ check boxes, and each box is a setting in WoWRevived.ini that can be set there a
 | Group keys and Shift select | `[Modern]` "Selection keys" | on | the next battle |
 | More save slots | `[Modern]` "More save slots" | on | the next time the Load or Save menu opens |
 | Battle zoom (+, -, wheel, R) | `[Modern]` "Battle zoom" | on | at once |
+| Fade between menus | `[Modern]` "Menu fade" | off | at once |
 | Original display settings | `[Modern]` "Original Display Settings" | off | the next time Display Settings opens |
 | Play in a window | `[WoW Engine]` "Windowed" | off | at once |
 | Stretch the picture | `[WoW Engine]` "Stretch" | off | at once |
@@ -143,11 +144,16 @@ The wheel isn't written to a playback recording (the keys are).
   briefing's two panels, the CD player's boxes, the empty drawer the research cabinet goes in), with the rest
   of the room drawn around them, so any view size shows the right part. `FrontEnd::Origin`.
 - **The movies**: the game's own are drawn in a 640 x 480 picture and scaled up to fill the screen, their shape
-  kept. A larger movie (WoWRevived's 1920 x 1080 `.mp4`s) is shown in a picture of its own size (update 203), so
-  it reaches the screen at its own shape and detail; before, it was shrunk into the 640 x 480 picture first.
-  `MovieScreen::PictureW` / `PictureH`.
-- **The menus' fade** (bigBlack, 640 x 480) is laid side by side to cover a larger picture (update 203); it
-  only covered the top left corner.
+  kept. A larger movie (WoWRevived's 1920 x 1080 `.mp4`s) is decoded at its own size, up to 1920 x 1080, and
+  shown in a picture of that size (updates 203 and 204), so it reaches the screen at its own shape and
+  detail. Before, the decoder shrank it to fit 640 x 480 and it played as a small strip.
+  `Mp4Movie` (the size it decodes to), `MovieScreen::PictureW` / `PictureH`.
+- **The menus' fade** is off (MODERN FIX, update 204; `[Modern]` "Menu fade" = 1 puts it back). The game
+  covers the view with bigBlack for a few ticks at each change of menu and holds a control's command for five
+  ticks meanwhile (0x4065E0). bigBlack comes out dark red in the Human menus' palette and another colour in the
+  Martians', and on a modern display the change reads as a flash of colour between menus. Without it a
+  control's command is carried out at once. With it on, bigBlack (640 x 480) is laid side by side to cover a
+  larger picture (update 203).
 - **Where the files go**: the engine looks for `extra\<size>\` and `warmap\` inside the game's `DAT` folder,
   so the installer has to put `WoWEngine/dat/extra` and `WoWEngine/dat/warmap` there (PLAN.md D2).
 

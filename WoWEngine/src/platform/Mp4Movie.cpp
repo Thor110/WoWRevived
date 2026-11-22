@@ -78,8 +78,10 @@ namespace wow
 
                 // the first frame, which settles the decoder's format
                 if (!ReadFrameSample(pending, pendingTime)) { error = "no video frames"; return false; }
-                // shown at most 640 x 480 (the game's screen), keeping its shape
-                double scale = (std::min)({ 1.0, 640.0 / sourceWidth, 480.0 / sourceHeight });
+                // MODERN: shown at its own size up to 1920 x 1080 (the largest view size), keeping its shape; the
+                // movie screen's picture is then that size and the window scales it to the screen. (It used to be
+                // shrunk to fit the game's 640 x 480 screen, which left a 1920 x 1080 movie a small strip.)
+                double scale = (std::min)({ 1.0, 1920.0 / sourceWidth, 1080.0 / sourceHeight });
                 width = (std::max)(1, int(sourceWidth * scale));
                 height = (std::max)(1, int(sourceHeight * scale));
                 frame.assign(size_t(width) * size_t(height), 0);

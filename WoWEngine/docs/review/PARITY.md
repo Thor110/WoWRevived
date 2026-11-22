@@ -1090,6 +1090,14 @@ transparency")
   whole picture; the menu after it; the game's own TITLE movie still 640 x 480; both battles as before. Not
   seen: an .mp4 (they are only decoded on Windows).
 
+**Update 204** (the owner's report on 203)
+- MODERN FIX: the menus' fade (0x4065E0) is off unless `[Modern]` "Menu fade" = 1; a control's command is
+  carried out at once. This departs from the original on purpose (MODERN.md).
+- An .mp4 is decoded at its own size up to 1920 x 1080, not shrunk to 640 x 480: that shrink, in the decoder,
+  was why 203's change did nothing for them.
+- Seen: a main menu button going to its menu with no frame of colour between; the start-up's screens and the
+  briefing still following each other; both battles as before. Not seen: an .mp4 (Windows only).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
