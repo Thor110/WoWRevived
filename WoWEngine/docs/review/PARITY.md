@@ -1098,6 +1098,17 @@ transparency")
 - Seen: a main menu button going to its menu with no frame of colour between; the start-up's screens and the
   briefing still following each other; both battles as before. Not seen: an .mp4 (Windows only).
 
+**Update 205** (modern options: the zoom on the land only, the HUD scale; nothing changed at their defaults)
+- The battle's draw is two passes, the land (0x49F610's rows, the beams, the selection, the labels) and the
+  panels (the icons, minimap, popup, information page, end box), each with its own size and scaled to the
+  picture; the mouse is turned into each one's pixels. The zoom changes the land's size, "HUD scale" (a slider
+  in Modern Options, 50% to 300%) the panels'.
+- Seen (Martian test battle): at 640 x 480 two steps out, more land and the panels as they were; at 1920 x
+  1080 with the HUD at 200% and two steps in, a group icon clicked where it is drawn selecting its group;
+  under the checkers at that size a run of icon clicks with Shift, the popup opened and used, a minimap
+  click, zooming, a drag box, edge scrolling and the menu; both battles at the defaults the same picture as
+  before, byte for byte.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

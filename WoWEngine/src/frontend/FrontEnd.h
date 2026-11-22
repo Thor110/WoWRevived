@@ -129,10 +129,10 @@ namespace wow
         int campaignSlot = 0;      // dword_4D2578: the save slot the new campaign goes in
         // MODERN: the page of five slots the Load and Save menus show, and the highest slot with a save
         int slotPage = 0;
-        // MODERN: the battle's zoom in steps (0 none, more is closer): the battle is drawn 1.25 times smaller or
-        // larger a step and the picture scaled to the screen
+        // MODERN: the battle's zoom in steps (0 none, more is closer): the land is drawn 1.25 times smaller or
+        // larger a step and scaled to the picture; the panels keep to the HUD scale
         int battleZoom = 0;
-        void BattlePicture(int& width, int& height) const;
+        void BattleView(const BattleMap& battle, int zoom, int w, int h, int& landW, int& landH, int& panelW, int& panelH) const;
         void ZoomBattle(int steps);
         int LastSlot() const;
         int HighestSave() const;

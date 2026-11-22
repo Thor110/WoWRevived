@@ -34,8 +34,8 @@ namespace wow
 
     BattleMap::BattleMap(Resources& res, const Setup& s) : Screen(Id, res, 0, 0x2F0), setup(s)
     {
-        viewW = s.viewW;
-        viewH = s.viewH;
+        viewW = picW = hudW = s.viewW;
+        viewH = picH = hudH = s.viewH;
         // WLandscape::CreateTerrain (0x47B900): maps\<name>, its extension swapped for .atm
         std::string base = s.mapName;
         if (auto dot = base.rfind('.'); dot != std::string::npos) base.resize(dot);
@@ -211,8 +211,8 @@ namespace wow
         miniW = miniPicture->width;
         miniH = miniPicture->height;
         const int border = 4;
-        miniX = viewW - miniW - border;
-        miniY = viewH - miniH - border;
+        miniX = hudW - miniW - border;
+        miniY = hudH - miniH - border;
         rectW = std::min(miniW, miniW * viewW / std::max(1, land.WorldWidth()));
         rectH = std::min(miniH, miniH * viewH / std::max(1, land.WorldHeight()));
         auto six = [](int r, int g, int b) {
@@ -404,15 +404,17 @@ namespace wow
     // player's (the other side's leave the view's), in mode 1 5 for the other side's and the player's with Ctrl, else
     // 1; elsewhere (0x485F60) mode 0 gives 4 with something selected else 0, mode 1 5 with Ctrl else 4. The table
     // (FrontEnd::DrawCursor) makes 1 hselcurs, 4 h-move and 5 h-attack.
-    int BattleMap::CursorAt(int x, int y) const
+    int BattleMap::CursorAt(int px, int py) const
     {
+        const int x = ViewX(px), y = ViewY(py);
+        const int hx = HudX(px), hy = HudY(py);
         if (!popup.empty()) return 0;
-        if (InMinimap(x, y)) return 0;
+        if (InMinimap(hx, hy)) return 0;
         const bool ctrl = (SDL_GetModState() & SDL_KMOD_CTRL) != 0;
         const int mode = Mode();
         // over a group icon (its 0x20, 0x4844CD): the select cursor in modes 0 and 1 (the icon's object is the
         // player's), cursor 0xC in the others
-        if (GroupIconAt(x, y) >= 0) return lastCursor = (mode == 0 || mode == 1) ? 1 : 0xC;
+        if (GroupIconAt(hx, hy) >= 0) return lastCursor = (mode == 0 || mode == 1) ? 1 : 0xC;
         int cursor = mode == 1 ? (ctrl ? 5 : 4) : 0;
         if (const Unit* u = HotspotAt(x, y))
         {
@@ -1625,7 +1627,7 @@ namespace wow
         int x = start, y = start;
         for (GroupIcon& icon : icons)
         {
-            if (x + icon.w + 2 > viewW - start) { x = start; y += icon.h + 2; }
+            if (x + icon.w + 2 > hudW - start) { x = start; y += icon.h + 2; }
             icon.x = x;
             icon.y = y;
             x += icon.w + 2;
@@ -2198,12 +2200,18 @@ namespace wow
         }
     }
 
-    void BattleMap::SetViewSize(int w, int h)
+    void BattleMap::SetView(int pictureW, int pictureH, int landW, int landH, int panelW, int panelH)
     {
-        if (w == viewW && h == viewH) return;
+        if (pictureW == picW && pictureH == picH && landW == viewW && landH == viewH && panelW == hudW && panelH == hudH) return;
         const int mx = scrollX + viewW / 2, my = scrollY + viewH / 2;
-        viewW = w;
-        viewH = h;
+        picW = std::max(1, pictureW);
+        picH = std::max(1, pictureH);
+        viewW = std::max(1, landW);
+        viewH = std::max(1, landH);
+        hudW = std::max(1, panelW);
+        hudH = std::max(1, panelH);
+        mouseX = mouseY = hudMouseX = hudMouseY = -1;
+        dragging = boxActive = false;
         popup.clear();          // laid out for the old size
         zoomer.active = false;
         SetUpMinimap();
@@ -2275,11 +2283,16 @@ namespace wow
 
     void BattleMap::OnKeyUp(int) { CloseInfoPage(); }      // (0x101 closes the information page, 0x4A41A9)
 
-    void BattleMap::OnMouseMove(int x, int y)
+    void BattleMap::OnMouseMove(int px, int py)
     {
+        // (the mouse comes in the picture's pixels: the panels are hit in their space, the land in its view)
+        const int x = ViewX(px), y = ViewY(py);
+        const int hx = HudX(px), hy = HudY(py);
         mouseX = x;
         mouseY = y;
-        if (miniDrag) MinimapScroll(x, y);
+        hudMouseX = hx;
+        hudMouseY = hy;
+        if (miniDrag) MinimapScroll(hx, hy);
         // 0x200 with the button held (0x485D00 -> 0x49C250): the rectangle's far corner; it's a box once it's more
         // than 4 pixels from where it started either way (+0x18 / +0x1C)
         if (dragging)
@@ -2290,7 +2303,7 @@ namespace wow
         }
         // a WHotButton (0x434390): the mouse coming onto an item (0x20) plays 0x194
         const int was = popupHover;
-        popupHover = PopupItemAt(x, y);
+        popupHover = PopupItemAt(hx, hy);
         if (popupHover >= 0 && popupHover != was) sounds.push_back(0x194);
         // 0x80F1 with the item's command (0x433330): its row opened out, the others closed
         if (popupHover >= 0) popupOpenRow = popup[size_t(popupHover)].row;
@@ -2574,7 +2587,8 @@ namespace wow
     // the rows and the placement: frontend/PopupRows.h
     void BattleMap::LayOutPopup(int x, int y)
     {
-        LayOutPopupRows(popup, x, y, viewW, viewH);
+        // (x, y are in the land's view; the popup is a panel)
+        LayOutPopupRows(popup, ViewToHudX(x), ViewToHudY(y), hudW, hudH);
         popupOpenRow = -1;
     }
 
@@ -2685,12 +2699,14 @@ namespace wow
         if (escape) sounds.push_back(0x196);
     }
 
-    std::optional<Command> BattleMap::OnMouseButton(int x, int y, bool down)
+    std::optional<Command> BattleMap::OnMouseButton(int px, int py, bool down)
     {
+        const int x = ViewX(px), y = ViewY(py);       // the land's view
+        const int hx = HudX(px), hy = HudY(py);       // the panels' space
         if (infoPage) { if (!down) CloseInfoPage(); return std::nullopt; }   // (0x202 closes the page, 0x4A41EF)
         if (endBox)
         {
-            if (!down && EndBoxButtonRect().Contains(x, y)) return EndBoxCommand();
+            if (!down && EndBoxButtonRect().Contains(hx, hy)) return EndBoxCommand();
             return std::nullopt;
         }
         // the popup has the mouse (0x42E9B0). The game's (WPopupMenu 0x4330B0): a press or a release of either button
@@ -2698,7 +2714,7 @@ namespace wow
         // [Modern] "Sticky popup menus" an item acts as it's pressed and a press elsewhere closes the popup.
         if (!popup.empty())
         {
-            const int item = PopupItemAt(x, y);
+            const int item = PopupItemAt(hx, hy);
             if (setup.stickyPopup)
             {
                 if (!down) return std::nullopt;
@@ -2717,7 +2733,7 @@ namespace wow
             // a group icon takes the mouse as it's pressed (0x42E9B0) and acts as it's let go (0x202, 0x484920)
             if (iconDown >= 0)
             {
-                const int at = GroupIconAt(x, y);
+                const int at = GroupIconAt(hx, hy);
                 if (at == iconDown && size_t(at) < groupIcons.size()) ClickGroupIcon(size_t(at));
                 iconDown = -1;
                 dragging = false;
@@ -2727,15 +2743,15 @@ namespace wow
             dragging = false;
             return std::nullopt;
         }
-        if (const int at = GroupIconAt(x, y); at >= 0)
+        if (const int at = GroupIconAt(hx, hy); at >= 0)
         {
             iconDown = at;
             return std::nullopt;
         }
-        if (popup.empty() && down && InMinimap(x, y))
+        if (popup.empty() && down && InMinimap(hx, hy))
         {
             miniDrag = true;   // the minimap takes the mouse (0x42E9B0) until the button's let go
-            MinimapScroll(x, y);
+            MinimapScroll(hx, hy);
             return std::nullopt;
         }
         // 0x201 (cursor modes 0 and 1): a drag rectangle starts here (0x49C230) and the view keeps the mouse
@@ -2758,7 +2774,7 @@ namespace wow
         if (command == 0x808C)
         {
             // 0x4403A0: the page opened at the object (InfoPage)
-            if (popupInfoText) infoPage = InfoPage{ res.String(popupInfoText), popupInfoX + 0x20, popupInfoY + 0x20, popupInfoText };
+            if (popupInfoText) infoPage = InfoPage{ res.String(popupInfoText), ViewToHudX(popupInfoX) + 0x20, ViewToHudY(popupInfoY) + 0x20, popupInfoText };
             return std::nullopt;
         }
         if (command == 0x80CE && param >= 0 && param <= 3)
@@ -2807,8 +2823,9 @@ namespace wow
     }
 
     // 0x204 / 0x205: held, the popup (above); let go quickly, 0x73 (Cancel) to the selection
-    std::optional<Command> BattleMap::OnRightButton(int x, int y, bool down)
+    std::optional<Command> BattleMap::OnRightButton(int px, int py, bool down)
     {
+        const int x = HudX(px), y = HudY(py);     // (only the popup, a panel, is hit here)
         if (infoPage) { if (!down) CloseInfoPage(); return std::nullopt; }   // (0x205 closes the page)
         if (!popup.empty())
         {
@@ -2836,7 +2853,7 @@ namespace wow
 
     int BattleMap::TipOwner(int x, int y) const
     {
-        if (const int i = PopupItemAt(x, y); i >= 0) return 100 + i;
+        if (const int i = PopupItemAt(HudX(x), HudY(y)); i >= 0) return 100 + i;
         return -1;
     }
 
@@ -2846,9 +2863,88 @@ namespace wow
         return {};
     }
 
+    namespace
+    {
+        // one picture into another of a different size: each pixel the nearest when the sizes divide evenly or the
+        // target is the smaller by more than half, else the four around it mixed
+        void ScaleInto(const uint32_t* src, int sw, int sh, uint32_t* dst, int dw, int dh)
+        {
+            if (sw == dw && sh == dh) { std::copy(src, src + size_t(sw) * size_t(sh), dst); return; }
+            const bool whole = dw % sw == 0 && dh % sh == 0 && dw / sw == dh / sh;
+            if (whole)
+            {
+                const int n = dw / sw;
+                for (int y = 0; y < dh; y++)
+                {
+                    const uint32_t* in = src + size_t(y / n) * size_t(sw);
+                    uint32_t* out = dst + size_t(y) * size_t(dw);
+                    for (int x = 0; x < dw; x++) out[x] = in[x / n];
+                }
+                return;
+            }
+            // 16.16 steps through the source, sampled at the pixels' middles
+            const int64_t stepX = (int64_t(sw) << 16) / dw, stepY = (int64_t(sh) << 16) / dh;
+            for (int y = 0; y < dh; y++)
+            {
+                int64_t fy = stepY * y + stepY / 2 - 0x8000;
+                if (fy < 0) fy = 0;
+                const int y0 = int(fy >> 16), y1 = std::min(sh - 1, y0 + 1);
+                const uint32_t wy = uint32_t(fy & 0xFFFF) >> 8;
+                const uint32_t* r0 = src + size_t(y0) * size_t(sw);
+                const uint32_t* r1 = src + size_t(y1) * size_t(sw);
+                uint32_t* out = dst + size_t(y) * size_t(dw);
+                for (int x = 0; x < dw; x++)
+                {
+                    int64_t fx = stepX * x + stepX / 2 - 0x8000;
+                    if (fx < 0) fx = 0;
+                    const int x0 = int(fx >> 16), x1 = std::min(sw - 1, x0 + 1);
+                    const uint32_t wx = uint32_t(fx & 0xFFFF) >> 8;
+                    auto mix = [&](int shift) {
+                        const uint32_t a = (r0[x0] >> shift) & 0xFF, b = (r0[x1] >> shift) & 0xFF;
+                        const uint32_t c = (r1[x0] >> shift) & 0xFF, d = (r1[x1] >> shift) & 0xFF;
+                        const uint32_t top = a * (256 - wx) + b * wx, bottom = c * (256 - wx) + d * wx;
+                        return ((top * (256 - wy) + bottom * wy) >> 16) << shift;
+                    };
+                    out[x] = 0xFF000000u | mix(16) | mix(8) | mix(0);
+                }
+            }
+        }
+    }
+
+    // The land and what stands on it, then the panels over it. MODERN: with a zoom or a HUD scale the land is drawn
+    // at its view's size and the panels in their space, each then scaled to the picture; with neither it is the
+    // game's one pass, straight onto the picture.
     void BattleMap::Draw(Canvas& canvas) const
     {
         Crumb("battle map: drawing");
+        const int cw = canvas.Width(), ch = canvas.Height();
+        if (viewW == cw && viewH == ch && hudW == cw && hudH == ch)
+        {
+            DrawLand(canvas);
+            DrawPanels(canvas);
+            return;
+        }
+        // the land at its view's size
+        landPixels.resize(size_t(viewW) * size_t(viewH));
+        Canvas landCanvas(landPixels.data(), viewW, viewH, res);
+        DrawLand(landCanvas);
+        if (hudW == cw && hudH == ch)
+        {
+            ScaleInto(landPixels.data(), viewW, viewH, canvas.Pixels(), cw, ch);
+            DrawPanels(canvas);
+            return;
+        }
+        // the panels' space: the land scaled into it, the panels on it, the whole scaled to the picture (so the
+        // panels' see-through parts mix with the land as they do in the game)
+        panelPixels.resize(size_t(hudW) * size_t(hudH));
+        ScaleInto(landPixels.data(), viewW, viewH, panelPixels.data(), hudW, hudH);
+        Canvas panelCanvas(panelPixels.data(), hudW, hudH, res);
+        DrawPanels(panelCanvas);
+        ScaleInto(panelPixels.data(), hudW, hudH, canvas.Pixels(), cw, ch);
+    }
+
+    void BattleMap::DrawLand(Canvas& canvas) const
+    {
         canvas.Clear(0);
         TerrainView::Target t{ canvas.Pixels(), canvas.Width(), 0, 0, canvas.Width(), canvas.Height() };
         // the ground row by row, each object drawn once the rows reach its depth (0x49F610)
@@ -2995,8 +3091,14 @@ namespace wow
         TerrainView::Render(land, tiles, table, levels, dither, t, -scrollX, -scrollY, fog.enabled ? &fogView : nullptr, between, &window);
         beamsTo(0x7FFFFFFF);
         DrawSelection(canvas);
-        DrawGroupIcons(canvas);
         DrawLabels(canvas);
+    }
+
+    // (the game draws the group icons before the sunken units' labels; the labels are on the land, so with a zoom
+    // they go with it, and the icons with the panels)
+    void BattleMap::DrawPanels(Canvas& canvas) const
+    {
+        DrawGroupIcons(canvas);
         // the minimap (0x486CB0): the picture, the dots (2 x 2 each, 0x4A1DD0), the view's rectangle (0x49C7C0)
         if (miniShown && miniPicture)
             if (const ShadeTable* shade = res.GetShade(21))
@@ -3056,7 +3158,7 @@ namespace wow
                 y += lineH;
             }
             const Rect bt = EndBoxButtonRect();
-            const bool over = bt.Contains(mouseX, mouseY);
+            const bool over = bt.Contains(hudMouseX, hudMouseY);
             canvas.DrawSprite(0x6A, over && res.GetFrame(0x6A, 1) ? 1 : 0, bt.x, bt.y);
         }
     }
@@ -3065,7 +3167,7 @@ namespace wow
     {
         const IndexedImage* f = res.GetFrame(0x68, 0);
         const int w = f ? f->width : 0, h = f ? f->height : 0;
-        return { (viewW - w) / 2, viewH - h - 4, w, h };
+        return { (hudW - w) / 2, hudH - h - 4, w, h };
     }
 
     Rect BattleMap::EndBoxButtonRect() const

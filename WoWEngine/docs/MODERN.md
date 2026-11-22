@@ -60,6 +60,7 @@ check boxes, and each box is a setting in WoWRevived.ini that can be set there a
 | Group keys and Shift select | `[Modern]` "Selection keys" | on | the next battle |
 | More save slots | `[Modern]` "More save slots" | on | the next time the Load or Save menu opens |
 | Battle zoom (+, -, wheel, R) | `[Modern]` "Battle zoom" | on | at once |
+| HUD scale (a slider) | `[Modern]` "HUD scale" | 100 | at once |
 | Fade between menus | `[Modern]` "Menu fade" | off | at once |
 | Original display settings | `[Modern]` "Original Display Settings" | off | the next time Display Settings opens |
 | Play in a window | `[WoW Engine]` "Windowed" | off | at once |
@@ -88,20 +89,29 @@ In battle, with `[Modern]` "Selection keys" on (it is unless turned off):
 Both work through the game's own selection (0x439000): the war map objects picked become one battle group, as
 a drag box over several makes them.
 
-### Battle zoom (update 202)
+### Battle zoom and HUD scale (updates 202 and 205)
 
 In battle, with `[Modern]` "Battle zoom" on (it is unless turned off): `+` (or `=`) and the wheel forward go
 closer, `-` and the wheel back go further, `R` puts it back. Each step is 1.25 times, about the view's middle.
+The zoom is the land's only. The panels (the group icons, the minimap, the popup menu, the information page,
+the end box) keep their size, which is the **HUD scale**: a slider in Modern Options, 50% to 300% in quarters
+(`[Modern]` "HUD scale", a percentage, 100 unless set), taken at once.
 
-How it is done: the battle is drawn at a different size and the window scales the picture to the screen
-(`FrontEnd::BattlePicture`, `BattleMap::SetViewSize`). Further out draws more of the land in a larger picture;
-closer draws less in a smaller one. The limits: never smaller than 640 x 480 (so at a 640 x 480 view size
-there is no going closer than the game's own view, only further), never more than twice the view size, never
-more than the land. A new battle starts unzoomed, and a menu over the battle is drawn unzoomed.
+How it is done (`FrontEnd::BattleView`, `BattleMap::SetView`, `BattleMap::Draw`): the picture stays the view
+size. The battle map has three sizes: the picture's, the land's view (the picture's over the zoom) and the
+panels' space (the picture's over the HUD scale). The land is drawn at its view's size and scaled to the
+picture; the panels are drawn in their space over it and that scaled to the picture. The mouse comes in the
+picture's pixels and is turned into the land's or the panels' as each is hit. With no zoom and the HUD at
+100% it is the game's one pass straight onto the picture, the same picture as before.
 
-What it doesn't do yet: the panels (the minimap, the group icons, the popup menu, the end box) are part of the
-picture, so they shrink and grow with the land. Keeping them at their size is the HUD scaling of PLAN.md C4.
-The wheel isn't written to a playback recording (the keys are).
+The limits: the land's view is never less than half the picture nor more than twice it, nor more than the
+land; the panels' space is never less than 640 x 480, which they are made for (so at a 640 x 480 view size the
+HUD can be made smaller but not larger; at 1920 x 1080 it goes up to 225%). A new battle starts unzoomed.
+
+What it doesn't do yet: the war map's panels don't follow the HUD scale; the selection's brackets and the drag
+box are drawn with the land, so they thicken and thin with the zoom; with the HUD not at 100% the land is
+scaled twice (to the panels' space, then to the picture), which softens it a little. The wheel isn't written to
+a playback recording (the keys are).
 
 ### Resolution (agreed with the owner, update 192)
 

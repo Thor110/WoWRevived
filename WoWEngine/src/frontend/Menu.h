@@ -59,6 +59,7 @@ namespace wow
         void AddEventCheck(int textId, bool value, OnChange changed);
         void AddEventCheckText(std::string text, bool value, OnChange changed);   // a caption that isn't a TEXT.ojd string
         void NextColumn();
+        void EndColumns() { if (column >= 0) nextY = std::max(nextY, columnBottom); }   // rows after the two columns go under the longer
 
 
     protected:

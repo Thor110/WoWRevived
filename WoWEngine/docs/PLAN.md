@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 204) and what remains
+## Where things stand (update 205) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -81,9 +81,9 @@ inventory with the history. Tick here and there as each is done.
       the selection in battle, `[Modern]` "Selection keys", on unless turned off.
 - [x] **C6** (200) More save slots: the Load and Save menus turn pages of five, up to slot 999 (the owner's
       idea, update 199). `[Modern]` "More save slots", on unless turned off.
-- [~] **C4** The battle's zoom is in (202): `+` / `-` or the wheel, `R` to put it back; the whole picture is
-      scaled, panels included. Still to do: the panels kept at their size while the land zooms (HUD scaling),
-      windowed mode with its size kept, key bindings.
+- [~] **C4** The battle's zoom (202) and the HUD scale (205) are in: `+` / `-` or the wheel, `R` to put it
+      back, zoom the land only; the panels go by the "HUD scale" slider in Modern Options. Still to do: the
+      HUD scale on the war map's panels, windowed mode with its size kept, key bindings.
 - [ ] **C5** The log kept for players' reports (it is: CRASH and STALL lines; nothing to do but not remove it).
 
 ### D. Files and assets (Stage 6.9, 6.11)

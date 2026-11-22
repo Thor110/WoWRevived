@@ -498,6 +498,12 @@ namespace wow
             });
         }
         m->AddEventCheckText("Play a recording", playWanted, [this](Button& b) { playWanted = b.value != 0; });
+        // the HUD scale ([Modern] "HUD scale", a percentage): the battle's panels from half size to three times,
+        // a quarter a step; taken at once (BattleView)
+        m->EndColumns();
+        m->AddSlider((std::clamp(ini.GetInt("Modern", "HUD scale", 100), 50, 300) - 50) / 25, 10,
+            [](int v) { return "HUD scale: " + std::to_string(50 + v * 25) + "%"; },
+            [this](Button& b) { ini.SetInt("Modern", "HUD scale", 50 + b.value * 25); });
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         m->FocusLast();
         return m;
@@ -1227,8 +1233,11 @@ namespace wow
             {
                 int w = 640, h = 480;
                 for (const Mode& mode : Modes) if (mode.w == sizedW && mode.h == sizedH) { w = mode.w; h = mode.h; }
-                if (sc == screen.get()) BattlePicture(w, h);        // (MODERN: its zoom, while it is the screen)
-                static_cast<BattleMap*>(sc)->SetViewSize(w, h);
+                // (MODERN: the zoom and the HUD scale)
+                BattleMap* battle = static_cast<BattleMap*>(sc);
+                int lw = w, lh = h, pw = w, ph = h;
+                BattleView(*battle, battleZoom, w, h, lw, lh, pw, ph);
+                battle->SetView(w, h, lw, lh, pw, ph);
             }
         // the war map's view is the view size (one of the sizes, else 640 x 480)
         if (WarMap* map = ActiveWarMap())
@@ -1696,38 +1705,49 @@ namespace wow
         if (auto comma = size.find(','); comma != std::string::npos) h = std::atoi(size.c_str() + comma + 1);
         for (const Mode& mode : Modes)
             if (mode.w == w && mode.h == h) { width = w; height = h; break; }
-        // (the battle map on its own is drawn at its zoom's size; a menu over it at the view size)
-        if (screen && screen->Id() == BattleMap::Id) BattlePicture(width, height);
     }
 
-    // MODERN: the battle's picture at its zoom. Each step is 1.25 times: closer draws less of the land in a smaller
-    // picture, which the window scales up; further draws more in a larger one. Never smaller than 640 x 480 (the
-    // battle's panels are made for that), never more than twice the view size, never more than the land.
-    void FrontEnd::BattlePicture(int& width, int& height) const
+    // MODERN: the battle's view. The picture is the view size; the land is drawn at the zoom (each step 1.25 times:
+    // closer draws less of it, further more) and the panels at the HUD scale ([Modern] "HUD scale", a percentage),
+    // each then scaled to the picture (BattleMap::SetView). The land's view is never less than half the picture
+    // nor more than twice it, nor more than the land; the panels' space never less than 640 x 480, which they
+    // are made for.
+    void FrontEnd::BattleView(const BattleMap& battle, int zoom, int w, int h, int& landW, int& landH, int& panelW, int& panelH) const
     {
-        const BattleMap* battle = nullptr;
-        for (const Screen* sc : { battleMap.get(), screen.get() })
-            if (sc && sc->Id() == BattleMap::Id) battle = static_cast<const BattleMap*>(sc);
-        if (!battle || !battleZoom) return;
-        const double f = std::pow(1.25, -battleZoom);
-        int w = int(width * f + 0.5) & ~1, h = int(height * f + 0.5) & ~1;
-        if (w < 640 || h < 480 || w > width * 2 || h > height * 2 || w > battle->WorldW() - 2 || h > battle->WorldH() - 2) return;
-        width = w;
-        height = h;
+        landW = panelW = w;
+        landH = panelH = h;
+        if (zoom)
+        {
+            const double f = std::pow(1.25, -zoom);
+            const int lw = int(w * f + 0.5) & ~1, lh = int(h * f + 0.5) & ~1;
+            if (lw >= w / 2 && lh >= h / 2 && lw <= w * 2 && lh <= h * 2 && lw <= battle.WorldW() - 2 && lh <= battle.WorldH() - 2) { landW = lw; landH = lh; }
+        }
+        const int percent = std::clamp(ini.GetInt("Modern", "HUD scale", 100), 50, 300);
+        if (percent != 100)
+        {
+            const int pw = (w * 100 / percent) & ~1, ph = (h * 100 / percent) & ~1;
+            if (pw >= 640 && ph >= 480) { panelW = pw; panelH = ph; }
+            else
+            {
+                // as large as the panels' 640 x 480 allows, the picture's shape kept
+                const double most = std::min(w / 640.0, h / 480.0);
+                if (most > 1.0) { panelW = int(w / most + 0.5) & ~1; panelH = int(h / most + 0.5) & ~1; }
+            }
+        }
     }
 
     void FrontEnd::ZoomBattle(int steps)
     {
         if (!screen || screen->Id() != BattleMap::Id || !ini.GetBool("Modern", "Battle zoom", true)) return;
         if (!steps) { battleZoom = 0; return; }
-        // a step is taken only if its picture is allowed (BattlePicture leaves the size alone when it isn't)
-        const int was = battleZoom;
-        int w0 = 0, h0 = 0, w1 = 0, h1 = 0;
-        ViewSize(w0, h0);
-        battleZoom += steps > 0 ? 1 : -1;
-        ViewSize(w1, h1);
-        const bool closer = battleZoom > was;
-        if (battleZoom != 0 && (closer ? w1 >= w0 : w1 <= w0)) battleZoom = was;
+        // a step is taken only if its view is allowed (BattleView leaves the land's view alone when it isn't)
+        const BattleMap& battle = *static_cast<const BattleMap*>(screen.get());
+        int w = 640, h = 480;
+        ViewSize(w, h);
+        const int next = battleZoom + (steps > 0 ? 1 : -1);
+        int lw = 0, lh = 0, pw = 0, ph = 0;
+        BattleView(battle, next, w, h, lw, lh, pw, ph);
+        if (next == 0 || lw != w) battleZoom = next;
     }
 
     void FrontEnd::OnWheel(int steps) { if (steps) ZoomBattle(steps); }

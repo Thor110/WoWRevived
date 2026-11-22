@@ -146,7 +146,11 @@ namespace wow
 
         int ScrollX() const { return scrollX; }
         // the view's size changed (Display Settings while the battle is on): its middle stays where it was
-        void SetViewSize(int w, int h);
+        void SetViewSize(int w, int h) { SetView(w, h, w, h, w, h); }
+        // MODERN (the zoom and the HUD scale, docs/MODERN.md): the picture's size, the size of the land's view
+        // drawn into it (smaller is closer) and the size of the space the panels are laid out in (smaller is
+        // larger panels). All three the same is the game's own view. The mouse arrives in the picture's pixels.
+        void SetView(int pictureW, int pictureH, int landW, int landH, int panelW, int panelH);
         int ViewW() const { return viewW; }
         int WorldW() const { return land.WorldWidth(); }
         int WorldH() const { return land.WorldHeight(); }
@@ -623,7 +627,19 @@ namespace wow
         const IndexedImage* miniPicture = nullptr;
         int miniX = 0, miniY = 0, miniW = 0, miniH = 0;
         int rectW = 0, rectH = 0, rectX = 0, rectY = 0;   // +0x98's size, +0x90 / +0x94
-        int viewW = 640, viewH = 480;                     // the view's size
+        int viewW = 640, viewH = 480;                     // the land's view
+        int picW = 640, picH = 480;                       // MODERN: the picture the mouse is in
+        int hudW = 640, hudH = 480;                       // MODERN: the panels' space
+        int ViewX(int px) const { return px < 0 ? px : int(int64_t(px) * viewW / picW); }
+        int ViewY(int py) const { return py < 0 ? py : int(int64_t(py) * viewH / picH); }
+        int HudX(int px) const { return px < 0 ? px : int(int64_t(px) * hudW / picW); }
+        int HudY(int py) const { return py < 0 ? py : int(int64_t(py) * hudH / picH); }
+        int ViewToHudX(int vx) const { return int(int64_t(vx) * hudW / viewW); }
+        int ViewToHudY(int vy) const { return int(int64_t(vy) * hudH / viewH); }
+        int hudMouseX = -1, hudMouseY = -1;               // the mouse in the panels' space (mouseX / mouseY: the land's view)
+        void DrawLand(Canvas& canvas) const;
+        void DrawPanels(Canvas& canvas) const;
+        mutable std::vector<uint32_t> landPixels, panelPixels;
         std::vector<Dot> dots;
         int miniFrames = 0;                                 // +0x88
         bool miniShown = true, miniDrag = false;
