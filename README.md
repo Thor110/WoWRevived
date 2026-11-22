@@ -193,8 +193,9 @@ The road map for this project.
 			- The extended warmap background includes another 4 files.
 			- Full count 142/445 .spr files.
 			- Remaining sprite files include mouse cursors, visual effects and parts of menus where there is very little space to add any detail.
-- ❌ 15 : Decomp/Recomp ( Started - 1% Complete )
-	- Begun mapping out virtual key addresses for use in the launchers custom keyboard shortcut settings. ( "WoWRevived\WoWDecomp\ida-notes-thor\ida-map.txt" )
+- [✅ 15 : Decomp/Recomp] ( 90% Complete )
+	- WoWEngine built.
+	- Modern options implemented.
 
 This might not all happen but I wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 
