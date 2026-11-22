@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 150) and what is next
+## Where things stand (update 151) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -19,12 +19,13 @@ the working order; the stages further down stay the full inventory.
 - [x] N4 Stage 2.6 (149, 150): the group panel top left; the name label on a unit gone under; the icons'
       cursor. Checked and not in the game: group keys, Shift adding to the selection. Left as provisional:
       the icon's lit state under the mouse and its flashing (what level 1 of its sprite looks like isn't known).
-- [ ] N5 Objects under a light pool are brighter in the engine than in the original. Measured in the owner's
-      sector 28 frame (update 150): the Command Post's tower top 110, 121, 161 against 80, 98, 159; the corner
-      markers in the pools 126, 116, 76 and 112, 106, 75 against 74, 79, 71 and 90, 88, 68; the two out of the
-      pools match. So the markers aren't a case of their own (the original's are tinted too): it is how much a
-      point light adds to an IOB object's faces. London's Big Ben is the other way (brighter in the original).
-- [ ] N6 Stage 2.7: reinforcements arriving, the zoomer, the battle info and battle-end dialogs.
+- [x] N5 (151) Objects under a light pool. Each part of a building is lit from its own point with its own
+      radius, and the lit point is a quarter of the model's height up (0x41141C). The Command Post in the
+      owner's sector 28 frame now measures as the original on every part checked (below).
+- [x] N6 Stage 2.7, looked into in 151 and found already in or not in the game: the zoomer is in (0x446690,
+      `ZoomTo`); the battle-end box is in (`EndBox`); "reinforcements arriving during a battle" has no routine
+      of its own (the deployment, 0x4222C0, is only called as a battle is entered, 0x439770; what the engine
+      has under that name is the retreat points, Reinforcements.cpp). Nothing left under 2.7.
 - [ ] N7 Stage 2.8 and 2.9, then Stages 3 to 5 as listed below.
 
 **Open questions to keep track of** (each has its notes in PARITY.md; don't re-trace what is ruled out there)
@@ -36,8 +37,9 @@ the working order; the stages further down stay the full inventory.
 - **London's deployment spot** (updates 143, 144). The original puts the lorries at ring 95's 288 degree spot,
   the engine at its 72 degree one. N2 (148) didn't settle it: with the parts and segments in the grid the engine
   still takes the 72 degree spot.
-- **Lighting in London** (update 143): Big Ben and Parliament brighter and warmer in the original, road light
-  pools the engine doesn't draw.
+- **Lighting in London** (update 143): Big Ben and Parliament are brighter in the original because its lorries
+  stand beside them with their headlights on; the engine's stand to the south. It goes with the deployment
+  spot above, not a lighting fault (update 151).
 - **The route save layout** against a real save of the original with units in transit (asked of the owner).
 
 Ask the owner for a frame of the original whenever a change is visible: a fresh game, the battle opened,
@@ -100,7 +102,8 @@ Small and independent; most need one routine traced.
 - [x] 2.6 The group panel (0x483DF0 / 0x484120), the label on a unit gone under (font 0x6F, 0x4991D0), the
       combined panel (0x448500, PARITY battle-ui 7). The group keys and Shift-select aren't in the game. Left:
       cursor modes 2-7 where the game (not the editor) uses them.
-- [ ] 2.7 Reinforcements arriving during a battle; the zoomer, the battle info and the battle-end dialogs.
+- [x] 2.7 The zoomer and the battle-end box (both in). Reinforcements arriving mid-battle aren't a routine of
+      the game's (update 151).
 - [ ] 2.8 The rest of the computer player in battle.
 - [ ] 2.9 Renderers still provisional: the WOF triangle filler, the blitter modes, the rest of the bm shade
       group's slots.

@@ -72,6 +72,16 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
   clicked, and a click anywhere else closes it. To go on the modern options screen as a toggle
   (`WarMap::SetStickyPopup`, `BattleMap::Setup::stickyPopup`).
 
+- **Group keys** (to do; off by default): Ctrl + a digit keeps the selected groups under that number and the digit
+  alone selects them again, a second press centring the view on them, as other strategy games have it. The
+  original has nothing of the kind: its digit keys send packet 0x12, which no routine handles (checked in update
+  150). Earlier notes listed "the group keys" as a missing parity item; they were an assumption from the genre,
+  not something found in the game. Not to be added as parity work.
+- **Shift adds to the selection** (to do; off by default): a click or a box with Shift held adds the groups to
+  the selection, and Shift-clicking a selected one takes it out. The original clears the selection on every
+  click and box (packet 4, 0x4976DA); its Shift path (packet 5, 0x497730) only runs with the debug flag
+  byte_4D1279 set (update 150). The same goes for it: a modern option, not parity.
+
 ### Sound
 
 - **Working sound controls**: now a modern fix, on by default; see "Modern fixes" above.

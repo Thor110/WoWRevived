@@ -509,6 +509,24 @@ Martian start's units turned differently)
   and all 182 vtables have 0x48D7C0, no, there); the hotspot's cursor asking vt+0x6C (0x497110 doesn't).
   TASKS.md's and BATTLEMAP.md's notes that listed them as missing are corrected.
 
+**Update 151** (PLAN.md's N5: objects under a light pool; measured against the owner's sector 28 frame)
+- [x] Point lights on a building's parts. Each part is an object of its own (0x47EE10), so it is lit from its
+      own point with its own radius (its renderer's +0x38..+0x3E); the engine lit every part from the building's
+      point with the building's radius. And the object's height goes in a quarter of its model's height up
+      (0x41141C: header 0x12, sar 2, added to the z before the lights are picked and passed on to 0x4111B0), so
+      a lamp at the foot of a tall model is below the point it is lit from. Mean colours in the frame, the
+      original / before / now: the tower's top 80, 98, 159 / 110, 121, 161 / 81, 100, 160; the tower's body
+      26, 33, 61 / 18, 25, 49 / 25, 32, 60; the sandbags 74, 79, 71 / 126, 116, 76 / 74, 77, 66, then
+      90, 88, 68 / 112, 106, 75 / 89, 88, 68, then 79, 82, 67 / 77, 79, 67 / 79, 82, 67; the roof unchanged and
+      right. (The "corner markers" of updates 144-150's notes on this frame are the Command Post's sandbag
+      parts 909-913, not an unfinished building's markers.)
+- London's brighter Big Ben and Parliament in the original are its lorries' headlights: they stand beside the
+  tower there and to the south in the engine. That difference is the deployment spot's, not the lighting's.
+- Stage 2.7 looked into: the zoomer and the battle-end box are in; the deployment is only run as a battle is
+  entered, so "reinforcements arriving during a battle" isn't a routine to port.
+- MODERN.md: group keys and Shift adding to the selection noted as modern options for later (the owner's word:
+  they were assumed from the genre, the game has neither).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

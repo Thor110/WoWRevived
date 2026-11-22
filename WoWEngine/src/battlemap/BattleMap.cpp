@@ -2782,6 +2782,17 @@ namespace wow
                     {
                         const Unit& un = units[size_t(o.unit)];
                         ox = int(un.x); oy = int(un.y); oz = land.HeightAt(ox, oy) + int(un.drive.lift); type = un.type;
+                        // a part is an object of its own (0x47EE10): it is lit from its own point (the unit's plus
+                        // its offset, on the unit's ground) with its own type's radius, not the unit's (past the
+                        // type's parts: AddCorners' markers, type 0x17B)
+                        if (o.part >= 0)
+                        {
+                            auto ut = setup.units->find(un.type);
+                            const int count = ut == setup.units->end() ? 0 : int(ut->second.parts.size());
+                            type = o.part < count ? ut->second.parts[size_t(o.part)].a : 0x17B;
+                            for (const Attached& at : un.attached)
+                                if (at.part == o.part) { ox += at.ox; oy += at.oy; oz += at.oz; break; }
+                        }
                     }
                     if (type >= 0)
                     {
@@ -2800,7 +2811,10 @@ namespace wow
                             if (!pick) break;
                             if (lit.empty()) lit = *base;
                             // at most max(8, ftol(the level / 255 x 63)) (0x4111B0)
-                            IsoObject::AddPointLight(m, lit, ox - (pick->x & 0xFFFF), oy - (pick->y & 0xFFFF), oz - (pick->z & 0xFFFF),
+                            // the object's height is taken a quarter of the model's (header 0x12) up (0x41141C:
+                            // sar 2, added before the lights are picked), so a lamp at the foot of a tall
+                            // model is under the point it's lit from and its top stays dark
+                            IsoObject::AddPointLight(m, lit, ox - (pick->x & 0xFFFF), oy - (pick->y & 0xFFFF), oz + (m.field12 >> 2) - (pick->z & 0xFFFF),
                                                      int(pick->level * setup.isoBrightness), pick->range & 0xFFFF, radius,
                                                      int(float(o.bright) * (1.0f / 255.0f) * 63.0f));
                         }

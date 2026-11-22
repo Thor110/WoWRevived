@@ -252,7 +252,8 @@ through 0x4579A4 like a ground half cell, with the object's shade slot (building
 `BMR<d>NA<letter>`; the bm group loads slots 1-4 and 10 by the hour), dither set 13 (DithDat + 0x3400) and its
 kind's span routine: kind 1 (0x4574CD) leaves texel 0 out.
 
-**Point lights on IOB objects** (0x49DE90 → 0x4113F0 → 0x4111B0): each draw a copy of the object's levels is
+**Point lights on IOB objects** (0x49DE90 → 0x4113F0 → 0x4111B0; a building's parts each by themselves, and the
+object's z a quarter of its model's height, header 0x12, up: 0x41141C): each draw a copy of the object's levels is
 lit by the two nearest lights (dword_4B8E28 = 2): each pick is the light whose octagonal distance (0x43FF00) from
 the object's point (+0x38..+0x3C, from +0x78..+0x80) is under the light's range + the object's radius (+0x3E, the
 type's +0x44) and further than the last pick's. Each adds 0x40C930 (dx / dy / dz the object less the light, out
