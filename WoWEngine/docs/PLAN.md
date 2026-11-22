@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 190) and what remains
+## Where things stand (update 191) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -48,11 +48,13 @@ inventory with the history. Tick here and there as each is done.
 
 ### B. Modern fixes (Stage 6.1 to 6.6; on by default, each marked MODERN FIX)
 
-- [ ] **B1** Mark the two sound fixes already in (the sliders saved, Master reaching the music) and save Ambient
-      and Speech as the menu closes (6.1).
-- [ ] **B2** The music toggle stops and starts the music at once (6.2).
-- [ ] **B3** Display Settings without the colour radios and the lights toggle; "Show lights" forced on (6.3).
-- [ ] **B4** First start takes the desktop's resolution (6.4).
+- [x] **B1** (191) The two sound fixes marked where they are (the sliders saved; Master reaching the music);
+      Ambient and Speech were already saved as the menu closes.
+- [x] **B2** (191) The music toggle acts at once.
+- [x] **B3** (191) Display Settings without the colour radios and the lights toggle; the lights always on.
+      `[Modern]` "Original Display Settings" = 1 gives the original's menu.
+- [ ] **B4** First start takes the desktop's resolution (6.4). To be done with B5: until the size is used it
+      would only be a number written down, and the slider can't show a size past the original's list.
 - [ ] **B5** The resolution applied (6.5), the large one: (a) the window, back buffer and the 640 x 480 screens;
       (b) the war map's and battle map's views at the chosen size, with the sound borders scaled (0x464B10);
       (c) WoWRevived's larger sizes and the launcher's per-resolution values, the HD menu backgrounds.
@@ -329,10 +331,10 @@ does today:
 | 6 | "Lights" off crashes when Infiltrate makes its light | The toggle is in Display Settings; the engine doesn't crash, but the option is wrong to offer | Remove the toggle and force `[Options] "Show lights"` on at start-up, as WoWRevived does |
 | 7 | (none) | (none) | On the first start (no `[Screen] Size` in the ini) take the desktop's resolution; after that the setting is the player's |
 
-- [ ] 6.1 Mark 1 and 3 where they are (`FrontEnd::SoundControl`, `ApplyVolumes`), with what the original does
+- [x] 6.1 (191) Mark 1 and 3 where they are (`FrontEnd::SoundControl`, `ApplyVolumes`), with what the original does
       (the menu's 0x4059A0 / 0x464490 path, traced so the comment can name where the write is missing).
-- [ ] 6.2 The music toggle (2): `Music` started and stopped by the check box, and by the setting at start-up.
-- [ ] 6.3 Display Settings without the colour radios (5) and the lights toggle (6); "Show lights" forced on when
+- [x] 6.2 (191) The music toggle (2): `Music` started and stopped by the check box, and by the setting at start-up.
+- [x] 6.3 (191) Display Settings without the colour radios (5) and the lights toggle (6); "Show lights" forced on when
       the settings load. FRONTEND.md's Display Settings row updated to say what the original has and what was
       taken out.
 - [ ] 6.4 First-start resolution (7): the desktop's size written to `[Screen] Size` when it's absent.

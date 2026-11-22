@@ -14,14 +14,14 @@ code each is to be marked `MODERN FIX`. A parity pass must leave them alone. The
 
 | Fix | The original | The engine |
 |---|---|---|
-| Volume sliders saved | The Sound Control sliders never write the registry, so the volumes are lost | Written to `WoWRevived.ini` |
-| Music toggle | The Sound Control check box does nothing | Stops and starts the music (*to do*: today it's only read when music starts) |
-| Master volume on the music | Master doesn't reach the music's playback | Master scales the music |
+| Volume sliders saved | The Sound Control sliders never write the registry, so the volumes are lost | **In** (marked, 191): Master as it moves, Ambient and Speech as the menu closes, written to `WoWRevived.ini` |
+| Music toggle | The Sound Control check box only saves the setting; the music steps read it when they next come round | **In** (191): off stops the track at once, and either way the music step of the map behind the menu is brought forward |
+| Master volume on the music | Master doesn't reach the music's playback | **In** (marked, 191): Master scales the music |
 | Resolution applied at once | The slider only takes effect after a restart | *To do*: the engine saves `[Screen] Size` but always draws 640 x 480 |
 | Desktop resolution on the first start | (no such thing) | *To do*: with no `[Screen] Size` yet, the desktop's is taken; afterwards the player's choice stands |
-| No 8 / 16-bit colour choice | Two radios in Display Settings; 8-bit doesn't work on modern systems | *To do*: the radios taken out (WoWRevived skips their creation) |
+| No 8 / 16-bit colour choice | Two radios in Display Settings; 8-bit doesn't work on modern systems | **In** (191): not offered; `[Modern]` "Original Display Settings" = 1 puts them and the lights toggle back |
 | Loose map files | The game marks MAPS.WoW's entries by looking for `Map\<name>` (0x414FAB), a folder it doesn't have, then reads `maps\<name>`: a loose map file is never used | **In** (update 140): `core/Vfs` looks in `maps\`, so a loose file in `MAPS` replaces the archive's, as in `DAT` |
-| No "Lights" toggle, lights always on | With lights off, Infiltrate, which makes a light, crashes the game | *To do*: the toggle taken out and `[Options] "Show lights"` forced on at start-up (WoWRevived does both) |
+| No "Lights" toggle, lights always on | With lights off, Infiltrate, which makes a light, crashes the game | **In** (191): the toggle not offered and the lights always on, unless `[Modern]` "Original Display Settings" = 1 |
 
 Other changes WoWRevived made to the executable, for reference when reading the listing (`IDA-Output.txt` was made
 from `WoW_patched.exe`): the CD Player's "no CD" check skipped, the .smk file check skipped, winmm redirected to

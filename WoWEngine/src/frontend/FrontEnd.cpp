@@ -103,6 +103,7 @@ namespace wow
     void FrontEnd::ApplyVolumes()
     {
         // [Sound\Volume], 0-1 (the settings at 0x4CA858-0x4CA870, one per sound type, and Master over them all)
+        // MODERN FIX: Master is over the music too (the last line). The game's Master doesn't reach the CD.
         static const char* const Types[6] = { "Ambient", "Engine", "Explosions", "Weapons", "Special", "Speech" };
         float types[6];
         for (int t = 0; t < 6; t++) types[t] = ini.GetFloat(SoundSection, Types[t], 1.0f);
@@ -289,6 +290,9 @@ namespace wow
         // the menu works in tenths (0x4B8A7C-0x4B8A84); the settings hold 0-1 like the game's. Master applies at
         // once (the 0x812B timer, 0x4644A0); Ambient (sound type 0) and Speech (type 5) when the menu closes
         // (0x4059A0, 0x464490)
+        // MODERN FIX: every slider's value is saved (Master as it moves, Ambient and Speech as the menu closes, in
+        // Show). The game's sliders change the volumes for the session and never write the settings (0x4059A0
+        // applies them; nothing calls the settings' save), so they are back at the next start.
         auto volume = [&](int textId, const char* name, float* pending) {
             int tenths = int(std::lround(std::clamp(ini.GetFloat(SoundSection, name, 1.0f), 0.0f, 1.0f) * 10));
             std::string text = res.String(textId);
@@ -303,7 +307,16 @@ namespace wow
         volume(0x43E, "Master", nullptr);
         volume(0x43F, "Ambient", &pendingAmbient);
         volume(0x440, "Speech", &pendingSpeech);
-        m->AddCheck(0x441, ini.GetBool(SoundSection, "CD", true), [this](Button& b) { ini.SetBool(SoundSection, "CD", b.value != 0); });
+        // MODERN FIX: the in-game music check box acts at once. Off, the track stops; either way the music step of
+        // the map behind the menu is brought forward, so the war map's ambient sound, or a track, starts within a
+        // tick. The game only saves the setting: its music steps read it when they next come round (the war map's
+        // every ten seconds or at a track's end), and a battle map's stop coming once the setting is off (0x4862B0).
+        m->AddCheck(0x441, ini.GetBool(SoundSection, "CD", true), [this](Button& b) {
+            ini.SetBool(SoundSection, "CD", b.value != 0);
+            if (!b.value) music.Stop();
+            if (battleMap || inBattle) battleMusicTimer = 1;
+            else if (ActiveWarMap()) musicTimer = 1;
+        });
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         m->FocusLast();                               // 0x42EBE0 on the bottom button
         return m;
@@ -334,15 +347,22 @@ namespace wow
                 ini.SetString("Screen", "Size", std::to_string(mode.w) + "," + std::to_string(mode.h));
             });
 
+        // MODERN FIX: the 8 bit / 16 bit colour radios and the "Show lights" check box aren't offered, as in WoWRevived
+        // (8 bit colour doesn't work on a modern system and the engine has one depth; with the lights off the game
+        // crashes when Infiltrate makes its light). [Modern] "Original Display Settings" = 1 puts them back.
+        const bool original = ini.GetBool("Modern", "Original Display Settings", false);
         bool eightBit = ini.GetInt("Screen", "BPP", 16) == 8;
         // the radios' tool tips are their labels; the options' are 0x453-0x456 (0x4098D5-0x4099A4)
-        m->AddRadio(0x447, 0x8110, eightBit, [this](Button& b) { if (b.value) ini.SetInt("Screen", "BPP", 8); }, 0x447);
-        m->AddRadio(0x448, 0x8110, !eightBit, [this](Button& b) { if (b.value) ini.SetInt("Screen", "BPP", 16); }, 0x448);
+        if (original)
+        {
+            m->AddRadio(0x447, 0x8110, eightBit, [this](Button& b) { if (b.value) ini.SetInt("Screen", "BPP", 8); }, 0x447);
+            m->AddRadio(0x448, 0x8110, !eightBit, [this](Button& b) { if (b.value) ini.SetInt("Screen", "BPP", 16); }, 0x448);
+        }
 
         auto option = [&](int textId, const char* name, int tooltip) {
             m->AddCheck(textId, ini.GetBool("Options", name, true), [this, name](Button& b) { ini.SetBool("Options", name, b.value != 0); }, tooltip);
         };
-        option(0x44D, "Show lights", 0x453);
+        if (original) option(0x44D, "Show lights", 0x453);
         option(0x450, "Show Smoke & particles", 0x456);
         option(0x44F, "Show gouraud shading", 0x455);
         option(0x44E, "Show vehicle shadows", 0x454);
@@ -1203,7 +1223,8 @@ namespace wow
         s.moveCosts = &moveCosts;
         s.moveSlopes = &moveSlopes;
         s.weapons = &weaponData;
-        s.showLights = ini.GetBool("Options", "Show lights", true);
+        // MODERN FIX: the lights are always on unless the original Display Settings are asked for (see DisplaySettings)
+        s.showLights = !ini.GetBool("Modern", "Original Display Settings", false) || ini.GetBool("Options", "Show lights", true);
         s.showShadows = ini.GetBool("Options", "Show vehicle shadows", true);
         s.wofBrightness = ini.GetFloat("Game", "WOF Brightness", 2.5f);
         s.zoomerSpeed = ini.GetFloat("Tweak", "Battlemap Zoomer Speed", 2.5f);

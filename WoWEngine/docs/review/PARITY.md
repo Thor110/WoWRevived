@@ -984,6 +984,12 @@ transparency")
   own is busy for seconds; the engine is never busy that long), and Stage 3's 3.2 and 3.5 (A4).
 - *Moved*: the players' command records go with the network game, which is what needs them.
 
+**Update 191** (the small modern fixes, B1 to B3; each marked MODERN FIX in FrontEnd.cpp and listed in MODERN.md)
+- The sound sliders' saving and Master over the music marked as the fixes they are.
+- The in-game music check box acts at once (off stops the track; the map's music step is brought forward).
+- Display Settings without the 8 / 16 bit radios and "Show lights"; the lights always on. `[Modern]` "Original
+  Display Settings" = 1 is the original's menu and setting, for checking against it.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
