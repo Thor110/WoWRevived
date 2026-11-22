@@ -63,12 +63,21 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
   encoder (`SprEncoder.cs`), which packs tighter than whatever the game's files were made with and decodes to
   identical pictures, so the data gets smaller at no cost.
 - **The owner's fixed files** (`WoWEngine/dat`, `WoWEngine/maps`: the WoWRevived patches for this version of the
-  game): `dat` holds re-encoded sprites (the owner's RLE encoder packs them better than the original tool did),
-  the Cotton Factory and Airship model fixes and the alternative war map backgrounds; `maps` holds the sector 22
-  terrain fix (`LAND22.CLS`) and re-encoded minimaps. The `dat` ones work today as loose files in the game's
-  `DAT` folder, and since update 140 the `maps` ones as loose files in `MAPS`. They are still to be **repacked
-  into the archives by the installer**; that waits for this stage, as does choosing between the original and the
-  extended war map background by resolution (`TEMP-HWM` / `TEMP-MWM` and their `HI` versions).
+  game), as laid out since update 166:
+  - `dat` (loose): re-encoded sprites (the owner's RLE encoder packs them better than the original tool did) and
+    the Cotton Factory and Airship model fixes. They work today as loose files in the game's `DAT` folder.
+  - `dat/warmap`: the alternative war map backgrounds (`MWM`, `TEMP-HWM` / `TEMP-MWM` and their `HI` sector maps,
+    `mmini`), to be chosen between by resolution.
+  - `dat/extra/<width>x<height>` (640x480 up to 1920x1080): WoWRevived's menu backgrounds for each resolution
+    (`humanbd`, `martbd`, `legal1`, `legal2`), the files its resolution switch swaps in.
+  - `dat/extra/HD`: the Enhanced Assets set (129 sprites: the war map's panels, buttons, counters, calendar and
+    so on, scaled up and back down; docs/ODDITIES.md, update 158).
+  - `dat/extra/UNITS`: the 24 pixel counter sheets.
+  - `maps`: the sector 22 terrain fix (`LAND22.CLS`) and re-encoded minimaps; loose files in `MAPS` since
+    update 140.
+  How the engine should offer these (repacked into the archives by the installer, or picked at run time by an
+  option) is for this stage; the owner: "we will look into it when we get that far". Nothing in the engine reads
+  the `extra` or `warmap` folders yet.
 
 ### Controls
 

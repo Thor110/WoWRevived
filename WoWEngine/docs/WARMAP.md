@@ -352,11 +352,15 @@ selection at +0x430, filled by its recorded commands 4 clear, 5 select (Shift ad
     and the next, f = (1 - left / length) x 32; the smallest of these over the entries trims the arrow (+0x5C: its
     body is drawn only past it)
   - once every entry has arrived, a route that isn't an attack raises event 3, ArrivedInSector, for its goal, and
-    goes from the route manager (0x41FBD0), which sends the world 0x802C when none are left (not traced).
+    goes from the route manager (0x41FBD0), which sends the world 0x802C when none are left; the world has no
+    case for it (0x4198C0 handles 0x800F and 0x802D in that range and returns 0 for the rest), so nothing follows.
   Attacks on the same sector arrive together: when a route is added the route manager (0x41FCF0) gives every
   attack heading for a sector the longest hours still to go of the routes heading there (0x4255F0), label too.
-  The engine moves a counter as a route of one entry; where it stands on the curve is its centre (the counter's
-  corner 16 up and left), *provisional*.
+  Units sent together are entries of one route (update 166): each moves at its own speed in its place in the
+  formation, and they share the route's one arrow (drawn from behind the hindmost, solid while the mouse is on
+  any of them, labelled with the route's hours), its one TravelInterrupted and its one ArrivedInSector, raised
+  when the last has arrived. The computer player's moves are a route each. Where an entry stands on the curve
+  is its centre (the counter's corner 16 up and left), *provisional*.
 - **Arrows**: RArrow (0x4244E0) makes a curve through the route's points: for the start the point where a route
   over land leaves it for the next sector (its link, 0x4BCEB0), then each sector's waypoint (0x437380); a naval
   route (+0x50: its first unit's +0x52 is 5 or 6), or a point that's 0, 0, takes the sector's sea waypoint

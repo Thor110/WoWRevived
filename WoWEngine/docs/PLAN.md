@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 165) and what is next
+## Where things stand (update 166) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -40,7 +40,7 @@ the working order; the stages further down stay the full inventory.
       View map, the sector unselected, units in transit selectable). 158: the mini-map shaded by sector and
       the panel where the game puts it. 159 (the owner's Martian frame): placed counters 16 up and left, the
       view's start on the selected sector, the view button's held frame. Left: 3.3's
-      hourly fan-out, 3.4 (several units as one route), 3.6 and 3.7, each to be checked against the code first:
+      hourly fan-out (checked, 165), 3.4 (done, 166); 3.6 and 3.7 are left, each to be checked against the code first:
       these lists have turned out stale more often than not.
 
 **Open questions to keep track of** (each has its notes in PARITY.md; don't re-trace what is ruled out there)
@@ -133,7 +133,8 @@ Small and independent; most need one routine traced.
 - [x] 3.3 The hourly step's fan-out, checked against 0x419E9D in update 165: the routes, the players, both
       sides' research, the pods, each sector and the resource warnings are all in, in that order. Damaged
       facilities: 155. (Work demand in the economy: not looked at again.)
-- [ ] 3.4 Several units sent as one route; the world's 0x802C when no routes are left.
+- [x] 3.4 Several units sent as one route (update 166: one arrow, one interruption, one arrival); the world's
+      0x802C when no routes are left has no handler (traced, nothing to do).
 - [ ] 3.5 The popup as child windows; the sector's and objects' remaining items; the remaining tool tips.
 - [ ] 3.6 The battle report's own counters in place of the auto-resolve's.
 - [ ] 3.7 Commands one queue pass later (0x95) where the order matters.

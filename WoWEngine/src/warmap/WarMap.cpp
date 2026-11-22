@@ -996,6 +996,7 @@ namespace wow
             for (uint32_t s : route.path) path.push_back(int(s));
             bool good = path.size() >= 2 && route.entries.size() == route.objects.size();
             for (int s : path) if (s < 1 || s > warmap::SectorCount) good = false;
+            const int routeNumber = ++nextRoute;
             for (size_t i = 0; i < route.objects.size(); i++)
             {
                 const SaveObject& o = route.objects[i];
@@ -1008,7 +1009,7 @@ namespace wow
                     continue;
                 }
                 const SaveRouteEntry& e = route.entries[i];
-                StartRoute(k, path, e.index);
+                StartRoute(k, path, e.index, routeNumber);
                 Counter& c = counters[size_t(k)];
                 c.attack = route.flag5E != 0;
                 c.naval = route.field50 != 0;
@@ -1176,7 +1177,8 @@ namespace wow
                     int s = k.path[size_t(n)];
                     if ((battle[size_t(s)] || owner[size_t(s)] == 1) && s != origin)
                     {
-                        k.interrupted = true;
+                        // the route is interrupted (+0x60), every entry of it, with the one event (0x41EF80)
+                        for (Counter& o : counters) if (o.Travelling() && o.route == k.route) o.interrupted = true;
                         RaiseEvent(TravelInterrupted, int(i));
                         break;
                     }
@@ -1242,7 +1244,11 @@ namespace wow
         // next tick's check (0x41AB00)
         RecomputeOwner(sector);
         RefreshSector(sector);
-        if (!attack) RaiseEvent(ArrivedInSector, sector);
+        // once every entry has arrived (0x4253F9) a route that isn't an attack raises ArrivedInSector, the once
+        bool others = false;
+        for (size_t i = 0; i < counters.size(); i++)
+            if (int(i) != index && counters[i].Travelling() && counters[i].route == k.route) others = true;
+        if (!attack && !others) RaiseEvent(ArrivedInSector, sector);
     }
 
     // 0x4249B0: where a travelling object would stop: the route's source (+0x24) if it hasn't set off (+0x30 0),
@@ -1403,8 +1409,27 @@ namespace wow
         // Previews (not set off) are solid.
         {
             const int hot = hovered && mouseX >= 0 ? CounterAt(mouseX, mouseY) : -1;
-            for (const Counter& k : counters)
-                if (k.Travelling() && k.kind == viewMode - 1) DrawRouteArrow(canvas, k, int(&k - counters.data()) != hot);
+            // one arrow a route (RArrow 0x4244E0 belongs to the route): drawn from behind its hindmost entry (+0x5C,
+            // the least of the entries' places), solid while the mouse is on any of its counters, its label the
+            // route's hours
+            const int hotRoute = hot >= 0 && counters[size_t(hot)].Travelling() ? counters[size_t(hot)].route : 0;
+            for (size_t i = 0; i < counters.size(); i++)
+            {
+                const Counter& k = counters[i];
+                if (!k.Travelling() || k.kind != viewMode - 1) continue;
+                bool first = true;
+                int trim = k.trim;
+                float hours = k.labelHours;
+                for (size_t j = 0; j < counters.size(); j++)
+                {
+                    const Counter& o = counters[j];
+                    if (j == i || !o.Travelling() || o.route != k.route || o.kind != k.kind) continue;
+                    if (j < i) { first = false; break; }
+                    trim = std::min(trim, o.trim);
+                    hours = std::max(hours, o.labelHours);
+                }
+                if (first) DrawRouteArrow(canvas, k, k.route != hotRoute, trim, hours);
+            }
         }
         for (const Preview& p : preview)
             if (p.path.size() > 1) DrawRouteArrow(canvas, p.shape);
@@ -3035,7 +3060,9 @@ namespace wow
                 for (const Preview& p : preview)
                 {
                     if (p.path.size() < 2) continue;
-                    for (size_t n = 0; n < p.group.size(); n++) StartRoute(p.group[n], p.path, int(n));
+                    // one route for the group (0x424160), each unit an entry of it
+                    const int route = ++nextRoute;
+                    for (size_t n = 0; n < p.group.size(); n++) StartRoute(p.group[n], p.path, int(n), route);
                     sent = true;
                 }
                 if (sent)
@@ -3363,8 +3390,10 @@ namespace wow
         return p;
     }
 
-    void WarMap::DrawRouteArrow(Canvas& canvas, const Counter& k, bool translucent) const
+    void WarMap::DrawRouteArrow(Canvas& canvas, const Counter& k, bool translucent, int trim, float hours) const
     {
+        if (trim < 0) trim = k.trim;
+        if (hours < 0.0f) hours = k.labelHours;
         const Canvas::Blend blend = translucent ? Canvas::Blend::Translucent : Canvas::Blend::Opaque;
         // RTypeArrow (0x49CAC0, drawn by 0x49CDB0) along the route's curve. Style (OBJ.ojd record 14): attacks 0
         // (Human) / 2 (Martian), other moves 1 / 3. Its texture is 256 x 64: the body strip in the first 64 columns,
@@ -3391,7 +3420,7 @@ namespace wow
         };
         // the body from the units on (+0x5C: the quads past it)
         int bodyEnd = std::max(0, n - Steps / 3 - 1);
-        int from = std::clamp(k.trim, 0, bodyEnd);
+        int from = std::clamp(trim, 0, bodyEnd);
         float plx, ply, prx, pry;
         edges(from, plx, ply, prx, pry);
         for (int i = from + 1; i <= bodyEnd; i++)
@@ -3426,7 +3455,7 @@ namespace wow
         // dword_4DAF9C), the text 1 pixel in: the arrival date worked out when the route was made, or when its
         // hours were last set (0x424431 / 0x4255F0)
         if (!k.attack) return;
-        std::string label = warmap::ArrivalText(k.labelFrom, k.labelHours, human,
+        std::string label = warmap::ArrivalText(k.labelFrom, hours, human,
             [&](int month) { return res.String(warmap::MonthText(month)); });
         auto [ex, ey] = at(n - 1);
         const Font* font = res.GetFont(0x71);
@@ -3908,9 +3937,10 @@ namespace wow
     }
 
     // A unit set off on a route (0x424160 and its RouteEntry 0x42AFE0), the n-th of its group.
-    void WarMap::StartRoute(int index, const std::vector<int>& path, int n)
+    void WarMap::StartRoute(int index, const std::vector<int>& path, int n, int route)
     {
         Counter& k = counters[size_t(index)];
+        k.route = route > 0 ? route : ++nextRoute;   // an entry of that route, or a route of its own
         const int sector = path.back();
         k.moved = true;
         k.path = path;

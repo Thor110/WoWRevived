@@ -692,6 +692,17 @@ Martian start's units turned differently)
 - Looked at and not it: how deployed units face. The two lone Martian units face the same way in the owner's
   frame, so it isn't the rand() heading (0x422738) but what 0x80C3 makes of it; London's spot is unchanged too.
 
+**Update 166** (3.4: units sent together; the owner's data folders moved)
+- [x] **Units sent together are one route.** The engine gave each its own, so a group drew its arrow once a
+      unit (translucent arrows one over another came out darker), labelled an attack once a unit, and raised
+      TravelInterrupted and ArrivedInSector once a unit. Now the group shares a route number: one arrow from
+      behind the hindmost entry (+0x5C), solid while the mouse is on any of its counters, one label with the
+      route's hours, one interruption for all, and ArrivedInSector when the last is in (0x4253F9). Routes read
+      from a save keep their entries together the same way.
+- [x] The world's 0x802C (no routes left, 0x41FBD0) has no handler: 0x4198C0 returns 0 for it. Nothing to do.
+- Synced with the owner's reorganised `dat` (`warmap`, `extra/<resolution>`, `extra/HD`, `extra/UNITS`):
+  nothing in the engine reads those folders; the layout is noted in MODERN.md for the stage that will.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
