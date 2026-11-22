@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 153) and what is next
+## Where things stand (update 154) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -32,7 +32,10 @@ the working order; the stages further down stay the full inventory.
       shade group's other slots). The owner's frames match closely, so this waits for a frame that shows a
       difference.
 - [~] N9 Stage 3 (the war map's missing pieces). 3.1 repair is in (153), with the units' health kept between
-      the war map and battles. Next 3.2 to 3.7 as listed below.
+      the war map and battles. 154: the counters' strength pips and the tool tips' task lines; 3.2's context
+      buttons, Suspend / Resume and CommandCentreBuilt were found already in. Still open under Stage 3, from the
+      code's own notes: the popup's Cancel Move and Information items; the event boxes some events open; the
+      Resource view's tool tips and facility row click; then 3.3, 3.4, 3.6, 3.7 as listed below.
 
 **Open questions to keep track of** (each has its notes in PARITY.md; don't re-trace what is ruled out there)
 

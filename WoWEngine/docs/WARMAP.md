@@ -391,6 +391,22 @@ speed divides by 0 in the game and never gets anywhere (*provisional*: 1 pixel a
 - **Saved routes** (0x425A60): origin, destination, +0x5F, +0x5E (attack), +0x44 (5), the path's count, +0x34, the
   path (the start first), the u8 +0x50 (naval) and the units.
 
+## Counter pips and task lines (update 154)
+
+**Strength pips** (0x42B477 makes them, 0x42BADB draws them; 0x449150 / 0x449340): every counter but a class 7
+one has a row under it, one pip for each battle unit of its object: GType 8 (hwpower.spr) at frame
+ftol(0.5 + 9 x the unit's health / its type's), sorted highest first, each the sprite's width - 1 on from the
+last, centred on the counter's middle at its foot. The battle map's group icons use the same strip unsorted.
+*Provisional*: the row's height is the one set by eye on the battle map's icons; no war map frame of the
+original has been checked.
+
+**The task lines of a tool tip** (a unit's 0x42901D, a finished construction's 0x42A5EB): an object that isn't on
+its way and has something queued in its factory adds, busy, "Currently building <name>" (0x48E, the head
+entry's type) and "Days to completion n.n" (0x48F: its hours left x the sector's three supply ratios for its
+side multiplied / 24, 0x45F7D0), then "Efficiency n.n" (0x493: 100 / that product, 0x460740); not busy,
+"Construction suspended" (0x492). "Idle" (0x491) is in both routines but only on a path the test before it has
+already ruled out.
+
 ## Repair (0x4297C0, 0x429B80, 0x422AB0, 0x4299C0; `WarMap::PickRepair`, `WarMap::RepairStep`)
 
 Each battle unit keeps its health (+0xC4) with its war map object: the save writes it as the last of BAMO's five

@@ -548,6 +548,17 @@ Martian start's units turned differently)
   icon and its power bar; a dead unit of a surviving object still comes back in the next battle. Not seen in a
   game (needs a repairer and a damaged unit together); exercised with a stand-in only.
 
+**Update 154** (Stage 3: counters and tool tips)
+- [x] The strength pips under a war map counter (0x42B477, 0x42BADB): one for each battle unit of its object,
+      by its health, highest first; not for the class 7 counters. Seen in the engine's own frame (five under
+      the lorries, one under a single unit); the row's height is the battle icons', not checked against a war
+      map frame of the original.
+- [x] The task lines of a unit's and a finished construction's tool tip (0x42901D, 0x42A5EB): Currently
+      building / Days to completion / Efficiency while its factory is busy, Construction suspended while it
+      isn't. By the listing; not seen (a tool tip needs the mouse held still on a counter).
+- Looked at and already in: the factory's context buttons, Suspend / Resume building tasks, CommandCentreBuilt
+  (TASKS.md and PLAN.md had them as missing).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

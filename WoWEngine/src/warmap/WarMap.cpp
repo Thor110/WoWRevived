@@ -1440,6 +1440,34 @@ namespace wow
                 if (const IndexedImage* icon = res.GetFrame(0x76, 0x95))
                     canvas.DrawSprite(0x76, 0x95, x + cw - icon->width + 2, y + ch - icon->height + 2);
             }
+            // the strength pips (+0xB0, 0x42B477 / 0x42BADB: every counter but a class 7 one): one for each battle
+            // unit of the object (0x449150 with the sort on: the highest first), GType 8 (hwpower.spr) at frame
+            // ftol(0.5 + 9 x its health / its type's), each the sprite's width - 1 on from the last, the row centred
+            // under the counter (0x449340 with x + half its width, y + its height).
+            // *Provisional*: the row's height is the battle map's group icons' (3 up from the foot, set by eye
+            // against the owner's frames of the original there); no frame of the war map's has been checked.
+            if (!k.shared && !k.refs.empty())
+            {
+                const int ref = k.refs.front();
+                if (ref >= 0 && size_t(ref) < table.size())
+                {
+                    const int most = UnitMaxHealth(table[size_t(ref)].Type());
+                    std::vector<int> frames;
+                    for (int health : table[size_t(ref)].BattleHealths())
+                        frames.push_back(most > 0 ? int(0.5 - double(float(health) / float(most)) * -9.0) : 0);
+                    std::stable_sort(frames.begin(), frames.end(), std::greater<int>());
+                    const IndexedImage* face = res.GetFrame(0x77, k.frame);
+                    const IndexedImage* pip = res.GetFrame(8, 0);
+                    if (pip && !frames.empty())
+                    {
+                        const int cw = face ? face->width : 32, ch = face ? face->height : 32;
+                        const int step = pip->width - 1;
+                        const int count = int(std::min<size_t>(frames.size(), 8));
+                        const int x0 = x + cw / 2 - (step * count) / 2;
+                        for (int i = 0; i < count; i++) canvas.DrawSprite(8, frames[size_t(i)], x0 + i * step, y + ch - 3);
+                    }
+                }
+            }
             if (k.shared)
             {
                 std::string text = k.finishedCount < k.count ? std::to_string(k.finishedCount) + "/" + std::to_string(k.count)
@@ -1606,8 +1634,8 @@ namespace wow
 
     // A counter's tool tip (0x807C, level 1-3 by how long the mouse has stayed):
     //   units (0x428D70): the name (the type's +0x14, OBJ.ojd record 21); "In transit" (0x51D) on its way (a
-    //   unit with a task would show it: Currently building / Days to completion / Efficiency, Idle or
-    //   Construction suspended, 0x48E-0x493, not in yet); from level 2, if it uses resources: "Resource use"
+    //   unit with a task shows it: Currently building / Days to completion / Efficiency, or Construction
+    //   suspended, 0x48E-0x493, below); from level 2, if it uses resources: "Resource use"
     //   (0x519) and the side's three kinds, "Working:" (0x51B) its work figures when it has any, then "Idle:"
     //   (0x51A) and "Moving:" (0x51C) its upkeep for all its men, halved when idle
     //   constructions (0x42A4B0): the name, " X n" for a class 7 counter (how many, 0x43A160); unfinished,
@@ -1630,11 +1658,46 @@ namespace wow
             return "\n" + res.String(0x519) + " (" + res.String(0x214 + base) + ", " + res.String(0x215 + base) + ", " +
                    res.String(0x216 + base) + ")";
         };
+        auto task = [&]() {
+            std::string out;
+            if (!k.refs.empty())
+                if (auto f = factories.find(k.refs.front()); f != factories.end() && !f->second.queue.entries.empty())
+                {
+                    if (f->second.queue.busy)
+                    {
+                        const BuildEntry& head = f->second.queue.entries.front();
+                        float product = 1.0f;
+                        if (!resourceCheat && k.sector >= 1 && k.sector <= warmap::SectorCount)
+                        {
+                            const auto& r = economy[size_t(k.sector)].ratio;
+                            const size_t side = u.faction == 1 ? 3 : 0;
+                            product = r[side] * r[side + 1] * r[side + 2];
+                        }
+                        auto made = unitData.find(head.type);
+                        const std::string name = made != unitData.end() && made->second.nameText ? res.String(made->second.nameText) : std::string();
+                        char line[160];
+                        std::snprintf(line, sizeof(line), "\n%s %s\n%s %0.1f", res.String(0x48E).c_str(), name.c_str(),
+                                      res.String(0x48F).c_str(), double(head.hours * product) * 0.04166666666666666);
+                        out += line;
+                        std::snprintf(line, sizeof(line), "\n%s %0.1f", res.String(0x493).c_str(), double(1.0f / product) * 100.0);
+                        out += line;
+                    }
+                    else out += "\n" + res.String(0x492);
+                }
+            return out;
+        };
         const float work = u.activity[0] + u.activity[1] + u.activity[2];
         const float keep = u.upkeep[0] + u.upkeep[1] + u.upkeep[2];
         if (k.kind == 0)
         {
             if (k.Travelling()) tip += "\n" + res.String(0x51D);
+            // its factory's task (0x42901D, a unit that isn't on its way with something queued, +0x54's +0x128):
+            // busy (+0x12C), "\n%s %s\n%s %0.1f" with "Currently building" (0x48E), the head entry's name
+            // (0x460A40), "Days to completion" (0x48F) and its hours left x the sector's three supply ratios for
+            // its side multiplied (0x45F7D0, 1 with the resource cheat) / 24; then "\n%s %0.1f" with "Efficiency"
+            // (0x493) and 100 / that product (0x460740). Not busy: "Construction suspended" (0x492). (The "Idle"
+            // string, 0x491, is only pushed with nothing queued, which the test before it has already sent past.)
+            else tip += task();
             if (level < 2 || work + keep == 0.0f) return tip;
             tip += kinds();
             if (work != 0.0f) tip += "\n" + res.String(0x51B) + figures(" %0.1f, %0.1f, %0.1f", u.activity[0], u.activity[1], u.activity[2]);
@@ -1654,6 +1717,7 @@ namespace wow
             std::snprintf(line, sizeof(line), "\n%2.1f%% ", double(k.progress) * 100.0);
             return tip + line + res.String(0x4B5);
         }
+        tip += task();      // a finished construction's the same (0x42A5EB)
         if (level >= 2 && work != 0.0f)
             tip += kinds() + "\n" + res.String(0x51B) + figures(" %0.1f, %0.1f, %0.1f", u.activity[0], u.activity[1], u.activity[2]);
         return tip;
