@@ -162,8 +162,8 @@ renderer's object pool is made forty times larger (0x40D150).
 Any of Mat, Charlie or Dave at start-up also sets one more flag (byte_4D12F4, 0x401998), which makes the sound
 loader look for a sound as a loose file before the library (0x466910).
 
-The engine: Mat's time of day is in (179); the rest of Mat is PLAN.md 4.9; Charlie, Dave and Edit functionality
-are with the developers' aids, 4.8.
+The engine (update 190): Charlie is in; Mat's time of day and, with Edit functionality, its picking of any sector on
+the war map are in; the battle map's halves of Mat and Edit functionality, and Dave, are not (PLAN.md A8).
 
 ## An upgraded building fights as the building it was (update 185)
 

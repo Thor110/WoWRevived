@@ -78,6 +78,11 @@ namespace wow
         // and "Messagebox Command" (word_4B942C, 22: the box's second line, 0x432852)
         void SetTextLevels(int infoPage, int boxDetail, int boxCommand) { infoPageLevel = infoPage; boxDetailLevel = boxDetail; boxCommandLevel = boxCommand; }
         void SetResourceCheat(bool on) { resourceCheat = on; }  // byte_58913C, youlikeit
+        // The developers' flags of [Debug] (docs/ODDITIES.md): Mat (byte_4D1279, also the curtains cheat) or Edit
+        // functionality (byte_4D1249) lets a sector that isn't the player's be selected (0x41D241, 0x41D427);
+        // Charlie (byte_4D1261) takes the boxes off ResearchAlert, PodLanded and UndefendedSectorLost, which then
+        // aren't critical (0x41E4D0)
+        void SetDeveloperFlags(bool mat, bool charlie, bool edit) { anySector = mat || edit; noBoxes = charlie; }
         // A sector's Damage Layer ("Damage Layer", vtable 0x4A92E8, the sector's +0x8C): the battle map's scorch, a
         // byte a landscape vertex, kept between battles and saved as DMGL; empty (0 x 0) until its first battle
         struct DamageLayer { int width = 0, height = 0; std::vector<uint8_t> grid; };
@@ -285,6 +290,7 @@ namespace wow
         bool upgradedInBattle = true;
         int FightType(const SaveObject& o) const;       // the type its battle objects fight as
         float FightHealthScale(const SaveObject& o) const;  // full health as it fights over full health as saved
+        bool anySector = false, noBoxes = false;
         int resStackX = 4, resStackY = 16, infoPageLevel = 15, boxDetailLevel = 21, boxCommandLevel = 22;
         int infoSpeechStart = 0;        // a sound for the front end to start and keep (the page's speech)
         bool infoSpeechFade = false;    // the page has gone: its speech fades over 30

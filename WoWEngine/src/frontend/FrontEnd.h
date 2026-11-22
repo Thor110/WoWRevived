@@ -32,6 +32,8 @@ namespace wow
         void Update();
         void Draw(Canvas& canvas) const;
         uint32_t Frames() const { return uint32_t(frames); }    // dword_4D2558
+        // byte_4D1279: the [Debug] "Mat" setting's own value, which the curtains cheat also sets (0x401372)
+        bool Mat() const { return cheats.mat || ini.GetBool("Debug", "Mat", false); }
         int PlaybackFiles() const { return ini.GetInt("Demo", "Playback Files", 4); }   // dword_4BAAD8
         void OnKey(int sdlKey);
         void OnKeyUp(int sdlKey) { if (screen) screen->OnKeyUp(sdlKey); }

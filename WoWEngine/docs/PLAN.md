@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 189) and what remains
+## Where things stand (update 190) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -17,12 +17,17 @@ inventory with the history. Tick here and there as each is done.
       gives it one, as in the game.
 - [ ] **A2 The players and their commands** (4.5): the local, computer and network player objects; the command
       records (0x4460A0); the commands the world handles one queue pass later (0x95, 0x419A24; was 3.7).
-      Needed before the network game.
-- [ ] **A3 The wait cursor** (4.2's last part): shown by the busy object (0x40E680) during a save, a load and
-      the war map's building. Decide whether anything would be seen, do it or close it.
-- [ ] **A4 Stage 3's last boxes closed**: 3.2 (construction's remaining fields, CommandCentreBuilt, the context
-      buttons) and 3.5 (the popup's remaining items and tool tips) were found mostly stale in 174 to 176;
-      go through each line once more against the code and tick or do it.
+      In a one-player game these change nothing that is seen (the engine's orders go straight to what they
+      order), so this is done with the network game, A9, which is what needs it.
+- [x] **A3 The wait cursor** (closed, 190). The busy object (0x40E680) sets cursor 13 round a save (0x4042D0),
+      a load (0x408B70) and the war map's reading (0x418500), and nothing is drawn in between by the game's
+      own thread; it shows only because the window's thread draws the cursor when the mouse moves
+      (0x42D0FC) while the game's is busy for seconds. The engine does each inside one frame, so there is no
+      moment to show it in. The cursor's animation is in (177).
+- [x] **A4 Stage 3's last boxes** (closed, 190). 3.2: the context buttons, Suspend / Resume and
+      CommandCentreBuilt were found in or not the game's in 153 to 156; "construction's remaining fields" is
+      A1's, done. 3.5: the popup's Information item and page (156, with its speech 176), the items on a unit
+      in transit (157), the tool tips (154, 155). Nothing is left under either.
 - [ ] **A5 Deployment's leftovers** (1.2): London's deployment spot (the lorries at ring 95's 288 degree spot in
       the original, 72 in the engine); the update order of the start lists. *Needs the owner's frame* (below).
 - [ ] **A6 The provisional renderers** (2.9): the WOF triangle filler, the blitter modes, the bm shade group's
@@ -30,9 +35,13 @@ inventory with the history. Tick here and there as each is done.
 - [ ] **A7 Combat checked by eye** (5.2, 5.3): quiet kills, damage rounding, the firer's sparing, retaliation,
       deaths, the pod's landing, the forfeit's return; Force Fire and the specials ending after one shot (173).
       A standing item: the owner's reports from play have found more than reading has.
-- [ ] **A8 The developers' switches, for the record** (4.8, 4.9; the owner: keep them, low priority): the rest of
-      the curtains cheat (enemy units and sectors picked, the reinforcement points); Charlie (three events
-      without their boxes); Edit functionality's picking; Dave's debug text and the debug log.
+- [~] **A8 The developers' switches, for the record** (4.8, 4.9; the owner: keep them, low priority). In (190):
+      Charlie (`[Debug]` "Charlie": ResearchAlert, PodLanded and UndefendedSectorLost without their boxes and
+      not critical); Mat as a setting as well as the cheat (`[Debug]` "Mat"); on the war map, Mat or Edit
+      functionality letting any sector be selected; Mat's time of day (179). Left: on the battle map, Mat's
+      enemy units picked one at a time with Shift's state (0x497680, 0x4972F0) and the reinforcement points
+      made with no battle on (0x43D171, 0x43D2D2); Edit functionality's picking of scenery (0x485A1A,
+      0x485DA9, 0x48A87D); Dave's debug text and the debug log.
 - [ ] **A9 The network game** (4.7), last of the original: the menus' lists, the lockstep packets. The owner's
       reading of what the network build needs: its timer out, network play itself, the start files not saved
       over (already so).
@@ -200,17 +209,17 @@ Small and independent; most need one routine traced.
 
 - [x] 3.1 Repair (Mobile Repair Vehicles, workshops), with the repair icon (update 153). Left: the power bar,
       what 0x8124 asks of a workshop, and a counter's pips.
-- [ ] 3.2 Construction's remaining fields, CommandCentreBuilt, the context buttons (factory panel, Suspend /
+- [x] 3.2 (closed, 190: see A4) Construction's remaining fields, CommandCentreBuilt, the context buttons (factory panel, Suspend /
       Resume, Retreat).
 - [x] 3.3 The hourly step's fan-out, checked against 0x419E9D in update 165: the routes, the players, both
       sides' research, the pods, each sector and the resource warnings are all in, in that order. Damaged
       facilities: 155. (Work demand in the economy: not looked at again.)
 - [x] 3.4 Several units sent as one route (update 166: one arrow, one interruption, one arrival); the world's
       0x802C when no routes are left has no handler (traced, nothing to do).
-- [ ] 3.5 The popup as child windows; the sector's and objects' remaining items; the remaining tool tips.
+- [x] 3.5 (closed, 190: see A4) The popup as child windows; the sector's and objects' remaining items; the remaining tool tips.
 - [x] 3.6 The battle report's own counters (update 167): 0x439C88 / 0x43A800 / 0x4212F0 traced; vehicles lost
       are every vehicle destroyed, and a destroyed vehicle leaves its war map object.
-- [ ] 3.7 Commands one queue pass later (0x95) where the order matters.
+- [ ] 3.7 (with A2 / A9) Commands one queue pass later (0x95) where the order matters.
 
 ## Stage 4: the rest of the original (laid out afresh in update 177)
 
@@ -238,7 +247,7 @@ wrong name: what is left of it is what the war map's save keeps of a battle's ob
         Use Reaper; `[System]` the six memory and frame-time ones.
       - *The developers' own* (4.8, optional): `[Debug]` the twelve, `[Stats]` the eight.
       - *With their stages*: `[Network]` the three (4.7), `[Demo]` Playback Files (4.6).
-- [~] 4.2 **Cursors.** Done in 177: the cursor's sprite animates (0x40CDC0, half a frame a tick). Left: the wait
+- [x] 4.2 **Cursors** (closed, 190: see A3). Done in 177: the cursor's sprite animates (0x40CDC0, half a frame a tick). Left: the wait
       cursor (cursor 13) shown by the busy object (0x40E680) while a game is saved (0x4042D0), loaded
       (0x408B70) and the war map built (0x418500); the engine does these inside one frame, so it is a question
       of whether anything would be seen.

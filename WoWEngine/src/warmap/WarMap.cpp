@@ -2454,7 +2454,7 @@ namespace wow
         switch (event)
         {
         case BattleInSector: case EndGameWon: case EndGameLost: return true;
-        case ResearchAlert: case PodLanded: case UndefendedSectorLost: return true;
+        case ResearchAlert: case PodLanded: case UndefendedSectorLost: return !noBoxes;    // 0x41E4D0
         case ConstructionCompleted: return Option("Construction Completed", false);
         case UnitCompleted: return Option("Unit Manufactured", false);
         case ArrivedInSector: return Option("Unit Arrived At Destination", false);
@@ -2524,7 +2524,7 @@ namespace wow
         case ResearchAlert: // 0x41F220: for the local player's research (its +0x88, param 1), "No research is
             if (param)      // currently in progress" and sound 0x135; otherwise nothing (and the queue waits)
             {
-                OpenBox(res.String(0x421), 0, {}, 0x8122);
+                if (!noBoxes) OpenBox(res.String(0x421), 0, {}, 0x8122);    // (0x41F23B)
                 sounds.push_back(0x135);
             }
             break;
@@ -2571,14 +2571,14 @@ namespace wow
             {
                 sounds.push_back(0x1B2);
                 text = res.String(0x41E) + ": " + name(sector);
-                OpenBox(text, sector, {}, 0x8122);
+                if (!noBoxes) OpenBox(text, sector, {}, 0x8122);    // (0x41F0A8)
             }
             else
             {
                 battle[size_t(sector)] = true;
                 sounds.push_back(0x1B3);
                 text = res.String(human ? 0x420 : 0x41F) + ": " + name(sector);
-                OpenBox(text, sector, res.String(human ? 0x4B2 : 0x4B1), 0x8072);
+                if (!noBoxes) OpenBox(text, sector, res.String(human ? 0x4B2 : 0x4B1), 0x8072);    // (0x41F12B, 0x41F16F)
             }
             Log(text);
             break;
@@ -2596,7 +2596,7 @@ namespace wow
             }
             box += res.String(what) + ": " + name(sector);
             line += res.String(what) + ": " + name(sector);
-            OpenBox(box, sector, {}, 0x8122);
+            if (!noBoxes) OpenBox(box, sector, {}, 0x8122);     // (0x41EA2E; with it goes 0x41A730, not traced)
             SetView(1);
             Log(line);
             podFlag[size_t(sector)] = false;
@@ -2800,7 +2800,7 @@ namespace wow
         // (0x41D1FD: the sector under the mouse is only looked at with no window of the player's under it and no
         // current object)
         if (const int over = CounterAt(x, y); over >= 0 && counters[size_t(over)].players) sector = 0;
-        if (sector && owner[size_t(sector)] == 0 && selection.empty()) selected = sector;
+        if (sector && (owner[size_t(sector)] == 0 || anySector) && selection.empty()) selected = sector;
         auto add = [&](int command, int param, int icon, int text) {
             Rect r = SpriteRect(icon, 0, 0);
             if (r.w <= 0) r.w = r.h = 32;
@@ -3170,7 +3170,7 @@ namespace wow
             return std::nullopt;
         }
         // otherwise the sector is selected if it's the player's (or with the cheats), and the player's action 2
-        if (sector && sector != selected && owner[size_t(sector)] == 0)
+        if (sector && sector != selected && (owner[size_t(sector)] == 0 || anySector))
         {
             selected = sector;
             ClearSelection();

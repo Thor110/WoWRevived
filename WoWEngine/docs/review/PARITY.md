@@ -973,6 +973,17 @@ transparency")
   Martian campaign run on with the computer player building, both clean under the checkers. Where the
   deployment stands a new building wasn't looked at.
 
+**Update 190** (A3, A4 closed; A8 begun)
+- [x] **Charlie** (`[Debug]` "Charlie", byte_4D1261): ResearchAlert, PodLanded and UndefendedSectorLost aren't
+      critical (their test, 0x41E4D0) and don't put up their boxes (0x41F23B; 0x41F0A8, 0x41F12B, 0x41F16F;
+      0x41EA2E); their sounds and message lines stay. Seen: a Martian campaign's clock runs on past the first
+      pod with it on, and stops at the pod's box with it off.
+- [x] **Mat is a setting too** (`[Debug]` "Mat"), not only the curtains cheat; with it or Edit functionality a
+      sector that isn't the player's can be selected on the war map (0x41D241, 0x41D427).
+- *Closed with reasons in PLAN.md*: the wait cursor (A3: the game shows it from the window's thread while its
+  own is busy for seconds; the engine is never busy that long), and Stage 3's 3.2 and 3.5 (A4).
+- *Moved*: the players' command records go with the network game, which is what needs them.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

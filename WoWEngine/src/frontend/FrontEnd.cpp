@@ -645,6 +645,7 @@ namespace wow
         map->SetEventOptions([this](const char* name, bool on) { return ini.GetBool("Event", name, on); });
         map->SetStickyPopup(ini.GetBool("Modern", "Sticky popup menus", false));   // a modern option (docs/MODERN.md)
         map->SetUpgradedInBattle(ini.GetBool("Modern", "Upgraded buildings in battle", true));   // MODERN FIX (docs/MODERN.md)
+        map->SetDeveloperFlags(Mat(), ini.GetBool("Debug", "Charlie", false), ini.GetBool("Debug", "Edit functionality", false));
         {
             ObjOjd::ArmourModifiers armour;     // the same [Tweak] values the battle map takes (0x4373D0)
             armour.visRadMul = ini.GetFloat("Tweak", "VisRadMul", 1.5f);
@@ -1188,7 +1189,7 @@ namespace wow
         s.hours = b.hours;
         // 0x40B030: with the curtains cheat on (byte_4D1279) and [Game] "Time Of Day" not 0, that hour lights the map
         int lightHour = int(b.hours) % 24;
-        if (const int forced = ini.GetInt("Game", "Time Of Day", 0); cheats.mat && forced != 0) lightHour = forced;
+        if (const int forced = ini.GetInt("Game", "Time Of Day", 0); Mat() && forced != 0) lightHour = forced;
         if (auto d = dayTimes.find(lightHour); d != dayTimes.end()) s.dayTime = &d->second;
         s.shadeClass = Landscape::ShadeClass(lastEnemyCount);
         s.human = res.Human();
@@ -1507,7 +1508,10 @@ namespace wow
         case 2: creditsEasterEgg = true; break;                                             // 0x401280: byte_4D25A4
         case 3: cheats.shym = true; break;                                                  // byte_4D25A0
         case 4: cheats.noFog = true; break;                                                 // byte_4BAD38 0
-        case 5: cheats.mat = true; break;                                                   // 0x401320
+        case 5:                                                                             // 0x401320
+            cheats.mat = true;
+            if (map) map->SetDeveloperFlags(true, ini.GetBool("Debug", "Charlie", false), ini.GetBool("Debug", "Edit functionality", false));
+            break;
         case 6: if (map) if (Research* r = map->LocalResearch()) r->CompleteAll(); break;   // 0x4013A0: 0x458460
         case 7:     // 0x401440 / 0x4014F0: 0x806C / 0x806D to the sector (dword_4D2550), with a war map
         case 8:
