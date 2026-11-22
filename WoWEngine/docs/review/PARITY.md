@@ -636,9 +636,18 @@ Martian start's units turned differently)
       engine showed 2 always.
 - With these the engine's frame of a new Martian campaign differs from the owner's only in the clock (theirs had
   run to 0001 01), their mouse pointer, and the first pod.
-- *Open*: **where the first pod lands.** In the owner's frame, just past the first day, a Martian counter stands
-  alone in sector 2 (south-west of the base, no one's before). The engine's first pod lands in Sector 10, a Human
-  sector, and asks to attack. Asked of the owner: whether the first pod always lands there.
+
+**Update 160** (the owner's `Martian.000` and `Human.000`; no code changed)
+- [x] **Closed: the Martian campaign opening at 0001 01 with a pod down.** It is the owner's start file, not the
+      exe: their `Martian.000` (35,711 bytes) is a game a day in (time 24.2667 hours, which is 91 updates at
+      speed 8; date 1 Sep 01:00:24; the note "Pod landed: Sector 6"; the pod's unit in sector 6; view 150, 324),
+      where the Italian discs' (34,172 bytes) is at time 0 with the base alone. Their `Human.000` differs from
+      the discs' in the saved view only (593, 1948 against 803, 1805), which the selected sector overrides
+      (update 159).
+- [x] **The engine on the owner's `Martian.000`** gives their frame but for the mouse pointer and the calendar's
+      moving part: 401 pixels of 307,200. So a save the original wrote a day in, with a pod and a note, loads
+      and draws right, and update 159's question about where the first pod lands falls away.
+- The test install now uses the owner's two start files (the discs' are kept beside it).
 
 ## Deferred (with the reason each is still open)
 

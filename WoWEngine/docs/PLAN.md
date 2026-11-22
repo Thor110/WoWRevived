@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 159) and what is next
+## Where things stand (update 160) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -55,8 +55,6 @@ the working order; the stages further down stay the full inventory.
 - **Lighting in London** (update 143): Big Ben and Parliament are brighter in the original because its lorries
   stand beside them with their headlights on; the engine's stand to the south. It goes with the deployment
   spot above, not a lighting fault (update 151).
-- **Where the first pod lands** (update 159): sector 2 in the owner's Martian frame, Sector 10 in the engine.
-  Asked whether it is always the same in the original.
 - **The route save layout** against a real save of the original with units in transit (asked of the owner).
 
 Ask the owner for a frame of the original whenever a change is visible: a fresh game, the battle opened,
