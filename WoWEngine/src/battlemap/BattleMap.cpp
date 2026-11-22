@@ -182,9 +182,12 @@ namespace wow
     // 0x4868B0: the picture (maps\hmin<sector>.spr, mmin in a Martian game) at the bottom right of the 640 x 480 view,
     // [Screen] "Scroll Border" (4) in; the view's rectangle its size x 640 / the world's width and x 480 / its height
     // (+0x1C, +0x20); drawn through the bm group's slot 21 ({S}MINIB) at level 0. The colours are system colours
-    // (0x40B120, 6-bit RGB): the rectangle 47, 0, 0 (Human) or 12, 42, 4 (Martian); a dot (0x480070) the side's
-    // vehicle colour (0, 63, 0 / 63, 0, 0) for a category 1 object of the player's, its other colour (32, 63, 0 /
-    // 63, 32, 0) for the player's others, and the other side's (0, 0, 63 / 0, 63, 0).
+    // (0x40B120 -> 0x40B3B0(palette, r, g, b), 6-bit each; the pushes are b, g, r): the rectangle (dword_4DAF9C)
+    // 0, 0, 47 (Human) or 12, 42, 4 (Martian); a dot (0x480070) the side's vehicle colour (4DAFA0: 0, 63, 0 /
+    // 63, 0, 0) for a category 1 object of the player's, its other colour (4DAFA4: 0, 63, 32 / 63, 32, 0) for the
+    // player's others, and the other side's (4DAFA8: 63, 0, 0 / 0, 63, 0). (Update 143: the Human game's had red
+    // and blue the wrong way round; the original's view rectangle is blue, seen in the owner's screenshot.)
+    // In an 8-bit display these are the palette's nearest entries (0x40B42F), not the colours themselves.
     void BattleMap::SetUpMinimap()
     {
         char name[32];
@@ -204,11 +207,11 @@ namespace wow
         };
         if (setup.human)
         {
-            rectColour = six(0x2F, 0, 0);
-            boxInner = six(0x28, 0, 0);
+            rectColour = six(0, 0, 0x2F);
+            boxInner = six(0, 0, 0x28);
             vehicleColour = six(0, 0x3F, 0);
-            otherColour = six(0x20, 0x3F, 0);
-            enemyColour = six(0, 0, 0x3F);
+            otherColour = six(0, 0x3F, 0x20);
+            enemyColour = six(0x3F, 0, 0);
         }
         else
         {
@@ -799,7 +802,7 @@ namespace wow
                         for (size_t pi = 0; pi < props.size() && ok; pi++)
                         {
                             const Prop& p = props[pi];
-                            if (!p.alive || (p.type >= 0xCF && p.type <= 0xE5) || (p.type >= 0x399 && p.type <= 0x3A9)) continue;
+                            if (!p.alive || (p.type >= 0xCF && p.type <= 0xE5)) continue;   // (+0xB8 bit 2: 0xCF-0xE5 only, 0x47D828)
                             if (Octagonal(bx, by, int(p.x), int(p.y)) < Radius44(p.type) + size) ok = false;
                         }
                         bx += 2 * size;

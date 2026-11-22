@@ -1297,7 +1297,7 @@ namespace wow
         }
         // the rubber band (tracker 0x49C3E0 -> 0x49C630, lines at depth 0x5DC0): with the box at least 0x17 tall, its
         // sides from 12 below the top to 12 above the bottom, the outer line in dword_4DAF9C and the one inside it in
-        // dword_4DAFB8 (0x40B120: Human RGB6 0x2F, 0, 0 and 0x28, 0, 0; Martian 12, 42, 4 and 5, 39, 4); with it at
+        // dword_4DAFB8 (0x40B120: Human RGB6 0, 0, 0x2F and 0, 0, 0x28, blue; Martian 12, 42, 4 and 5, 39, 4); with it at
         // least 0x17 wide, the top and bottom the same way from 12 in at each end. The corners stay open.
         if (rubberBand)
         {
@@ -1306,7 +1306,7 @@ namespace wow
             auto c6 = [](int c) { return uint32_t((c << 2) | (c >> 4)); };
             auto rgb = [&](int r6, int g6, int b6) { return c6(r6) << 16 | c6(g6) << 8 | c6(b6); };
             const bool human = res.Human();
-            const uint32_t outer = human ? rgb(0x2F, 0, 0) : rgb(12, 42, 4), inner = human ? rgb(0x28, 0, 0) : rgb(5, 39, 4);
+            const uint32_t outer = human ? rgb(0, 0, 0x2F) : rgb(12, 42, 4), inner = human ? rgb(0, 0, 0x28) : rgb(5, 39, 4);
             auto plot = [&](int px, int py, uint32_t c) { if (px >= 0 && py >= 0 && px < canvas.Width() && py < canvas.Height()) out[size_t(py) * size_t(canvas.Width()) + size_t(px)] = c; };
             if (b - t >= 0x17)
                 for (int py = t + 12; py <= b - 12; py++)
@@ -1341,12 +1341,13 @@ namespace wow
             if (selected) canvas.DrawSprite(warmap::MiniSectorGType, selected, mini.x, mini.y);
             {
                 // the view's outline (0x49C740 at 0x422E6C), its size fixed at miniW x 640 / mapW by miniH x 480 / mapH,
-                // in the side's colour (dword_4DAF9C from 0x40B120: Human RGB6 0x2F, 0, 0; Martian 12, 42, 4)
+                // in the side's colour (dword_4DAF9C from 0x40B120: Human RGB6 0, 0, 0x2F, blue: 0x40B3B0's pushes are
+                // b, g, r; Martian 12, 42, 4)
                 uint32_t* out = canvas.Pixels();
                 int x0 = mini.x + cameraX * MiniW / warmap::MapWidth, y0 = mini.y + cameraY * MiniH / warmap::MapHeight;
                 int x1 = x0 + MiniW * 640 / warmap::MapWidth, y1 = y0 + MiniH * 480 / warmap::MapHeight;
                 auto c6 = [](int c) { return uint32_t((c << 2) | (c >> 4)); };
-                const uint32_t colour = res.Human() ? c6(0x2F) << 16 : (c6(12) << 16 | c6(42) << 8 | c6(4));
+                const uint32_t colour = res.Human() ? c6(0x2F) : (c6(12) << 16 | c6(42) << 8 | c6(4));
                 auto plot = [&](int x, int y) { if (x >= 0 && y >= 0 && x < canvas.Width() && y < canvas.Height()) out[size_t(y) * size_t(canvas.Width()) + size_t(x)] = colour; };
                 for (int x = x0; x <= x1; x++) { plot(x, y0); plot(x, y1); }
                 for (int y = y0; y <= y1; y++) { plot(x0, y); plot(x1, y); }

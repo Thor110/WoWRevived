@@ -348,6 +348,35 @@ settled: battle-ui 8, combat 4 and 9, movement 15, 16 and 24, battle-setup 4, 11
       the next step at the track's end, nothing with the CD option off. *Provisional*: where the track is stopped
       on leaving the battle.
 
+**Update 143** (from the owner's screenshot of the original: a new Human game, London, nothing moved)
+- [x] The Human game's side colours had red and blue the wrong way round. 0x40B3B0 takes (palette, r, g, b) and
+      its callers in 0x40B120 push b, g, r: the Human view rectangle and rubber band (dword_4DAF9C / 4DAFB8) are
+      0, 0, 47 and 0, 0, 40, blue, not red; the player's non-vehicle dot (4DAFA4) 0, 63, 32; the other side's dot
+      (4DAFA8) 63, 0, 0. Fixed on the battle map's minimap and the war map's mini-map outline and rubber band. The
+      Martian game's were right. The screenshot's rectangle is #0000BD.
+- [x] The burnt trees (0x399-0x3A9) aren't trees to the game (+0xB8 bit 2 is set for 0xCF-0xE5 only, 0x47D828):
+      the exclusions added in updates 137 and 142 took them for trees.
+- **Open, not understood: where the lorries deploy.** The original puts London's five lorries north-east of Big Ben
+  (the block's spot about 4331, 2790: ring 95, the fifth of its six angles, 288 degrees); the engine takes the
+  second angle, 72 degrees (4331, 2970), south of the tower by the hedge. Same centre (the HQ, 4302, 2880), same
+  ring, same block. So the original refuses the 72 degree spot and the engine doesn't. Checked and matching:
+  the ring (0x4222C0: k, size, e, step, the angles), the ground cost (0x480680) and its tables (terrain 11 costs
+  a lorry 8, not -1), the footprint marking (0x47C280), the HQ's class (0x48E8A0, vt+0xB8 false, so its +0x46
+  stays OBJ.ojd's 28). What would explain it, none confirmed: the footprint of the Parliament part 825 reaching
+  one vertex further (its radius 5 cells, not 4: 121 against a needed 128), or the HQ's reaching two cells. Tried
+  and ruled out: the HQ's footprint at its model radius (then 288 degrees is refused too).
+- **Correction to update 140: a building's parts are in the world's grid.** An object's start (0x48A8B0 ->
+  0x48A660) sets its own position again (vt+0x40, 0x48AA80) when vt+0xF0 (0x48A830) says so, and it does for a
+  part whose parent is a building (category 2 or 3). So the parts are found by the deployment's check, the look
+  ahead and an explosion (0x47FC50), each with its own radius and health. A tree circle's trees still aren't
+  (bit 2 with a parent). **Not yet in the engine**: its explosions and look ahead still treat a building as one
+  object.
+- **Seen in the screenshot, not yet traced**: Big Ben and Parliament are lit brighter and warmer than the
+  engine's; the road has light pools the engine doesn't draw, and the engine draws one round the lorries that the
+  original doesn't show; the bridge's deck is much darker. The lorries' dots are #E7FF00, which no 16-bit side
+  colour gives: the screenshot looks to be from an 8-bit display, where the side colours are the palette's
+  nearest entries (0x40B42F); if so the lighting differences may be the 8-bit tables' too.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
