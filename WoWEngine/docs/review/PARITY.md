@@ -1142,6 +1142,10 @@ transparency")
   `-` no longer does); both battles with `--no-loose` the same picture as before, and running with the loose
   files. Not seen: the icon and the release script (Windows).
 
+**Update 210** (the Modern Options menu)
+- The HUD scale slider's row has the full-width underlay of the other rows (the slider's own glass is
+  narrower), on both sides' menus.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

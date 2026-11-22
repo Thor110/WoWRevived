@@ -505,6 +505,7 @@ namespace wow
         m->AddSlider((std::clamp(ini.GetInt("Modern", "HUD scale", 100), 50, 300) - 50) / 25, 10,
             [](int v) { return "HUD scale: " + std::to_string(50 + v * 25) + "%"; },
             [this](Button& b) { ini.SetInt("Modern", "HUD scale", 50 + b.value * 25); });
+        m->WidenLast();
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         m->FocusLast();
         return m;

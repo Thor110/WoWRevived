@@ -59,6 +59,9 @@ namespace wow
         void AddEventCheck(int textId, bool value, OnChange changed);
         void AddEventCheckText(std::string text, bool value, OnChange changed);   // a caption that isn't a TEXT.ojd string
         void NextColumn();
+        // MODERN: the last row added gets the full-width underlay of the menu's rows (the two-column menus' slider
+        // sprite is narrower than their other rows)
+        void WidenLast() { if (!buttons.empty()) buttons.back().underlay = style == 2 ? 0x3D : 0x3A; }
         void EndColumns() { if (column >= 0) nextY = std::max(nextY, columnBottom); }   // rows after the two columns go under the longer
 
 

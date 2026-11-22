@@ -55,7 +55,12 @@ namespace wow
             break;
         }
         }
-        if (b.glass) canvas.DrawSprite(b.glass, glassFrame, b.rect.x, b.rect.y, 0, Canvas::Blend::Translucent);
+        if (b.underlay)
+        {
+            const Rect under = SpriteRect(b.underlay, 0, 0);
+            canvas.DrawSprite(b.underlay, 0, b.rect.x - (under.w - b.rect.w) / 2, b.rect.y, 0, Canvas::Blend::Translucent);
+        }
+        else if (b.glass) canvas.DrawSprite(b.glass, glassFrame, b.rect.x, b.rect.y, 0, Canvas::Blend::Translucent);
         if (b.plate) canvas.DrawSprite(b.plate, plateFrame, b.rect.x, b.rect.y);
         if (b.kind == Button::Kind::Edit)
         {

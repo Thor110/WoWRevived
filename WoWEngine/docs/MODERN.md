@@ -162,6 +162,11 @@ found without being copied by hand:
 - **A build run where it was made** looks in the source folder it was built from (`WOWENGINE_SOURCE_DIR`),
   and any build looks in `dat` / `maps` beside the program, when the game is installed somewhere else
   (`GameFiles::AddOverlay`: paths beginning DAT or MAPS look there first).
+- **Which background for which view size** needs no swapping of files (WoWRevived's launcher copies the
+  size's files over the ones in `DAT`; the engine doesn't): for the view size in use the engine reads
+  `DAT\extra\<width>x<height>\<name>` when it is there, and the plain `DAT\<name>` otherwise
+  (`Resources::FileFor`), and changes over at once when the size is changed in Display Settings. So the
+  files in `DAT` itself can stay the 640 x 480 ones. Repacking them into Dat.wow is for later (the owner).
 - `--no-loose` on the command line leaves them out (the game's files only), which is what the parity checks
   use. The log says which folder is used ("Loose files:") and, for each view size, which of its backgrounds
   were found ("View size ...: backgrounds in ...").
