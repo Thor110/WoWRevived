@@ -1024,6 +1024,13 @@ transparency")
   byte for byte. Not looked at: the Build List and the information page on a large view; the movies stay 640
   x 480.
 
+**Update 195** (the third step of B5; nothing of the original's changed at 640 x 480)
+- The briefing, debriefing, research and CD player are drawn from the picture's top left on a larger view,
+  not centred: their large backgrounds have the frames for the controls there.
+- Seen at 1920 x 1080: the briefing's text and map in its two panels, the CD player's list, picture and
+  credits in its boxes, the research cabinet in its drawer; both battles at 640 x 480 the same picture as
+  before. Not seen: the debriefing on a large view (same background and rule as the briefing).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

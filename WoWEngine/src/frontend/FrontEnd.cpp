@@ -1574,6 +1574,14 @@ namespace wow
         x = y = 0;
         // the maps are the whole picture; their menus, like every other 640 x 480 screen, sit in its middle
         if (SmallPicture(screen.get()) || (screen && (screen->Id() == WarMap::Id || screen->Id() == BattleMap::Id))) return;
+        // the briefing, debriefing, research and CD player are drawn at the top left: their backgrounds for a
+        // larger view (the owner's, 1920 x 1080) have the original 640 x 480 picture's frames there, with the
+        // rest of the room around them
+        if (screen)
+        {
+            const int id = screen->Id();
+            if (id == Briefing::Id || id == Debriefing::Id || id == ResearchScreen::Id || id == CdPlayer::Id) return;
+        }
         x = std::max(0, (pictureW - 640) / 2);
         y = std::max(0, (pictureH - 480) / 2);
     }

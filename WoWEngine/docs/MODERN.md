@@ -17,7 +17,7 @@ code each is to be marked `MODERN FIX`. A parity pass must leave them alone. The
 | Volume sliders saved | The Sound Control sliders never write the registry, so the volumes are lost | **In** (marked, 191): Master as it moves, Ambient and Speech as the menu closes, written to `WoWRevived.ini` |
 | Music toggle | The Sound Control check box only saves the setting; the music steps read it when they next come round | **In** (191): off stops the track at once, and either way the music step of the map behind the menu is brought forward |
 | Master volume on the music | Master doesn't reach the music's playback | **In** (marked, 191): Master scales the music |
-| Resolution applied at once | The slider only takes effect after a restart | **In but for the movies** (192-194): the menus, the other 640 x 480 screens and both maps take the view size at once. See "Resolution" below |
+| Resolution applied at once | The slider only takes effect after a restart | **In** (192-195): the menus, the other 640 x 480 screens and both maps take the view size at once; the movies are scaled up. See "Resolution" below |
 | Desktop resolution on the first start | (no such thing) | **In** (192): with no `[Screen] Size` yet, the view size is worked out from the desktop's and kept; afterwards the player's choice stands |
 | No 8 / 16-bit colour choice | Two radios in Display Settings; 8-bit doesn't work on modern systems | **In** (191): not offered; `[Modern]` "Original Display Settings" = 1 puts them and the lights toggle back |
 | Loose map files | The game marks MAPS.WoW's entries by looking for `Map\<name>` (0x414FAB), a folder it doesn't have, then reads `maps\<name>`: a loose map file is never used | **In** (update 140): `core/Vfs` looks in `maps\`, so a loose file in `MAPS` replaces the archive's, as in `DAT` |
@@ -82,7 +82,11 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
   width as the original's does (0x484DF0); the group icons wrap at the view's width; the end box is at the
   bottom middle; the Battle Options menu is in the middle. The sound's listener is the view's middle, and the
   borders are scaled as the original scales them for a larger screen (0x464B10, ODDITIES.md).
-- **The movies** are still drawn at 640 x 480 and scaled by the window.
+- **The briefing, debriefing, research and CD player** (195) are the exception to the centring: they are drawn
+  at the top left. The owner's 1920 x 1080 backgrounds for them have the original picture's frames there (the
+  briefing's two panels, the CD player's boxes, the empty drawer the research cabinet goes in), with the rest
+  of the room drawn around them, so any view size shows the right part. `FrontEnd::Origin`.
+- **The movies** are drawn at 640 x 480 and scaled up to fill the screen, their shape kept.
 - **Where the files go**: the engine looks for `extra\<size>\` and `warmap\` inside the game's `DAT` folder,
   so the installer has to put `WoWEngine/dat/extra` and `WoWEngine/dat/warmap` there (PLAN.md D2).
 

@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 194) and what remains
+## Where things stand (update 195) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -55,7 +55,7 @@ inventory with the history. Tick here and there as each is done.
       `[Modern]` "Original Display Settings" = 1 gives the original's menu.
 - [x] **B4** (192) The first start takes the desktop's resolution, by the rule agreed with the owner
       (MODERN.md "Resolution").
-- [~] **B5** The resolution applied (6.5), in three steps:
+- [x] **B5** The resolution applied (6.5), in three steps:
       - [x] (a, 192) the picture is the view size; the menus and the other 640 x 480 screens are centred in it
         over the backgrounds made for the size, never scaled; the slider acts at once; the picture is scaled
         to the screen with its shape kept;
@@ -64,8 +64,9 @@ inventory with the history. Tick here and there as each is done.
         scroll and zoom limits, edge scrolling, the minimap, popups, the end box, the group icons, the sound's
         listener and borders, 0x464B10); the menus over both centred. Not looked at yet: the Build List and
         the information page on a large battle view;
-      - [ ] (c) the movies and the briefing / research / CD player screens looked at on a large view; the
-        installer putting `dat/extra` and `dat/warmap` in the game's `DAT`.
+      - [x] (c, 195) the briefing, debriefing, research and CD player drawn at the top left of a large
+        view, where their large backgrounds have the original picture's frames; the movies stay 640 x 480,
+        scaled up to fill the screen. Putting `dat/extra` and `dat/warmap` in the game's `DAT` is with D2.
 - [x] Already in: the start files never saved over (160); upgraded buildings fight as their level (186).
 
 ### C. Modern options (Stage 6.7, 6.8)
