@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 182) and what is next
+## Where things stand (update 183) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -204,12 +204,16 @@ wrong name: what is left of it is what the war map's save keeps of a battle's ob
       carried as bytes; the two values after a battle unit's SELO id aren't understood.
 - [ ] 4.5 **The players and their commands**: the local, computer and network player objects, the command
       records (0x4460A0), and the commands the world handles one queue pass later (0x95, 0x419A24; was 3.7).
-- [ ] 4.6 **Playback recordings**: the game's self-running demo. Every input message goes through one routine
+- [x] 4.6 **Playback recordings** (in, update 183: `core/Playback.h`, with the switches `--record` and
+      `--playback` until Stage 6 gives them a place in the modern options): the game's self-running demo. Every input message goes through one routine
       (0x42D520) that can append it, with its tick, to `Playback.1`; another (0x42D2D0, each frame) reads
       `playback.1` to `playback.N` (`[Demo]` Playback Files, 4) and posts the messages back on their ticks.
       Playback is turned on by the world's command 0x808F (0x419C22); nothing in the retail listing turns
       recording on (byte_4EA3F4 has no writer). They are raw input, not the players' command records, so
-      they don't wait for 4.5.
+      they don't wait for 4.5. Neither switch can be reached in the retail game (update 183): the only
+      sender of 0x808F is the research screen's blueprint (0x45F73B), whose click the research screen takes
+      itself to say the speech again (0x45D29D) and doesn't pass on. So the system is whole but dormant.
+      The owner: implement it as the original has it, with the way in under the modern options (Stage 6).
 - [ ] 4.7 **The network game**: the menus' lists and the lockstep packets. The owner wants it tried, last or
       nearly last (update 178). Their reading of what the network build needs to play a campaign: its timer
       taken out, network play itself, and the start files no longer saved over (the engine already doesn't,

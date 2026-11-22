@@ -888,6 +888,20 @@ transparency")
   BAMO, heading, x, y, height, health, BATP, VEHI. A building's goes on after BATP with no class tag.
 - *Playback recordings* read out for the owner (PLAN.md 4.6).
 
+**Update 183** (Stage 4.6)
+- [x] **Playback recordings** (0x42D2D0 / 0x42D520), as the game has them: every input message goes through the
+      recorder, which while recording appends {frames since it began, message, wParam, lParam} to `Playback.1`;
+      the pump, once a frame, opens `playback.N` (N round from 1 to `[Demo]` Playback Files), hands back each
+      message whose frame has come and stops at the file's end; real input is dropped while it plays. The
+      engine's input now reaches the game as those messages (0x100 / 0x101 / 0x102, 0x200, 0x201 / 0x202,
+      0x204 / 0x205). Checked: a recording written and read back by the class alone, and a hand-made
+      `playback.1` played through the running engine (its Escape left the title screen on its frame).
+      Not checked: a recording made by hand at the keyboard, which can't be done here.
+- *Not in*: the two messages the game also records, 0x805B (a button held, each frame, 0x42D610) and 0x800A
+  (0x42D640), which the engine works out itself; the cursor moved on the desktop for a played 0x200.
+- The plan's note that playback can't be reached in the retail game (the blueprint's 0x808F never gets to the
+  world) is from the last turn.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

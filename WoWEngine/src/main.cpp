@@ -8,6 +8,7 @@
 #include "frontend/Canvas.h"
 #include "core/Random.h"
 #include "core/Crumb.h"
+#include "core/Playback.h"
 #include "frontend/FrontEnd.h"
 #include "frontend/Resources.h"
 #include "frontend/Settings.h"
@@ -83,6 +84,7 @@ namespace
         int ticks = 0;
         int mouseX = -1, mouseY = -1;
         int side = -1; // 1 Human, 0 Martian, -1 not given
+        bool record = false, playback = false;  // --record / --playback: the game's playback recordings (core/Playback.h)
     };
 
     Options ParseOptions(int argc, char** argv)
@@ -95,6 +97,8 @@ namespace
             else if (arg == "--martian") o.side = 0;
             else if (arg == "--open" && i + 1 < argc) o.open = int(std::strtol(argv[++i], nullptr, 0));
             else if (arg == "--ticks" && i + 1 < argc) o.ticks = std::atoi(argv[++i]);
+            else if (arg == "--record") o.record = true;
+            else if (arg == "--playback") o.playback = true;
             else if (arg == "--load" && i + 1 < argc) { o.open = 0x80B3; o.openParam = std::atoi(argv[++i]); }
             else if (arg == "--then" && i + 1 < argc) o.then = int(std::strtol(argv[++i], nullptr, 0));
             else if (arg == "--mouse" && i + 1 < argc)
@@ -241,6 +245,34 @@ namespace
         std::raise(sig);
     }
 #endif
+    // A recording keeps keys as the window's virtual keys (wParam of 0x100 / 0x101). The keys the game uses, both
+    // ways; any other key is kept as its SDL code with the top bit set, which no virtual key has.
+    struct KeyPair { int sdl; uint32_t vk; };
+    constexpr KeyPair KeyPairs[] = {
+        { SDLK_RETURN, 0x0D }, { SDLK_ESCAPE, 0x1B }, { SDLK_BACKSPACE, 0x08 }, { SDLK_TAB, 0x09 }, { SDLK_SPACE, 0x20 },
+        { SDLK_LEFT, 0x25 }, { SDLK_UP, 0x26 }, { SDLK_RIGHT, 0x27 }, { SDLK_DOWN, 0x28 }, { SDLK_HOME, 0x24 }, { SDLK_END, 0x23 },
+        { SDLK_PAGEUP, 0x21 }, { SDLK_PAGEDOWN, 0x22 }, { SDLK_INSERT, 0x2D }, { SDLK_DELETE, 0x2E }, { SDLK_PAUSE, 0x13 },
+        { SDLK_LSHIFT, 0x10 }, { SDLK_RSHIFT, 0x10 }, { SDLK_LCTRL, 0x11 }, { SDLK_RCTRL, 0x11 }, { SDLK_LALT, 0x12 }, { SDLK_RALT, 0x12 },
+        { SDLK_COMMA, 0xBC }, { SDLK_PERIOD, 0xBE }, { SDLK_MINUS, 0xBD }, { SDLK_EQUALS, 0xBB }, { SDLK_KP_PLUS, 0x6B }, { SDLK_KP_MINUS, 0x6D },
+    };
+    uint32_t VirtualFromKey(int key)
+    {
+        if (key >= int(SDLK_A) && key <= int(SDLK_Z)) return uint32_t('A' + (key - int(SDLK_A)));
+        if (key >= int(SDLK_0) && key <= int(SDLK_9)) return uint32_t('0' + (key - int(SDLK_0)));
+        if (key >= int(SDLK_F1) && key <= int(SDLK_F12)) return uint32_t(0x70 + (key - int(SDLK_F1)));
+        for (const KeyPair& p : KeyPairs) if (p.sdl == key) return p.vk;
+        return uint32_t(key) | 0x80000000u;
+    }
+    int KeyFromVirtual(uint32_t vk)
+    {
+        if (vk & 0x80000000u) return int(vk & 0x7FFFFFFFu);
+        if (vk >= 'A' && vk <= 'Z') return int(SDLK_A) + int(vk - 'A');
+        if (vk >= '0' && vk <= '9') return int(SDLK_0) + int(vk - '0');
+        if (vk >= 0x70 && vk <= 0x7B) return int(SDLK_F1) + int(vk - 0x70);
+        for (const KeyPair& p : KeyPairs) if (p.vk == vk) return p.sdl;
+        return 0;
+    }
+
     // The watchdog: a thread that looks at the main loop's heartbeat once a second. Five seconds with no pass puts a
     // STALL line in the log with what the engine was doing; a pass after that, a line saying how long it was.
     void Watch()
@@ -297,6 +329,13 @@ int main(int argc, char** argv)
     wow::random::FillTable();
 
     Options options = ParseOptions(argc, argv);
+    // (the engine's own: with a recording being made or played the random numbers start from 1, as the world's do
+    // (0x417DA3), so that what was recorded meets the same game when it's played)
+    if (options.record || options.playback)
+    {
+        wow::random::Seed(1);
+        wow::random::FillTable();
+    }
     auto files = wow::GameFiles::Locate(CandidateFolders(options));
     if (!files)
     {
@@ -406,6 +445,31 @@ int main(int argc, char** argv)
             SDL_Log("OnActivateApp %s", on ? "On" : "Off");
         };
         std::thread(Watch).detach();    // it only reads the heartbeat and writes the log; it ends with the process
+        // The playback recordings (0x42D2D0 / 0x42D520): input reaches the game as the window's messages, through
+        // Record; played back, the same messages come from the file
+        wow::Playback playback;
+        playback.SetFiles(files->Root(), [&](const std::string& name) { return files->Resolve(name); }, frontEnd.PlaybackFiles());
+        playback.SetRecording(options.record);
+        playback.SetPlaying(options.playback);
+        if (options.record) SDL_Log("Recording input to Playback.1");
+        if (options.playback) SDL_Log("Playing back recorded input (playback.1 to playback.%d)", frontEnd.PlaybackFiles());
+        auto act = [&](const wow::Playback::Message& m) {
+            const int x = int(int16_t(m.lParam & 0xFFFF)), y = int(int16_t(m.lParam >> 16));
+            switch (m.msg)
+            {
+            case 0x100: frontEnd.OnKey(KeyFromVirtual(m.wParam)); break;
+            case 0x101: frontEnd.OnKeyUp(KeyFromVirtual(m.wParam)); break;
+            case 0x102: { const char text[3] = { m.wParam < 0x80 ? char(m.wParam) : char(0xC0 | (m.wParam >> 6)), m.wParam < 0x80 ? char(0) : char(0x80 | (m.wParam & 0x3F)), 0 }; frontEnd.OnText(text); break; }
+            case 0x200: frontEnd.OnMouseMove(x, y); break;
+            case 0x201: case 0x202: frontEnd.OnMouseButton(x, y, m.msg == 0x201); break;
+            case 0x204: case 0x205: frontEnd.OnRightButton(x, y, m.msg == 0x204); break;
+            default: break;
+            }
+        };
+        auto input = [&](uint32_t msg, uint32_t wParam, int x, int y) {
+            const wow::Playback::Message m{ msg, wParam, uint32_t(uint16_t(x)) | uint32_t(uint16_t(y)) << 16 };
+            if (playback.Record(frontEnd.Frames(), m)) act(m);
+        };
         while (!done && !frontEnd.QuitRequested())
         {
             wow::Beat();
@@ -420,17 +484,27 @@ int main(int argc, char** argv)
                 case SDL_EVENT_KEY_DOWN:
                     if (event.key.key == SDLK_RETURN && (event.key.mod & SDL_KMOD_ALT)) { if (!event.key.repeat) { video.ToggleFullScreen(); wow::Screen::windowed = !(SDL_GetWindowFlags(video.Window()) & SDL_WINDOW_FULLSCREEN); } }
                     else if (event.key.key == SDLK_PAUSE) { if (!event.key.repeat) setActive(!active); }
-                    else if (active) frontEnd.OnKey(int(event.key.key));
+                    else if (active) input(0x100, VirtualFromKey(int(event.key.key)), 0, 0);
                     break;
                 case SDL_EVENT_WINDOW_FOCUS_LOST: setActive(false); break;
                 case SDL_EVENT_WINDOW_FOCUS_GAINED: setActive(true); break;
-                case SDL_EVENT_KEY_UP: frontEnd.OnKeyUp(int(event.key.key)); break;
-                case SDL_EVENT_TEXT_INPUT: if (active) frontEnd.OnText(event.text.text); break;
-                case SDL_EVENT_MOUSE_MOTION:
-                    if (video.ToGame(event.motion.x, event.motion.y, x, y)) frontEnd.OnMouseMove(x, y);
-                    else frontEnd.OnMouseLeave();
+                case SDL_EVENT_KEY_UP: input(0x101, VirtualFromKey(int(event.key.key)), 0, 0); break;
+                case SDL_EVENT_TEXT_INPUT:
+                    // 0x102, a character at a time (the game's text is Latin-1; anything past it isn't recorded)
+                    if (active)
+                        for (const unsigned char* c = reinterpret_cast<const unsigned char*>(event.text.text); *c; c++)
+                        {
+                            uint32_t ch = *c;
+                            if (ch >= 0xC0 && ch < 0xE0 && c[1]) { ch = (ch & 0x1F) << 6 | (c[1] & 0x3F); c++; }
+                            else if (ch >= 0x80) continue;
+                            if (ch < 0x100) input(0x102, ch, 0, 0);
+                        }
                     break;
-                case SDL_EVENT_WINDOW_MOUSE_LEAVE: frontEnd.OnMouseLeave();
+                case SDL_EVENT_MOUSE_MOTION:
+                    if (video.ToGame(event.motion.x, event.motion.y, x, y)) input(0x200, 0, x, y);
+                    else if (!playback.Playing()) frontEnd.OnMouseLeave();
+                    break;
+                case SDL_EVENT_WINDOW_MOUSE_LEAVE: if (!playback.Playing()) frontEnd.OnMouseLeave();
                     break;
                 case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 case SDL_EVENT_MOUSE_BUTTON_UP:
@@ -441,8 +515,8 @@ int main(int argc, char** argv)
                     bool inside = video.ToGame(event.button.x, event.button.y, x, y);
                     if (!inside) x = y = -1;
                     if (down && (!inside || !active)) break;
-                    if (event.button.button == SDL_BUTTON_LEFT) frontEnd.OnMouseButton(x, y, down);
-                    else if (event.button.button == SDL_BUTTON_RIGHT) frontEnd.OnRightButton(x, y, down);
+                    if (event.button.button == SDL_BUTTON_LEFT) input(down ? 0x201 : 0x202, 0, x, y);
+                    else if (event.button.button == SDL_BUTTON_RIGHT) input(down ? 0x204 : 0x205, 0, x, y);
                 }
                     break;
                 default: break;
@@ -456,7 +530,14 @@ int main(int argc, char** argv)
             if (lag > TickNs * 5) lag = TickNs * 5; // don't try to catch up after a long stall
             while (lag >= TickNs)
             {
-                if (active) frontEnd.Update();
+                if (active)
+                {
+                    // 0x403680: the playback's messages for this frame, then the frame
+                    const bool was = playback.Playing();
+                    for (const wow::Playback::Message& m : playback.Pump(frontEnd.Frames())) act(m);
+                    if (was && !playback.Playing()) SDL_Log("Playback finished");
+                    frontEnd.Update();
+                }
                 lag -= TickNs;
             }
 

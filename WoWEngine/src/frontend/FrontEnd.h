@@ -31,6 +31,8 @@ namespace wow
 
         void Update();
         void Draw(Canvas& canvas) const;
+        uint32_t Frames() const { return uint32_t(frames); }    // dword_4D2558
+        int PlaybackFiles() const { return ini.GetInt("Demo", "Playback Files", 4); }   // dword_4BAAD8
         void OnKey(int sdlKey);
         void OnKeyUp(int sdlKey) { if (screen) screen->OnKeyUp(sdlKey); }
         void OnText(const char* utf8) { if (screen) screen->OnText(utf8); }

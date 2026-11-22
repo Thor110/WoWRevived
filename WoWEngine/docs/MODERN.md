@@ -110,6 +110,17 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
 
 - Decided: the lights toggle goes and the lights are always on; see "Modern fixes" above.
 
+### Playback recordings (the owner, update 183)
+
+The original's self-running demo (docs/PLAN.md 4.6, `core/Playback.h`) can't be switched on in the retail game.
+The engine has it as the game does, the files and their format the game's own, and for now switches it from the
+command line: `--record` writes the session's input to `Playback.1` in the game folder, `--playback` plays
+`playback.1` to `playback.N` (`[Demo]` "Playback Files", 4), one file each time, and drops real input until the
+file ends. To come here: a way to start and stop both from the menus. Two things the engine adds, because a
+recording is only raw input by frame number: with either switch the random numbers start from 1, so a recording
+meets the same game it was made in; and a key the game has no virtual key for is kept as its own code with the
+top bit set. A recording is only good from the state it was made from (the same start, the same save).
+
 ## Game modes
 
 - **Campaign extras**: Martian against Martian, and Human against Human.
