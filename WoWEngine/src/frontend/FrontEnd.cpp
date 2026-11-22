@@ -1193,6 +1193,8 @@ namespace wow
     void FrontEnd::Dispatch(const Command& command, bool fromControl)
     {
         if (delayed) return; // the view is fading out: it takes no more input
+        // (Escape on the main menu or the Insert CD menu does nothing, so there is nothing to fade out for)
+        if (command.id == Commands::Back && screen && (screen->Id() == CmdMainMenu || screen->Id() == CmdInsertCd)) return;
         if (fromControl && screen && Fades(*screen))
         {
             delayed = command;
@@ -1245,7 +1247,10 @@ namespace wow
             {
                 Command c = *delayed;
                 delayed.reset();
+                const Screen* was = screen.get();
                 Execute(c);
+                // (a command that left the same view up: it fades back in rather than staying black)
+                if (screen.get() == was) { fadeIn = 2; overlay = 2; }
             }
             return;
         }
@@ -1648,7 +1653,12 @@ namespace wow
         screen->Draw(canvas);
         DrawTooltip(canvas);
         canvas.SetOrigin(0, 0);
-        if (overlay) canvas.DrawSprite(0x5C, 0, 0, 0, 0, overlay == 1 ? Canvas::Blend::Translucent : Canvas::Blend::Opaque);
+        // (bigBlack is 640 x 480: on a larger picture it is laid side by side until the picture is covered)
+        if (overlay)
+            if (const IndexedImage* black = res.GetFrame(0x5C, 0); black && black->width > 0 && black->height > 0)
+                for (int y = 0; y < canvas.Height(); y += black->height)
+                    for (int x = 0; x < canvas.Width(); x += black->width)
+                        canvas.DrawSprite(0x5C, 0, x, y, 0, overlay == 1 ? Canvas::Blend::Translucent : Canvas::Blend::Opaque);
         canvas.SetOrigin(ox, oy);
         DrawCursor(canvas);
         canvas.SetOrigin(0, 0);
@@ -1668,7 +1678,13 @@ namespace wow
     {
         width = 640;
         height = 480;
-        if (SmallPicture(screen.get())) return;
+        if (SmallPicture(screen.get()))
+        {
+            const MovieScreen* movie = static_cast<const MovieScreen*>(screen.get());
+            width = movie->PictureW();
+            height = movie->PictureH();
+            return;
+        }
         const std::string size = ini.GetString("Screen", "Size", "640,480");
         int w = std::atoi(size.c_str()), h = 0;
         if (auto comma = size.find(','); comma != std::string::npos) h = std::atoi(size.c_str() + comma + 1);

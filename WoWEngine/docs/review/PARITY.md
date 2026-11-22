@@ -1079,6 +1079,17 @@ transparency")
   x 480; both battles without the keys the same picture as before. Not seen: the wheel, and the scaled picture
   on a real screen.
 
+**Update 203** (faults the owner found at 1920 x 1080)
+- A movie larger than 640 x 480 is shown in a picture of its own size, not shrunk into 640 x 480 first.
+- The menus' fade (0x4065E0, bigBlack) covers the whole of a larger picture; it was only the top left 640 x
+  480, which showed as a block of the fade's colour between menus.
+- Escape on the main menu (and the Insert CD menu) starts no fade: the command does nothing there, and the
+  fade it began was never ended, so the picture stayed covered. A command that leaves the same view up now
+  fades back in.
+- Seen at 1920 x 1080: Escape on the main menu leaving it as it is; the fade's second tick one colour over the
+  whole picture; the menu after it; the game's own TITLE movie still 640 x 480; both battles as before. Not
+  seen: an .mp4 (they are only decoded on Windows).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

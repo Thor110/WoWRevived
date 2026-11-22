@@ -5,6 +5,7 @@
 #include "frontend/Screen.h"
 #include "platform/Movie.h"
 
+#include <algorithm>
 #include <deque>
 #include <memory>
 
@@ -23,6 +24,10 @@ namespace wow
         std::optional<Command> OnKey(int sdlKey) override;
         std::optional<Command> OnMouseButton(int, int, bool) override { return std::nullopt; }
         int CursorAt(int, int) const override { return -1; } // no cursor over a movie
+        // MODERN: the picture a movie is shown in: the game's 640 x 480, or the movie's own size when it is larger
+        // (WoWRevived's 1920 x 1080 .mp4s), so the window scales it to the screen at its own shape
+        int PictureW() const { return std::max(640, shownWidth); }
+        int PictureH() const { return shownWidth > 640 || shownHeight > 480 ? std::max(1, shownHeight) : 480; }
         // the movie pauses with the game (0x44E440)
         void SetPaused(bool paused) override { if (audio) audio->SetPaused(paused); }
 

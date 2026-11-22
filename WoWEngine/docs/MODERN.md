@@ -142,7 +142,12 @@ The wheel isn't written to a playback recording (the keys are).
   at the top left. The owner's 1920 x 1080 backgrounds for them have the original picture's frames there (the
   briefing's two panels, the CD player's boxes, the empty drawer the research cabinet goes in), with the rest
   of the room drawn around them, so any view size shows the right part. `FrontEnd::Origin`.
-- **The movies** are drawn at 640 x 480 and scaled up to fill the screen, their shape kept.
+- **The movies**: the game's own are drawn in a 640 x 480 picture and scaled up to fill the screen, their shape
+  kept. A larger movie (WoWRevived's 1920 x 1080 `.mp4`s) is shown in a picture of its own size (update 203), so
+  it reaches the screen at its own shape and detail; before, it was shrunk into the 640 x 480 picture first.
+  `MovieScreen::PictureW` / `PictureH`.
+- **The menus' fade** (bigBlack, 640 x 480) is laid side by side to cover a larger picture (update 203); it
+  only covered the top left corner.
 - **Where the files go**: the engine looks for `extra\<size>\` and `warmap\` inside the game's `DAT` folder,
   so the installer has to put `WoWEngine/dat/extra` and `WoWEngine/dat/warmap` there (PLAN.md D2).
 
