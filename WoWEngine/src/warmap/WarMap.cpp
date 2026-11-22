@@ -572,6 +572,24 @@ namespace wow
         return t == unitData.end() ? 0 : ObjOjd::Armour(t->second, res.Human(), armour);
     }
 
+    // The vehicles a battle destroyed go from their objects' lists of battle units (+0x4C), so a group that comes
+    // through with losses is that much smaller on the war map, in its next battle and in the save; and they are
+    // the battle report's vehicles lost (0x4212F0: +0x60 / +0x64, the units' vehicles before less those now).
+    void WarMap::RemoveBattleUnits(const std::vector<std::pair<int, int>>& dead)
+    {
+        battleDead[0] = battleDead[1] = 0;
+        std::vector<std::pair<int, int>> order = dead;
+        std::sort(order.begin(), order.end(), [](const auto& a, const auto& b) { return a.first != b.first ? a.first < b.first : a.second > b.second; });
+        for (const auto& [ref, slot] : order)
+        {
+            if (ref < 0 || size_t(ref) >= table.size() || slot < 0) continue;
+            const int at = CounterOf(ref);
+            if (at < 0 || counters[size_t(at)].kind != 0) continue;
+            battleDead[counters[size_t(at)].players ? 0 : 1]++;
+            table[size_t(ref)].RemoveBattleUnit(size_t(slot));
+        }
+    }
+
     void WarMap::SetUnitHealth(int ref, int slot, int health)
     {
         if (ref < 0 || size_t(ref) >= table.size() || slot < 0) return;
@@ -2110,7 +2128,7 @@ namespace wow
             // fought on the battle map: each object whose battle units are all gone is taken out of its counter (the
             // battle map's 0x8057 on its last unit; 0x43A800 counts what's left for the report): a counter left
             // empty goes from the sector; the side with nothing left lost
-            int gone[2] = { 0, 0 }, goneCrew[2] = { 0, 0 }, goneFacilities[2] = { 0, 0 };
+            int gone[2] = { 0, 0 }, goneFacilities[2] = { 0, 0 };
             std::vector<int> emptied;
             for (int ref : *lost)
                 for (size_t i = 0; i < counters.size(); i++)
@@ -2120,10 +2138,7 @@ namespace wow
                     auto it = std::find(k.refs.begin(), k.refs.end(), ref);
                     if (it == k.refs.end()) continue;
                     const int side = k.players ? 0 : 1;
-                    Counter one = k;
-                    one.refs = { ref };
-                    one.count = 1;
-                    if (k.kind == 0) { gone[side]++; goneCrew[side] += CrewOf(one); }
+                    if (k.kind == 0) gone[side]++;
                     else goneFacilities[side]++;
                     k.refs.erase(it);
                     k.count = std::max(0, k.count - 1);
@@ -2152,10 +2167,13 @@ namespace wow
             debriefing.fought = true;
             debriefing.survivors = left[0] != 0;
             debriefing.lostUnits = gone[0];
-            debriefing.lostVehicles = goneCrew[0];
+            // (0x4212F0) units: the objects gone from the lists; vehicles: the units' vehicles before less those
+            // now, so every vehicle destroyed, in a group that came through as well as one that didn't
+            debriefing.lostVehicles = battleDead[0];
             debriefing.lostFacilities = goneFacilities[0];
             debriefing.killedUnits = gone[1];
-            debriefing.killedVehicles = goneCrew[1];
+            debriefing.killedVehicles = battleDead[1];
+            battleDead[0] = battleDead[1] = 0;
             debriefing.killedFacilities = goneFacilities[1];
             RecomputeOwner(s);
             // 0x43A0D3: the sector had its command building and hasn't now: 0x813D to its holder's objects there

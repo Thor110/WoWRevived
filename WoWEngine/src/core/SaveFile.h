@@ -55,6 +55,7 @@ namespace wow
         // from the tag.
         std::vector<int> BattleHealths() const;
         void SetBattleHealth(size_t unit, int health);
+        bool RemoveBattleUnit(size_t unit);     // a vehicle destroyed: its entry out of the object's list (+0x4C)
         // The type changed where it's written: at the start, and before each of its battle objects' SELO tags
         // (the rest, its hit points among them, stay the copied object's)
         void SetType(int type);

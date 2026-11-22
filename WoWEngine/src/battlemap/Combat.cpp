@@ -130,6 +130,7 @@ namespace wow
         objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) { return o.unit == int(index); }), objects.end());
         for (ViewObject& o : objects)
             if (o.unit > int(index)) o.unit--;
+        NoteDead(u);
         units.erase(units.begin() + std::ptrdiff_t(index));
         // its war map object's last (0x47EB00 -> 0x4216D0 = 1), and the battle group's
         const bool last = std::none_of(units.begin(), units.end(), [&](const Unit& o) { return o.ref == u.ref; });

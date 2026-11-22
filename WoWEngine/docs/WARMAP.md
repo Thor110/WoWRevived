@@ -857,7 +857,15 @@ queue pass later (0x95, 0x419A24).
    sound faded in over 60 ticks. After a battle, 0x4AB ("... were eliminated") or 0x4AC ("... are occupying this
    sector") wrapped to the columns, three lines on "Forces lost:" (0x4AD: +0x58 (+0x60) and +0x18 − +0x28) and
    "Enemy forces destroyed:" (0x4AE: +0x5C (+0x64) and +0x1C − +0x2C), each with "Units (Vehicles):" and
-   "Facilities:", and the mini map. A key or click sends 0x99 five ticks later (0x49B900); otherwise 0x8017 comes
+   "Facilities:", and the mini map. The figures are the battle report's (0x421210, update 167): as the battle
+   is entered (0x439C88) it takes each side's unit objects (+0x40 / +0x44), their vehicles (+0x30 / +0x34: the
+   battle units in each object's list, 0x421F90) and its constructions and resources (+0x18 / +0x1C); as it's
+   left (0x43A800) the same again (+0x48 / +0x4C, +0x38 / +0x3C, +0x28 / +0x2C), and 0x4212F0 takes the
+   differences: units lost are the objects gone from the lists, vehicles lost every vehicle destroyed, whether
+   its group came through or not, facilities lost the constructions and resources gone. (What an object
+   answers 0x8116 with is taken off both sides of each sum and so cancels.) A vehicle destroyed goes from its
+   object's list, so a group that comes through with losses is that much smaller on the war map (its pips), in
+   its next battle and in the save. A key or click sends 0x99 five ticks later (0x49B900); otherwise 0x8017 comes
    `[Debriefing] "Delay"` (300) ticks after it's first drawn (0x49B830).
 5. **Back on the war map** (0x99 after a queue flush, or 0x8017 → 0x419AA2): no child view, the world shown again,
    every sound faded out over 30 ticks, the ambient sound dropped, 0x8147 after 30 ticks (the music again,

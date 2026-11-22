@@ -144,6 +144,26 @@ namespace wow
             if (std::memcmp(&bytes[i], "BAMO", 4) == 0 && n++ == unit) { Put32(bytes, i + 20, uint32_t(health)); return; }
     }
 
+    // A vehicle of the object destroyed in a battle: it goes from the object's list of battle units (+0x4C; what
+    // 0x421F90 counts for the battle report and the war map's pips show). A vehicle's entry is 52 bytes: its type,
+    // SELO with its id and place, BAMO with five values, BATP, VEHI; the count after BMOL goes down by one.
+    bool SaveObject::RemoveBattleUnit(size_t unit)
+    {
+        size_t n = 0;
+        for (size_t i = 20; i + 32 <= bytes.size(); i++)
+        {
+            if (std::memcmp(&bytes[i], "BAMO", 4) != 0 || n++ != unit) continue;
+            if (std::memcmp(&bytes[i - 16], "SELO", 4) != 0 || std::memcmp(&bytes[i + 24], "BATPVEHI", 8) != 0) return false;
+            size_t list = std::string::npos;
+            for (size_t j = 0; j + 8 <= i; j++) if (std::memcmp(&bytes[j], "BMOL", 4) == 0) list = j;
+            if (list == std::string::npos || Get32(bytes, list + 4) == 0) return false;
+            Put32(bytes, list + 4, Get32(bytes, list + 4) - 1);
+            bytes.erase(bytes.begin() + std::ptrdiff_t(i - 20), bytes.begin() + std::ptrdiff_t(i + 32));
+            return true;
+        }
+        return false;
+    }
+
     void SaveObject::SetBattlePosition(float x, float y)
     {
         const size_t at = LastBatp(bytes);

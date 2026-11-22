@@ -910,7 +910,12 @@ namespace wow
                     // each unit's health goes back with its war map object (the battle objects are the war map
                     // objects' own, so what a battle leaves them with is what the war map and the save have)
                     if (WarMap* map = ActiveWarMap())
+                    {
                         for (const BattleMap::UnitHealth& h : bm->UnitHealths()) map->SetUnitHealth(h.ref, h.slot, h.health);
+                        // then the vehicles destroyed go from their objects (after the healths: the slots are the
+                        // objects' as the battle found them)
+                        map->RemoveBattleUnits(bm->DeadUnits());
+                    }
                     retreated = bm->RetreatedRefs();
                     controlLevel = bm->ControlLevel();
                     controlByPlayer = bm->ControlByPlayer();

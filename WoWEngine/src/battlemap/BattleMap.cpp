@@ -3063,6 +3063,14 @@ namespace wow
         return out;
     }
 
+    // A unit destroyed (not one that left the map): kept for the war map, where it goes from its object's list of
+    // battle units (0x47EB00), and for the battle report's vehicles lost (0x4212F0)
+    void BattleMap::NoteDead(const Unit& u)
+    {
+        if (u.ref >= 0 && size_t(u.ref) < setup.groups.size() && u.slot >= 0 && setup.groups[size_t(u.ref)].ref >= 0)
+            deadUnits.push_back({ setup.groups[size_t(u.ref)].ref, u.slot });
+    }
+
     std::vector<int> BattleMap::LostRefs() const
     {
         std::vector<int> out;

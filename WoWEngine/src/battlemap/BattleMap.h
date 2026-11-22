@@ -359,6 +359,8 @@ namespace wow
         int NearestPoint(int x, int y, int moveClass, int count = 0) const; // 0x43D3F0
         std::vector<int> groupRetreat;                          // the sector a group's retreating to (0x80BB), 0 none
         std::vector<bool> groupLeft;                            // a group with a unit that left the map
+        std::vector<std::pair<int, int>> deadUnits;                      // the units destroyed, for the war map's objects and the report
+        void NoteDead(const Unit& u);
         void LeaveMap(size_t unit);
         Unit* UnitById(int id);
         void EngineSound(Unit& u);                              // 0x491450
@@ -763,6 +765,7 @@ namespace wow
     public:
         // The war map objects whose battle units are all gone (each group stands for one), for the war map
         std::vector<int> LostRefs() const;
+        const std::vector<std::pair<int, int>>& DeadUnits() const { return deadUnits; }   // each unit destroyed: its war map object and slot
         // every battle unit still standing as the battle leaves it: its war map object, which of the object's
         // units it is, and its health, to go back into the object (+0xC4 is saved with each, 0x489F30)
         struct UnitHealth { int ref, slot, health; };

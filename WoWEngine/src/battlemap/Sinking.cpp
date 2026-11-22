@@ -123,6 +123,7 @@ namespace wow
         objects.erase(std::remove_if(objects.begin(), objects.end(), [&](const ViewObject& o) { return o.unit == int(index); }), objects.end());
         for (ViewObject& o : objects)
             if (o.unit > int(index)) o.unit--;
+        NoteDead(u);
         units.erase(units.begin() + std::ptrdiff_t(index));
         if (std::none_of(units.begin(), units.end(), [&](const Unit& o) { return o.group == u.group; })) GroupGone(u.group);
     }

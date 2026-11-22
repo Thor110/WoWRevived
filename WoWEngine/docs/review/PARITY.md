@@ -703,6 +703,18 @@ Martian start's units turned differently)
 - Synced with the owner's reorganised `dat` (`warmap`, `extra/<resolution>`, `extra/HD`, `extra/UNITS`):
   nothing in the engine reads those folders; the layout is noted in MODERN.md for the stage that will.
 
+**Update 167** (3.6: the battle report)
+- [x] **The report's sums traced** (0x439C88 as a battle is entered, 0x43A800 as it's left, 0x4212F0): units
+      lost = unit objects before less now; vehicles lost = the vehicles in those objects' lists before less now;
+      facilities lost = constructions and resources before less now.
+- [x] **Vehicles lost counted every vehicle destroyed**; the engine counted only the vehicles of groups wiped
+      out, so a group that lost two of three and came through showed none.
+- [x] **A destroyed vehicle leaves its war map object** (its entry out of the object's list of battle units,
+      0x47EB00). The engine left the object whole: a group that had lost vehicles went into its next battle,
+      and into the save, at full strength, and kept all its pips. Checked by taking two of three vehicles out of
+      a Scout group: one unit left, 104 bytes shorter, one pip.
+- Not seen running: neither test battle has a kill in it (Stage 5).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

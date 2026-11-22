@@ -147,6 +147,8 @@ namespace wow
         void SetArmour(const ObjOjd::ArmourModifiers& a) { armour = a; }
         // a battle unit's health (+0xC4) put back in its war map object as a battle leaves it
         void SetUnitHealth(int ref, int slot, int health);
+        void RemoveBattleUnits(const std::vector<std::pair<int, int>>& dead); // (object, slot) of each vehicle destroyed
+        int battleDead[2] = { 0, 0 };    // vehicles destroyed in the battle just fought, the player's and the other side's
         void SetStatusStrip(bool on) { statusStrip = on; }   // [Modern] "War map status strip"
         void SetDeposits(std::map<int, std::array<int, 6>> d, float dropOff) { deposits = std::move(d); resourceDropOff = dropOff; }
         // Both sides' research (0x417CD0: the local player's first, dword_4E9B88, then the other side's, 4E9B8C),
