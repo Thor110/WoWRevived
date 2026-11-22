@@ -746,13 +746,26 @@ transparency")
 - The rest of the owner's frame agrees with the engine's of the same kind of fight: the selection rings, the
   move marker, the heat ray, the pips.
 
+**Update 171** (closed: how deployed units face; no code changed)
+- [x] **The engine was right; the frame was of a saved battle.** Turning the engine's lone Handling Machine
+      through every heading against the owner's Martian base frame puts it at about 3430 of 4096, which is the
+      direction from the map's middle (2500, 2510) to where it stands: the heading a unit gets when it keeps a
+      saved place (0x4227F0: 0x80C3 with the map's middle), not when it is placed afresh (0x422787: with its
+      block's spot, which for a lone unit is where it stands, so heading 0). The owner's start file that day was
+      a save with the base's units already placed (ODDITIES.md). Run on that file the engine gives the frame:
+      the Scout's eyes out of sight, the Digging Mechanism turned the same way.
+- The heading routine for a direction of no length is 0 (0x43FE77), as the engine has it.
+- London's spot stays open; it may be the same kind of thing and wants a fresh frame on the discs' files.
+- 5.2: the heat ray in the engine's fight set beside the owner's frame: the same white beam widening to the
+  target with the see-through glow at its end.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
 known visible bug in the two test battles.
 - battle-ui 12: cursor modes 2-7 (the editor / placement tools, not in the engine).
-- deployment: how the deployed units end up facing (update 145); the update order as the
-  world list's (HUNI, HCON, HRES, AUNI, ACON, ARES).
+- deployment: the update order as the world list's (HUNI, HCON, HRES, AUNI, ACON, ARES). (How deployed units
+  face: closed, update 171.)
 - movement 21 (the rest): a bridge broken but standing (needs a saved battle to arise).
 - warmap 2 (part): the repair icon and power bar (repair isn't in). warmap 14: units on a route restart after a load
   (done, update 137). warmap 20: the battle pulse's own draw

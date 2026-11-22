@@ -433,6 +433,13 @@ eases away from the point; then 0x47F320(1) and vt+0x11C (*not in*). Placing is 
 (about its +0xF4 / +0xF8 target) or its +0x18C byte (0x422412 / 0x422463); both come from the unit's saved battle
 state, which isn't read (*provisional*: never set).
 
+So how a unit faces as a battle opens tells which way it came (update 171). Placed afresh, a unit faces away from
+its block's spot (a lone unit stands on the spot, the direction has no length, and 0x43FDA0 gives heading 0). Keeping
+a saved place, it faces away from the map's middle. The owner's frame of the Martian base had every unit facing
+away from the middle (the lone Handling Machine at 3331, 1149 measured at about 3430 of 4096, the direction from
+2500, 2510): its campaign's start file was a save with the battle's places in it (docs/ODDITIES.md), and the
+engine run on that file gives the frame's facings; on the discs' file it places them afresh, as the game would.
+
 **Start view** (0x439B7E): the player's command building in HCON (Human 278 / 58, Martian 830 / 120 by sector),
 the middle of its units' extent ((max - min) / 2 + min, 0x42A2A0 / 0x42A340); else 4F742C / 4F7434 unless their
 sum is 0; else the map's middle.

@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 170) and what is next
+## Where things stand (update 171) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -45,13 +45,11 @@ the working order; the stages further down stay the full inventory.
 
 **Open questions to keep track of** (each has its notes in PARITY.md; don't re-trace what is ruled out there)
 
-- **How deployed units end up facing** (updates 145, 146). Measured in the owner's Martian frame: the two units
-  that stand alone both face about 3400 of 4096, the engine has them near 0. The owner: units do sometimes go
-  on turning after a level loads, not always; it may be the computer player's doing. Watch for it while doing
-  2.8 (the battle AI) and anything that sets a stopped unit going (0x808B, 0x80C2 at a battle's start).
 - **London's deployment spot** (updates 143, 144). The original puts the lorries at ring 95's 288 degree spot,
   the engine at its 72 degree one. N2 (148) didn't settle it: with the parts and segments in the grid the engine
-  still takes the 72 degree spot.
+  still takes the 72 degree spot. Worth a fresh frame from the owner on the discs' start files, a new Human
+  campaign's first look at London: the Martian frame of the same day turned out to be of a saved state (update
+  171), and this one may be too.
 - **Lighting in London** (update 143): Big Ben and Parliament are brighter in the original because its lorries
   stand beside them with their headlights on; the engine's stand to the south. It goes with the deployment
   spot above, not a lighting fault (update 151).
