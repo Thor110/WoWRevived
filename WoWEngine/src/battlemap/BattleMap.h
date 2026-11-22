@@ -467,6 +467,7 @@ namespace wow
         void SetStance(int group, int stance);                  // 0x80B2 to the group: it and each member (+0xD8)
         void TurnOnOwn(Unit& u);                                // 0x496100
         std::vector<Unit> units;
+        std::vector<int16_t> phases;    // each unit's +0x146 as its constructor drew it (0x490943), by its index
         int startX = 0, startY = 0;                          // dword_4F742C / 4F7434: the player's deployment centre
         void Deploy();
         void Place(std::vector<size_t> members, int cx, int cy);
@@ -490,7 +491,8 @@ namespace wow
         // (vt+0x108, 0x486850): both nodes come out of the route finder (0x494370), which stops a search under way.
         struct BridgeLink { int ax = 0, ay = 0, bx = 0, by = 0, length = 0; float segment = 0;
                             int type = 0, x = 0, y = 0, health = 0, dieAt = -1; bool gone = false;
-                            int nodeA = -1, nodeB = -1; std::vector<const WofInstance*> segments; };
+                            int nodeA = -1, nodeB = -1; std::vector<const WofInstance*> segments;
+                            int segmentType = 0; std::vector<std::pair<int, int>> segmentAt; };   // each segment's type and point
         bool BridgeGone(int link) const { return link < 1 || link > int(bridgeLinks.size()) || bridgeLinks[size_t(link - 1)].gone; }
         void BridgeDies(size_t bridge, bool quietly);
         void RemoveNode(int node);                                                      // 0x494370

@@ -553,6 +553,9 @@ EnterBattleMap makes it with the sector (+0x8C). Its parts:
   (0x480070, every object's): dword_4DAFA0 for a category 1 object (a vehicle) else dword_4DAFA4, and dword_4DAFA8
   for the other side's (+0x24 not 0): Human 0, 63, 0 / 0, 63, 32 / 63, 0, 0; Martian 63, 0, 0 / 63, 32, 0 /
   0, 63, 0. Types 694 / 695 (0x48C870) use dword_4DAFAC / 4DAFB0 and show none while their vtbl+0x9C says so.
+- **A bridge's brightness**: the segments (0x1CC-0x1CE) are of type 0x1C0's class (0x48CFB0), whose vt+0x5C
+  (0x48D000) is the fog level round the segment x its type's +0xA1 (150), so a deck is never drawn at more than
+  150 / 255.
 - **A dot's stored colour** (0x4A1D80): the dot is kept as x, y and a colour word, and the word is the colour OR
   its own low byte moved up a byte. Red 0xF800 and orange 0xFC00 have nothing there and stay; the Human game's
   green 0x07E0 becomes 0xE7E0, so the Human side's dots are yellow (#E7FF00 on screen), and its 0x07F0 0xF7F0.

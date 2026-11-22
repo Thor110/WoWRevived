@@ -84,6 +84,17 @@ namespace wow
         // twinkles (twink1-3.spr) among them, were skipped without it
         slotTables[20] = table;
         SetUpRouteFinder();     // 0x47AF10, with the landscape, before anything is placed (the bridges add nodes)
+        // a vehicle's phase (+0x146) is drawn as the object is made (its constructor, 0x490943), which is on the war
+        // map, long before the battle's scenery starts and its tree circles seed rand() again (0x48F42A): so the
+        // draws are made here, ahead of the scenery, and don't come between the circles' seeds and the deployment's
+        phases.clear();
+        if (s.units)
+            for (const BattleGroup& g : s.groups)
+            {
+                auto d = s.units->find(g.type);
+                const bool vehicle = d != s.units->end() && d->second.category == 1;
+                for (size_t i = 0; i < g.places.size(); i++) phases.push_back(vehicle ? int16_t(random::Rand()) : int16_t(0));
+            }
         if (s.loadScenery) LoadScenery(sun, letter);
         // the units with saved places start, then the pod lands (0x439ADE-0x439B20: made, added and started before
         // the six deployments, 0x439B24, so the Martians deploy round it), in Deploy
@@ -684,8 +695,8 @@ namespace wow
     // renderer and its parts, 0x47EE10, then vt+0x14), so each one is in the world, its footprint down (vt+0xE4,
     // 0x48A950, its parts' with it as 0x47EF30 starts them), before the next is placed. A building's start
     // (0x48E9D0) first takes out the scenery standing on it (ClearScenery).
-    // *Provisional*: the order of the rand() calls inside one object's start (its look round's count, its phase, its
-    // light parts' rolls) is the engine's own.
+    // The rand() calls of one start, in the original's order: the light parts' rolls (0x48DE80) as the parts are
+    // made and started, then the look round's count (0x4957A2). The phase isn't one of them (see the constructor).
     void BattleMap::StartUnit(size_t index)
     {
         if (units[index].started) return;
@@ -704,8 +715,6 @@ namespace wow
         const bool unfinished = double(progress) <= 0.9999;
         if (IsBuilding(u) && unfinished) u.health = std::max(1, int(float(u.health) * progress));
         if (auto d = setup.units->find(u.type); d != setup.units->end()) u.stance = d->second.field43;   // 0x495740
-        // and the look round's count (+0xDA) rand() % 30 (0x4957A2), so the units don't all look on one update
-        u.scanCount = random::Rand() % 30;
         SetUpGuns(u);
         // 0x48F7C0: an emplacement not on a vehicle whose construction is under 1.0 has no guns (+0x3C 0)
         if (IsEmplacement(u.type) && progress < 1.0f) u.guns.clear();
@@ -715,10 +724,13 @@ namespace wow
             const int mc = d->second.field52;
             u.drive.turnRate = mc >= 0 && mc <= 4 ? 64 : (mc == 5 || mc == 6) ? 8 : mc == 7 ? 16 : 0;
             u.drive.arrival = float(double(u.drive.radius) * setup.vehicles.arrivalRadius - -20.0);
-            u.drive.phase = int16_t(random::Rand());
+            u.drive.phase = index < phases.size() ? phases[index] : int16_t(random::Rand());   // (see the constructor)
         }
         AddRenderer(u.type, u.x, u.y, u.heading, int(index));
         AddPartRenderers(index);
+        // the look round's count (+0xDA) rand() % 30 (0x4957A2), so the units don't all look on one update: drawn
+        // after the base start (0x495785 -> 0x48A8B0) has started the parts, the light parts' rolls among them
+        units[index].scanCount = random::Rand() % 30;
         if (IsBuilding(u) && unfinished && u.players) AddCorners(index);
         Occupy(u.type, u.x, u.y);
     }
@@ -1414,6 +1426,21 @@ namespace wow
                 o.bright = int(FogLevelAt(p.type, p.x, p.y) * float(of));
                 if (o.sprite) o.level = o.bright >> 2;
             }
+            else if (o.wof && o.unit < 0)
+            {
+                // a bridge's segments (types 0x1CC-0x1CE) are objects of type 0x1C0's class (the factory's 0x447541,
+                // 0x48CFB0), children of the bridge each at its own point: their vt+0x5C is that class's (0x48D000),
+                // the fog level round the point x the type's +0xA1 (150 for the three), so a deck is drawn at
+                // 150 / 255 of a vehicle's brightness at best
+                for (const BridgeLink& b : bridgeLinks)
+                    for (size_t k = 0; k < b.segments.size() && k < b.segmentAt.size(); k++)
+                        if (b.segments[k] == o.wof)
+                        {
+                            int of = 255;
+                            if (auto t = setup.units->find(b.segmentType); t != setup.units->end()) of = t->second.fieldA1 & 0xFF;
+                            o.bright = int(FogLevelAt(b.segmentType, float(b.segmentAt[k].first), float(b.segmentAt[k].second)) * float(of));
+                        }
+            }
         }
         std::stable_sort(objects.begin(), objects.end(), [](const ViewObject& a, const ViewObject& b) { return a.key < b.key; });
     }
@@ -1858,6 +1885,7 @@ namespace wow
         auto u = setup.units->find(o.type);
         const GType* g = nullptr;
         int gtype = 0;
+        int segmentType = 0;
         float objectScale = 1.0f;
         for (const auto& part : u->second.parts)
         {
@@ -1865,7 +1893,7 @@ namespace wow
             if (pu == setup.units->end()) continue;
             const GType* pg = res.FindGType(pu->second.field28);
             // the segment's own scale (+0xA4): the part's float (0x47EEC0) times its type's (+0xA8, 0x47EE24)
-            if (pg && pg->gclass == 2) { g = pg; gtype = pu->second.field28; objectScale = part.f * pu->second.scale; break; }
+            if (pg && pg->gclass == 2) { segmentType = part.a; g = pg; gtype = pu->second.field28; objectScale = part.f * pu->second.scale; break; }
         }
         if (!g) return;
         auto file = res.LoadFile(g->file);
@@ -1888,6 +1916,7 @@ namespace wow
         bridgeLinks[link].x = int(o.x);
         bridgeLinks[link].y = int(o.y);
         bridgeLinks[link].health = MaxHealth(o.type);
+        bridgeLinks[link].segmentType = segmentType;
         const size_t first = wofs.size();
         for (int i = 0; i < bridge.Count(); i++)
         {
@@ -1902,6 +1931,7 @@ namespace wow
             const int segDepth = w->PosedDepth();
             objects.push_back({ y + segDepth, 0, 0, nullptr, w.get(), g->paletteSlot });
             bridgeLinks[link].segments.push_back(w.get());
+            bridgeLinks[link].segmentAt.push_back({ x, y });
             wofs.push_back(std::move(w));
         }
         const int made = int(wofs.size() - first);

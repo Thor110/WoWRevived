@@ -28,8 +28,9 @@ Small and independent; most need one routine traced.
 - [ ] 1.2 Deployment's leftovers (update 136's provisional points). Done in 137: what ActivateAll takes out again
       (scenery on scorched ground) and the grid 0x47FE10 searches (the scenery counts). Done in 140: a building's parts aren't in
       the grid. Done in 141: a bridge under a starting building goes too. Left:
-      the order of the rand() calls inside one start; the start order kept for the update order (the world
-      list is HUNI, HCON, HRES, AUNI, ACON, ARES).
+      the start order kept for the update order (the world list is HUNI, HCON, HRES, AUNI, ACON, ARES). Done
+      in 145: the order of the rand() calls inside one start. Open (PARITY.md, update 145): how the deployed
+      units end up facing.
 - [x] 1.3 Tree circles hit by weapons (S6's last open point).
 - [x] 1.4 Muster's first step and the start order of 0x495740 (movement 20).
 - [x] 1.5 The fog's timing by the global frame counter, dword_4D2558 (battle-setup 12).

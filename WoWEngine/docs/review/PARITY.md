@@ -407,12 +407,36 @@ new Martian game's first battle, nothing moved; 16-bit colour, `ISO obj col rad 
   with strength pips, Stage 2.6); the engine lights an unfinished building's corner markers yellow where the
   original's are grey.
 
+**Update 145** (from the owner's notes on the frames: Southampton's bridge lighter than the original's; the
+Martian start's units turned differently)
+- [x] A bridge's deck was drawn too bright. Its segments (types 0x1CC-0x1CE) are objects of type 0x1C0's class
+      (the factory's 0x447541, constructor 0x48CFB0), and that class's vt+0x5C (0x48D000) gives the renderer the
+      fog level round the object x its type's +0xA1, 150 for the three segment types, where the engine drew them
+      at 255. London's deck measured 24, 33, 52 against the original's 12, 17, 38; it is 9, 16, 31 now (the
+      engine's lorries stand by it and the original's don't, so the two frames aren't lit alike there).
+- [x] The rand() calls of a unit's start are in the original's order: a vehicle's phase (+0x146) is drawn in its
+      constructor (0x490943), which runs on the war map when the unit is made, not as it starts; the look
+      round's count (0x4957A2) is drawn after the base start has started the parts, so after the light parts'
+      rolls (0x48DE80). The engine draws the phases ahead of the scenery, so they don't come between the tree
+      circles' seeds (0x48F42A) and the deployment's headings.
+- **Open: how the deployed units end up facing.** rand() itself is the C runtime's, linked into the exe
+  (0x467B30), the same generator the engine has; what can differ is where in its run each draw falls. By the
+  listing a placed unit is given a heading of rand() & 0xFFF (0x422738, the renderer's vt+0x30), its start
+  zeroes +0x100 (0x490EA4), the muster (0x80C3, 0x490D06) sets +0x100 to the heading from the spot to the unit
+  (0 for a unit alone, which stands on the spot) with speed 0.2, and each driving step turns the renderer to
+  +0x100 (0x49333D). The engine does that, and then turns on for a few updates while the speed dies away
+  (flags 0x409, target 0, 0). The owner's frame of the original shows other facings, for the lone units and
+  the groups of three alike. Not explained. The steering only runs on the updates the phase picks
+  (0x492F59), and the phase comes from the war map's run of rand() (srand(1) as the war map is built,
+  0x417DA3), which the engine doesn't reproduce: if the original's facings are the same on every fresh start,
+  that run is what to trace next (the constructors after 0x417DA3, the pods' 0x41A330, the music's 0x41B070).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
 known visible bug in the two test battles.
 - battle-ui 12: cursor modes 2-7 (the editor / placement tools, not in the engine).
-- deployment: the order of the rand() calls inside one object's start; the update order as the
+- deployment: how the deployed units end up facing (update 145); the update order as the
   world list's (HUNI, HCON, HRES, AUNI, ACON, ARES).
 - movement 21 (the rest): a bridge broken but standing (needs a saved battle to arise).
 - warmap 2 (part): the repair icon and power bar (repair isn't in). warmap 14: units on a route restart after a load
