@@ -860,6 +860,10 @@ transparency")
 - *The owner's question of stray headers in saves*: they are each sector's six lists, always written
   (docs/ODDITIES.md).
 
+**Update 180** (reading only, for the owner's question)
+- The four developers' flags of `[Debug]` read out in full in docs/ODDITIES.md: Mat (the curtains cheat),
+  Charlie, Dave, Edit functionality, and the flag the first three set at start-up. Nothing changed in the code.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

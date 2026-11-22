@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 179) and what is next
+## Where things stand (update 180) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -204,7 +204,8 @@ wrong name: what is left of it is what the war map's save keeps of a battle's ob
       it but the time of day): enemy units can be picked in a battle and Shift adds to the selection
       (0x497680, 0x4976F5), a sector that isn't the player's can be selected on the war map (0x41D24A,
       0x41D430), and the reinforcement points are made without a battle on (0x43D171).
-- [ ] 4.8 **The developers' aids** (optional): the debug log (`[Debug]` Log Debug Output, 0x417C30; WoWEngine.log
+- [ ] 4.8 **The developers' aids** (optional; Charlie, Dave and Edit functionality are read out in
+      docs/ODDITIES.md, update 180): the debug log (`[Debug]` Log Debug Output, 0x417C30; WoWEngine.log
       stands in), the overlays (Show Radii, Show Arrival, Show Orders, Show Accelerations), `[Stats]`.
 
 Done before this list was redrawn: speech attached to text ids (176).

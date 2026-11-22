@@ -127,3 +127,41 @@ its last byte with every tag where its reader expects one, and written straight 
 same size and, but for a few rounded numbers, the same bytes (update 178). If a save turns up that the reader
 stops on, it goes here.
 
+## The developers' flags: Mat, Charlie, Dave and Edit functionality (update 180)
+
+Four on / off settings in `[Debug]`, all off unless set, three of them named for people (0x401580-0x401640).
+Each is read straight from its setting's value byte, so setting it to 1 turns it on for good; the `curtains`
+cheat sets Mat's byte for the one run (0x401372). None of them opens a menu: each lets through things the game
+otherwise refuses. Read from the listing; not tried in the original.
+
+**Mat** (byte_4D1279; `curtains`)
+- Battle map: the other side's units take the mouse like the player's own: they show the hot brackets
+  (0x4972F0, which otherwise returns at once for an object that isn't the player's) and a click selects them
+  (0x497680), one unit at a time and not its whole war map object (0x4976F5), with Shift's state sent with the
+  click.
+- War map: a click or the popup on a sector the player doesn't hold selects it (0x41D24A, 0x41D430).
+- The reinforcement points are made when a battle map is entered with no battle on (0x43D171), and for every
+  neighbouring sector, not only the ones that qualify (0x43D2D2).
+- With `[Game]` "Time Of Day" not 0, the battle map is lit for that hour (0x40B030).
+
+**Charlie** (byte_4D1261): three of the war map's events stop being critical, so they no longer wait their turn,
+stop the clock or put up their box, and only write their line in the messages: ResearchAlert (0x41F220),
+PodLanded (0x41F010) and UndefendedSectorLost (0x41E960). Their test in the event table is "Charlie is off"
+(0x41E4D0). BattleInSector is always critical.
+
+**Dave** (byte_4D1231): text for a debugger. Some eighty places write a line through OutputDebugString or the
+game's own printer (0x403680's frame figures, the CD's calls 0x412690-0x414390, DirectPlay's packets 0x44A1A7,
+the sound files asked for 0x466029). The printer is an empty routine in the retail build (nullsub_4), so most of
+it says nothing; the OutputDebugString lines ("CD not available") can be seen with a debug viewer.
+
+**Edit functionality** (byte_4D1249): the editor's picking. On the battle map a click and a drag box are sent to
+the scenery's list as well as the units' (0x485A1A, 0x485DA9), and an object of any kind can be picked
+(0x48A87D: otherwise only kinds 1 to 3); on the war map any sector can be selected, as with Mat; and the
+renderer's object pool is made forty times larger (0x40D150).
+
+Any of Mat, Charlie or Dave at start-up also sets one more flag (byte_4D12F4, 0x401998), which makes the sound
+loader look for a sound as a loose file before the library (0x466910).
+
+The engine: Mat's time of day is in (179); the rest of Mat is PLAN.md 4.9; Charlie, Dave and Edit functionality
+are with the developers' aids, 4.8.
+
