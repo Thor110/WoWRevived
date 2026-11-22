@@ -129,6 +129,21 @@ namespace wow
         return out;
     }
 
+    std::vector<int> SaveObject::BattleHealths() const
+    {
+        std::vector<int> out;
+        for (size_t i = 0; i + 24 <= bytes.size(); i++)
+            if (std::memcmp(&bytes[i], "BAMO", 4) == 0) out.push_back(int(Get32(bytes, i + 20)));
+        return out;
+    }
+
+    void SaveObject::SetBattleHealth(size_t unit, int health)
+    {
+        size_t n = 0;
+        for (size_t i = 0; i + 24 <= bytes.size(); i++)
+            if (std::memcmp(&bytes[i], "BAMO", 4) == 0 && n++ == unit) { Put32(bytes, i + 20, uint32_t(health)); return; }
+    }
+
     void SaveObject::SetBattlePosition(float x, float y)
     {
         const size_t at = LastBatp(bytes);

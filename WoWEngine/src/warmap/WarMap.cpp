@@ -530,6 +530,151 @@ namespace wow
         return game.ticks - before;
     }
 
+    // ---- Repair (docs/WARMAP.md "Repair") ----
+
+    // 0x47DA20: a battle unit's full health, its type's +0x4A
+    int WarMap::UnitMaxHealth(int type) const
+    {
+        auto t = unitData.find(type);
+        return t == unitData.end() ? 0 : ObjOjd::Armour(t->second, res.Human(), armour);
+    }
+
+    void WarMap::SetUnitHealth(int ref, int slot, int health)
+    {
+        if (ref < 0 || size_t(ref) >= table.size() || slot < 0) return;
+        table[size_t(ref)].SetBattleHealth(size_t(slot), health);
+    }
+
+    // 0x422AB0 over one of a sector's lists: of every battle unit of every object in it that isn't being repaired
+    // already (+0xB8 bit 12), the one whose health / its type's is lowest, and under 1.0 (the first of equals)
+    bool WarMap::MostDamaged(int sector, bool players, int kind, int& ref, int& unit) const
+    {
+        float best = 1.0f;
+        bool found = false;
+        for (int c : SectorObjects(sector, players, kind))
+            for (int r : counters[size_t(c)].refs)
+            {
+                if (r < 0 || size_t(r) >= table.size()) continue;
+                if (std::find(destroyed.begin(), destroyed.end(), r) != destroyed.end()) continue;
+                const int most = UnitMaxHealth(table[size_t(r)].Type());
+                if (most <= 0) continue;
+                const std::vector<int> healths = table[size_t(r)].BattleHealths();
+                for (size_t i = 0; i < healths.size(); i++)
+                {
+                    if (repairing.count({ r, int(i) })) continue;
+                    const float ratio = float(healths[i]) / float(most);
+                    if (ratio < best) { best = ratio; ref = r; unit = int(i); found = true; }
+                }
+            }
+        return found;
+    }
+
+    // 0x4297C0: a repairer looks for work. Its old target is let go (bit 12 cleared, +0x50 and +0x64 0). Then, among
+    // its own side's objects in its sector (0x446370 with the kind and whether it's the player's):
+    //  - a Mobile Repair Vehicle (types 30 and 31) takes the most damaged of the constructions or of the resources:
+    //    the constructions' when its health / its full health, as whole numbers (so 0 for a damaged one and 1 for
+    //    none found), is under the resources'; else the resources';
+    //  - a workshop (types 60 and 121) that answers its own 0x8124 takes the most damaged of the units.
+    // One found at full health (the same whole division, at least 1) is dropped; else it's marked (bit 12).
+    // *Provisional*: what 0x8124 asks isn't traced; taken as the workshop being finished (0x42AA70).
+    void WarMap::PickRepair(int ref)
+    {
+        Repair& rep = repairs[ref];
+        if (rep.target >= 0) repairing.erase({ rep.target, rep.unit });
+        rep = Repair{};
+        const int at = CounterOf(ref);
+        if (at < 0 || counters[size_t(at)].Travelling()) return;
+        const int sector = counters[size_t(at)].sector;
+        const bool players = (table[size_t(ref)].list & 1) == 0;
+        const int type = table[size_t(ref)].Type();
+        auto whole = [&](int r, int u) {    // health / full health, whole (0x429883: cdq, idiv)
+            const int most = UnitMaxHealth(table[size_t(r)].Type());
+            const std::vector<int> healths = table[size_t(r)].BattleHealths();
+            return most > 0 && size_t(u) < healths.size() ? healths[size_t(u)] / most : 1;
+        };
+        int target = -1, unit = -1;
+        if (type == 30 || type == 31)
+        {
+            int cr = -1, cu = -1, rr = -1, ru = -1;
+            const bool c = MostDamaged(sector, players, 1, cr, cu), r = MostDamaged(sector, players, 2, rr, ru);
+            const int cv = c ? whole(cr, cu) : 1, rv = r ? whole(rr, ru) : 1;
+            if (cv < rv) { if (c) { target = cr; unit = cu; } }
+            else if (r) { target = rr; unit = ru; }
+        }
+        else if (type == 60 || type == 121)
+        {
+            if (AiFinished(ref)) MostDamaged(sector, players, 0, target, unit);
+        }
+        if (target < 0) return;
+        if (whole(target, unit) >= 1) return;
+        rep.target = target;
+        rep.unit = unit;
+        repairing.insert({ target, unit });
+    }
+
+    // 0x429B80, an object's hourly step (with the hours gone by), after its intel's count down: with a target, one
+    // that's no longer in the repairer's sector is let go and another looked for; the hours (+0x64) go up by those
+    // gone by, and for each (the sector's three supply ratios for its side multiplied, 1 with the resource cheat,
+    // x 24) hours in them the target's health goes up by 10 (a Mobile Repair Vehicle Mk1, type 30), 20 (Mk2, 31)
+    // or 30 (a workshop, 60 and 121); at its full health it's left there, unmarked, and another looked for. With
+    // none, the count goes up by one each call and past 24 another is looked for.
+    void WarMap::RepairStep(int ref, int hours)
+    {
+        const int type = table[size_t(ref)].Type();
+        if (!Repairer(type)) return;
+        const int at = CounterOf(ref);
+        if (at < 0) return;
+        Repair& rep = repairs[ref];
+        if (rep.target < 0)
+        {
+            if (++rep.hours > 0x18) { rep.hours = 0; PickRepair(ref); }
+            return;
+        }
+        const int sector = counters[size_t(at)].Travelling() ? 0 : counters[size_t(at)].sector;
+        const int targetAt = CounterOf(rep.target);
+        const int targetSector = targetAt < 0 || counters[size_t(targetAt)].Travelling() ? -1 : counters[size_t(targetAt)].sector;
+        if (targetSector != sector)
+        {
+            PickRepair(ref);
+            if (repairs[ref].target < 0) return;
+        }
+        Repair& now = repairs[ref];
+        now.hours += hours;
+        float period = 24.0f;
+        if (!resourceCheat && sector >= 1 && sector <= warmap::SectorCount)
+        {
+            auto t = unitData.find(type);
+            const size_t base = t != unitData.end() && t->second.faction == 1 ? 3 : 0;
+            const auto& r = economy[size_t(sector)].ratio;
+            period *= r[base] * r[base + 1] * r[base + 2];
+        }
+        const int add = type == 30 ? 10 : type == 31 ? 20 : 30;
+        SaveObject& o = table[size_t(now.target)];
+        std::vector<int> healths = o.BattleHealths();
+        if (size_t(now.unit) >= healths.size()) { PickRepair(ref); return; }
+        int health = healths[size_t(now.unit)];
+        while (float(now.hours) > period)
+        {
+            health += add;
+            now.hours = int(float(now.hours) - period);
+        }
+        const int most = UnitMaxHealth(o.Type());
+        if (health >= most)
+        {
+            o.SetBattleHealth(size_t(now.unit), most);
+            now.hours = 0;
+            PickRepair(ref);
+        }
+        else o.SetBattleHealth(size_t(now.unit), health);
+    }
+
+    // 0x4299C0 (with 0): one of the object's battle units is being repaired (+0xB8 bit 12)
+    bool WarMap::BeingRepaired(int ref) const
+    {
+        auto it = repairing.lower_bound({ ref, 0 });
+        return it != repairing.end() && it->first == ref;
+    }
+
     // The world's 0x802D, every whole game hour (0x419E9D): the routes, the players, both sides' research, the
     // pods, each sector, then the resource warnings. (The routes, the pods and the warnings are in so far.)
     // The world's 0x802D (0x419E9D), in its order: the routes, the players (the computer player's turn), both
@@ -546,6 +691,16 @@ namespace wow
         for (Counter& k : counters) k.intel = std::max(0, k.intel - hours);
         for (int s = 1; s <= warmap::SectorCount; s++)
         {
+            // each object's hourly step (0x446310 -> 0x429B80): the repairers' work, by the sector's lists, the units
+            // then the constructions, the home side first
+            for (int kind = 0; kind < 2; kind++)
+                for (bool players : { true, false })
+                    for (int c : SectorObjects(s, players, kind))
+                    {
+                        const std::vector<int> objects = counters[size_t(c)].refs;
+                        for (int ref : objects)
+                            if (ref >= 0 && size_t(ref) < table.size() && Repairer(table[size_t(ref)].Type())) RepairStep(ref, hours);
+                    }
             std::vector<int> refs;
             for (int list = 0; list < 6; list++)
                 for (const auto& [ref, f] : factories)
@@ -1239,12 +1394,13 @@ namespace wow
             // head entry's type's counter frame, blinking: phases 1 and 6 at 50%, 2-5 solid, 0, 7 and 8 not shown; at 8
             // it waits (10 - ftol(eff x 10)) x 6 ticks (eff 0x460740: 1 / the sector's three supply ratios multiplied)
             // and starts again. Suspended: the idle icon, frame 0x94, solid.
-            // *Provisional*: the repair icon (0x95) and its power bar aren't in (no repair yet); the object is the
-            // counter's first.
+            // *Provisional*: the object is the counter's first.
+            bool production = false;
             if (!k.refs.empty())
                 if (auto f = factories.find(k.refs.front()); f != factories.end() && !f->second.queue.entries.empty() &&
                                                                 (k.kind == 0 || !k.unfinished))
                 {
+                    production = true;
                     const IndexedImage* face = res.GetFrame(0x77, k.frame);
                     const int cw = face ? face->width : 32, ch = face ? face->height : 32;
                     int frame = 0x94;
@@ -1274,6 +1430,16 @@ namespace wow
                     if (const IndexedImage* icon = res.GetFrame(0x76, frame); icon && shown)
                         canvas.DrawSprite(0x76, frame, x + cw - icon->width + 2, y + ch - icon->height + 2, 0, blend);
                 }
+            // the repair icon (GType 0x76 frame 0x95): while one of the object's battle units is being repaired
+            // (0x4299C0), in the production icon's place. *Provisional*: drawn solid whenever no production icon
+            // is; how 0x42BC90 shares the corner between the two, and the power bar, aren't traced.
+            if (!production && std::any_of(k.refs.begin(), k.refs.end(), [&](int ref) { return BeingRepaired(ref); }))
+            {
+                const IndexedImage* face = res.GetFrame(0x77, k.frame);
+                const int cw = face ? face->width : 32, ch = face ? face->height : 32;
+                if (const IndexedImage* icon = res.GetFrame(0x76, 0x95))
+                    canvas.DrawSprite(0x76, 0x95, x + cw - icon->width + 2, y + ch - icon->height + 2);
+            }
             if (k.shared)
             {
                 std::string text = k.finishedCount < k.count ? std::to_string(k.finishedCount) + "/" + std::to_string(k.count)

@@ -1296,7 +1296,8 @@ arrival, vt+0x168, is the same as every vehicle's 0x491FA0, only not inlined.)
 
 The battle's computer side is played by the war map's computer player (vtable 0x4AA680), through its handler
 (0x442AC0): 0x8075 (the battle begun, 0x445210), 0x807F (ended, 0x445620: all cleared), 0x807A (an object gone,
-0x445B90), 0x80B1 (a threat seen, 0x445D60: from the target scan).
+0x445B90), 0x80B1 (a threat seen, 0x445D60: one of its units' look round has seen an unarmed object of the other
+side, 0x49668B; its war map object becomes a threat, active, if there's room in the 16 and it isn't one).
 
 **Begun** (0x445210): its counts cleared; +0x450, whether it holds the sector. Holding it, its own constructions and
 then its own resources there (0x446370(2,0) and (3,0): the sector's +0x58 and +0x60, lists 3 and 5) become threats

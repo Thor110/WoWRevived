@@ -630,6 +630,16 @@ namespace wow
         map->SetArrowTypes(std::move(arrows));
         map->SetEventOptions([this](const char* name, bool on) { return ini.GetBool("Event", name, on); });
         map->SetStickyPopup(ini.GetBool("Modern", "Sticky popup menus", false));   // a modern option (docs/MODERN.md)
+        {
+            ObjOjd::ArmourModifiers armour;     // the same [Tweak] values the battle map takes (0x4373D0)
+            armour.visRadMul = ini.GetFloat("Tweak", "VisRadMul", 1.5f);
+            armour.scenery = ini.GetFloat("Tweak", "Scenery Armour Modifier", 1.2f);
+            armour.humanFriend = ini.GetFloat("Tweak", "HumanFriend Armour Modifier", 1.8f);
+            armour.humanEnemy = ini.GetFloat("Tweak", "HumanEnemy Armour Modifier", 1.8f);
+            armour.martianFriend = ini.GetFloat("Tweak", "MartianFriend Armour Modifier", 1.8f);
+            armour.martianEnemy = ini.GetFloat("Tweak", "MartianEnemy Armour Modifier", 1.8f);
+            map->SetArmour(armour);
+        }
         map->SetStatusStrip(ini.GetBool("Modern", "War map status strip", false)); // the same
         map->SetSoundLength([this](int id) { return sound.LengthTicks(id); });
         map->SetDeposits(std::move(deposits), ini.GetFloat("Tweak", "Resource Drop Off Rate", 3.0f));
@@ -894,6 +904,10 @@ namespace wow
                 if (auto* bm = dynamic_cast<BattleMap*>(sc))
                 {
                     lost = bm->LostRefs();
+                    // each unit's health goes back with its war map object (the battle objects are the war map
+                    // objects' own, so what a battle leaves them with is what the war map and the save have)
+                    if (WarMap* map = ActiveWarMap())
+                        for (const BattleMap::UnitHealth& h : bm->UnitHealths()) map->SetUnitHealth(h.ref, h.slot, h.health);
                     retreated = bm->RetreatedRefs();
                     controlLevel = bm->ControlLevel();
                     controlByPlayer = bm->ControlByPlayer();

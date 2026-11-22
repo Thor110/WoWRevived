@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 151) and what is next
+## Where things stand (update 153) and what is next
 
 Stage 1 is done. Stage 2 has 2.6 to 2.9 open. The owner's reference frames of the original (London, sector 28,
 the Martian start) have been the best check so far: each one turned up things reading hadn't. The list below is
@@ -26,7 +26,13 @@ the working order; the stages further down stay the full inventory.
       `ZoomTo`); the battle-end box is in (`EndBox`); "reinforcements arriving during a battle" has no routine
       of its own (the deployment, 0x4222C0, is only called as a battle is entered, 0x439770; what the engine
       has under that name is the retreat points, Reinforcements.cpp). Nothing left under 2.7.
-- [ ] N7 Stage 2.8 and 2.9, then Stages 3 to 5 as listed below.
+- [x] N7 Stage 2.8 (152): the battle AI was already in but for one message, 0x80B1 to the AI player (a threat
+      seen, 0x445D60), now ported with its sender (0x49668B).
+- [ ] N8 Stage 2.9: the renderers still marked provisional (the WOF triangle filler, the blitter modes, the bm
+      shade group's other slots). The owner's frames match closely, so this waits for a frame that shows a
+      difference.
+- [~] N9 Stage 3 (the war map's missing pieces). 3.1 repair is in (153), with the units' health kept between
+      the war map and battles. Next 3.2 to 3.7 as listed below.
 
 **Open questions to keep track of** (each has its notes in PARITY.md; don't re-trace what is ruled out there)
 
@@ -104,14 +110,15 @@ Small and independent; most need one routine traced.
       cursor modes 2-7 where the game (not the editor) uses them.
 - [x] 2.7 The zoomer and the battle-end box (both in). Reinforcements arriving mid-battle aren't a routine of
       the game's (update 151).
-- [ ] 2.8 The rest of the computer player in battle.
+- [x] 2.8 The rest of the computer player in battle (0x80B1's threat seen, update 152; the rest was in).
 - [ ] 2.9 Renderers still provisional: the WOF triangle filler, the blitter modes, the rest of the bm shade
       group's slots.
 - [x] 2.10 Battle music (CD tracks 4 / 5).
 
 ## Stage 3: the war map's missing pieces
 
-- [ ] 3.1 Repair (Mobile Repair Vehicles, workshops), with the repair icon and the power bar (warmap 2).
+- [x] 3.1 Repair (Mobile Repair Vehicles, workshops), with the repair icon (update 153). Left: the power bar,
+      what 0x8124 asks of a workshop, and a counter's pips.
 - [ ] 3.2 Construction's remaining fields, CommandCentreBuilt, the context buttons (factory panel, Suspend /
       Resume, Retreat).
 - [ ] 3.3 The hourly step's remaining fan-out; damaged facilities and work demand in the economy.

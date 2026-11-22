@@ -16,6 +16,17 @@ namespace wow
         }
     }
 
+    // 0x80B1 to the AI player (0x445D60), one of its units having seen an unarmed object of the other side
+    // (0x49668B): the object's war map object (+0x48) becomes a threat, active, unless there are 16 already or
+    // it is one. Nothing is planned there and then; the planner takes it up when it next runs.
+    void BattleMap::AiThreatSeen(int group)
+    {
+        if (!aiOn || group < 0 || size_t(group) >= setup.groups.size() || aiThreats.size() >= 16) return;
+        for (const AiThreat& t : aiThreats)
+            if (t.group == group) return;
+        aiThreats.push_back({ group, true });
+    }
+
     // 0x441E70: an object's strength, its battle units (0x4216D0) times its type's weight (word_518B10)
     int BattleMap::AiValue(int group) const
     {

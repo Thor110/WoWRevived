@@ -50,6 +50,11 @@ namespace wow
         bool BattlePosition(float& x, float& y) const;
         // Every battle object's place (+0x78 / +0x7C: the second and third floats after each BAMO tag), in order
         std::vector<std::pair<float, float>> BattlePositions() const;
+        // Every battle object's health (+0xC4), in order. A battle object writes "BAMO" and then its heading
+        // (+0x40), its place (+0x78, +0x7C, +0x84) and its health (0x489F30): the health is the dword 20 bytes on
+        // from the tag.
+        std::vector<int> BattleHealths() const;
+        void SetBattleHealth(size_t unit, int health);
         // The type changed where it's written: at the start, and before each of its battle objects' SELO tags
         // (the rest, its hit points among them, stay the copied object's)
         void SetType(int type);

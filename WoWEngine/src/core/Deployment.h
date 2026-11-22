@@ -20,6 +20,7 @@ namespace wow
         int aiWeight = 0;       // AI.ojd's weight of its type (word_518B10)
         int aiClass = 0;        // AI.ojd's class of its type (0x518B14 via 0x441EB0)
         std::vector<std::pair<float, float>> places;
+        std::vector<int> healths;   // each battle unit's saved health (+0xC4, BAMO's last value); empty: none known
         // a construction's or resource's state, the war map object's +0x7C / +0x78 (0x48E9D0 and 0x48F7C0 read it
         // through the battle object's +0x48): under 1 while it's being built
         float progress = 1.0f;

@@ -527,6 +527,27 @@ Martian start's units turned differently)
 - MODERN.md: group keys and Shift adding to the selection noted as modern options for later (the owner's word:
   they were assumed from the genre, the game has neither).
 
+**Update 152** (Stage 2.8)
+- [x] 0x80B1 to the computer player (0x445D60), the one battle AI message not ported. In a unit's look round
+      (0x496570), an unarmed object of the other side that it sees is told to the AI player when the looker is
+      of that player's side (0x49666F: 0x4406E0 of the looker against dword_4E9B78's +0x24); the player makes the
+      object's war map object a threat, active, unless it has 16 or it is one already, and plans nothing there
+      and then. (The engine's note had it the other way round: "a player's unit seeing an unarmed one".)
+      Not seen running: neither test battle has the two sides in sight of each other.
+
+**Update 153** (Stage 3.1: repair)
+- [x] A battle unit's health is kept. It is BAMO's fifth value in the save (0x489F30 writes the heading, the
+      place and +0xC4); a battle now starts each unit with it and hands it back as it ends
+      (`SaveObject::BattleHealths`, `BattleMap::UnitHealths`). Parliament's reads 17999 in the test save, its
+      type's full health as the engine works it out (0x47DA20), which checks both.
+- [x] Repair on the war map (0x4297C0, 0x429B80, 0x422AB0): the Mobile Repair Vehicles (types 30, 31) mend the
+      most damaged construction or resource of their side in their sector, the workshops (60, 121) the most
+      damaged unit; 10, 20 or 30 health for every 24 hours x the sector's supply ratios; the repair icon (GType
+      0x76 frame 0x95, 0x4299C0) on the counter. WARMAP.md "Repair" has the rules.
+- *Provisional / not yet*: 0x8124 (taken as "finished"); the icon's sharing of the corner with the production
+  icon and its power bar; a dead unit of a surviving object still comes back in the next battle. Not seen in a
+  game (needs a repairer and a damaged unit together); exercised with a stand-in only.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

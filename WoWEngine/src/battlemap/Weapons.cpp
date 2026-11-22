@@ -519,7 +519,8 @@ namespace wow
     // at once; else the battle's key building (0x33E / 0x78, 0x116 / 0x3A by the kind) if seen, else the last seen.
     // The group gets 0x80B1 with it: for a player's group (+0x1D8 bit 4) and a vehicle target (+0xB8 bit 0), if
     // rand() is under 5000 speech 0x10F; then 0x482960: as 0x482880, the target set and bit 0 set.
-    // *Provisional*: a player's unit seeing an unarmed one also tells the battle (0x80B1 to dword_4E9B78), not in.
+    // An unarmed one seen by a unit of the computer player's side (0x49666F: the scanner's side is the AI
+    // player's, dword_4E9B78 +0x24) is also told to that player (0x80B1, 0x445D60: AiThreatSeen).
     void BattleMap::AutoTarget(const Unit& u)
     {
         auto t = setup.units->find(u.type);
@@ -536,6 +537,7 @@ namespace wow
             if (IsBuilding(o) && double(Progress(o)) <= 0.9999) continue;
             if (o.players == u.players || !Targetable(o)) continue;
             if (!o.guns.empty()) { pick = &o; break; }
+            if (!u.players) AiThreatSeen(o.ref);
             last = &o;
             if (o.type == (setup.sector == 3 ? 0x33E : 0x78) || o.type == (setup.sector == 30 ? 0x116 : 0x3A)) key = &o;
         }

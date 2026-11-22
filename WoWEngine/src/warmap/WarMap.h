@@ -144,6 +144,9 @@ namespace wow
         // A sound's length in ticks (the victory's wait, 0x41F400)
         void SetSoundLength(std::function<int(int)> length) { soundLength = std::move(length); }
         void SetStickyPopup(bool on) { stickyPopup = on; }   // [Modern] "Sticky popup menus"
+        void SetArmour(const ObjOjd::ArmourModifiers& a) { armour = a; }
+        // a battle unit's health (+0xC4) put back in its war map object as a battle leaves it
+        void SetUnitHealth(int ref, int slot, int health);
         void SetStatusStrip(bool on) { statusStrip = on; }   // [Modern] "War map status strip"
         void SetDeposits(std::map<int, std::array<int, 6>> d, float dropOff) { deposits = std::move(d); resourceDropOff = dropOff; }
         // Both sides' research (0x417CD0: the local player's first, dword_4E9B88, then the other side's, 4E9B8C),
@@ -220,6 +223,19 @@ namespace wow
         bool resourceCheat = false;     // byte_58913C: every product of supply ratios taken as 1 (0x41AA16, 0x45F82F, 0x460717)
         std::vector<SaveObject> table;
         std::vector<int> destroyed;      // refs into the table of objects gone from the map (not written back)
+        // Repair (0x4297C0 / 0x429B80; docs/WARMAP.md "Repair"): a repairer's target (+0x50, one battle unit of an
+        // object of its side in its sector) and the hours it has put in (+0x64); the units being repaired (+0xB8
+        // bit 12 of each, 0x429940)
+        struct Repair { int target = -1, unit = -1, hours = 0; };
+        std::map<int, Repair> repairs;                  // by the repairer's ref
+        std::set<std::pair<int, int>> repairing;        // (the object's ref, which of its battle units)
+        ObjOjd::ArmourModifiers armour;
+        int UnitMaxHealth(int type) const;              // 0x47DA20
+        static bool Repairer(int type) { return type == 30 || type == 31 || type == 60 || type == 121; }
+        bool MostDamaged(int sector, bool players, int kind, int& ref, int& unit) const;   // 0x422AB0
+        void PickRepair(int ref);                       // 0x4297C0
+        void RepairStep(int ref, int hours);            // 0x429B80
+        bool BeingRepaired(int ref) const;              // 0x4299C0
         std::map<int, ObjOjd::UnitData> unitData;
         // The factories (WBuildList, docs/WARMAP.md "Production"): each object's that has one, by its place in the
         // table, as read from (and written back into) the end of its saved bytes

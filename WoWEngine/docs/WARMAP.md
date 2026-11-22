@@ -391,6 +391,39 @@ speed divides by 0 in the game and never gets anywhere (*provisional*: 1 pixel a
 - **Saved routes** (0x425A60): origin, destination, +0x5F, +0x5E (attack), +0x44 (5), the path's count, +0x34, the
   path (the start first), the u8 +0x50 (naval) and the units.
 
+## Repair (0x4297C0, 0x429B80, 0x422AB0, 0x4299C0; `WarMap::PickRepair`, `WarMap::RepairStep`)
+
+Each battle unit keeps its health (+0xC4) with its war map object: the save writes it as the last of BAMO's five
+values (0x489F30: the tag, the heading +0x40, the place +0x78 / +0x7C / +0x84, the health), 20 bytes on from the
+tag. A battle starts each unit with it and leaves it there (update 153; before, the engine started every unit
+at its type's full health).
+
+Four types repair: the Mobile Repair Vehicles Mk1 and Mk2 (30 and 31) and the two workshops (60, the Humans'
+Repair Workshops, and 121, the Martians' Repair Facility). Each keeps a target (+0x50: one battle unit) and the
+hours it has put in (+0x64); a unit being repaired has +0xB8 bit 12.
+
+**Looking for work** (0x4297C0): the old target is let go. Among its own side's objects in its sector
+(0x446370), a vehicle takes the most damaged battle unit of the constructions or of the resources: 0x422AB0 gives
+each list's unit with the lowest health / full health under 1.0 that isn't being repaired already; the
+constructions' is taken when its health / full health as whole numbers (0 for a damaged one, 1 when none was
+found) is under the resources', else the resources'. A workshop that answers its own 0x8124 takes the most
+damaged of the units. One found at full health is dropped; else it is marked.
+
+**The hourly step** (0x429B80, each object's, with the hours gone by, after its intel counts down): a target no
+longer in the repairer's sector is let go and another looked for. The hours go up by those gone by; for every
+(24 x the sector's three supply ratios for its side multiplied, 1 with the resource cheat) hours in them the
+target's health goes up by 10 (Mk1), 20 (Mk2) or 30 (a workshop). At full health it is left there, unmarked, and
+another looked for. With no target the count goes up by one a call, and past 24 another is looked for.
+
+**The icon**: a counter shows GType 0x76's frame 0x95 while one of its object's units is being repaired
+(0x4299C0).
+
+*Provisional*: what 0x8124 asks isn't traced (taken as the workshop being finished); the icon is drawn solid
+whenever the counter has no production icon, and its power bar isn't in; a battle unit that dies while others of
+its object live on isn't taken out of the object. Not seen running in a game: it needs a damaged unit and a
+repairer in one sector. Checked with a stand-in: Parliament's saved health reads 17999, its type's full health,
+and with it set to 5 and a unit made a Mk1 the target is taken and marked.
+
 ## Martian pods
 
 Every whole game hour the world (0x802D, 0x419E9D) moves the routes, the players and both sides' research

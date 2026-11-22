@@ -592,9 +592,12 @@ namespace wow
     {
         units.clear();
         for (const BattleGroup& g : setup.groups)
-            for (const auto& [x, y] : g.places)
+            for (size_t slot = 0; slot < g.places.size(); slot++)
             {
+                const auto& [x, y] = g.places[slot];
                 Unit u{};
+                u.slot = int(slot);
+                if (slot < g.healths.size()) u.savedHealth = g.healths[slot];
                 u.type = g.type;
                 u.x = x;
                 u.y = y;
@@ -712,6 +715,9 @@ namespace wow
         // model's radius (0x47EB10)
         u.drive.radius = Radius44(u.type);
         u.health = MaxHealth(u.type);
+        // an object comes with the health its war map object's save kept (+0xC4, read back with the rest of BAMO,
+        // 0x489ED0); one made fresh has its type's
+        if (u.savedHealth > 0) u.health = u.savedHealth;
         // 0x48E9D0: a building whose construction isn't done (+0x7C / +0x78 at most 0.9999; +0xC0 bit 0 clear)
         // starts with that much of its health, at least 1
         const float progress = Progress(u);
@@ -2976,6 +2982,18 @@ namespace wow
         }
         endBox = box;
         popup.clear();
+    }
+
+    // *Provisional*: a unit that died while others of its object live on isn't told (the game takes it out of the
+    // object's list, 0x8057); the engine's objects keep their battle units as the save had them, so it comes back
+    // in the next battle.
+    std::vector<BattleMap::UnitHealth> BattleMap::UnitHealths() const
+    {
+        std::vector<UnitHealth> out;
+        for (const Unit& u : units)
+            if (u.ref >= 0 && size_t(u.ref) < setup.groups.size() && u.slot >= 0 && setup.groups[size_t(u.ref)].ref >= 0)
+                out.push_back({ setup.groups[size_t(u.ref)].ref, u.slot, std::max(1, u.health) });
+        return out;
     }
 
     std::vector<int> BattleMap::LostRefs() const

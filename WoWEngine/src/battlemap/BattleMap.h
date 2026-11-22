@@ -341,6 +341,8 @@ namespace wow
                       int footX = 0, footY = 0; // +0x13C / +0x13E: where its footprint is marked (both 0: none)
                       int droneTarget = 0;  // +0x190: a drone's object to run into (vt+0xC4 = 0x48FA80)
                       bool started = false; // +0x18: vt+0x14 has run (StartUnit)
+                      int slot = -1;        // which of its war map object's battle units it is (the save's order)
+                      int savedHealth = -1; // its health as the save had it (+0xC4), -1 for none
                       bool fogged = false;  // +0xB8 bit 3 (vt+0x9C / vt+0xA0): the other side's, hidden by the fog
                       int stance = 1;       // +0xD8: its type's +0x43 byte (record 56) to start with (0x495740)
                     };
@@ -720,6 +722,7 @@ namespace wow
         struct AiTask { int threat = -1, own = -1; };
         bool aiOn = false, aiHolder = false;                    // +0x450: the AI holds the sector
         std::vector<AiThreat> aiThreats;
+        void AiThreatSeen(int group);                           // 0x80B1 to the AI player, 0x445D60
         std::vector<int> aiOwn;
         std::vector<AiTask> aiTasks;
         void AiStart();                                         // 0x445210
@@ -753,6 +756,10 @@ namespace wow
     public:
         // The war map objects whose battle units are all gone (each group stands for one), for the war map
         std::vector<int> LostRefs() const;
+        // every battle unit still standing as the battle leaves it: its war map object, which of the object's
+        // units it is, and its health, to go back into the object (+0xC4 is saved with each, 0x489F30)
+        struct UnitHealth { int ref, slot, health; };
+        std::vector<UnitHealth> UnitHealths() const;
         // The war map objects that left by a reinforcement point, and the sector each went to
         std::vector<std::pair<int, int>> RetreatedRefs() const;
         bool Fought() const { return battleOn; }
