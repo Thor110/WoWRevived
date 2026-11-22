@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 193) and what remains
+## Where things stand (update 194) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -59,11 +59,11 @@ inventory with the history. Tick here and there as each is done.
       - [x] (a, 192) the picture is the view size; the menus and the other 640 x 480 screens are centred in it
         over the backgrounds made for the size, never scaled; the slider acts at once; the picture is scaled
         to the screen with its shape kept;
-      - [~] (b) the maps' views at the view size. The war map's is in (193): its view, edge scrolling, panels'
-        and mini-map's anchors, the menus over it centred, and its background chosen by the view's width.
-        Still to do: the battle map's view (the view rectangle, zoom and scroll limits, edge scrolling, the
-        minimap and popups, the end box, the group icons, the Build List's place) and the sound borders
-        (0x464B10);
+      - [x] (b, 193-194) the maps' views at the view size: the war map's (its view, edge scrolling, panels'
+        and mini-map's anchors, its background chosen by the view's width) and the battle map's (the view,
+        scroll and zoom limits, edge scrolling, the minimap, popups, the end box, the group icons, the sound's
+        listener and borders, 0x464B10); the menus over both centred. Not looked at yet: the Build List and
+        the information page on a large battle view;
       - [ ] (c) the movies and the briefing / research / CD player screens looked at on a large view; the
         installer putting `dat/extra` and `dat/warmap` in the game's `DAT`.
 - [x] Already in: the start files never saved over (160); upgraded buildings fight as their level (186).

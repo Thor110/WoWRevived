@@ -112,6 +112,7 @@ namespace wow
             std::function<bool(bool human, int index)> researchDone;
             // a side's improvement multiplier by its enhancement's type (Research::Multiplier: 1.0 until it's done)
             std::function<float(bool human, int type)> researchMultiplier;
+            int viewW = 640, viewH = 480;   // the view's size (the screen's in the original)
             // the sector's Damage Layer (width, height, a byte a vertex; 0 x 0 for none yet), and [BattleMap]
             // "Damage reduction divisor" (dword_4D259C, 500)
             int damageWidth = 0, damageHeight = 0;
@@ -143,6 +144,10 @@ namespace wow
         std::string TipText(int owner, int level) const override;
 
         int ScrollX() const { return scrollX; }
+        // the view's size changed (Display Settings while the battle is on): its middle stays where it was
+        void SetViewSize(int w, int h);
+        int ViewW() const { return viewW; }
+        int ViewH() const { return viewH; }
         int ScrollY() const { return scrollY; }
         void ScrollTo(int x, int y);
 
@@ -615,6 +620,7 @@ namespace wow
         const IndexedImage* miniPicture = nullptr;
         int miniX = 0, miniY = 0, miniW = 0, miniH = 0;
         int rectW = 0, rectH = 0, rectX = 0, rectY = 0;   // +0x98's size, +0x90 / +0x94
+        int viewW = 640, viewH = 480;                     // the view's size
         std::vector<Dot> dots;
         int miniFrames = 0;                                 // +0x88
         bool miniShown = true, miniDrag = false;

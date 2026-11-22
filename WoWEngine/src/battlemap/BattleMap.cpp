@@ -34,6 +34,8 @@ namespace wow
 
     BattleMap::BattleMap(Resources& res, const Setup& s) : Screen(Id, res, 0, 0x2F0), setup(s)
     {
+        viewW = s.viewW;
+        viewH = s.viewH;
         // WLandscape::CreateTerrain (0x47B900): maps\<name>, its extension swapped for .atm
         std::string base = s.mapName;
         if (auto dot = base.rfind('.'); dot != std::string::npos) base.resize(dot);
@@ -188,7 +190,7 @@ namespace wow
             }
         }
         SetUpMinimap();
-        ScrollTo(cx - 320, land.ProjectY(cy, land.HeightAt(cx, cy)) - 240);
+        ScrollTo(cx - viewW / 2, land.ProjectY(cy, land.HeightAt(cx, cy)) - viewH / 2);
     }
 
     // 0x4868B0: the picture (maps\hmin<sector>.spr, mmin in a Martian game) at the bottom right of the 640 x 480 view,
@@ -209,10 +211,10 @@ namespace wow
         miniW = miniPicture->width;
         miniH = miniPicture->height;
         const int border = 4;
-        miniX = 640 - miniW - border;
-        miniY = 480 - miniH - border;
-        rectW = miniW * 640 / std::max(1, land.WorldWidth());
-        rectH = miniH * 480 / std::max(1, land.WorldHeight());
+        miniX = viewW - miniW - border;
+        miniY = viewH - miniH - border;
+        rectW = std::min(miniW, miniW * viewW / std::max(1, land.WorldWidth()));
+        rectH = std::min(miniH, miniH * viewH / std::max(1, land.WorldHeight()));
         auto six = [](int r, int g, int b) {
             auto c = [](int v) { return uint32_t((v * 255 + 31) / 63); };
             return c(r) << 16 | c(g) << 8 | c(b);
@@ -438,7 +440,7 @@ namespace wow
         if (!any) return;
         const int cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
         // a Zoomer there at "Battlemap Zoomer Speed" (0x43A592)
-        ZoomTo(cx - 320, land.ProjectY(cy, land.HeightAtNearest(cx, cy)) - 240);
+        ZoomTo(cx - viewW / 2, land.ProjectY(cy, land.HeightAtNearest(cx, cy)) - viewH / 2);
     }
 
     // 0x446690: the target kept within the scroll (0 to the size less the view), the start the view's place now
@@ -446,8 +448,8 @@ namespace wow
     // (+0x20), the step 0 (+0x24)
     void BattleMap::ZoomTo(int x, int y)
     {
-        x = std::max(0, std::min(x, land.WorldWidth() - 640 - 1));
-        y = std::max(0, std::min(y, land.WorldHeight() - 480 - 1));
+        x = std::max(0, std::min(x, land.WorldWidth() - viewW - 1));
+        y = std::max(0, std::min(y, land.WorldHeight() - viewH - 1));
         zoomer = Zoomer{};
         zoomer.active = true;
         zoomer.x = float(scrollX);
@@ -512,7 +514,7 @@ namespace wow
         }
         if (!any) return;
         const int cx = (maxX - minX) / 2 + minX, cy = (maxY - minY) / 2 + minY;
-        const int x = cx - 320, y = land.ProjectY(cy, land.HeightAtNearest(cx, cy)) - 240;
+        const int x = cx - viewW / 2, y = land.ProjectY(cy, land.HeightAtNearest(cx, cy)) - viewH / 2;
         if (glide) ZoomTo(x, y);
         else { zoomer.active = false; ScrollTo(x, y); }
     }
@@ -577,7 +579,7 @@ namespace wow
     // 0x486E80's 0x201 / 0x200: the point under the mouse, as a share of the world, less half the view (0x7A)
     void BattleMap::MinimapScroll(int x, int y)
     {
-        ScrollTo(land.WorldWidth() * (x - miniX) / std::max(1, miniW) - 320, land.WorldHeight() * (y - miniY) / std::max(1, miniH) - 240);
+        ScrollTo(land.WorldWidth() * (x - miniX) / std::max(1, miniW) - viewW / 2, land.WorldHeight() * (y - miniY) / std::max(1, miniH) - viewH / 2);
     }
 
     // The deployment (0x421FE0 for each list, in EnterBattleMap's order: HCON, HRES, ACON, ARES, HUNI, AUNI). Every
@@ -1621,7 +1623,7 @@ namespace wow
         int x = start, y = start;
         for (GroupIcon& icon : icons)
         {
-            if (x + icon.w + 2 > 640 - start) { x = start; y += icon.h + 2; }
+            if (x + icon.w + 2 > viewW - start) { x = start; y += icon.h + 2; }
             icon.x = x;
             icon.y = y;
             x += icon.w + 2;
@@ -2148,8 +2150,8 @@ namespace wow
     // +0x20, 0x484DA4) less the view's, less 1
     void BattleMap::ScrollTo(int x, int y)
     {
-        scrollX = std::max(0, std::min(x, land.WorldWidth() - 640 - 1));
-        scrollY = std::max(0, std::min(y, land.WorldHeight() - 480 - 1));
+        scrollX = std::max(0, std::min(x, land.WorldWidth() - viewW - 1));
+        scrollY = std::max(0, std::min(y, land.WorldHeight() - viewH - 1));
         // 0x8004 to the minimap: its rectangle at the scroll's share of the picture, kept inside it
         if (miniPicture)
         {
@@ -2158,6 +2160,18 @@ namespace wow
             if (rectW + rectX > miniW) rectX = miniW - rectW;
             if (rectH + rectY > miniH) rectY = miniH - rectH;
         }
+    }
+
+    void BattleMap::SetViewSize(int w, int h)
+    {
+        if (w == viewW && h == viewH) return;
+        const int mx = scrollX + viewW / 2, my = scrollY + viewH / 2;
+        viewW = w;
+        viewH = h;
+        popup.clear();          // laid out for the old size
+        zoomer.active = false;
+        SetUpMinimap();
+        ScrollTo(mx - viewW / 2, my - viewH / 2);
     }
 
     // 0x485610: each press (and repeat) of a key is one step, sent as 0x7A with the view's new top left
@@ -2235,7 +2249,7 @@ namespace wow
     void BattleMap::EdgeScroll()
     {
         if (mouseX < 0 || !popup.empty()) return;
-        const int margin = Screen::windowed ? 32 : 4, W = 640, H = 480;    // 0x484E2C
+        const int margin = Screen::windowed ? 32 : 4, W = viewW, H = viewH;    // 0x484E2C
         if (mouseX > margin && mouseX < W - margin && mouseY > margin && mouseY < H - margin) return;
         const int div = (W / 2) / 40;
         ScrollTo(scrollX - (W / 2 - mouseX) / div, scrollY - (H / 2 - mouseY) / div);
@@ -2317,7 +2331,7 @@ namespace wow
         FogTick();
         WaterTwinkles();
         // the listener (dword_4E9250 / dy): the view's centre
-        if (setup.sound) setup.sound->SetListener(scrollX + 320, scrollY + 240);
+        if (setup.sound) setup.sound->SetListener(scrollX + viewW / 2, scrollY + viewH / 2);
         // the right button held for [Tweak] "Quick Cancel Timeout" updates opens the popup (0x805B -> 0x485DE0)
         if (rightDownAt >= 0 && popup.empty() && ticks - rightDownAt == setup.quickCancelTimeout && mouseX >= 0)
             OpenPopup(mouseX, mouseY);
@@ -2508,7 +2522,7 @@ namespace wow
     // the rows and the placement: frontend/PopupRows.h
     void BattleMap::LayOutPopup(int x, int y)
     {
-        LayOutPopupRows(popup, x, y, 640, 480);
+        LayOutPopupRows(popup, x, y, viewW, viewH);
         popupOpenRow = -1;
     }
 
@@ -2999,7 +3013,7 @@ namespace wow
     {
         const IndexedImage* f = res.GetFrame(0x68, 0);
         const int w = f ? f->width : 0, h = f ? f->height : 0;
-        return { (640 - w) / 2, 480 - h - 4, w, h };
+        return { (viewW - w) / 2, viewH - h - 4, w, h };
     }
 
     Rect BattleMap::EndBoxButtonRect() const

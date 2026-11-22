@@ -117,8 +117,27 @@ namespace wow
             std::sscanf(text.c_str(), "%d,%d,%d,%d", &b.left, &b.top, &b.right, &b.bottom);
             return b;
         };
-        sound.SetBorders(border("Inner border", { -320, -200, 320, 200 }), border("Outer border", { -640, -400, 640, 400 }),
-                         border("Inner Ambient border", { -640, -400, 640, 400 }), border("Outer Ambient border", { -960, -600, 960, 600 }));
+        Sound::Border inner = border("Inner border", { -320, -200, 320, 200 }), outer = border("Outer border", { -640, -400, 640, 400 });
+        Sound::Border innerAmbient = border("Inner Ambient border", { -640, -400, 640, 400 });
+        Sound::Border outerAmbient = border("Outer Ambient border", { -960, -600, 960, 600 });
+        // 0x464B10 (at the start and on each change of the screen's size): on a screen that isn't 640 wide the
+        // inner borders' left and the outer borders' right are multiplied by its width / 640, and the same for
+        // the tops and bottoms by its height / 480. Only those sides: the others stay as set (docs/ODDITIES.md).
+        int vw = 640, vh = 480;
+        for (const Mode& mode : Modes) if (mode.w == sizedW && mode.h == sizedH) { vw = mode.w; vh = mode.h; }
+        if (vw != 640)
+        {
+            const double f = double(vw) / 640;
+            inner.left = int(inner.left * f); outer.right = int(outer.right * f);
+            innerAmbient.left = int(innerAmbient.left * f); outerAmbient.right = int(outerAmbient.right * f);
+        }
+        if (vh != 480)
+        {
+            const double f = double(vh) / 480;
+            inner.top = int(inner.top * f); outer.bottom = int(outer.bottom * f);
+            innerAmbient.top = int(innerAmbient.top * f); outerAmbient.bottom = int(outerAmbient.bottom * f);
+        }
+        sound.SetBorders(inner, outer, innerAmbient, outerAmbient);
         music.SetVolume(master);
     }
 
@@ -1059,8 +1078,16 @@ namespace wow
             const std::string size = ini.GetString("Screen", "Size", "640,480");
             int w = std::atoi(size.c_str()), h = 0;
             if (auto comma = size.find(','); comma != std::string::npos) h = std::atoi(size.c_str() + comma + 1);
-            if (w != sizedW || h != sizedH) { sizedW = w; sizedH = h; res.SetViewSize(w, h); }
+            if (w != sizedW || h != sizedH) { sizedW = w; sizedH = h; res.SetViewSize(w, h); ApplyVolumes(); }
         }
+        // the battle map's view is the view size too
+        for (Screen* sc : { battleMap.get(), screen.get() })
+            if (sc && sc->Id() == BattleMap::Id)
+            {
+                int w = 640, h = 480;
+                for (const Mode& mode : Modes) if (mode.w == sizedW && mode.h == sizedH) { w = mode.w; h = mode.h; }
+                static_cast<BattleMap*>(sc)->SetViewSize(w, h);
+            }
         // the war map's view is the view size (one of the sizes, else 640 x 480)
         if (WarMap* map = ActiveWarMap())
         {
@@ -1304,6 +1331,7 @@ namespace wow
             return r ? r->Multiplier(type) : 1.0f;
         };
         if (s.zMapRes < 1) s.zMapRes = 400;
+        for (const Mode& mode : Modes) if (mode.w == sizedW && mode.h == sizedH) { s.viewW = mode.w; s.viewH = mode.h; }
         try
         {
             auto battle = std::make_unique<BattleMap>(res, s);
@@ -1492,13 +1520,11 @@ namespace wow
 
     namespace
     {
-        // a screen that is still drawn at 640 x 480 and scaled by the window: the battle map, its menu (no
-        // background of its own) and the movies. The war map's view is the view size.
-        bool SmallPicture(const Screen* screen, bool overBattle)
+        // a screen that is still drawn at 640 x 480 and scaled by the window: the movies. The maps' views are
+        // the view size.
+        bool SmallPicture(const Screen* screen)
         {
-            if (!screen) return false;
-            const int id = screen->Id();
-            return id == BattleMap::Id || id == MovieScreen::Id || (overBattle && !screen->Background());
+            return screen && screen->Id() == MovieScreen::Id;
         }
     }
 
@@ -1506,7 +1532,7 @@ namespace wow
     {
         width = 640;
         height = 480;
-        if (SmallPicture(screen.get(), battleMap != nullptr)) return;
+        if (SmallPicture(screen.get())) return;
         const std::string size = ini.GetString("Screen", "Size", "640,480");
         int w = std::atoi(size.c_str()), h = 0;
         if (auto comma = size.find(','); comma != std::string::npos) h = std::atoi(size.c_str() + comma + 1);
@@ -1547,7 +1573,7 @@ namespace wow
     {
         x = y = 0;
         // the maps are the whole picture; their menus, like every other 640 x 480 screen, sit in its middle
-        if (SmallPicture(screen.get(), battleMap != nullptr) || (screen && screen->Id() == WarMap::Id)) return;
+        if (SmallPicture(screen.get()) || (screen && (screen->Id() == WarMap::Id || screen->Id() == BattleMap::Id))) return;
         x = std::max(0, (pictureW - 640) / 2);
         y = std::max(0, (pictureH - 480) / 2);
     }

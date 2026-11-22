@@ -17,7 +17,7 @@ code each is to be marked `MODERN FIX`. A parity pass must leave them alone. The
 | Volume sliders saved | The Sound Control sliders never write the registry, so the volumes are lost | **In** (marked, 191): Master as it moves, Ambient and Speech as the menu closes, written to `WoWRevived.ini` |
 | Music toggle | The Sound Control check box only saves the setting; the music steps read it when they next come round | **In** (191): off stops the track at once, and either way the music step of the map behind the menu is brought forward |
 | Master volume on the music | Master doesn't reach the music's playback | **In** (marked, 191): Master scales the music |
-| Resolution applied at once | The slider only takes effect after a restart | **Begun** (192, 193): the menus, the other 640 x 480 screens and the war map take the view size at once; the battle map's view is next. See "Resolution" below |
+| Resolution applied at once | The slider only takes effect after a restart | **In but for the movies** (192-194): the menus, the other 640 x 480 screens and both maps take the view size at once. See "Resolution" below |
 | Desktop resolution on the first start | (no such thing) | **In** (192): with no `[Screen] Size` yet, the view size is worked out from the desktop's and kept; afterwards the player's choice stands |
 | No 8 / 16-bit colour choice | Two radios in Display Settings; 8-bit doesn't work on modern systems | **In** (191): not offered; `[Modern]` "Original Display Settings" = 1 puts them and the lights toggle back |
 | Loose map files | The game marks MAPS.WoW's entries by looking for `Map\<name>` (0x414FAB), a folder it doesn't have, then reads `maps\<name>`: a loose map file is never used | **In** (update 140): `core/Vfs` looks in `maps\`, so a loose file in `MAPS` replaces the archive's, as in `DAT` |
@@ -76,8 +76,13 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
   `Resources::SetFileOverrides`). They hold the original picture at the left with 423 more columns of sea on
   the right, so sectors, counters and saves need no shifting. If they aren't there, the original picture is
   drawn in the middle of the view with black at its sides.
-- **The battle map and the movies** are still drawn at 640 x 480 and scaled by the window until their views take the
-  size.
+- **The battle map** (194) is drawn at the view size (`BattleMap::Setup` viewW / viewH, `SetViewSize` for a
+  change while it is on): more of the land is seen, nothing is larger. The minimap keeps to the bottom right
+  corner and its rectangle is the view's share of the land; the edge scrolling's speed goes by the view's
+  width as the original's does (0x484DF0); the group icons wrap at the view's width; the end box is at the
+  bottom middle; the Battle Options menu is in the middle. The sound's listener is the view's middle, and the
+  borders are scaled as the original scales them for a larger screen (0x464B10, ODDITIES.md).
+- **The movies** are still drawn at 640 x 480 and scaled by the window.
 - **Where the files go**: the engine looks for `extra\<size>\` and `warmap\` inside the game's `DAT` folder,
   so the installer has to put `WoWEngine/dat/extra` and `WoWEngine/dat/warmap` there (PLAN.md D2).
 

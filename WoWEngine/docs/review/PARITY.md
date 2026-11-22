@@ -1013,6 +1013,17 @@ transparency")
   reference frame); the Human one at 1280 x 800 with Campaign Options centred, and at 1600 x 900 without the
   extended files; both battles and both war maps unchanged at 640 x 480. The battle map is still 640 x 480.
 
+**Update 194** (the rest of the second step of B5: the battle map; nothing of the original's changed at 640 x 480)
+- The battle map is drawn at the view size: the view, the scroll's and zoomer's limits, the start's and the
+  selection's centring, edge scrolling (0x484DF0), the minimap's place and rectangle (0x4868B0), the popup's
+  layout, the end box, the group icons' wrap and the sound's listener all go by it. Menus over it are centred.
+- The sound borders are scaled for a screen that isn't 640 x 480 as 0x464B10 does it (one corner of each;
+  ODDITIES.md). This closes the "not yet" of update 179.
+- Seen: both test battles at 1920 x 1080; a Martian battle at that size under the checkers, scrolled to the
+  corners by the edges and the minimap, with the menu up; both battles at 640 x 480 the same picture as before,
+  byte for byte. Not looked at: the Build List and the information page on a large view; the movies stay 640
+  x 480.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

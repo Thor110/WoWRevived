@@ -184,3 +184,14 @@ which is how the computer player's buildings get their levels, stays its first. 
 player's own lists mismatched too, but several of those are saves renamed to play the other side.) The owner's
 decision: the buildings are to show as what they are for both sides, which is the modern fix.
 
+
+## The sound borders on a larger screen (0x464B10)
+
+The four sound borders (`[Sound]` "Inner border", "Outer border", "Inner Ambient border", "Outer Ambient
+border": how far from the view's middle a sound is at full volume and where it is silent) are scaled when the
+screen isn't 640 x 480, at the start and on each change of mode (0x402A45, 0x42C87F, 0x42C8F9). Only one
+corner of each is scaled: the inner borders' left and top, the outer borders' right and bottom, by the screen's
+width / 640 and height / 480. The other sides stay as set. So on a larger screen sounds to the left and above
+keep full volume further out than sounds to the right and below, and fade out sooner on the left and top than
+on the right and bottom. It reads like a slip (each border half done). The engine does the same (update 194);
+scaling all four sides would be a modern fix, not made.
