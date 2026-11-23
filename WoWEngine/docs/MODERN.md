@@ -224,20 +224,19 @@ middle with dithered ends, frame 1 the even grey), with the palette entries the 
 
 (A backing sprite that is itself wider than the control on it is centred under it, should one ever be made.)
 
-### The game's text (update 219)
+### The game's text (updates 219 and 220)
 
-WoWRevived's updated TEXT.ojd files, one for each language, are in `resources` (`TEXT-EN.ojd`, `TEXT-FR.ojd`,
-`TEXT-DE.ojd`, `TEXT-IT.ojd`, `TEXT-ES.ojd`) and go beside the programs in a build and a release. As the engine
-starts, the one for the install's language (`[WoW Engine]` "Language") is copied in as the game's `TEXT.ojd`,
-if the game's isn't that file already; the file it replaces is kept, once, as `TEXT.ojd.original`.
+WoWRevived's updated TEXT.ojd files, one for each language and each tested in WoWRevived, are in `resources`
+(`TEXT-EN.ojd`, `TEXT-FR.ojd`, `TEXT-DE.ojd`, `TEXT-IT.ojd`, `TEXT-ES.ojd`); a build and a release have them in
+a `resources` folder beside the programs. **WoWLauncher** copies the one for the install's language in as the
+game's `TEXT.ojd` (`install::CopyLanguageText`): at the end of an install, by the language the discs' marker
+gave, and at its start when the game is installed already. Only that one file is copied, over the disc's;
+no copy of the disc's is kept (the owner's decision, update 220). Nothing is copied when the language isn't
+known. The engine itself reads whatever `TEXT.ojd` the install has and copies nothing (update 219 had it do
+the copying, with a backup; both taken out).
 
-- Nothing is copied when the language isn't known (an install with neither the setting nor a language.txt),
-  with `--no-loose`, or in a screenshot run.
-- To go back to the disc's text: delete `TEXT.ojd`, rename `TEXT.ojd.original` to it, and start with
-  `--no-loose` (or take the `TEXT-*.ojd` files away).
-- The log says when it copies ("Text: ... copied in as TEXT.ojd").
-- The engine's own captions (the Modern Options menu's and the rest) are still built in; putting them into
-  these files is PLAN.md C8.
+The engine's own captions (the Modern Options menu's and the rest) are still built in; putting them into these
+files is PLAN.md C8.
 
 ### The install's language (update 216)
 

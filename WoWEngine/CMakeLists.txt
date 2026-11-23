@@ -146,6 +146,8 @@ if(TARGET SDL3::SDL3)
     if(WIN32)
         target_sources(WoWLauncher PRIVATE resources/WoWEngine.rc)
     endif()
+    # a build run where it was made finds the updated text in the source's resources folder
+    target_compile_definitions(WoWLauncher PRIVATE WOWENGINE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     # the launcher's picture, next to the programs
     add_custom_command(TARGET WoWLauncher POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources/launcher.bmp $<TARGET_FILE_DIR:WoWLauncher>/launcher.bmp)
@@ -153,11 +155,12 @@ if(TARGET SDL3::SDL3)
         # keep SDL3.dll next to the exe
         add_custom_command(TARGET WoWEngine POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL3::SDL3> $<TARGET_FILE_DIR:WoWEngine>)
-        # WoWRevived's updated TEXT.ojd for each language, which the engine copies in as the game's (src/main.cpp)
+        # WoWRevived's updated TEXT.ojd for each language, in "resources" beside the programs: WoWLauncher copies
+        # the install's language's in as the game's TEXT.ojd (src/install/Installer.cpp)
         foreach(text_language EN FR DE IT ES)
             if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/resources/TEXT-${text_language}.ojd)
-                add_custom_command(TARGET WoWEngine POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources/TEXT-${text_language}.ojd $<TARGET_FILE_DIR:WoWEngine>/TEXT-${text_language}.ojd)
+                add_custom_command(TARGET WoWLauncher POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources/TEXT-${text_language}.ojd $<TARGET_FILE_DIR:WoWLauncher>/resources/TEXT-${text_language}.ojd)
             endif()
         endforeach()
         # Discord's rich presence (src/platform/Discord.cpp): discord-rpc.dll and its licence next to the exe. The

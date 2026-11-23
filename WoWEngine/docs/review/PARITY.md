@@ -1197,6 +1197,12 @@ transparency")
 - Seen: all five files read (1332 strings each, both sides); the Italian one copied into the test install and
   the menus in Italian from it; both battles with `--no-loose` as before.
 
+**Update 220** (the game's text, as the owner wants it)
+- WoWLauncher copies the updated TEXT.ojd for the install's language in as the game's, at an install's end
+  and at its start with the game installed; no backup; the engine copies nothing.
+- Seen: the launcher started on the test install set to Italian copying TEXT-IT.ojd in; with no language
+  known, the text left alone; both battles as before.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

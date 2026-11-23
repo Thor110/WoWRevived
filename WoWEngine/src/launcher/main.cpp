@@ -287,6 +287,24 @@ int main(int argc, char** argv)
         else if (arg == "--start") { state.startRequested = true; installScreen = true; }
         else if (arg == "--screenshot" && i + 2 < argc) { screenshot = argv[++i]; screenshotSeconds = std::atof(argv[++i]); }
     }
+    // WoWRevived's updated text for each language is in "resources" beside the programs (a build run where it was
+    // made: the source's). The install puts the one for the discs' language in as the game's TEXT.ojd; a game
+    // that is installed already gets it now.
+    {
+        std::vector<fs::path> places;
+        if (const char* base = SDL_GetBasePath()) places.emplace_back(fs::path(base) / "resources");
+#ifdef WOWENGINE_SOURCE_DIR
+        places.emplace_back(fs::path(WOWENGINE_SOURCE_DIR) / "resources");
+#endif
+        for (const fs::path& place : places)
+        {
+            std::error_code ec;
+            if (!fs::is_regular_file(place / "TEXT-EN.ojd", ec)) continue;
+            SetTextFolder(place);
+            break;
+        }
+    }
+    if (screenshot.empty() && Installed(state.target)) CopyLanguageText(state.target);
     state.phase = !installScreen && Installed(state.target) ? Phase::Ready : Phase::Waiting;
     const uint64_t startedAt = SDL_GetTicks();
     std::thread worker(Worker, std::ref(state));

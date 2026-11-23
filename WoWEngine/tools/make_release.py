@@ -90,9 +90,6 @@ def main():
     if WINDOWS:
         files.append((build_dir / ('SDL3d.dll' if args.debug else 'SDL3.dll'), False))
         files.append((build_dir / 'SDL3.dll', False))
-    # WoWRevived's updated TEXT.ojd for each language (the engine copies the install's in as TEXT.ojd)
-    for code in ('EN', 'FR', 'DE', 'IT', 'ES'):
-        files.append((ROOT / 'resources' / f'TEXT-{code}.ojd', False))
     if WINDOWS:
         # Discord's rich presence: the DLL and its licence (from the build folder, where the build puts them, or
         # straight from resources)
@@ -116,6 +113,15 @@ def main():
             missing.append(str(path))
     if missing:
         sys.exit('Missing from the build: ' + ', '.join(missing))
+
+    # WoWRevived's updated TEXT.ojd for each language, in "resources": WoWLauncher copies the one for the discs'
+    # language in as the game's TEXT.ojd
+    (out / 'resources').mkdir(exist_ok=True)
+    for code in ('EN', 'FR', 'DE', 'IT', 'ES'):
+        source = ROOT / 'resources' / f'TEXT-{code}.ojd'
+        if source.exists():
+            shutil.copy2(source, out / 'resources' / source.name)
+            print('  resources/' + source.name)
 
     # the engine's loose files: into DAT and MAPS of the release folder, which is where the game is then installed
     # (WoWLauncher adds the game's own files beside them), so they are read as the game's loose files are

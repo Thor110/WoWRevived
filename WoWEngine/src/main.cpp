@@ -436,46 +436,6 @@ int main(int argc, char** argv)
             std::error_code ec;
             if (!ini.GetString("WoW Engine", "Language", "").empty()) fs::remove(*old, ec);
         }
-        // MODERN (docs/MODERN.md "The game's text"): WoWRevived's updated TEXT.ojd for the install's language
-        // (TEXT-EN / FR / DE / IT / ES.ojd, shipped with the engine) is copied in as the game's TEXT.ojd, the one
-        // it replaces kept once as TEXT.ojd.original. Only when the language is known; not with --no-loose, nor in
-        // a screenshot run (those leave the install as it is). Before the text is read, below.
-        if (!options.noLoose && options.screenshot.empty())
-        {
-            std::string language = ini.GetString("WoW Engine", "Language", "");
-            for (char& c : language) c = char(std::tolower(static_cast<unsigned char>(c)));
-            const char* code = language.rfind("en", 0) == 0 ? "EN" : language.rfind("fr", 0) == 0 ? "FR" :
-                               language.rfind("ge", 0) == 0 || language.rfind("de", 0) == 0 ? "DE" : language.rfind("it", 0) == 0 ? "IT" :
-                               language.rfind("sp", 0) == 0 || language.rfind("es", 0) == 0 ? "ES" : nullptr;
-            const auto current = files->Resolve("TEXT.ojd");
-            if (code && current)
-            {
-                const std::string name = std::string("TEXT-") + code + ".ojd";
-                std::vector<fs::path> places;
-                if (const char* base = SDL_GetBasePath()) { places.emplace_back(fs::path(base) / name); places.emplace_back(fs::path(base) / "resources" / name); }
-#ifdef WOWENGINE_SOURCE_DIR
-                places.emplace_back(fs::path(WOWENGINE_SOURCE_DIR) / "resources" / name);
-#endif
-                auto read = [](const fs::path& path) {
-                    std::ifstream in(path, std::ios::binary);
-                    return std::vector<char>(std::istreambuf_iterator<char>(in), {});
-                };
-                for (const fs::path& updated : places)
-                {
-                    std::error_code ec;
-                    if (!fs::is_regular_file(updated, ec)) continue;
-                    const std::vector<char> wanted = read(updated);
-                    if (wanted.empty() || wanted == read(*current)) break;      // nothing to do: it is the one in use
-                    fs::path original = *current;
-                    original += ".original";
-                    if (!fs::exists(original, ec)) fs::copy_file(*current, original, ec);
-                    if (ec) { SDL_Log("Text: couldn't keep %s, so TEXT.ojd is left as it is", original.string().c_str()); break; }
-                    fs::copy_file(updated, *current, fs::copy_options::overwrite_existing, ec);
-                    SDL_Log(ec ? "Text: couldn't copy %s over TEXT.ojd" : "Text: %s copied in as TEXT.ojd (the one before kept as TEXT.ojd.original)", updated.string().c_str());
-                    break;
-                }
-            }
-        }
         wow::Resources resources(vfs, human);
         const wow::FrontEndSettings settings = ReadSettings(*files);
         TickNs = uint64_t(1000 / settings.gameFrequency) * 1'000'000ull;

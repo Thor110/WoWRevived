@@ -53,6 +53,14 @@ namespace wow::install
     // inserted (in any order), then Finish.
     void CopyDisc(Disc& disc, const InstallOptions& options, const Progress& progress, InstallResult& result);
     void Finish(const InstallOptions& options, InstallResult& result);
+
+    // WoWRevived's updated text (docs/MODERN.md "The game's text"): the folder that holds TEXT-EN.ojd, TEXT-FR.ojd,
+    // TEXT-DE.ojd, TEXT-IT.ojd and TEXT-ES.ojd, set once by the program (WoWLauncher: its "resources" folder).
+    // Finish then copies the one for the install's language ([WoW Engine] "Language" in the ini, which the
+    // discs' language marker gave) in as the game's TEXT.ojd. CopyLanguageText does the same for an install
+    // that is already there. True if the game's TEXT.ojd is now that file.
+    void SetTextFolder(std::filesystem::path folder);
+    bool CopyLanguageText(const std::filesystem::path& target);
     // The music folder a disc's tracks go to: named after the disc (see 3. above).
     const char* MusicFolder(Side discSide);
 

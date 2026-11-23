@@ -15,6 +15,7 @@
 #include <cctype>
 #include <cstdio>
 #include <fstream>
+#include <iterator>
 #include <set>
 #include <stdexcept>
 
@@ -200,8 +201,46 @@ namespace wow::install
         progress("Finished " + disc.Describe(), 1.0);
     }
 
+    namespace { fs::path textFolder; }
+
+    void SetTextFolder(fs::path folder) { textFolder = std::move(folder); }
+
+    bool CopyLanguageText(const fs::path& target)
+    {
+        if (textFolder.empty()) return false;
+        IniStore ini;
+        ini.Load((target / IniStore::FileName()).string());
+        std::string language;
+        if (!ini.Get("WoW Engine", "Language", language) || language.empty())
+        {
+            // (an install made before the language was a setting has it in language.txt)
+            std::ifstream old(target / "language.txt");
+            if (!old || !std::getline(old, language)) return false;
+        }
+        language = Lower(language);
+        const char* code = language.rfind("en", 0) == 0 ? "EN" : language.rfind("fr", 0) == 0 ? "FR" :
+                           language.rfind("ge", 0) == 0 || language.rfind("de", 0) == 0 ? "DE" : language.rfind("it", 0) == 0 ? "IT" :
+                           language.rfind("sp", 0) == 0 || language.rfind("es", 0) == 0 ? "ES" : nullptr;
+        if (!code) return false;
+        std::error_code ec;
+        const fs::path updated = textFolder / (std::string("TEXT-") + code + ".ojd");
+        if (!fs::is_regular_file(updated, ec)) return false;
+        // over the game's own, whatever case its name has on disk
+        const auto existing = wow::GameFiles(target).Resolve("TEXT.ojd");
+        const fs::path game = existing ? *existing : target / "TEXT.ojd";
+        if (existing && fs::file_size(game, ec) == fs::file_size(updated, ec))
+        {
+            // (already that file: nothing is written)
+            std::ifstream a(game, std::ios::binary), b(updated, std::ios::binary);
+            if (std::equal(std::istreambuf_iterator<char>(a), {}, std::istreambuf_iterator<char>(b), {})) return true;
+        }
+        fs::copy_file(updated, game, fs::copy_options::overwrite_existing, ec);
+        return !ec;
+    }
+
     void Finish(const InstallOptions& options, InstallResult& result)
     {
+        CopyLanguageText(options.target);
         wow::GameFiles files(options.target);
         if (!result.humanDisc) result.warnings.push_back("The Human disc wasn't copied, so its music (Music-Human) is missing.");
         if (!result.martianDisc) result.warnings.push_back("The Martian disc wasn't copied, so its music (Music-Martian) is missing.");
