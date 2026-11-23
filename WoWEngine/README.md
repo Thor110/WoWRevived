@@ -109,7 +109,7 @@ A `<disc>` can be any of:
 - an `.iso` image;
 - a `.cue` sheet, with its `.bin` files.
 
-Give it both discs, in either order, or no disc at all to use whatever is in the drives. It works out which is which. Where both discs have a file, the Human disc's copy is kept, so the order makes no difference. Then it copies the game files, rips the music from tracks 2 to 5, writes `language.txt`. Finally it checks that every file the engine needs is there. It skips everything WoWLauncher's clean-up deletes. The movies go where WoWRevived's wrapper looks for them: `TITLE` and `RAGELOGO` in `FMV`, and each disc's own `INTRO`, `VICTORY` and `DEFEAT` in `FMV-Human` or `FMV-Martian`, so both sides keep theirs. WoWRevived's `.mp4` versions can go next to them and are played first.
+Give it both discs, in either order, or no disc at all to use whatever is in the drives. It works out which is which. Where both discs have a file, the Human disc's copy is kept, so the order makes no difference. Then it copies the game files, rips the music from tracks 2 to 5, writes the language into `WoWRevived.ini` (`[WoW Engine]` "Language"). Finally it checks that every file the engine needs is there. It skips everything WoWLauncher's clean-up deletes. The movies go where WoWRevived's wrapper looks for them: `TITLE` and `RAGELOGO` in `FMV`, and each disc's own `INTRO`, `VICTORY` and `DEFEAT` in `FMV-Human` or `FMV-Martian`, so both sides keep theirs. WoWRevived's `.mp4` versions can go next to them and are played first.
 
 How it handles the different situations:
 - **Both discs in two drives:** both are found and copied without asking.

@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 215) and what remains
+## Where things stand (update 216) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -85,15 +85,23 @@ inventory with the history. Tick here and there as each is done.
       `+` / `-` or the wheel, `R` to put it back, zoom the land only; the panels of both maps go by the "HUD
       scale" slider in Modern Options. The window keeps its size (208). Key bindings in `[Keys]` (209). Done but for
       what the testers say about the zoomed brackets.
-- [ ] **C5** The log kept for players' reports (it is: CRASH and STALL lines; nothing to do but not remove it).
+- [x] **C5** The log kept for players' reports (CRASH and STALL lines; the run before's kept as
+      WoWEngine.previous.log, 199).
+- [x] **C7** (212) Discord rich presence, as WoWRevived's. Left: the 64-bit `discord-rpc.dll` added to the release;
+      tried against Discord (it can't be here).
+- [ ] **C8** The engine's own captions ("Modern Options", its boxes, "Next Saves" ...) as strings appended to
+      each language's TEXT.ojd by the installer, the built-in English kept as the fallback (the owner's idea,
+      199).
 
 ### D. Files and assets (Stage 6.9, 6.11)
 
-- [ ] **D1** Every data folder overridable by loose files (with `[Sound]` Search Libraries First), modern
-      formats for them.
-- [ ] **D2** The owner's fixed files (the text changes, the Cotton Factory's smokestacks, the Airship model's
-      name, sector 22's hole, the restored sprite pixels) and the data folder layout (`dat/warmap`,
-      `dat/extra/<res>`, `dat/extra/HD`, `dat/extra/UNITS`).
+- [~] **D1** Loose files: DAT and MAPS are overridable, from the game's folder and from the engine's own `dat` /
+      `maps` (209). Left: the sounds (`[Sound]` Search Libraries First), modern formats for loose files.
+- [~] **D2** The data folder layout is in (209): the engine's `dat` and `maps` are used where they lie and go into
+      a release's DAT and MAPS; `dat/extra/<res>` by view size, `dat/warmap` by the view's width. Left: each
+      of the owner's fixed files looked at in play (the Cotton Factory's smokestacks, the Airship model's
+      name, sector 22's hole, the restored sprite pixels), the text changes, and `dat/extra/HD` and
+      `dat/extra/UNITS`, which nothing reads yet (D3).
 - [ ] **D3** Enhanced Assets as an option; every `.spr` re-encoded by WoWViewer's packer.
 - [ ] **D4** The credits picture: the team's hidden screen kept as the last 480 rows of any edited one, added
       lines above it (the owner rates this high).
@@ -113,8 +121,10 @@ inventory with the history. Tick here and there as each is done.
 
 ### G. Release
 
-- [ ] **G1** The Windows-only code built and tried on Windows (the crash filter and the watchdog in main.cpp,
-      the Media Foundation movies): it can't be compiled here.
+- [~] **G1** The Windows-only code built and tried on Windows: the owner builds and runs each update there. Not
+      yet reported on: the crash filter and watchdog doing their job, the `.mp4`s at their own size (204), the
+      icon and the release script's DAT / MAPS (209), the window's kept size (208), Discord (212).
+- [ ] **G4** A trailer for the project: the very last thing (the owner, 199).
 - [ ] **G2** Unit tests for the decoders, the save's round trip and the war map's rules.
 - [ ] **G3** The release scripts tried from a clean checkout; the docs brought level (TASKS.md is stale in
       places and should be redrawn from this list).
@@ -123,6 +133,10 @@ inventory with the history. Tick here and there as each is done.
 
 - A frame of the original: a new Human campaign's first look at London, on the discs' start files, Enhanced
   Assets off (A5).
+- The testers' word on the selection brackets scaling with the battle's zoom (C4).
+- Tried by hand and reported: a recording made and played from the Modern Options menu (C2); the wheel's zoom;
+  an engine save loaded in the original game.
+- The 64-bit `discord-rpc.dll` (C7).
 - A frame of the original with a building that was upgraded where it stood, on the battle map (confirms 185).
 - A recording made at the keyboard with `--record` and played with `--playback` (183); whether ordinary input
   still feels right since it all goes that way now.

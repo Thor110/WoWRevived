@@ -57,6 +57,8 @@ add_library(wowinstall STATIC
     src/install/Installer.cpp
 )
 target_link_libraries(wowinstall PUBLIC wowcore)
+# IniStore.h (shared with the patch DLLs): the installer writes the install's language into WoWRevived.ini
+target_include_directories(wowinstall PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../WoWPatches/Common)
 # The two command line tools are for working on the engine, not for players: they aren't built unless asked for
 # (cmake -DWOW_BUILD_TOOLS=ON) and aren't in a release.
 #   wowinstall-cli: WoWLauncher's install from the discs, as a command with its steps printed

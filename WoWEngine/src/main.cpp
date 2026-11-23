@@ -419,6 +419,22 @@ int main(int argc, char** argv)
         wow::Vfs vfs(*files);
         wow::Resources resources(vfs, human);
         wow::Settings ini(vfs.Files());
+        // The install's language is a setting ([WoW Engine] "Language"). An install made before that has it in
+        // language.txt: it is taken into the ini and the file removed.
+        // (not in a screenshot run: those leave the install as it is)
+        if (auto old = options.screenshot.empty() ? files->Resolve("language.txt") : std::nullopt)
+        {
+            if (ini.GetString("WoW Engine", "Language", "").empty())
+            {
+                std::ifstream in(*old);
+                std::string language;
+                std::getline(in, language);
+                while (!language.empty() && (language.back() == '\r' || language.back() == ' ')) language.pop_back();
+                if (!language.empty()) ini.SetString("WoW Engine", "Language", language);
+            }
+            std::error_code ec;
+            if (!ini.GetString("WoW Engine", "Language", "").empty()) fs::remove(*old, ec);
+        }
         const wow::FrontEndSettings settings = ReadSettings(*files);
         TickNs = uint64_t(1000 / settings.gameFrequency) * 1'000'000ull;
         wow::FrontEnd frontEnd(resources, settings, ini, vfs.Files());
@@ -560,13 +576,7 @@ int main(int argc, char** argv)
         wow::Discord discord;
         if (frontEnd.DiscordSetting())
         {
-            std::string language = "English";
-            if (auto path = files->Resolve("language.txt"))
-            {
-                std::ifstream in(*path);
-                std::getline(in, language);
-            }
-            discord.Start(language);
+            discord.Start(ini.GetString("WoW Engine", "Language", "English"));
         }
         // The playback recordings (0x42D2D0 / 0x42D520): input reaches the game as the window's messages, through
         // Record; played back, the same messages come from the file

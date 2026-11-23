@@ -1172,6 +1172,12 @@ transparency")
 - `dat/hugeslda.spr`: the owner's backing for the two-column menus' slider, used as the engine's other loose
   files are.
 
+**Update 216** (a setting; the plan brought level)
+- The install's language is `[WoW Engine]` "Language" in WoWRevived.ini, written by the installer; a
+  language.txt from an earlier install is taken into it and removed. Seen: the test install's language.txt
+  taken into the ini by a start of the engine; both battles as before.
+- PLAN.md's remaining list ticked and added to (C5, C7, C8, D1, D2, G1, G4, what waits on the owner).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

@@ -7,7 +7,7 @@
 //      disc's copy wins (the Human disc always overwrites, the Martian disc never does)
 //   3. rips the music (tracks 2-5 of each disc) to the folders the _inmm wrapper reads, named after the disc:
 //      the Human disc's to Music-Human\NN TrackNN.wav, the Martian disc's to Music-Martian\NN TrackNN.wav
-//   4. writes language.txt (no side marker: WoWLauncher runs WoWEngine with --human or --martian)
+//   4. writes the language into WoWRevived.ini, [WoW Engine] "Language" (no side marker: WoWLauncher runs WoWEngine with --human or --martian)
 //   5. checks that every file the engine needs is there
 #pragma once
 #include "install/Disc.h"

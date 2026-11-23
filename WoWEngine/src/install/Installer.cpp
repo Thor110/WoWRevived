@@ -1,3 +1,13 @@
+// IniStore.h includes <windows.h> on Windows, so keep that header's macros to a minimum
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#endif
+#include "IniStore.h"
 #include "install/Installer.h"
 #include "core/GameFiles.h"
 
@@ -40,7 +50,7 @@ namespace wow::install
             "autorun.inf", "cms16.dll", "cms32_95.dll", "cms32_nt.dll", "data.tag", "data1.cab", "dsetup.dll",
             "dsetup16.dll", "dsetup32.dll", "lang.dat", "layout.bin", "os.dat", "readme.txt", "setup.exe", "setup.ini",
             "setup.ins", "setup.lid", "wow.exe", "wowstart.exe",
-            "english.cd", "french.cd", "german.cd", "italian.cd", "spanish.cd", // turned into language.txt
+            "english.cd", "french.cd", "german.cd", "italian.cd", "spanish.cd", // turned into [WoW Engine] "Language" in the ini
             "human.cd", "martian.cd", // the side markers: WoWLauncher tells WoWEngine the side (--human / --martian)
         };
         std::string lower = Lower(discPath);
@@ -95,18 +105,28 @@ namespace wow::install
         (info.side == Side::Human ? result.humanDisc : result.martianDisc) = true;
         if (!info.language.empty())
         {
-            // discs from two different language releases make a mixed install (the Human disc's text wins)
-            std::ifstream previous(options.target / "language.txt");
+            // The install's language is kept in WoWRevived.ini ([WoW Engine] "Language"), with the other settings (it
+            // used to be a file of its own, language.txt, which is taken over and removed if it is there).
+            // Discs from two different language releases make a mixed install (the Human disc's text wins).
+            const fs::path iniPath = options.target / IniStore::FileName();
+            IniStore ini;
+            ini.Load(iniPath.string());
             std::string earlier;
-            if (previous && std::getline(previous, earlier) && !earlier.empty() && earlier != info.language)
+            if (!ini.Get("WoW Engine", "Language", earlier) || earlier.empty())
+            {
+                std::ifstream old(options.target / "language.txt");
+                if (old) std::getline(old, earlier);
+                while (!earlier.empty() && (earlier.back() == '\r' || earlier.back() == ' ')) earlier.pop_back();
+            }
+            if (!earlier.empty() && earlier != info.language)
             {
                 result.warnings.push_back("The discs are from different releases (" + earlier + " and " + info.language +
                     "); the game's text comes from the Human disc.");
                 if (info.side != Side::Human) info.language = earlier;
             }
-            previous.close();
-            std::ofstream out(options.target / "language.txt", std::ios::trunc);
-            out << info.language << "\n";
+            ini.Set("WoW Engine", "Language", info.language);
+            ini.Save();
+            fs::remove(options.target / "language.txt", ec);
         }
 
         std::vector<DiscFile> files = disc.Files();

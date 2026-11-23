@@ -175,7 +175,7 @@ found without being copied by hand:
 
 As WoWRevived has it (`WoWPatches/_inmm/winmm_driver9x.cpp`), in `platform/Discord.*`: `discord-rpc.dll` is
 loaded if it is next to the program (or anywhere Windows finds it), and the presence says where the player
-is, in the game's language (the first line of `language.txt`), with the time the session began:
+is, in the game's language (`[WoW Engine]` "Language"), with the time the session began:
 
 | Where | State / details (English) | Image |
 |---|---|---|
@@ -212,6 +212,13 @@ middle with dithered ends, frame 1 the even grey), with the palette entries the 
 17, 52). With `--no-loose` the game's own is used.
 
 (A backing sprite that is itself wider than the control on it is centred under it, should one ever be made.)
+
+### The install's language (update 216)
+
+The installer writes the language of the discs into WoWRevived.ini, `[WoW Engine]` "Language" ("English",
+"French", "German", "Italian", "Spanish"), with the other settings. It used to be a file of its own,
+`language.txt`: an install that has one has it taken into the ini and removed, by the installer or by the
+engine's next start.
 
 ### Resolution (agreed with the owner, update 192)
 
