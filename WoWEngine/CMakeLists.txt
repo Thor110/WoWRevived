@@ -153,6 +153,13 @@ if(TARGET SDL3::SDL3)
         # keep SDL3.dll next to the exe
         add_custom_command(TARGET WoWEngine POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL3::SDL3> $<TARGET_FILE_DIR:WoWEngine>)
+        # Discord's rich presence (src/platform/Discord.cpp): discord-rpc.dll and its licence next to the exe. The
+        # DLL has to be built for the same processor as the engine (x64 for the x64 presets), or it won't load.
+        if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/resources/discord-rpc.dll)
+            add_custom_command(TARGET WoWEngine POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources/discord-rpc.dll $<TARGET_FILE_DIR:WoWEngine>/discord-rpc.dll
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources/discord-rpc-LICENSE.txt $<TARGET_FILE_DIR:WoWEngine>/discord-rpc-LICENSE.txt)
+        endif()
     endif()
 else()
     message(WARNING "SDL3 not available: only the libraries (and the tools, with WOW_BUILD_TOOLS) will be built")

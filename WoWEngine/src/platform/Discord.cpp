@@ -161,7 +161,15 @@ namespace wow
         std::string beside = std::string(SDL_GetBasePath() ? SDL_GetBasePath() : "") + "discord-rpc.dll";
         library = LoadLibraryA(beside.c_str());
         if (!library) library = LoadLibraryA("discord-rpc.dll");
-        if (!library) { SDL_Log("Discord: no discord-rpc.dll (the 64-bit one), so no rich presence"); return; }
+        if (!library)
+        {
+            // 193 (ERROR_BAD_EXE_FORMAT): the DLL is there but built for another processor (a 32-bit DLL and a
+            // 64-bit engine, or the other way round); 126: not found
+            const DWORD why = GetLastError();
+            if (why == 193) SDL_Log("Discord: discord-rpc.dll is built for another processor than the engine (which is %d-bit), so no rich presence", int(sizeof(void*) * 8));
+            else SDL_Log("Discord: discord-rpc.dll wasn't found, so no rich presence (error %lu)", static_cast<unsigned long>(why));
+            return;
+        }
         initialize = reinterpret_cast<InitializeFn>(GetProcAddress(library, "Discord_Initialize"));
         updatePresence = reinterpret_cast<UpdatePresenceFn>(GetProcAddress(library, "Discord_UpdatePresence"));
         runCallbacks = reinterpret_cast<RunCallbacksFn>(GetProcAddress(library, "Discord_RunCallbacks"));

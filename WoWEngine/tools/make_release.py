@@ -90,6 +90,10 @@ def main():
     if WINDOWS:
         files.append((build_dir / ('SDL3d.dll' if args.debug else 'SDL3.dll'), False))
         files.append((build_dir / 'SDL3.dll', False))
+        # Discord's rich presence: the DLL and its licence (from the build folder, where the build puts them, or
+        # straight from resources)
+        for extra in ('discord-rpc.dll', 'discord-rpc-LICENSE.txt'):
+            files.append((build_dir / extra if (build_dir / extra).exists() else ROOT / 'resources' / extra, False))
     else:
         # SDL3 built by the project sits in _deps; an installed SDL3 is found by the system instead
         for lib in sorted((build_dir / '_deps').glob('sdl3-build/libSDL3.so*')) + sorted((build_dir / '_deps').glob('sdl3-build/libSDL3*.dylib')):

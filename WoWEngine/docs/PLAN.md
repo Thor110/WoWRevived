@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 216) and what remains
+## Where things stand (update 217) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -87,8 +87,9 @@ inventory with the history. Tick here and there as each is done.
       what the testers say about the zoomed brackets.
 - [x] **C5** The log kept for players' reports (CRASH and STALL lines; the run before's kept as
       WoWEngine.previous.log, 199).
-- [x] **C7** (212) Discord rich presence, as WoWRevived's. Left: the 64-bit `discord-rpc.dll` added to the release;
-      tried against Discord (it can't be here).
+- [x] **C7** (212) Discord rich presence, as WoWRevived's. The DLL and its licence are in `resources` and go beside
+      the programs in a build and a release (217). Left: the DLL in the repository is the 32-bit one and has to
+      be the 64-bit one for the x64 engine; tried against Discord (it can't be here).
 - [ ] **C8** The engine's own captions ("Modern Options", its boxes, "Next Saves" ...) as strings appended to
       each language's TEXT.ojd by the installer, the built-in English kept as the fallback (the owner's idea,
       199).

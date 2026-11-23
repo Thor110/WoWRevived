@@ -191,8 +191,12 @@ and every 16 seconds otherwise. `[Modern]` "Discord rich presence" = 0 turns it 
 started ("Discord: ...").
 
 - **The DLL must be the 64-bit `discord-rpc.dll`** (the `win64-dynamic` one of discord-rpc's release). The engine
-  is a 64-bit program; WoWRevived's copy is 32-bit, for the 32-bit game, and won't load. It isn't in the
-  repository or the release yet: to be added beside the programs (`tools/make_release.py`).
+  is a 64-bit program; WoWRevived's copy is 32-bit, for the 32-bit game, and won't load. The DLL is
+  `resources/discord-rpc.dll`, with discord-rpc's licence (MIT, Discord, Inc. 2017) beside it as
+  `resources/discord-rpc-LICENSE.txt`; the build copies both next to WoWEngine.exe and the release script puts
+  them in the release (update 217). **The one in the repository at update 217 is the 32-bit one** (the file
+  says "PE32 ... Intel 80386"): the log will say "built for another processor" until the 64-bit one replaces
+  it.
 - Windows only. Not tried: there is no Discord here to try it against; the code builds and does nothing
   without the DLL.
 

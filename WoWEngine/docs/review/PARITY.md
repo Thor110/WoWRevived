@@ -1178,6 +1178,11 @@ transparency")
   taken into the ini by a start of the engine; both battles as before.
 - PLAN.md's remaining list ticked and added to (C5, C7, C8, D1, D2, G1, G4, what waits on the owner).
 
+**Update 217** (packaging)
+- discord-rpc.dll and its licence are copied next to WoWEngine.exe by the build and into a release by the
+  release script. The log says when the DLL is for another processor. (The DLL in `resources` is 32-bit; the
+  engine's presets are x64.)
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
