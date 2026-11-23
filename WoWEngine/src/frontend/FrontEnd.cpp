@@ -481,6 +481,8 @@ namespace wow
               "The Load and Save menus turn pages of five\nsaves instead of stopping at five." },
             { "Modern", "Battle zoom", "Battle zoom (+, -, wheel, R)", true,
               "Zoom the battle map with + and - or the mouse\nwheel. R puts it back." },
+            { "Modern", "Enhanced assets", "Enhanced assets", false,
+              "This setting enables the enhanced user\ninterface assets, which add a little more colour\ndepth to the interface. From the next start." },
             { "Modern", "Original Display Settings", "Original display settings", false,
               "Puts back the 8 bit and 16 bit colour choices\nand the lights switch in Display Settings.\nThey do nothing useful on a modern system." },
             { "WoW Engine", "Windowed", "Play in a window", false,
@@ -493,12 +495,14 @@ namespace wow
               "Enabling this will allow the music to continue\nplaying when the window loses focus." },
             { "Modern", "Menu fade", "Fade between menus", false,
               "The original game's short fade through a flat\ncolour each time a menu changes." },
+            { "Modern", "Discord rich presence", "Discord rich presence", true,
+              "Shows on Discord what you are doing in the\ngame. From the next start." },
         };
         auto m = MenuOver(CmdModernOptions, previous, 2);
         m->AddHeadingText("Modern Options");
         for (size_t i = 0; i < std::size(Options); i++)
         {
-            if (i == 7)
+            if (i == 8)
             {
                 // the game's playback recordings (core/Playback.h), which the retail game never switches on
                 m->NextColumn();
@@ -510,7 +514,7 @@ namespace wow
             });
             m->SetLastTip(o.tip);
         }
-        // (the two columns are kept the same length, seven rows each: a shorter one leaves a hole in the underlay)
+        // (the two columns are kept the same length, eight rows each: a shorter one leaves a hole in the underlay)
         m->AddEventCheckText("Record input", recordWanted, [this](Button& b) { recordWanted = b.value != 0; });
         m->SetLastTip("Records every key and mouse action from now\ninto Playback.1 in the game folder, the original\ngame's own demo recording. Untick to stop.");
         m->AddEventCheckText("Play a recording", playWanted, [this](Button& b) { playWanted = b.value != 0; });

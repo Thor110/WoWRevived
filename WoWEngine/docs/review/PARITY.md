@@ -1222,6 +1222,14 @@ transparency")
 **Update 224** (the version)
 - WoWEngine is version 0.2.2 (CMakeLists.txt, the one place). PLAN.md has the order suggested for what is left.
 
+**Update 225** (modern option: Enhanced assets; the credits' hidden screen closed)
+- `[Modern]` "Enhanced assets": the interface's sprites from `dat\extra\HD\`. A box for it and one for Discord
+  rich presence in Modern Options (eight rows a column).
+- The credits' hidden screen needs nothing more: it is the picture's last 480 rows, reached only with
+  `englishrose`, whatever the picture's height.
+- Seen: the war map's panels with and without the enhanced sprites, both sides; the menu; both battles with
+  `--no-loose` as before.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

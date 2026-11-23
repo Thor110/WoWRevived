@@ -437,6 +437,8 @@ int main(int argc, char** argv)
             if (!ini.GetString("WoW Engine", "Language", "").empty()) fs::remove(*old, ec);
         }
         wow::Resources resources(vfs, human);
+        // MODERN: WoWRevived's enhanced interface sprites, from the start (docs/MODERN.md "Enhanced assets")
+        resources.SetEnhancedAssets(!options.noLoose && ini.GetBool("Modern", "Enhanced assets", false));
         const wow::FrontEndSettings settings = ReadSettings(*files);
         TickNs = uint64_t(1000 / settings.gameFrequency) * 1'000'000ull;
         wow::FrontEnd frontEnd(resources, settings, ini, vfs.Files());

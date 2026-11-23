@@ -62,6 +62,8 @@ check boxes, and each box is a setting in WoWRevived.ini that can be set there a
 | Battle zoom (+, -, wheel, R) | `[Modern]` "Battle zoom" | on | at once |
 | HUD scale (a slider) | `[Modern]` "HUD scale" | 100 | at once |
 | Fade between menus | `[Modern]` "Menu fade" | off | at once |
+| Discord rich presence | `[Modern]` "Discord rich presence" | on | the next start |
+| Enhanced assets | `[Modern]` "Enhanced assets" | off | the next start |
 | Original display settings | `[Modern]` "Original Display Settings" | off | the next time Display Settings opens |
 | Play in a window | `[WoW Engine]` "Windowed" | off | at once |
 | Stretch the picture | `[WoW Engine]` "Stretch" | off | at once |
@@ -223,6 +225,20 @@ middle with dithered ends, frame 1 the even grey), with the palette entries the 
 17, 52). With `--no-loose` the game's own is used.
 
 (A backing sprite that is itself wider than the control on it is centred under it, should one ever be made.)
+
+### Enhanced assets (update 225)
+
+WoWRevived's Enhanced Assets: the interface's sprites (the war map's panels, calendar and buttons, the popup
+menus' icons, the research pictures, the CD player's pictures, the unit counters: 129 files) upscaled,
+brought back to their size and re-encoded, which gives them a little more colour depth. They have the game's
+file names and sizes and are in `dat/extra/HD`. With `[Modern]` "Enhanced assets" on (a box in Modern Options,
+WoWRevived's launcher's name and tool tip; off unless turned on, as WoWRevived ships), a sprite is read from
+`dat\extra\HD\<name>` when it is there (`Resources::FileFor`: a named override, the view size's folder,
+then this, then the game's). Read once, at the start. Not with `--no-loose`.
+
+WoWRevived's other asset option, **Larger Minimaps**, is not in: it needs the larger minimap sprites (the
+`MAPS-Larger.WoW` of WoWRevived), and `WoWEngine/maps` has the regular ones (the same bytes as the game's).
+`dat/extra/UNITS` (the 32 x 32 battle unit counters that go with the larger minimaps) waits on it.
 
 ### The game's text (updates 219 and 220)
 

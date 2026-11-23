@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 224) and what remains
+## Where things stand (update 225) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -112,9 +112,15 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
       of the owner's fixed files looked at in play (the Cotton Factory's smokestacks, the Airship model's
       name, sector 22's hole, the restored sprite pixels), the text changes, and `dat/extra/HD` and
       `dat/extra/UNITS`, which nothing reads yet (D3).
-- [ ] **D3** Enhanced Assets as an option; every `.spr` re-encoded by WoWViewer's packer.
-- [ ] **D4** The credits picture: the team's hidden screen kept as the last 480 rows of any edited one, added
-      lines above it (the owner rates this high).
+- [x] **D3** (225) Enhanced Assets as an option: `dat/extra/HD` read in place of the game's sprites of the same
+      names, `[Modern]` "Enhanced assets", off unless turned on. Left: Larger Minimaps (WoWRevived's other
+      asset option), which needs the larger minimap sprites, not in `WoWEngine/maps` (those are the regular
+      ones); `dat/extra/UNITS` (the 32 x 32 unit counters that go with them) waits on that.
+- [x] **D4** (closed, 225) The credits' hidden screen. It is the last 480 rows of credits.spr and is only ever
+      reached with the `englishrose` cheat, as in the game (the scroll's two ends are worked out from the
+      picture's height: 960 rows from the bottom, or 480 with the cheat). Nothing to build: a credits picture
+      edited later (WoWRevived / Thor110, Opus 5.5, Fable 5.2 to be added by the owner) works the same as long
+      as the team's screen stays its last 480 rows and the new lines go above it.
 
 ### E. Content the game names and never offers (after everything regular works)
 

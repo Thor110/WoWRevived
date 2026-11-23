@@ -73,6 +73,7 @@ namespace wow
         for (char& c : lower) c = char(std::tolower(static_cast<unsigned char>(c)));
         if (auto o = overrides.find(lower); o != overrides.end() && vfs.Exists(o->second)) return o->second;
         if (!sizeFolder.empty() && vfs.Exists(sizeFolder + name)) return sizeFolder + name;
+        if (enhanced && vfs.Exists("dat\\extra\\HD\\" + name)) return "dat\\extra\\HD\\" + name;
         return g.file;
     }
 
@@ -100,6 +101,13 @@ namespace wow
         for (const char* name : { "humanbd.spr", "martbd.spr", "legal1.spr", "legal2.spr" })
             if (vfs.Exists(sizeFolder + name)) found += std::string(found.empty() ? "" : ", ") + name;
         SDL_Log("View size %d x %d: backgrounds in %s: %s", width, height, sizeFolder.c_str(), found.empty() ? "none found" : found.c_str());
+        Refresh();
+    }
+
+    void Resources::SetEnhancedAssets(bool on)
+    {
+        if (on == enhanced) return;
+        enhanced = on;
         Refresh();
     }
 
