@@ -1168,6 +1168,10 @@ transparency")
   by putting a seamless run of columns in twice, not by stretching. Seen at three knob places on the Human
   menu and on the Martian one; both battles as before.
 
+**Update 215** (a file)
+- `dat/hugeslda.spr`: the owner's backing for the two-column menus' slider, used as the engine's other loose
+  files are.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

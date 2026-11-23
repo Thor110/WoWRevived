@@ -206,6 +206,11 @@ plain, then lit). Their full rows (`hugebut.spr` / `hugebutb.spr`) are 540 wide.
 where that leaves no seam (the columns after the run are the same as the run's own). So the ends, the
 outline, the knob and the dithering are the sprites' own, with nothing stretched and no file to make.
 
+The backing is the owner's own `hugeslda.spr` (update 215), a loose file in the engine's `dat` folder that
+replaces the one in Dat.wow: the same size and two frames, made from the owner's pictures (frame 0 the dark
+middle with dithered ends, frame 1 the even grey), with the palette entries the game's file uses (10, 12, 14,
+17, 52). With `--no-loose` the game's own is used.
+
 (A backing sprite that is itself wider than the control on it is centred under it, should one ever be made.)
 
 ### Resolution (agreed with the owner, update 192)
