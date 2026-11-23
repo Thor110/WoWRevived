@@ -10,6 +10,7 @@
 #include "IniStore.h"
 #include "install/Installer.h"
 #include "core/GameFiles.h"
+#include "core/EngineText.h"
 
 #include <algorithm>
 #include <cctype>
@@ -225,17 +226,46 @@ namespace wow::install
         std::error_code ec;
         const fs::path updated = textFolder / (std::string("TEXT-") + code + ".ojd");
         if (!fs::is_regular_file(updated, ec)) return false;
-        // over the game's own, whatever case its name has on disk
+        auto read = [](const fs::path& path) {
+            std::ifstream in(path, std::ios::binary);
+            return std::string(std::istreambuf_iterator<char>(in), {});
+        };
+        // WoWRevived's file, then the engine's own strings in that language (core/EngineText.h), each one that the
+        // file doesn't already have, as one more record at its end: 0xFF, a line number, type 2 (both sides), the
+        // id, the length with its 0, the text in Latin-1
+        std::string wanted = read(updated);
+        if (wanted.empty()) return false;
+        {
+            std::set<int> present;
+            for (size_t pos = 0; pos + 9 <= wanted.size();)
+            {
+                auto u16 = [&](size_t at) { return int(uint8_t(wanted[at])) | int(uint8_t(wanted[at + 1])) << 8; };
+                const int type = int16_t(u16(pos + 3)), id = u16(pos + 5), length = u16(pos + 7);
+                pos += 9;
+                if (type >= 0 && type <= 2) { present.insert(id); pos += size_t(length); }
+                else if (type != 3 && type != 4) break;      // not a record: leave the rest alone
+            }
+            const enginetext::Language which = code[0] == 'F' ? enginetext::French : code[0] == 'D' ? enginetext::German :
+                                               code[0] == 'I' ? enginetext::Italian : code[1] == 'S' ? enginetext::Spanish : enginetext::English;
+            for (const enginetext::Entry& e : enginetext::Table)
+            {
+                if (present.count(e.id)) continue;
+                const std::string text = enginetext::Latin1(e.text[which]);
+                const size_t length = text.size() + 1;
+                const char head[9] = { char(0xFF), char(e.id & 0xFF), char(e.id >> 8), 2, 0, char(e.id & 0xFF), char(e.id >> 8),
+                                       char(length & 0xFF), char(length >> 8) };
+                wanted.append(head, 9);
+                wanted.append(text);
+                wanted.push_back('\0');
+            }
+        }
+        // over the game's own, whatever case its name has on disk; nothing is written when it is that already
         const auto existing = wow::GameFiles(target).Resolve("TEXT.ojd");
         const fs::path game = existing ? *existing : target / "TEXT.ojd";
-        if (existing && fs::file_size(game, ec) == fs::file_size(updated, ec))
-        {
-            // (already that file: nothing is written)
-            std::ifstream a(game, std::ios::binary), b(updated, std::ios::binary);
-            if (std::equal(std::istreambuf_iterator<char>(a), {}, std::istreambuf_iterator<char>(b), {})) return true;
-        }
-        fs::copy_file(updated, game, fs::copy_options::overwrite_existing, ec);
-        return !ec;
+        if (existing && read(game) == wanted) return true;
+        std::ofstream out(game, std::ios::binary | std::ios::trunc);
+        out.write(wanted.data(), std::streamsize(wanted.size()));
+        return bool(out);
     }
 
     void Finish(const InstallOptions& options, InstallResult& result)

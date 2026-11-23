@@ -18,7 +18,9 @@ namespace wow
     class TextTable
     {
     public:
-        static constexpr size_t MaxIds = 0x29A8 / 8; // the game allocates room for 1333 ids
+        static constexpr size_t GameIds = 0x29A8 / 8; // the game allocates room for 1333 ids
+        // MODERN: the engine's own strings have ids past the game's (core/EngineText.h), so the engine reads more
+        static constexpr size_t MaxIds = 2048;
 
         // human picks which side's strings are kept, as the game only loads the side being played.
         // Throws FormatError if a record runs past the end of the data.

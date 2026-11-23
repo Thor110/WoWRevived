@@ -236,9 +236,10 @@ WoWRevived's launcher's name and tool tip; off unless turned on, as WoWRevived s
 `dat\extra\HD\<name>` when it is there (`Resources::FileFor`: a named override, the view size's folder,
 then this, then the game's). Read once, at the start. Not with `--no-loose`.
 
-WoWRevived's other asset option, **Larger Minimaps**, is not in: it needs the larger minimap sprites (the
-`MAPS-Larger.WoW` of WoWRevived), and `WoWEngine/maps` has the regular ones (the same bytes as the game's).
-`dat/extra/UNITS` (the 32 x 32 battle unit counters that go with the larger minimaps) waits on it.
+WoWRevived's other asset option, **Larger Minimaps**, is not wanted in the engine (the owner, update 226): it
+was the only way to a bigger minimap in the original, and the HUD scale does that here. `WoWEngine/maps` has
+the regular minimaps; `dat/extra/UNITS` (the 32 x 32 battle unit counters that went with the larger ones)
+is unused.
 
 ### The game's text (updates 219 and 220)
 
@@ -253,8 +254,25 @@ known. The copy goes over the game's file under whatever case its name has (the 
 The engine itself reads whatever `TEXT.ojd` the install has and copies nothing (update 219 had it do
 the copying, with a backup; both taken out).
 
-The engine's own captions (the Modern Options menu's and the rest) are still built in; putting them into these
-files is PLAN.md C8.
+### The engine's own text (update 226)
+
+The strings the engine adds (the Modern Options menu's title, rows and tool tips, "Next Saves" and "Previous
+Saves": 37 of them) are TEXT.ojd strings like the game's own, with ids 1400 to 1437, past the game's last
+(1332). `core/EngineText.h` has them in English, French, German, Italian and Spanish.
+
+- **WoWLauncher** appends the install's language's to the game's `TEXT.ojd` when it copies WoWRevived's file in
+  (`install::CopyLanguageText`): one more record at the file's end for each id the file doesn't have, in
+  Latin-1 as the rest of the file is. The files in `resources` are not touched.
+- **The engine** reads them from the install's `TEXT.ojd` (`Resources::String`), and uses its built-in English
+  for any that aren't there (an install whose text the launcher hasn't been over, or `--no-loose`'s plain
+  disc text).
+- A row's tool tip is its caption's id + 20. Tool tips have no line breaks in the file: the menu wraps them
+  at 46 characters (`Menu::SetLastTip`). The captions keep to about 30 characters, the width of a column.
+- **Not for the original game**: it has room for 1333 ids (0x414410) and would write past its table on these.
+  Only the engine's install gets them; WoWRevived's own files stay as they are.
+- "Music playback", "Enhanced assets" and their tool tips are WoWRevived's launcher's in every language. The
+  rest of the French, German, Italian and Spanish is the engine's own translation and should be read over by
+  someone who speaks each.
 
 ### The install's language (update 216)
 

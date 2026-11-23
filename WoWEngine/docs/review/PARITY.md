@@ -1230,6 +1230,15 @@ transparency")
 - Seen: the war map's panels with and without the enhanced sprites, both sides; the menu; both battles with
   `--no-loose` as before.
 
+**Update 226** (modern: the engine's own text in TEXT.ojd; notes)
+- The engine's captions and tool tips are strings 1400 to 1437 (`core/EngineText.h`, five languages), appended
+  to the install's TEXT.ojd by WoWLauncher and read from it, English built in as the fallback. `TextTable`
+  reads ids up to 2047 (the game's limit, 1333, is `GameIds`).
+- Larger Minimaps dropped; the owner's fixed files taken as tested (PLAN.md D2, D3).
+- Seen: the launcher writing each language's file on the test install (1332 game strings still read from
+  each); the Modern Options menu and a tool tip in French, German, Italian and Spanish; the English fallback
+  with the disc's text; both battles with `--no-loose` as before.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

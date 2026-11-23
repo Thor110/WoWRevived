@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 225) and what remains
+## Where things stand (update 226) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -99,23 +99,22 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
       the programs in a build and a release (217). The owner has it working (218).
 - [x] **D5** (219, 220) WoWRevived's updated TEXT.ojd for the install's language copied in as the game's by
       WoWLauncher (the five files in `resources`).
-- [ ] **C8** The engine's own captions ("Modern Options", its boxes, "Next Saves" ...) as strings appended to
-      each language's TEXT.ojd by the installer, the built-in English kept as the fallback (the owner's idea,
-      199).
+- [x] **C8** (226) The engine's own captions and tool tips (the Modern Options menu, the save menus' page rows)
+      are TEXT.ojd strings, ids 1400 to 1437, in the five languages (`core/EngineText.h`); WoWLauncher appends
+      the install's language's to its TEXT.ojd, and the engine falls back to its built-in English. The French,
+      German, Italian and Spanish are the engine's own and want a native speaker's eye.
 
 ### D. Files and assets (Stage 6.9, 6.11)
 
 - [~] **D1** Loose files: DAT and MAPS are overridable, from the game's folder and from the engine's own `dat` /
       `maps` (209). Left: the sounds (`[Sound]` Search Libraries First), modern formats for loose files.
-- [~] **D2** The data folder layout is in (209): the engine's `dat` and `maps` are used where they lie and go into
-      a release's DAT and MAPS; `dat/extra/<res>` by view size, `dat/warmap` by the view's width. Left: each
-      of the owner's fixed files looked at in play (the Cotton Factory's smokestacks, the Airship model's
-      name, sector 22's hole, the restored sprite pixels), the text changes, and `dat/extra/HD` and
-      `dat/extra/UNITS`, which nothing reads yet (D3).
+- [x] **D2** The data folder layout (209): the engine's `dat` and `maps` are used where they lie and go into a
+      release's DAT and MAPS; `dat/extra/<res>` by view size, `dat/warmap` by the view's width. The owner's
+      fixed files in them (the Cotton Factory's smokestacks, the Airship model's name, sector 22's hole, the
+      restored sprite pixels) are WoWRevived's, tested there at length, and are taken as right (the owner, 226).
 - [x] **D3** (225) Enhanced Assets as an option: `dat/extra/HD` read in place of the game's sprites of the same
-      names, `[Modern]` "Enhanced assets", off unless turned on. Left: Larger Minimaps (WoWRevived's other
-      asset option), which needs the larger minimap sprites, not in `WoWEngine/maps` (those are the regular
-      ones); `dat/extra/UNITS` (the 32 x 32 unit counters that go with them) waits on that.
+      names, `[Modern]` "Enhanced assets", off unless turned on. WoWRevived's Larger Minimaps is not wanted
+      (the owner, 226: the HUD scale does its job); `dat/extra/UNITS`, which went with it, is unused.
 - [x] **D4** (closed, 225) The credits' hidden screen. It is the last 480 rows of credits.spr and is only ever
       reached with the `englishrose` cheat, as in the game (the scroll's two ends are worked out from the
       picture's height: 960 rows from the bottom, or 480 with the cheat). Nothing to build: a credits picture

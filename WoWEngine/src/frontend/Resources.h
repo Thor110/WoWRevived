@@ -27,7 +27,8 @@ namespace wow
 
         bool Human() const { return human; }
         const TextTable& Text() const { return text; }
-        const std::string& String(int id) const { return text.Get(id); }
+        // (MODERN: one of the engine's own strings that the install's TEXT.ojd doesn't have is its built-in English)
+        const std::string& String(int id) const;
 
         const GType* FindGType(int id) const;
         const Sprite* GetSprite(int gtype);

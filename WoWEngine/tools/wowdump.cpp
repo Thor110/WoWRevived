@@ -568,7 +568,7 @@ int main(int argc, char** argv)
             if (first == "--text")
             {
                 auto table = wow::TextTable::Load(data, human);
-                for (int id = 0; id < int(wow::TextTable::MaxIds); id++)
+                for (int id = 0; id < int(wow::TextTable::GameIds); id++)
                 {
                     if (!table.Has(id)) continue;
                     std::string text = table.Get(id);

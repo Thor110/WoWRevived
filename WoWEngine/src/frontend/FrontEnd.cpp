@@ -1,4 +1,5 @@
 #include "frontend/FrontEnd.h"
+#include "core/EngineText.h"
 
 #include "core/AiTable.h"
 #include "core/Crumb.h"
@@ -272,8 +273,8 @@ namespace wow
     // "Next Saves" when there is a page after this one, "Previous Saves" after the first
     void FrontEnd::AddSlotPageButtons(Menu& m, size_t listed)
     {
-        if (size_t(slotPage + 1) * SaveSlot::PerPage < listed) m.AddButtonText(CmdSlotPage, "Next Saves", 1);
-        if (slotPage > 0) m.AddButtonText(CmdSlotPage, "Previous Saves", -1);
+        if (size_t(slotPage + 1) * SaveSlot::PerPage < listed) m.AddButtonText(CmdSlotPage, res.String(enginetext::NextSaves), 1);
+        if (slotPage > 0) m.AddButtonText(CmdSlotPage, res.String(enginetext::PreviousSaves), -1);
     }
 
     std::unique_ptr<Screen> FrontEnd::LoadGame(int previous)
@@ -337,7 +338,7 @@ namespace wow
         m->AddButton(0x3EF, 0x410);   // Display Settings
         m->AddButton(0x3ED, 0x411);   // Sound Control
         m->AddButton(0x8117, 0x412);  // Critical event options
-        m->AddButtonText(CmdModernOptions, "Modern Options");   // the engine's own (docs/MODERN.md), above the credits
+        m->AddButtonText(CmdModernOptions, res.String(enginetext::ModernOptions));   // the engine's own (docs/MODERN.md), above the credits
         m->AddButton(0x80CA, 0x534);  // Credits
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         return m;
@@ -466,67 +467,54 @@ namespace wow
     // columns.
     std::unique_ptr<Screen> FrontEnd::ModernOptions(int previous)
     {
-        // (the tool tips are the engine's own English; "Music playback" and its tip are WoWRevived's launcher's)
-        struct Option { const char* section; const char* name; const char* text; bool on; const char* tip; };
+        // The rows' captions and tool tips are the engine's strings (core/EngineText.h: TEXT.ojd ids 1401 on, a row's
+        // tip its id + 20), in this order. "Music playback", "Enhanced assets" and their tips are WoWRevived's
+        // launcher's.
+        struct Option { const char* section; const char* name; bool on; };
         static const Option Options[] = {
-            { "Modern", "Upgraded buildings in battle", "Upgraded buildings in battle", true,
-              "Buildings upgraded on the war map fight as their\nnew level in battle. The original game keeps\nthem at the level they were built at." },
-            { "Modern", "Sticky popup menus", "Popup menus stay open", false,
-              "The right button's menu stays open when the\nbutton is let go, and an item is chosen with a\nclick. The original needs the button held." },
-            { "Modern", "War map status strip", "War map status strip", false,
-              "Shows the name of the sector or button under\nthe mouse along the bottom of the war map." },
-            { "Modern", "Selection keys", "Group keys and Shift select", true,
-              "In battle: Ctrl and a digit keeps the selection,\nthe digit brings it back, pressed again it looks\nat it. Shift adds to the selection." },
-            { "Modern", "More save slots", "More save slots", true,
-              "The Load and Save menus turn pages of five\nsaves instead of stopping at five." },
-            { "Modern", "Battle zoom", "Battle zoom (+, -, wheel, R)", true,
-              "Zoom the battle map with + and - or the mouse\nwheel. R puts it back." },
-            { "Modern", "Enhanced assets", "Enhanced assets", false,
-              "This setting enables the enhanced user\ninterface assets, which add a little more colour\ndepth to the interface. From the next start." },
-            { "Modern", "Original Display Settings", "Original display settings", false,
-              "Puts back the 8 bit and 16 bit colour choices\nand the lights switch in Display Settings.\nThey do nothing useful on a modern system." },
-            { "WoW Engine", "Windowed", "Play in a window", false,
-              "Play in a window instead of filling the screen.\nAlt and Enter also switches between the two." },
-            { "WoW Engine", "Stretch", "Stretch the picture", false,
-              "Stretch the picture to fill the whole screen.\nOff, it keeps its shape, with bars at the sides." },
-            { "WoW Engine", "System Cursor", "System mouse pointer", false,
-              "Use the system's mouse pointer instead of the\ngame's own." },
-            { "Sound\\Volume", "CD-Focus", "Music playback", false,
-              "Enabling this will allow the music to continue\nplaying when the window loses focus." },
-            { "Modern", "Menu fade", "Fade between menus", false,
-              "The original game's short fade through a flat\ncolour each time a menu changes." },
-            { "Modern", "Discord rich presence", "Discord rich presence", true,
-              "Shows on Discord what you are doing in the\ngame. From the next start." },
+            { "Modern", "Upgraded buildings in battle", true },
+            { "Modern", "Sticky popup menus", false },
+            { "Modern", "War map status strip", false },
+            { "Modern", "Selection keys", true },
+            { "Modern", "More save slots", true },
+            { "Modern", "Battle zoom", true },
+            { "Modern", "Enhanced assets", false },
+            { "Modern", "Original Display Settings", false },
+            { "WoW Engine", "Windowed", false },
+            { "WoW Engine", "Stretch", false },
+            { "WoW Engine", "System Cursor", false },
+            { "Sound\\Volume", "CD-Focus", false },
+            { "Modern", "Menu fade", false },
+            { "Modern", "Discord rich presence", true },
         };
         auto m = MenuOver(CmdModernOptions, previous, 2);
-        m->AddHeadingText("Modern Options");
+        m->AddHeadingText(res.String(enginetext::ModernOptions));
         for (size_t i = 0; i < std::size(Options); i++)
         {
-            if (i == 8)
-            {
-                // the game's playback recordings (core/Playback.h), which the retail game never switches on
-                m->NextColumn();
-            }
+            if (i == 8) m->NextColumn();
             const Option& o = Options[i];
-            m->AddEventCheckText(o.text, ini.GetBool(o.section, o.name, o.on), [this, o](Button& b) {
+            const int text = enginetext::UpgradedBuildings + int(i);
+            m->AddEventCheckText(res.String(text), ini.GetBool(o.section, o.name, o.on), [this, o](Button& b) {
                 ini.SetBool(o.section, o.name, b.value != 0);
                 ApplyModernOptions();
             });
-            m->SetLastTip(o.tip);
+            m->SetLastTip(res.String(text + enginetext::TipOffset));
         }
         // (the two columns are kept the same length, eight rows each: a shorter one leaves a hole in the underlay)
-        m->AddEventCheckText("Record input", recordWanted, [this](Button& b) { recordWanted = b.value != 0; });
-        m->SetLastTip("Records every key and mouse action from now\ninto Playback.1 in the game folder, the original\ngame's own demo recording. Untick to stop.");
-        m->AddEventCheckText("Play a recording", playWanted, [this](Button& b) { playWanted = b.value != 0; });
-        m->SetLastTip("Plays a recording back. Start it from the same\nplace the recording was made. Escape stops it.");
+        // the game's playback recordings (core/Playback.h), which the retail game never switches on
+        m->AddEventCheckText(res.String(enginetext::RecordInput), recordWanted, [this](Button& b) { recordWanted = b.value != 0; });
+        m->SetLastTip(res.String(enginetext::RecordInput + enginetext::TipOffset));
+        m->AddEventCheckText(res.String(enginetext::PlayRecording), playWanted, [this](Button& b) { playWanted = b.value != 0; });
+        m->SetLastTip(res.String(enginetext::PlayRecording + enginetext::TipOffset));
         // the HUD scale ([Modern] "HUD scale", a percentage): the battle's panels from half size to three times,
         // a quarter a step; taken at once (BattleView)
         m->EndColumns();
+        const std::string hud = res.String(enginetext::HudScale);
         m->AddSlider((std::clamp(ini.GetInt("Modern", "HUD scale", 100), 50, 300) - 50) / 25, 10,
-            [](int v) { return "HUD scale: " + std::to_string(50 + v * 25) + "%"; },
+            [hud](int v) { return hud + ": " + std::to_string(50 + v * 25) + "%"; },
             [this](Button& b) { ini.SetInt("Modern", "HUD scale", 50 + b.value * 25); });
         m->WidenLast();
-        m->SetLastTip("The size of the maps' panels: the minimap,\nthe icons, the menus and the calendar.");
+        m->SetLastTip(res.String(enginetext::HudScale + enginetext::TipOffset));
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         m->FocusLast();
         return m;
@@ -918,7 +906,7 @@ namespace wow
         m->AddButton(CmdMainMenu, 0x40A);              // "Return to Main Menu"
         m->AddButton(CmdCriticalEvents, 0x412);
         m->AddButton(CmdSoundControl, 0x411);
-        m->AddButtonText(CmdModernOptions, "Modern Options");   // the engine's own (docs/MODERN.md)
+        m->AddButtonText(CmdModernOptions, res.String(enginetext::ModernOptions));   // the engine's own (docs/MODERN.md)
         m->AddBottomButton(CmdQuitMenu, 0x404);        // "Save & Exit Game"
         m->SetPrevious(WarMap::Id);
         return m;

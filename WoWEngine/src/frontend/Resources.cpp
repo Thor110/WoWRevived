@@ -1,4 +1,5 @@
 #include "frontend/Resources.h"
+#include "core/EngineText.h"
 #include <cctype>
 #include "core/ShadeGroups.h"
 
@@ -126,6 +127,19 @@ namespace wow
         const Sprite* sprite = GetSprite(id);
         if (!sprite) return nullptr;
         return &(frames[key] = sprite->Decode(frame));
+    }
+
+    const std::string& Resources::String(int id) const
+    {
+        if (id < enginetext::First || text.Has(id)) return text.Get(id);
+        static std::map<int, std::string> english;
+        auto it = english.find(id);
+        if (it == english.end())
+        {
+            const char* found = enginetext::Find(id);
+            it = english.emplace(id, found ? found : "").first;
+        }
+        return it->second;
     }
 
     const IndexedImage* Resources::GetFileImage(const std::string& file, int frame)

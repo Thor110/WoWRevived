@@ -122,6 +122,24 @@ namespace wow
         onChange[index] = std::move(changed);
     }
 
+    // (a tool tip from TEXT.ojd is one line: broken here at the spaces, as near 46 characters a line as it goes)
+    void Menu::SetLastTip(const std::string& text)
+    {
+        if (buttons.empty()) return;
+        std::string out, line;
+        size_t start = 0;
+        while (start <= text.size())
+        {
+            size_t end = text.find(' ', start);
+            if (end == std::string::npos) end = text.size();
+            const std::string word = text.substr(start, end - start);
+            if (!line.empty() && line.size() + 1 + word.size() > 46) { out += line + "\n"; line = word; }
+            else line += (line.empty() ? "" : " ") + word;
+            start = end + 1;
+        }
+        buttons.back().tipText = out + line;
+    }
+
     void Menu::NextColumn()
     {
         column = 1;
