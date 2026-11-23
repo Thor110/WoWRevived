@@ -56,6 +56,9 @@ namespace wow
         // [Sound\Volume] Master and the per-type volumes, 0-1.
         void SetVolumes(float master, const float typeVolumes[6]);
         void SetMinimumAudible(float v) { minimumAudible = v; }
+        // The developers' flag Dave (byte_4D1231, [Debug] "Dave"): the debug text. The game's goes to a debugger
+        // (OutputDebugString) or to a printer that is empty in the retail build; the engine's goes to its log.
+        void SetDebugText(bool on) { debugText = on; }
 
         // Once per game tick: fades.
         void Update();
@@ -97,6 +100,7 @@ namespace wow
         };
         void HandOutVoices();           // 0x462FF0's ambient (0x463C30) and engine parts
         float minimumAudible = 0.05f;   // [Sound] "Minimum Audible Volume" (dword_4CA874, read by 0x462FF0)
+        bool debugText = false;     // Dave
 
         static void SDLCALL Feed(void* self, SDL_AudioStream* stream, int additional, int total);
         void Mix(float* out, int frames);

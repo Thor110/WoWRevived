@@ -113,6 +113,7 @@ namespace wow
         float master = ini.GetFloat(SoundSection, "Master", 1.0f);
         sound.SetVolumes(master, types);
         sound.SetMinimumAudible(ini.GetFloat("Sound", "Minimum Audible Volume", 0.05f));   // 0x4646C0
+        sound.SetDebugText(ini.GetBool("Debug", "Dave", false));                          // the developers' flag (docs/ODDITIES.md)
         // the four borders (the settings' text is "%d,%d,%d,%d", 0x411C7C; numbers left out keep the default, so
         // WoWRevived's launcher, which writes the left and top only, leaves the right and bottom as they were)
         auto border = [&](const char* name, Sound::Border b) {
@@ -1450,6 +1451,7 @@ namespace wow
         s.showSmoke = ini.GetBool("Options", "Show Smoke & particles", true);
         s.stickyPopup = ini.GetBool("Modern", "Sticky popup menus", false);   // a modern option (docs/MODERN.md)
         s.selectionKeys = ini.GetBool("Modern", "Selection keys", true);       // the same
+        s.mat = Mat();      // the developers' flag (docs/ODDITIES.md)
         s.groups = map->BattleGroups(b.sector);
         for (const WarMap::ReinforcementSource& r : map->ReinforcementSources()) s.sources.push_back({ r.sector, r.players, r.hq });
         s.hasRoom = [this](bool land, int sector, int count) { WarMap* wm = ActiveWarMap(); return !wm || wm->HasRoom(land, sector, count); };

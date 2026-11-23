@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 227) and what remains
+## Where things stand (update 228) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -43,13 +43,11 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
 - [ ] **A7 Combat checked by eye** (5.2, 5.3): quiet kills, damage rounding, the firer's sparing, retaliation,
       deaths, the pod's landing, the forfeit's return; Force Fire and the specials ending after one shot (173).
       A standing item: the owner's reports from play have found more than reading has.
-- [~] **A8 The developers' switches, for the record** (4.8, 4.9; the owner: keep them, low priority). In (190):
-      Charlie (`[Debug]` "Charlie": ResearchAlert, PodLanded and UndefendedSectorLost without their boxes and
-      not critical); Mat as a setting as well as the cheat (`[Debug]` "Mat"); on the war map, Mat or Edit
-      functionality letting any sector be selected; Mat's time of day (179). Left: on the battle map, Mat's
-      enemy units picked one at a time with Shift's state (0x497680, 0x4972F0) and the reinforcement points
-      made with no battle on (0x43D171, 0x43D2D2); Edit functionality's picking of scenery (0x485A1A,
-      0x485DA9, 0x48A87D); Dave's debug text and the debug log.
+- [x] **A8 The developers' switches, for the record** (4.8, 4.9; closed, 228). Charlie (190); Mat as a setting
+      and the cheat, on the war map (190) and in battle (228: the other side's units picked one at a time, the
+      reinforcement points with no battle on); Mat's time of day (179); Edit functionality's war map half
+      (190); Dave as lines in the log (228). Not built, with the reasons in ODDITIES.md: Edit functionality's
+      battle half (it only serves the editor), the loose-sound flag (with D1).
 - [ ] **A9 The network game** (4.7), last of the original: the menus' lists, the lockstep packets. The owner's
       reading of what the network build needs: its timer out, network play itself, the start files not saved
       over (already so).

@@ -162,8 +162,23 @@ renderer's object pool is made forty times larger (0x40D150).
 Any of Mat, Charlie or Dave at start-up also sets one more flag (byte_4D12F4, 0x401998), which makes the sound
 loader look for a sound as a loose file before the library (0x466910).
 
-The engine (update 190): Charlie is in; Mat's time of day and, with Edit functionality, its picking of any sector on
-the war map are in; the battle map's halves of Mat and Edit functionality, and Dave, are not (PLAN.md A8).
+The engine (updates 190 and 228):
+- **Charlie** is in.
+- **Mat** is in, on both maps: its time of day; any sector picked on the war map; in battle the other side's
+  units take the mouse, show the brackets and are selected one at a time (`BattleMap::SelectUnit`, packet 5),
+  and the reinforcement points are made with no battle on and for every neighbouring sector. Seen in the
+  engine: a Human vehicle clicked in a Martian game is selected on its own with Mat, and not without.
+- **Edit functionality**: its picking of any sector on the war map is in. Its battle half is not, and has
+  nothing to show for itself without the editor: the click and the drag box are sent on to the scenery's
+  list (0x485A1A, 0x485DA9), whose objects are not the player's and so are never picked by them, and an
+  object of any kind may have a hotspot (0x48A87D), which only matters to a tool that then does something
+  with scenery. The forty times larger object pool (0x40D150) is a limit the engine doesn't have.
+- **Dave**: the game's lines go to a debugger, most of them through a printer that is empty in the retail
+  build. The engine's stand-in is its log: with `[Debug]` "Dave" each sound file is written as it is asked
+  for ("Dave: sound ...", the game's 0x466029). The other eighty-odd lines (frame figures, the CD's calls,
+  DirectPlay's packets) have no counterpart worth writing.
+- **byte_4D12F4** (a sound looked for as a loose file first): not in; the engine's sounds come from the
+  library only (PLAN.md D1).
 
 ## An upgraded building fights as the building it was (update 185)
 

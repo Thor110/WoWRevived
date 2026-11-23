@@ -71,6 +71,10 @@ namespace wow
             struct Source { int sector = 0; bool players = false, hq = false; };
             std::vector<Source> sources;
             bool stickyPopup = false;   // [Modern] "Sticky popup menus": the popup stays open once the right button's let go
+            // The developers' flag Mat (byte_4D1279; [Debug] "Mat" or the curtains cheat; docs/ODDITIES.md): the other
+            // side's units take the mouse and are selected one at a time; the reinforcement points are made with no
+            // battle on, for every neighbouring sector
+            bool mat = false;
             bool selectionKeys = true;  // [Modern] "Selection keys": Ctrl + digit keeps a selection, the digit brings it back, Shift adds to it
             // 0x43AC40 on a sector: room there for `count` more of the player's land objects (else boats)
             std::function<bool(bool land, int sector, int count)> hasRoom;
@@ -658,6 +662,7 @@ namespace wow
         // 0x439000 for each war map object selected (0x8088): its units into the player's selection group (0x4480F0,
         // out of their own), which is then the group the orders go to; that group stays theirs once deselected
         void SelectRefs(const std::vector<int>& refs);
+        void SelectUnit(size_t index);                      // packet 5 (0x497730): that one object, out of its group
         // MODERN (the engine's own, [Modern] "Selection keys"): the selection's war map objects, the ten kept
         // selections (Ctrl + digit), and a selection with more added to it (Shift)
         std::vector<int> SelectedRefs() const;

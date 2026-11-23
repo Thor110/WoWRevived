@@ -357,8 +357,16 @@ namespace wow
             // 0x497680: the player's (or the debug flag), and with Ctrl only a vehicle; then always packet 4 (the
             // selection cleared, 0x4976DA) and the object's war map object selected (0x8088), so clicking one of
             // several selected groups narrows the selection to it
-            if (!best->players) return;
+            // With the developers' flag Mat (byte_4D1279, 0x49769D) the other side's are taken too, and (0x4976F5)
+            // the object itself is selected by packet 5, with Shift's state, not its war map object's group.
+            if (!best->players && !setup.mat) return;
             if (ctrl && !vehicle(*best)) return;
+            if (setup.mat)
+            {
+                SelectUnit(size_t(best - units.data()));
+                for (size_t g = 0; g < selected.size(); g++) if (selected[g]) { SelectionSpeech(int(g)); break; }
+                return;
+            }
             const int ref = best->ref;
             SelectRefs({ ref });      // (nothing is selected in mode 0, so Shift has nothing to add to)
             for (size_t g = 0; g < selected.size(); g++) if (selected[g]) { SelectionSpeech(int(g)); break; }
@@ -420,7 +428,7 @@ namespace wow
         if (const Unit* u = HotspotAt(x, y))
         {
             // mode 0 over the other side's (0x4971B7-0x4971C3): handled with no cursor set, so the last one stays
-            if (mode == 0 && !u->players) return lastCursor;
+            if (mode == 0 && !u->players && !setup.mat) return lastCursor;     // (with Mat they are picked as the player's are)
             if (mode == 0) cursor = 1;
             if (mode == 1) cursor = (!u->players || ctrl) ? 5 : 1;
         }
@@ -533,7 +541,8 @@ namespace wow
     {
         for (const Unit& u : units)
         {
-            if (!u.players || !selected[size_t(u.group)]) continue;
+            // (0x4972F0 returns at once for an object that isn't the player's, unless Mat is set)
+            if ((!u.players && !setup.mat) || !selected[size_t(u.group)]) continue;
             const int half = Selectable(u);
             int sx, sy;
             UnitScreen(u, sx, sy);
@@ -1736,6 +1745,24 @@ namespace wow
         std::vector<int> all = SelectedRefs();
         for (int r : refs) if (std::find(all.begin(), all.end(), r) == all.end()) all.push_back(r);
         SelectRefs(all);
+    }
+
+    // Packet 5 (0x497730, only with Mat): the one object selected, taken out of its group into one of its own
+    // (the selection's group is the one the orders go to, as with 0x439000).
+    // *Provisional*: Shift's state goes with the packet; in cursor mode 0, the only one this is reached in,
+    // nothing is selected for it to add to.
+    void BattleMap::SelectUnit(size_t index)
+    {
+        ClearSelection();
+        if (index >= units.size()) return;
+        const int old = units[index].group;
+        if (GroupCount(old) == 1) { selected[size_t(old)] = true; return; }
+        const int g = AddGroup(units[index].players);
+        units[index].group = g;
+        RecomputeGroup(g);
+        RecomputeGroup(old);
+        SetUpGrounds();
+        selected[size_t(g)] = true;
     }
 
     void BattleMap::SelectRefs(const std::vector<int>& refs)

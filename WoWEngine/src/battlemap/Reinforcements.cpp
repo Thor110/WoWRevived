@@ -24,14 +24,14 @@ namespace wow
     void BattleMap::SetUpReinforcements()
     {
         rpoints.clear();
-        if (!battleOn) return;
+        if (!battleOn && !setup.mat) return;       // 0x43D171: with no battle on, only with Mat
         const int playerSide = setup.human ? 0 : 1;
         (void)playerSide;
         const int w = land.WorldWidth();
         const int h = int((int64_t(land.Height()) * land.Cell()) >> 16);
         for (const Setup::Source& src : setup.sources)
         {
-            if (!src.hq) continue;
+            if (!src.hq && !setup.mat) continue;       // 0x43D2D2: with Mat every neighbouring sector, qualifying or not
             for (int kind : { 7, 5, 1 })
             {
                 int x = 0, y = 0;
@@ -42,7 +42,7 @@ namespace wow
                 if (top < left && top < right && top < bottom) y = 100;
                 if (right < left && right < top && right < bottom) x = w - 100;
                 if (bottom < left && bottom < top && bottom < right) y = h - 100;
-                if (!src.players) continue;
+                if (!src.players && !setup.mat) continue;      // ("or the debug flag")
                 if (setup.hasRoom)
                 {
                     auto rt = setup.units->find(kind == 5 ? 19 : 1);

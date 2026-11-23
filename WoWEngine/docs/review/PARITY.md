@@ -1243,6 +1243,15 @@ transparency")
 - After the language's text has been copied in, WoWLauncher deletes the release's `resources` folder (the five
   TEXT files). Seen: a folder beside the launcher deleted after the copy; the source's left alone.
 
+**Update 228** (the developers' switches, A8)
+- Mat in battle (byte_4D1279): 0x49769D the other side's units are taken by a click, 0x4976F5 the object
+  itself is selected (packet 5), 0x4972F6 its brackets are drawn, 0x43D171 / 0x43D2D2 the reinforcement points
+  with no battle on and for every neighbouring sector. `BattleMap::Setup::mat`.
+- Dave: with `[Debug]` "Dave" the log has each sound file as it is asked for.
+- Edit functionality's battle half is left out, with the reason (ODDITIES.md).
+- Seen: with Mat, a Human vehicle clicked in a Martian battle selected on its own, brackets drawn (also under
+  the checkers); without Mat, the same click does nothing; both battles with `--no-loose` as before.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

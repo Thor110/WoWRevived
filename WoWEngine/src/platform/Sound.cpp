@@ -43,6 +43,8 @@ namespace wow
         auto it = cache.find(sample.name);
         if (it != cache.end()) return it->second;
         std::shared_ptr<const std::vector<int16_t>> pcm;
+        // (0x466029, with Dave: each sound file as it is asked for)
+        if (debugText) SDL_Log("Dave: sound %s", sample.name.c_str());
         if (auto loaded = library.Load(sample)) pcm = std::make_shared<const std::vector<int16_t>>(std::move(*loaded));
         else SDL_Log("Couldn't find Sfx %s in Library", sample.name.c_str()); // the game's own message
         cache[sample.name] = pcm;
