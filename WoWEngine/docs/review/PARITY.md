@@ -1210,6 +1210,15 @@ transparency")
 **Update 222** (a file's name)
 - The naming of `TEXT.ojd` is the install's only; the launcher's start no longer renames it.
 
+**Update 223** (the renaming taken out; WoWRevived's patches)
+- The installer no longer renames TEXT.ojd (updates 221, 222): the disc's name is kept.
+- Outside the engine, at the owner's asking: `WoWPatches/Smackw32/Smackw32.cpp` and
+  `WoWPatches/_inmm/winmm_driver9x.cpp` had the side the wrong way round (`UseMartianAssets()` returned true
+  when Human.cd was there). Human.cd means a Human game: 0x402630 sets byte_4B84C4 (I Am Human) to 1 on
+  finding Human.cd and to 0 on Martian.cd, and WoWLauncher's "Start Human Game" renames MARTIAN.cd to
+  Human.cd. Now `!humanCdPresent`, and the credits' duration goes by the same rule. Not built or run here
+  (Windows DLLs).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

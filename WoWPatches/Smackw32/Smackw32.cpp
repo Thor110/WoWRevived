@@ -38,9 +38,11 @@ bool                isFullscreen = false;
 HWND                overlayWindow = NULL;
 ULONG_PTR           gdiplusToken = 0;
 IMFPMediaPlayer*    pMediaPlayer = NULL;
-// human.cd's presence selects the Martian FMV folder (verified in-game, see commit c933737), _inmm.dll uses the same rule.
+// Human.cd's presence means a Human game (the game's own check, 0x402630, and WoWLauncher's "Start Human Game", which
+// renames MARTIAN.cd to Human.cd), so the Martian FMV folder is used when Human.cd is NOT there. _inmm.dll uses the
+// same rule. (This was the wrong way round for a while: Human.cd picked the Martian folder.)
 bool                humanCdPresent = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES);
-inline bool         UseMartianAssets() { return humanCdPresent; }
+inline bool         UseMartianAssets() { return !humanCdPresent; }
 wow::GameBuild      gameBuild = wow::BUILD_UNKNOWN;
 std::atomic<bool>   focusThreadRunning{ false };
 
@@ -278,10 +280,8 @@ void CreateCreditsOverlay()
                 { 107.0f, 144.0f },  // Spanish
             };
             wow::Language language = wow::DetectLanguage(); // language.txt, then the size of credits.png
-            // TODO: check in-game. Commit c933737 found that human.cd's presence means the Martian FMV and music,
-            // but this still picks the Human duration when human.cd is present. If the credits scroll finishes
-            // at the wrong time for a faction, swap these two around.
-            float dur = humanCdPresent ? kTiming[language].humanDur : kTiming[language].martianDur;
+            // (Human.cd present: a Human game, the Human duration; the same rule as UseMartianAssets)
+            float dur = UseMartianAssets() ? kTiming[language].martianDur : kTiming[language].humanDur;
             Log("Language %d, dur=%.1fs", (int)language, dur);
 
             creditsScrollPx = (float)creditsImage->GetHeight() / dur;
@@ -758,4 +758,4 @@ BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID)
         creditsShutdown = true;
     }
     return TRUE;
-}
+}

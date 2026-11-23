@@ -232,9 +232,8 @@ a `resources` folder beside the programs. **WoWLauncher** copies the one for the
 game's `TEXT.ojd` (`install::CopyLanguageText`): at the end of an install, by the language the discs' marker
 gave, and at its start when the game is installed already. Only that one file is copied, over the disc's;
 no copy of the disc's is kept (the owner's decision, update 220). Nothing is copied when the language isn't
-known. An install names the game's file `TEXT.ojd`, in capitals as WoWRevived has it, whatever case the disc's
-copy came with; that is done by the install only, and a name a player gives it afterwards is left alone
-(updates 221 and 222).
+known. The copy goes over the game's file under whatever case its name has (the Italian disc's is
+`Text.ojd`); nothing is renamed (the renaming of updates 221 and 222 was taken out again in 223).
 The engine itself reads whatever `TEXT.ojd` the install has and copies nothing (update 219 had it do
 the copying, with a backup; both taken out).
 

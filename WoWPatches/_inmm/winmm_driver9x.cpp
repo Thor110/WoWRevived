@@ -31,10 +31,13 @@ bool forceStopFired = false;
 // and no waveOut call that waits on the device (waveOutReset/Close) is ever made while audioLock is held.
 CRITICAL_SECTION audioLock;
 CRITICAL_SECTION deviceLock;
-// human.cd's presence selects the Martian music and FMV folders (verified in-game, see commit c933737),
+// Human.cd's presence means a Human game: the game's own check (0x402630) sets "I Am Human" when it finds
+// Human.cd and clears it when it finds Martian.cd, and WoWLauncher's "Start Human Game" renames MARTIAN.cd to
+// Human.cd (its "Start Martian Game" the other way). So the Martian music and FMV folders are used when
+// Human.cd is NOT there. (This was the wrong way round for a while: Human.cd picked the Martian folders.)
 // Smackw32.dll uses the same rule. Everything that picks a faction's assets goes through UseMartianAssets().
 bool humanCdPresent = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES);
-inline bool UseMartianAssets() { return humanCdPresent; }
+inline bool UseMartianAssets() { return !humanCdPresent; }
 // Tracks the system uptime tick of the last physical Escape press
 DWORD lastEscapeTick = 0;
 // Tracks the system uptime tick of the last physical mouse click
