@@ -240,6 +240,20 @@ namespace wow::install
 
     void Finish(const InstallOptions& options, InstallResult& result)
     {
+        // An install names the game's text file "TEXT.ojd", in capitals as WoWRevived has it, whatever case the
+        // disc's copy came with. (Only here: what a player names it afterwards is left alone.)
+        {
+            const fs::path& target = options.target;
+            std::error_code ec;
+            const auto named = wow::GameFiles(target).Resolve("TEXT.ojd");
+            if (named && named->filename().string() != "TEXT.ojd")
+            {
+                // (through another name: on Windows a rename that only changes the case can be refused)
+                const fs::path temp = target / "TEXT.ojd.renaming";
+                fs::rename(*named, temp, ec);
+                if (!ec) fs::rename(temp, target / "TEXT.ojd", ec);
+            }
+        }
         CopyLanguageText(options.target);
         wow::GameFiles files(options.target);
         if (!result.humanDisc) result.warnings.push_back("The Human disc wasn't copied, so its music (Music-Human) is missing.");

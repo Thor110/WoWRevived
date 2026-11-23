@@ -1203,6 +1203,13 @@ transparency")
 - Seen: the launcher started on the test install set to Italian copying TEXT-IT.ojd in; with no language
   known, the text left alone; both battles as before.
 
+**Update 221** (a file's name)
+- WoWLauncher names the game's text file `TEXT.ojd`, renaming a `Text.ojd` or the like. Seen on the test
+  install (it had `Text.ojd`), with and without a language known.
+
+**Update 222** (a file's name)
+- The naming of `TEXT.ojd` is the install's only; the launcher's start no longer renames it.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
