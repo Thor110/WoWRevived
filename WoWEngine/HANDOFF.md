@@ -134,6 +134,8 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   exe. `docs/TASKS.md` and `docs/REVIEW.md` are the older task lists (PARITY.md takes precedence).
   `docs/review/range-*.md` are per-address-range routine reviews.
 - `docs/MODERN.md`: the `[Modern]` options, the only deliberate departures.
+- `docs/TRAILER.md`: the trailer (first cut at update 230) and how to cut it again with `tools/trailer`; `--frames`
+  records a scripted run's every update as pictures.
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
@@ -181,7 +183,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **230**.
+  - The next number is **231**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.

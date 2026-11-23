@@ -138,7 +138,8 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
       yet reported on: the crash filter and watchdog doing their job, the release script's DAT / MAPS (209),
       the window's kept size (208). Reported working by the owner (218): the `.mp4`s at their own size, the
       icon, Discord.
-- [ ] **G4** A trailer for the project: the very last thing (the owner, 199). The plan and shot list are in TRAILER.md.
+- [~] **G4** A trailer for the project: the very last thing (the owner, 199). A first cut made (230): TRAILER.md,
+      `tools/trailer`, the engine's footage recorded with `--frames`. To be cut again once the engine is finished.
 - [ ] **G2** Unit tests for the decoders, the save's round trip and the war map's rules.
 - [ ] **G3** The release scripts tried from a clean checkout; the docs brought level (TASKS.md is stale in
       places and should be redrawn from this list).

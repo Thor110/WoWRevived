@@ -77,6 +77,7 @@ namespace
     // --open starts on the screen a menu command opens (0x8E Game Options, 0x6E Save Game...).
     // --ticks N runs N game updates (30 a second) after the keys, before the screenshot.
     // --mouse x,y moves the mouse there first (game coordinates), for screenshots of the cursor and highlights.
+    // --frames <folder> saves the picture after every update of a --screenshot run, as numbered BMPs (for videos).
     // --screenshot presses the comma separated keys (up, down, enter, escape, f1-f9, 0-9, click:x:y, move:x:y, down:x:y, up:x:y, rdown:x:y, rup:x:y, wait:n updates), saves the frame and exits.
     struct Options
     {
@@ -91,6 +92,7 @@ namespace
         int side = -1; // 1 Human, 0 Martian, -1 not given
         bool record = false, playback = false;  // --record / --playback: the game's playback recordings (core/Playback.h)
         bool noLoose = false;                   // --no-loose: the engine's own DAT and MAPS files aren't used (the game's files only)
+        fs::path frames;                        // --frames <folder>: with --screenshot, every update's picture saved there
     };
 
     Options ParseOptions(int argc, char** argv)
@@ -105,6 +107,7 @@ namespace
             else if (arg == "--ticks" && i + 1 < argc) o.ticks = std::atoi(argv[++i]);
             else if (arg == "--record") o.record = true;
             else if (arg == "--no-loose") o.noLoose = true;
+            else if (arg == "--frames" && i + 1 < argc) o.frames = argv[++i];
             else if (arg == "--playback") o.playback = true;
             else if (arg == "--load" && i + 1 < argc) { o.open = 0x80B3; o.openParam = std::atoi(argv[++i]); }
             else if (arg == "--then" && i + 1 < argc) o.then = int(std::strtol(argv[++i], nullptr, 0));
@@ -527,6 +530,19 @@ int main(int argc, char** argv)
         if (!options.screenshot.empty())
         {
             if (options.mouseX >= 0) frontEnd.OnMouseMove(options.mouseX, options.mouseY);
+            // --frames: each update's picture is saved as a numbered BMP (000000.bmp ...), 30 to the second of the
+            // game's time, for making videos (the trailer, docs/TRAILER.md). Not the game's; a developer's option.
+            int frameNumber = 0;
+            if (!options.frames.empty()) { std::error_code ec; fs::create_directories(options.frames, ec); }
+            auto update = [&]() {
+                frontEnd.Update();
+                if (options.frames.empty()) return;
+                fitPicture();
+                frontEnd.Draw(canvas);
+                char name[32];
+                std::snprintf(name, sizeof name, "%06d.bmp", frameNumber++);
+                wow::WriteBmp(options.frames / name, video.Pixels(), video.Width(), video.Height());
+            };
             for (int key : options.keys)
             {
                 if (key == int(SDLK_LSHIFT)) { SDL_SetModState(SDL_KMOD_LSHIFT); continue; }
@@ -541,7 +557,7 @@ int main(int argc, char** argv)
                     if (base == RightDownKey || base == RightUpKey) frontEnd.OnRightButton(px, py, base == RightDownKey);
                     continue;
                 }
-                if (key <= WaitKey) { for (int t = 0; t < WaitKey - key; t++) frontEnd.Update(); continue; }
+                if (key <= WaitKey) { for (int t = 0; t < WaitKey - key; t++) update(); continue; }
                 if (key == -1) { frontEnd.OnMouseButton(options.mouseX, options.mouseY, true); frontEnd.OnMouseButton(options.mouseX, options.mouseY, false); continue; }
                 if (key <= -2)
                 {
@@ -555,8 +571,8 @@ int main(int argc, char** argv)
                 // letters are typed too, as SDL's text input would send them
                 if (key >= int(SDLK_A) && key <= int(SDLK_Z)) { char text[2] = { char('a' + (key - int(SDLK_A))), 0 }; frontEnd.OnText(text); }
             }
-            for (int t = 0; t < options.ticks; t++) frontEnd.Update();
-            if (options.then) { frontEnd.Open(options.then); for (int t = 0; t < 10; t++) frontEnd.Update(); }
+            for (int t = 0; t < options.ticks; t++) update();
+            if (options.then) { frontEnd.Open(options.then); for (int t = 0; t < 10; t++) update(); }
             fitPicture();
             frontEnd.Draw(canvas);
             wow::WriteBmp(options.screenshot, video.Pixels(), video.Width(), video.Height());
