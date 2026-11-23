@@ -56,9 +56,7 @@ namespace wow
         void DrawSpriteRows(int gtype, int frame, int x, int y, int firstRow, int rows, int level = 0);
         // MODERN: a sprite made wider: its left and right halves at the ends, the columns about its middle repeated
         // between them (a row's see-through backing stretched to a wider row, its ends and seams kept)
-        // wideFile: a sprite file made at the wider size (the same frames), used in place of the stretching when
-        // it is there
-        void DrawSpriteWidened(int gtype, int frame, int x, int y, int toWidth, Blend blend = Blend::Opaque, const char* wideFile = nullptr);
+        void DrawSpriteWidened(int gtype, int frame, int x, int y, int toWidth, Blend blend = Blend::Opaque);
         // A triangle filled from an 8-bit texture (texW x texH, index 0 left clear), its corners at x/y on screen
         // and u/v in the texture, mapped straight across (affine), as the arrows' textured polygons
         // (0x410090 quads, 0x410190 triangles)

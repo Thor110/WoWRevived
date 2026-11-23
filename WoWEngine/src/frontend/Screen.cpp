@@ -55,12 +55,17 @@ namespace wow
             break;
         }
         }
-        if (b.glass && b.widen > b.rect.w)
-            // (the slider's backing made at the full rows' width, dat\\hugesldw.spr, when the files have it:
-            // hugeslda.spr's two frames at 540 x 32; else hugeslda.spr stretched)
-            canvas.DrawSpriteWidened(b.glass, glassFrame, b.rect.x - (b.widen - b.rect.w) / 2, b.rect.y, b.widen, Canvas::Blend::Translucent,
-                                     b.glass == 0x348 ? "dat\\hugesldw.spr" : nullptr);
-        else if (b.glass) canvas.DrawSprite(b.glass, glassFrame, b.rect.x, b.rect.y, 0, Canvas::Blend::Translucent);
+        // MODERN: a backing wider than the control on it is centred under it (a loose hugeslda.spr made 540 wide,
+        // the full rows' width, under the 520 wide slider hugesld.spr); one narrower than the row asks for
+        // (Button::widen) has its middle repeated to that width
+        if (b.glass)
+        {
+            const Rect glass = SpriteRect(b.glass, 0, 0);
+            if (glass.w > b.rect.w) canvas.DrawSprite(b.glass, glassFrame, b.rect.x - (glass.w - b.rect.w) / 2, b.rect.y, 0, Canvas::Blend::Translucent);
+            else if (b.widen > b.rect.w)
+                canvas.DrawSpriteWidened(b.glass, glassFrame, b.rect.x - (b.widen - b.rect.w) / 2, b.rect.y, b.widen, Canvas::Blend::Translucent);
+            else canvas.DrawSprite(b.glass, glassFrame, b.rect.x, b.rect.y, 0, Canvas::Blend::Translucent);
+        }
         if (b.plate) canvas.DrawSprite(b.plate, plateFrame, b.rect.x, b.rect.y);
         if (b.kind == Button::Kind::Edit)
         {

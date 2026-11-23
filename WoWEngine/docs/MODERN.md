@@ -196,13 +196,17 @@ started ("Discord: ...").
 - Windows only. Not tried: there is no Discord here to try it against; the code builds and does nothing
   without the DLL.
 
-### The Modern Options menu's slider backing (updates 210-212)
+### The Modern Options menu's slider backing (updates 210-213)
 
-The two-column menus' slider (`hugesld.spr`, backing `hugeslda.spr`, 520 x 32) is narrower than their full rows
-(`hugebut.spr` / `hugebutb.spr`, 540 x 32). The HUD scale row's backing is drawn 540 wide: from
-`dat\hugesldw.spr` when the files have it (the owner's, to be made: `hugeslda.spr`'s two frames, plain and lit,
-at 540 x 32), else `hugeslda.spr` with its middle repeated (`Canvas::DrawSpriteWidened`), which smears its
-dithering.
+The two-column menus' slider (`hugesld.spr`, 520 x 32, 22 frames: the knob's eleven places plain, then lit) has
+a backing (`hugeslda.spr`, 520 x 32, 2 frames: plain, lit) narrower than their full rows (`hugebut.spr` /
+`hugebutb.spr`, 540 x 32). The HUD scale row's backing is drawn 540 wide:
+
+- **With a loose `hugeslda.spr` made 540 wide** (the owner's, to come: the same two frames) it is drawn as it is,
+  centred under the 520 wide `hugesld.spr`. The rule is general (`Screen::DrawButton`): a backing wider than
+  the control on it is centred under it.
+- **With the game's own 520 wide one**, its middle is repeated to 540 (`Canvas::DrawSpriteWidened`), which
+  smears its dithering.
 
 ### Resolution (agreed with the owner, update 192)
 

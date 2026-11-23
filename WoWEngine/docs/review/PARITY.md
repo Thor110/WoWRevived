@@ -1158,6 +1158,11 @@ transparency")
 - Seen: the engine building and running without the DLL; both battles and the menu as before. Not seen:
   Discord itself.
 
+**Update 213** (the slider's backing)
+- A row's backing wider than the control on it is centred under it, so a loose `hugeslda.spr` made 540 wide
+  goes under the 520 wide `hugesld.spr` (the separate `hugesldw.spr` of 212 is dropped). Seen with a 540 wide
+  stand-in; with the game's own files the menu and both battles as before.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

@@ -67,19 +67,12 @@ namespace wow
         DrawImage(*image, shade->Level(level), x - g->hotX, y - g->hotY, blend);
     }
 
-    void Canvas::DrawSpriteWidened(int gtype, int frame, int x, int y, int toWidth, Blend blend, const char* wideFile)
+    void Canvas::DrawSpriteWidened(int gtype, int frame, int x, int y, int toWidth, Blend blend)
     {
         const IndexedImage* image = res.GetFrame(gtype, frame);
         const ShadeTable* shade = res.ShadeFor(gtype);
         const GType* g = res.FindGType(gtype);
         if (!image || !shade || !g || image->width < 4) return;
-        // the one made at the size, centred on where the stretched one would be
-        if (wideFile && res.HasFile(wideFile))
-            if (const IndexedImage* made = res.GetFileImage(wideFile, frame))
-            {
-                DrawImage(*made, shade->Level(0), x - g->hotX - (made->width - toWidth) / 2, y - g->hotY, blend);
-                return;
-            }
         if (toWidth <= image->width) { DrawImage(*image, shade->Level(0), x - g->hotX, y - g->hotY, blend); return; }
         IndexedImage wide;
         wide.width = toWidth;
