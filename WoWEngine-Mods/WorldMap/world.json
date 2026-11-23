@@ -1,0 +1,4387 @@
+{
+ "about": "A draft world war map for a future WoWEngine mod. Not usable by the original game or the current engine (both have 30 sectors built in); see README.md.",
+ "map": {
+  "width": 8192,
+  "height": 3443,
+  "projection": "Miller cylindrical",
+  "central_meridian": 11.0,
+  "lat_north": 72.0,
+  "lat_south": -56.0,
+  "km_per_pixel_at_equator": 4.892
+ },
+ "values": {
+  "sea": 0,
+  "sectors": [
+   1,
+   62
+  ],
+  "unused": 63,
+  "borders_between_sectors": [
+   64,
+   170
+  ],
+  "unused_2": 171,
+  "coastlines": [
+   172,
+   229
+  ],
+  "total_used": 230,
+  "sea_areas_in_CHI": [
+   192,
+   233
+  ]
+ },
+ "sectors": [
+  {
+   "id": 1,
+   "name": "The British Isles",
+   "value": 1,
+   "bounds": [
+    3609,
+    499,
+    3885,
+    770
+   ],
+   "waypoint": [
+    3809,
+    690
+   ],
+   "waypoint_lon_lat": [
+    -1.59,
+    52.67
+   ],
+   "area_km2": 308000,
+   "coastal": true,
+   "neighbours": [],
+   "borders": [
+    172
+   ],
+   "members": [
+    "GBR",
+    "IRL",
+    "IMN",
+    "GGY",
+    "JEY"
+   ],
+   "sea_areas": [
+    192,
+    195
+   ]
+  },
+  {
+   "id": 2,
+   "name": "Iberia",
+   "value": 2,
+   "bounds": [
+    3629,
+    950,
+    3920,
+    1157
+   ],
+   "waypoint": [
+    3736,
+    1049
+   ],
+   "waypoint_lon_lat": [
+    -4.8,
+    40.13
+   ],
+   "area_km2": 589000,
+   "coastal": true,
+   "neighbours": [
+    3
+   ],
+   "borders": [
+    64,
+    173
+   ],
+   "members": [
+    "ESP",
+    "PRT",
+    "AND"
+   ],
+   "sea_areas": [
+    195,
+    201
+   ]
+  },
+  {
+   "id": 3,
+   "name": "France",
+   "value": 3,
+   "bounds": [
+    3736,
+    738,
+    4063,
+    1016
+   ],
+   "waypoint": [
+    3901,
+    857
+   ],
+   "waypoint_lon_lat": [
+    2.45,
+    47.04
+   ],
+   "area_km2": 553000,
+   "coastal": true,
+   "neighbours": [
+    2,
+    4,
+    5,
+    8,
+    9
+   ],
+   "borders": [
+    64,
+    65,
+    66,
+    67,
+    68,
+    174
+   ],
+   "members": [
+    "FRA [-6, 41, 10, 52]",
+    "MCO"
+   ],
+   "sea_areas": [
+    192,
+    195,
+    201
+   ]
+  },
+  {
+   "id": 4,
+   "name": "The Low Countries",
+   "value": 4,
+   "bounds": [
+    3903,
+    666,
+    4009,
+    787
+   ],
+   "waypoint": [
+    3990,
+    787
+   ],
+   "waypoint_lon_lat": [
+    6.36,
+    49.45
+   ],
+   "area_km2": 69000,
+   "coastal": true,
+   "neighbours": [
+    3,
+    5
+   ],
+   "borders": [
+    65,
+    69,
+    175
+   ],
+   "members": [
+    "NLD",
+    "BEL",
+    "LUX"
+   ],
+   "sea_areas": [
+    192
+   ]
+  },
+  {
+   "id": 5,
+   "name": "Germany",
+   "value": 5,
+   "bounds": [
+    3980,
+    616,
+    4187,
+    849
+   ],
+   "waypoint": [
+    4132,
+    758
+   ],
+   "waypoint_lon_lat": [
+    12.6,
+    50.42
+   ],
+   "area_km2": 356000,
+   "coastal": true,
+   "neighbours": [
+    3,
+    4,
+    6,
+    8,
+    10
+   ],
+   "borders": [
+    66,
+    69,
+    70,
+    71,
+    72,
+    176
+   ],
+   "members": [
+    "DEU"
+   ],
+   "sea_areas": [
+    192,
+    194
+   ]
+  },
+  {
+   "id": 6,
+   "name": "Scandinavia",
+   "value": 6,
+   "bounds": [
+    3957,
+    38,
+    4550,
+    625
+   ],
+   "waypoint": [
+    4382,
+    164
+   ],
+   "waypoint_lon_lat": [
+    23.59,
+    67.96
+   ],
+   "area_km2": 795000,
+   "coastal": true,
+   "neighbours": [
+    5,
+    7,
+    15
+   ],
+   "borders": [
+    70,
+    73,
+    74,
+    177
+   ],
+   "members": [
+    "NOR",
+    "SWE",
+    "DNK"
+   ],
+   "sea_areas": [
+    192,
+    193,
+    194,
+    199
+   ]
+  },
+  {
+   "id": 7,
+   "name": "The Baltic",
+   "value": 7,
+   "bounds": [
+    4314,
+    80,
+    4563,
+    652
+   ],
+   "waypoint": [
+    4431,
+    644
+   ],
+   "waypoint_lon_lat": [
+    25.74,
+    54.16
+   ],
+   "area_km2": 475000,
+   "coastal": true,
+   "neighbours": [
+    6,
+    10,
+    13,
+    14,
+    15
+   ],
+   "borders": [
+    73,
+    75,
+    76,
+    77,
+    78,
+    178
+   ],
+   "members": [
+    "FIN",
+    "EST",
+    "LVA",
+    "LTU"
+   ],
+   "sea_areas": [
+    194
+   ]
+  },
+  {
+   "id": 8,
+   "name": "The Alps",
+   "value": 8,
+   "bounds": [
+    3981,
+    800,
+    4235,
+    892
+   ],
+   "waypoint": [
+    4160,
+    807
+   ],
+   "waypoint_lon_lat": [
+    13.83,
+    48.77
+   ],
+   "area_km2": 128000,
+   "coastal": false,
+   "neighbours": [
+    3,
+    5,
+    9,
+    10,
+    11,
+    12
+   ],
+   "borders": [
+    67,
+    71,
+    79,
+    80,
+    81,
+    82
+   ],
+   "members": [
+    "CHE",
+    "AUT",
+    "LIE"
+   ],
+   "sea_areas": []
+  },
+  {
+   "id": 9,
+   "name": "Italy",
+   "value": 9,
+   "bounds": [
+    3996,
+    857,
+    4266,
+    1140
+   ],
+   "waypoint": [
+    4078,
+    891
+   ],
+   "waypoint_lon_lat": [
+    10.23,
+    45.85
+   ],
+   "area_km2": 306000,
+   "coastal": true,
+   "neighbours": [
+    3,
+    8,
+    12
+   ],
+   "borders": [
+    68,
+    79,
+    83,
+    179
+   ],
+   "members": [
+    "ITA",
+    "SMR",
+    "VAT",
+    "MLT"
+   ],
+   "sea_areas": [
+    201,
+    202
+   ]
+  },
+  {
+   "id": 10,
+   "name": "Central Europe",
+   "value": 10,
+   "bounds": [
+    4121,
+    623,
+    4394,
+    835
+   ],
+   "waypoint": [
+    4391,
+    758
+   ],
+   "waypoint_lon_lat": [
+    23.99,
+    50.42
+   ],
+   "area_km2": 439000,
+   "coastal": true,
+   "neighbours": [
+    5,
+    7,
+    8,
+    11,
+    13,
+    14
+   ],
+   "borders": [
+    72,
+    75,
+    80,
+    84,
+    85,
+    86,
+    180
+   ],
+   "members": [
+    "POL",
+    "CZE",
+    "SVK"
+   ],
+   "sea_areas": [
+    194
+   ]
+  },
+  {
+   "id": 11,
+   "name": "The Danube",
+   "value": 11,
+   "bounds": [
+    4212,
+    813,
+    4531,
+    952
+   ],
+   "waypoint": [
+    4395,
+    832
+   ],
+   "waypoint_lon_lat": [
+    24.16,
+    47.91
+   ],
+   "area_km2": 366000,
+   "coastal": true,
+   "neighbours": [
+    8,
+    10,
+    12,
+    13
+   ],
+   "borders": [
+    81,
+    84,
+    87,
+    88,
+    181
+   ],
+   "members": [
+    "HUN",
+    "ROU",
+    "MDA"
+   ],
+   "sea_areas": [
+    203
+   ]
+  },
+  {
+   "id": 12,
+   "name": "The Balkans",
+   "value": 12,
+   "bounds": [
+    4151,
+    863,
+    4496,
+    1186
+   ],
+   "waypoint": [
+    4362,
+    927
+   ],
+   "waypoint_lon_lat": [
+    22.71,
+    44.58
+   ],
+   "area_km2": 520000,
+   "coastal": true,
+   "neighbours": [
+    8,
+    9,
+    11,
+    18
+   ],
+   "borders": [
+    82,
+    83,
+    87,
+    89,
+    182
+   ],
+   "members": [
+    "SRB",
+    "HRV",
+    "BIH",
+    "MNE",
+    "MKD",
+    "ALB",
+    "GRC",
+    "BGR",
+    "SVN",
+    "KOS"
+   ],
+   "sea_areas": [
+    202,
+    203
+   ]
+  },
+  {
+   "id": 13,
+   "name": "The Western Steppe",
+   "value": 13,
+   "bounds": [
+    4350,
+    582,
+    4764,
+    908
+   ],
+   "waypoint": [
+    4403,
+    769
+   ],
+   "waypoint_lon_lat": [
+    24.51,
+    50.06
+   ],
+   "area_km2": 781000,
+   "coastal": true,
+   "neighbours": [
+    7,
+    10,
+    11,
+    14
+   ],
+   "borders": [
+    76,
+    85,
+    88,
+    90,
+    183
+   ],
+   "members": [
+    "UKR",
+    "BLR"
+   ],
+   "sea_areas": [
+    203
+   ]
+  },
+  {
+   "id": 14,
+   "name": "Central Russia",
+   "value": 14,
+   "bounds": [
+    4298,
+    399,
+    4932,
+    789
+   ],
+   "waypoint": [
+    4917,
+    425
+   ],
+   "waypoint_lon_lat": [
+    47.1,
+    60.83
+   ],
+   "area_km2": 1139000,
+   "coastal": true,
+   "neighbours": [
+    7,
+    10,
+    13,
+    15,
+    16
+   ],
+   "borders": [
+    77,
+    86,
+    90,
+    91,
+    92,
+    184
+   ],
+   "members": [
+    "RUS [27, 50, 45, 61.5]",
+    "RUS [19, 54, 23, 56]"
+   ],
+   "sea_areas": [
+    194
+   ]
+  },
+  {
+   "id": 15,
+   "name": "Northern Russia",
+   "value": 15,
+   "bounds": [
+    4493,
+    0,
+    5352,
+    479
+   ],
+   "waypoint": [
+    5185,
+    399
+   ],
+   "waypoint_lon_lat": [
+    58.88,
+    61.58
+   ],
+   "area_km2": 1215000,
+   "coastal": true,
+   "neighbours": [
+    6,
+    7,
+    14,
+    16,
+    25
+   ],
+   "borders": [
+    74,
+    78,
+    91,
+    93,
+    94,
+    185
+   ],
+   "members": [
+    "RUS [27, 61.5, 66, 82]"
+   ],
+   "sea_areas": [
+    199
+   ]
+  },
+  {
+   "id": 16,
+   "name": "The Volga",
+   "value": 16,
+   "bounds": [
+    4787,
+    385,
+    5409,
+    1019
+   ],
+   "waypoint": [
+    5200,
+    405
+   ],
+   "waypoint_lon_lat": [
+    59.54,
+    61.41
+   ],
+   "area_km2": 1476000,
+   "coastal": true,
+   "neighbours": [
+    14,
+    15,
+    17,
+    22,
+    25
+   ],
+   "borders": [
+    92,
+    93,
+    95,
+    96,
+    97,
+    186
+   ],
+   "members": [
+    "RUS [45, 41, 66, 61.5]"
+   ],
+   "sea_areas": [
+    204
+   ]
+  },
+  {
+   "id": 17,
+   "name": "The Caucasus",
+   "value": 17,
+   "bounds": [
+    4750,
+    949,
+    4991,
+    1095
+   ],
+   "waypoint": [
+    4928,
+    1047
+   ],
+   "waypoint_lon_lat": [
+    47.58,
+    40.2
+   ],
+   "area_km2": 199000,
+   "coastal": true,
+   "neighbours": [
+    16,
+    18,
+    21
+   ],
+   "borders": [
+    95,
+    98,
+    99,
+    187
+   ],
+   "members": [
+    "GEO",
+    "ARM",
+    "AZE"
+   ],
+   "sea_areas": [
+    203,
+    204
+   ]
+  },
+  {
+   "id": 18,
+   "name": "Anatolia",
+   "value": 18,
+   "bounds": [
+    4438,
+    997,
+    4865,
+    1195
+   ],
+   "waypoint": [
+    4746,
+    1138
+   ],
+   "waypoint_lon_lat": [
+    39.59,
+    36.77
+   ],
+   "area_km2": 789000,
+   "coastal": true,
+   "neighbours": [
+    12,
+    17,
+    19,
+    21
+   ],
+   "borders": [
+    89,
+    98,
+    100,
+    101,
+    188
+   ],
+   "members": [
+    "TUR",
+    "CYP",
+    "CYN"
+   ],
+   "sea_areas": [
+    202,
+    203
+   ]
+  },
+  {
+   "id": 19,
+   "name": "The Levant",
+   "value": 19,
+   "bounds": [
+    4623,
+    1122,
+    4950,
+    1334
+   ],
+   "waypoint": [
+    4745,
+    1258
+   ],
+   "waypoint_lon_lat": [
+    39.54,
+    32.09
+   ],
+   "area_km2": 752000,
+   "coastal": true,
+   "neighbours": [
+    18,
+    20,
+    21,
+    37
+   ],
+   "borders": [
+    100,
+    102,
+    103,
+    104,
+    189
+   ],
+   "members": [
+    "SYR",
+    "IRQ",
+    "JOR",
+    "LBN",
+    "ISR",
+    "PSX"
+   ],
+   "sea_areas": [
+    202,
+    233
+   ]
+  },
+  {
+   "id": 20,
+   "name": "Arabia",
+   "value": 20,
+   "bounds": [
+    4633,
+    1258,
+    5207,
+    1726
+   ],
+   "waypoint": [
+    4926,
+    1551
+   ],
+   "waypoint_lon_lat": [
+    47.5,
+    20.08
+   ],
+   "area_km2": 2802000,
+   "coastal": true,
+   "neighbours": [
+    19
+   ],
+   "borders": [
+    102,
+    190
+   ],
+   "members": [
+    "SAU",
+    "YEM",
+    "OMN",
+    "ARE",
+    "QAT",
+    "BHR",
+    "KWT"
+   ],
+   "sea_areas": [
+    205,
+    206,
+    233
+   ]
+  },
+  {
+   "id": 21,
+   "name": "Persia",
+   "value": 21,
+   "bounds": [
+    4848,
+    1060,
+    5285,
+    1431
+   ],
+   "waypoint": [
+    5230,
+    1222
+   ],
+   "waypoint_lon_lat": [
+    60.86,
+    33.51
+   ],
+   "area_km2": 1619000,
+   "coastal": true,
+   "neighbours": [
+    17,
+    18,
+    19,
+    22,
+    23
+   ],
+   "borders": [
+    99,
+    101,
+    103,
+    105,
+    106,
+    191
+   ],
+   "members": [
+    "IRN"
+   ],
+   "sea_areas": [
+    204,
+    206,
+    233
+   ]
+  },
+  {
+   "id": 22,
+   "name": "Turkestan",
+   "value": 22,
+   "bounds": [
+    4904,
+    605,
+    5831,
+    1178
+   ],
+   "waypoint": [
+    5268,
+    1177
+   ],
+   "waypoint_lon_lat": [
+    62.53,
+    35.26
+   ],
+   "area_km2": 3918000,
+   "coastal": true,
+   "neighbours": [
+    16,
+    21,
+    23,
+    25,
+    30
+   ],
+   "borders": [
+    96,
+    105,
+    107,
+    108,
+    109,
+    192
+   ],
+   "members": [
+    "KAZ",
+    "UZB",
+    "TKM",
+    "KGZ",
+    "TJK"
+   ],
+   "sea_areas": [
+    204
+   ]
+  },
+  {
+   "id": 23,
+   "name": "Afghanistan",
+   "value": 23,
+   "bounds": [
+    5222,
+    1094,
+    5598,
+    1463
+   ],
+   "waypoint": [
+    5279,
+    1208
+   ],
+   "waypoint_lon_lat": [
+    63.01,
+    34.06
+   ],
+   "area_km2": 1530000,
+   "coastal": true,
+   "neighbours": [
+    21,
+    22,
+    24,
+    30
+   ],
+   "borders": [
+    106,
+    107,
+    110,
+    111,
+    193
+   ],
+   "members": [
+    "AFG",
+    "PAK"
+   ],
+   "sea_areas": [
+    206
+   ]
+  },
+  {
+   "id": 24,
+   "name": "India",
+   "value": 24,
+   "bounds": [
+    5397,
+    1168,
+    6059,
+    1879
+   ],
+   "waypoint": [
+    5660,
+    1455
+   ],
+   "waypoint_lon_lat": [
+    79.75,
+    24.1
+   ],
+   "area_km2": 3562000,
+   "coastal": true,
+   "neighbours": [
+    23,
+    30,
+    33
+   ],
+   "borders": [
+    110,
+    112,
+    113,
+    194
+   ],
+   "members": [
+    "IND",
+    "NPL",
+    "BTN",
+    "BGD",
+    "LKA",
+    "KAS"
+   ],
+   "sea_areas": [
+    206,
+    207
+   ]
+  },
+  {
+   "id": 25,
+   "name": "Western Siberia",
+   "value": 25,
+   "bounds": [
+    5194,
+    0,
+    5935,
+    798
+   ],
+   "waypoint": [
+    5227,
+    394
+   ],
+   "waypoint_lon_lat": [
+    60.72,
+    61.73
+   ],
+   "area_km2": 2412000,
+   "coastal": true,
+   "neighbours": [
+    15,
+    16,
+    22,
+    26,
+    28,
+    30
+   ],
+   "borders": [
+    94,
+    97,
+    108,
+    114,
+    115,
+    116,
+    195
+   ],
+   "members": [
+    "RUS [66, 45, 90, 82]"
+   ],
+   "sea_areas": [
+    199,
+    200
+   ]
+  },
+  {
+   "id": 26,
+   "name": "Central Siberia",
+   "value": 26,
+   "bounds": [
+    5643,
+    0,
+    6625,
+    795
+   ],
+   "waypoint": [
+    5807,
+    389
+   ],
+   "waypoint_lon_lat": [
+    86.21,
+    61.87
+   ],
+   "area_km2": 3557000,
+   "coastal": false,
+   "neighbours": [
+    25,
+    27,
+    28,
+    29
+   ],
+   "borders": [
+    114,
+    117,
+    118,
+    119
+   ],
+   "members": [
+    "RUS [90, 45, 125, 82]"
+   ],
+   "sea_areas": []
+  },
+  {
+   "id": 27,
+   "name": "Eastern Siberia",
+   "value": 27,
+   "bounds": [
+    6248,
+    0,
+    8177,
+    989
+   ],
+   "waypoint": [
+    6729,
+    360
+   ],
+   "waypoint_lon_lat": [
+    126.73,
+    62.69
+   ],
+   "area_km2": 5985000,
+   "coastal": true,
+   "neighbours": [
+    26,
+    29,
+    32
+   ],
+   "borders": [
+    117,
+    120,
+    121,
+    196
+   ],
+   "members": [
+    "RUS [125, 40, 180, 82]",
+    "RUS [-180, 40, -160, 82]"
+   ],
+   "sea_areas": [
+    211,
+    212,
+    215
+   ]
+  },
+  {
+   "id": 28,
+   "name": "Mongolia",
+   "value": 28,
+   "bounds": [
+    5842,
+    707,
+    6574,
+    1009
+   ],
+   "waypoint": [
+    6314,
+    943
+   ],
+   "waypoint_lon_lat": [
+    108.49,
+    44.0
+   ],
+   "area_km2": 1561000,
+   "coastal": false,
+   "neighbours": [
+    25,
+    26,
+    29,
+    30
+   ],
+   "borders": [
+    115,
+    118,
+    122,
+    123
+   ],
+   "members": [
+    "MNG"
+   ],
+   "sea_areas": []
+  },
+  {
+   "id": 29,
+   "name": "Northern China",
+   "value": 29,
+   "bounds": [
+    6057,
+    662,
+    6912,
+    1275
+   ],
+   "waypoint": [
+    6346,
+    982
+   ],
+   "waypoint_lon_lat": [
+    109.9,
+    42.59
+   ],
+   "area_km2": 2896000,
+   "coastal": true,
+   "neighbours": [
+    26,
+    27,
+    28,
+    30,
+    31,
+    32
+   ],
+   "borders": [
+    119,
+    120,
+    122,
+    124,
+    125,
+    126,
+    197
+   ],
+   "members": [
+    "CHN [104, 33.5, 136, 54]"
+   ],
+   "sea_areas": [
+    210
+   ]
+  },
+  {
+   "id": 30,
+   "name": "Tibet",
+   "value": 30,
+   "bounds": [
+    5520,
+    796,
+    6318,
+    1407
+   ],
+   "waypoint": [
+    6007,
+    995
+   ],
+   "waypoint_lon_lat": [
+    95.0,
+    42.12
+   ],
+   "area_km2": 4339000,
+   "coastal": false,
+   "neighbours": [
+    22,
+    23,
+    24,
+    25,
+    28,
+    29,
+    31,
+    33
+   ],
+   "borders": [
+    109,
+    111,
+    112,
+    116,
+    123,
+    124,
+    127,
+    128
+   ],
+   "members": [
+    "CHN [73, 26, 104, 50]"
+   ],
+   "sea_areas": []
+  },
+  {
+   "id": 31,
+   "name": "Southern China",
+   "value": 31,
+   "bounds": [
+    6066,
+    1181,
+    6624,
+    1596
+   ],
+   "waypoint": [
+    6092,
+    1406
+   ],
+   "waypoint_lon_lat": [
+    98.74,
+    26.12
+   ],
+   "area_km2": 2187000,
+   "coastal": true,
+   "neighbours": [
+    29,
+    30,
+    33
+   ],
+   "borders": [
+    125,
+    127,
+    129,
+    198
+   ],
+   "members": [
+    "CHN [97, 18, 125, 33.5]",
+    "TWN",
+    "HKG",
+    "MAC"
+   ],
+   "sea_areas": [
+    209,
+    210
+   ]
+  },
+  {
+   "id": 32,
+   "name": "Korea and Japan",
+   "value": 32,
+   "bounds": [
+    6675,
+    901,
+    7164,
+    1285
+   ],
+   "waypoint": [
+    6729,
+    1006
+   ],
+   "waypoint_lon_lat": [
+    126.73,
+    41.72
+   ],
+   "area_km2": 596000,
+   "coastal": true,
+   "neighbours": [
+    27,
+    29
+   ],
+   "borders": [
+    121,
+    126,
+    199
+   ],
+   "members": [
+    "KOR",
+    "PRK",
+    "JPN"
+   ],
+   "sea_areas": [
+    210,
+    211
+   ]
+  },
+  {
+   "id": 33,
+   "name": "Indochina",
+   "value": 33,
+   "bounds": [
+    5943,
+    1347,
+    6336,
+    1985
+   ],
+   "waypoint": [
+    6089,
+    1399
+   ],
+   "waypoint_lon_lat": [
+    98.6,
+    26.41
+   ],
+   "area_km2": 2074000,
+   "coastal": true,
+   "neighbours": [
+    24,
+    30,
+    31
+   ],
+   "borders": [
+    113,
+    128,
+    129,
+    200
+   ],
+   "members": [
+    "MMR",
+    "THA",
+    "LAO",
+    "VNM",
+    "KHM",
+    "MYS [99, 0, 105, 8]",
+    "SGP"
+   ],
+   "sea_areas": [
+    207,
+    209
+   ]
+  },
+  {
+   "id": 34,
+   "name": "The East Indies",
+   "value": 34,
+   "bounds": [
+    6012,
+    1586,
+    7394,
+    2257
+   ],
+   "waypoint": [
+    6436,
+    2011
+   ],
+   "waypoint_lon_lat": [
+    113.85,
+    0.13
+   ],
+   "area_km2": 2816000,
+   "coastal": true,
+   "neighbours": [],
+   "borders": [
+    201
+   ],
+   "members": [
+    "IDN",
+    "PHL",
+    "BRN",
+    "TLS",
+    "PNG",
+    "MYS [108, 0, 120, 8]"
+   ],
+   "sea_areas": [
+    207,
+    209,
+    210,
+    223,
+    225
+   ]
+  },
+  {
+   "id": 35,
+   "name": "Western Australia",
+   "value": 35,
+   "bounds": [
+    6414,
+    2265,
+    6985,
+    2848
+   ],
+   "waypoint": [
+    6929,
+    2526
+   ],
+   "waypoint_lon_lat": [
+    135.52,
+    -22.14
+   ],
+   "area_km2": 3921000,
+   "coastal": true,
+   "neighbours": [
+    36
+   ],
+   "borders": [
+    130,
+    202
+   ],
+   "members": [
+    "AUS [110, -45, 135, -9]"
+   ],
+   "sea_areas": [
+    225,
+    230
+   ]
+  },
+  {
+   "id": 36,
+   "name": "Eastern Australia",
+   "value": 36,
+   "bounds": [
+    6782,
+    2258,
+    7908,
+    3159
+   ],
+   "waypoint": [
+    7177,
+    2674
+   ],
+   "waypoint_lon_lat": [
+    146.42,
+    -28.24
+   ],
+   "area_km2": 4101000,
+   "coastal": true,
+   "neighbours": [
+    35
+   ],
+   "borders": [
+    130,
+    203
+   ],
+   "members": [
+    "AUS [135, -45, 155, -9]",
+    "NZL"
+   ],
+   "sea_areas": [
+    223,
+    224,
+    225,
+    230
+   ]
+  },
+  {
+   "id": 37,
+   "name": "Egypt and the Sudan",
+   "value": 37,
+   "bounds": [
+    4342,
+    1270,
+    4723,
+    1934
+   ],
+   "waypoint": [
+    4404,
+    1683
+   ],
+   "waypoint_lon_lat": [
+    24.56,
+    14.45
+   ],
+   "area_km2": 3488000,
+   "coastal": true,
+   "neighbours": [
+    19,
+    39,
+    40,
+    42,
+    43,
+    44,
+    45
+   ],
+   "borders": [
+    104,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    204
+   ],
+   "members": [
+    "EGY",
+    "SDN",
+    "SDS"
+   ],
+   "sea_areas": [
+    202,
+    205
+   ]
+  },
+  {
+   "id": 38,
+   "name": "The Maghreb",
+   "value": 38,
+   "bounds": [
+    3456,
+    1129,
+    4117,
+    1577
+   ],
+   "waypoint": [
+    3907,
+    1468
+   ],
+   "waypoint_lon_lat": [
+    2.72,
+    23.56
+   ],
+   "area_km2": 3010000,
+   "coastal": true,
+   "neighbours": [
+    39,
+    40
+   ],
+   "borders": [
+    137,
+    138,
+    205
+   ],
+   "members": [
+    "MAR",
+    "SAH",
+    "DZA"
+   ],
+   "sea_areas": [
+    195,
+    201,
+    219
+   ]
+  },
+  {
+   "id": 39,
+   "name": "Libya",
+   "value": 39,
+   "bounds": [
+    4016,
+    1123,
+    4418,
+    1565
+   ],
+   "waypoint": [
+    4323,
+    1530
+   ],
+   "waypoint_lon_lat": [
+    21.0,
+    20.96
+   ],
+   "area_km2": 1801000,
+   "coastal": true,
+   "neighbours": [
+    37,
+    38,
+    40
+   ],
+   "borders": [
+    131,
+    137,
+    139,
+    206
+   ],
+   "members": [
+    "LBY",
+    "TUN"
+   ],
+   "sea_areas": [
+    201,
+    202
+   ]
+  },
+  {
+   "id": 40,
+   "name": "The Sahel",
+   "value": 40,
+   "bounds": [
+    3459,
+    1379,
+    4390,
+    1843
+   ],
+   "waypoint": [
+    3838,
+    1505
+   ],
+   "waypoint_lon_lat": [
+    -0.32,
+    22.01
+   ],
+   "area_km2": 4742000,
+   "coastal": true,
+   "neighbours": [
+    37,
+    38,
+    39,
+    41,
+    42
+   ],
+   "borders": [
+    132,
+    138,
+    139,
+    140,
+    141,
+    207
+   ],
+   "members": [
+    "MRT",
+    "MLI",
+    "NER",
+    "TCD"
+   ],
+   "sea_areas": [
+    219
+   ]
+  },
+  {
+   "id": 41,
+   "name": "West Africa",
+   "value": 41,
+   "bounds": [
+    3446,
+    1631,
+    3932,
+    1915
+   ],
+   "waypoint": [
+    3833,
+    1668
+   ],
+   "waypoint_lon_lat": [
+    -0.54,
+    15.09
+   ],
+   "area_km2": 1666000,
+   "coastal": true,
+   "neighbours": [
+    40,
+    42
+   ],
+   "borders": [
+    140,
+    142,
+    208
+   ],
+   "members": [
+    "SEN",
+    "GMB",
+    "GNB",
+    "GIN",
+    "SLE",
+    "LBR",
+    "CIV",
+    "BFA",
+    "GHA",
+    "TGO",
+    "BEN"
+   ],
+   "sea_areas": [
+    219,
+    221
+   ]
+  },
+  {
+   "id": 42,
+   "name": "The Niger",
+   "value": 42,
+   "bounds": [
+    3907,
+    1696,
+    4468,
+    1992
+   ],
+   "waypoint": [
+    4295,
+    1854
+   ],
+   "waypoint_lon_lat": [
+    19.77,
+    7.02
+   ],
+   "area_km2": 2039000,
+   "coastal": true,
+   "neighbours": [
+    37,
+    40,
+    41,
+    44
+   ],
+   "borders": [
+    133,
+    141,
+    142,
+    143,
+    209
+   ],
+   "members": [
+    "NGA",
+    "CMR",
+    "CAF",
+    "GNQ"
+   ],
+   "sea_areas": [
+    221
+   ]
+  },
+  {
+   "id": 43,
+   "name": "The Horn of Africa",
+   "value": 43,
+   "bounds": [
+    4596,
+    1600,
+    5015,
+    2052
+   ],
+   "waypoint": [
+    4820,
+    1877
+   ],
+   "waypoint_lon_lat": [
+    42.84,
+    6.02
+   ],
+   "area_km2": 1924000,
+   "coastal": true,
+   "neighbours": [
+    37,
+    45
+   ],
+   "borders": [
+    134,
+    144,
+    210
+   ],
+   "members": [
+    "ETH",
+    "ERI",
+    "DJI",
+    "SOM",
+    "SOL"
+   ],
+   "sea_areas": [
+    205,
+    206,
+    222
+   ]
+  },
+  {
+   "id": 44,
+   "name": "The Congo",
+   "value": 44,
+   "bounds": [
+    4043,
+    1894,
+    4556,
+    2428
+   ],
+   "waypoint": [
+    4331,
+    2305
+   ],
+   "waypoint_lon_lat": [
+    21.35,
+    -12.72
+   ],
+   "area_km2": 4169000,
+   "coastal": true,
+   "neighbours": [
+    37,
+    42,
+    45,
+    46,
+    47
+   ],
+   "borders": [
+    135,
+    143,
+    145,
+    146,
+    147,
+    211
+   ],
+   "members": [
+    "COD",
+    "COG",
+    "GAB",
+    "AGO"
+   ],
+   "sea_areas": [
+    221
+   ]
+  },
+  {
+   "id": 45,
+   "name": "East Africa",
+   "value": 45,
+   "bounds": [
+    4503,
+    1889,
+    4798,
+    2282
+   ],
+   "waypoint": [
+    4784,
+    1924
+   ],
+   "waypoint_lon_lat": [
+    41.26,
+    3.96
+   ],
+   "area_km2": 1733000,
+   "coastal": true,
+   "neighbours": [
+    37,
+    43,
+    44,
+    46
+   ],
+   "borders": [
+    136,
+    144,
+    145,
+    148,
+    212
+   ],
+   "members": [
+    "KEN",
+    "UGA",
+    "TZA",
+    "RWA",
+    "BDI"
+   ],
+   "sea_areas": [
+    222
+   ]
+  },
+  {
+   "id": 46,
+   "name": "The Zambezi",
+   "value": 46,
+   "bounds": [
+    4345,
+    2202,
+    4775,
+    2640
+   ],
+   "waypoint": [
+    4345,
+    2312
+   ],
+   "waypoint_lon_lat": [
+    21.96,
+    -13.02
+   ],
+   "area_km2": 2026000,
+   "coastal": true,
+   "neighbours": [
+    44,
+    45,
+    47
+   ],
+   "borders": [
+    146,
+    148,
+    149,
+    213
+   ],
+   "members": [
+    "ZMB",
+    "MWI",
+    "ZWE",
+    "MOZ"
+   ],
+   "sea_areas": [
+    222
+   ]
+  },
+  {
+   "id": 47,
+   "name": "Southern Africa",
+   "value": 47,
+   "bounds": [
+    4112,
+    2290,
+    4994,
+    2839
+   ],
+   "waypoint": [
+    4394,
+    2605
+   ],
+   "waypoint_lon_lat": [
+    24.12,
+    -25.42
+   ],
+   "area_km2": 3288000,
+   "coastal": true,
+   "neighbours": [
+    44,
+    46
+   ],
+   "borders": [
+    147,
+    149,
+    214
+   ],
+   "members": [
+    "ZAF",
+    "NAM",
+    "BWA",
+    "LSO",
+    "SWZ",
+    "MDG"
+   ],
+   "sea_areas": [
+    220,
+    221,
+    222
+   ]
+  },
+  {
+   "id": 48,
+   "name": "Alaska",
+   "value": 48,
+   "bounds": [
+    19,
+    24,
+    8191,
+    672
+   ],
+   "waypoint": [
+    385,
+    238
+   ],
+   "waypoint_lon_lat": [
+    -152.06,
+    66.03
+   ],
+   "area_km2": 1522000,
+   "coastal": true,
+   "neighbours": [
+    49
+   ],
+   "borders": [
+    150,
+    215
+   ],
+   "members": [
+    "USA [-180, 50, -129, 72]"
+   ],
+   "sea_areas": [
+    215,
+    216,
+    232
+   ]
+  },
+  {
+   "id": 49,
+   "name": "Western Canada",
+   "value": 49,
+   "bounds": [
+    638,
+    0,
+    1539,
+    820
+   ],
+   "waypoint": [
+    638,
+    260
+   ],
+   "waypoint_lon_lat": [
+    -140.94,
+    65.44
+   ],
+   "area_km2": 3847000,
+   "coastal": true,
+   "neighbours": [
+    48,
+    50,
+    51,
+    52
+   ],
+   "borders": [
+    150,
+    151,
+    152,
+    153,
+    216
+   ],
+   "members": [
+    "CAN [-142, 40, -100, 84]"
+   ],
+   "sea_areas": [
+    216,
+    232
+   ]
+  },
+  {
+   "id": 50,
+   "name": "Eastern Canada",
+   "value": 50,
+   "bounds": [
+    1100,
+    0,
+    2648,
+    998
+   ],
+   "waypoint": [
+    1486,
+    257
+   ],
+   "waypoint_lon_lat": [
+    -103.68,
+    65.52
+   ],
+   "area_km2": 5177000,
+   "coastal": true,
+   "neighbours": [
+    49,
+    52,
+    53
+   ],
+   "borders": [
+    151,
+    154,
+    155,
+    217
+   ],
+   "members": [
+    "CAN [-100, 40, -52, 84]",
+    "SPM"
+   ],
+   "sea_areas": [
+    196,
+    197,
+    198,
+    232
+   ]
+  },
+  {
+   "id": 51,
+   "name": "The American West",
+   "value": 51,
+   "bounds": [
+    1007,
+    800,
+    1522,
+    1276
+   ],
+   "waypoint": [
+    1516,
+    1131
+   ],
+   "waypoint_lon_lat": [
+    -102.36,
+    37.03
+   ],
+   "area_km2": 3064000,
+   "coastal": true,
+   "neighbours": [
+    49,
+    52,
+    55
+   ],
+   "borders": [
+    152,
+    156,
+    157,
+    218
+   ],
+   "members": [
+    "USA [-125, 25, -104, 50]"
+   ],
+   "sea_areas": [
+    214,
+    216
+   ]
+  },
+  {
+   "id": 52,
+   "name": "The Great Plains",
+   "value": 52,
+   "bounds": [
+    1418,
+    800,
+    1820,
+    1411
+   ],
+   "waypoint": [
+    1518,
+    1135
+   ],
+   "waypoint_lon_lat": [
+    -102.27,
+    36.88
+   ],
+   "area_km2": 2465000,
+   "coastal": true,
+   "neighbours": [
+    49,
+    50,
+    51,
+    53,
+    54,
+    55
+   ],
+   "borders": [
+    153,
+    154,
+    156,
+    158,
+    159,
+    160,
+    219
+   ],
+   "members": [
+    "USA [-104, 25, -90, 50]"
+   ],
+   "sea_areas": [
+    218
+   ]
+  },
+  {
+   "id": 53,
+   "name": "The Northern States",
+   "value": 53,
+   "bounds": [
+    1731,
+    845,
+    2321,
+    1144
+   ],
+   "waypoint": [
+    1763,
+    1052
+   ],
+   "waypoint_lon_lat": [
+    -91.5,
+    40.02
+   ],
+   "area_km2": 1385000,
+   "coastal": true,
+   "neighbours": [
+    50,
+    52,
+    54
+   ],
+   "borders": [
+    155,
+    158,
+    161,
+    220
+   ],
+   "members": [
+    "USA [-90, 37, -66, 50]"
+   ],
+   "sea_areas": [
+    196,
+    217
+   ]
+  },
+  {
+   "id": 54,
+   "name": "The Southern States",
+   "value": 54,
+   "bounds": [
+    1759,
+    1140,
+    2128,
+    1438
+   ],
+   "waypoint": [
+    2016,
+    1144
+   ],
+   "waypoint_lon_lat": [
+    -80.38,
+    36.54
+   ],
+   "area_km2": 893000,
+   "coastal": true,
+   "neighbours": [
+    52,
+    53
+   ],
+   "borders": [
+    159,
+    161,
+    221
+   ],
+   "members": [
+    "USA [-90, 24, -75, 37]"
+   ],
+   "sea_areas": [
+    217,
+    218
+   ]
+  },
+  {
+   "id": 55,
+   "name": "Mexico",
+   "value": 55,
+   "bounds": [
+    1180,
+    1243,
+    1872,
+    1680
+   ],
+   "waypoint": [
+    1419,
+    1266
+   ],
+   "waypoint_lon_lat": [
+    -106.62,
+    31.78
+   ],
+   "area_km2": 1977000,
+   "coastal": true,
+   "neighbours": [
+    51,
+    52,
+    56
+   ],
+   "borders": [
+    157,
+    160,
+    162,
+    222
+   ],
+   "members": [
+    "MEX"
+   ],
+   "sea_areas": [
+    214,
+    218,
+    227
+   ]
+  },
+  {
+   "id": 56,
+   "name": "Central America",
+   "value": 56,
+   "bounds": [
+    1746,
+    1477,
+    2352,
+    1849
+   ],
+   "waypoint": [
+    1780,
+    1628
+   ],
+   "waypoint_lon_lat": [
+    -90.76,
+    16.81
+   ],
+   "area_km2": 729000,
+   "coastal": true,
+   "neighbours": [
+    55,
+    57
+   ],
+   "borders": [
+    162,
+    163,
+    223
+   ],
+   "members": [
+    "GTM",
+    "BLZ",
+    "HND",
+    "SLV",
+    "NIC",
+    "CRI",
+    "PAN",
+    "CUB",
+    "HTI",
+    "DOM",
+    "JAM",
+    "BHS",
+    "PRI",
+    "TTO"
+   ],
+   "sea_areas": [
+    217,
+    218,
+    227
+   ]
+  },
+  {
+   "id": 57,
+   "name": "New Granada",
+   "value": 57,
+   "bounds": [
+    2047,
+    1730,
+    2670,
+    2111
+   ],
+   "waypoint": [
+    2335,
+    1997
+   ],
+   "waypoint_lon_lat": [
+    -66.37,
+    0.75
+   ],
+   "area_km2": 2519000,
+   "coastal": true,
+   "neighbours": [
+    56,
+    58,
+    59
+   ],
+   "borders": [
+    163,
+    164,
+    165,
+    224
+   ],
+   "members": [
+    "COL",
+    "VEN",
+    "GUY",
+    "SUR",
+    "FRA [-55, 1, -51, 6]"
+   ],
+   "sea_areas": [
+    217,
+    219,
+    227
+   ]
+  },
+  {
+   "id": 58,
+   "name": "The Andes",
+   "value": 58,
+   "bounds": [
+    1994,
+    1982,
+    2537,
+    2544
+   ],
+   "waypoint": [
+    2491,
+    2388
+   ],
+   "waypoint_lon_lat": [
+    -59.51,
+    -16.29
+   ],
+   "area_km2": 2644000,
+   "coastal": true,
+   "neighbours": [
+    57,
+    59,
+    60,
+    61
+   ],
+   "borders": [
+    164,
+    166,
+    167,
+    168,
+    225
+   ],
+   "members": [
+    "ECU",
+    "PER",
+    "BOL"
+   ],
+   "sea_areas": [
+    227
+   ]
+  },
+  {
+   "id": 59,
+   "name": "The Amazon",
+   "value": 59,
+   "bounds": [
+    2163,
+    1895,
+    3053,
+    2326
+   ],
+   "waypoint": [
+    2478,
+    2213
+   ],
+   "waypoint_lon_lat": [
+    -60.08,
+    -8.72
+   ],
+   "area_km2": 4835000,
+   "coastal": true,
+   "neighbours": [
+    57,
+    58,
+    60
+   ],
+   "borders": [
+    165,
+    166,
+    169,
+    226
+   ],
+   "members": [
+    "BRA [-75, -12, -34, 6]"
+   ],
+   "sea_areas": [
+    219
+   ]
+  },
+  {
+   "id": 60,
+   "name": "Southern Brazil",
+   "value": 60,
+   "bounds": [
+    2421,
+    2181,
+    2995,
+    2843
+   ],
+   "waypoint": [
+    2514,
+    2279
+   ],
+   "waypoint_lon_lat": [
+    -58.5,
+    -11.59
+   ],
+   "area_km2": 4252000,
+   "coastal": true,
+   "neighbours": [
+    58,
+    59,
+    61
+   ],
+   "borders": [
+    167,
+    169,
+    170,
+    227
+   ],
+   "members": [
+    "BRA [-75, -35, -34, -12]",
+    "PRY",
+    "URY"
+   ],
+   "sea_areas": [
+    219,
+    220,
+    229
+   ]
+  },
+  {
+   "id": 61,
+   "name": "Patagonia",
+   "value": 61,
+   "bounds": [
+    2122,
+    2418,
+    2624,
+    3431
+   ],
+   "waypoint": [
+    2427,
+    2537
+   ],
+   "waypoint_lon_lat": [
+    -62.32,
+    -22.6
+   ],
+   "area_km2": 3530000,
+   "coastal": true,
+   "neighbours": [
+    58,
+    60
+   ],
+   "borders": [
+    168,
+    170,
+    228
+   ],
+   "members": [
+    "ARG",
+    "CHL",
+    "FLK"
+   ],
+   "sea_areas": [
+    227,
+    229
+   ]
+  },
+  {
+   "id": 62,
+   "name": "Greenland and Iceland",
+   "value": 62,
+   "bounds": [
+    2578,
+    0,
+    3537,
+    460
+   ],
+   "waypoint": [
+    2842,
+    144
+   ],
+   "waypoint_lon_lat": [
+    -44.09,
+    68.47
+   ],
+   "area_km2": 1054000,
+   "coastal": true,
+   "neighbours": [],
+   "borders": [
+    229
+   ],
+   "members": [
+    "GRL",
+    "ISL",
+    "FRO"
+   ],
+   "sea_areas": [
+    197,
+    231
+   ]
+  }
+ ],
+ "borders": [
+  {
+   "value": 64,
+   "sectors": [
+    2,
+    3
+   ]
+  },
+  {
+   "value": 65,
+   "sectors": [
+    3,
+    4
+   ]
+  },
+  {
+   "value": 66,
+   "sectors": [
+    3,
+    5
+   ]
+  },
+  {
+   "value": 67,
+   "sectors": [
+    3,
+    8
+   ]
+  },
+  {
+   "value": 68,
+   "sectors": [
+    3,
+    9
+   ]
+  },
+  {
+   "value": 69,
+   "sectors": [
+    4,
+    5
+   ]
+  },
+  {
+   "value": 70,
+   "sectors": [
+    5,
+    6
+   ]
+  },
+  {
+   "value": 71,
+   "sectors": [
+    5,
+    8
+   ]
+  },
+  {
+   "value": 72,
+   "sectors": [
+    5,
+    10
+   ]
+  },
+  {
+   "value": 73,
+   "sectors": [
+    6,
+    7
+   ]
+  },
+  {
+   "value": 74,
+   "sectors": [
+    6,
+    15
+   ]
+  },
+  {
+   "value": 75,
+   "sectors": [
+    7,
+    10
+   ]
+  },
+  {
+   "value": 76,
+   "sectors": [
+    7,
+    13
+   ]
+  },
+  {
+   "value": 77,
+   "sectors": [
+    7,
+    14
+   ]
+  },
+  {
+   "value": 78,
+   "sectors": [
+    7,
+    15
+   ]
+  },
+  {
+   "value": 79,
+   "sectors": [
+    8,
+    9
+   ]
+  },
+  {
+   "value": 80,
+   "sectors": [
+    8,
+    10
+   ]
+  },
+  {
+   "value": 81,
+   "sectors": [
+    8,
+    11
+   ]
+  },
+  {
+   "value": 82,
+   "sectors": [
+    8,
+    12
+   ]
+  },
+  {
+   "value": 83,
+   "sectors": [
+    9,
+    12
+   ]
+  },
+  {
+   "value": 84,
+   "sectors": [
+    10,
+    11
+   ]
+  },
+  {
+   "value": 85,
+   "sectors": [
+    10,
+    13
+   ]
+  },
+  {
+   "value": 86,
+   "sectors": [
+    10,
+    14
+   ]
+  },
+  {
+   "value": 87,
+   "sectors": [
+    11,
+    12
+   ]
+  },
+  {
+   "value": 88,
+   "sectors": [
+    11,
+    13
+   ]
+  },
+  {
+   "value": 89,
+   "sectors": [
+    12,
+    18
+   ]
+  },
+  {
+   "value": 90,
+   "sectors": [
+    13,
+    14
+   ]
+  },
+  {
+   "value": 91,
+   "sectors": [
+    14,
+    15
+   ]
+  },
+  {
+   "value": 92,
+   "sectors": [
+    14,
+    16
+   ]
+  },
+  {
+   "value": 93,
+   "sectors": [
+    15,
+    16
+   ]
+  },
+  {
+   "value": 94,
+   "sectors": [
+    15,
+    25
+   ]
+  },
+  {
+   "value": 95,
+   "sectors": [
+    16,
+    17
+   ]
+  },
+  {
+   "value": 96,
+   "sectors": [
+    16,
+    22
+   ]
+  },
+  {
+   "value": 97,
+   "sectors": [
+    16,
+    25
+   ]
+  },
+  {
+   "value": 98,
+   "sectors": [
+    17,
+    18
+   ]
+  },
+  {
+   "value": 99,
+   "sectors": [
+    17,
+    21
+   ]
+  },
+  {
+   "value": 100,
+   "sectors": [
+    18,
+    19
+   ]
+  },
+  {
+   "value": 101,
+   "sectors": [
+    18,
+    21
+   ]
+  },
+  {
+   "value": 102,
+   "sectors": [
+    19,
+    20
+   ]
+  },
+  {
+   "value": 103,
+   "sectors": [
+    19,
+    21
+   ]
+  },
+  {
+   "value": 104,
+   "sectors": [
+    19,
+    37
+   ]
+  },
+  {
+   "value": 105,
+   "sectors": [
+    21,
+    22
+   ]
+  },
+  {
+   "value": 106,
+   "sectors": [
+    21,
+    23
+   ]
+  },
+  {
+   "value": 107,
+   "sectors": [
+    22,
+    23
+   ]
+  },
+  {
+   "value": 108,
+   "sectors": [
+    22,
+    25
+   ]
+  },
+  {
+   "value": 109,
+   "sectors": [
+    22,
+    30
+   ]
+  },
+  {
+   "value": 110,
+   "sectors": [
+    23,
+    24
+   ]
+  },
+  {
+   "value": 111,
+   "sectors": [
+    23,
+    30
+   ]
+  },
+  {
+   "value": 112,
+   "sectors": [
+    24,
+    30
+   ]
+  },
+  {
+   "value": 113,
+   "sectors": [
+    24,
+    33
+   ]
+  },
+  {
+   "value": 114,
+   "sectors": [
+    25,
+    26
+   ]
+  },
+  {
+   "value": 115,
+   "sectors": [
+    25,
+    28
+   ]
+  },
+  {
+   "value": 116,
+   "sectors": [
+    25,
+    30
+   ]
+  },
+  {
+   "value": 117,
+   "sectors": [
+    26,
+    27
+   ]
+  },
+  {
+   "value": 118,
+   "sectors": [
+    26,
+    28
+   ]
+  },
+  {
+   "value": 119,
+   "sectors": [
+    26,
+    29
+   ]
+  },
+  {
+   "value": 120,
+   "sectors": [
+    27,
+    29
+   ]
+  },
+  {
+   "value": 121,
+   "sectors": [
+    27,
+    32
+   ]
+  },
+  {
+   "value": 122,
+   "sectors": [
+    28,
+    29
+   ]
+  },
+  {
+   "value": 123,
+   "sectors": [
+    28,
+    30
+   ]
+  },
+  {
+   "value": 124,
+   "sectors": [
+    29,
+    30
+   ]
+  },
+  {
+   "value": 125,
+   "sectors": [
+    29,
+    31
+   ]
+  },
+  {
+   "value": 126,
+   "sectors": [
+    29,
+    32
+   ]
+  },
+  {
+   "value": 127,
+   "sectors": [
+    30,
+    31
+   ]
+  },
+  {
+   "value": 128,
+   "sectors": [
+    30,
+    33
+   ]
+  },
+  {
+   "value": 129,
+   "sectors": [
+    31,
+    33
+   ]
+  },
+  {
+   "value": 130,
+   "sectors": [
+    35,
+    36
+   ]
+  },
+  {
+   "value": 131,
+   "sectors": [
+    37,
+    39
+   ]
+  },
+  {
+   "value": 132,
+   "sectors": [
+    37,
+    40
+   ]
+  },
+  {
+   "value": 133,
+   "sectors": [
+    37,
+    42
+   ]
+  },
+  {
+   "value": 134,
+   "sectors": [
+    37,
+    43
+   ]
+  },
+  {
+   "value": 135,
+   "sectors": [
+    37,
+    44
+   ]
+  },
+  {
+   "value": 136,
+   "sectors": [
+    37,
+    45
+   ]
+  },
+  {
+   "value": 137,
+   "sectors": [
+    38,
+    39
+   ]
+  },
+  {
+   "value": 138,
+   "sectors": [
+    38,
+    40
+   ]
+  },
+  {
+   "value": 139,
+   "sectors": [
+    39,
+    40
+   ]
+  },
+  {
+   "value": 140,
+   "sectors": [
+    40,
+    41
+   ]
+  },
+  {
+   "value": 141,
+   "sectors": [
+    40,
+    42
+   ]
+  },
+  {
+   "value": 142,
+   "sectors": [
+    41,
+    42
+   ]
+  },
+  {
+   "value": 143,
+   "sectors": [
+    42,
+    44
+   ]
+  },
+  {
+   "value": 144,
+   "sectors": [
+    43,
+    45
+   ]
+  },
+  {
+   "value": 145,
+   "sectors": [
+    44,
+    45
+   ]
+  },
+  {
+   "value": 146,
+   "sectors": [
+    44,
+    46
+   ]
+  },
+  {
+   "value": 147,
+   "sectors": [
+    44,
+    47
+   ]
+  },
+  {
+   "value": 148,
+   "sectors": [
+    45,
+    46
+   ]
+  },
+  {
+   "value": 149,
+   "sectors": [
+    46,
+    47
+   ]
+  },
+  {
+   "value": 150,
+   "sectors": [
+    48,
+    49
+   ]
+  },
+  {
+   "value": 151,
+   "sectors": [
+    49,
+    50
+   ]
+  },
+  {
+   "value": 152,
+   "sectors": [
+    49,
+    51
+   ]
+  },
+  {
+   "value": 153,
+   "sectors": [
+    49,
+    52
+   ]
+  },
+  {
+   "value": 154,
+   "sectors": [
+    50,
+    52
+   ]
+  },
+  {
+   "value": 155,
+   "sectors": [
+    50,
+    53
+   ]
+  },
+  {
+   "value": 156,
+   "sectors": [
+    51,
+    52
+   ]
+  },
+  {
+   "value": 157,
+   "sectors": [
+    51,
+    55
+   ]
+  },
+  {
+   "value": 158,
+   "sectors": [
+    52,
+    53
+   ]
+  },
+  {
+   "value": 159,
+   "sectors": [
+    52,
+    54
+   ]
+  },
+  {
+   "value": 160,
+   "sectors": [
+    52,
+    55
+   ]
+  },
+  {
+   "value": 161,
+   "sectors": [
+    53,
+    54
+   ]
+  },
+  {
+   "value": 162,
+   "sectors": [
+    55,
+    56
+   ]
+  },
+  {
+   "value": 163,
+   "sectors": [
+    56,
+    57
+   ]
+  },
+  {
+   "value": 164,
+   "sectors": [
+    57,
+    58
+   ]
+  },
+  {
+   "value": 165,
+   "sectors": [
+    57,
+    59
+   ]
+  },
+  {
+   "value": 166,
+   "sectors": [
+    58,
+    59
+   ]
+  },
+  {
+   "value": 167,
+   "sectors": [
+    58,
+    60
+   ]
+  },
+  {
+   "value": 168,
+   "sectors": [
+    58,
+    61
+   ]
+  },
+  {
+   "value": 169,
+   "sectors": [
+    59,
+    60
+   ]
+  },
+  {
+   "value": 170,
+   "sectors": [
+    60,
+    61
+   ]
+  },
+  {
+   "value": 172,
+   "sectors": [
+    1,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 173,
+   "sectors": [
+    2,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 174,
+   "sectors": [
+    3,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 175,
+   "sectors": [
+    4,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 176,
+   "sectors": [
+    5,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 177,
+   "sectors": [
+    6,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 178,
+   "sectors": [
+    7,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 179,
+   "sectors": [
+    9,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 180,
+   "sectors": [
+    10,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 181,
+   "sectors": [
+    11,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 182,
+   "sectors": [
+    12,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 183,
+   "sectors": [
+    13,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 184,
+   "sectors": [
+    14,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 185,
+   "sectors": [
+    15,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 186,
+   "sectors": [
+    16,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 187,
+   "sectors": [
+    17,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 188,
+   "sectors": [
+    18,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 189,
+   "sectors": [
+    19,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 190,
+   "sectors": [
+    20,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 191,
+   "sectors": [
+    21,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 192,
+   "sectors": [
+    22,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 193,
+   "sectors": [
+    23,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 194,
+   "sectors": [
+    24,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 195,
+   "sectors": [
+    25,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 196,
+   "sectors": [
+    27,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 197,
+   "sectors": [
+    29,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 198,
+   "sectors": [
+    31,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 199,
+   "sectors": [
+    32,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 200,
+   "sectors": [
+    33,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 201,
+   "sectors": [
+    34,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 202,
+   "sectors": [
+    35,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 203,
+   "sectors": [
+    36,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 204,
+   "sectors": [
+    37,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 205,
+   "sectors": [
+    38,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 206,
+   "sectors": [
+    39,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 207,
+   "sectors": [
+    40,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 208,
+   "sectors": [
+    41,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 209,
+   "sectors": [
+    42,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 210,
+   "sectors": [
+    43,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 211,
+   "sectors": [
+    44,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 212,
+   "sectors": [
+    45,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 213,
+   "sectors": [
+    46,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 214,
+   "sectors": [
+    47,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 215,
+   "sectors": [
+    48,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 216,
+   "sectors": [
+    49,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 217,
+   "sectors": [
+    50,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 218,
+   "sectors": [
+    51,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 219,
+   "sectors": [
+    52,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 220,
+   "sectors": [
+    53,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 221,
+   "sectors": [
+    54,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 222,
+   "sectors": [
+    55,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 223,
+   "sectors": [
+    56,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 224,
+   "sectors": [
+    57,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 225,
+   "sectors": [
+    58,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 226,
+   "sectors": [
+    59,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 227,
+   "sectors": [
+    60,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 228,
+   "sectors": [
+    61,
+    0
+   ],
+   "coastline": true
+  },
+  {
+   "value": 229,
+   "sectors": [
+    62,
+    0
+   ],
+   "coastline": true
+  }
+ ],
+ "sea_areas": [
+  {
+   "value": 192,
+   "name": "The North Sea",
+   "lon_lat": [
+    3,
+    56
+   ],
+   "coastal_sectors": [
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  {
+   "value": 193,
+   "name": "The Norwegian Sea",
+   "lon_lat": [
+    3,
+    68
+   ],
+   "coastal_sectors": [
+    6
+   ]
+  },
+  {
+   "value": 194,
+   "name": "The Baltic Sea",
+   "lon_lat": [
+    19,
+    57
+   ],
+   "coastal_sectors": [
+    5,
+    6,
+    7,
+    10,
+    14
+   ]
+  },
+  {
+   "value": 195,
+   "name": "The Western Approaches",
+   "lon_lat": [
+    -12,
+    48
+   ],
+   "coastal_sectors": [
+    1,
+    2,
+    3,
+    38
+   ]
+  },
+  {
+   "value": 196,
+   "name": "The North Atlantic",
+   "lon_lat": [
+    -35,
+    45
+   ],
+   "coastal_sectors": [
+    50,
+    53
+   ]
+  },
+  {
+   "value": 197,
+   "name": "The Labrador Sea",
+   "lon_lat": [
+    -55,
+    58
+   ],
+   "coastal_sectors": [
+    50,
+    62
+   ]
+  },
+  {
+   "value": 198,
+   "name": "Hudson Bay",
+   "lon_lat": [
+    -85,
+    60
+   ],
+   "coastal_sectors": [
+    50
+   ]
+  },
+  {
+   "value": 199,
+   "name": "The Barents Sea",
+   "lon_lat": [
+    40,
+    71
+   ],
+   "coastal_sectors": [
+    6,
+    15,
+    25
+   ]
+  },
+  {
+   "value": 200,
+   "name": "The Kara Sea",
+   "lon_lat": [
+    80,
+    71
+   ],
+   "coastal_sectors": [
+    25
+   ]
+  },
+  {
+   "value": 201,
+   "name": "The Western Mediterranean",
+   "lon_lat": [
+    5,
+    39
+   ],
+   "coastal_sectors": [
+    2,
+    3,
+    9,
+    38,
+    39
+   ]
+  },
+  {
+   "value": 202,
+   "name": "The Eastern Mediterranean",
+   "lon_lat": [
+    22,
+    34
+   ],
+   "coastal_sectors": [
+    9,
+    12,
+    18,
+    19,
+    37,
+    39
+   ]
+  },
+  {
+   "value": 203,
+   "name": "The Black Sea",
+   "lon_lat": [
+    34,
+    43
+   ],
+   "coastal_sectors": [
+    11,
+    12,
+    13,
+    17,
+    18
+   ]
+  },
+  {
+   "value": 204,
+   "name": "The Caspian Sea",
+   "lon_lat": [
+    51,
+    42
+   ],
+   "coastal_sectors": [
+    16,
+    17,
+    21,
+    22
+   ]
+  },
+  {
+   "value": 205,
+   "name": "The Red Sea",
+   "lon_lat": [
+    38,
+    20
+   ],
+   "coastal_sectors": [
+    20,
+    37,
+    43
+   ]
+  },
+  {
+   "value": 206,
+   "name": "The Arabian Sea",
+   "lon_lat": [
+    63,
+    15
+   ],
+   "coastal_sectors": [
+    20,
+    21,
+    23,
+    24,
+    43
+   ]
+  },
+  {
+   "value": 207,
+   "name": "The Bay of Bengal",
+   "lon_lat": [
+    88,
+    14
+   ],
+   "coastal_sectors": [
+    24,
+    33,
+    34
+   ]
+  },
+  {
+   "value": 208,
+   "name": "The Indian Ocean",
+   "lon_lat": [
+    75,
+    -20
+   ],
+   "coastal_sectors": []
+  },
+  {
+   "value": 209,
+   "name": "The South China Sea",
+   "lon_lat": [
+    113,
+    12
+   ],
+   "coastal_sectors": [
+    31,
+    33,
+    34
+   ]
+  },
+  {
+   "value": 210,
+   "name": "The East China Sea",
+   "lon_lat": [
+    125,
+    30
+   ],
+   "coastal_sectors": [
+    29,
+    31,
+    32,
+    34
+   ]
+  },
+  {
+   "value": 211,
+   "name": "The Sea of Japan",
+   "lon_lat": [
+    136,
+    42
+   ],
+   "coastal_sectors": [
+    27,
+    32
+   ]
+  },
+  {
+   "value": 212,
+   "name": "The Sea of Okhotsk",
+   "lon_lat": [
+    150,
+    54
+   ],
+   "coastal_sectors": [
+    27
+   ]
+  },
+  {
+   "value": 213,
+   "name": "The Western Pacific",
+   "lon_lat": [
+    160,
+    25
+   ],
+   "coastal_sectors": []
+  },
+  {
+   "value": 214,
+   "name": "The North Pacific",
+   "lon_lat": [
+    -150,
+    35
+   ],
+   "coastal_sectors": [
+    51,
+    55
+   ]
+  },
+  {
+   "value": 215,
+   "name": "The Bering Sea",
+   "lon_lat": [
+    -175,
+    57
+   ],
+   "coastal_sectors": [
+    27,
+    48
+   ]
+  },
+  {
+   "value": 216,
+   "name": "The Gulf of Alaska",
+   "lon_lat": [
+    -145,
+    55
+   ],
+   "coastal_sectors": [
+    48,
+    49,
+    51
+   ]
+  },
+  {
+   "value": 217,
+   "name": "The Caribbean",
+   "lon_lat": [
+    -75,
+    15
+   ],
+   "coastal_sectors": [
+    53,
+    54,
+    56,
+    57
+   ]
+  },
+  {
+   "value": 218,
+   "name": "The Gulf of Mexico",
+   "lon_lat": [
+    -90,
+    25
+   ],
+   "coastal_sectors": [
+    52,
+    54,
+    55,
+    56
+   ]
+  },
+  {
+   "value": 219,
+   "name": "The Central Atlantic",
+   "lon_lat": [
+    -35,
+    15
+   ],
+   "coastal_sectors": [
+    38,
+    40,
+    41,
+    57,
+    59,
+    60
+   ]
+  },
+  {
+   "value": 220,
+   "name": "The South Atlantic",
+   "lon_lat": [
+    -20,
+    -25
+   ],
+   "coastal_sectors": [
+    47,
+    60
+   ]
+  },
+  {
+   "value": 221,
+   "name": "The Gulf of Guinea",
+   "lon_lat": [
+    2,
+    -2
+   ],
+   "coastal_sectors": [
+    41,
+    42,
+    44,
+    47
+   ]
+  },
+  {
+   "value": 222,
+   "name": "The Mozambique Channel",
+   "lon_lat": [
+    42,
+    -20
+   ],
+   "coastal_sectors": [
+    43,
+    45,
+    46,
+    47
+   ]
+  },
+  {
+   "value": 223,
+   "name": "The Coral Sea",
+   "lon_lat": [
+    155,
+    -20
+   ],
+   "coastal_sectors": [
+    34,
+    36
+   ]
+  },
+  {
+   "value": 224,
+   "name": "The Tasman Sea",
+   "lon_lat": [
+    160,
+    -40
+   ],
+   "coastal_sectors": [
+    36
+   ]
+  },
+  {
+   "value": 225,
+   "name": "The Java Sea",
+   "lon_lat": [
+    118,
+    -6
+   ],
+   "coastal_sectors": [
+    34,
+    35,
+    36
+   ]
+  },
+  {
+   "value": 226,
+   "name": "The South Pacific",
+   "lon_lat": [
+    -120,
+    -30
+   ],
+   "coastal_sectors": []
+  },
+  {
+   "value": 227,
+   "name": "The Eastern Pacific",
+   "lon_lat": [
+    -95,
+    0
+   ],
+   "coastal_sectors": [
+    55,
+    56,
+    57,
+    58,
+    61
+   ]
+  },
+  {
+   "value": 228,
+   "name": "The Southern Ocean",
+   "lon_lat": [
+    60,
+    -50
+   ],
+   "coastal_sectors": []
+  },
+  {
+   "value": 229,
+   "name": "Cape Horn",
+   "lon_lat": [
+    -65,
+    -55
+   ],
+   "coastal_sectors": [
+    60,
+    61
+   ]
+  },
+  {
+   "value": 230,
+   "name": "The Great Australian Bight",
+   "lon_lat": [
+    130,
+    -40
+   ],
+   "coastal_sectors": [
+    35,
+    36
+   ]
+  },
+  {
+   "value": 231,
+   "name": "The Greenland Sea",
+   "lon_lat": [
+    -15,
+    70
+   ],
+   "coastal_sectors": [
+    62
+   ]
+  },
+  {
+   "value": 232,
+   "name": "The Beaufort Sea",
+   "lon_lat": [
+    -140,
+    71
+   ],
+   "coastal_sectors": [
+    48,
+    49,
+    50
+   ]
+  },
+  {
+   "value": 233,
+   "name": "The Persian Gulf",
+   "lon_lat": [
+    51,
+    27
+   ],
+   "coastal_sectors": [
+    19,
+    20,
+    21
+   ]
+  }
+ ]
+}
