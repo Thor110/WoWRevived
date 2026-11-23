@@ -1219,6 +1219,9 @@ transparency")
   Human.cd. Now `!humanCdPresent`, and the credits' duration goes by the same rule. Not built or run here
   (Windows DLLs).
 
+**Update 224** (the version)
+- WoWEngine is version 0.2.2 (CMakeLists.txt, the one place). PLAN.md has the order suggested for what is left.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

@@ -1,11 +1,19 @@
 # Plan after update 136
 
-## Where things stand (update 223) and what remains
+## Where things stand (update 224) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
 settled. What follows is everything left, in the order to do it; the stages further down stay the full
 inventory with the history. Tick here and there as each is done.
+
+**Version 0.2.2** from update 224 (0.0.1 until then; 0.0.1 as of update 222 went to the testers on Discord).
+
+**The order suggested for what is left** (update 224): 1. whatever the testers report from 0.0.1 (A7), as it
+comes; 2. D4 the credits picture; 3. D3 Enhanced Assets, then D2's check of the owner's fixed files in play;
+4. C8 the engine's captions in TEXT.ojd; 5. A8 the developers' switches' battle halves; 6. A5 and A6 as the
+owner's frames arrive; 7. G2 the tests and G3 the docs redrawn; 8. E the two unused buildings; 9. A9 with A2,
+the network game; 10. F the modes and editors; 11. G4 the trailer.
 
 ### A. The original, finished (parity first, as always)
 
