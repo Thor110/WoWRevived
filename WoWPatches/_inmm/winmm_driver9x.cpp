@@ -36,8 +36,20 @@ CRITICAL_SECTION deviceLock;
 // Human.cd (its "Start Martian Game" the other way). So the Martian music and FMV folders are used when
 // Human.cd is NOT there. (This was the wrong way round for a while: Human.cd picked the Martian folders.)
 // Smackw32.dll uses the same rule. Everything that picks a faction's assets goes through UseMartianAssets().
-bool humanCdPresent = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES);
-inline bool UseMartianAssets() { return !humanCdPresent; }
+// Looked for each time it is asked, next to the game's exe (not once as the DLL loads, and not in whatever the
+// working folder happens to be): the launcher renames the marker just before it starts the game, and a value
+// taken at load time, or from another folder, would be the wrong side's.
+static bool HumanCdPresent()
+{
+    char path[MAX_PATH];
+    DWORD n = GetModuleFileNameA(NULL, path, MAX_PATH);
+    while (n > 0 && path[n - 1] != '\\' && path[n - 1] != '/') n--;
+    path[n] = 0;
+    lstrcatA(path, "Human.cd");
+    if (GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES) return true;
+    return GetFileAttributesA("Human.cd") != INVALID_FILE_ATTRIBUTES;
+}
+inline bool UseMartianAssets() { return !HumanCdPresent(); }
 // Tracks the system uptime tick of the last physical Escape press
 DWORD lastEscapeTick = 0;
 // Tracks the system uptime tick of the last physical mouse click

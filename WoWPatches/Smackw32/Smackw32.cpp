@@ -41,8 +41,20 @@ IMFPMediaPlayer*    pMediaPlayer = NULL;
 // Human.cd's presence means a Human game (the game's own check, 0x402630, and WoWLauncher's "Start Human Game", which
 // renames MARTIAN.cd to Human.cd), so the Martian FMV folder is used when Human.cd is NOT there. _inmm.dll uses the
 // same rule. (This was the wrong way round for a while: Human.cd picked the Martian folder.)
-bool                humanCdPresent = (GetFileAttributesA("human.cd") != INVALID_FILE_ATTRIBUTES);
-inline bool         UseMartianAssets() { return !humanCdPresent; }
+// Looked for each time it is asked, next to the game's exe (not once as the DLL loads, and not in whatever the
+// working folder happens to be): the launcher renames the marker just before it starts the game, and a value
+// taken at load time, or from another folder, would be the wrong side's.
+static bool HumanCdPresent()
+{
+    char path[MAX_PATH];
+    DWORD n = GetModuleFileNameA(NULL, path, MAX_PATH);
+    while (n > 0 && path[n - 1] != '\\' && path[n - 1] != '/') n--;
+    path[n] = 0;
+    lstrcatA(path, "Human.cd");
+    if (GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES) return true;
+    return GetFileAttributesA("Human.cd") != INVALID_FILE_ATTRIBUTES;
+}
+inline bool         UseMartianAssets() { return !HumanCdPresent(); }
 wow::GameBuild      gameBuild = wow::BUILD_UNKNOWN;
 std::atomic<bool>   focusThreadRunning{ false };
 
@@ -268,7 +280,7 @@ void CreateCreditsOverlay()
             // Default: scroll full image in ~60 seconds (tune per language).
             creditsScrollY = 0.0f;
 
-            Log("human.cd present: %s", humanCdPresent ? "yes" : "no");
+            Log("human.cd present: %s", HumanCdPresent() ? "yes" : "no");
 
             // Timing table per language (same order as wow::Language): { humanDur (s), martianDur (s) }
             struct CreditsInfo { float humanDur; float martianDur; };
@@ -615,7 +627,7 @@ extern "C" {
             }
         }
         movie.append("mp4");
-        Log("Updated String: %s", movie.c_str());
+        Log("Updated String: %s (Human.cd %s)", movie.c_str(), HumanCdPresent() ? "found: Human game" : "not found: Martian game");
 
         CreateOverlayWindow();
 

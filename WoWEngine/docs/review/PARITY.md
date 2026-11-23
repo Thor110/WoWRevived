@@ -1252,6 +1252,12 @@ transparency")
 - Seen: with Mat, a Human vehicle clicked in a Martian battle selected on its own, brackets drawn (also under
   the checkers); without Mat, the same click does nothing; both battles with `--no-loose` as before.
 
+**Update 229** (WoWRevived's patches, outside the engine)
+- The owner: v1.1.3 still plays the Martian movie in a Human game with Human.cd in the folder. The rule in the
+  source was already right (`!humanCdPresent`), so the cause isn't known from here. Made sturdier in both
+  DLLs: Human.cd is looked for each time it is asked, next to the game's exe, not once at load in the
+  working folder; Smackw32's log line for each movie says which side it took. Not built or run here.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

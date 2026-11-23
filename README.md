@@ -1,6 +1,21 @@
+<div align="center">
+  <img src="images/discord/banner.jpg" alt="WoW Revived">
+</div>
+
 # WoW Revived
 
 The definitive preservation patch and revival project for the classic Rage Software game Jeff Wayne's 'The War Of The Worlds' released in 1998.
+
+**NEW : WoWEngine** - the game's engine rebuilt from the ground up in modern C++ and SDL3, natively for Windows, macOS and Linux. It runs on the original disc files, aims to play exactly like the original, and includes all of the features and file fixes made for WoWRevived, plus a Modern Options menu with battle zoom, HUD scaling, group keys, more save slots and more. See [Decomp/Recomp - WoWEngine](#decomprecomp---wowengine) below.
+
+<table>
+  <tr>
+    <td align="center"><img src="images/wowengine/engine-warmap-640.png" alt="War Map - 640x480"><br>Original : 640x480</td>
+    <td align="center"><img src="images/wowengine/engine-warmap-1080.jpg" alt="War Map - 1920x1080"><br>WoWEngine : 1920x1080</td>
+  </tr>
+</table>
+
+**OLD : WoWRevived for the original executable**
 
 The game is usually installed to "C:\Program Files (x86)\Jeff Wayne's 'The War Of The Worlds'", but a folder you can write to without administrator rights, such as "C:\Games\Jeff Wayne's 'The War Of The Worlds'", is recommended. The game's settings are saved next to it in WoWRevived.ini, so the folder can be moved or copied for modding, preservation, or portable use.
 
@@ -193,9 +208,37 @@ The road map for this project.
 			- The extended warmap background includes another 4 files.
 			- Full count 142/445 .spr files.
 			- Remaining sprite files include mouse cursors, visual effects and parts of menus where there is very little space to add any detail.
-- [✅ 15 : Decomp/Recomp] ( 90% Complete )
+- [✅ 15 : Decomp/Recomp](#decomprecomp---wowengine) ( 90% Complete )
 	- WoWEngine built.
+		- An SDL3 / C++20 rebuild of the game's engine, written routine by routine from the disassembly of the original executable. ( about 34,000 lines of code )
+		- Runs natively on Windows, macOS and Linux as a 64-bit program, no compatibility layers, DirectDraw wrappers or DirectPlay setup required.
+		- Contains no game data, it runs on the files from the original Human and Martian discs.
+		- Aims for 1:1 parity with the original: the same rules, numbers, draw order and random number use.
+		- Its own installer and launcher, WoWLauncher, copies the game from the discs, mounted disc images (.iso, .bin/.cue) or folders, and rips the music, on all three platforms.
+	- All of the WoWRevived features and file fixes included.
+		- The updated TEXT.ojd for all five languages, the fixed Cotton Factory, Airship and Sector 22 files and the restored building pixels.
+		- Extended backgrounds for every supported resolution and the extended war map, picked automatically for the resolution in use, no file swapping required.
+		- Enhanced Assets as an option.
+		- WoWRevived's 1080p upscales of the movies are played when they are installed, otherwise the original Smacker movies play through the engine's own decoder.
+		- Volume sliders that are saved, master volume applied to the music, music that keeps playing when the window loses focus. ( optional )
+		- No 8/16 bit colour toggles and no "Lights" toggle, so infiltration can't crash the game.
+		- Discord rich presence.
+	- Modern fixes, on by default.
+		- The resolution is applied at once from the Display Settings menu, no restart required, and the first start uses the desktop's resolution.
+		- Starting a new campaign never overwrites the start files.
+		- Upgraded buildings fight at their upgraded level in battle.
+		- Loose map files in the MAPS folder are used, like loose files in the DAT folder.
 	- Modern options implemented.
+		- A Modern Options menu, opened from Game Options and the war map's Campaign Options.
+		- Battle zoom. ( +, -, mouse wheel, R to reset )
+		- HUD scale from 50% to 300% for the war map and battle map panels.
+		- Group keys ( Ctrl + digit to keep, digit to select ) and Shift to add to the selection in battle.
+		- More save slots, in pages of five, up to 999.
+		- Key bindings for both maps in WoWRevived.ini.
+		- Popup menus that stay open, a war map status strip, windowed mode, picture stretching and the system mouse pointer.
+		- Input recording and playback.
+		- A log file that records crashes and stalls, to make bug reports easier.
+	- Still to do: battle saving, repair, breakable bridges, network play and parts of the computer player.
 
 This might not all happen but I wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 
@@ -519,6 +562,142 @@ Many more assets have been reworked, most of which is barely noticeable but in g
 
 Please note that these enhanced assets are disabled by default and can be enabled in the launcher.
 
+## Decomp/Recomp - WoWEngine
+
+WoWEngine is a rebuild of the game's engine in C++20 with SDL3, written routine by routine from the disassembly of the original executable. The aim is 1:1 parity with the original game: the same rules, the same numbers, the same draw order and the same use of random numbers. Anything that changes how the game plays sits behind an option in the Modern Options menu, the only changes made without asking are fixes for faults in the original.
+
+It runs natively on Windows, macOS and Linux as a 64-bit program, so there is no need for compatibility settings, a DirectDraw wrapper or DirectPlay. Like the patched game, it keeps its settings in WoWRevived.ini in the game's folder, so existing installations carry straight over.
+
+The engine contains no game data, it runs on the files from the original Human and Martian discs.
+
+The source code and its documentation are in the [WoWEngine](WoWEngine) folder, see [WoWEngine/README.md](WoWEngine/README.md) for how to build it.
+
+### Installing
+
+WoWEngine comes with its own installer and launcher, WoWLauncher, laid out like the WoWRevived launcher. ( This is not the original game's installer, which should still not be used for the patched game. )
+
+- Insert either disc, or both, and it finds them within a couple of seconds, or choose **Use Disc Images...** to install from .iso or .bin/.cue images instead.
+- It copies the game, rips the music from the discs and copies in the updated TEXT.ojd for the language of your discs.
+- With the game installed, it opens on the launcher screen with **Start Human Game** and **Start Martian Game**.
+
+The music can only be ripped from a disc or a .bin/.cue image, as .iso images only hold the data track. Reading the music straight from a drive works on Windows and Linux, on macOS it has to come from a .bin/.cue image.
+
+### 640x480 vs 1920x1080
+
+The original game drew everything at 640x480. WoWEngine draws the war map and battle map at the full resolution chosen, and the resolution is applied the moment it is changed in the Display Settings menu.
+
+War Map
+
+<table>
+  <tr>
+    <td align="center"><img src="images/wowengine/engine-warmap-640.png" alt="War Map - 640x480"><br>640x480</td>
+    <td align="center"><img src="images/wowengine/engine-warmap-1080.jpg" alt="War Map - 1920x1080"><br>1920x1080</td>
+  </tr>
+</table>
+
+Battle Map
+
+<table>
+  <tr>
+    <td align="center"><img src="images/wowengine/engine-london-640.png" alt="Battle Map - 640x480"><br>640x480</td>
+    <td align="center"><img src="images/wowengine/engine-london-1080.jpg" alt="Battle Map - 1920x1080"><br>1920x1080</td>
+  </tr>
+</table>
+
+### Everything from WoWRevived
+
+All of the features and file fixes made especially for WoWRevived are included:
+
+- The updated TEXT.ojd files for English, French, German, Italian and Spanish.
+- The fixed game files: the Cotton Factory smokestacks, the Airship model, the hole in Sector 22 South Wales and the restored building pixels.
+- The extended backgrounds for every supported resolution and the extended war map. The engine picks the right ones for the resolution in use, so no files are swapped around.
+- Enhanced Assets, as an option in the Modern Options menu.
+- WoWRevived's 1080p upscales of the movies are played when they are installed, otherwise the original Smacker movies play through the engine's own decoder.
+- Volume sliders that are actually saved, the master volume applied to the music and the music playback option that keeps the music playing when the window loses focus.
+- The Display Settings menu without the broken 8/16 bit colour toggles and the "Lights" toggle that could crash the game when using infiltration.
+- Discord rich presence, with the same states as WoWRevived.
+
+<table>
+  <tr>
+    <td align="center"><img src="images/wowengine/engine-research-1080.jpg" alt="Human Research - 1920x1080"><br>Human Research - 1920x1080</td>
+    <td align="center"><img src="images/wowengine/engine-cd-player-1080.jpg" alt="CD Player - 1920x1080"><br>CD Player - 1920x1080</td>
+  </tr>
+</table>
+
+### Modern Fixes
+
+These are fixes for faults in the original game and are on by default:
+
+- The resolution is applied at once, without restarting the game, and the first start uses the desktop's resolution.
+- Starting a new campaign never overwrites the Human.000 and Martian.000 start files, which the original game could do.
+- Upgraded buildings fight at their upgraded level, in the original game a Level 3 Vehicle Factory still fought as a Level 1 on the battle map. ( can be turned off )
+- Loose map files placed in the MAPS folder are used, as loose files in the DAT folder already were.
+
+### Modern Options
+
+The Modern Options menu is opened from Game Options in the main menu, or from Campaign Options on the war map.
+
+<div align="center">
+  <img src="images/wowengine/engine-modern-options.png" alt="Modern Options">
+</div>
+
+| Option | Default | What it does |
+|---|---|---|
+| Upgraded buildings in battle | On | Upgraded buildings fight at their upgraded level |
+| Popup menus stay open | Off | The right-click popup menus stay open after the button is let go, items are clicked |
+| War map status strip | Off | A strip at the bottom left of the war map naming the sector or button under the mouse |
+| Group keys and Shift select | On | Ctrl + a digit keeps the selection, the digit selects it again, pressed twice it moves the view there, Shift adds to the selection |
+| More save slots | On | The Load and Save menus have pages of five, up to slot 999 |
+| Battle zoom | On | +, - or the mouse wheel to zoom the battle map, R to reset |
+| HUD scale | 100% | The size of the war map and battle map panels, from 50% to 300% |
+| Fade between menus | Off | The original game's fade between menus |
+| Enhanced assets | Off | WoWRevived's Enhanced Assets |
+| Original display settings | Off | The original Display Settings menu |
+| Play in a window | Off | Windowed mode, the window's size is remembered |
+| Stretch the picture | Off | Fill the screen instead of keeping the picture's shape |
+| System mouse pointer | Off | The system's mouse pointer instead of the game's |
+| Music playback | Off | Keep the music playing when the window loses focus |
+| Discord rich presence | On | Discord rich presence |
+| Record input / Play a recording | | Record a game's input and play it back |
+
+The keys for both maps can also be changed in WoWRevived.ini under `[Keys]`.
+
+Battle Zoom
+
+<div align="center">
+  <img src="images/wowengine/engine-battle-zoom.jpg" alt="Battle Zoom">
+</div>
+
+HUD Scale - 200% on the war map at 1920x1080
+
+<div align="center">
+  <img src="images/wowengine/engine-hud-scale.jpg" alt="HUD Scale">
+</div>
+
+More Save Slots
+
+<div align="center">
+  <img src="images/wowengine/engine-more-save-slots.png" alt="More Save Slots">
+</div>
+
+A Martian pod landing in a Human sector at 1920x1080
+
+<div align="center">
+  <img src="images/wowengine/engine-martian-landing.jpg" alt="Martian Pod Landing">
+</div>
+
+### Bug Reports
+
+WoWEngine writes a log, WoWEngine.log, next to WoWEngine.exe, with a CRASH line if the game crashes and a STALL line if it stops responding. The log from the previous run is kept as WoWEngine.previous.log, so please include both when reporting a problem on the Discord or in an Issue.
+
+### Still To Do
+
+- Saving during a battle.
+- Repairing units and buildings.
+- Breakable bridges.
+- Network play.
+- Parts of the computer player.
+
 ## Credit
 
 Thanks to angrylion for the original executable patch and winmm.dll shim which I used as a reference for my own fixes : https://www.old-games.ru/forum/threads/patchi-vozvraschajuschie-cd-audio-the-patchs-to-restore-cdda-playback.51778/#post-877625
@@ -549,4 +728,4 @@ Thanks to Sulus for posting a video of the violent geometry tearing on the airsh
 
 Thanks to FunkyFr3sh for cnc-ddraw, which provides the DirectDraw translation layer for modern systems. See ddraw-license.txt for the full MIT license.
 
-Thanks to the Discord community for supporting the project and helping out with testing.
+Thanks to the Discord community for supporting the project and helping out with testing.
