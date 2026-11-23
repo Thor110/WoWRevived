@@ -66,10 +66,18 @@ check boxes, and each box is a setting in WoWRevived.ini that can be set there a
 | Play in a window | `[WoW Engine]` "Windowed" | off | at once |
 | Stretch the picture | `[WoW Engine]` "Stretch" | off | at once |
 | System mouse pointer | `[WoW Engine]` "System Cursor" | off | at once |
-| CD player music continues | `[WoW Engine]` "CD Player Music Continues" | off | at once |
+| Music playback | `[Sound\Volume]` "CD-Focus" (WoWRevived's own setting) | off | at once |
 
 Two more boxes aren't settings: **Record input** and **Play a recording** switch the game's playback recordings
 (below) on and off while playing.
+
+**Music playback** (update 218) is WoWRevived's launcher's option of that name, with its setting and its tool
+tip: on, the music plays on while the window is out of focus or minimised (the game pauses it, and the engine
+does unless this is on). Until 218 the box in its place was "CD player music continues" (`[WoW Engine]` "CD
+Player Music Continues": the music carrying on after the CD player's menu is left), which is not what was
+asked for; that setting still works from the ini but has no box.
+
+Every row has a tool tip (`Button::tipText`, the engine's own English; to go into TEXT.ojd with the captions).
 
 The captions have two spaces before them, as WoWRevived's TEXT.ojd has before the game's own check box
 captions, so they clear the tick or cross. They are the engine's own English text (there are no strings for them in TEXT.ojd).
@@ -194,9 +202,8 @@ started ("Discord: ...").
   is a 64-bit program; WoWRevived's copy is 32-bit, for the 32-bit game, and won't load. The DLL is
   `resources/discord-rpc.dll`, with discord-rpc's licence (MIT, Discord, Inc. 2017) beside it as
   `resources/discord-rpc-LICENSE.txt`; the build copies both next to WoWEngine.exe and the release script puts
-  them in the release (update 217). **The one in the repository at update 217 is the 32-bit one** (the file
-  says "PE32 ... Intel 80386"): the log will say "built for another processor" until the 64-bit one replaces
-  it.
+  them in the release (update 217). The one in the repository is the 64-bit one since update 218 (the owner
+  replaced the 32-bit one first added), and the owner has seen it working.
 - Windows only. Not tried: there is no Discord here to try it against; the code builds and does nothing
   without the DLL.
 

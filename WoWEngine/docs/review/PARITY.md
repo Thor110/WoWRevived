@@ -1183,6 +1183,14 @@ transparency")
   release script. The log says when the DLL is for another processor. (The DLL in `resources` is 32-bit; the
   engine's presets are x64.)
 
+**Update 218** (the owner's list)
+- WoWLauncher: with the game installed there is no "Install from Discs" button (`--install` still opens the
+  install screen).
+- Modern Options: "Music playback" (the music plays on while the window is out of focus, `[Sound\Volume]`
+  "CD-Focus") in place of "CD player music continues"; a tool tip on every row.
+- Seen: tool tips on both sides' menus; the launcher's screen with two start buttons and Exit; both battles
+  as before. Not seen: the music with the window out of focus (no window here).
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

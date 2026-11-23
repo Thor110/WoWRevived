@@ -466,20 +466,33 @@ namespace wow
     // columns.
     std::unique_ptr<Screen> FrontEnd::ModernOptions(int previous)
     {
-        struct Option { const char* section; const char* name; const char* text; bool on; };
+        // (the tool tips are the engine's own English; "Music playback" and its tip are WoWRevived's launcher's)
+        struct Option { const char* section; const char* name; const char* text; bool on; const char* tip; };
         static const Option Options[] = {
-            { "Modern", "Upgraded buildings in battle", "Upgraded buildings in battle", true },
-            { "Modern", "Sticky popup menus", "Popup menus stay open", false },
-            { "Modern", "War map status strip", "War map status strip", false },
-            { "Modern", "Selection keys", "Group keys and Shift select", true },
-            { "Modern", "More save slots", "More save slots", true },
-            { "Modern", "Battle zoom", "Battle zoom (+, -, wheel, R)", true },
-            { "Modern", "Original Display Settings", "Original display settings", false },
-            { "WoW Engine", "Windowed", "Play in a window", false },
-            { "WoW Engine", "Stretch", "Stretch the picture", false },
-            { "WoW Engine", "System Cursor", "System mouse pointer", false },
-            { "WoW Engine", "CD Player Music Continues", "CD player music continues", false },
-            { "Modern", "Menu fade", "Fade between menus", false },
+            { "Modern", "Upgraded buildings in battle", "Upgraded buildings in battle", true,
+              "Buildings upgraded on the war map fight as their\nnew level in battle. The original game keeps\nthem at the level they were built at." },
+            { "Modern", "Sticky popup menus", "Popup menus stay open", false,
+              "The right button's menu stays open when the\nbutton is let go, and an item is chosen with a\nclick. The original needs the button held." },
+            { "Modern", "War map status strip", "War map status strip", false,
+              "Shows the name of the sector or button under\nthe mouse along the bottom of the war map." },
+            { "Modern", "Selection keys", "Group keys and Shift select", true,
+              "In battle: Ctrl and a digit keeps the selection,\nthe digit brings it back, pressed again it looks\nat it. Shift adds to the selection." },
+            { "Modern", "More save slots", "More save slots", true,
+              "The Load and Save menus turn pages of five\nsaves instead of stopping at five." },
+            { "Modern", "Battle zoom", "Battle zoom (+, -, wheel, R)", true,
+              "Zoom the battle map with + and - or the mouse\nwheel. R puts it back." },
+            { "Modern", "Original Display Settings", "Original display settings", false,
+              "Puts back the 8 bit and 16 bit colour choices\nand the lights switch in Display Settings.\nThey do nothing useful on a modern system." },
+            { "WoW Engine", "Windowed", "Play in a window", false,
+              "Play in a window instead of filling the screen.\nAlt and Enter also switches between the two." },
+            { "WoW Engine", "Stretch", "Stretch the picture", false,
+              "Stretch the picture to fill the whole screen.\nOff, it keeps its shape, with bars at the sides." },
+            { "WoW Engine", "System Cursor", "System mouse pointer", false,
+              "Use the system's mouse pointer instead of the\ngame's own." },
+            { "Sound\\Volume", "CD-Focus", "Music playback", false,
+              "Enabling this will allow the music to continue\nplaying when the window loses focus." },
+            { "Modern", "Menu fade", "Fade between menus", false,
+              "The original game's short fade through a flat\ncolour each time a menu changes." },
         };
         auto m = MenuOver(CmdModernOptions, previous, 2);
         m->AddHeadingText("Modern Options");
@@ -495,10 +508,13 @@ namespace wow
                 ini.SetBool(o.section, o.name, b.value != 0);
                 ApplyModernOptions();
             });
+            m->SetLastTip(o.tip);
         }
         // (the two columns are kept the same length, seven rows each: a shorter one leaves a hole in the underlay)
         m->AddEventCheckText("Record input", recordWanted, [this](Button& b) { recordWanted = b.value != 0; });
+        m->SetLastTip("Records every key and mouse action from now\ninto Playback.1 in the game folder, the original\ngame's own demo recording. Untick to stop.");
         m->AddEventCheckText("Play a recording", playWanted, [this](Button& b) { playWanted = b.value != 0; });
+        m->SetLastTip("Plays a recording back. Start it from the same\nplace the recording was made. Escape stops it.");
         // the HUD scale ([Modern] "HUD scale", a percentage): the battle's panels from half size to three times,
         // a quarter a step; taken at once (BattleView)
         m->EndColumns();
@@ -506,6 +522,7 @@ namespace wow
             [](int v) { return "HUD scale: " + std::to_string(50 + v * 25) + "%"; },
             [this](Button& b) { ini.SetInt("Modern", "HUD scale", 50 + b.value * 25); });
         m->WidenLast();
+        m->SetLastTip("The size of the maps' panels: the minimap,\nthe icons, the menus and the calendar.");
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         m->FocusLast();
         return m;
@@ -1970,7 +1987,11 @@ namespace wow
 
     void FrontEnd::SetPaused(bool paused)
     {
-        if (paused) musicWasPaused = music.Paused();
+        // MODERN ("Music playback" in the Modern Options menu; WoWRevived's own setting, [Sound\Volume] "CD-Focus"):
+        // with it on, the music plays on while the window is out of focus or minimised
+        const bool musicPlaysOn = ini.GetBool(SoundSection, "CD-Focus", false);
+        if (paused && musicPlaysOn) musicWasPaused = true;          // (left alone now, and when the focus comes back)
+        else if (paused) musicWasPaused = music.Paused();
         if (!musicWasPaused) music.SetPaused(paused);
         sound.SetPaused(paused);
         if (screen) screen->SetPaused(paused);

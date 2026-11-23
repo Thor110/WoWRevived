@@ -115,7 +115,9 @@ namespace wow
 
     std::string Screen::TipText(int owner, int) const
     {
-        if (owner < 0 || size_t(owner) >= buttons.size() || !buttons[size_t(owner)].tooltip) return {};
+        if (owner < 0 || size_t(owner) >= buttons.size()) return {};
+        if (!buttons[size_t(owner)].tipText.empty()) return buttons[size_t(owner)].tipText;
+        if (!buttons[size_t(owner)].tooltip) return {};
         return res.String(buttons[size_t(owner)].tooltip);
     }
 

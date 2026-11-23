@@ -307,8 +307,7 @@ int main(int argc, char** argv)
             Picture picture = LoadPicture();
             const ui::Box pictureBox{ 12, 12, 400, 300 };
             // the launcher screen, where WoWRevived's launcher has its buttons
-            const ui::Box humanButton{ 122, 325, 195, 23 }, martianButton{ 122, 354, 195, 23 }, reinstallButton{ 122, 383, 195, 23 },
-                          quitButton{ 122, 470, 195, 23 };
+            const ui::Box humanButton{ 122, 325, 195, 23 }, martianButton{ 122, 354, 195, 23 }, quitButton{ 122, 470, 195, 23 };
             // the install screen
             const ui::Box installButton{ 12, 420, 270, 23 }, imagesButton{ 12, 449, 270, 23 }, folderButton{ 12, 478, 270, 23 };
             const ui::Box backButton{ 296, 449, 116, 23 }, exitButton{ 296, 478, 116, 23 };
@@ -365,16 +364,18 @@ int main(int argc, char** argv)
                 std::string installLabel = phase == Phase::NeedOtherDisc ? "Skip the Other Disc" : "Install The War Of The Worlds";
                 bool installEnabled = phase == Phase::NeedOtherDisc || ((phase == Phase::Waiting || phase == Phase::Failed || phase == Phase::Done) && !discs.empty());
 
-                // launcher screen: 0 human, 1 martian, 2 install from discs, 3 exit
+                // launcher screen: 0 human, 1 martian, 2 exit
                 // install screen:  0 install, 1 images, 2 folder, 3 back, 4 exit
                 std::vector<const ui::Box*> boxes;
                 std::vector<bool> enabled;
                 std::vector<std::string> labels;
                 if (launcher)
                 {
-                    boxes = { &humanButton, &martianButton, &reinstallButton, &quitButton };
-                    enabled = { engineThere, engineThere, true, true };
-                    labels = { "Start Human Game", "Start Martian Game", "Install from Discs...", "Exit" };
+                    // (with the game installed there is no "Install from Discs": --install opens the install screen
+                    // for anyone who wants to install again)
+                    boxes = { &humanButton, &martianButton, &quitButton };
+                    enabled = { engineThere, engineThere, true };
+                    labels = { "Start Human Game", "Start Martian Game", "Exit" };
                 }
                 else
                 {
@@ -399,16 +400,7 @@ int main(int argc, char** argv)
                         {
                         case 0: startGame(true); break;
                         case 1: startGame(false); break;
-                        case 2:
-                        {
-                            std::lock_guard<std::mutex> l(state.lock);
-                            state.phase = Phase::Waiting;
-                            state.result = {};
-                            state.message.clear();
-                            state.wake.notify_all();
-                            break;
-                        }
-                        case 3: running = false; break;
+                        case 2: running = false; break;
                         }
                         return;
                     }

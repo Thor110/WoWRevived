@@ -58,6 +58,7 @@ namespace wow
         // the label left-aligned 37 pixels in (0x4B8E00 + 0x4B8E04 + 0x4B8E08). NextColumn starts the second.
         void AddEventCheck(int textId, bool value, OnChange changed);
         void AddEventCheckText(std::string text, bool value, OnChange changed);   // a caption that isn't a TEXT.ojd string
+        void SetLastTip(std::string text) { if (!buttons.empty()) buttons.back().tipText = std::move(text); }   // its tool tip
         void NextColumn();
         // MODERN: the last row added has its backing drawn as wide as the menu's full rows, its own ends and seams
         // kept (the two-column menus' slider sprite is narrower than their other rows)

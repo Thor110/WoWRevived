@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 217) and what remains
+## Where things stand (update 218) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -88,8 +88,7 @@ inventory with the history. Tick here and there as each is done.
 - [x] **C5** The log kept for players' reports (CRASH and STALL lines; the run before's kept as
       WoWEngine.previous.log, 199).
 - [x] **C7** (212) Discord rich presence, as WoWRevived's. The DLL and its licence are in `resources` and go beside
-      the programs in a build and a release (217). Left: the DLL in the repository is the 32-bit one and has to
-      be the 64-bit one for the x64 engine; tried against Discord (it can't be here).
+      the programs in a build and a release (217). The owner has it working (218).
 - [ ] **C8** The engine's own captions ("Modern Options", its boxes, "Next Saves" ...) as strings appended to
       each language's TEXT.ojd by the installer, the built-in English kept as the fallback (the owner's idea,
       199).
@@ -123,8 +122,9 @@ inventory with the history. Tick here and there as each is done.
 ### G. Release
 
 - [~] **G1** The Windows-only code built and tried on Windows: the owner builds and runs each update there. Not
-      yet reported on: the crash filter and watchdog doing their job, the `.mp4`s at their own size (204), the
-      icon and the release script's DAT / MAPS (209), the window's kept size (208), Discord (212).
+      yet reported on: the crash filter and watchdog doing their job, the release script's DAT / MAPS (209),
+      the window's kept size (208). Reported working by the owner (218): the `.mp4`s at their own size, the
+      icon, Discord.
 - [ ] **G4** A trailer for the project: the very last thing (the owner, 199).
 - [ ] **G2** Unit tests for the decoders, the save's round trip and the war map's rules.
 - [ ] **G3** The release scripts tried from a clean checkout; the docs brought level (TASKS.md is stale in
