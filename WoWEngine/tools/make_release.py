@@ -90,6 +90,10 @@ def main():
     if WINDOWS:
         files.append((build_dir / ('SDL3d.dll' if args.debug else 'SDL3.dll'), False))
         files.append((build_dir / 'SDL3.dll', False))
+    # WoWRevived's updated TEXT.ojd for each language (the engine copies the install's in as TEXT.ojd)
+    for code in ('EN', 'FR', 'DE', 'IT', 'ES'):
+        files.append((ROOT / 'resources' / f'TEXT-{code}.ojd', False))
+    if WINDOWS:
         # Discord's rich presence: the DLL and its licence (from the build folder, where the build puts them, or
         # straight from resources)
         for extra in ('discord-rpc.dll', 'discord-rpc-LICENSE.txt'):

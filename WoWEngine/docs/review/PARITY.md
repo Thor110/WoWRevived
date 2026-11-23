@@ -1191,6 +1191,12 @@ transparency")
 - Seen: tool tips on both sides' menus; the launcher's screen with two start buttons and Exit; both battles
   as before. Not seen: the music with the window out of focus (no window here).
 
+**Update 219** (the game's text)
+- The updated TEXT.ojd for the install's language (`resources/TEXT-xx.ojd`) is copied in as the game's at the
+  engine's start, the one before kept as TEXT.ojd.original. Not with `--no-loose` or in a screenshot run.
+- Seen: all five files read (1332 strings each, both sides); the Italian one copied into the test install and
+  the menus in Italian from it; both battles with `--no-loose` as before.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

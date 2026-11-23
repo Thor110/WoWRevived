@@ -1,6 +1,6 @@
 # Plan after update 136
 
-## Where things stand (update 218) and what remains
+## Where things stand (update 219) and what remains
 
 Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
 start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
@@ -89,6 +89,8 @@ inventory with the history. Tick here and there as each is done.
       WoWEngine.previous.log, 199).
 - [x] **C7** (212) Discord rich presence, as WoWRevived's. The DLL and its licence are in `resources` and go beside
       the programs in a build and a release (217). The owner has it working (218).
+- [x] **D5** (219) WoWRevived's updated TEXT.ojd for the install's language copied in as the game's (the five
+      files in `resources`), the one replaced kept as TEXT.ojd.original.
 - [ ] **C8** The engine's own captions ("Modern Options", its boxes, "Next Saves" ...) as strings appended to
       each language's TEXT.ojd by the installer, the built-in English kept as the fallback (the owner's idea,
       199).

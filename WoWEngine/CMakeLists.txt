@@ -153,6 +153,13 @@ if(TARGET SDL3::SDL3)
         # keep SDL3.dll next to the exe
         add_custom_command(TARGET WoWEngine POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL3::SDL3> $<TARGET_FILE_DIR:WoWEngine>)
+        # WoWRevived's updated TEXT.ojd for each language, which the engine copies in as the game's (src/main.cpp)
+        foreach(text_language EN FR DE IT ES)
+            if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/resources/TEXT-${text_language}.ojd)
+                add_custom_command(TARGET WoWEngine POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources/TEXT-${text_language}.ojd $<TARGET_FILE_DIR:WoWEngine>/TEXT-${text_language}.ojd)
+            endif()
+        endforeach()
         # Discord's rich presence (src/platform/Discord.cpp): discord-rpc.dll and its licence next to the exe. The
         # DLL has to be built for the same processor as the engine (x64 for the x64 presets), or it won't load.
         if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/resources/discord-rpc.dll)

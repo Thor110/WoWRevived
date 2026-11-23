@@ -224,6 +224,21 @@ middle with dithered ends, frame 1 the even grey), with the palette entries the 
 
 (A backing sprite that is itself wider than the control on it is centred under it, should one ever be made.)
 
+### The game's text (update 219)
+
+WoWRevived's updated TEXT.ojd files, one for each language, are in `resources` (`TEXT-EN.ojd`, `TEXT-FR.ojd`,
+`TEXT-DE.ojd`, `TEXT-IT.ojd`, `TEXT-ES.ojd`) and go beside the programs in a build and a release. As the engine
+starts, the one for the install's language (`[WoW Engine]` "Language") is copied in as the game's `TEXT.ojd`,
+if the game's isn't that file already; the file it replaces is kept, once, as `TEXT.ojd.original`.
+
+- Nothing is copied when the language isn't known (an install with neither the setting nor a language.txt),
+  with `--no-loose`, or in a screenshot run.
+- To go back to the disc's text: delete `TEXT.ojd`, rename `TEXT.ojd.original` to it, and start with
+  `--no-loose` (or take the `TEXT-*.ojd` files away).
+- The log says when it copies ("Text: ... copied in as TEXT.ojd").
+- The engine's own captions (the Modern Options menu's and the rest) are still built in; putting them into
+  these files is PLAN.md C8.
+
 ### The install's language (update 216)
 
 The installer writes the language of the discs into WoWRevived.ini, `[WoW Engine]` "Language" ("English",

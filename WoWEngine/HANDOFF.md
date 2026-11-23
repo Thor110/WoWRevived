@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 218
+# Handoff: WoWEngine after update 219
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -137,7 +137,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 218
+## State after update 219
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -165,7 +165,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   `WoWEngine-update-N.zip` of the files changed against `origin/main`:
   - CRLF line endings
   - patches, tests and workflows left out
-  - binary files (`.ico` and the like) copied as they are, not given CRLF
+  - binary files (`.ico`, `.spr`, `.dll`, `.ojd` and the like) copied as they are, not given CRLF
   - a run without `--screenshot` writes the first start's view size into the test install's ini: restore the
     ini afterwards
   - the parity checks are run with `--no-loose` (the game's files only); without it the engine's own `dat`
@@ -177,7 +177,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **219**.
+  - The next number is **220**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.
