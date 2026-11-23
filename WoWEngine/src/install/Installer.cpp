@@ -202,9 +202,27 @@ namespace wow::install
         progress("Finished " + disc.Describe(), 1.0);
     }
 
-    namespace { fs::path textFolder; }
+    namespace
+    {
+        fs::path textFolder;
+        bool removeTextFolder = false;
 
-    void SetTextFolder(fs::path folder) { textFolder = std::move(folder); }
+        // the five files gone, and their folder if nothing else is in it
+        void RemoveTextFolder()
+        {
+            if (!removeTextFolder || textFolder.empty()) return;
+            std::error_code ec;
+            for (const char* code : { "EN", "FR", "DE", "IT", "ES" }) fs::remove(textFolder / (std::string("TEXT-") + code + ".ojd"), ec);
+            if (fs::is_empty(textFolder, ec)) fs::remove(textFolder, ec);
+            textFolder.clear();
+        }
+    }
+
+    void SetTextFolder(fs::path folder, bool removeAfter)
+    {
+        textFolder = std::move(folder);
+        removeTextFolder = removeAfter;
+    }
 
     bool CopyLanguageText(const fs::path& target)
     {
@@ -262,10 +280,13 @@ namespace wow::install
         // over the game's own, whatever case its name has on disk; nothing is written when it is that already
         const auto existing = wow::GameFiles(target).Resolve("TEXT.ojd");
         const fs::path game = existing ? *existing : target / "TEXT.ojd";
-        if (existing && read(game) == wanted) return true;
+        if (existing && read(game) == wanted) { RemoveTextFolder(); return true; }
         std::ofstream out(game, std::ios::binary | std::ios::trunc);
         out.write(wanted.data(), std::streamsize(wanted.size()));
-        return bool(out);
+        out.close();
+        if (!out) return false;
+        RemoveTextFolder();      // (the copy is in: the files it came from aren't needed again)
+        return true;
     }
 
     void Finish(const InstallOptions& options, InstallResult& result)

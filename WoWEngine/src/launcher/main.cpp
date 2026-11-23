@@ -291,16 +291,23 @@ int main(int argc, char** argv)
     // made: the source's). The install puts the one for the discs' language in as the game's TEXT.ojd; a game
     // that is installed already gets it now.
     {
-        std::vector<fs::path> places;
-        if (const char* base = SDL_GetBasePath()) places.emplace_back(fs::path(base) / "resources");
+        // (a release's folder beside the programs is deleted once its file has been copied in; the source's,
+        // which a build run where it was made uses, never is)
+        std::vector<std::pair<fs::path, bool>> places;
+        if (const char* base = SDL_GetBasePath()) places.emplace_back(fs::path(base) / "resources", true);
 #ifdef WOWENGINE_SOURCE_DIR
-        places.emplace_back(fs::path(WOWENGINE_SOURCE_DIR) / "resources");
+        places.emplace_back(fs::path(WOWENGINE_SOURCE_DIR) / "resources", false);
 #endif
-        for (const fs::path& place : places)
+        for (const auto& [place, remove] : places)
         {
             std::error_code ec;
             if (!fs::is_regular_file(place / "TEXT-EN.ojd", ec)) continue;
-            SetTextFolder(place);
+            // (never the source folder, even if the program was built into it)
+            bool source = false;
+#ifdef WOWENGINE_SOURCE_DIR
+            source = fs::equivalent(place, fs::path(WOWENGINE_SOURCE_DIR) / "resources", ec);
+#endif
+            SetTextFolder(place, remove && !source);
             break;
         }
     }

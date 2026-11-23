@@ -59,7 +59,9 @@ namespace wow::install
     // Finish then copies the one for the install's language ([WoW Engine] "Language" in the ini, which the
     // discs' language marker gave) in as the game's TEXT.ojd. CopyLanguageText does the same for an install
     // that is already there. True if the game's TEXT.ojd is now that file.
-    void SetTextFolder(std::filesystem::path folder);
+    // removeAfter: once the install's file has been copied in, the five files are deleted and the folder with them
+    // if it is then empty (a release's "resources"; never the source's).
+    void SetTextFolder(std::filesystem::path folder, bool removeAfter = false);
     bool CopyLanguageText(const std::filesystem::path& target);
     // The music folder a disc's tracks go to: named after the disc (see 3. above).
     const char* MusicFolder(Side discSide);

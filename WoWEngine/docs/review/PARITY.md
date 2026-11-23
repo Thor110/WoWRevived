@@ -1239,6 +1239,10 @@ transparency")
   each); the Modern Options menu and a tool tip in French, German, Italian and Spanish; the English fallback
   with the disc's text; both battles with `--no-loose` as before.
 
+**Update 227** (the launcher)
+- After the language's text has been copied in, WoWLauncher deletes the release's `resources` folder (the five
+  TEXT files). Seen: a folder beside the launcher deleted after the copy; the source's left alone.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
