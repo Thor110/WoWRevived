@@ -1163,6 +1163,11 @@ transparency")
   goes under the 520 wide `hugesld.spr` (the separate `hugesldw.spr` of 212 is dropped). Seen with a 540 wide
   stand-in; with the game's own files the menu and both battles as before.
 
+**Update 214** (the slider row)
+- The HUD scale row is the game's two slider sprites (`hugeslda.spr` under `hugesld.spr`), both widened to 540
+  by putting a seamless run of columns in twice, not by stretching. Seen at three knob places on the Human
+  menu and on the Martian one; both battles as before.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

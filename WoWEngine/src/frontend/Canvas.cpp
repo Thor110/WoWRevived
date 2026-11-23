@@ -67,6 +67,10 @@ namespace wow
         DrawImage(*image, shade->Level(level), x - g->hotX, y - g->hotY, blend);
     }
 
+    // The sprite as it is but wider: a run of its columns is put in twice, and the run is one where that leaves no
+    // seam (the columns after it are the same as the run's own, so the picture carries on as if it had always
+    // been that wide). The nearest such run to the middle is taken; a slider's knob, a button's ends and any
+    // dithering are left as they are.
     void Canvas::DrawSpriteWidened(int gtype, int frame, int x, int y, int toWidth, Blend blend)
     {
         const IndexedImage* image = res.GetFrame(gtype, frame);
@@ -74,19 +78,35 @@ namespace wow
         const GType* g = res.FindGType(gtype);
         if (!image || !shade || !g || image->width < 4) return;
         if (toWidth <= image->width) { DrawImage(*image, shade->Level(0), x - g->hotX, y - g->hotY, blend); return; }
+        const int w = image->width, h = image->height, extra = toWidth - w;
+        // the run [at - extra, at) repeats cleanly when every column of it is the same as the one `extra` further on
+        auto clean = [&](int at) {
+            if (at - extra < 0 || at + extra > w) return false;
+            for (int r = 0; r < h; r++)
+            {
+                const uint8_t* row = image->pixels.data() + size_t(r) * size_t(w);
+                for (int c = at - extra; c < at; c++) if (row[c] != row[c + extra]) return false;
+            }
+            return true;
+        };
+        int at = w / 2;
+        for (int d = 0; d < w; d++)
+        {
+            if (clean(w / 2 + d)) { at = w / 2 + d; break; }
+            if (clean(w / 2 - d)) { at = w / 2 - d; break; }
+        }
+        at = std::clamp(at, std::min(extra, w), w);
         IndexedImage wide;
         wide.width = toWidth;
-        wide.height = image->height;
-        wide.pixels.resize(size_t(toWidth) * size_t(image->height));
-        const int half = image->width / 2, extra = toWidth - image->width;
-        const int span = std::min(64, half);                // the columns about the middle that fill the gap
-        for (int r = 0; r < image->height; r++)
+        wide.height = h;
+        wide.pixels.resize(size_t(toWidth) * size_t(h));
+        for (int r = 0; r < h; r++)
         {
-            const uint8_t* src = image->pixels.data() + size_t(r) * size_t(image->width);
+            const uint8_t* src = image->pixels.data() + size_t(r) * size_t(w);
             uint8_t* dst = wide.pixels.data() + size_t(r) * size_t(toWidth);
-            for (int c = 0; c < half; c++) dst[c] = src[c];
-            for (int c = 0; c < extra; c++) dst[half + c] = src[half - span / 2 + c % span];
-            for (int c = half; c < image->width; c++) dst[extra + c] = src[c];
+            for (int c = 0; c < at; c++) dst[c] = src[c];
+            for (int c = 0; c < extra; c++) dst[at + c] = src[std::max(0, at - extra) + c % std::max(1, std::min(extra, at))];
+            for (int c = at; c < w; c++) dst[extra + c] = src[c];
         }
         DrawImage(wide, shade->Level(0), x - g->hotX, y - g->hotY, blend);
     }

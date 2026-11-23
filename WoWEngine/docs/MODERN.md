@@ -196,17 +196,17 @@ started ("Discord: ...").
 - Windows only. Not tried: there is no Discord here to try it against; the code builds and does nothing
   without the DLL.
 
-### The Modern Options menu's slider backing (updates 210-213)
+### The Modern Options menu's slider row (updates 210-214)
 
-The two-column menus' slider (`hugesld.spr`, 520 x 32, 22 frames: the knob's eleven places plain, then lit) has
-a backing (`hugeslda.spr`, 520 x 32, 2 frames: plain, lit) narrower than their full rows (`hugebut.spr` /
-`hugebutb.spr`, 540 x 32). The HUD scale row's backing is drawn 540 wide:
+The two-column menus' slider is two sprites, both 520 x 32: `hugeslda.spr` (the see-through backing, 2 frames:
+plain, lit) and `hugesld.spr` on top of it (the row's outline and the knob, 22 frames: the knob's eleven places
+plain, then lit). Their full rows (`hugebut.spr` / `hugebutb.spr`) are 540 wide. The HUD scale row is drawn
+540 wide from those same two sprites, both widened the same way (`Canvas::DrawSpriteWidened`, asked for by
+`Menu::WidenLast`): a run of 20 columns is put in twice, and the run chosen is the nearest to the middle
+where that leaves no seam (the columns after the run are the same as the run's own). So the ends, the
+outline, the knob and the dithering are the sprites' own, with nothing stretched and no file to make.
 
-- **With a loose `hugeslda.spr` made 540 wide** (the owner's, to come: the same two frames) it is drawn as it is,
-  centred under the 520 wide `hugesld.spr`. The rule is general (`Screen::DrawButton`): a backing wider than
-  the control on it is centred under it.
-- **With the game's own 520 wide one**, its middle is repeated to 540 (`Canvas::DrawSpriteWidened`), which
-  smears its dithering.
+(A backing sprite that is itself wider than the control on it is centred under it, should one ever be made.)
 
 ### Resolution (agreed with the owner, update 192)
 
