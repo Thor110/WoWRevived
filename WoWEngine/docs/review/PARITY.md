@@ -1151,6 +1151,13 @@ transparency")
   the middle repeated between them (`Canvas::DrawSpriteWidened`). The bottom button's backing used in 210 has
   cut corners, which showed.
 
+**Update 212** (modern: Discord rich presence; nothing of the original's changed)
+- `platform/Discord.*`: WoWRevived's rich presence, through discord-rpc.dll when it is there (Windows, the
+  64-bit DLL). `[Modern]` "Discord rich presence".
+- The HUD scale row's backing is read from `dat\hugesldw.spr` when there is one.
+- Seen: the engine building and running without the DLL; both battles and the menu as before. Not seen:
+  Discord itself.
+
 ## Deferred (with the reason each is still open)
 
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a

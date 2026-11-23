@@ -56,7 +56,10 @@ namespace wow
         }
         }
         if (b.glass && b.widen > b.rect.w)
-            canvas.DrawSpriteWidened(b.glass, glassFrame, b.rect.x - (b.widen - b.rect.w) / 2, b.rect.y, b.widen, Canvas::Blend::Translucent);
+            // (the slider's backing made at the full rows' width, dat\\hugesldw.spr, when the files have it:
+            // hugeslda.spr's two frames at 540 x 32; else hugeslda.spr stretched)
+            canvas.DrawSpriteWidened(b.glass, glassFrame, b.rect.x - (b.widen - b.rect.w) / 2, b.rect.y, b.widen, Canvas::Blend::Translucent,
+                                     b.glass == 0x348 ? "dat\\hugesldw.spr" : nullptr);
         else if (b.glass) canvas.DrawSprite(b.glass, glassFrame, b.rect.x, b.rect.y, 0, Canvas::Blend::Translucent);
         if (b.plate) canvas.DrawSprite(b.plate, plateFrame, b.rect.x, b.rect.y);
         if (b.kind == Button::Kind::Edit)

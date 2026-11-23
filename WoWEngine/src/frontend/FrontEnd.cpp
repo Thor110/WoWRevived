@@ -1797,6 +1797,16 @@ namespace wow
         return freed ? 0 : key;
     }
 
+    // (WoWRevived's rule: the CD player while its menu is up; a campaign while its war map exists, whatever is
+    // shown over it; else the menus)
+    int FrontEnd::PresenceState() const
+    {
+        if (screen && screen->Id() == CdPlayer::Id) return 4;
+        const bool campaign = warMap || battleMap || (screen && (screen->Id() == WarMap::Id || screen->Id() == BattleMap::Id));
+        if (campaign) return res.Human() ? 1 : 2;
+        return 0;
+    }
+
     void FrontEnd::OnWheel(int steps) { if (steps) ZoomBattle(steps); }
 
     void FrontEnd::ViewSizeFor(int desktopW, int desktopH, int& width, int& height)

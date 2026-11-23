@@ -90,6 +90,7 @@ if(TARGET SDL3::SDL3)
         src/platform/Video.cpp
         src/platform/Music.cpp
         src/platform/Sound.cpp
+        src/platform/Discord.cpp
         src/frontend/ResearchScreen.cpp
         src/frontend/Resources.cpp
         src/frontend/Canvas.cpp

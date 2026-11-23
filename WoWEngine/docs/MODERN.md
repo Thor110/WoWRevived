@@ -171,11 +171,38 @@ found without being copied by hand:
   use. The log says which folder is used ("Loose files:") and, for each view size, which of its backgrounds
   were found ("View size ...: backgrounds in ...").
 
-### Discord rich presence (the owner, update 209; to do next)
+### Discord rich presence (update 212)
 
-As WoWRevived has it (`WoWPatches/_inmm/winmm_driver9x.cpp`): `discord-rpc.dll` loaded if it is there, the
-presence set for the main menu, a Human or a Martian campaign and the CD player's tracks, in the game's
-language, with the session's start time. To be done the same way, with the same texts and image keys.
+As WoWRevived has it (`WoWPatches/_inmm/winmm_driver9x.cpp`), in `platform/Discord.*`: `discord-rpc.dll` is
+loaded if it is next to the program (or anywhere Windows finds it), and the presence says where the player
+is, in the game's language (the first line of `language.txt`), with the time the session began:
+
+| Where | State / details (English) | Image |
+|---|---|---|
+| The menus | Deciding the Fate of Earth / Main Menu | `cover` |
+| A Human campaign (its war map exists, whatever is over it) | Defending Earth / Human Campaign | `human` |
+| A Martian campaign | Invading Earth / Martian Campaign | `martian` |
+| The CD player | Listening to the Score / CD Player, the track's name | the track's (`cd_bd1`-`cd_bd7`) |
+| A network game (when there is one) | Battling for Dominance / Multiplayer Skirmish, the side as the small image | `network` |
+
+The same application id (1527400154154402022), texts (five languages) and image keys as WoWRevived, and the
+same rule for sending: when the state changes, when the CD player's track changes, when Discord (re)connects,
+and every 16 seconds otherwise. `[Modern]` "Discord rich presence" = 0 turns it off. The log says whether it
+started ("Discord: ...").
+
+- **The DLL must be the 64-bit `discord-rpc.dll`** (the `win64-dynamic` one of discord-rpc's release). The engine
+  is a 64-bit program; WoWRevived's copy is 32-bit, for the 32-bit game, and won't load. It isn't in the
+  repository or the release yet: to be added beside the programs (`tools/make_release.py`).
+- Windows only. Not tried: there is no Discord here to try it against; the code builds and does nothing
+  without the DLL.
+
+### The Modern Options menu's slider backing (updates 210-212)
+
+The two-column menus' slider (`hugesld.spr`, backing `hugeslda.spr`, 520 x 32) is narrower than their full rows
+(`hugebut.spr` / `hugebutb.spr`, 540 x 32). The HUD scale row's backing is drawn 540 wide: from
+`dat\hugesldw.spr` when the files have it (the owner's, to be made: `hugeslda.spr`'s two frames, plain and lit,
+at 540 x 32), else `hugeslda.spr` with its middle repeated (`Canvas::DrawSpriteWidened`), which smears its
+dithering.
 
 ### Resolution (agreed with the owner, update 192)
 

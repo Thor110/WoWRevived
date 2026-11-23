@@ -70,6 +70,12 @@ namespace wow
         void Open(int command, int param = 0) { Execute({ command, param }); }
 
         bool QuitRequested() const { return quit; }
+        // MODERN: for Discord's rich presence (platform/Discord.h): where the player is (0 the menus, 1 a Human
+        // campaign, 2 a Martian one, 4 the CD player), the CD track playing and the side
+        int PresenceState() const;
+        int PresenceTrack() const { return music.Track(); }
+        bool Human() const { return res.Human(); }
+        bool DiscordSetting() const { return ini.GetBool("Modern", "Discord rich presence", true); }
         int CurrentScreen() const { return screen ? screen->Id() : 0; }
 
     private:

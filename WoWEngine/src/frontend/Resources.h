@@ -45,7 +45,7 @@ namespace wow
         const std::vector<uint8_t>* GetRaw(int gtype);
         // The first frame of a sprite file named outright rather than through the graphics table (the mini battle
         // maps, maps\hmin%02d.spr / mmin%02d.spr, 0x4A1F90), nothing if it can't be read
-        const IndexedImage* GetFileImage(const std::string& file);
+        const IndexedImage* GetFileImage(const std::string& file, int frame = 0);
         // A game file by its game path (dat\..., maps\...), loose or from the archives
         std::optional<std::vector<uint8_t>> LoadFile(const std::string& path) { return vfs.Load(path); }
         // Loads a palette group's shade tables into their slots, as LoadShadeTables does (see ShadeGroups.h).

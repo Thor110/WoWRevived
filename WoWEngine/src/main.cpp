@@ -9,6 +9,9 @@
 #include "core/Random.h"
 #include "core/Crumb.h"
 #include "core/Playback.h"
+#include "platform/Discord.h"
+
+#include <fstream>
 #include "frontend/FrontEnd.h"
 #include "frontend/Resources.h"
 #include "frontend/Settings.h"
@@ -553,6 +556,18 @@ int main(int argc, char** argv)
             SDL_Log("OnActivateApp %s", on ? "On" : "Off");
         };
         std::thread(Watch).detach();    // it only reads the heartbeat and writes the log; it ends with the process
+        // MODERN: Discord's rich presence (platform/Discord.h), unless [Modern] "Discord rich presence" = 0
+        wow::Discord discord;
+        if (frontEnd.DiscordSetting())
+        {
+            std::string language = "English";
+            if (auto path = files->Resolve("language.txt"))
+            {
+                std::ifstream in(*path);
+                std::getline(in, language);
+            }
+            discord.Start(language);
+        }
         // The playback recordings (0x42D2D0 / 0x42D520): input reaches the game as the window's messages, through
         // Record; played back, the same messages come from the file
         wow::Playback playback;
@@ -680,6 +695,13 @@ int main(int argc, char** argv)
                 {
                     // 0x403680: the playback's messages for this frame, then the frame
                     followMenu();
+                    if (discord.Active())
+                    {
+                        const int where = frontEnd.PresenceState();
+                        discord.Update(where == 4 ? wow::Discord::State::CdPlayer : where == 1 ? wow::Discord::State::Human :
+                                       where == 2 ? wow::Discord::State::Martian : wow::Discord::State::Menu,
+                                       frontEnd.PresenceTrack(), frontEnd.Human());
+                    }
                     const bool was = playback.Playing();
                     for (const wow::Playback::Message& m : playback.Pump(frontEnd.Frames())) act(m);
                     if (was && !playback.Playing()) { SDL_Log("Playback finished"); frontEnd.SetPlaybackState(playback.Recording(), false); }
