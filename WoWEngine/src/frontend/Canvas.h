@@ -54,6 +54,7 @@ namespace wow
         // Draws only rows [firstRow, firstRow + rows) of a frame, its first row drawn at y (a sprite whose source
         // rect was cropped, 0x40EDF0: the war map's resource bars)
         void DrawSpriteRows(int gtype, int frame, int x, int y, int firstRow, int rows, int level = 0);
+        void DrawColour(const Resources::ColourImage& c, int x, int y, int firstRow, int rows, Blend blend);
         // MODERN: a sprite made wider: its left and right halves at the ends, the columns about its middle repeated
         // between them (a row's see-through backing stretched to a wider row, its ends and seams kept)
         void DrawSpriteWidened(int gtype, int frame, int x, int y, int toWidth, Blend blend = Blend::Opaque);

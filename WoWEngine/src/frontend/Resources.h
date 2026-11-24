@@ -49,6 +49,12 @@ namespace wow
         bool EnhancedAssets() const { return enhanced; }
         const std::map<int, GType>& GTypes() const { return gtypes; }
         const Font* GetFont(int gtype);
+        // MODERN (docs/OVERRIDE.md): a sprite frame's PNG in full colour (0xAARRGGBB), when an override is found for
+        // it (with Enhanced assets on): <the sprite's file without .spr>_frame_NN.png for a sprite of several
+        // frames, <name>.png for one of one, as WoWViewer exports them. GetFrame then gives that picture matched
+        // to the sprite's colour table (level 0), for the drawing that goes through the tables.
+        struct ColourImage { int width = 0, height = 0; std::vector<uint32_t> rgba; };
+        const ColourImage* GetColourFrame(int gtype, int frame);
         // A graphics entry's file as it is (class 6 entries are raw 8-bit images, like the route arrows' 256 x 64)
         const std::vector<uint8_t>* GetRaw(int gtype);
         // The first frame of a sprite file named outright rather than through the graphics table (the mini battle
@@ -77,6 +83,9 @@ namespace wow
         bool enhanced = false;      // MODERN: dat\extra\HD\ looked in first
         bool enhancedAllowed = true;
         std::map<std::pair<int, int>, IndexedImage> frames;
+        std::map<std::pair<int, int>, ColourImage> colourFrames;   // MODERN: the PNG overrides found
+        std::set<std::pair<int, int>> pngChecked;                  // frames already looked for
+        void ApplyPngOverride(int id, int frame, IndexedImage& image);
         std::map<int, std::unique_ptr<Font>> fonts;
         std::map<int, std::optional<std::vector<uint8_t>>> raws;
         std::map<std::string, std::optional<IndexedImage>> fileImages;

@@ -129,9 +129,9 @@ namespace wow
             auto u = unitData.find(head.type);
             head.hours = u == unitData.end() ? 0.0f : float(ObjOjd::BuildHours(u->second, ModifierHuman(players), manufacture));
             if (q.size() < 32) q.push_back(head);
-            return !(isVehicle(q.front().type) && !HasRoomFor(q.front().type, sector));
+            return !(isVehicle(q.front().type) && !(players && unlimitedBuilding) && !HasRoomFor(q.front().type, sector));
         }
-        if (players && !q.empty() && isVehicle(q.front().type) && !HasRoomFor(q.front().type, sector)) return false;
+        if (players && !unlimitedBuilding && !q.empty() && isVehicle(q.front().type) && !HasRoomFor(q.front().type, sector)) return false;
         return !q.empty();
     }
 
@@ -289,7 +289,7 @@ namespace wow
         auto& q = f.queue.entries;
         if (u->second.category == 1)
         {
-            if (players && !HasRoomFor(type, sector)) return false;
+            if (players && !unlimitedBuilding && !HasRoomFor(type, sector)) return false;
             if (!q.empty() && q.back().type == type)
             {
                 BuildEntry& e = q.back();
@@ -356,7 +356,8 @@ namespace wow
             auto u = unitData.find(type);
             const int at = CounterOf(ref);
             const int sector = at >= 0 ? counters[size_t(at)].sector : table[size_t(ref)].Sector();
-            if (u != unitData.end() && u->second.category == 1 && !HasRoomFor(type, sector)) return;
+            const bool players = at >= 0 ? counters[size_t(at)].players : table[size_t(ref)].list % 2 == 0;
+            if (u != unitData.end() && u->second.category == 1 && !(players && unlimitedBuilding) && !HasRoomFor(type, sector)) return;
             f.queue.busy = true;
             ShadeSectors();
         }
@@ -533,7 +534,9 @@ namespace wow
                 if (fk < 0 || counters[size_t(fk)].sector != sector || !counters[size_t(fk)].players) continue;
                 for (const BuildEntry& e : f.queue.entries) if (e.type == type) n++;
             }
-        if (n >= u->second.maxPerSector) return false;
+        // (MODERN, "Unlimited building": no limit but the command buildings' one, 58 and 120, whose OBJ.ojd limit
+        // is 1: the war map takes a sector's command building as its only one, 0x80AC)
+        if (n >= u->second.maxPerSector && !(unlimitedBuilding && u->second.maxPerSector > 1)) return false;
         if (u->second.prerequisite)
         {
             const std::vector<int> here = Finished(sector);

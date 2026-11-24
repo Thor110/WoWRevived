@@ -85,6 +85,45 @@ Every row has a tool tip (`Button::tipText`, the engine's own English; to go int
 The captions have two spaces before them, as WoWRevived's TEXT.ojd has before the game's own check box
 captions, so they clear the tick or cross. They are the engine's own English text (there are no strings for them in TEXT.ojd).
 
+### Modern Gameplay (update 246)
+
+A menu of the rules of play the engine can change, under Modern Options in Game Options and in the war map's
+menu (command 0x9004, `FrontEnd::ModernGameplay`), laid out as Display Settings' boxes are. Its rows:
+
+| Box | Setting | Default | Takes effect |
+|---|---|---|---|
+| Upgraded buildings in battle | `[Modern]` "Upgraded buildings in battle" | on | the next battle (also in Modern Options) |
+| Unlimited building | `[Modern]` "Unlimited building" | off | at once |
+| Units on bridges fire back | `[Modern]` "Bridges fire back" | off | the next battle |
+
+**Unlimited building.** The game keeps a sector to so many of each type (OBJ.ojd record 52, "max per sector":
+20, the turret emplacements 12, the command buildings 1). An item is offered in a factory's or construction
+vehicle's list only while the side's objects of that type in the sector (and, for a vehicle, those queued in the
+sector's factories) are fewer (0x43C7F0, `WarMap::ItemEnabled`). A factory also won't start or finish a vehicle
+while the sector has no room for it: "Max units in sector" or "Max boats in sector" (`[Tweak]`, 15 and 5) of the
+player's units there or on their way (0x43AC10, 0x45FF00, 0x45FE60, 0x4604B0). With the option on, for the
+player's factories and construction vehicles, on the war map and the battle map:
+
+- the per-sector limit isn't applied, except the command buildings' (58 and 120, limit 1: the war map takes a
+  sector's command building as its only one, 0x80AC); turrets, mines, fences, every building and vehicle can be
+  built without limit;
+- a factory makes vehicles whatever the sector's room.
+
+Still kept: a queue holds 32 entries (0x4604B0), and moving a group into a sector keeps to "Max units in sector"
+and "Max boats in sector" (0x42ABD0's refusals 7 and 8; they can be raised in `[Tweak]`). A sector that has more
+units than that from its factories keeps them; others can't join it until there are fewer. The computer player's
+factories keep every limit. (The setting is `WarMap::unlimitedBuilding`, read at the war map's start and when
+the box changes.)
+
+**Units on bridges fire back.** A unit's aim (vt+0xC8, 0x491110 for the vehicles) returns at once while the unit
+is on a bridge link (+0x18C set, 0x491123), so in the original a unit crossing a bridge neither returns fire nor
+takes Force Fire until it's off the bridge, whatever hits it (the owner noticed it with the Humans' units). The
+link is set for any unit whose route goes over a bridge (`SetWaypoint` / the route's node links). With the option on that test is left out (`BattleMap::Aim`,
+`BattleMap::Setup::bridgesFireBack`): the unit aims and fires from the deck as it would from the ground. The other test
+there, a unit under the ground (+0x84 under 0), stays; on a bridge the height is the deck's, never under 0 (the
+link's lift, `OnBridge`). *Provisional*: not yet seen in a battle with a bridge and an enemy in range; the code
+path is the same one every other unit's fire takes.
+
 ### Group keys and Shift select (update 198)
 
 In battle, with `[Modern]` "Selection keys" on (it is unless turned off):
@@ -393,6 +432,10 @@ engine's next start.
   option would give `SFX` and `VOX` the same.
 - **Modern formats** accepted for the overriding files (PNG for sprites, WAV / OGG for sounds, and so on), so a
   fix or a mod needn't be encoded in the game's own formats.
+  *PNG for sprites is in (update 246)*: with Enhanced assets on, any `.spr` frame is replaced by a PNG beside it,
+  named as WoWViewer exports the frames (`<name>_frame_NN.png`, or `<name>.png` for a one-frame sprite), at the
+  frame's size or 2, 4 or 8 times it; drawn in full colour where the game draws the sprite as it is, and matched to
+  its colour table elsewhere (`Resources::ApplyPngOverride`, `Canvas::DrawColour`). The rules are in docs/OVERRIDE.md.
 - **Enhanced Assets** (an option of the earlier patched game, WoWRevived): every sprite extracted, scaled up and
   back down, which gives cleaner, more vivid colours. Off for parity work: a frame taken with it on doesn't match
   the discs' sprites pixel for pixel (update 158 ran into this on the war map's panel). To offer as an option.
@@ -617,7 +660,7 @@ Two new campaigns, each one faction against itself (PLAN.md F1).
     formats (PNG / BMP for sprites and textures, OBJ for models, and the like) read in place of the archive's,
     so packs and mods need no conversion. Not designed yet; the engine's loose-file overlay (`GameFiles`,
     "The engine's own files" above) is where it would hang. Full-colour textures lit by the engine would come
-    with it.
+    with it. *Sprites since update 246*: docs/OVERRIDE.md.
 
 ## From the earlier patched game
 
@@ -638,8 +681,13 @@ once the engine is complete.
 
 ## Ideas from the owner (noted at update 199; not planned in detail yet)
 
-- **Human units fire back from bridges** (the owner, update 238; not to work on yet): in the original a unit on a
-  bridge doesn't return fire.
+- **Unlimited building** (the owner, update 245). *In (update 246)*: "Modern Gameplay", below.
+- **Custom campaigns** (the owner, update 245). *In (update 246)*: docs/CUSTOM.md. A text file each in
+  `dat\Campaigns` (kind, name, start file, pods, a civil war's layout lines), the main menu's "Custom Campaigns"
+  under the civil war, saves `SaveGame\Custom.001` on with the engine's tag and its flags, and a Load menu of
+  their own ("Resume Custom Campaign").
+- **Human units fire back from bridges** (the owner, update 238). *In (update 246)*: "Modern Gameplay", above
+  (0x491123: the aim's bridge link test).
 
 - **More save slots.** *In (updates 200 and 201), as pages*: the game has five slots; the Load and Save menus
   keep their five rows and get "Next Saves" and "Previous Saves" rows, up to slot 999 (the three digits of

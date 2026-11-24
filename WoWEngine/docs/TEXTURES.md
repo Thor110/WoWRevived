@@ -10,6 +10,9 @@ it's used ("Texture pack: human/units/ar_lor_1.png"), or why one isn't ("... is 
 used"). A change to the pack is seen at the next battle the program starts after it's run again (the folder is
 looked through once).
 
+The interface's sprites (`.spr`: menus, buttons, panels, icons) are replaced another way, frame by frame with
+PNGs beside them: see OVERRIDE.md.
+
 ## The folders
 
 Beside the program: `TEXTURES` (or `textures`) beside WoWEngine.exe; a build run where it was made also looks in

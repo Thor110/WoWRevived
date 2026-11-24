@@ -64,7 +64,38 @@ namespace wow
         const ShadeTable* shade = res.ShadeFor(gtype);
         const GType* g = res.FindGType(gtype);
         if (!image || !shade || !g) return;
+        // MODERN (docs/OVERRIDE.md): a PNG override at the table's plain level drawn in its own colours
+        if (level == 0)
+            if (const Resources::ColourImage* c = res.GetColourFrame(gtype, frame)) { DrawColour(*c, x - g->hotX, y - g->hotY, 0, c->height, blend); return; }
         DrawImage(*image, shade->Level(level), x - g->hotX, y - g->hotY, blend);
+    }
+
+    // a full-colour picture (rows firstRow on, rows of them): alpha 0 left out, 255 put down, between mixed;
+    // Translucent half and half, as the indexed drawing's
+    void Canvas::DrawColour(const Resources::ColourImage& c, int x, int y, int firstRow, int rows, Blend blend)
+    {
+        x += originX;
+        y += originY;
+        for (int r = 0; r < rows; r++)
+        {
+            const int sy = y + r, row = firstRow + r;
+            if (sy < 0 || sy >= height || row < 0 || row >= c.height) continue;
+            const uint32_t* src = c.rgba.data() + size_t(row) * size_t(c.width);
+            uint32_t* dst = pixels + size_t(sy) * size_t(width);
+            for (int ix = std::max(0, -x); ix < c.width && x + ix < width; ix++)
+            {
+                const uint32_t s = src[ix], a = s >> 24;
+                if (a == 0) continue;
+                uint32_t& d = dst[x + ix];
+                uint32_t out = s & 0xFFFFFFu;
+                if (a < 255)
+                {
+                    auto mix = [&](int sh) { return (((s >> sh) & 0xFF) * a + ((d >> sh) & 0xFF) * (255 - a)) / 255 << sh; };
+                    out = mix(16) | mix(8) | mix(0);
+                }
+                d = blend == Blend::Opaque ? out : ((out >> 1) & 0x7F7F7F) + ((d >> 1) & 0x7F7F7F);
+            }
+        }
     }
 
     // The sprite as it is but wider: a run of its columns is put in twice, and the run is one where that leaves no
@@ -121,8 +152,14 @@ namespace wow
         y += originY;
         firstRow = std::clamp(firstRow, 0, image->height);
         rows = std::min(rows, image->height - firstRow);
-        const uint32_t* colours = shade->Level(level);
         x -= g->hotX;
+        if (level == 0)
+            if (const Resources::ColourImage* c = res.GetColourFrame(gtype, frame))
+            {
+                DrawColour(*c, x - originX, y - originY, firstRow, rows, Blend::Opaque);
+                return;
+            }
+        const uint32_t* colours = shade->Level(level);
         for (int r = 0; r < rows; r++)
         {
             const int sy = y + r;

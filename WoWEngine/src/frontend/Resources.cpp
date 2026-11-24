@@ -2,6 +2,8 @@
 #include "core/EngineText.h"
 #include <cctype>
 #include "core/ShadeGroups.h"
+#include "core/Png.h"
+#include "core/TexturePack.h"
 
 #include <SDL3/SDL_log.h>
 
@@ -89,6 +91,8 @@ namespace wow
             raws.erase(id);
             readFrom.erase(id);
             for (auto it = frames.begin(); it != frames.end();) it = it->first.first == id ? frames.erase(it) : std::next(it);
+            for (auto it = colourFrames.begin(); it != colourFrames.end();) it = it->first.first == id ? colourFrames.erase(it) : std::next(it);
+            for (auto it = pngChecked.begin(); it != pngChecked.end();) it = it->first == id ? pngChecked.erase(it) : std::next(it);
         }
     }
 
@@ -111,6 +115,10 @@ namespace wow
         if (on == enhanced) return;
         enhanced = on;
         Refresh();
+        // (the PNG overrides come and go with it: every frame decoded again, looking for them or not)
+        frames.clear();
+        colourFrames.clear();
+        pngChecked.clear();
     }
 
     void Resources::SetFileOverrides(std::map<std::string, std::string> files)
@@ -127,7 +135,59 @@ namespace wow
         if (it != frames.end()) return &it->second;
         const Sprite* sprite = GetSprite(id);
         if (!sprite) return nullptr;
-        return &(frames[key] = sprite->Decode(frame));
+        IndexedImage image = sprite->Decode(frame);
+        ApplyPngOverride(id, frame, image);
+        return &(frames[key] = std::move(image));
+    }
+
+    const Resources::ColourImage* Resources::GetColourFrame(int id, int frame)
+    {
+        if (colourFrames.empty()) return nullptr;
+        GetFrame(id, frame);
+        auto it = colourFrames.find({ id, frame });
+        return it == colourFrames.end() ? nullptr : &it->second;
+    }
+
+    // MODERN (docs/OVERRIDE.md): the frame's PNG, looked for beside the file the sprite is read from (its game path
+    // with the extension taken off, through the same loose folders), named as WoWViewer exports a sprite's frames;
+    // at the frame's size, or 2, 4 or 8 times it (made the frame's size, textures::FitTo). Kept in full colour, and
+    // given to the indexed drawing matched to the sprite's colour table at level 0 (textures::Indices). Without the
+    // table (a battle map's own slots), the indexed drawing keeps the game's frame.
+    void Resources::ApplyPngOverride(int id, int frame, IndexedImage& image)
+    {
+        if (!enhanced) return;
+        const GType* g = FindGType(id);
+        const Sprite* sprite = GetSprite(id);
+        if (!g || !sprite) return;
+        std::string base = FileFor(*g);
+        if (const size_t dot = base.find_last_of('.'); dot != std::string::npos && base.find_last_of("\\/") < dot) base.erase(dot);
+        char suffix[32];
+        std::snprintf(suffix, sizeof(suffix), "_frame_%02d.png", frame);
+        const std::string path = sprite->FrameCount() > 1 ? base + suffix : base + ".png";
+        auto data = vfs.Load(path);
+        if (!data) return;
+        const bool first = pngChecked.insert({ id, frame }).second;
+        PngImage png;
+        try { png = DecodePng(*data); }
+        catch (const std::exception& ex) { if (first) SDL_Log("Override %s: %s; the game's is used", path.c_str(), ex.what()); return; }
+        auto fitted = textures::FitTo(png, image.width, image.height);
+        if (!fitted)
+        {
+            if (first) SDL_Log("Override %s is %dx%d, not %dx%d (or 2, 4 or 8 times it); the game's is used", path.c_str(), png.width, png.height, image.width, image.height);
+            return;
+        }
+        if (first) SDL_Log("Override: %s", path.c_str());
+        ColourImage c{ fitted->width, fitted->height, fitted->rgba };
+        // (magenta, the game's see-through, as the PNGs WoWViewer writes have it)
+        for (uint32_t& px : c.rgba) if ((px & 0xFFFFFFu) == 0xFF00FFu) px = 0;
+        colourFrames[{ id, frame }] = std::move(c);
+        if (const ShadeTable* shade = ShadeFor(id))
+        {
+            uint32_t palette[256];
+            const uint32_t* level = shade->Level(0);
+            for (int i = 0; i < 256; i++) palette[i] = level[i] & 0xFFFFFFu;
+            image.pixels = textures::Indices(*fitted, palette, &image.pixels);
+        }
     }
 
     const std::string& Resources::String(int id) const
@@ -205,6 +265,8 @@ namespace wow
             if (group.paletteGType != paletteGType) continue;
             // 0x40B6C0 frees all 33 slots first, so a group's screen never draws with another group's tables
             shades.clear();
+            // (an overridden frame is matched to its table again: another group can put another table in its slot)
+            for (const auto& [key, c] : colourFrames) frames.erase(key);
             for (int i = 0; i < group.count; i++)
             {
                 std::string name(group.files[i]);

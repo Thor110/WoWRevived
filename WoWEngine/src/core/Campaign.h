@@ -50,7 +50,25 @@ namespace wow
     // and then the other side's (each with its faction's tag), where the original's has the Humans' and then the
     // Martians'. Their files have names of their own (SaveSlot), so the original game, which reads every
     // Human.00n / Martian.00n it finds, never meets one.
+    //
+    // MODERN (update 246, docs/CUSTOM.md): the campaign word's low byte is the Campaign; the bits above it are flags
+    // (CampaignFlags). A custom campaign's save (SaveGame\Custom.nnn) always has the tag, a regular one's too, so
+    // its flags are kept. An engine from before update 246 refuses a save with flags ("unknown campaign").
     inline constexpr char EngineSaveTag[4] = { 'W', 'O', 'W', 'E' };
     inline constexpr uint32_t EngineSaveVersion = 1;
     inline constexpr size_t EngineSaveHeader = 12;
+
+    namespace CampaignFlags
+    {
+        inline constexpr uint32_t KindMask = 0xFF;
+        inline constexpr uint32_t Custom = 0x100;       // a custom campaign's (docs/CUSTOM.md)
+        inline constexpr uint32_t NoPods = 0x200;       // a custom campaign's "pods = off"
+        inline constexpr uint32_t Martian = 0x400;      // the player's faction Martian (a regular kind's; a civil war's is its own)
+        inline constexpr uint32_t Known = Custom | NoPods | Martian;
+    }
+    // Whether the Martians' pods land: in a custom campaign as it says, else in the regular game and not in a civil war
+    inline bool HasPods(Campaign c, uint32_t flags) { return (flags & CampaignFlags::Custom) ? !(flags & CampaignFlags::NoPods) : !IsCivilWar(c); }
+    inline bool IsCustom(uint32_t flags) { return (flags & CampaignFlags::Custom) != 0; }
+    // whether a save of the campaign has the engine's tag
+    inline bool TaggedSave(Campaign c, uint32_t flags) { return IsCivilWar(c) || IsCustom(flags); }
 }

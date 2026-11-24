@@ -1,6 +1,7 @@
 // The front end: the screens and the command handling that moves between them (WGame's command handler, vanilla
 // 0x402B80). Commands are the ids the game's buttons send.
 #pragma once
+#include "core/CustomCampaign.h"
 #include "core/TexturePack.h"
 #include "core/Campaign.h"
 #include "battlemap/BattleMap.h"
@@ -96,6 +97,7 @@ namespace wow
         std::unique_ptr<Screen> DisplaySettings(int previous); // 0x3EF, 0x4096D0
         std::unique_ptr<Screen> CriticalEvents(int previous);
         std::unique_ptr<Screen> ModernOptions(int previous);
+        std::unique_ptr<Screen> ModernGameplay(int previous);
         bool recordWanted = false, playWanted = false;
         void ApplyModernOptions();  // 0x8117, 0x409DE0
         std::unique_ptr<Screen> LoadGame(int previous);     // 0x6F, 0x409560
@@ -118,7 +120,7 @@ namespace wow
         bool NewCampaignFile(int slot, const std::string& name);
         // 0x80B4 -> 0x4042D0: the war map written to its campaign's slot ("Saving game to slot %d")
         void SaveCampaign();
-        std::filesystem::path SlotFile(int slot, bool civilWar = false) const;
+        std::filesystem::path SlotFile(int slot) const;      // the slot's file for the campaign being started or played
         static bool WriteSaveFile(const std::filesystem::path& path, const std::vector<uint8_t>& data);
         int playingSlot = 0;       // the slot the war map's campaign is saved in (world +0x128)
         std::map<int, ObjOjd::ResearchPageInfo> researchPages; // OBJ.ojd records 63 / 64
@@ -146,6 +148,21 @@ namespace wow
         // CivilSlot (the slots stop at 999).
         Campaign campaign = Campaign::Regular;
         static constexpr int CivilSlot = 1000;
+        // MODERN (update 246, docs/CUSTOM.md): a custom campaign is being started or played (its saves are
+        // SaveGame\Custom.nnn, either faction's; in the Load menu's commands its slot is its number + CustomSlot),
+        // the one chosen to start, the definitions offered (this faction's) and their menu's page; the Load menu
+        // listing the custom saves
+        bool customCampaign = false;
+        CustomCampaign customChosen;
+        std::vector<CustomCampaign> customList;
+        int customPage = 0;
+        bool customLoad = false;
+        static constexpr int CustomSlot = 2000;
+        std::vector<CustomCampaign> FindCustomCampaigns() const;
+        // the custom saves: this faction's (mine), or every one (the numbers taken)
+        std::vector<int> CustomSlots(bool mine) const;
+        std::string SlotGamePath(int slot) const;           // "SaveGame\..." for the campaign being started or played
+        std::unique_ptr<Screen> CustomCampaignsMenu(int previous);
         Campaign CivilWarHere() const { return res.Human() ? Campaign::HumanCivilWar : Campaign::MartianCivilWar; }
         // MODERN: the page of five slots the Load and Save menus show, and the highest slot with a save
         int slotPage = 0;

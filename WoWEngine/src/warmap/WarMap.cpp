@@ -915,8 +915,9 @@ namespace wow
     // not in yet). A Martian game switches to the Unit view first (0x41A730).
     void WarMap::DropPod(int hours)
     {
-        // MODERN (docs/MODERN.md "The civil wars"): no pods in a civil war, nor rand() drawn for them
-        if (IsCivilWar(campaign)) return;
+        // MODERN (docs/MODERN.md "The civil wars"): no pods in a civil war, nor rand() drawn for them; a custom
+        // campaign's as it says (docs/CUSTOM.md)
+        if (!HasPods(campaign, campaignFlags)) return;
         if (pods >= 8) return;
         podHours += hours;
         if (podHours < podInterval) return;
@@ -1078,6 +1079,7 @@ namespace wow
     void WarMap::UseSave(SaveFile from)
     {
         campaign = from.campaign;
+        campaignFlags = from.campaignFlags;
         table.clear();
         for (int sector = 1; sector <= warmap::SectorCount; sector++)
             for (const auto& list : from.Sector(sector).lists)

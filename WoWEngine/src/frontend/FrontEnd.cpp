@@ -59,6 +59,11 @@ namespace wow
         constexpr int CmdDisplaySettings = 0x3EF;
         constexpr int CmdCriticalEvents = 0x8117;
         constexpr int CmdModernOptions = 0x9001;  // the engine's own menu (no such command in the game)
+        constexpr int CmdModernGameplay = 0x9004; // the engine's own: Modern Options' rules of play (update 246)
+        constexpr int CmdCustomCampaigns = 0x9005;  // the engine's own (update 246): the Custom Campaigns menu
+        constexpr int CmdCustomStart = 0x9006;      // the same: start the custom campaign param (its place in the list)
+        constexpr int CmdCustomLoad = 0x9007;       // the same: the Load menu of the custom saves
+        constexpr int CmdCustomPage = 0x9008;       // the same: the Custom Campaigns menu's page, param +1 or -1
         constexpr int CmdNewCivilWar = 0x9003;    // the engine's own: Start New Campaign for the side's civil war
         constexpr int CmdSlotPage = 0x9002;       // the engine's own: the Load / Save menu's page, param +1 or -1
         constexpr int CmdSaveMenu = 0x6E;
@@ -267,11 +272,28 @@ namespace wow
     {
         // MODERN: Load lists the regular saves and then the civil war's (their numbers + CivilSlot); Save lists the
         // kind of campaign being started or played
+        if (load && customLoad)
+        {
+            std::vector<int> all;
+            for (int slot : CustomSlots(true)) all.push_back(slot + CustomSlot);
+            return all;
+        }
         if (load)
         {
             std::vector<int> all = SavedSlots();
             for (int slot : SavedSlots(true)) all.push_back(slot + CivilSlot);
             return all;
+        }
+        // MODERN (update 246): a custom campaign's: this faction's saves, then the lowest number no custom save of
+        // either faction has (the other faction's are never offered to be replaced)
+        if (customCampaign)
+        {
+            std::vector<int> slots = CustomSlots(true);
+            const std::vector<int> taken = CustomSlots(false);
+            for (int slot = SaveSlot::First; slot <= LastSlot(); slot++)
+                if (!std::binary_search(taken.begin(), taken.end(), slot)) { slots.push_back(slot); break; }
+            std::sort(slots.begin(), slots.end());
+            return slots;
         }
         const std::vector<int> saved = SavedSlots(IsCivilWar(campaign));
         std::vector<int> slots;
@@ -293,13 +315,19 @@ namespace wow
     std::unique_ptr<Screen> FrontEnd::LoadGame(int previous)
     {
         auto m = std::make_unique<Menu>(CmdLoadGame, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, 2);
-        m->AddHeading(AnySaveGame() ? 0x406 : 0x434); // "Resume Campaign" or "No Saved Campaigns"
+        if (customLoad) m->AddHeadingText(res.String(enginetext::ResumeCustom));   // (MODERN, update 246)
+        else m->AddHeading(AnySaveGame() ? 0x406 : 0x434); // "Resume Campaign" or "No Saved Campaigns"
         // (MODERN: a page of five; with no more than five saves it is the game's menu as it was)
         const std::vector<int> slots = MenuSlots(true);
         slotPage = std::clamp(slotPage, 0, slots.empty() ? 0 : int(slots.size() - 1) / SaveSlot::PerPage);
         for (size_t i = size_t(slotPage) * SaveSlot::PerPage; i < slots.size() && i < size_t(slotPage + 1) * SaveSlot::PerPage; i++)
         {
             // MODERN: a civil war's name shown with "(Human Civil War)" or "(Martian Civil War)" after it
+            if (slots[i] >= CustomSlot)
+            {
+                if (auto name = SaveSlot::NameAt(files, SaveSlot::CustomPath(slots[i] - CustomSlot))) m->AddButtonText(CmdLoadSlot, *name, slots[i]);
+                continue;
+            }
             const bool civil = slots[i] >= CivilSlot;
             if (auto name = SaveSlot::Name(files, res.Human(), slots[i] % CivilSlot, civil))
                 m->AddButtonText(CmdLoadSlot, civil ? *name + " " + res.String(res.Human() ? enginetext::HumanCivilWarTag : enginetext::MartianCivilWarTag) : *name, slots[i]);
@@ -318,11 +346,96 @@ namespace wow
         slotPage = std::clamp(slotPage, 0, int(slots.size() - 1) / SaveSlot::PerPage);
         for (size_t i = size_t(slotPage) * SaveSlot::PerPage; i < slots.size() && i < size_t(slotPage + 1) * SaveSlot::PerPage; i++)
         {
-            auto name = SaveSlot::Name(files, res.Human(), slots[i], IsCivilWar(campaign));
+            auto name = SaveSlot::NameAt(files, SlotGamePath(slots[i]));
             m->AddButtonText(CmdSaveSlot, name ? *name : res.String(0x408), slots[i]); // "Empty"
         }
         AddSlotPageButtons(*m, slots.size());
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
+        return m;
+    }
+
+    // MODERN (update 246, docs/CUSTOM.md): the custom campaigns this faction can play: every dat\Campaigns\*.txt
+    // (the engine's own dat folder first; a name there hides the game's), read now, those without a kind or of
+    // the other faction left out, in the order of their names
+    std::vector<CustomCampaign> FrontEnd::FindCustomCampaigns() const
+    {
+        std::vector<CustomCampaign> found;
+        std::vector<std::string> seen;
+        for (const std::filesystem::path& folder : files.ResolveAll("dat\\Campaigns"))
+        {
+            std::error_code ec;
+            std::vector<std::filesystem::path> texts;
+            for (const auto& entry : std::filesystem::directory_iterator(folder, ec))
+            {
+                std::string lower = entry.path().filename().string();
+                for (char& c : lower) c = char(std::tolower(static_cast<unsigned char>(c)));
+                if (entry.is_regular_file(ec) && lower.size() > 4 && lower.compare(lower.size() - 4, 4, ".txt") == 0 &&
+                    std::find(seen.begin(), seen.end(), lower) == seen.end())
+                {
+                    seen.push_back(lower);
+                    texts.push_back(entry.path());
+                }
+            }
+            for (const std::filesystem::path& path : texts)
+            {
+                std::ifstream in(path, std::ios::binary);
+                const std::string body((std::istreambuf_iterator<char>(in)), {});
+                std::vector<std::string> warnings;
+                bool ok = false;
+                CustomCampaign c = CustomCampaign::Parse(body, path.filename().string(), warnings, ok);
+                for (const std::string& w : warnings) SDL_Log("Custom campaign %s: %s", path.filename().string().c_str(), w.c_str());
+                if (ok && c.human == res.Human()) found.push_back(std::move(c));
+            }
+        }
+        std::sort(found.begin(), found.end(), [](const CustomCampaign& a, const CustomCampaign& b) { return a.name < b.name; });
+        return found;
+    }
+
+    std::vector<int> FrontEnd::CustomSlots(bool mine) const
+    {
+        std::vector<int> slots;
+        auto folder = files.Resolve("SaveGame");
+        if (!folder) return slots;
+        const std::string prefix = "custom.";
+        std::error_code ec;
+        for (const auto& entry : std::filesystem::directory_iterator(*folder, ec))
+        {
+            std::string name = entry.path().filename().string();
+            for (char& c : name) c = char(std::tolower(static_cast<unsigned char>(c)));
+            if (name.size() != prefix.size() + 3 || name.compare(0, prefix.size(), prefix) != 0) continue;
+            if (!std::all_of(name.begin() + long(prefix.size()), name.end(), [](char c) { return c >= '0' && c <= '9'; })) continue;
+            const int slot = std::atoi(name.c_str() + prefix.size());
+            if (slot < SaveSlot::First || slot > SaveSlot::Max || std::find(slots.begin(), slots.end(), slot) != slots.end()) continue;
+            if (mine)
+            {
+                // (the faction from the tag's campaign word: a civil war's its own, else the Martian flag)
+                auto word = SaveSlot::CampaignWord(files, SaveSlot::CustomPath(slot));
+                if (!word) continue;
+                const Campaign kind = Campaign(*word & CampaignFlags::KindMask);
+                const bool human = IsCivilWar(kind) ? kind == Campaign::HumanCivilWar : !(*word & CampaignFlags::Martian);
+                if (human != res.Human()) continue;
+            }
+            slots.push_back(slot);
+        }
+        std::sort(slots.begin(), slots.end());
+        return slots;
+    }
+
+    // MODERN (update 246): Custom Campaigns, from the main menu: "Resume Custom Campaign" when there are custom
+    // saves of this faction, then the definitions five to a page, each starting a new campaign of it (the slots and
+    // the name as for any new campaign)
+    std::unique_ptr<Screen> FrontEnd::CustomCampaignsMenu(int previous)
+    {
+        auto m = std::make_unique<Menu>(CmdCustomCampaigns, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, 2);
+        m->AddHeadingText(res.String(customList.empty() ? enginetext::NoCustomCampaigns : enginetext::CustomCampaigns));
+        if (!CustomSlots(true).empty()) m->AddButtonText(CmdCustomLoad, res.String(enginetext::ResumeCustom));
+        customPage = std::clamp(customPage, 0, customList.empty() ? 0 : int(customList.size() - 1) / SaveSlot::PerPage);
+        for (size_t i = size_t(customPage) * SaveSlot::PerPage; i < customList.size() && i < size_t(customPage + 1) * SaveSlot::PerPage; i++)
+            m->AddButtonText(CmdCustomStart, customList[i].name, int(i));
+        if (size_t(customPage + 1) * SaveSlot::PerPage < customList.size()) m->AddButtonText(CmdCustomPage, res.String(enginetext::NextCampaigns), 1);
+        if (customPage > 0) m->AddButtonText(CmdCustomPage, res.String(enginetext::PreviousCampaigns), -1);
+        m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
+        m->FocusLast();
         return m;
     }
 
@@ -342,6 +455,8 @@ namespace wow
             m->AddButton(CmdNewCampaign, 0x40C);
             // MODERN (docs/MODERN.md "The civil wars"): the side's civil war, under Start New Campaign
             m->AddButtonText(CmdNewCivilWar, res.String(res.Human() ? enginetext::HumanCivilWar : enginetext::MartianCivilWar));
+            // MODERN (update 246, docs/CUSTOM.md): the custom campaigns, under the civil war
+            m->AddButtonText(CmdCustomCampaigns, res.String(enginetext::CustomCampaigns));
         }
         m->AddButton(CmdOptions, 0x401);
         m->AddButton(CdPlayer::Id, 0x402);
@@ -358,6 +473,7 @@ namespace wow
         m->AddButton(0x3ED, 0x411);   // Sound Control
         m->AddButton(0x8117, 0x412);  // Critical event options
         m->AddButtonText(CmdModernOptions, res.String(enginetext::ModernOptions));   // the engine's own (docs/MODERN.md), above the credits
+        m->AddButtonText(CmdModernGameplay, res.String(enginetext::ModernGameplay)); // the same (update 246)
         m->AddButton(0x80CA, 0x534);  // Credits
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         return m;
@@ -489,22 +605,22 @@ namespace wow
         // The rows' captions and tool tips are the engine's strings (core/EngineText.h: TEXT.ojd ids 1401 on, a row's
         // tip its id + 20), in this order. "Music playback", "Enhanced assets" and their tips are WoWRevived's
         // launcher's.
-        struct Option { const char* section; const char* name; bool on; };
+        struct Option { const char* section; const char* name; bool on; int text; };
         static const Option Options[] = {
-            { "Modern", "Upgraded buildings in battle", true },
-            { "Modern", "Sticky popup menus", false },
-            { "Modern", "War map status strip", false },
-            { "Modern", "Selection keys", true },
-            { "Modern", "More save slots", true },
-            { "Modern", "Battle zoom", true },
-            { "Modern", "Enhanced assets", false },
-            { "Modern", "Original Display Settings", false },
-            { "WoW Engine", "Windowed", false },
-            { "WoW Engine", "Stretch", false },
-            { "WoW Engine", "System Cursor", false },
-            { "Sound\\Volume", "CD-Focus", false },
-            { "Modern", "Menu fade", false },
-            { "Modern", "Discord rich presence", true },
+            { "Modern", "Upgraded buildings in battle", true, enginetext::UpgradedBuildings },   // (also in Modern Gameplay)
+            { "Modern", "Sticky popup menus", false, enginetext::StickyPopups },
+            { "Modern", "War map status strip", false, enginetext::StatusStrip },
+            { "Modern", "Selection keys", true, enginetext::SelectionKeys },
+            { "Modern", "More save slots", true, enginetext::MoreSaves },
+            { "Modern", "Battle zoom", true, enginetext::BattleZoom },
+            { "Modern", "Enhanced assets", false, enginetext::EnhancedAssets },
+            { "Modern", "Original Display Settings", false, enginetext::OriginalDisplay },
+            { "WoW Engine", "Windowed", false, enginetext::Windowed },
+            { "WoW Engine", "Stretch", false, enginetext::Stretch },
+            { "WoW Engine", "System Cursor", false, enginetext::SystemPointer },
+            { "Sound\\Volume", "CD-Focus", false, enginetext::MusicPlayback },
+            { "Modern", "Menu fade", false, enginetext::MenuFade },
+            { "Modern", "Discord rich presence", true, enginetext::DiscordPresence },
         };
         auto m = MenuOver(CmdModernOptions, previous, 2);
         m->AddHeadingText(res.String(enginetext::ModernOptions));
@@ -512,7 +628,7 @@ namespace wow
         {
             if (i == 8) m->NextColumn();
             const Option& o = Options[i];
-            const int text = enginetext::UpgradedBuildings + int(i);
+            const int text = o.text;
             m->AddEventCheckText(res.String(text), ini.GetBool(o.section, o.name, o.on), [this, o](Button& b) {
                 ini.SetBool(o.section, o.name, b.value != 0);
                 ApplyModernOptions();
@@ -550,6 +666,33 @@ namespace wow
         return m;
     }
 
+    // MODERN (update 246): the rules of play the engine can change, in a menu of their own (docs/MODERN.md
+    // "Modern Gameplay"), opened from Game Options and the war map's menu, under Modern Options; laid out as
+    // Display Settings' boxes are. "Upgraded buildings in battle" is in Modern Options too.
+    std::unique_ptr<Screen> FrontEnd::ModernGameplay(int previous)
+    {
+        struct Option { const char* name; bool on; int text; };
+        static const Option Options[] = {
+            { "Upgraded buildings in battle", true, enginetext::UpgradedBuildings },
+            { "Unlimited building", false, enginetext::UnlimitedBuilding },
+            { "Bridges fire back", false, enginetext::BridgesFireBack },
+        };
+        auto m = MenuOver(CmdModernGameplay, previous, 1);
+        m->AddHeadingText(res.String(enginetext::ModernGameplay));
+        for (const Option& o : Options)
+        {
+            m->AddCheck(0, ini.GetBool("Modern", o.name, o.on), [this, o](Button& b) {
+                ini.SetBool("Modern", o.name, b.value != 0);
+                ApplyModernOptions();
+            });
+            m->SetLastText("  " + res.String(o.text));    // (two spaces before, as the game's own boxes' captions)
+            m->SetLastTip(res.String(o.text + enginetext::TipOffset));
+        }
+        m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
+        m->FocusLast();
+        return m;
+    }
+
     // the switches that act at once (the window's are taken by the main loop)
     void FrontEnd::ApplyModernOptions()
     {
@@ -561,6 +704,7 @@ namespace wow
             map->SetStickyPopup(ini.GetBool("Modern", "Sticky popup menus", false));
             map->SetUpgradedInBattle(ini.GetBool("Modern", "Upgraded buildings in battle", true));
             map->SetStatusStrip(ini.GetBool("Modern", "War map status strip", false));
+            map->SetUnlimitedBuilding(ini.GetBool("Modern", "Unlimited building", false));
         }
     }
 
@@ -680,10 +824,15 @@ namespace wow
         return m;
     }
 
-    std::filesystem::path FrontEnd::SlotFile(int slot, bool civilWar) const
+    std::string FrontEnd::SlotGamePath(int slot) const
     {
-        char name[32];
-        std::snprintf(name, sizeof(name), "%s%s.%03d", res.Human() ? "Human" : "Martian", civilWar ? "CW" : "", slot);
+        return customCampaign ? SaveSlot::CustomPath(slot) : SaveSlot::GamePath(res.Human(), slot, IsCivilWar(campaign));
+    }
+
+    std::filesystem::path FrontEnd::SlotFile(int slot) const
+    {
+        const std::string gamePath = SlotGamePath(slot);
+        const std::string name = gamePath.substr(gamePath.find_last_of('\\') + 1);
         // the SaveGame folder as it is on disk (any case), else a new one (WinMain makes it, 0x401940)
         std::filesystem::path folder = files.Root() / "SaveGame";
         if (auto existing = files.Resolve("SaveGame")) folder = *existing;
@@ -716,7 +865,11 @@ namespace wow
 
     bool FrontEnd::NewCampaignFile(int slot, const std::string& name)
     {
-        auto start = files.Resolve(res.Human() ? "Human.000" : "Martian.000");
+        // (MODERN: a custom campaign's start file is in dat\Campaigns when it names one)
+        const std::string startPath = customCampaign && !customChosen.start.empty() ? "dat\\Campaigns\\" + customChosen.start
+                                                                                     : res.Human() ? "Human.000" : "Martian.000";
+        auto start = files.Resolve(startPath);
+        if (!start) SDL_Log("New campaign: no %s", startPath.c_str());
         if (!start || slot < SaveSlot::First || slot > SaveSlot::Max) return false;
         std::ifstream in(*start, std::ios::binary);
         std::vector<uint8_t> data((std::istreambuf_iterator<char>(in)), {});
@@ -725,7 +878,8 @@ namespace wow
             // a new GAME header with the name, then the start file's body as it is (0x44EBB0)
             SaveFile save = SaveFile::Parse(data);
             // MODERN: a civil war's start is made from the side's start file (core/CivilWar.h)
-            if (IsCivilWar(campaign))
+            if (IsCivilWar(campaign) && customCampaign) save = MakeCivilWarStart(save, campaign, customChosen.layout);
+            else if (IsCivilWar(campaign))
             {
                 // the layout from dat\CivilWar.txt when there is one (the engine's own dat first), else the draft
                 CivilWarLayout layout = CivilWarLayout::Default(campaign);
@@ -740,6 +894,8 @@ namespace wow
                 }
                 save = MakeCivilWarStart(save, campaign, layout);
             }
+            // MODERN (update 246): a custom campaign's kind and flags, in the engine's tag
+            if (customCampaign) { save.campaign = campaign; save.campaignFlags = customChosen.Flags(); }
             save.SetName(name);
             data = save.Write();
         }
@@ -748,7 +904,7 @@ namespace wow
             SDL_Log("New campaign: %s: %s", start->string().c_str(), e.what());
             return false;
         }
-        std::filesystem::path path = SlotFile(slot, IsCivilWar(campaign));
+        std::filesystem::path path = SlotFile(slot);
         if (!WriteSaveFile(path, data)) { SDL_Log("New campaign: can't write %s", path.string().c_str()); return false; }
         SDL_Log("New campaign \"%s\" in %s", name.c_str(), path.string().c_str());
         return true;
@@ -764,7 +920,7 @@ namespace wow
         if (!map || playingSlot < SaveSlot::First || playingSlot > SaveSlot::Max) return;
         auto data = map->SaveData();
         if (!data) { SDL_Log("The war map didn't come from a save it can write, so it isn't saved"); return; }
-        bool ok = WriteSaveFile(SlotFile(playingSlot, IsCivilWar(campaign)), *data);
+        bool ok = WriteSaveFile(SlotFile(playingSlot), *data);
         SDL_Log(ok ? "Saving game to slot %d" : "Saving game to slot %d failed", playingSlot);
     }
 
@@ -779,8 +935,13 @@ namespace wow
         SaveInfo info;
         // MODERN: the kind of campaign from the save itself: a civil war's starts with the engine's tag (core/Campaign.h)
         campaign = Campaign::Regular;
+        customCampaign = false;
         if (data.size() >= EngineSaveHeader && std::memcmp(data.data(), EngineSaveTag, 4) == 0)
-            campaign = Campaign(uint32_t(data[8]) | uint32_t(data[9]) << 8 | uint32_t(data[10]) << 16 | uint32_t(data[11]) << 24);
+        {
+            const uint32_t word = uint32_t(data[8]) | uint32_t(data[9]) << 8 | uint32_t(data[10]) << 16 | uint32_t(data[11]) << 24;
+            campaign = Campaign(word & CampaignFlags::KindMask);
+            customCampaign = IsCustom(word);     // (MODERN, update 246: saved to SaveGame\Custom.nnn)
+        }
         try { info = SaveInfo::Read(data); }
         catch (const std::exception& e)
         {
@@ -885,6 +1046,7 @@ namespace wow
             map->SetArmour(armour);
         }
         map->SetStatusStrip(ini.GetBool("Modern", "War map status strip", false)); // the same
+        map->SetUnlimitedBuilding(ini.GetBool("Modern", "Unlimited building", false)); // the same (update 246)
         map->SetSoundLength([this](int id) { return sound.LengthTicks(id); });
         map->SetDeposits(std::move(deposits), ini.GetFloat("Tweak", "Resource Drop Off Rate", 3.0f));
         map->SetPodInterval(ini.GetInt("Tweak", "Pod Interval (hours)", 24));
@@ -962,6 +1124,7 @@ namespace wow
         m->AddButton(CmdCriticalEvents, 0x412);
         m->AddButton(CmdSoundControl, 0x411);
         m->AddButtonText(CmdModernOptions, res.String(enginetext::ModernOptions));   // the engine's own (docs/MODERN.md)
+        m->AddButtonText(CmdModernGameplay, res.String(enginetext::ModernGameplay)); // the same (update 246)
         m->AddBottomButton(CmdQuitMenu, 0x404);        // "Save & Exit Game"
         m->SetPrevious(WarMap::Id);
         return m;
@@ -1013,8 +1176,9 @@ namespace wow
         case CmdDisplaySettings: { int back = BackTo(command.id, current); ShowMenu(DisplaySettings(back), back); } break;
         case CmdCriticalEvents: { int back = BackTo(command.id, current); ShowMenu(CriticalEvents(back), back); } break;
         case CmdModernOptions: { int back = BackTo(command.id, current); ShowMenu(ModernOptions(back), back); } break;
-        case CmdLoadGame: networkLoad = false; slotPage = 0; { int back = BackTo(command.id, current); ShowMenu(LoadGame(back), back); } break;
-        case CmdLoadNetworkGame: networkLoad = true; slotPage = 0; { int back = BackTo(command.id, current); ShowMenu(LoadGame(back), back); } break;
+        case CmdModernGameplay: { int back = BackTo(command.id, current); ShowMenu(ModernGameplay(back), back); } break;
+        case CmdLoadGame: networkLoad = false; customLoad = false; slotPage = 0; { int back = BackTo(command.id, current); ShowMenu(LoadGame(back), back); } break;
+        case CmdLoadNetworkGame: networkLoad = true; customLoad = false; slotPage = 0; { int back = BackTo(command.id, current); ShowMenu(LoadGame(back), back); } break;
         case CmdSaveMenu: slotPage = 0; { int back = BackTo(command.id, current); ShowMenu(SaveGame(back), back); } break;
         case CmdSinglePlayer: topMenu = CmdSinglePlayer; Show(SinglePlayer(CmdMainMenu)); break;
         case CmdNetwork: Show(ServiceProvider(CmdMainMenu, res.Human() ? CmdNetworkHost : CmdJoinNetwork)); break;
@@ -1032,9 +1196,30 @@ namespace wow
                 slotPage = 0;
                 // MODERN: which campaign is being started (going back from Replace or the name keeps it)
                 campaign = command.id == CmdNewCivilWar ? CivilWarHere() : Campaign::Regular;
+                customCampaign = false;
             }
-            Show(SaveGame(topMenu));
+            Show(SaveGame(customCampaign ? CmdCustomCampaigns : topMenu));
             break;
+        // MODERN (update 246, docs/CUSTOM.md): the custom campaigns
+        case CmdCustomCampaigns:
+            if (!screen || screen->Id() != CmdSaveMenu) customPage = 0;
+            customList = FindCustomCampaigns();
+            ShowMenu(CustomCampaignsMenu(CmdMainMenu), CmdMainMenu);
+            break;
+        case CmdCustomPage:
+            customPage = std::max(0, customPage + command.param);
+            ShowMenu(CustomCampaignsMenu(CmdMainMenu), CmdMainMenu);
+            break;
+        case CmdCustomStart:
+            if (command.param < 0 || size_t(command.param) >= customList.size()) break;
+            customChosen = customList[size_t(command.param)];
+            campaign = customChosen.kind;
+            customCampaign = true;
+            slotPage = 0;
+            SDL_Log("Custom campaign \"%s\" (%s)", customChosen.name.c_str(), customChosen.file.c_str());
+            Show(SaveGame(CmdCustomCampaigns));
+            break;
+        case CmdCustomLoad: customLoad = true; slotPage = 0; ShowMenu(LoadGame(CmdCustomCampaigns), CmdCustomCampaigns); break;
         // MODERN: the Load or Save menu turned a page (the same menu made again, going back where it went)
         case CmdSlotPage:
             if (screen && (screen->Id() == CmdLoadGame || screen->Id() == CmdSaveMenu))
@@ -1050,7 +1235,7 @@ namespace wow
         case CmdSaveSlot:
             // 0x4043D0: a slot that's in use asks first, an empty one goes straight to naming the campaign
             campaignSlot = command.param;
-            if (auto name = SaveSlot::Name(files, res.Human(), campaignSlot, IsCivilWar(campaign))) { campaignName = *name; Show(ReplaceCampaign(CmdNewCampaign)); }
+            if (auto name = SaveSlot::NameAt(files, SlotGamePath(campaignSlot))) { campaignName = *name; Show(ReplaceCampaign(CmdNewCampaign)); }
             else { campaignName.clear(); Execute({ CmdReplaceCampaign, 0 }); }
             break;
         case CmdReplaceCampaign: Show(EditCampaign(CmdNewCampaign)); break;
@@ -1058,7 +1243,8 @@ namespace wow
             // 0x404660 sets up the new campaign in the slot, then on to the disc check and the intro
             if (!NewCampaignFile(campaignSlot, campaignName)) campaignSlot = 0;
             // (MODERN: a civil war has no intro: the faction's tells of the Martians' coming)
-            Execute({ CmdInsertCd, IsCivilWar(campaign) ? CmdStartCampaign : CmdIntro });
+            // (and a custom campaign none: it starts where its start file says, update 246)
+            Execute({ CmdInsertCd, IsCivilWar(campaign) || customCampaign ? CmdStartCampaign : CmdIntro });
             break;
         case CmdInsertCd:
             // the war map's own 0x8133 (0x41B210) starts the briefing first
@@ -1077,17 +1263,24 @@ namespace wow
         case CmdStartCampaign:
             // a new campaign plays from its slot, set up from Human.000 or Martian.000 (0x404660); if that
             // couldn't be written, from the start file itself, unsaved
-            if (campaignSlot >= SaveSlot::First && SaveSlot::Exists(files, res.Human(), campaignSlot, IsCivilWar(campaign)))
-                StartWarMap(SaveSlot::GamePath(res.Human(), campaignSlot, IsCivilWar(campaign)), {}, campaignSlot);
+            if (campaignSlot >= SaveSlot::First && files.Resolve(SlotGamePath(campaignSlot)))
+                StartWarMap(SlotGamePath(campaignSlot), {}, campaignSlot);
             else
             {
                 campaign = Campaign::Regular;   // (MODERN: a civil war needs its slot's file, made from the start file)
+                customCampaign = false;         // (and a custom campaign)
                 StartWarMap(res.Human() ? "Human.000" : "Martian.000", campaignName);
             }
             break;
         case CmdLoadSlot:
         {
             // MODERN: a civil war's slot comes as its number + CivilSlot
+            // (and a custom campaign's as its number + CustomSlot; StartWarMap takes the kind from the save's tag)
+            if (command.param >= CustomSlot)
+            {
+                StartWarMap(SaveSlot::CustomPath(command.param - CustomSlot), {}, command.param - CustomSlot, true);
+                break;
+            }
             const bool civil = command.param >= CivilSlot;
             campaign = civil ? CivilWarHere() : Campaign::Regular;
             StartWarMap(SaveSlot::GamePath(res.Human(), command.param % CivilSlot, civil), {}, command.param % CivilSlot, true);
@@ -1561,6 +1754,7 @@ namespace wow
         s.showSmoke = ini.GetBool("Options", "Show Smoke & particles", true);
         s.stickyPopup = ini.GetBool("Modern", "Sticky popup menus", false);   // a modern option (docs/MODERN.md)
         s.selectionKeys = ini.GetBool("Modern", "Selection keys", true);       // the same
+        s.bridgesFireBack = ini.GetBool("Modern", "Bridges fire back", false); // the same (update 246)
         s.mat = Mat();      // the developers' flag (docs/ODDITIES.md)
         s.groups = map->BattleGroups(b.sector);
         for (const WarMap::ReinforcementSource& r : map->ReinforcementSources()) s.sources.push_back({ r.sector, r.players, r.hq });

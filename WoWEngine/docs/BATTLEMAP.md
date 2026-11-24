@@ -729,7 +729,9 @@ icon GType, tool tip text):
   Retaliate (1, 0x34D, 0x472) when armed, Avoid (0, 0x34C, 0x471) when moving, then Retreat (0x80B7, 0x2D, 0x479)
   when moving, a battle is on, the sector isn't quiet and there are reinforcement points (dword_4F76E8);
 - Abandon (0x8067, 0x34B, 0x46F);
-- Force Fire (0x80F3 0x80ED, 0x1E, 0x48A) when armed;
+- Force Fire (0x80F3 0x80ED, 0x1E, 0x48A) when armed (the popup's rows go by command, the item's +0x28 that
+  0x42DE00 sets from its first argument and 0x4331C0 matches, so Force Fire and the specials, all 0x80F3, are one
+  row: Force Fire first, the specials opening out beside it under the mouse; checked in update 245);
 - each special order 0x47DA80 allows, in order: Submerge 0x80EF (0x349, 0x48C), Tunnel 0x80EE (0x34A, 0x48B), Black
   Dust 0x80D5-D7 (0x25, 0x482), Shock Bomb D8-DA (0x26, 0x483), Explosives DB-DD (0x351, 0x484), Infiltrate DE-E0
   (0x352, 0x485), Pulse E1-E3 (0x353, 0x486), Freeze E4-E6 (0x354, 0x487), Scare E7-E9 (0x355, 0x488), Control EA-EC

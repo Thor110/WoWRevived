@@ -72,16 +72,35 @@ namespace wow
         return l;
     }
 
+    namespace
+    {
+        CivilWarLayout ParseLayout(std::string_view text, Campaign campaign, const std::vector<std::string>* skip, std::vector<std::string>& warnings);
+    }
+
     CivilWarLayout CivilWarLayout::Parse(std::string_view text, Campaign campaign, std::vector<std::string>& warnings)
     {
-        CivilWarLayout l = Default(campaign);
+        return ParseLayout(text, campaign, nullptr, warnings);
+    }
+
+    CivilWarLayout CivilWarLayout::ParseLines(std::string_view text, Campaign campaign, const std::vector<std::string>& skip, std::vector<std::string>& warnings)
+    {
+        return ParseLayout(text, campaign, &skip, warnings);
+    }
+
+    namespace
+    {
+    // (with skip, the whole text is the section: a custom campaign's file)
+    CivilWarLayout ParseLayout(std::string_view text, Campaign campaign, const std::vector<std::string>* skip, std::vector<std::string>& warnings)
+    {
+        using To = CivilWarLayout::To;
+        CivilWarLayout l = CivilWarLayout::Default(campaign);
         const std::string want = campaign == Campaign::MartianCivilWar ? "martian civil war" : "human civil war";
         auto lower = [](std::string t) { for (char& c : t) c = char(std::tolower(static_cast<unsigned char>(c))); return t; };
         auto trim = [](std::string t) {
             const size_t a = t.find_first_not_of(" \t\r"), b = t.find_last_not_of(" \t\r");
             return a == std::string::npos ? std::string() : t.substr(a, b - a + 1);
         };
-        bool inSection = false, found = false;
+        bool inSection = skip != nullptr, found = skip != nullptr;
         // a list given replaces the draft's; "rest" in it sends the sectors no list names there
         bool listed = false;
         std::istringstream in{ std::string(text) };
@@ -93,7 +112,7 @@ namespace wow
             if (const size_t hash = line.find('#'); hash != std::string::npos) line.erase(hash);
             line = trim(line);
             if (line.empty()) continue;
-            if (line.front() == '[')
+            if (line.front() == '[' && !skip)
             {
                 inSection = lower(trim(line.substr(1, line.find(']') - 1))) == want;
                 found |= inSection;
@@ -103,6 +122,7 @@ namespace wow
             const size_t eq = line.find('=');
             if (eq == std::string::npos) { warnings.push_back("line " + std::to_string(number) + ": no '='"); continue; }
             const std::string key = lower(trim(line.substr(0, eq)));
+            if (skip && std::find(skip->begin(), skip->end(), key) != skip->end()) continue;
             std::istringstream values(lower(line.substr(eq + 1)));
             std::vector<std::string> words;
             for (std::string w; values >> w;) words.push_back(w);
@@ -139,6 +159,7 @@ namespace wow
         }
         if (!found) warnings.push_back("no [" + std::string(campaign == Campaign::MartianCivilWar ? "Martian" : "Human") + " Civil War] section: the draft is used");
         return l;
+    }
     }
 
     SaveFile MakeCivilWarStart(const SaveFile& start, Campaign campaign, const CivilWarLayout& layout)

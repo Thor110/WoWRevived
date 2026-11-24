@@ -36,6 +36,7 @@ add_library(wowcore STATIC
     src/core/SaveGame.cpp
     src/core/SaveFile.cpp
     src/core/CivilWar.cpp
+    src/core/CustomCampaign.cpp
     src/core/Png.cpp
     src/core/TexturePack.cpp
     src/core/SoundTable.cpp

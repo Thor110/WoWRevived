@@ -403,19 +403,24 @@ namespace wow
     {
         // MODERN: a civil war's save has the engine's tag, its version and the campaign before the original's layout
         Campaign campaign = Campaign::Regular;
+        uint32_t flags = 0;
         std::span<const uint8_t> data = whole;
         if (whole.size() >= EngineSaveHeader && std::memcmp(whole.data(), EngineSaveTag, 4) == 0)
         {
             auto u32 = [&](size_t at) { return uint32_t(whole[at]) | uint32_t(whole[at + 1]) << 8 | uint32_t(whole[at + 2]) << 16 | uint32_t(whole[at + 3]) << 24; };
             if (u32(4) != EngineSaveVersion) throw FormatError("save: the engine's save version " + std::to_string(u32(4)) + " isn't known");
-            const uint32_t c = u32(8);
-            if (c != uint32_t(Campaign::HumanCivilWar) && c != uint32_t(Campaign::MartianCivilWar)) throw FormatError("save: unknown campaign " + std::to_string(c));
+            const uint32_t word = u32(8), c = word & CampaignFlags::KindMask;
+            if ((word & ~(CampaignFlags::KindMask | CampaignFlags::Known)) != 0 || c > uint32_t(Campaign::MartianCivilWar) ||
+                (c == uint32_t(Campaign::Regular) && !(word & CampaignFlags::Custom)))
+                throw FormatError("save: unknown campaign " + std::to_string(word));
             campaign = Campaign(c);
+            flags = word & ~CampaignFlags::KindMask;
             data = whole.subspan(EngineSaveHeader);
         }
         Reader r{ data };
         SaveFile s;
         s.campaign = campaign;
+        s.campaignFlags = flags;
         s.version = r.U32();
         r.Tag("GAME");
         uint32_t length = r.U32();
@@ -593,11 +598,11 @@ namespace wow
     std::vector<uint8_t> SaveFile::Write() const
     {
         Writer w;
-        if (IsCivilWar(campaign))
+        if (TaggedSave(campaign, campaignFlags))
         {
             w.o.insert(w.o.end(), EngineSaveTag, EngineSaveTag + 4);
             w.U32(EngineSaveVersion);
-            w.U32(uint32_t(campaign));
+            w.U32(uint32_t(campaign) | (campaignFlags & CampaignFlags::Known));
         }
         w.U32(version);
         w.Tag("GAME");

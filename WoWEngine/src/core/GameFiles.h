@@ -27,6 +27,8 @@ namespace wow
 
         // A game path such as "DAT\\Dat.wow" (either slash) to the real file, or nothing if it doesn't exist.
         std::optional<std::filesystem::path> Resolve(std::string_view gamePath) const;
+        // Every real path the game path has: the overlays' (for DAT and MAPS paths), then the game folder's
+        std::vector<std::filesystem::path> ResolveAll(std::string_view gamePath) const;
 
         // The files the engine can't start without that are missing from Root().
         std::vector<std::string> Missing() const;

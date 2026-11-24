@@ -192,6 +192,7 @@ namespace wow
         void RemoveBattleUnits(const std::vector<std::pair<int, int>>& dead); // (object, slot) of each vehicle destroyed
         int battleDead[2] = { 0, 0 };    // vehicles destroyed in the battle just fought, the player's and the other side's
         void SetStatusStrip(bool on) { statusStrip = on; }   // [Modern] "War map status strip"
+        void SetUnlimitedBuilding(bool on) { unlimitedBuilding = on; }   // [Modern] "Unlimited building"
         void SetDeposits(std::map<int, std::array<int, 6>> d, float dropOff) { deposits = std::move(d); resourceDropOff = dropOff; }
         // Both sides' research (0x417CD0: the local player's first, dword_4E9B88, then the other side's, 4E9B8C),
         // read from the save when there is one (HRSH, MRSH), and the war map view's trigger update (0x418D17)
@@ -280,6 +281,7 @@ namespace wow
         // faction in the regular game and the player's own in a civil war: everything that wants the other side's
         // faction (its research tree, command building, resource kinds, rules) asks OtherIsHuman().
         Campaign campaign = Campaign::Regular;
+        uint32_t campaignFlags = 0;     // (update 246: a custom campaign's, core/Campaign.h)
     public:
         Campaign CampaignKind() const { return campaign; }
         bool OtherIsHuman() const { return OtherHuman(campaign, res.Human()); }
@@ -617,6 +619,11 @@ namespace wow
         bool Option(const char* name, bool on) const { return eventOption ? eventOption(name, on) : on; }
         bool stickyPopup = false;   // [Modern] "Sticky popup menus": the popup stays open once the right button's let go
         bool statusStrip = false;   // [Modern] "War map status strip": the engine's strip with the sector's name (not in the game)
+        // MODERN (update 246, docs/MODERN.md "Unlimited building"): the player's factories and construction vehicles
+        // ignore each type's "max per sector" (OBJ.ojd record 52; not the command buildings', 1) and the sector's
+        // room for the vehicles they make
+        // ("Max units in sector" / "Max boats in sector"); moving into a sector still keeps to those
+        bool unlimitedBuilding = false;
         bool forfeited = false;     // byte_4E9B94: the battle map's key building lost with no battle on (0x48ACEF)
         struct QueuedEvent { int event, param; std::string text; };
         std::deque<QueuedEvent> eventQueue;

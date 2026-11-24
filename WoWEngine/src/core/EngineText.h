@@ -32,7 +32,11 @@ namespace wow::enginetext
         HumanCivilWar = 1450, MartianCivilWar, HumanCivilWarTag, MartianCivilWarTag,                     // 1450-1453
         // the debriefing's lines that name the other faction (0x4AB / 0x4AC), for a war within one
         EnemyEliminated, EnemyOccupying,                                                                  // 1454-1455
-        Last = 1455,
+        // the Modern Gameplay menu (update 246): its rows and title; their tips are their ids + 20 (1476-1478)
+        UnlimitedBuilding = 1456, BridgesFireBack, ModernGameplay,                                       // 1456-1458
+        // custom campaigns (update 246, docs/CUSTOM.md): the main menu's entry and its menu's heading, its rows
+        CustomCampaigns = 1460, ResumeCustom, NoCustomCampaigns, NextCampaigns, PreviousCampaigns,      // 1460-1464
+        Last = 1478,
     };
 
     struct Entry { int id; const char* text[Languages]; };
@@ -168,6 +172,32 @@ namespace wow::enginetext
             "Die Größe der Kartenanzeigen: Minikarte, Symbole, Menüs und Kalender.",
             "La dimensione dei pannelli delle mappe: la minimappa, le icone, i menu e il calendario.",
             "El tamaño de los paneles de los mapas: el minimapa, los iconos, los menús y el calendario." } },
+        { UnlimitedBuilding, { "Unlimited building", "Construction illimitée", "Unbegrenzter Bau", "Costruzione illimitata", "Construcción ilimitada" } },
+        { BridgesFireBack, { "Units on bridges fire back", "Tir depuis les ponts", "Feuer von Brücken", "Fuoco dai ponti", "Fuego desde los puentes" } },
+        { CustomCampaigns, { "Custom Campaigns", "Campagnes personnalisées", "Eigene Feldzüge", "Campagne personalizzate", "Campañas personalizadas" } },
+        { ResumeCustom, { "Resume Custom Campaign", "Reprendre une campagne personnalisée", "Eigenen Feldzug fortsetzen", "Riprendi campagna personalizzata", "Reanudar campaña personalizada" } },
+        { NoCustomCampaigns, { "No custom campaigns", "Aucune campagne personnalisée", "Keine eigenen Feldzüge", "Nessuna campagna personalizzata", "No hay campañas personalizadas" } },
+        { NextCampaigns, { "Next Campaigns", "Campagnes suivantes", "Weitere Feldzüge", "Campagne successive", "Campañas siguientes" } },
+        { PreviousCampaigns, { "Previous Campaigns", "Campagnes précédentes", "Vorherige Feldzüge", "Campagne precedenti", "Campañas anteriores" } },
+        { ModernGameplay, { "Modern Gameplay", "Jeu moderne", "Modernes Spiel", "Gioco moderno", "Juego moderno" } },
+        { ModernGameplay + TipOffset, {
+            "Changes to the rules of play: upgraded buildings in battle, unlimited building, units firing from bridges.",
+            "Changements des règles : bâtiments améliorés au combat, construction illimitée, tir depuis les ponts.",
+            "Geänderte Spielregeln: ausgebaute Gebäude im Kampf, unbegrenzter Bau, Feuer von Brücken.",
+            "Modifiche alle regole: edifici potenziati in battaglia, costruzione illimitata, fuoco dai ponti.",
+            "Cambios en las reglas: edificios mejorados en batalla, construcción ilimitada, fuego desde los puentes." } },
+        { UnlimitedBuilding + TipOffset, {
+            "Your factories and construction vehicles ignore the limits on how many of each thing a sector can hold.",
+            "Vos usines et véhicules de construction ignorent la limite de chaque objet par secteur.",
+            "Ihre Fabriken und Baufahrzeuge ignorieren die Höchstzahl jedes Objekts pro Sektor.",
+            "Le tue fabbriche e i veicoli da costruzione ignorano il limite di ogni oggetto per settore.",
+            "Tus fábricas y vehículos de construcción ignoran el límite de cada objeto por sector." } },
+        { BridgesFireBack + TipOffset, {
+            "Units crossing a bridge aim and return fire instead of holding it until they are off it.",
+            "Les unités humaines sur un pont ripostent au lieu de retenir leur tir.",
+            "Menschliche Einheiten auf einer Brücke erwidern das Feuer.",
+            "Le unità umane su un ponte rispondono al fuoco.",
+            "Las unidades humanas sobre un puente devuelven el fuego." } },
         { MenuScale + TipOffset, {
             "The size of the menus, up to what fits the screen: 200% doubles every pixel.",
             "La taille des menus, jusqu'à ce que permet l'écran : 200 % double chaque pixel.",

@@ -62,6 +62,7 @@ namespace wow
         void NextColumn();
         // MODERN: the last row added has its backing drawn as wide as the menu's full rows, its own ends and seams
         // kept (the two-column menus' slider sprite is narrower than their other rows)
+        void SetLastText(std::string text) { if (!buttons.empty()) buttons.back().text = std::move(text); }
         void WidenLast() { if (!buttons.empty()) buttons.back().widen = SpriteRect(style == 2 ? 0x3B : 0x38, 0, 0).w; }
         void EndColumns() { if (column >= 0) nextY = std::max(nextY, columnBottom); }   // rows after the two columns go under the longer
 

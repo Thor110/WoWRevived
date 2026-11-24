@@ -19,9 +19,31 @@ namespace wow
 
     bool SaveSlot::Exists(const GameFiles& files, bool human, int slot, bool civilWar) { return files.Resolve(GamePath(human, slot, civilWar)).has_value(); }
 
+    std::string SaveSlot::CustomPath(int slot)
+    {
+        char path[48];
+        std::snprintf(path, sizeof(path), "SaveGame\\Custom.%03d", slot);
+        return path;
+    }
+
+    std::optional<uint32_t> SaveSlot::CampaignWord(const GameFiles& files, const std::string& gamePath)
+    {
+        auto path = files.Resolve(gamePath);
+        if (!path) return std::nullopt;
+        std::ifstream in(*path, std::ios::binary);
+        unsigned char head[EngineSaveHeader] = {};
+        if (!in.read(reinterpret_cast<char*>(head), std::streamsize(sizeof(head))) || std::memcmp(head, EngineSaveTag, 4) != 0) return std::nullopt;
+        return uint32_t(head[8]) | uint32_t(head[9]) << 8 | uint32_t(head[10]) << 16 | uint32_t(head[11]) << 24;
+    }
+
     std::optional<std::string> SaveSlot::Name(const GameFiles& files, bool human, int slot, bool civilWar)
     {
-        auto path = files.Resolve(GamePath(human, slot, civilWar));
+        return NameAt(files, GamePath(human, slot, civilWar));
+    }
+
+    std::optional<std::string> SaveSlot::NameAt(const GameFiles& files, const std::string& gamePath)
+    {
+        auto path = files.Resolve(gamePath);
         if (!path) return std::nullopt;
         std::ifstream in(*path, std::ios::binary);
         char raw[NameLength] = {};

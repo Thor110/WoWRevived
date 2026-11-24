@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 245
+# Handoff: WoWEngine after update 246
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -147,12 +147,14 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   exe. `docs/TASKS.md` and `docs/REVIEW.md` are the older task lists (PARITY.md takes precedence).
   `docs/review/range-*.md` are per-address-range routine reviews.
 - `docs/MODERN.md`: the `[Modern]` options, the only deliberate departures.
+- `docs/TEXTURES.md` (the battle map's texture packs), `docs/OVERRIDE.md` (PNGs in place of any sprite's frames)
+  and `docs/CUSTOM.md` (custom campaigns): the rules for the files players and modders make.
 - `docs/TRAILER.md`: the trailer (first cut at update 230) and how to cut it again with `tools/trailer`; `--frames`
   records a scripted run's every update as pictures.
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 245
+## State after update 246
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -184,6 +186,19 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   moved). The parity battles didn't see it (a battle reads the table, not the counters). Fixed in 238. A new
   campaign's war map screenshot with the construction vehicles in sectors 12 and 24 is a quick look: their
   counters aren't the lorry's.
+- **Update 246** did the owner's list from after 245, in their order:
+  - **PNG sprite overrides** (docs/OVERRIDE.md): with Enhanced assets on, any `.spr` frame is replaced by a PNG
+    beside it, named as WoWViewer exports frames (`<name>_frame_NN.png`, `<name>.png` for one frame), at the
+    frame's size or 2, 4 or 8 times it (`Resources::ApplyPngOverride`, `Canvas::DrawColour`). Tried on the main
+    menu's button plate (`dat\bigmnbut_frame_00.png` at 704 x 64, `--open 0x90`): drawn in full colour.
+  - **Modern Gameplay** menu (0x9004; Game Options and the war map's menu, under Modern Options) with
+    **Unlimited building** (MODERN.md "Modern Gameplay": OBJ.ojd's per-sector limit, but the command buildings',
+    and the sector's room for new vehicles, not applied to the player's factories) and **Units on bridges fire
+    back** (the aim's bridge link test, 0x491123, left out). Neither has been tried in a battle or on a full
+    sector yet: worth a play-test.
+  - **Custom campaigns** (docs/CUSTOM.md): `dat\Campaigns\*.txt`, the main menu's "Custom Campaigns", saves
+    `SaveGame\Custom.nnn`. Tried headless on the English install: the Highlands Alone Human Civil War and the
+    Martian Stranded started, saved, listed and loaded; the test saves were deleted after.
 - **Test units** (245): `wowdump --addunit <save> <out> <sector> <type> <list> <dx,dy>` adds a unit of a type (its
   battle units' count, the type's full health) to a sector's list (0 the player's units, 1 the other side's), near
   the first placed object there; OBJ.ojd is read from the save's folder. As `--load 1` with the file as
@@ -231,7 +246,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **246**.
+  - The next number is **247**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.

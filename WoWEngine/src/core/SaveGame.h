@@ -27,6 +27,12 @@ namespace wow
         // engine's tag before the original's layout, so its name is that much further on.
         static std::optional<std::string> Name(const GameFiles& files, bool human, int slot, bool civilWar = false);
         static bool Exists(const GameFiles& files, bool human, int slot, bool civilWar = false);
+        // MODERN (update 246, docs/CUSTOM.md): a custom campaign's saves, "SaveGame\Custom.001" on, either faction's
+        // (the campaign word says whose)
+        static std::string CustomPath(int slot);
+        static std::optional<std::string> NameAt(const GameFiles& files, const std::string& gamePath);
+        // the campaign word of the engine's tag (core/Campaign.h), or nothing for a save without it
+        static std::optional<uint32_t> CampaignWord(const GameFiles& files, const std::string& gamePath);
     };
 
     // The start of a save, which the game writes as a stream of objects (each object's writer puts its tag, then

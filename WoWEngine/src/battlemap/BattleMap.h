@@ -86,6 +86,7 @@ namespace wow
             // battle on, for every neighbouring sector
             bool mat = false;
             bool selectionKeys = true;  // [Modern] "Selection keys": Ctrl + digit keeps a selection, the digit brings it back, Shift adds to it
+            bool bridgesFireBack = false;   // [Modern] "Bridges fire back" (update 246): a unit on a bridge link aims and fires (Aim)
             // 0x43AC40 on a sector: room there for `count` more of the player's land objects (else boats)
             std::function<bool(bool land, int sector, int count)> hasRoom;
             int noBuildBorder = 16;     // [Tweak] "No-build border width (vertices)" (dword_59D93C)

@@ -53,6 +53,9 @@ namespace wow
         // The section for the campaign in a CivilWar.txt; what's missing from it is the draft's. Lines it can't
         // read are left out, each noted in warnings.
         static CivilWarLayout Parse(std::string_view text, Campaign campaign, std::vector<std::string>& warnings);
+        // MODERN (update 246): the same lines in a custom campaign's file (core/CustomCampaign.h), which has no
+        // sections; the keys named in `skip` are the custom campaign's own, and are left to it
+        static CivilWarLayout ParseLines(std::string_view text, Campaign campaign, const std::vector<std::string>& skip, std::vector<std::string>& warnings);
     };
 
     // Throws FormatError when the start file's research can't be split into its two blocks.

@@ -36,6 +36,20 @@ namespace wow
         return ResolveIn(root, gamePath);
     }
 
+    std::vector<fs::path> GameFiles::ResolveAll(std::string_view gamePath) const
+    {
+        std::vector<fs::path> all;
+        const size_t skip = gamePath.find_first_not_of("\\/");
+        const std::string_view rest = skip == std::string_view::npos ? std::string_view() : gamePath.substr(skip);
+        const size_t end = rest.find_first_of("\\/");
+        const std::string first(rest.substr(0, end));
+        if (end != std::string_view::npos && (EqualsNoCase(first, "dat") || EqualsNoCase(first, "maps")))
+            for (const fs::path& folder : overlays)
+                if (auto found = ResolveIn(folder, gamePath)) all.push_back(*found);
+        if (auto found = ResolveIn(root, gamePath)) all.push_back(*found);
+        return all;
+    }
+
     std::optional<fs::path> GameFiles::ResolveIn(const fs::path& folder, std::string_view gamePath)
     {
         fs::path current = folder;

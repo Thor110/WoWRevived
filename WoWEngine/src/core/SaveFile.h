@@ -167,6 +167,7 @@ namespace wow
     {
         // MODERN: a civil war's save (core/Campaign.h): the engine's tag first, then the original's layout
         Campaign campaign = Campaign::Regular;
+        uint32_t campaignFlags = 0;     // MODERN (update 246): the campaign word's flags (core/Campaign.h)
         uint32_t version = 5;
         std::vector<uint8_t> game;     // the GAME block, 0x28 bytes
         uint32_t warMap[4] = {};       // view x, view y, selected sector, view mode

@@ -4,6 +4,7 @@
 #include "core/SaveFile.h"
 #include "core/SaveGame.h"
 #include "core/CivilWar.h"
+#include "core/CustomCampaign.h"
 
 #include <filesystem>
 #include <fstream>
@@ -323,4 +324,61 @@ TEST("civil war layout: sectors moved between sides, no copy, and lines it can't
     std::vector<std::string> none;
     CivilWarLayout::Parse("[Elsewhere]\nplayer = 1\n", Campaign::HumanCivilWar, none);
     CHECK_EQ(none.size(), size_t(1));           // no section: the draft, noted
+}
+
+TEST("custom campaign: a save's kind and flags in the tag, read back; a regular kind without the custom flag throws")
+{
+    SaveFile s = MakeSave();
+    s.campaign = Campaign::Regular;
+    s.campaignFlags = CampaignFlags::Custom | CampaignFlags::NoPods | CampaignFlags::Martian;
+    std::vector<uint8_t> bytes = s.Write();
+    REQUIRE(bytes.size() > EngineSaveHeader);
+    CHECK(std::memcmp(bytes.data(), EngineSaveTag, 4) == 0);
+    CHECK_EQ(int(bytes[8]), 0);
+    CHECK_EQ(int(bytes[9]), 7);
+    const SaveFile back = SaveFile::Parse(bytes);
+    CHECK(back.campaign == Campaign::Regular);
+    CHECK_EQ(back.campaignFlags, s.campaignFlags);
+    CHECK(!HasPods(back.campaign, back.campaignFlags));
+    CHECK(back.Write() == bytes);
+    bytes[9] = 0;                         // a tagged regular save that isn't a custom one
+    CHECK_THROWS(SaveFile::Parse(bytes));
+    bytes[9] = 0x81;                      // a flag this engine doesn't know
+    CHECK_THROWS(SaveFile::Parse(bytes));
+    // the pods: the regular game's on, a civil war's off, a custom campaign's as it says
+    CHECK(HasPods(Campaign::Regular, 0));
+    CHECK(!HasPods(Campaign::HumanCivilWar, 0));
+    CHECK(HasPods(Campaign::Regular, CampaignFlags::Custom));
+    CHECK_EQ(SaveSlot::CustomPath(7), std::string("SaveGame\\Custom.007"));
+}
+
+TEST("custom campaign: the definition's keys, a civil war's layout, and lines it can't read")
+{
+    std::vector<std::string> warnings;
+    bool ok = false;
+    CustomCampaign c = CustomCampaign::Parse("name = Quiet Skies  # a comment\nkind = Human\npods = off\n", "Quiet.txt", warnings, ok);
+    CHECK(ok);
+    CHECK(warnings.empty());
+    CHECK_EQ(c.name, std::string("Quiet Skies"));
+    CHECK(c.kind == Campaign::Regular && c.human && !c.pods);
+    CHECK_EQ(c.Flags(), CampaignFlags::Custom | CampaignFlags::NoPods);
+
+    warnings.clear();
+    c = CustomCampaign::Parse("kind = martian civil war\npods = on\nother = rest\ncopy = none\nstart = ../x\ncolour = red\n", "Split.txt", warnings, ok);
+    CHECK(ok);
+    CHECK_EQ(c.name, std::string("Split"));                 // the file's name without .txt
+    CHECK(c.kind == Campaign::MartianCivilWar && !c.human && !c.pods);
+    CHECK_EQ(c.layout.copyFrom, 0);
+    CHECK(c.start.empty());
+    CHECK_EQ(warnings.size(), size_t(3));                   // pods on, the start's folder, colour
+    CHECK_EQ(c.Flags(), CampaignFlags::Custom | CampaignFlags::NoPods | CampaignFlags::Martian);
+
+    warnings.clear();
+    c = CustomCampaign::Parse("kind = human\nplayer = 1 2\n", "x.txt", warnings, ok);
+    CHECK(ok);
+    CHECK_EQ(warnings.size(), size_t(1));                   // a layout line in a regular kind
+
+    warnings.clear();
+    CustomCampaign::Parse("name = Nothing\nkind = venusian\n", "n.txt", warnings, ok);
+    CHECK(!ok);
 }
