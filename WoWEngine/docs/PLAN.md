@@ -98,6 +98,7 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
 - [x] **C9** (231) Enhanced assets taken at once, without a restart (the owner's idea, 230; MODERN.md
       "Enhanced assets").
 - [x] **C10** (231) A menu scale, a slider of its own (the owner's idea, 230; MODERN.md "Menu scale").
+- [x] **C11** (232) The maps' tool tips at the HUD scale (the owner, 231; MODERN.md "Battle zoom and HUD scale").
 - [x] **D5** (219, 220) WoWRevived's updated TEXT.ojd for the install's language copied in as the game's by
       WoWLauncher (the five files in `resources`).
 - [x] **C8** (226) The engine's own captions and tool tips (the Modern Options menu, the save menus' page rows)

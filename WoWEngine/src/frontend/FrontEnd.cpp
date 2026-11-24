@@ -1361,6 +1361,11 @@ namespace wow
     // right edge and its middle at least 4 down, then grown by 2 on the left and top and 1 on the right and bottom.
     void FrontEnd::DrawTooltip(Canvas& canvas) const
     {
+        if (tip) DrawTooltip(canvas, tip->x, tip->y);
+    }
+
+    void FrontEnd::DrawTooltip(Canvas& canvas, int tipX, int tipY) const
+    {
         if (!tip) return;
         const Font* font = res.GetFont(0x6F);
         if (!font) return;
@@ -1377,7 +1382,7 @@ namespace wow
         int th = font->Height() * lines + 2 * (lines - 1);
         int w = tw + 2, h = th + 2;
         int offset = ini.GetInt("Screen", "Tool Tip Offset", 16);
-        int cx = tip->x + 32 + w / 2, cy = tip->y - offset + 32 + h / 2;
+        int cx = tipX + 32 + w / 2, cy = tipY - offset + 32 + h / 2;
         if (cx + w / 2 > canvas.Width() - canvas.OriginX()) cx = canvas.Width() - canvas.OriginX() - w / 2 - 4;
         if (cy < 4 - canvas.OriginY()) cy = 4 - canvas.OriginY();
         Rect text{ cx - w / 2 + 1, cy - h / 2 + 1, tw, th };
@@ -1714,7 +1719,21 @@ namespace wow
         {
             canvas.SetOrigin(ox, oy);
             screen->Draw(canvas);
-            DrawTooltip(canvas);
+            const bool onMap = screen->Id() == WarMap::Id || screen->Id() == BattleMap::Id;
+            int pw = canvas.Width(), ph = canvas.Height();
+            if (onMap) PanelSize(canvas.Width(), canvas.Height(), pw, ph);
+            if (tip && onMap && (pw != canvas.Width() || ph != canvas.Height()))
+            {
+                // MODERN (update 232): the maps' tool tips (a sector's name, a counter's, the panels' buttons') are
+                // laid on with the maps' panels, at the HUD scale, where the mouse is in the panels' space
+                canvas.SetOrigin(0, 0);
+                const int tx = int(int64_t(tip->x) * pw / canvas.Width()), ty = int(int64_t(tip->y) * ph / canvas.Height());
+                LayPanels(canvas.Pixels(), canvas.Width(), canvas.Height(), pw, ph, menuUnder, menuOver, [&](uint32_t* pixels, int w, int h) {
+                    Canvas layer(pixels, w, h, res);
+                    DrawTooltip(layer, tx, ty);
+                });
+            }
+            else DrawTooltip(canvas);
         }
         canvas.SetOrigin(0, 0);
         // (bigBlack is 640 x 480: on a larger picture it is laid side by side until the picture is covered)

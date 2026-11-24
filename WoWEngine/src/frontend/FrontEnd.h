@@ -187,6 +187,7 @@ namespace wow
         // tool tips (0x433870)
         void UpdateTooltip();
         void DrawTooltip(Canvas& canvas) const;
+        void DrawTooltip(Canvas& canvas, int x, int y) const;   // at x, y of the canvas
         struct Tip { std::string text; int x, y; };
         std::optional<Tip> tip;
         int stillTicks = 0;        // updates since the mouse last moved

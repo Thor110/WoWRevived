@@ -135,6 +135,11 @@ buffer of the panels' size, the panels are drawn on that as the game draws them 
 with what is under), and only the pixels the panels changed are put back on the picture, scaled. The rest of
 the picture is untouched, so the map or the land is not softened by the HUD scale.
 
+**The maps' tool tips** (update 232; the owner's question at 231) follow the HUD scale too: a sector's name, a
+counter's, the panels' buttons' and the Build List's, on both maps, are laid on with the panels (`FrontEnd::Draw`,
+`LayPanels`) where the mouse is in the panels' space. Until 232 they were drawn at the original size whatever the
+HUD scale. A menu's tool tips go with the menu, at the menu scale.
+
 What it doesn't do yet: the battle's drag box is drawn with the land, so it thickens and thins with the zoom.
 The wheel isn't written to a playback recording (the keys are).
 
