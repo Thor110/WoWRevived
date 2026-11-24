@@ -59,8 +59,6 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
       unfinished with its markers; cancelling from the queue kills it. The war map's Build List was already
       cancel-only for a constructor vehicle (its items greyed, 0x494). Force Fire: `BattleMap::Armed` lacked
       several shot classes' types (the Handling Machine's 0x1AB, the Electric Machines'), fixed. Left:
-      - the hours passing during a battle (0x802D through the battle world, 0x43B6C9 -> 0x446310), so a site
-        grows while the battle's on (the engine's war map clock stops for battles: to look at as a whole);
       - a fence drawn as its line of posts (the engine draws any fence as one object);
       - a vehicle ordered from the battle map, made at the world's (0, 0) in the original when done (not followed);
       - the specials each seen in play (they're in the popup and fire through the guns' modes).

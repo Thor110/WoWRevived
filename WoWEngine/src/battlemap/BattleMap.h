@@ -16,6 +16,7 @@
 #include "core/WofView.h"
 #include "core/Deployment.h"
 #include "battlemap/BuildHost.h"
+#include "core/TexturePack.h"
 #include <algorithm>
 #include <map>
 #include <set>
@@ -52,6 +53,9 @@ namespace wow
             const std::map<int, ObjOjd::UnitData>* units = nullptr;
             // the war map's factories, for building on the battle map (BuildHost); none: no Build
             BuildHost* build = nullptr;
+            // MODERN (docs/TEXTURES.md): a texture pack (none: the game's own), and each model GType's folder in it
+            const TexturePack* textures = nullptr;
+            std::map<int, std::string> textureFolders;
             // MODERN (docs/MODERN.md "The civil wars"): the other side's copy of the table (ObjOjd::OtherSideUnits),
             // which its units' full health is read from; the one table when not given
             const std::map<int, ObjOjd::UnitData>* otherUnits = nullptr;
@@ -185,7 +189,7 @@ namespace wow
         DitherTables dither;
         // The scenery (dat\<sector>.nsb) as RTypeISO objects: the IOB models and their lights by GType, each
         // object's screen point and depth, and the time-of-day shade tables of the slots they use
-        struct IsoModel { IobModel model; std::vector<uint8_t> lights; int slot = 0; };
+        struct IsoModel { IobModel model; std::vector<uint8_t> lights; int slot = 0; bool ownLook = false; };
         std::map<int, IsoModel> models;
         mutable std::map<std::pair<const IsoModel*, int>, std::vector<uint8_t>> isoLights;   // base lights by level
         struct ViewObject { int key; int x, y; const IsoModel* model; const WofInstance* wof = nullptr; int slot = 0; int sprite = 0; int light = -1;
@@ -196,7 +200,9 @@ namespace wow
                             int level = -1;
                             // the level vt+0x18 was given (+0x34 for a WOF or IOB renderer, 0-255): the fog's, set
                             // each update by its object's vt+0x5C (0x48B3D0)
-                            int bright = 255; };
+                            int bright = 255;
+                            // MODERN: drawn from the civil war's own texture for the other side, so not hue-turned
+                            bool ownLook = false; };
         // A scenery object (WScenery 0x4895E0 / 0x489380 on the damageable 0x489E20): its type, point and height
         // (+0x84), its health (+0xC4, the type's +0x4A to start with, bit 7 set), a 0x80A0 on its way, its light
         // updating: on the world's update list (dword_4D2550 +0x20), so its update (the smoulder, 0x48AEF0) runs
@@ -431,7 +437,17 @@ namespace wow
         void ShotDone(Unit& u);                                 // vt+0xD0 from a gun (0x494F4D): 0x4910C0 / 0x496BC0
         void MoveFlag(int x, int y);                            // 0x483590's flag, type 0x17C at level 0                                 // 0x8031 to a vehicle: 0x4910C0 -> 0x496BC0
         void StandDown(Unit& u);                                // 0x805A to a unit (its guns aside): vt+0xCC, vt+0xAC(0)                            // 0x48EF80's part after 0x48AB20
-        const IsoModel* LoadIob(int gtype);                     // an IOB model and its lights, loaded once
+        static constexpr int OtherModelKey = 0x40000000;        // MODERN: a model's cache key for the civil war's other side's own look
+        const IsoModel* LoadIob(int gtype, bool civilOther = false);
+        // MODERN (docs/TEXTURES.md): the texture pack's picture for a model, as the game's indices (w x h), if the
+        // pack has one of that size; whether the other side in a civil war has a picture of its own for it; a WOF
+        // file by its GType (and side), loaded once with the pack's atlas in
+        std::optional<std::vector<uint8_t>> PackPicture(int gtype, bool civilOther, int w, int h) const;
+        bool CivilOwnLook(int gtype, int unit) const;
+        std::vector<uint8_t>& WofFile(int gtype, bool civilOther);
+        void PackIob(IobModel& m, int gtype, bool civilOther) const;
+        mutable std::map<int, std::array<uint32_t, 256>> packPalettes;   // by slot: the export's colours
+        mutable std::set<std::string> packWarned;                     // an IOB model and its lights, loaded once
         void StopUnitSounds(Unit& u);
         void ClearFootprint(Unit& u);                           // vt+0x114, 0x491630
         static bool IsGas(int type);                            // 0x393-0x395, WGasCloud

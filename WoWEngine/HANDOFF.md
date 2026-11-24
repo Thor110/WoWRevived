@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 239
+# Handoff: WoWEngine after update 240
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -152,7 +152,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 239
+## State after update 240
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -175,12 +175,22 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   (Oxford, sector 24, has a construction vehicle and no enemy; the test install's at 640 x 480):
   `--human --open 0x8A --ticks 5 --screenshot b.bmp "wait:10,click:60:230,wait:5,rdown:60:230,wait:20,click:60:272,wait:300,click:42:42,wait:10,rdown:400:300,wait:20,move:400:345,wait:5,rup:400:345,wait:20,click:55:140,wait:5,move:480:110,wait:5,move:482:112,wait:20,click:482:112,wait:30"`
   (View map on Oxford, the vehicle's group icon, its popup's Build, the list's first item, a green spot, placed).
-  Next: the texture pack's PNG overrides (docs/TEXTURES.md), and the rest of A10. The version is 0.2.5 (238).
+  The texture packs are read (240; docs/TEXTURES.md). To try one: `wowdump --textures <game> <out>` and turn the
+  BMPs into PNGs (or take the owner's zip), put them in `build/textures` (the program's folder), set `[Modern]
+  "Enhanced assets"=1` in the test install's ini (restore it after) and run without `--no-loose`; `wowdump
+  --texcheck <game> <pack>` checks a pack reads back as the game's. A frame with an unchanged pack is the same as
+  without. Next: the rest of A10. The version is 0.2.5 (238).
 - **A lesson from 237**: the war map's constructor moved its `units` argument into the other side's copy and then
   read `units` again, so every counter had frame 0, speed 0 and move class 0 (all looked like lorries and none
   moved). The parity battles didn't see it (a battle reads the table, not the counters). Fixed in 238. A new
   campaign's war map screenshot with the construction vehicles in sectors 12 and 24 is a quick look: their
   counters aren't the lorry's.
+- **Always check the disassembly** (the owner, update 240): before saying how the original behaves, or building
+  on a reading of it, look it up in `/home/user/ida/IDA-Output.txt` (the owner's IDA listing; ask for it if it's
+  missing), not the docs' or a summary's word alone. A subagent's trace is a lead, not the answer: check its key
+  addresses yourself. Update 239's notes had the war map's hours passing during a battle because a handler that
+  forwards them (0x43B6C9) was taken for proof they arrive; the clock can't run in a battle at all (0x41AEA0 ->
+  0x43D010). Say *provisional* where it isn't checked.
 - Known open questions are in PARITY.md (S6's tree circles, the Deferred list) and under *Provisional* in the docs.
 - Things worth a look in play, because they were only checked by reading the disassembly:
   - combat after update 132 (quiet vanishing kills, damage rounding, the firer's sparing)
@@ -211,7 +221,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **240**.
+  - The next number is **241**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.

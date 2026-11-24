@@ -36,6 +36,8 @@ add_library(wowcore STATIC
     src/core/SaveGame.cpp
     src/core/SaveFile.cpp
     src/core/CivilWar.cpp
+    src/core/Png.cpp
+    src/core/TexturePack.cpp
     src/core/SoundTable.cpp
     src/core/Models.cpp
     src/core/Landscape.cpp
@@ -72,6 +74,7 @@ if(WOW_BUILD_TESTS)
         tests/SaveTests.cpp
         tests/WarMapTests.cpp
         tests/IniTests.cpp
+        tests/TextureTests.cpp
     )
     target_link_libraries(wowtests PRIVATE wowcore)
     target_include_directories(wowtests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/../WoWPatches/Common)
@@ -136,6 +139,7 @@ if(TARGET SDL3::SDL3)
     src/battlemap/BattleAi.cpp
     src/battlemap/Fog.cpp
     src/battlemap/Building.cpp
+    src/battlemap/Textures.cpp
         src/warmap/WarMap.cpp
         src/warmap/Production.cpp
         src/warmap/BuildWindow.cpp

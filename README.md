@@ -654,7 +654,7 @@ The Modern Options menu is opened from Game Options in the main menu, or from Ca
 | HUD scale | 100% | The size of the war map and battle map panels and their tool tips, from 50% to 300% |
 | Menu scale | 100% | The size of the menus, up to 225% at 1920x1080 (the largest that fits the resolution) |
 | Fade between menus | Off | The original game's fade between menus |
-| Enhanced assets | Off | WoWRevived's Enhanced Assets, switched on or off without a restart |
+| Enhanced assets | Off | WoWRevived's Enhanced Assets, switched on or off without a restart; also reads a texture pack from the TEXTURES folder (see WoWEngine/docs/TEXTURES.md) |
 | Original display settings | Off | The original Display Settings menu |
 | Play in a window | Off | Windowed mode, the window's size is remembered |
 | Stretch the picture | Off | Fill the screen instead of keeping the picture's shape |

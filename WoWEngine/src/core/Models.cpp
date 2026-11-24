@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <map>
 
 namespace wow
 {
@@ -124,6 +125,7 @@ namespace wow
             p.x = S16(d, o + 4); p.y = S16(d, o + 6);
             for (int k = 0; k < 3; k++) p.normals[k] = U16(d, o + 8 + size_t(k) * 2);
             p.offset = U32(d, o + 14);
+            p.seed = p.offset;
             m.patches.push_back(p);
         }
         m.patchData.assign(d.begin() + Header, d.end());
@@ -175,6 +177,69 @@ namespace wow
         image.pixels.assign(size_t(image.width) * size_t(image.height), 0);
         for (const Pixel& px : pixels) image.pixels[size_t(px.y - minY) * size_t(image.width) + size_t(px.x - minX)] = px.c;
         return image;
+    }
+
+    IobModel IobModel::Repainted(const IndexedImage& picture) const
+    {
+        // the picture's origin, as Picture() places it: the least x and y any pixel had (no more than 0)
+        const IndexedImage old = Picture();
+        int minX = 0, minY = 0;
+        {
+            // the same walk as Picture() for the bounds
+            std::vector<uint32_t> starts;
+            for (const IobPatch& p : patches) starts.push_back(p.offset);
+            std::sort(starts.begin(), starts.end());
+            starts.erase(std::unique(starts.begin(), starts.end()), starts.end());
+            starts.push_back(uint32_t(patchData.size()));
+            for (const IobPatch& p : patches)
+            {
+                if (p.offset >= patchData.size()) continue;
+                size_t pos = p.offset;
+                const size_t end = *std::upper_bound(starts.begin(), starts.end(), p.offset);
+                for (int row = 0; pos + 1 < end; row++)
+                {
+                    const int skip = patchData[pos++], run = patchData[pos++];
+                    if (skip == 0 && run == 0) break;
+                    const int count = run & 0x7F;
+                    pos += (run & 0x80) ? 1 : size_t(count);
+                    if (count) { minX = std::min(minX, p.x + skip); minY = std::min(minY, p.y + row); }
+                }
+            }
+        }
+        IobModel m = *this;
+        if (picture.width != old.width || picture.height != old.height) return m;
+        std::map<uint32_t, uint32_t> moved;     // an old patch data offset -> its new one
+        std::vector<uint8_t> data;
+        for (IobPatch& p : m.patches)
+        {
+            if (p.offset >= patchData.size()) continue;
+            if (auto it = moved.find(p.offset); it != moved.end()) { p.offset = it->second; continue; }
+            const uint32_t at = uint32_t(data.size());
+            size_t pos = p.offset;
+            for (int row = 0; row < int(p.height) && pos + 1 < patchData.size(); row++)
+            {
+                const int skip = patchData[pos++], run = patchData[pos++];
+                const int count = run & 0x7F;
+                pos += (run & 0x80) ? 1 : size_t(count);
+                data.push_back(uint8_t(skip));
+                data.push_back(uint8_t(count));
+                for (int k = 0; k < count; k++)
+                {
+                    const int x = p.x + skip + k - minX, y = p.y + row - minY;
+                    const bool in = x >= 0 && y >= 0 && x < picture.width && y < picture.height;
+                    // a see-through pixel in the new picture keeps the old one (TEXTURES.md: a hole shows the game's)
+                    uint8_t v = in ? picture.pixels[size_t(y) * size_t(picture.width) + size_t(x)] : 0;
+                    if (v == 0 && in) v = old.pixels[size_t(y) * size_t(old.width) + size_t(x)];
+                    data.push_back(v);
+                }
+            }
+            data.push_back(0);      // (Picture() stops at [0][0] as at the next patch's data)
+            data.push_back(0);
+            moved[p.offset] = at;
+            p.offset = at;
+        }
+        m.patchData = std::move(data);
+        return m;
     }
 
     Terrain Terrain::Load(std::span<const uint8_t> cls, std::span<const uint8_t> atm)

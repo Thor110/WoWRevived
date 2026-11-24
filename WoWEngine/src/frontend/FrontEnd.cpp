@@ -1469,6 +1469,26 @@ namespace wow
         canvas.DrawString(0x6F, tip->text, text, TextCentreX | TextCentreY);
     }
 
+    const TexturePack* FrontEnd::Textures()
+    {
+        if (!texturePack)
+        {
+            texturePack.emplace();
+            std::vector<std::filesystem::path> places;
+            if (const char* base = SDL_GetBasePath()) { places.emplace_back(std::filesystem::path(base) / "TEXTURES"); places.emplace_back(std::filesystem::path(base) / "textures"); }
+#ifdef WOWENGINE_SOURCE_DIR
+            places.emplace_back(std::filesystem::path(WOWENGINE_SOURCE_DIR) / "textures");
+#endif
+            for (const auto& place : places)
+                if (texturePack->Open(place))
+                {
+                    SDL_Log("Texture pack: %zu pictures in %s", texturePack->Count(), place.string().c_str());
+                    break;
+                }
+        }
+        return texturePack->Empty() ? nullptr : &*texturePack;
+    }
+
     // EnterBattleMap (0x439770), as far as it goes: the sector's landscape (0x47AF10, lit for the calendar's hour,
     // ftol(+0x28) % 24) and its shade tables (0x40B570, from the enemy count of the battle before), the briefing
     // sound stopped (0x41B360), then the count for the next battle (0x43983E)
@@ -1516,6 +1536,12 @@ namespace wow
         s.units = &map->Units();
         s.otherUnits = &map->Units(false);
         s.build = map;          // building on the battle map: the war map's factories (it stays behind the battle)
+        // MODERN (docs/TEXTURES.md): the texture pack, with Enhanced assets on (--no-loose keeps it off)
+        if (const TexturePack* pack = res.EnhancedAssets() ? Textures() : nullptr)
+        {
+            s.textures = pack;
+            s.textureFolders = textures::Folders(res.GTypes(), map->Units());
+        }
         s.six = &wofTypes;
         s.lights = &lightTypes;
         s.moveCosts = &moveCosts;

@@ -59,7 +59,7 @@ namespace wow
             const uint8_t header[4] = { p.width, p.height, p.colour, p.mode };
             const int l[3] = { lights[size_t(i) * 3], lights[size_t(i) * 3 + 1], lights[size_t(i) * 3 + 2] };
             // the patch counter (4CA0E0) counts down from the number of patches
-            TerrainView::DrawPatch(header, m.patchData.data() + p.offset, int(p.offset) + (count - i), x + p.x, y + p.y, l,
+            TerrainView::DrawPatch(header, m.patchData.data() + p.offset, int(p.seed) + (count - i), x + p.x, y + p.y, l,
                                    0x3400, p.mode == 1, target, dither, table);
         }
     }

@@ -799,9 +799,13 @@ factory building's vehicles can be ordered there.
   sector's battle being on, put where it was placed (0x80A7, a fence's second point 0x80A6) and started: unfinished,
   health max(1, its full health x 0), the four build markers round it on the player's side ("Buildings").
 - **It grows** with its factory's hours (0x802D -> 0x80AD: +0x7C), and is finished at 0x80AC (+0x7C = +0x78, its
-  battle object's health its full). In the original the battle world passes the hours on (0x43B6C9 -> 0x446310);
-  *not in*: the engine's war map clock doesn't run during a battle, so a site placed in a battle starts growing
-  when the battle ends.
+  battle object's health its full). The hours are the war map clock's (the calendar's update 0x41F6C0 sends
+  0x802D to the war map world), and the clock doesn't run during a battle: time can't be turned on while any
+  sector holds both sides (0x41AEA0 -> 0x43D010), and the press on the map that opens a quiet sector's battle map
+  turns it off (WARMAP.md "The clock"). So a site placed on the battle map starts growing once the player is
+  back on the war map and sets time running, as the engine does. The battle world does pass an 0x802D on to its
+  objects (its handler 0x43ADA0, at 0x43B6C9 -> 0x446310), but with the clock stopped none comes; nor do the
+  war map's units move during a battle. (Corrected in update 240: 239's notes had the hours passing.)
 - **Cancelled** from the window (0x462120 in battle mode): the construction is sent 0x80A0 and dies (with its
   explosion and its markers; the engine's markers were left behind by any unfinished building's death until 239),
   rather than being taken from the sector as on the war map.

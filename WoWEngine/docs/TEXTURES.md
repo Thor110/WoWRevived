@@ -1,13 +1,19 @@
 # Texture packs: where the files go
 
-*The layout agreed with the owner (update 238). The engine doesn't read these folders yet. Reading them is the
-next texture step (MODERN.md "Tools", Texture packs). Until then this is the layout to put a pack together in. It
-is the same as the texture export's (`wowdump --textures`), so an exported and reworked set can be dropped in as
-it is.*
+*The layout agreed with the owner (update 238); the engine reads it since update 240 (`core/Png`,
+`core/TexturePack`, `battlemap/Textures.cpp`). It is the same as the texture export's (`wowdump --textures`), so an
+exported and reworked set can be dropped in as it is.*
+
+**It's read with Enhanced assets on** (Modern Options; `--no-loose` keeps it off), as the battle map loads its
+models. WoWEngine.log says where the pack was found ("Texture pack: 482 pictures in ...") and names each picture as
+it's used ("Texture pack: human/units/ar_lor_1.png"), or why one isn't ("... is 256x40, not 256x48; the game's is
+used"). A change to the pack is seen at the next battle the program starts after it's run again (the folder is
+looked through once).
 
 ## The folders
 
-Beside the program (a build: the source folder's `textures`; a release: `TEXTURES` beside WoWEngine.exe):
+Beside the program: `TEXTURES` (or `textures`) beside WoWEngine.exe; a build run where it was made also looks in
+the source folder's `textures` (WoWEngine/textures), after the program's own:
 
 ```
 textures/
@@ -69,7 +75,9 @@ textures/
   light falls.
   - An **8-bit PNG with the export's palette** (any edit that keeps the palette, such as painting with its
     colours) is read by index, exactly, with no rounding to the nearest colour. An exported PNG put back
-    unchanged gives the game's texture byte for byte.
+    unchanged gives the game's texture byte for byte (checked for all 484 of the export's: `wowdump --texcheck
+    <game folder> <pack folder>` reads a pack as the engine does and says which pictures differ from the game's),
+    and the battle's pictures are the same to the pixel as without the pack.
   - Colours far from any in the palette come out as the nearest one, as they would in any quantising. The
     colour groups are: Human buildings and scenery houses, Human vehicles, Martian vehicles, Martian buildings,
     nature (trees, red weed). A Human building can only use the Human buildings' colours, and so on.
@@ -77,6 +85,9 @@ textures/
     common formats for the rest of the game's files. Packs made now carry over: the same folders and names.
 - **Animated buildings** are read the same way: the picture as the export shows it. How their animation changes
   the pieces isn't covered yet.
+- **Not read**: interlaced PNGs (save without interlacing). The bridges (`scenery/bridge_*`) aren't read yet: the
+  battle map builds them by their own route. A building's dither (the fine pattern of its shading) is kept as the
+  game's, whatever the picture.
 
 ## Not in this layout
 

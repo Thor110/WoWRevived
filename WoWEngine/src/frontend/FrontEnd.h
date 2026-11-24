@@ -1,6 +1,7 @@
 // The front end: the screens and the command handling that moves between them (WGame's command handler, vanilla
 // 0x402B80). Commands are the ids the game's buttons send.
 #pragma once
+#include "core/TexturePack.h"
 #include "core/Campaign.h"
 #include "battlemap/BattleMap.h"
 #include "frontend/Briefing.h"
@@ -168,6 +169,10 @@ namespace wow
         FrontEndSettings settings;
         Settings& ini;
         const GameFiles& files;
+        // MODERN (docs/TEXTURES.md): the texture pack, looked for once (textures beside the program, or in the
+        // source folder of a build run where it was made)
+        std::optional<TexturePack> texturePack;
+        const TexturePack* Textures();
         Music music;
         Sound sound;
         int ambient = 0;           // dword_4D25D0: the menus' ambient sound 0x18C

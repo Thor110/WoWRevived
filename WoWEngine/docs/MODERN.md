@@ -608,6 +608,11 @@ Two new campaigns, each one faction against itself (PLAN.md F1).
   - For now (the owner, after 237): the pack is made in any colours and quantised back to the game's indices and
     shade tables on the way in, so it works with the engine as it is (and the original). The export's palettes
     are what to quantise against: each side's midday table at the level the export used.
+  - **Read since update 240** (with Enhanced assets on): PNGs in `TEXTURES` beside the program, laid out as the
+    export, quantised on the way in; a unit's atlas replaced in its WOF and a building's picture painted back into
+    its IOB's patches (`IobModel::Repainted`); the civil war's other side from `civilwar/<faction>/` without the
+    hue turn. The rules for the files are in docs/TEXTURES.md. The engine reads PNG itself (`core/Png`: inflate and
+    the PNG format, no library). This is the first of the common-format overrides below, for the textures only.
   - Later (the owner's plan): **overrides in common formats**. Game files overridden by loose files in ordinary
     formats (PNG / BMP for sprites and textures, OBJ for models, and the like) read in place of the archive's,
     so packs and mods need no conversion. Not designed yet; the engine's loose-file overlay (`GameFiles`,

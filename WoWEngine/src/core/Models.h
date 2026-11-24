@@ -66,6 +66,10 @@ namespace wow
         uint8_t width = 0, height = 0, colour = 0, mode = 0;
         uint16_t normals[3] = {};
         uint32_t offset = 0;         // of its RLE rows, from 0x22
+        // the offset as the file has it, which seeds the patch's dither phase (the game's from the patch's address,
+        // TerrainView::DrawPatch); kept when a texture pack's picture moves the rows (Repainted), so the dither
+        // stays the same
+        uint32_t seed = 0;
     };
 
     struct IobModel
@@ -83,6 +87,11 @@ namespace wow
         // Draws the pre-rendered building (every patch's rows) into an indexed picture, 0 transparent. The size
         // is the furthest any patch reaches.
         IndexedImage Picture() const;
+        // MODERN (docs/TEXTURES.md): a copy with a picture of Picture()'s size painted in, each patch keeping its
+        // rows' shapes (where each starts and how many pixels; a patch is drawn a row a header row, its height)
+        // with each pixel the picture's there, written out (a run's repeat byte becomes the row's pixels). The
+        // patches' data is laid out afresh in their order; patches that shared data still share it.
+        IobModel Repainted(const IndexedImage& picture) const;
     };
 
     struct Terrain

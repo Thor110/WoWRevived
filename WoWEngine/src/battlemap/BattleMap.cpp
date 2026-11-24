@@ -1011,7 +1011,7 @@ namespace wow
                 // unit's point plus its offset, on the unit's ground (0x48E9D0 puts each child at its own +0xA0 plus
                 // the building's ground less the child's: the building's ground, flat under all its parts).
                 // *Provisional*: the offset isn't turned with a unit's heading (the buildings don't turn).
-                const IsoModel* m = LoadIob(gtype);
+                const IsoModel* m = LoadIob(gtype, CivilOwnLook(gtype, int(index)));
                 if (!m) continue;
                 const int x = int(u.x) + int16_t(part.b), y = int(u.y) + int16_t(part.c);
                 // a child (+0x44 set before its vt+0x24, 0x47EE89): its model's radius is its type's +0x46 too
@@ -1027,6 +1027,7 @@ namespace wow
                 v.unit = int(index);
                 v.depth = depth;
                 v.part = int(pi);
+                v.ownLook = m->ownLook;
                 objects.push_back(v);
                 Attached a;
                 a.part = int(pi);
@@ -1037,13 +1038,9 @@ namespace wow
                 continue;
             }
             if (!g || g->gclass != 2 || !(isTurret || isShadow)) continue;
-            auto f = wofFiles.find(gtype);
-            if (f == wofFiles.end())
-            {
-                auto data = res.LoadFile(g->file);
-                f = wofFiles.emplace(gtype, data ? std::move(*data) : std::vector<uint8_t>{}).first;
-            }
-            if (f->second.empty()) continue;
+            const bool ownLook = CivilOwnLook(gtype, int(index));     // (MODERN: the texture pack)
+            const std::vector<uint8_t>* f = &WofFile(gtype, ownLook);
+            if (f->empty()) continue;
             float scale = 65536.0f;
             int follow = 0, depth = 0;
             if (setup.six)
@@ -1058,7 +1055,7 @@ namespace wow
             // (0x49DCA0, 0x47ED08)
             scale = float(int(float(int(scale)) * (part.f * pt->second.scale)));
             std::unique_ptr<WofInstance> w;
-            try { w = std::make_unique<WofInstance>(f->second, scale, follow); }
+            try { w = std::make_unique<WofInstance>(*f, scale, follow); }
             catch (const std::exception&) { continue; }
             Attached a;
             a.part = int(pi);
@@ -1081,6 +1078,7 @@ namespace wow
             }
             u.attached.push_back(a);
             objects.push_back({ int(u.y) + depth, 0, 0, nullptr, w.get(), g->paletteSlot, 0, -1, int(index), depth, -1, -1, int(pi) });
+            objects.back().ownLook = ownLook;
             wofs.push_back(std::move(w));
         }
         PoseParts(u);
@@ -1345,13 +1343,9 @@ namespace wow
         const int ix = int(x), iy = int(y);
         if (g->gclass == 2)
         {
-            auto f = wofFiles.find(gtype);
-            if (f == wofFiles.end())
-            {
-                auto data = res.LoadFile(g->file);
-                f = wofFiles.emplace(gtype, data ? std::move(*data) : std::vector<uint8_t>{}).first;
-            }
-            if (f->second.empty()) return;
+            const bool ownLook = CivilOwnLook(gtype, unit);           // (MODERN: the texture pack)
+            const std::vector<uint8_t>* f = &WofFile(gtype, ownLook);
+            if (f->empty()) return;
             float scale = 65536.0f;
             int follow = 0, depth = 0;
             if (setup.six)
@@ -1364,20 +1358,22 @@ namespace wow
             // the object's scale (+0xA4: 1.0 times its type's +0xA8 float, 0x47EE24) on the model's (0x47ED08)
             scale = float(int(float(int(scale)) * u->second.scale));
             std::unique_ptr<WofInstance> w;
-            try { w = std::make_unique<WofInstance>(f->second, scale, follow); }
+            try { w = std::make_unique<WofInstance>(*f, scale, follow); }
             catch (const std::exception&) { return; }
             w->Transform(land, heading, ix, iy, land.HeightAt(ix, iy));
             objects.push_back({ iy + depth, 0, 0, nullptr, w.get(), g->paletteSlot, 0, -1, unit, depth });
+            objects.back().ownLook = ownLook;
             if (unit >= 0) units[size_t(unit)].wof = w.get();
             wofs.push_back(std::move(w));
         }
         else if (g->gclass == 1)
         {
-            const IsoModel* m = LoadIob(gtype);
+            const IsoModel* m = LoadIob(gtype, CivilOwnLook(gtype, unit));
             if (!m) return;
             // with its unit, so it goes as the unit does
             ViewObject v{ iy + IsoObject::Depth(m->model), ix, land.ProjectY(iy, land.HeightAt(ix, iy)), m };
             v.unit = unit;
+            v.ownLook = m->ownLook;
             v.depth = IsoObject::Depth(m->model);
             objects.push_back(v);
         }
@@ -1842,9 +1838,10 @@ namespace wow
         heldSounds.clear();
     }
 
-    const BattleMap::IsoModel* BattleMap::LoadIob(int gtype)
+    const BattleMap::IsoModel* BattleMap::LoadIob(int gtype, bool civilOther)
     {
-        auto m = models.find(gtype);
+        const int key = civilOther ? (gtype | OtherModelKey) : gtype;
+        auto m = models.find(key);
         if (m == models.end())
         {
             IsoModel im;
@@ -1853,11 +1850,13 @@ namespace wow
                 if (auto file = res.LoadFile(g->file))
                 {
                     try { im.model = IobModel::Load(*file); } catch (const std::exception&) { im.model = {}; }
+                    PackIob(im.model, gtype, civilOther);      // (MODERN: the texture pack)
                     if (!im.model.patches.empty()) im.lights = IsoObject::BaseLights(im.model, sun, levels);
                 }
                 im.slot = g->paletteSlot;
+                im.ownLook = civilOther;
             }
-            m = models.emplace(gtype, std::move(im)).first;
+            m = models.emplace(key, std::move(im)).first;
         }
         return m->second.model.patches.empty() ? nullptr : &m->second;
     }
@@ -1906,6 +1905,7 @@ namespace wow
                     try
                     {
                         im.model = IobModel::Load(*file);
+                        PackIob(im.model, u->second.field28, false);
                         im.lights = IsoObject::BaseLights(im.model, sun, levels);
                         im.slot = g->paletteSlot;
                     }
@@ -2041,6 +2041,7 @@ namespace wow
                 if (!file) { models[gtype]; Occupy(o.type, o.x, o.y, o.tree); continue; }
                 try { im.model = IobModel::Load(*file); }
                 catch (const std::exception&) { models[gtype]; Occupy(o.type, o.x, o.y, o.tree); continue; }
+                PackIob(im.model, gtype, false);        // (MODERN: the texture pack)
                 im.lights = IsoObject::BaseLights(im.model, sun, levels);
                 im.slot = g->paletteSlot;
                 m = models.emplace(gtype, std::move(im)).first;
@@ -3038,7 +3039,7 @@ namespace wow
                 if (!shade) continue;
                 // MODERN (the civil wars): the other side's units in their faction's colours turned, so the two sides
                 // can be told apart (a copy of each slot's table, made once)
-                if (setup.civilWar && o.unit >= 0 && size_t(o.unit) < units.size() && !units[size_t(o.unit)].players)
+                if (setup.civilWar && !o.ownLook && o.unit >= 0 && size_t(o.unit) < units.size() && !units[size_t(o.unit)].players)
                 {
                     auto ot = otherSideTables.find(slot);
                     if (ot == otherSideTables.end()) ot = otherSideTables.emplace(slot, shade->HueRotated(OtherSideHue)).first;

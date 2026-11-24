@@ -46,6 +46,8 @@ namespace wow
         // their next use (Refresh), the others are kept. AllowEnhancedAssets(false) (--no-loose) keeps it off.
         void SetEnhancedAssets(bool on);
         void AllowEnhancedAssets(bool allowed) { enhancedAllowed = allowed; if (!allowed) SetEnhancedAssets(false); }
+        bool EnhancedAssets() const { return enhanced; }
+        const std::map<int, GType>& GTypes() const { return gtypes; }
         const Font* GetFont(int gtype);
         // A graphics entry's file as it is (class 6 entries are raw 8-bit images, like the route arrows' 256 x 64)
         const std::vector<uint8_t>* GetRaw(int gtype);

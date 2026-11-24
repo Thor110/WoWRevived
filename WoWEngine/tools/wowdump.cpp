@@ -31,6 +31,8 @@
 #include "core/SaveGame.h"
 #include "core/Smacker.h"
 #include "core/Palette.h"
+#include "core/Png.h"
+#include "core/TexturePack.h"
 #include "core/SoundTable.h"
 #include "core/ShadeTable.h"
 #include "core/Sprite.h"
@@ -666,6 +668,92 @@ int main(int argc, char** argv)
                 std::printf("%-30s %s (GType 0x%03X, slot %d)\n", (folder + "/" + stem).c_str(), ext.c_str(), unsigned(id), g.paletteSlot);
             }
             for (const auto& [folder, n] : counts) std::printf("%-20s %d\n", folder.c_str(), n);
+            return 0;
+        }
+        if (first == "--texcheck" && argc == 4)
+        {
+            // every model a texture pack has a picture for, read as the battle map reads it, against the game's own:
+            // the same indices (an unchanged export gives the game's bytes back), or how many differ
+            const fs::path game = argv[2];
+            const auto obj = ReadFile(game / "OBJ.ojd");
+            wow::Archive archive(game / "DAT" / "Dat.wow");
+            auto gtypes = wow::ObjOjd::LoadGTypes(obj, true);
+            for (auto& [id, g] : wow::ObjOjd::LoadGTypes(obj, false)) gtypes.emplace(id, g);
+            const auto folders = wow::textures::Folders(gtypes, wow::ObjOjd::LoadUnits(obj));
+            wow::TexturePack pack;
+            if (!pack.Open(argv[3])) throw std::runtime_error("no pictures in the pack");
+            std::map<int, std::vector<uint32_t>> palettes;
+            int same = 0, differ = 0, refused = 0;
+            for (const auto& [id, folder] : folders)
+            {
+                const wow::GType& g = gtypes.at(id);
+                const std::string stem = wow::textures::Stem(g.file);
+                auto path = pack.Find(folder, stem, false);
+                if (!path) continue;
+                auto& pal = palettes[g.paletteSlot];
+                if (pal.empty())
+                {
+                    auto t = wow::ShadeTable::LoadShh(archive.Read(wow::textures::PaletteTable(g.paletteSlot) + ".SHH"));
+                    pal.assign(t.Level(wow::textures::ExportLevel), t.Level(wow::textures::ExportLevel) + 256);
+                    for (auto& c : pal) c &= 0xFFFFFFu;
+                }
+                const auto png = wow::DecodePng(ReadFile(*path));
+                const auto indices = wow::textures::Indices(png, pal.data());
+                auto entry = archive.Find(g.file.substr(g.file.find_last_of('\\') + 1));
+                if (!entry) continue;
+                auto data = archive.Read(*entry);
+                std::vector<uint8_t> was, now;
+                if (wow::textures::WofAtlasHeight(data) > 0)
+                {
+                    const int h = wow::textures::WofAtlasHeight(data);
+                    auto m = wow::WofModel::Load(data);
+                    was = m.texture;
+                    if (!wow::textures::ReplaceWofAtlas(data, indices, png.width, png.height)) { refused++; std::printf("%s/%s: the wrong size (%dx%d, not 256x%d)\n", folder.c_str(), stem.c_str(), png.width, png.height, h); continue; }
+                    now = wow::WofModel::Load(data).texture;
+                }
+                else
+                {
+                    auto m = wow::IobModel::Load(data);
+                    const auto pic = m.Picture();
+                    if (png.width != pic.width || png.height != pic.height) { refused++; std::printf("%s/%s: the wrong size\n", folder.c_str(), stem.c_str()); continue; }
+                    wow::IndexedImage img{ pic.width, pic.height, indices };
+                    // what the game draws of each patch: its header height's rows (TerrainView::DrawPatch), each
+                    // row's skip, count and pixels
+                    auto drawn = [](const wow::IobModel& im) {
+                        std::vector<uint8_t> out;
+                        for (const auto& p : im.patches)
+                        {
+                            size_t pos = p.offset;
+                            for (int row = 0; row < int(p.height) && pos + 1 < im.patchData.size(); row++)
+                            {
+                                const int skip = im.patchData[pos], run = im.patchData[pos + 1], count = run & 0x7F;
+                                pos += 2;
+                                out.push_back(uint8_t(skip));
+                                out.push_back(uint8_t(count));
+                                for (int k = 0; k < count && pos < im.patchData.size(); k++) out.push_back(im.patchData[(run & 0x80) ? pos : pos + size_t(k)]);
+                                pos += (run & 0x80) ? 1 : size_t(count);
+                            }
+                        }
+                        return out;
+                    };
+                    was = drawn(m);
+                    now = drawn(m.Repainted(img));
+                }
+                size_t n = 0;
+                for (size_t i = 0; i < was.size() && i < now.size(); i++) n += was[i] != now[i];
+                if (n || was.size() != now.size()) { differ++; std::printf("%s/%s: %zu pixels differ\n", folder.c_str(), stem.c_str(), n); }
+                else same++;
+            }
+            std::printf("%d the same, %d differ, %d refused\n", same, differ, refused);
+            return differ || refused ? 1 : 0;
+        }
+        if (first == "--png" && argc == 4)
+        {
+            // a PNG read as the texture packs are, its pixels written raw (0xAARRGGBB, little-endian) for checking
+            auto img = wow::DecodePng(ReadFile(argv[2]));
+            std::ofstream out(argv[3], std::ios::binary);
+            out.write(reinterpret_cast<const char*>(img.rgba.data()), std::streamsize(img.rgba.size() * 4));
+            std::printf("%dx%d %s\n", img.width, img.height, img.paletted ? "paletted" : "colour");
             return 0;
         }
         if (first == "--iob" && argc == 6)
