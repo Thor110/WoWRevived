@@ -140,6 +140,20 @@ namespace wow
         for (size_t g = 0; g < groupTargets.size(); g++)
             if (u.id != 0 && groupTargets[g].target == u.id) TargetGone(int(g), u, last);
         if (groupEmpty) GroupGone(u.group);
+        // a fence's post: its ground let go (vt+0xE8 0x48B6D0), and its fence told (vt+0x50, 0x48DAA0); a fence:
+        // its posts go with it (0x48D9C0 hands its 0x80A0 on to each)
+        if (u.fenceOf >= 0)
+        {
+            if (double(Progress(u)) > 0.9999) land.ClearOccupied(int(u.x), int(u.y), 32, 8);
+            PostGone(u);
+        }
+        if (IsFence(u.type))
+        {
+            // (posted, as 0x80A0 is: at the next update's deaths)
+            for (Unit& p : units)
+                if (p.fenceOf == u.id && (p.dieAt < 0 || p.dieAt > ticks)) { p.dieAt = ticks; p.dieQuietly = quietly; }
+            return;
+        }
         if (t == setup.units->end()) return;
         // vt+0xE8 (0x48A9A0): a category 0, 2 or 3 object, not a tree, frees its footprint (0x47C3A0 with 2)
         // (a mine's own, 0x48CB60: flag 8, if it was built)
@@ -147,7 +161,7 @@ namespace wow
         {
             if (double(Progress(u)) > 0.9999) land.ClearOccupied(int(u.x), int(u.y), Radius46(u.type), 8);
         }
-        else if (const int c = t->second.category; (c == 0 || c == 2 || c == 3) && !(u.type >= 0xCF && u.type <= 0xE5))
+        else if (const int c = t->second.category; u.fenceOf < 0 && (c == 0 || c == 2 || c == 3) && !(u.type >= 0xCF && u.type <= 0xE5))
             land.ClearOccupied(int(u.x), int(u.y), Radius46(u.type), 2);
         // and its parts still standing theirs (its children go with it, 0x47EAA0)
         for (const Attached& a : u.attached)
@@ -427,9 +441,8 @@ namespace wow
     }
 
     // A tree circle's 0x80A0 (0x489FA0): its type's destruction effect (+0x98, 591) at its centre, and it's gone
-    // with its children, the trees (0x47EAA0).
-    // *Provisional*: the trees go without effects of their own (what 0x47EAA0 does for each child beyond taking it
-    // out isn't traced).
+    // with its children, the trees (0x47EAA0: off its parent's list, vt+0x50; out of the world's list, 0x440CB0; out
+    // of a selection, 0x448210; freed; nothing played), so the trees go without effects of their own (update 244).
     void BattleMap::CircleDies(size_t index)
     {
         Circle& c = circles[index];

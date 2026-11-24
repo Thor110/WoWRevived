@@ -724,6 +724,7 @@ namespace wow
     {
         if (units[index].started) return;
         units[index].started = true;
+        units[index].startSeq = ++startCount;
         NoteModel(units[index].type, false);
         if (IsBuilding(units[index])) ClearScenery(index);
         Unit& u = units[index];
@@ -740,6 +741,13 @@ namespace wow
         const float progress = Progress(u);
         const bool unfinished = double(progress) <= 0.9999;
         if (IsBuilding(u) && unfinished) u.health = std::max(1, int(float(u.health) * progress));
+        // a fence (0x4989F0): no model, footprint or parts of its own; it lays its posts (Fences.cpp)
+        if (IsFence(u.type))
+        {
+            if (unfinished) u.health = std::max(1, int(float(MaxHealth(u.type, u.players)) * progress));
+            LayFence(index);
+            return;
+        }
         if (auto d = setup.units->find(u.type); d != setup.units->end()) u.stance = d->second.field43;   // 0x495740
         SetUpGuns(u);
         // 0x48F7C0: an emplacement not on a vehicle whose construction is under 1.0 has no guns (+0x3C 0)
@@ -764,6 +772,11 @@ namespace wow
         if (units[index].type >= 0x273 && units[index].type <= 0x276)
         {
             if (!unfinished) land.MarkOccupied(int(units[index].x), int(units[index].y), Radius46(units[index].type), 8);
+        }
+        // a fence's post, finished, marks the ground round it (vt+0xE4 0x48B690: 0x47C280 radius 32, bit 8)
+        else if (units[index].fenceOf >= 0)
+        {
+            if (!unfinished) land.MarkOccupied(int(units[index].x), int(units[index].y), 32, 8);
         }
         else Occupy(units[index].type, units[index].x, units[index].y);
     }
@@ -2404,7 +2417,7 @@ namespace wow
         AiUpdate();
         UpdatePlacing();
         for (size_t i = 0; i < units.size();)
-            if (units[i].dieAt >= 0 && ticks >= units[i].dieAt) Die(i);
+            if (units[i].dieAt >= 0 && ticks >= units[i].dieAt) Die(i, units[i].dieQuietly);
             else i++;
         // a forfeit's 0x76 (0x43AA18, posted 150 updates on through 0x4355A0): back to the war map
         if (forfeitAt >= 0 && ticks >= forfeitAt)
@@ -2440,27 +2453,38 @@ namespace wow
         EdgeScroll();
         ZoomTick();
         CheckBattleEnd();
-        // the groups were made before the units (0x4216E0), so their updates (0x483B70, the chase first) come first
-        for (size_t g = 0; g < groupTicks.size(); g++) GroupTick(int(g));
         // the world list (0x47D610) in start order: each unit's whole update (0x4967E0 / the vehicles' 0x4913B0), then
         // its children's, its turrets and guns, made as it started (0x47EE10), before the next unit's
+        // (update 244) The screen's children are a list each object is put at the head of as it starts (0x495740 ->
+        // 0x440060: its +0x14 the old head, the list's +0x18 it), and the update walks it from the head (0x440030,
+        // vtable 0x4AA610's +0x10: each one's vt+0x10, then its +0x14): the last started first. The parity review
+        // (battle-setup 14) had them in start order; the engine went through them in the order the deployment made
+        // them, by list, until 244. One started during the update isn't reached until the next (it went in before
+        // the walk's place). Any not started go after, in the deployment's order, as before.
         bool moved = false;
-        for (size_t i = 0; i < units.size(); i++)
+        std::vector<std::pair<int, int>> order;     // (start order, id)
+        order.reserve(units.size());
+        for (const Unit& u : units) order.push_back({ u.started ? -u.startSeq : (1 << 30), u.id });
+        std::stable_sort(order.begin(), order.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+        for (const auto& [seq, id] : order)
         {
+            (void)seq;
+            size_t i = 0;
+            while (i < units.size() && units[i].id != id) i++;
+            if (i == units.size()) continue;        // gone already this update
             const float x = units[i].x, y = units[i].y;
             Drive(i);
             // a retreating unit (steering bit 9) arrived at its route's end leaves the map (0x491A96)
             if (units[i].leaving)
             {
                 LeaveMap(i);
-                i--;
                 continue;
             }
             ShipTick(i);
             StatusTick(units[i]);
             BuildingTick(units[i]);
             DroneTick(i);
-            if (SinkTick(i)) { i--; moved = true; continue; }
+            if (SinkTick(i)) { moved = true; continue; }
             moved |= units[i].sink != 0;
             MarkerTick(i);
             // 0x496862: after the look round, health under 0 calls vt+0x78 and the update ends there (no smoulder): for
@@ -2472,7 +2496,6 @@ namespace wow
                 if (units[i].vehicle)
                 {
                     Die(i, true);
-                    i--;
                     moved = true;
                     continue;
                 }
@@ -2486,6 +2509,11 @@ namespace wow
             for (Gun& g : units[i].guns) GunTick(i, g);
             PoseParts(units[i]);
         }
+        // the groups (0x483B70, the chase first): each went on the same list as it was made (the constructor 0x480190,
+        // 0x440060 at 0x480263), before any unit started (0x4216E0, then the deployment), so the walk from the head
+        // reaches them after the units, the last made first (update 244; until then the engine ran them first, in
+        // the order they were made)
+        for (size_t g = groupTicks.size(); g-- > 0;) GroupTick(int(g));
         for (size_t c = 0; c < circles.size(); c++)
             if (circles[c].alive && circles[c].dieAt >= 0 && ticks >= circles[c].dieAt) CircleDies(c);
         for (size_t b = 0; b < bridgeLinks.size(); b++)
@@ -3151,6 +3179,7 @@ namespace wow
         TerrainView::Fog fogView{ fog.map.empty() ? nullptr : fog.map.data(), land.Width(), fog.smooth, fog.darkness };
         TerrainView::Render(land, tiles, table, levels, dither, t, -scrollX, -scrollY, fog.enabled ? &fogView : nullptr, between, &window);
         beamsTo(0x7FFFFFFF);
+        DrawWires(canvas);
         DrawSelection(canvas);
         DrawPlacing(canvas);
         DrawLabels(canvas);

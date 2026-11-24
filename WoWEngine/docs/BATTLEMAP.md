@@ -356,8 +356,10 @@ after the row past its y plus that.
 
 ## Bridges (WBridge 0x497890-0x498750 on 0x4862C0-0x4868A0; `core/Bridge`)
 
-Scenery types 445 (Country), 446 (City) and 447 (Railway) are bridges (0x48D050, 0x48D510 and their neighbour; the
-three differ only in their part: 461 bridge_1.WOF, 462 bridge_2.WOF, 448 bridge_4.WOF). The sector files have one
+Scenery types 445 (Country), 446 (City) and 447 (Railway) are bridges, all three of one class (0x48D050, vtable
+0x4AEF80, on WBridge 0x497890; the factory 0x446B30's jump table 0x447469); type 444 (0x1BC, "Bridge Military")
+is a class of its own, 0x48D510 (vtable 0x4AF0A0), which nothing in the game builds (update 243: the notes had
+0x48D510 as the City bridge's). The three differ only in their part: 461 bridge_1.WOF, 462 bridge_2.WOF, 448 bridge_4.WOF). The sector files have one
 to four each in 21 of the 30 sectors.
 
 - **Load** (0x48D0A0): x, y (the position), then end A's x, y and end B's x, y. An end at or past the map's width
@@ -369,7 +371,8 @@ to four each in 21 of the 30 sectors.
   is -3.0 and it's subtracted, so three more, not fewer); the bridge's one part is the first segment and count - 1
   more of its type are made; segment i stands at A + (i + 1/2) steps (a step being (B - A) / count), kept as
   floats relative to the position.
-- **Joints** (0x48D2F0, vtbl+0x10C, every update from 0x498110): joint i lies at i x (length / count) along the
+- **Joints** (0x48D2F0, vtbl+0x10C, from 0x498110, the bridge's start (vt+0x14), once: it also adds the bridge's
+  two route nodes (vt+0x104), so it can't run every update; corrected in update 243): joint i lies at i x (length / count) along the
   line (the distance added up as a float). Its point P on the line, and the ground's height there; the deck is the
   straight line between the ends' ground heights or that ground, whichever is higher. Six points, 40 either side
   of P across the line: the ground, the deck (deck + 8) and the rail's top (deck + 16); at the two end joints (0 and
@@ -788,8 +791,7 @@ factory building's vehicles can be ordered there.
 - **The line tool** (fences and walls; 0x4A03A0-0x4A1180): the first press anchors the line (where the far post's
   box is); then the far post's box (0x47B610) and the run from the anchor (0x47B770, over water for the bridge)
   must both pass, and the anchor's had to; the second press orders it from one end to the other (the release is
-  taken). The bridge's is pressed, dragged and let go. *Provisional*: the engine makes a fence one object at its
-  first end, as it draws the saved ones.
+  taken). The bridge's is pressed, dragged and let go. The fence then lays its posts from end to end ("Fences").
 - **The order**: 0x80A4 to the Build List, which sends packet 0x16 {type, the four place values, 0xDEADDEAD}
   (0x4601C0); every placement ends the tool (the view's 0x80A4 / 0x8137: cursor mode 7). A right button let go
   quickly drops the tool (0x42C6A0) as it does the selection; the mouse leaving the view only hides it.
@@ -810,6 +812,46 @@ factory building's vehicles can be ordered there.
   explosion and its markers; the engine's markers were left behind by any unfinished building's death until 239),
   rather than being taken from the sector as on the war map.
 - Nothing about the constructor moves: there's no range and no drive to the site.
+
+## Fences (WFence 0x48D780 on the line base 0x498750, vtable 0x4AF1B8; the posts 0x48B590; `battlemap/Fences.cpp`; update 243)
+
+Types 451-456 (the Human wire fences 451-453, which engineers 17 / 18 build; the Martian electric, laser and plasma
+fences 454-456, which the Digging Mechanisms 91 / 92 build). A fence is an object with no model of its own (its
+type's +0x28 is 0) and one part (record 28): its post's type (451 695 WireF, 452 464 WireW, 453 694 MWireW, 454
+465 f_elec, 455 466 f_laser, 456 467 f_plasma; each an IOB, scaled by the part's float).
+
+- **Its two ends** are the fence's +0xE8 / +0xEC and +0xF0 / +0xF4 (the earlier notes had +0xC8-+0xD4): 0x80A5
+  sets the first and 0x80A6 the second; 0x80A7 moves the object to its point (vt+0x3C) and then sets the first,
+  as a placed fence's order does (0x43CD10: 0x80A7 then 0x80A6). They're saved as four values after its BATP
+  (0x498890; read back by 0x4987F0, which sends itself 0x80A5 and 0x80A6). A fence the computer ordered on the war
+  map has none (0, 0, 0, 0), and the game lays it in the map's corner as the engine does.
+- **Laying the posts** (vt+0x24, 0x48D800, when its group is started, 0x47D030): the ends put in order (the first
+  the one with the lesser x), each on the vertex grid (0x498900: ((v << 16) + half a cell) / the cell x the cell
+  >> 16); the heading and length between them (0x43FDA0, +0x40 and +0xF8); N = ftol(length x 1/64 - (-1.0))
+  (0x4AF2D8, 0x4AF2DC), its +0x100 and +0x110; the spacing length / N (+0x114). The part (the first post) at the
+  first end, then N more of its type (0x446B30), each a step ((x1 - x0) / N, (y1 - y0) / N) on from the last and
+  linked to it (the post's +0xEC). So N + 1 posts, at most 64 apart, end to end.
+- **Its start** (0x4989F0): its health from its war map object's progress if under 0.9999 (at least 1, +0xC0 bit 0
+  clear); then k = 0x48A7D0 = N - ftol((N + 1) x health / its full) posts from the far end aren't there: a finished
+  fence goes (each one's vt+0x78), so a fence saved damaged comes back shorter; an unfinished one's are turned into
+  the build marker 0x17B (bld_mark.spr). The engine lays the posts this way at the fence's start (`LayFence`), puts
+  the fence object at its first end (*provisional* for a loaded one, which the deployment places in the game; it
+  has no model or footprint, so nothing sees where it is).
+- **The posts' ground**: a finished post marks round it (vt+0xE4 0x48B690: 0x47C280, radius 32, bit 8) and lets it
+  go as it dies (vt+0xE8 0x48B6D0); at most 64 apart, they close the line to vehicles. The fence marks nothing.
+- **Damage**: each post is an object of its own with its type's health (6 for the Human posts, 32 for the
+  Martian), hit as any object is. As one goes, the fence's vt+0x50 (0x48DAA0): the post after it loses its lines
+  back (0x48B630), the fence one post fewer (+0x110), its health its full x those left / N (0x48DB04), and with none
+  left the fence goes, quietly (vt+0x78, 0x48DA40: 0x807B to both players, 0x42A0B0, 0x495BB0). A fence's own
+  0x80A0 is handed on to every post (0x48D9C0). The engine posts these (the next update's deaths) as the game
+  posts its messages. The posts aren't saved; the fence's health is, and the next battle lays it again.
+- **The wires** (0x48BE30 / 0x48B700): a finished post whose previous post stands draws three or four lines back to
+  it, each end the given pixels above each post's ground point (the iso projection): 464 / 695 at -16 and -4 and a
+  brace from -16 to -4; 694 the same and the other brace (-4 to -16); 465-467 at -16, -10 and -4. Black for the
+  Human fences (dword_4DAF88), and 6-bit (16, 16, 45), (45, 16, 16) and (32, 16, 45) for the electric, laser and
+  plasma ones (dword_4DAFBC-0x4DAFC4, 0x40B120). *Provisional*: the engine draws them over the land's objects (the
+  game puts each line in the view's list just in front of the nearer post); 467's fourth line, a flicker
+  (0x48C650, its trigger not found) and the posts' mini-map dots (0x48C870) aren't in.
 
 ## Damage and death (0x48AB20, 0x48A5A0, 0x80A0 in 0x489FA0; WExplosion 0x488180 / 0x488350 / 0x488200; `battlemap/Combat.cpp`)
 
@@ -1443,9 +1485,10 @@ With the lorries' group handed to the computer for the test (London not its): no
 every 91 updates a new random point and route (30, 21, 21 nodes...), the group seldom reaching one before the next.
 
 *Provisional*: the strongest is the first of the greatest; class 2's test and the object-gone side test as read;
-the cursor (+0x470) does nothing here; vt+0x38 in the periodic work isn't in; "attacking" is having a target; the
-attack orders' home values aren't traced (the point, or the object's point, is used); the computer's specials
-(0x482570, every 8th update with +0x1D8 bit 7) aren't in.
+the cursor (+0x470) does nothing here; "attacking" is having a target; the attack orders' home values aren't
+traced (the point, or the object's point, is used). (The periodic work's vt+0x38 is `Engage`, and the computer's
+specials, 0x482570 every 8th update with +0x1D8 bit 7, are `ComputerSpecials`: both in; this note had them out
+until update 244.)
 
 ## Reinforcement points and Retreat (0x43D150, 0x43D3F0, 0x480EF0; `battlemap/Reinforcements.cpp`)
 

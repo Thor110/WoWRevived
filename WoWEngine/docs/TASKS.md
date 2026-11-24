@@ -36,12 +36,11 @@ that was still open or partly done and says here where each now stands.
 - **Combat checked by eye** (A7): the owner's and the testers' reports.
 - **Deployment's leftovers** and **the provisional renderers** (A5, A6): waiting on frames of the original.
 - **Battle AI**: the parts not yet traced (the planner, the specials and the groups' stance work are in).
-- **Bridges that break**, **the route finder spread over updates**, **the tree circles' lifetime** (PARITY.md
-  Deferred, S6).
+- (The route finder over updates and the tree circles' lifetime: done, PLAN 2.1 and update 244.)
 - **Auto-resolving a battle** and the other modes; the editors (F1, F2).
 - **The two buildings the game names and never offers** (E1, E2).
-- **The settings**: every one the original reads is read where the engine has its system; there has been no
-  audit of all ~229 against part 14 of the survey.
+- (The settings: audited in update 244, docs/review/SETTINGS.md: every one the original reads that changes play
+  is read.)
 
 ---
 

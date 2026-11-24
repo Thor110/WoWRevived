@@ -92,6 +92,7 @@ namespace wow
         if (const float scale = FightHealthScale(o); scale != 1.0f)
             for (int& h : g.healths) h = int(float(h) * scale + 0.5f);
         if (g.list >= 2 && o.Value(0) != 0.0f) g.progress = o.Value(1) / o.Value(0);
+        g.hasLine = o.LinePoints(g.line);
         return g;
     }
 

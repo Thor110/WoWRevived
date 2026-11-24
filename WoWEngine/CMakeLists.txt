@@ -140,6 +140,7 @@ if(TARGET SDL3::SDL3)
     src/battlemap/Fog.cpp
     src/battlemap/Building.cpp
     src/battlemap/Textures.cpp
+    src/battlemap/Fences.cpp
         src/warmap/WarMap.cpp
         src/warmap/Production.cpp
         src/warmap/BuildWindow.cpp

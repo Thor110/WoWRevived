@@ -473,9 +473,8 @@ namespace wow
     // Packet 0x16 from the placement (0x4A1460 / 0x4A0490 -> 0x80A4 -> 0x460EC1 -> 0x4601C0) to 0x460240: the entry
     // (0x4603B0), its place's four values (0x461C80: +0x1C-+0x28; a building's third and fourth are whatever was on
     // the stack in the original, kept 0 here), the construction made in the sector at once (0x4620B0 -> 0x43CD10)
-    // and put where it was placed (0x80A7, its second point 0x80A6). The engine keeps only the first point in the
-    // object (its battle position); a fence's second end is in the entry. *Provisional*: a fence is drawn as one
-    // object at its first end, as the engine draws the saved ones.
+    // and put where it was placed (0x80A7, its second point 0x80A6): the object's battle position, and a fence's
+    // two ends in its four values after BATP (as it saves them, 0x498890), which the battle lays its posts from.
     std::optional<BattleGroup> WarMap::PlaceConstruction(int type, int x0, int y0, int x1, int y1)
     {
         if (!buildWindow) return std::nullopt;
@@ -487,6 +486,8 @@ namespace wow
         if (!q.empty()) q.back().place = { x0, y0, x1, y1 };
         SaveFactory(ref);
         table[size_t(made)].SetBattlePosition(float(x0), float(y0));
+        const int line[4] = { x0, y0, x1, y1 };
+        table[size_t(made)].SetLinePoints(line);       // (a fence's ends; nothing for anything else)
         const int at = CounterOf(made);
         return GroupOf(made, at >= 0 ? counters[size_t(at)].previous : 0);
     }

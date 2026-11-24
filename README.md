@@ -240,7 +240,7 @@ The road map for this project.
 		- Input recording and playback.
 	- Civil wars ( work in progress ): a Human Civil War and a Martian Civil War, each faction against itself, with no pods.
 		- A log file that records crashes and stalls, to make bug reports easier.
-	- Still to do: battle saving, repair, breakable bridges, network play and parts of the computer player.
+	- Still to do: network play and parts of the computer player.
 
 This might not all happen but I wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 

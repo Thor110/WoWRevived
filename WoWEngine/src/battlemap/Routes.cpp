@@ -333,18 +333,23 @@ namespace wow
         return true;
     }
 
-    // 0x483270, from the group's update while the route finder is its: 200 more neighbours (0x44EFA0); still
-    // running, nothing; found, "ROUTE FOUND": the route built (0x494690), the flag and the acknowledgement for a
-    // player's order, and each member 0x802E(ftol(sqrt(members) + 1) x its radius, the route); none, 0x4833F0.
-    // Either way the finder is free again.
+    // 0x483270, from the group's update while the route finder is its. It reads the search's state first (A* +4,
+    // 0x483278-0x48329F): still running (0), a node taken out since the search began (dword_59E41C) ends it (route
+    // not found, 0x4833BA -> 0x4833F0, the flag cleared), else 200 more neighbours (0x44EFA0), whose outcome isn't
+    // looked at until the next update's call; found (1), "ROUTE FOUND": the route built (0x494690), the flag and the
+    // acknowledgement for a player's order, and each member 0x802E(ftol(sqrt(the group's count now, 0x4216D0) + 1)
+    // x its radius, the route); none (2), 0x4833F0. Either way the finder is free again.
+    // (Update 244: until then the engine took a search's outcome in the step's own call, an update early, and a
+    // node taken out ended a search that had already finished.)
     void BattleMap::PollRoute(int group)
     {
         if (finder.group != group) return;
-        // 0x4833BA: a node taken out since the search began (dword_59E41C) ends it: route not found
-        int state = 2;
-        if (finderAbort) finderAbort = false;
-        else state = finder.run.Step(200);
-        if (state == 0) return;
+        int state = finder.run.State();
+        if (state == 0)
+        {
+            if (finderAbort) { finderAbort = false; state = 2; }
+            else { finder.run.Step(200); return; }
+        }
         const RouteFinder f = finder;
         finder.group = -1;
         std::vector<size_t> members;
@@ -368,7 +373,7 @@ namespace wow
             if (!f.attacking) Speak(0x10A, group);
             groupOrdered[size_t(group)] = false;
         }
-        const int scale = int(std::sqrt(double(f.n)) - -1.0);
+        const int scale = int(std::sqrt(double(std::max(1, GroupCount(group)))) - -1.0);
         for (size_t i : members) FollowRoute(units[i], scale * units[i].drive.radius, route);
     }
 

@@ -199,6 +199,11 @@ namespace wow
     void BattleMap::OrderGroupMove(int group, const std::vector<size_t>& members, int x, int y)
     {
         if (members.empty()) return;
+        // a move order (0x482510 / 0x480EB0) sets +0x1D8 bit 0 and clears bit 2 before it sends 0x804F (the group's
+        // own periodic moves set bit 2 again after, GroupTick); bit 0 goes when they've all arrived (0x8081). So a
+        // move put off below leaves the group busy while it waits, and its roam and home (0x483BD7) don't run
+        // (update 244: the engine set it after the test)
+        if (group >= 0 && size_t(group) < groupBusy.size()) { groupBusy[size_t(group)] = true; groupSelfMove[size_t(group)] = false; }
         // 0x482E60's first test: the route finder busy with another group's search, this move is put off: 0x804F
         // posted to the group again, with the point, 10 updates on
         if (finder.group >= 0 && finder.group != group)
@@ -208,9 +213,6 @@ namespace wow
             heldMoves.push_back(std::move(h));
             return;
         }
-        // a move order (0x482510 / 0x480EB0) sets +0x1D8 bit 0 and clears bit 2 (the group's own periodic moves set
-        // bit 2 again after, GroupTick); bit 0 goes when they've all arrived (0x8081)
-        if (group >= 0 && size_t(group) < groupBusy.size()) { groupBusy[size_t(group)] = true; groupSelfMove[size_t(group)] = false; }
         // each member's distance to the point (0x43FF00, +0xD4), the nearest (+0x68) and the farthest (+0x6C),
         // whose position is the route's start
         auto octagonal = [](int x0, int y0, int x1, int y1) {

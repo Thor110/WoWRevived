@@ -24,6 +24,9 @@ namespace wow
         // a construction's or resource's state, the war map object's +0x7C / +0x78 (0x48E9D0 and 0x48F7C0 read it
         // through the battle object's +0x48): under 1 while it's being built
         float progress = 1.0f;
+        // a fence's two ends (types 451-456: x0 y0 x1 y1, its war map object's four values after BATP)
+        bool hasLine = false;
+        int line[4] = { 0, 0, 0, 0 };
         bool Players() const { return (list & 1) == 0; }
     };
 

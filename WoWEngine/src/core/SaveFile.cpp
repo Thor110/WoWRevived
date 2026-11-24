@@ -251,6 +251,24 @@ namespace wow
         return true;
     }
 
+    bool SaveObject::LinePoints(int out[4]) const
+    {
+        const int type = int(Get32(bytes, 0));
+        if (type < 451 || type > 456) return false;
+        const size_t at = LastBatp(bytes);
+        if (at == std::string::npos || at + 4 + 16 > bytes.size()) return false;
+        for (int i = 0; i < 4; i++) out[i] = int(Get32(bytes, at + 4 + size_t(i) * 4));
+        return true;
+    }
+
+    void SaveObject::SetLinePoints(const int points[4])
+    {
+        int old[4];
+        if (!LinePoints(old)) return;
+        const size_t at = LastBatp(bytes);
+        for (int i = 0; i < 4; i++) Put32(bytes, at + 4 + size_t(i) * 4, uint32_t(points[i]));
+    }
+
     void SaveObject::SetBattlePosition(float x, float y)
     {
         const size_t at = LastBatp(bytes);

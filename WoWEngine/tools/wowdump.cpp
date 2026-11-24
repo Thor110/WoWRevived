@@ -351,6 +351,61 @@ int main(int argc, char** argv)
             }
             return written == data ? 0 : 1;
         }
+        if (first == "--addfence" && argc == 9)
+        {
+            // a test aid: a finished fence of a type added to a sector's player's constructions, from its command
+            // building's battle place plus (dx0, dy0) to plus (dx1, dy1): wowdump --addfence <save> <out> <sector> <type>
+            // <dx0,dy0> <dx1,dy1> <list>
+            wow::SaveFile save = wow::SaveFile::Parse(ReadFile(argv[2]));
+            const int sector = std::atoi(argv[4]), type = std::atoi(argv[5]), list = std::atoi(argv[8]);
+            int dx0 = 0, dy0 = 0, dx1 = 0, dy1 = 0;
+            std::sscanf(argv[6], "%d,%d", &dx0, &dy0);
+            std::sscanf(argv[7], "%d,%d", &dx1, &dy1);
+            float cx = 0, cy = 0;
+            for (const auto& o : save.Sector(sector).lists[2])
+                if (!o.BattlePositions().empty()) { cx = o.BattlePositions()[0].first; cy = o.BattlePositions()[0].second; break; }
+            wow::SaveObject f = wow::SaveObject::MakeBuilding(type, list, sector, 100, false, wow::SaveObject::BuildingClass::Line);
+            std::vector<bool> used = save.UsedIds();
+            f.Renumber(used);
+            f.SetSector(sector);
+            f.SetBattlePosition(cx + float(dx0), cy + float(dy0));
+            const int line[4] = { int(cx) + dx0, int(cy) + dy0, int(cx) + dx1, int(cy) + dy1 };
+            f.SetLinePoints(line);
+            f.SetValue(0, 1.0f);
+            f.SetValue(1, 1.0f);
+            save.Sector(sector).lists[size_t(list)].push_back(f);
+            const auto bytes = save.Write();
+            std::ofstream(argv[3], std::ios::binary).write(reinterpret_cast<const char*>(bytes.data()), std::streamsize(bytes.size()));
+            std::printf("fence %d in sector %d from %d,%d to %d,%d\n", type, sector, line[0], line[1], line[2], line[3]);
+            return 0;
+        }
+        if (first == "--addunit" && argc == 8)
+        {
+            // a test aid: n vehicles of a type added to a sector's list (0 the player's units, 1 the other side's),
+            // at the battle position of the first object of that sector with one, plus (dx, dy):
+            // wowdump --addunit <save> <out> <sector> <type> <list> <dx,dy>   (count from the type's battle units)
+            wow::SaveFile save = wow::SaveFile::Parse(ReadFile(argv[2]));
+            const int sector = std::atoi(argv[4]), type = std::atoi(argv[5]), list = std::atoi(argv[6]);
+            int dx = 0, dy = 0;
+            std::sscanf(argv[7], "%d,%d", &dx, &dy);
+            float cx = 0, cy = 0;
+            for (const auto& l : save.Sector(sector).lists)
+                for (const auto& o : l)
+                    if (!o.BattlePositions().empty() && (cx == 0 && cy == 0) && o.BattlePositions()[0].first != 0) { cx = o.BattlePositions()[0].first; cy = o.BattlePositions()[0].second; }
+            const auto units = wow::ObjOjd::LoadUnits(ReadFile(fs::path(argv[2]).parent_path() / "OBJ.ojd"));
+            auto u = units.find(type);
+            const int n = u == units.end() ? 1 : std::max(1, u->second.battleUnits);
+            wow::SaveObject o = wow::SaveObject::MakeUnit(type, list, sector, n, 0, false);   // (0: the type's full health)
+            std::vector<bool> used = save.UsedIds();
+            o.Renumber(used);
+            o.SetSector(sector);
+            o.SetBattlePosition(cx + float(dx), cy + float(dy));
+            save.Sector(sector).lists[size_t(list)].push_back(o);
+            const auto bytes = save.Write();
+            std::ofstream(argv[3], std::ios::binary).write(reinterpret_cast<const char*>(bytes.data()), std::streamsize(bytes.size()));
+            std::printf("%d of type %d in sector %d list %d near %g,%g\n", n, type, sector, list, double(cx + float(dx)), double(cy + float(dy)));
+            return 0;
+        }
         if (first == "--save" && argc == 3)
         {
             auto data = ReadFile(argv[2]);
@@ -372,6 +427,17 @@ int main(int argc, char** argv)
                 if (o.list >= 2) std::printf("  (%g, %g)", o.value[0], o.value[1]);
                 std::printf("\n");
             }
+            // the fences' two ends (WFence's four values after BATP)
+            try
+            {
+                const wow::SaveFile save = wow::SaveFile::Parse(data);
+                for (int sector = 1; sector <= 30; sector++)
+                    for (const auto& list : save.Sector(sector).lists)
+                        for (const auto& o : list)
+                            if (int p[4]; o.LinePoints(p))
+                                std::printf("  sector %2d fence type %d  id %d  from %d,%d to %d,%d\n", sector, o.Type(), o.Id(), p[0], p[1], p[2], p[3]);
+            }
+            catch (const std::exception&) {}
             return 0;
         }
         if (first == "--models" && argc == 3)

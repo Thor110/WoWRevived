@@ -383,8 +383,17 @@ namespace wow
                       int savedHealth = -1; // its health as the save had it (+0xC4), -1 for none
                       bool fogged = false;  // +0xB8 bit 3 (vt+0x9C / vt+0xA0): the other side's, hidden by the fog
                       int stance = 1;       // +0xD8: its type's +0x43 byte (record 56) to start with (0x495740)
+                      // A fence (WFence 0x48D780 on 0x498750, types 451-456) is an object with no model of its own
+                      // and a row of posts (0x48B590), each an object of its own with its own health: a post's fence
+                      // (its id) and the post before it (+0xEC, its id; -1 none or gone), a fence's posts laid (+0x100)
+                      // and still standing (+0x110)
+                      int fenceOf = -1, prevPost = -1, postsLaid = 0, postsLeft = 0;
+                      bool dieQuietly = false;  // its dieAt is a quiet one (vt+0x78 0x495BB0: no explosion)
+                      int startSeq = 0;     // the order it started in (0x495740 adds it to the screen's children,
+                                            // 0x440060 on [dword_4D2550+0x20], which the update goes through)
                     };
         int nextId = 1;
+        int startCount = 0;     // StartUnit's count, each unit's startSeq
         // The reinforcement points (0x43D150: dword_4F7458, 0x18 bytes each, dword_4F76E8 of them): the point, the
         // sector it leads to, the link kind (7, 5, 1), whether the player holds that sector; each with its marker
         struct ReinforcePoint { int x = 0, y = 0, sector = 0, kind = 0; bool owned = false; };
@@ -807,6 +816,10 @@ namespace wow
         void PlaceNow(int x0, int y0, int x1, int y1);          // the order (0x80A4 -> packet 0x16)
         void AddGroup(const BattleGroup& g);                    // a construction made in the sector during the battle (0x43CD10)
         void KillGroupOf(int ref);                              // 0x80A0 to a construction cancelled from the Build List
+        static bool IsFence(int type) { return type >= 451 && type <= 456; }
+        void LayFence(size_t index);                            // vt+0x24 0x48D800 and the start 0x4989F0
+        void PostGone(const Unit& post);                        // the fence's vt+0x50 (0x48DAA0)
+        void DrawWires(Canvas& canvas) const;                   // the posts' lines (0x48B700)
         mutable int lastCursor = 0;         // the cursor last set (kept where the game sets none)              // the row opened out (0x433330 with the hovered item's command)
         bool PopupShown(size_t i) const { return popup[i].col == 0 || popup[i].row == popupOpenRow; }
         void LayOutPopup(int x, int y);

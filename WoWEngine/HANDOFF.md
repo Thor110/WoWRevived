@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 242
+# Handoff: WoWEngine after update 245
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -152,7 +152,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 242
+## State after update 245
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -161,9 +161,8 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Big pieces still missing from the engine as a game (update 231; docs/PLAN.md "Where things stand" is the list
   to work from, docs/TASKS.md is older):
   - network play, with the player and command objects it needs (A9, A2)
-  - breakable bridges and the route finder spread over updates (PARITY.md, Deferred)
+  - (the route finder runs over updates since PLAN 2.1, refined in 244; the bridges break since PLAN 2.2)
   - parts of the computer player (TASKS.md, Battle AI)
-  - the tree circles' lifetime (S6)
   - the two buildings the game names and never offers (E1, E2); the editors (F2); the civil wars' balance and the
     rest of their list (F1, MODERN.md "The civil wars")
 
@@ -185,6 +184,14 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   moved). The parity battles didn't see it (a battle reads the table, not the counters). Fixed in 238. A new
   campaign's war map screenshot with the construction vehicles in sectors 12 and 24 is a quick look: their
   counters aren't the lorry's.
+- **Test units** (245): `wowdump --addunit <save> <out> <sector> <type> <list> <dx,dy>` adds a unit of a type (its
+  battle units' count, the type's full health) to a sector's list (0 the player's units, 1 the other side's), near
+  the first placed object there; OBJ.ojd is read from the save's folder. As `--load 1` with the file as
+  SaveGame\Martian.001 (or Human.001).
+- **Fences** (243): `wowdump --addfence <save> <out> <sector> <type> <dx0,dy0> <dx1,dy1> <list>` adds a finished
+  fence near a sector's command building, for a battle to look at (Human.000's Oxford, sector 24, list 2, then
+  `--load 1` and View map on Oxford as in the building recipe). Martian.000 has the Humans' fences in sectors 15-21
+  and 30. `wowdump --save` prints each fence's ends.
 - **Always check the disassembly** (the owner, update 240): before saying how the original behaves, or building
   on a reading of it, look it up in `/home/user/ida/IDA-Output.txt` (the owner's IDA listing; ask for it if it's
   missing), not the docs' or a summary's word alone. A subagent's trace is a lead, not the answer: check its key
@@ -206,6 +213,9 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   - patches left out; since update 235 the unit tests (`WoWEngine/tests/`) and the workflow
     (`.github/workflows/wowengine.yml`) go in the zip like the rest (the owner asked for them)
   - binary files (`.ico`, `.spr`, `.dll`, `.ojd` and the like) copied as they are, not given CRLF
+  - the parity frames were taken again in update 244: the update order (units the last started first, then the
+    groups) moved one London lorry a few pixels and the route's later delivery one Martian minimap dot; both
+    checked by eye. A session without the earlier frames takes its own from a run of the two recipes first
   - the parity frames are the same from run to run only because the random seed is the milliseconds since the
     engine started, which is the same few on an idle machine; on a busy one (just after a rebuild, or a
     restart) a run can come out with another seed and a different frame. Run it again before taking a
@@ -221,7 +231,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **243**.
+  - The next number is **246**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.
@@ -255,10 +265,15 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 
 ## Suggested next steps
 
-1. Read PARITY.md's Deferred list and pick what the owner wants first. The larger ones are:
-   - movement A3 / 17: the route finder as a stateful object that runs over several updates
-   - breakable bridges (movement 21, A5)
-   - units in transit after a load (warmap 14): trace the WMOB route entry bytes against 0x4257C0
-2. Battle saving and repair are the biggest missing game features.
-3. If the owner can play-test, ask what looks or behaves differently from the original; that has found more than
+1. The owner's list (update 243), what's left: **each special order tried in a battle.** Begun in 245: with
+   `wowdump --addunit` (below) three Martian type 66 (Black Dust) in Martian.000's sector 3, their popup offers
+   Black Dust in Force Fire's row, as the original lays the specials out; ordered onto a point, the group finds a
+   route (21 nodes) and sets off, but in 1000 updates no gas is seen at the point and the group isn't seen
+   arriving. To look at next: whether they arrive, and the special's fire mode at the target (Weapons.cpp
+   `GroupOrder` / `GunTick`, BATTLEMAP.md "The modes and specials"). Done: fences (243), vehicles from the battle
+   map (243, closed), the update order, the route finder's poll and the tree circles (244), the settings audit
+   and the battle AI's notes (245: docs/review/SETTINGS.md; the AI's specials and Engage were in already). The
+   bridges already break (PLAN 2.2), the repair icon and the counters' pips are in, and the original has no
+   battle saving.
+2. If the owner can play-test, ask what looks or behaves differently from the original; that has found more than
    reading has.

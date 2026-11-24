@@ -1263,18 +1263,28 @@ transparency")
 Each needs either something the engine doesn't have yet, or tracing the disassembly hasn't covered; none is a
 known visible bug in the two test battles.
 - battle-ui 12: cursor modes 2-7 (the editor / placement tools, not in the engine).
-- deployment: the update order as the world list's (HUNI, HCON, HRES, AUNI, ACON, ARES). (How deployed units
-  face: closed, update 171.)
-- movement 21 (the rest): a bridge broken but standing (needs a saved battle to arise).
+- deployment: the update order, closed in update 244. The battle world's "World tasks" list (0x435310 ->
+  0x43FF80, vtable 0x4AA610) takes each object at its head as it starts (0x495740 -> 0x440060) and each group as
+  it's made (0x480190, at 0x480263), and its update walks it from the head (0x440030): the units the last started
+  first, then the groups the last made first. The engine now goes through them so (battle-setup 14 had them in
+  start order, and the engine in the deployment's, groups first). (How deployed units face: closed, update 171.)
+- movement 21 (the rest), closed in update 243: "a bridge broken but standing" is the military bridge (type 444,
+  0x48D510) still being built (0x4865A0: health from its war map object's progress, the unbuilt segments shown
+  as build markers, no route across, riders dropped or drowned, 0x4933D0), and nothing in the game builds one
+  (no unit's builders name it; the debug menu 0x8027 can). The scenery bridges (445-447) save only their place
+  and ends (0x48D230), not their health, so they come back whole in every battle, as the engine has them.
 - warmap 2 (part): the repair icon and power bar (repair isn't in). warmap 14: units on a route restart after a load
   (done, update 137). warmap 20: the battle pulse's own draw
   counter (the same at a steady 30 fps).
 
 The architecture items, by report:
 - Settled by Phase 1: rendering A1-A3, battle-ui A / B, movement A1 / A2 / A4, combat A1-A3 / A5, battle-setup A-C,
-  data A (tree circles' children: their lifetime is still open, see S6).
-- Still as they were, by choice for now: movement A3 (the route finder is a function, not a stateful singleton),
-  movement A5 (bridges are scenery, not objects that can break), combat A4 (hits take ints; Hit now takes the raw
+  data A (tree circles' children: closed in update 244, 0x47EAA0 takes them out with nothing played).
+- Still as they were, by choice for now: (movement A3 is done: PLAN 2.1's stateful finder; update 244 has it take a
+  search's outcome on the next update's poll, as 0x483270 reads the state before it steps, abort only a running
+  search, the spread scale from the group's count at delivery, and a put-off move leave the group busy),
+  movement A5 (bridges break since PLAN 2.2: each an object at its point with its type's health, its route nodes
+  taken out as it goes, riders keeping their link and lift as in the game), combat A4 (hits take ints; Hit now takes the raw
   double), battle-ui C (the screen point is computed when needed; it's the same value), battle-ui D / warmap
   (popups: rows now, but still a flat list of items, not child windows), warmap A (one `Counter` for the original's
   counter and its objects), warmap B / C (views and drawing are immediate, not child objects and a depth-sorted

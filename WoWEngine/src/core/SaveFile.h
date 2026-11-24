@@ -105,6 +105,10 @@ namespace wow
         // (the rest, its hit points among them, stay the copied object's)
         void SetType(int type);
         void SetBattlePosition(float x, float y);
+        // A fence's two ends (types 451-456, WFence 0x498890 / 0x4987F0: four values after its BATP, x0 y0 x1 y1,
+        // as the fence keeps them at +0xE8-+0xF4); false for anything else
+        bool LinePoints(int out[4]) const;
+        void SetLinePoints(const int points[4]);
         void SetSector(int sector);
         bool Kind2() const { return list >= 2; } // a construction or resource (two floats before SELO)
         // every SELO id in it (its own first, then its battle map units')

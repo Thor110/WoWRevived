@@ -49,7 +49,7 @@ Targets:
 | Target | What it is |
 |---|---|
 | `WoWEngine` | The game. Pass the game folder as the first argument, or put the engine in the game folder. `--open 0x6E` starts on the screen a menu command opens. `--ticks N` runs N game updates before a screenshot. `--screenshot file.bmp [keys]` presses the listed keys (up, down, left, right, enter, escape, backspace, or =letters, which are also typed into a text field), saves the frame and exits. `--frames <folder>` with `--screenshot` saves every update's picture as numbered BMPs, for videos (docs/TRAILER.md). |
-| `wowdump` | *Developer tool, not built unless `-DWOW_BUILD_TOOLS=ON`, not in a release.* Lists and extracts the KAT! and SfxL archives. `--check <folder>` reports missing game files, `--sprite` saves a sprite as a BMP, `--text` prints TEXT.ojd, `--obj` the OBJ.ojd graphics table, `--sfx` the SFX.ojd sound table, `--ai` AI.ojd, `--units` each unit type's counter frame, movement class and war map speed, `--arrows` the route arrow styles, `--smk` decodes a Smacker movie to BMPs and a WAV, `--save` a save's name, date and sections, `--models` reads and summarises every WOF, IOB and CLS in an archive, `--iob` saves a building's picture as a BMP, `--textures` writes every unit's and building's texture, sorted by side, as 8-bit BMPs, `--texcheck` checks a texture pack reads back as the game's, and `--png` reads a PNG as the engine does. |
+| `wowdump` | *Developer tool, not built unless `-DWOW_BUILD_TOOLS=ON`, not in a release.* Lists and extracts the KAT! and SfxL archives. `--check <folder>` reports missing game files, `--sprite` saves a sprite as a BMP, `--text` prints TEXT.ojd, `--obj` the OBJ.ojd graphics table, `--sfx` the SFX.ojd sound table, `--ai` AI.ojd, `--units` each unit type's counter frame, movement class and war map speed, `--arrows` the route arrow styles, `--smk` decodes a Smacker movie to BMPs and a WAV, `--save` a save's name, date, sections and fences' ends, `--addfence` and `--addunit` add a fence or a unit to a save for testing, `--models` reads and summarises every WOF, IOB and CLS in an archive, `--iob` saves a building's picture as a BMP, `--textures` writes every unit's and building's texture, sorted by side, as 8-bit BMPs, `--texcheck` checks a texture pack reads back as the game's, and `--png` reads a PNG as the engine does. |
 | `wowcore` | The file formats and game data code, with no SDL dependency, so tools can use it on their own. |
 | `WoWLauncher` | The one program players start, laid out like WoWRevived's WoWLauncher. With the game installed it starts a Human or Martian game; without it, it's the installer: it finds the discs in the drives (or disc images you pick), copies the game and rips the music. See [Installing](#installing). |
 | `wowinstall-cli` | *Developer tool, built with `-DWOW_BUILD_TOOLS=ON` only.* The same installer from the command line, printing each step. |
@@ -108,8 +108,8 @@ Where the engine stands (update 234; `docs/PLAN.md` is the full list, and what t
    messages, the computer player, saving and loading (old saves load and write back exactly).
 3. **Battle map**: done but for the tracing still open. Terrain, units, buildings, scenery, driving and route
    finding, combat, specials, the computer player's battles, reinforcements, the battle's end and its losses taken
-   back to the war map. Still open: bridges that break, the route finder spread over updates, parts of the
-   computer player's battle planning, the tree circles' lifetime; combat is to be checked by eye in play.
+   back to the war map. Still open: parts of the
+   computer player's battle planning; combat is to be checked by eye in play.
 4. **Modern fixes and options**: done. The Modern Options menu (docs/MODERN.md): battle zoom, HUD and menu scale,
    group keys, more save slots, key bindings, windowed play, Enhanced Assets, Discord, recordings and more, with
    every WoWRevived fix and file built in.
