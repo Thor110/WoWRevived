@@ -518,9 +518,13 @@ namespace wow
             [this](Button& b) { ini.SetInt("Modern", "HUD scale", 50 + b.value * 25); });
         m->WidenLast();
         m->SetLastTip(res.String(enginetext::HudScale + enginetext::TipOffset));
-        // MODERN (update 231): the menus' size, 100% to 300% a quarter a step; drawn as large as the picture allows
+        // MODERN (update 231): the menus' size, a quarter a step from 100% up to the largest the view size takes
+        // (update 233; 225% at 1920 x 1080, the largest size; 100% at 640 x 480, where the slider can't move)
         const std::string scale = res.String(enginetext::MenuScale);
-        m->AddSlider((std::clamp(ini.GetInt("Modern", "Menu scale", 100), 100, 300) - 100) / 25, 8,
+        int vw = 640, vh = 480;
+        ViewSize(vw, vh);
+        const int scaleSteps = std::max(0, (std::min(vw * 100 / 640, vh * 100 / 480) - 100) / 25);
+        m->AddSlider((std::clamp(ini.GetInt("Modern", "Menu scale", 100), 100, 300) - 100) / 25, scaleSteps,
             [scale](int v) { return scale + ": " + std::to_string(100 + v * 25) + "%"; },
             [this](Button& b) { ini.SetInt("Modern", "Menu scale", 100 + b.value * 25); });
         m->WidenLast();

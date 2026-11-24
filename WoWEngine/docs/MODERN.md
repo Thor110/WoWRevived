@@ -218,9 +218,11 @@ started ("Discord: ...").
 ### Menu scale (update 231)
 
 The menus are 640 x 480 and the original never scales them: at 1920 x 1080 they sit small in the middle of the
-picture. `[Modern]` "Menu scale" (a percentage, 100 to 300 a quarter a step, a slider in Modern Options under the
-HUD scale's) draws them larger, as large as the picture allows (225% at 1920 x 1080; 200% doubles every pixel,
-the others mix the four pixels round each point, as the HUD scale does).
+picture. `[Modern]` "Menu scale" (a percentage, a quarter a step, a slider in Modern Options under the HUD
+scale's) draws them larger. The slider goes from 100% up to the largest the view size takes (update 233: 225% at
+1920 x 1080, the largest of the sizes; 200% at 1600 x 900 to 1680 x 1050; 150% at 1024 x 768 to 1366 x 768;
+125% at 800 x 600; at 640 x 480 it can't move), and a larger value in the ini is drawn at that largest. 200%
+doubles every pixel; the others mix the four pixels round each point, as the HUD scale does.
 
 - **What is scaled**: the menus (every `Menu`: the main menu and its sub-menus, Load and Save, the war map's and
   the battle map's menus). Not the briefing, debriefing, research and CD player, which are laid out against
