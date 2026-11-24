@@ -87,6 +87,9 @@ namespace wow
             int field50 = 0;         // +0x50, record 33
             int armourRaw = 100;     // record 34 (100 if none); +0x4A is it x the armour modifier, see Armour
             int armourFaction = -1;  // the faction when record 34 came (-1: none came, +0x4A stays 100)
+            // MODERN (docs/MODERN.md "The civil wars"): set in the other side's copy of the table (OtherSideUnits),
+            // whose types take their faction's Enemy modifiers whatever the side played
+            bool otherSide = false;
             std::vector<float> armourMuls; // record 35, each multiplying +0x4A again
             int field4C = 0;         // +0x4C, record 57
             int field92 = 90;        // +0x92, record 53
@@ -115,6 +118,11 @@ namespace wow
         // by faction and the side played as the research ones (all 1.8) (0x4373D0-0x437510)
         struct ArmourModifiers { float visRadMul = 1.5f, scenery = 1.2f, humanFriend = 1.8f, humanEnemy = 1.8f, martianFriend = 1.8f, martianEnemy = 1.8f; };
         static int Armour(const UnitData& unit, bool playingHuman, const ArmourModifiers& m); // +0x4A
+        // MODERN (docs/MODERN.md "The civil wars"): the unit table as the other side's: each type marked otherSide.
+        // In the regular game it gives what the one table does (the other side's types are the other faction's,
+        // which take the Enemy modifiers already); in a civil war the other side's types, the player's faction's,
+        // take the Enemy ones too. A texture pack for the other side would hang from here as well.
+        static std::map<int, UnitData> OtherSideUnits(std::map<int, UnitData> units);
         static int Vision(const UnitData& unit, const ArmourModifiers& m);                    // +0x48
         // The loader's tables kept by graphics id (the current record 0) and by unit type, for the battle map
         struct BattleTables

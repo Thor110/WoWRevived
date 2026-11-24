@@ -556,7 +556,7 @@ namespace wow
                 // +0x98 = 1 - the health (vt+0xB4) / its type's (0x47DA20) (0x496DE3; 0x497290 as it's damaged):
                 // frame ftol(the frame count x it), at most the last, at least 0, so full health is frame 0
                 const int frames = bar->FrameCount();
-                const int max = MaxHealth(u.type);
+                const int max = MaxHealth(u.type, u.players);
                 const float damage = 1.0f - (max > 0 ? float(u.health) / float(max) : 1.0f);
                 const int frame = std::clamp(int(float(frames) * damage), 0, std::max(0, frames - 1));
                 canvas.DrawSprite(7, frame, (l + r) / 2, b - 8);
@@ -731,7 +731,7 @@ namespace wow
         // every object's +0xAC is its type's +0x44 word (the neighbours keep apart by it); an IOB object's is its
         // model's radius (0x47EB10)
         u.drive.radius = Radius44(u.type);
-        u.health = MaxHealth(u.type);
+        u.health = MaxHealth(u.type, u.players);
         // an object comes with the health its war map object's save kept (+0xC4, read back with the rest of BAMO,
         // 0x489ED0); one made fresh has its type's
         if (u.savedHealth > 0) u.health = u.savedHealth;
@@ -1694,7 +1694,7 @@ namespace wow
             {
                 if (u.ref != icon.ref || !u.players) continue;
                 if (selected[size_t(u.group)]) isSelected = true;
-                const int max = MaxHealth(u.type);
+                const int max = MaxHealth(u.type, u.players);
                 frames.push_back(max > 0 ? int(0.5 - double(float(u.health) / float(max)) * -9.0) : 0);
             }
             if (isSelected)

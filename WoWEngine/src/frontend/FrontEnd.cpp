@@ -725,7 +725,21 @@ namespace wow
             // a new GAME header with the name, then the start file's body as it is (0x44EBB0)
             SaveFile save = SaveFile::Parse(data);
             // MODERN: a civil war's start is made from the side's start file (core/CivilWar.h)
-            if (IsCivilWar(campaign)) save = MakeCivilWarStart(save, campaign);
+            if (IsCivilWar(campaign))
+            {
+                // the layout from dat\CivilWar.txt when there is one (the engine's own dat first), else the draft
+                CivilWarLayout layout = CivilWarLayout::Default(campaign);
+                if (auto path = files.Resolve("dat\\CivilWar.txt"))
+                {
+                    std::ifstream text(*path, std::ios::binary);
+                    const std::string body((std::istreambuf_iterator<char>(text)), {});
+                    std::vector<std::string> warnings;
+                    layout = CivilWarLayout::Parse(body, campaign, warnings);
+                    SDL_Log("Civil war layout: %s", path->string().c_str());
+                    for (const std::string& w : warnings) SDL_Log("  CivilWar.txt %s", w.c_str());
+                }
+                save = MakeCivilWarStart(save, campaign, layout);
+            }
             save.SetName(name);
             data = save.Write();
         }
@@ -1240,6 +1254,9 @@ namespace wow
             warMap.reset();
             playingSlot = 0;
             topMenu = CmdMainMenu;
+            // MODERN (docs/MODERN.md "The civil wars"): the endings are the regular war's (London taken, or the
+            // Martians driven from Scotland), so a civil war goes straight to the credits
+            if (IsCivilWar(campaign)) { Execute({ Credits::Id, CmdMainMenu }); break; }
             PlayMovie(command.param == 0x80FA || command.param == 0x80FC ? "VICTORY" : "DEFEAT", { Credits::Id, CmdMainMenu });
             break;
         case Commands::Back:
@@ -1493,6 +1510,7 @@ namespace wow
         s.pod = map->TakePod(b.sector);
         s.loadScenery = ini.GetBool("Debug", "Load scenery", true);
         s.units = &map->Units();
+        s.otherUnits = &map->Units(false);
         s.six = &wofTypes;
         s.lights = &lightTypes;
         s.moveCosts = &moveCosts;

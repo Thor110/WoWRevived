@@ -1,0 +1,42 @@
+# The civil wars' start layouts (WoWEngine, docs/MODERN.md "The civil wars").
+#
+# A civil war starts from the faction's own start file (Human.000 or Martian.000), which is changed as this file
+# says when the campaign begins. Changes here take effect for the next new civil war; saved games keep their own.
+# Without this file (or with --no-loose) the engine uses the same layout as below, built in.
+#
+# Each section has these lines; anything after a # is a comment:
+#   player  = sectors     the start file's faction's objects there stay, the player's
+#   other   = sectors     they go to the other side
+#   neutral = sectors     they're taken out, and the sector is no one's
+#             one of the three may say "rest": every sector the others don't name goes there (else the other side)
+#   copy    = sector      the player's home is given a copy of this sector's objects in the start file (its command
+#                         building becoming the right one for the home), or none
+#   copy at = x y         where on the war map the copy's middle goes
+# Sectors the other faction held in the start file are always emptied and no one's. The homes can't be moved
+# here: the Humans' player's home is the Grampian Mountains (3), the Martians' London (30).
+#
+# Sector numbers (TEXT.ojd's names, sector n is string 0x002 + n):
+#    1 North Western Highlands    2 Isle of Skye               3 Grampian Mountains
+#    4 Strathmore                 5 Isle of Man                6 Argyll
+#    7 Southern Uplands           8 Edinburgh                  9 Galloway
+#   10 Northumberland            11 Newcastle                 12 Lake District
+#   13 Pennines                  14 Whitby                    15 Liverpool
+#   16 Nottingham                17 The Wolds                 18 North Wales
+#   19 Cotswolds                 20 Northampton               21 Fens
+#   22 South Wales               23 Bristol                   24 Oxford
+#   25 Essex                     26 Norfolk                   27 Cornwall
+#   28 Southampton               29 Dover                     30 London
+
+[Human Civil War]
+player  = 1 2 3 4 6 7 8 9        # Scotland
+other   = rest                   # London's: the rest of the start file's Human sectors
+neutral =
+copy    = 30                     # London's base, copied to the Grampians
+copy at = 468 540                # where the Martians' base was
+
+[Martian Civil War]
+player  =
+other   = rest                   # every Martian sector of the start file the other side's
+neutral =
+copy    = 3                      # the Grampians' base, copied to London
+copy at = 1111 2034              # London's route waypoint

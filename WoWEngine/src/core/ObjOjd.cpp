@@ -295,12 +295,18 @@ namespace wow
         if (unit.armourFaction >= 0)
         {
             float mod = m.scenery;
-            if (unit.armourFaction == 0) mod = playingHuman ? m.humanFriend : m.humanEnemy;
-            else if (unit.armourFaction == 1) mod = playingHuman ? m.martianEnemy : m.martianFriend;
+            if (unit.armourFaction == 0) mod = playingHuman && !unit.otherSide ? m.humanFriend : m.humanEnemy;
+            else if (unit.armourFaction == 1) mod = playingHuman || unit.otherSide ? m.martianEnemy : m.martianFriend;
             a = int(int16_t(int(double(unit.armourRaw) * double(mod))));
         }
         for (float f : unit.armourMuls) a = int(int16_t(int(double(a) * double(f))));
         return a;
+    }
+
+    std::map<int, ObjOjd::UnitData> ObjOjd::OtherSideUnits(std::map<int, UnitData> units)
+    {
+        for (auto& [type, u] : units) u.otherSide = true;
+        return units;
     }
 
     int ObjOjd::Vision(const UnitData& unit, const ArmourModifiers& m) // record 32 (0x438208)

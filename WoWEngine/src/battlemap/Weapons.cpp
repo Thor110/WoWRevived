@@ -620,7 +620,7 @@ namespace wow
             // a building's vt+0xC0 (0x48F030): the player's (+0x24 0), when rand() is under 500 or it's still at full
             // health (0x47DA20), hit by an object of another side (0x440110, 0x4406E0): its last 0x111 cut off if it's
             // still playing, then 0x111 at the listener (+0xEC)
-            if (random::Rand() < 500 || u.health == MaxHealth(u.type))
+            if (random::Rand() < 500 || u.health == MaxHealth(u.type, u.players))
                 if (const Unit* a = attacker ? UnitById(attacker) : nullptr; a && a->players != u.players && setup.sound)
                 {
                     if (u.alertSound && setup.sound->Active(u.alertSound)) setup.sound->Stop(u.alertSound);

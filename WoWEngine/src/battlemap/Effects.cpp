@@ -352,7 +352,7 @@ namespace wow
         if (Frame() % 15 != 0 || !setup.showSmoke) return;
         const Unit& u = units[index];
         if (u.fogged) return;   // 0x48AEF0: no smoke while vt+0x9C (in the fog)
-        const int max = MaxHealth(u.type);
+        const int max = MaxHealth(u.type, u.players);
         if (max == 0) return;
         const float fraction = float(u.health) / float(max);
         int level = int(double(fraction) * -5.0 + double(5.0f));

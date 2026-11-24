@@ -32,6 +32,7 @@
 #include "core/Smacker.h"
 #include "core/Palette.h"
 #include "core/SoundTable.h"
+#include "core/ShadeTable.h"
 #include "core/Sprite.h"
 #include "core/TextOjd.h"
 
@@ -44,7 +45,9 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <functional>
 #include <map>
+#include <set>
 #include <vector>
 #include <string>
 
@@ -68,6 +71,8 @@ static int Usage()
         "       wowdump --resave <save> [out]      read a save exactly, write it again and compare\n"
         "       wowdump --models <archive>         check and summarise every WOF, IOB and CLS\n"
         "       wowdump --iob <archive> <name> <palette> <out.bmp>\n"
+        "       wowdump --textures <game folder> <outdir> [level]\n"
+        "                                          every unit's and building's texture as 8-bit BMPs, by side\n"
         "       wowdump --landscape <map.CLS> <map.ATM> [<OBJ.ojd> <hour> <LANDR.INT> <out.bmp>]\n"
         "                                          build a battle map's terrain; light it for an hour\n"
         "       wowdump --terrain <map.CLS> <map.ATM> <OBJ.ojd> <hour> <dat folder> <out.bmp> | <x> <y> <out.bmp>\n"
@@ -93,6 +98,27 @@ static void WriteSpriteBmp(const fs::path& path, const wow::IndexedImage& image,
         pixels[i] = (uint32_t(c.r) << 16) | (uint32_t(c.g) << 8) | c.b;
     }
     wow::WriteBmp(path, pixels.data(), image.width, image.height);
+}
+
+// An 8-bit BMP: the image's own colour indices kept, with a 256-colour palette (index 0 is transparent in the game
+// and is written as magenta), so a texture can be edited and its indices read back.
+static void WriteIndexedBmp(const fs::path& path, const uint8_t* indices, int width, int height, const uint32_t* colours)
+{
+    const int stride = (width + 3) & ~3;
+    const uint32_t offset = 14 + 40 + 1024, size = offset + uint32_t(stride) * uint32_t(height);
+    std::vector<uint8_t> out(size, 0);
+    auto put32 = [&](size_t at, uint32_t v) { for (int i = 0; i < 4; i++) out[at + size_t(i)] = uint8_t(v >> (i * 8)); };
+    auto put16 = [&](size_t at, uint16_t v) { out[at] = uint8_t(v); out[at + 1] = uint8_t(v >> 8); };
+    out[0] = 'B'; out[1] = 'M';
+    put32(2, size); put32(10, offset);
+    put32(14, 40); put32(18, uint32_t(width)); put32(22, uint32_t(height)); put16(26, 1); put16(28, 8);
+    put32(34, uint32_t(stride) * uint32_t(height)); put32(46, 256); put32(50, 256);
+    for (int i = 0; i < 256; i++) put32(54 + size_t(i) * 4, i == 0 ? 0xFF00FFu : colours[i] & 0xFFFFFFu);
+    for (int y = 0; y < height; y++)
+        std::memcpy(&out[offset + size_t(height - 1 - y) * size_t(stride)], indices + size_t(y) * size_t(width), size_t(width));
+    std::ofstream f(path, std::ios::binary);
+    if (!f) throw std::runtime_error("can't write " + path.string());
+    f.write(reinterpret_cast<const char*>(out.data()), std::streamsize(out.size()));
 }
 
 int main(int argc, char** argv)
@@ -528,6 +554,118 @@ int main(int argc, char** argv)
             wow::WriteBmp(argv[7], px.data(), W, H);
             std::printf("%s: scale %g, ground follow %d, slot %d (%s), bounds x %d..%d\n", file.c_str(), double(scale), follow, slot,
                         shade.c_str(), model.MinX(), model.MaxX());
+            return 0;
+        }
+        if (first == "--textures" && (argc == 4 || argc == 5))
+        {
+            // Every WOF (vehicles) and IOB (buildings) the graphics table names, sorted by side and kind. A unit
+            // type's model (+0x28, record 24) and its parts' (record 28) say whose it is; models no unit type
+            // names go by their shade slot (1 Human buildings, 2 Human vehicles, 3 Martian vehicles, 4 Martian
+            // buildings), slot 1's being the towns' and the countryside's (scenery/), as are slot 10's (the trees
+            // and the red weed). Each is coloured by its slot's midday table (BM??M.SHH) at one level (44 of 64
+            // unless given: about full light; above it the colours run to white), its own indices kept.
+            const fs::path game = argv[2], out = argv[3];
+            const int level = argc == 5 ? std::atoi(argv[4]) : 44;
+            const auto obj = ReadFile(game / "OBJ.ojd");
+            wow::Archive archive(game / "DAT" / "Dat.wow");
+            auto gtypes = wow::ObjOjd::LoadGTypes(obj, true);
+            for (auto& [id, g] : wow::ObjOjd::LoadGTypes(obj, false)) gtypes.emplace(id, g);
+            const auto units = wow::ObjOjd::LoadUnits(obj);
+            std::map<int, std::pair<int, bool>> owner;     // gtype -> faction, building
+            // a part (record 28) is a unit type of its own, whose model is its +0x28; parts can have parts
+            std::function<void(int, int, bool, int)> claim = [&](int type, int faction, bool building, int depth)
+            {
+                auto u = units.find(type);
+                if (u == units.end() || depth > 4) return;
+                owner.emplace(u->second.field28, std::make_pair(faction, building));
+                for (const auto& part : u->second.parts) claim(part.a, faction, building, depth + 1);
+            };
+            for (const auto& [type, u] : units)
+                if (u.faction <= 1) claim(type, u.faction, u.category >= 2, 0);
+            const std::map<int, std::string> tables = { { 1, "BMHBM" }, { 2, "BMHVM" }, { 3, "BMMVM" }, { 4, "BMMBM" }, { 10, "BMR0NAM" } };
+            std::map<int, wow::ShadeTable> shade;
+            for (const auto& [slot, name] : tables) shade[slot] = wow::ShadeTable::LoadShh(archive.Read(name + ".SHH"));
+            std::map<std::string, int> counts;
+            std::set<std::string> done;
+            for (const auto& [id, g] : gtypes)
+            {
+                std::string file = g.file.substr(g.file.find_last_of('\\') + 1);
+                std::string ext = file.substr(file.find_last_of('.') + 1);
+                for (char& c : ext) c = char(std::toupper(static_cast<unsigned char>(c)));
+                if ((ext != "WOF" && ext != "IOB") || !shade.count(g.paletteSlot)) continue;
+                std::string folder;
+                std::string lower = file;
+                for (char& c : lower) c = char(std::tolower(static_cast<unsigned char>(c)));
+                if (lower.rfind("bridge", 0) == 0) folder = "scenery";       // the bridges belong to no one
+                else if (auto o = owner.find(id); o != owner.end())
+                    folder = std::string(o->second.first == 0 ? "human/" : "martian/") + (o->second.second ? "buildings" : "units");
+                else if (g.paletteSlot == 2) folder = "human/units";
+                else if (g.paletteSlot == 3) folder = "martian/units";
+                else if (g.paletteSlot == 4) folder = "martian/buildings";
+                else folder = "scenery";
+                const std::string stem = file.substr(0, file.find_last_of('.'));
+                if (!done.insert(folder + "/" + stem).second) continue;
+                auto data = archive.Find(file);
+                if (!data) { std::printf("%-14s not in the archive\n", file.c_str()); continue; }
+                const uint32_t* colours = shade[g.paletteSlot].Level(level);
+                fs::create_directories(out / folder);
+                if (ext == "WOF")
+                {
+                    auto m = wow::WofModel::Load(archive.Read(*data));
+                    if (m.textureHeight <= 0 || m.texture.empty()) { std::printf("%-14s no texture\n", file.c_str()); continue; }
+                    WriteIndexedBmp(out / folder / (stem + ".bmp"), m.texture.data(), 256, m.textureHeight, colours);
+                }
+                else
+                {
+                    auto m = wow::IobModel::Load(archive.Read(*data));
+                    auto pic = m.Picture();
+                    if (pic.pixels.empty()) { std::printf("%-14s empty picture\n", file.c_str()); continue; }
+                    WriteIndexedBmp(out / folder / (stem + ".bmp"), pic.pixels.data(), pic.width, pic.height, colours);
+                    // where each lit triangle's patch sits in the picture (its pixels' bounds, decoded as Picture()
+                    // does), so a reworked picture can be cut back up
+                    std::vector<uint32_t> starts;
+                    for (const auto& p : m.patches) starts.push_back(p.offset);
+                    starts.push_back(uint32_t(m.patchData.size()));
+                    std::sort(starts.begin(), starts.end());
+                    struct Box { int x0, y0, x1, y1; };
+                    std::vector<Box> boxes;
+                    int minX = 0, minY = 0;
+                    for (const auto& p : m.patches)
+                    {
+                        Box b{ 1 << 30, 1 << 30, -(1 << 30), -(1 << 30) };
+                        size_t pos = p.offset;
+                        const size_t end = p.offset < m.patchData.size() ? *std::upper_bound(starts.begin(), starts.end(), p.offset) : pos;
+                        for (int row = 0; pos + 1 < end; row++)
+                        {
+                            const int skip = m.patchData[pos++], run = m.patchData[pos++];
+                            if (skip == 0 && run == 0) break;
+                            const int count = run & 0x7F;
+                            pos += (run & 0x80) ? 1 : size_t(count);
+                            if (count == 0) continue;
+                            b.x0 = std::min(b.x0, p.x + skip); b.x1 = std::max(b.x1, p.x + skip + count);
+                            b.y0 = std::min(b.y0, p.y + row); b.y1 = std::max(b.y1, p.y + row + 1);
+                        }
+                        if (b.x1 > b.x0) { minX = std::min(minX, b.x0); minY = std::min(minY, b.y0); }
+                        boxes.push_back(b);
+                    }
+                    std::ofstream layout(out / folder / (stem + ".patches.txt"));
+                    layout << "# " << file << ": " << m.patches.size() << " patches (one per lit triangle), picture " << pic.width << "x" << pic.height
+                           << ", the building's anchor at " << -minX << "," << -minY << " in it\n"
+                           << "# patch: left top right bottom of its pixels in the picture (right, bottom exclusive), then its\n"
+                           << "# colour and mode bytes; later patches are drawn over earlier ones\n";
+                    for (size_t i = 0; i < boxes.size(); i++)
+                    {
+                        const Box& b = boxes[i];
+                        layout << i << ": ";
+                        if (b.x1 > b.x0) layout << b.x0 - minX << ' ' << b.y0 - minY << ' ' << b.x1 - minX << ' ' << b.y1 - minY;
+                        else layout << "empty";
+                        layout << "  " << int(m.patches[i].colour) << ' ' << int(m.patches[i].mode) << '\n';
+                    }
+                }
+                counts[folder]++;
+                std::printf("%-30s %s (GType 0x%03X, slot %d)\n", (folder + "/" + stem).c_str(), ext.c_str(), unsigned(id), g.paletteSlot);
+            }
+            for (const auto& [folder, n] : counts) std::printf("%-20s %d\n", folder.c_str(), n);
             return 0;
         }
         if (first == "--iob" && argc == 6)

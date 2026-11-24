@@ -138,8 +138,10 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
       and built in 236, MODERN.md "The civil wars"): (a) side and faction told apart, the regular game unchanged;
       (b) the other side's units' colours on the battle map; (c) the starts, made from the side's own start file
       (a first draft: to be evened out with the owner); (d) the computer player on its own faction, no pods; (e) the
-      main menu's entries, the debriefing's texts, the engine's save form with its tag and file names. Left: the
-      balance, armour per side, the war map counters' colours, the list in MODERN.md. Then network play (A9) on the
+      main menu's entries, the debriefing's texts, the engine's save form with its tag and file names; (f) 237:
+      a unit table per side (the other side's armour from the Enemy modifiers), the start layout read from
+      dat\CivilWar.txt, no ending movies. Left: the balance (the owner trials layouts with the file), the voice
+      lines that name the other faction, a texture pack (`wowdump --textures`), the list in MODERN.md. Then network play (A9) on the
       same ground. Also: auto-resolving a battle.
 - [ ] **F2** Level editor; war map creator and new campaigns; save editor.
 

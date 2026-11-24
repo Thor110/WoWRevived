@@ -696,9 +696,11 @@ Two new campaigns, started from the main menu under Start New Campaign: **Human 
 - The Human Civil War sets the Humans against each other, the player's side starting from Scotland against London.
 - The Martian Civil War is set after the Humans have lost the Earth, the player's Martians starting from London against Scotland.
 - There are no pods in either, the computer player plays the other side with its own faction's rules, and the other side's units are shown in different colours on the battle map.
+- Each side has its own unit table, so the other side's units take the enemy armour settings as in the regular game.
+- There are no ending movies; a civil war goes straight to the credits.
 - Civil war campaigns are saved separately ( HumanCW.001, MartianCW.001 ) so the original game never sees them, and they are listed in the same Load menu with "(Human Civil War)" or "(Martian Civil War)" after their names.
 
-The starting layouts are a first draft and the two sides still need evening out.
+The starting layouts are a first draft and the two sides still need evening out. They are read from DAT\CivilWar.txt when a civil war begins, so which sectors each side starts with can be changed there and tried with a new campaign, no rebuild needed.
 
 ### Bug Reports
 

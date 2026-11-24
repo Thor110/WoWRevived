@@ -2,6 +2,7 @@
 // that they agree with each other, and the calendar and route search the war map uses.
 #include "Test.h"
 #include "core/AStar.h"
+#include "core/ObjOjd.h"
 #include "core/Campaign.h"
 #include "warmap/WarMapData.h"
 
@@ -122,4 +123,25 @@ TEST("campaign: each side's faction")
     CHECK_EQ(OwnerCode(false, 0), 1);
     CHECK_EQ(OwnerCode(false, 1), 0);
     CHECK(!IsCivilWar(Campaign::Regular) && IsCivilWar(Campaign::HumanCivilWar));
+}
+
+TEST("unit table: the other side's copy takes the Enemy armour modifiers")
+{
+    ObjOjd::UnitData human, martian;
+    human.armourFaction = 0;
+    martian.armourFaction = 1;
+    human.armourRaw = martian.armourRaw = 100;
+    ObjOjd::ArmourModifiers m;
+    m.humanFriend = 2.0f; m.humanEnemy = 1.0f; m.martianFriend = 3.0f; m.martianEnemy = 1.5f;
+    const auto other = ObjOjd::OtherSideUnits({ { 1, human }, { 2, martian } });
+    // the regular game: the copy gives what the one table did for the other side's faction
+    CHECK_EQ(ObjOjd::Armour(martian, true, m), 150);
+    CHECK_EQ(ObjOjd::Armour(other.at(2), true, m), 150);
+    CHECK_EQ(ObjOjd::Armour(human, false, m), 100);
+    CHECK_EQ(ObjOjd::Armour(other.at(1), false, m), 100);
+    // a civil war: the player's faction on the other side is the enemy
+    CHECK_EQ(ObjOjd::Armour(human, true, m), 200);
+    CHECK_EQ(ObjOjd::Armour(other.at(1), true, m), 100);
+    CHECK_EQ(ObjOjd::Armour(martian, false, m), 300);
+    CHECK_EQ(ObjOjd::Armour(other.at(2), false, m), 150);
 }

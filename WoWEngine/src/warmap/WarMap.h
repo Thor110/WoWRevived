@@ -58,6 +58,8 @@ namespace wow
         bool HasRoom(bool land, int sector, int count) const; // 0x43AC40: room for `count` more of the player's
         int SectorOwner(int sector) const { return sector >= 0 && sector <= warmap::SectorCount ? owner[size_t(sector)] : 2; }
         const std::map<int, ObjOjd::UnitData>& Units() const { return unitData; }
+        // a side's unit table: the player's, or (MODERN) the other side's copy
+        const std::map<int, ObjOjd::UnitData>& Units(bool players) const { return players ? unitData : otherUnitData; }
         const DebriefingInfo& Debriefing() const { return debriefing; }
         void ReturnFromBattle();                   // 0x99 / 0x8017, then the view's 0x418980: 0x808D and 0x41E730
 
@@ -310,13 +312,15 @@ namespace wow
         std::map<int, Repair> repairs;                  // by the repairer's ref
         std::set<std::pair<int, int>> repairing;        // (the object's ref, which of its battle units)
         ObjOjd::ArmourModifiers armour;
-        int UnitMaxHealth(int type) const;              // 0x47DA20
+        int UnitMaxHealth(int type, bool players = true) const; // 0x47DA20, from the side's table (Units)
         static bool Repairer(int type) { return type == 30 || type == 31 || type == 60 || type == 121; }
         bool MostDamaged(int sector, bool players, int kind, int& ref, int& unit) const;   // 0x422AB0
         void PickRepair(int ref);                       // 0x4297C0
         void RepairStep(int ref, int hours);            // 0x429B80
         bool BeingRepaired(int ref) const;              // 0x4299C0
         std::map<int, ObjOjd::UnitData> unitData;
+        // MODERN (docs/MODERN.md "The civil wars"): the other side's copy (ObjOjd::OtherSideUnits)
+        std::map<int, ObjOjd::UnitData> otherUnitData;
         // The factories (WBuildList, docs/WARMAP.md "Production"): each object's that has one, by its place in the
         // table, as read from (and written back into) the end of its saved bytes
         std::map<int, ObjectTail> factories;

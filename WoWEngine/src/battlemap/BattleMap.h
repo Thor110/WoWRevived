@@ -49,6 +49,9 @@ namespace wow
             bool loadScenery = true;    // [Debug] "Load scenery" (0x4F73F1)
             bool pod = false;           // the sector's +0x64: a pod landed here since the last battle (0x41A3BC)
             const std::map<int, ObjOjd::UnitData>* units = nullptr;
+            // MODERN (docs/MODERN.md "The civil wars"): the other side's copy of the table (ObjOjd::OtherSideUnits),
+            // which its units' full health is read from; the one table when not given
+            const std::map<int, ObjOjd::UnitData>* otherUnits = nullptr;
             const std::map<int, ObjOjd::BattleTables::Six>* six = nullptr;  // OBJ.ojd record 6 (the WOF GTypes)
             const std::map<int, ObjOjd::BattleTables::Thirteen>* lights = nullptr; // record 13 (the light parts)
             bool showLights = true;     // [Options] "Show lights" (byte_4B8808)
@@ -451,7 +454,7 @@ namespace wow
         std::vector<Cascade> cascades;      // 0x48CDE0's next explosions, made once the effects are walked
         std::vector<Landing> landings;                          // made after the flying objects' updates
         // Damage and death (0x48A5A0, 0x48AB20, 0x80A0 in 0x489FA0) and the explosions (WExplosion 0x488180)
-        int MaxHealth(int type) const;                          // 0x47DA20: +0x4A with the armour modifiers
+        int MaxHealth(int type, bool players = true) const;     // 0x47DA20: +0x4A with the armour modifiers, by side
         void Damage(size_t unit, int amount);                   // vt+0xE0, 0x48AB20
         void Die(size_t unit, bool quietly = false);            // 0x80A0; quietly: vt+0x78 0x495BB0, no explosion
         void KeyBuildingLost(bool players);                     // 0x48AC50's key building case

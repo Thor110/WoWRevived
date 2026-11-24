@@ -75,6 +75,7 @@ if(WOW_BUILD_TESTS)
     )
     target_link_libraries(wowtests PRIVATE wowcore)
     target_include_directories(wowtests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/../WoWPatches/Common)
+    target_compile_definitions(wowtests PRIVATE WOWENGINE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     add_test(NAME unit COMMAND wowtests)
 endif()
 # The two command line tools are for working on the engine, not for players: they aren't built unless asked for

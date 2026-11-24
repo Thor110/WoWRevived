@@ -276,3 +276,51 @@ TEST("civil war start: the copied HQ takes its new sector's type")
     CHECK_EQ(s.Sector(3).lists[2][0].BattleType(), 58);
     CHECK_EQ(s.Sector(30).lists[3][0].Type(), 278);         // London's stays London's
 }
+
+TEST("civil war layout: the shipped dat\\CivilWar.txt reads as the built-in draft")
+{
+    std::ifstream in(std::filesystem::path(WOWENGINE_SOURCE_DIR) / "dat" / "CivilWar.txt", std::ios::binary);
+    REQUIRE(bool(in));
+    const std::string text((std::istreambuf_iterator<char>(in)), {});
+    for (Campaign c : { Campaign::HumanCivilWar, Campaign::MartianCivilWar })
+    {
+        std::vector<std::string> warnings;
+        const CivilWarLayout file = CivilWarLayout::Parse(text, c, warnings);
+        CHECK(warnings.empty());
+        const CivilWarLayout draft = CivilWarLayout::Default(c);
+        for (int sector = 1; sector <= 30; sector++) CHECK(file.Where(sector) == draft.Where(sector));
+        CHECK_EQ(file.copyFrom, draft.copyFrom);
+        CHECK_EQ(file.copyX, draft.copyX);
+        CHECK_EQ(file.copyY, draft.copyY);
+        CHECK(MakeCivilWarStart(MiniStart(c == Campaign::HumanCivilWar), c, file).Write() ==
+              MakeCivilWarStart(MiniStart(c == Campaign::HumanCivilWar), c).Write());
+    }
+}
+
+TEST("civil war layout: sectors moved between sides, no copy, and lines it can't read")
+{
+    const std::string text =
+        "[Martian Civil War]\nplayer = 1\n"
+        "[Human Civil War]   # this one\n"
+        "player = 8 15\n"
+        "neutral = rest\n"
+        "copy = none\n"
+        "copy at = 5\n"
+        "colour = red\n"
+        "other = 99\n";
+    std::vector<std::string> warnings;
+    const CivilWarLayout l = CivilWarLayout::Parse(text, Campaign::HumanCivilWar, warnings);
+    CHECK_EQ(warnings.size(), size_t(3));       // copy at, colour, 99
+    CHECK(l.Where(15) == CivilWarLayout::To::Player);
+    CHECK(l.Where(30) == CivilWarLayout::To::Neutral);
+    CHECK_EQ(l.copyFrom, 0);
+    const SaveFile s = MakeCivilWarStart(MiniStart(true), Campaign::HumanCivilWar, l);
+    CHECK_EQ(Count(s, 15, 0), size_t(1));       // Liverpool the player's
+    CHECK_EQ(s.Sector(15).Owner(), 0);
+    CHECK_EQ(Count(s, 30, 2) + Count(s, 30, 3) + Count(s, 30, 0) + Count(s, 30, 1), size_t(0));   // London emptied
+    CHECK_EQ(s.Sector(30).Owner(), 2);
+    CHECK_EQ(Count(s, 3, 0) + Count(s, 3, 2), size_t(0));      // no copy in the Grampians
+    std::vector<std::string> none;
+    CivilWarLayout::Parse("[Elsewhere]\nplayer = 1\n", Campaign::HumanCivilWar, none);
+    CHECK_EQ(none.size(), size_t(1));           // no section: the draft, noted
+}

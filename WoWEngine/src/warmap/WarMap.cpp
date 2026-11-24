@@ -44,6 +44,7 @@ namespace wow
         // the war map's numbers start from srand(1) each time (WWarMapWorld 0x417CD0)
         random::Seed(1);
         unitData = units;
+        otherUnitData = ObjOjd::OtherSideUnits(std::move(units));
         this->objectClasses = objectClasses;
         // A counter for each object (0x42B2F0, made by 0x4205F0), except that objects of class 7 (AI.ojd's class,
         // 0x518B14: wire fences, mines) share one a type and sector (0x4282A0 / 0x428270), with how many there are
@@ -382,7 +383,7 @@ namespace wow
         // each finished one's share times its health / its full health as whole numbers (0x423B00: cdq, idiv):
         // one that's damaged at all makes nothing till it's mended
         int working = 0, counted = 0;
-        const int most = UnitMaxHealth(FacilityType[kind]);
+        const int most = UnitMaxHealth(FacilityType[kind], owner[size_t(sector)] == 0);
         for (const Counter& k : counters)
         {
             if (k.sector != sector || k.kind != 2 || k.type != FacilityType[kind] || k.count <= 0 || k.Travelling()) continue;
@@ -621,10 +622,11 @@ namespace wow
     // ---- Repair (docs/WARMAP.md "Repair") ----
 
     // 0x47DA20: a battle unit's full health, its type's +0x4A
-    int WarMap::UnitMaxHealth(int type) const
+    int WarMap::UnitMaxHealth(int type, bool players) const
     {
-        auto t = unitData.find(type);
-        return t == unitData.end() ? 0 : ObjOjd::Armour(t->second, res.Human(), armour);
+        const auto& units = Units(players);
+        auto t = units.find(type);
+        return t == units.end() ? 0 : ObjOjd::Armour(t->second, res.Human(), armour);
     }
 
     // The vehicles a battle destroyed go from their objects' lists of battle units (+0x4C), so a group that comes
@@ -668,7 +670,8 @@ namespace wow
     {
         const int fights = FightType(o), saved = o.BattleType();
         if (fights == saved) return 1.0f;
-        const int a = UnitMaxHealth(fights), b = UnitMaxHealth(saved);
+        const bool players = (o.list & 1) == 0;
+        const int a = UnitMaxHealth(fights, players), b = UnitMaxHealth(saved, players);
         return a > 0 && b > 0 ? float(a) / float(b) : 1.0f;
     }
 
@@ -691,7 +694,7 @@ namespace wow
             {
                 if (r < 0 || size_t(r) >= table.size()) continue;
                 if (std::find(destroyed.begin(), destroyed.end(), r) != destroyed.end()) continue;
-                const int most = UnitMaxHealth(table[size_t(r)].BattleType());
+                const int most = UnitMaxHealth(table[size_t(r)].BattleType(), players);
                 if (most <= 0) continue;
                 const std::vector<int> healths = table[size_t(r)].BattleHealths();
                 for (size_t i = 0; i < healths.size(); i++)
@@ -723,7 +726,7 @@ namespace wow
         const bool players = (table[size_t(ref)].list & 1) == 0;
         const int type = table[size_t(ref)].Type();
         auto whole = [&](int r, int u) {    // health / full health, whole (0x429883: cdq, idiv)
-            const int most = UnitMaxHealth(table[size_t(r)].BattleType());
+            const int most = UnitMaxHealth(table[size_t(r)].BattleType(), players);
             const std::vector<int> healths = table[size_t(r)].BattleHealths();
             return most > 0 && size_t(u) < healths.size() ? healths[size_t(u)] / most : 1;
         };
@@ -793,7 +796,7 @@ namespace wow
             health += add;
             now.hours = int(float(now.hours) - period);
         }
-        const int most = UnitMaxHealth(o.BattleType());
+        const int most = UnitMaxHealth(o.BattleType(), (o.list & 1) == 0);
         if (health >= most)
         {
             o.SetBattleHealth(size_t(now.unit), most);
@@ -958,14 +961,14 @@ namespace wow
                 SaveObject o;
                 if (kind == 0)
                     o = SaveObject::MakeUnit(type, list, sector, u == unitData.end() ? 1 : std::max(1, u->second.battleUnits),
-                                             UnitMaxHealth(type), factory);
+                                             UnitMaxHealth(type, players), factory);
                 else
                 {
                     // a gun emplacement's battle object is a vehicle's class (0x48F750), a fence's has its two ends
                     const bool emplacement = (type >= 0x32 && type <= 0x39) || (type >= 0x6F && type <= 0x76);
                     const auto cls = emplacement ? SaveObject::BuildingClass::Emplacement
                                    : (type >= 451 && type <= 456) ? SaveObject::BuildingClass::Line : SaveObject::BuildingClass::Plain;
-                    o = SaveObject::MakeBuilding(type, list, sector, UnitMaxHealth(type), factory, cls);
+                    o = SaveObject::MakeBuilding(type, list, sector, UnitMaxHealth(type, players), factory, cls);
                 }
                 // the ids in use: the sectors' own data as saved, and every object the map has now
                 std::vector<bool> used = save->UsedIds();
@@ -1670,7 +1673,7 @@ namespace wow
                 const int ref = k.refs.front();
                 if (ref >= 0 && size_t(ref) < table.size())
                 {
-                    const int most = UnitMaxHealth(table[size_t(ref)].BattleType());
+                    const int most = UnitMaxHealth(table[size_t(ref)].BattleType(), (table[size_t(ref)].list & 1) == 0);
                     std::vector<int> frames;
                     for (int health : table[size_t(ref)].BattleHealths())
                         frames.push_back(most > 0 ? int(0.5 - double(float(health) / float(most)) * -9.0) : 0);

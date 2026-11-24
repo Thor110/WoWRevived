@@ -521,6 +521,13 @@ Two new campaigns, each one faction against itself (PLAN.md F1).
     other side's, and the player gets a copy of it in London. Every other sector is no one's.
   - A copied HQ takes its new sector's form (London's Command Post 278 is a 58 elsewhere, the Grampians'
     Communications Centre 830 a 120); `WarMap::HasCommandPost` takes either form in a civil war.
+  - **The layout is a text file** (update 237): `dat\CivilWar.txt`, shipped in the engine's `dat` folder (DAT in a
+    release), says for each civil war which sectors' objects stay the player's, go to the other side or are taken
+    out, which sector's objects the player's home gets a copy of, and where they go (`CivilWarLayout`). It's read
+    when a civil war begins, so a change is tried with a new campaign and no rebuild; lines it can't read are noted
+    in WoWEngine.log ("CivilWar.txt line n: ..."). Without the file (or with `--no-loose`) the same draft is built
+    in (`CivilWarLayout::Default`; a unit test checks the two agree). The homes can't be moved by it: the war map,
+    the battle map and the endings know them as the Grampians (3) and London (30) by the campaign.
 - **Sides and factions** (`core/Campaign.h`): the save's H lists are always the player's side and the A lists the
   other's, whatever their factions, so the engine already thought in sides. What changed is every place that took
   the other side to be the other faction, which now asks the campaign (`WarMap::OtherIsHuman`): the other side's
@@ -532,6 +539,14 @@ Two new campaigns, each one faction against itself (PLAN.md F1).
 - **The economy**: each sector's six stock slots were the Humans' 0-2 and the Martians' 3-5. In a civil war the
   player keeps its faction's slots and the other side has the other three (`WarMap::SlotBase`), while its facility
   types and deposits stay its faction's (`FactionBase`, `FactionKind`), so the two sides never share a stock.
+- **Each side's unit table** (update 237): the war map keeps a second copy of the unit table for the other side
+  (`ObjOjd::OtherSideUnits`, `WarMap::Units(players)`, the battle setup's `otherUnits`), each type marked as the
+  other side's, which takes its faction's Enemy armour modifier ([Tweak] "HumanEnemy / MartianEnemy Armour
+  Modifier") whatever the side played. Only the full-health lookups choose the table, by the object's side
+  (`WarMap::UnitMaxHealth`, `BattleMap::MaxHealth`); everything else reads the one table as before. In the regular
+  game the copy gives the same numbers (the other side's types are the other faction's, which take the Enemy
+  modifiers already); in a civil war the other side's units now take the Enemy ones where they took Friend. The
+  copy is also where per-side data would go: the other side's textures for a texture pack, say.
 - **Damage**: the game gives a hit the target's armour from the target's faction and the attacker's improvements
   from the other faction's tree. In a civil war the attacker is the same faction, so there: the target's armour
   from the target's side and the attacker's faction's improvement from the attacker's side.
@@ -544,16 +559,19 @@ Two new campaigns, each one faction against itself (PLAN.md F1).
   Load menu lists the regular saves and then the civil war's, shown with "(Human Civil War)" / "(Martian Civil
   War)" after the name (the stored name is the player's); Save and Select Campaign to Replace list the kind being
   played or started.
+- **Endings** (update 237): no movie. The regular victory and defeat movies are about London falling or the
+  Martians being driven from Scotland, so a civil war's end goes straight to the credits (FrontEnd, 0x80FE).
 - **Texts**: the debriefing's "The Martians / Humans in this sector were eliminated" and "... are occupying this
   sector" say "the enemy" in a civil war (engine strings 1454, 1455). The menu entries and tags are 1450-1453.
   The French, German, Italian and Spanish are the engine's own wording.
 
 **Not done yet, or to decide with the owner:**
 - The start layouts' balance (the Human Civil War's draft gives London's side 17 sectors to the player's 3).
-- Armour is worked out per type, so the difficulty's armour modifiers are the player's "Friend" ones for both sides
-  in a civil war (the research and build times are per side).
-- The war map's counters look the same for both sides (the borders and mini-map show who holds what).
-- The ending movies are the faction's regular victory and defeat; the opening has none.
+- No movies at either end (the owner: none for now).
+- The other side looks the same on the war map's counters (the owner: maybe retextured later) and is told apart
+  on the battle map only by the hue turn, until a texture pack gives each side its own textures (below).
+- Voice lines that name the other faction ("Martians sighted" and the like) are the regular game's: to be reworked
+  for the civil wars later (the owner).
 - The Single Player Options menu (with the network version enabled) has no civil war entry yet.
 - `ReceiveSpecial`'s Martian research (items 132 / 133) is asked of the receiving unit's side: *provisional*.
 - A battle between the two sides hasn't been played through headless (their forces start far apart); the colours
@@ -565,6 +583,24 @@ Two new campaigns, each one faction against itself (PLAN.md F1).
 - **War map creator and new campaigns** (the owner's idea): with the level editor, a tool to make a war map
   (the map, its sectors, links and starting forces), so whole new campaigns can be built and played.
 - **Save editor**: the war map's objects, research and resources in a save.
+- **Texture packs** (the owner, update 237; planned): new textures for both sides' units and buildings, which would
+  also give the civil wars' two sides looks of their own (the other side's from its unit table, above). The first
+  step is done: `wowdump --textures <game folder> <outdir> [level]` writes every unit's and building's texture as
+  an 8-bit BMP into human/units, human/buildings, martian/units, martian/buildings and scenery, keeping the
+  game's colour indices, with the battle map's midday shade table at a level (44 of 64 unless given) as the
+  palette. Which side a model is on comes from the unit table (each type's model, +0x28, and its parts', which
+  are unit types of their own); a model no type names goes by its shade slot (1 Human buildings, 2 Human
+  vehicles, 3 Martian vehicles, 4 Martian buildings, 10 nature).
+  - A unit (WOF) has one texture atlas 256 pixels wide that its faces map into: repainted in place, its layout
+    kept.
+  - A building (IOB) isn't textured. It's a picture rendered beforehand from the game's one view, cut into
+    run-length patches, one per lit triangle of its model, each placed from the building's anchor and lit by its
+    triangle's normals. `IobModel::Picture` puts them back together; the export writes each building's
+    `<name>.patches.txt` beside it, with each patch's pixel bounds in the picture, so a reworked picture can be cut
+    back into the same patches as long as the outline stays. Patches can overlap (the later drawn over the
+    earlier), which is a likely reason building edits have gone wrong in other tools.
+  - Still to decide: whether a pack keeps to the game's indices and shade tables (it would then work in the
+    original too) or is full colour, which needs the engine to read full-colour textures and light them itself.
 
 ## From the earlier patched game
 

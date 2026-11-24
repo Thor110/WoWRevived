@@ -30,10 +30,11 @@ namespace wow
 
     // 0x47DA20: the type table's +0x4A, the type's record 34 times the armour modifier for its faction and the side
     // played, then record 35's (OBJ.ojd loader 0x43823F / 0x4382BA)
-    int BattleMap::MaxHealth(int type) const
+    int BattleMap::MaxHealth(int type, bool players) const
     {
-        auto t = setup.units->find(type);
-        if (t == setup.units->end()) return 0;
+        const auto* table = !players && setup.otherUnits ? setup.otherUnits : setup.units;
+        auto t = table->find(type);
+        if (t == table->end()) return 0;
         return ObjOjd::Armour(t->second, setup.human, setup.armour);
     }
 
@@ -65,7 +66,7 @@ namespace wow
         auto t = setup.units->find(u.type);
         if (t == setup.units->end() || u.partsLeft <= 1) return;
         const int parts = int(t->second.parts.size());
-        const int most = MaxHealth(u.type);
+        const int most = MaxHealth(u.type, u.players);
         if (parts <= 0 || most <= 0) return;
         const float ratio = float(std::max(0, u.health)) / float(most);
         int lose = (u.partsLeft - 1) - int(float(parts) * ratio);
