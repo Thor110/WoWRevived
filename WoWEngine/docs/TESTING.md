@@ -56,6 +56,15 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## Resources (update 255)
+
+- A resource building (iron, coal, oil; the Martians' three) placed on the battle map with a construction vehicle,
+  left to finish on the war map: the Resource view's bar for the kind rises in its sector and less in the sectors
+  near it; a second one in the same sector adds less than the first (r B / (n + r - 1) each). Seen headless
+  through the war map's order and its hours, with the building given 1 health first as a battle hands it back.
+- Other buildings placed on the battle map are finished at their full health too (a repair vehicle no longer
+  goes to them).
+
 ## The window (update 254)
 
 - Play in window (Modern Options), then a smaller or larger resolution in Game Options: the window takes the

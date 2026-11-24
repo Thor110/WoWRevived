@@ -249,7 +249,11 @@ namespace wow
         if (int k = CounterOf(ref); k >= 0 && o.Value(0) != 0.0f) counters[size_t(k)].progress = o.Value(1) / o.Value(0);
     }
 
-    // 0x80AC (0x42A980): finished, +0x78 and +0x7C both 1.0. A command building (58, 278 in sector 30; 120, 830 in
+    // 0x80AC (0x42A980): finished, its first battle unit's health (+0xC4) its type's whole (0x47DA20), +0x78 and
+    // +0x7C both 1.0. (A construction goes onto a battle map with its progress's share of its health, at least 1,
+    // 0x48E9D0, which the battle hands back; without this a facility placed on the battle map finished at that
+    // and, short of its whole health, made nothing: update 255, a tester's report that new resource buildings
+    // didn't add to the resources.) A command building (58, 278 in sector 30; 120, 830 in
     // sector 3) has the world think again about the sectors (0x418890: here the paths are built again) and, if
     // it's the local player's, raises CommandCentreBuilt (event 15) for the sector; anything else is laid out
     // again in its sector (0x4297C0, and 0x8145 to the view when it shows its kind).
@@ -257,11 +261,13 @@ namespace wow
     {
         if (ref < 0 || size_t(ref) >= table.size()) return;
         SaveObject& o = table[size_t(ref)];
-        o.SetValue(0, 1.0f);
-        o.SetValue(1, 1.0f);
         const int k = CounterOf(ref);
         const int sector = k >= 0 ? counters[size_t(k)].sector : o.Sector();
         const bool players = k >= 0 ? counters[size_t(k)].players : o.list % 2 == 0;
+        if (!o.BattleHealths().empty())
+            if (const int whole = UnitMaxHealth(o.Type(), players); whole > 0) o.SetBattleHealth(0, whole);
+        o.SetValue(0, 1.0f);
+        o.SetValue(1, 1.0f);
         if (k >= 0)
         {
             Counter& c = counters[size_t(k)];

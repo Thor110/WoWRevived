@@ -627,7 +627,12 @@ Tested with one entry injected into a Human factory (type 35 in sector 13): type
 480 hours, with 2 repeats. It made the two units 480 and 998 hours in, then raised FacilityIdle.
 
 **The construction's side** (WMOB 0x42A4B0): 0x80AE, started, sets +0x78 to its whole time and +0x7C to 0;
-0x80AD adds the hours to +0x7C (the counter shows +0x7C / +0x78 done); 0x80AC (0x42A980) sets both to 1.0. A
+0x80AD adds the hours to +0x7C (the counter shows +0x7C / +0x78 done); 0x80AC (0x42A980) gives its first battle
+unit (its battle object's +0xC4) its type's whole health (0x47DA20) and sets both to 1.0. (Before update 255 the
+engine left the health: a construction goes onto a battle map with its progress's share of it, at least 1
+(0x48E9D0), and the battle hands that back, so one placed on the battle map finished at 1 health. A facility at
+less than its whole health makes nothing (phase 0 above), so new resource buildings added nothing: a tester's
+report. Ones finished so in a save stay that way until repaired.) A
 command building finished has the world think about the sectors again (0x418890; the engine builds the paths
 again) and, if it's the local player's, raises CommandCentreBuilt (event 15) for the sector; anything else is laid
 out again (0x4297C0, 0x8145). (The survey has 0x80AC and 0x80AD the other way round; 0x461D60 sends 0x80AD with
