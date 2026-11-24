@@ -191,11 +191,11 @@ namespace wow::enginetext
         { PreviousCampaigns, { "Previous Campaigns", "Campagnes précédentes", "Vorherige Feldzüge", "Campagne precedenti", "Campañas anteriores" } },
         { ModernGameplay, { "Modern Gameplay", "Jeu moderne", "Modernes Spiel", "Gioco moderno", "Juego moderno" } },
         { ModernGameplay + TipOffset, {
-            "Changes to the rules of play: upgraded buildings in battle, unlimited building, units firing from bridges.",
-            "Changements des règles : bâtiments améliorés au combat, construction illimitée, tir depuis les ponts.",
-            "Geänderte Spielregeln: ausgebaute Gebäude im Kampf, unbegrenzter Bau, Feuer von Brücken.",
-            "Modifiche alle regole: edifici potenziati in battaglia, costruzione illimitata, fuoco dai ponti.",
-            "Cambios en las reglas: edificios mejorados en batalla, construcción ilimitada, fuego desde los puentes." } },
+            "Changes to the rules of play: upgraded buildings in battle, unlimited building, control on bridges, bridges staying broken.",
+            "Changements des règles : bâtiments améliorés au combat, construction illimitée, contrôle sur les ponts, ponts qui restent détruits.",
+            "Geänderte Spielregeln: ausgebaute Gebäude im Kampf, unbegrenzter Bau, Kontrolle auf Brücken, zerstörte Brücken bleiben zerstört.",
+            "Modifiche alle regole: edifici potenziati in battaglia, costruzione illimitata, controllo sui ponti, ponti che restano distrutti.",
+            "Cambios en las reglas: edificios mejorados en batalla, construcción ilimitada, control en los puentes, puentes que siguen destruidos." } },
         { UnlimitedBuilding + TipOffset, {
             "Your factories and construction vehicles ignore the limits on how many of each thing a sector can hold.",
             "Vos usines et véhicules de construction ignorent la limite de chaque objet par secteur.",

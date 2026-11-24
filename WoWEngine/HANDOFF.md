@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 251
+# Handoff: WoWEngine after update 252
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -157,7 +157,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 251
+## State after update 252
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -189,6 +189,11 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   moved). The parity battles didn't see it (a battle reads the table, not the counters). Fixed in 238. A new
   campaign's war map screenshot with the construction vehicles in sectors 12 and 24 is a quick look: their
   counters aren't the lorry's.
+- **Update 252**: the engine's strings checked before the testers' build: all 59 in the five languages, only
+  Latin-1 characters, every Modern Options and Modern Gameplay row with its tip (id + 20), every id the code uses
+  in the table, and `CopyLanguageText` putting them into a scratch Italian install's TEXT.ojd (it rebuilds the file
+  from WoWRevived's TEXT-xx.ojd plus every engine string it lacks each time the launcher starts an installed game,
+  so an existing install gets new strings). The Modern Gameplay tip (1478) brought up to date (the bridge options).
 - **Update 251**: docs only. The note that a vehicle ordered from the battle map is "made at (0, 0)" in the original
   corrected (BATTLEMAP.md "Building on the battle map", PLAN.md A10): it's always finished on the war map, since
   the clock doesn't run with a battle on, as the engine does. Units arriving from another sector deploy at the
@@ -287,7 +292,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **252**.
+  - The next number is **253**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.
