@@ -146,7 +146,8 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
 - [x] **G4** A trailer for the project (the owner, 199). Done (230, 231): the trailer, a Shorts version and the
       title cards (TRAILER.md, `tools/trailer`, the engine's footage recorded with `--frames`). Can be cut again
       when the engine changes.
-- [ ] **G2** Unit tests for the decoders, the save's round trip and the war map's rules.
+- [x] **G2** (235) Unit tests for the decoders, the save's round trip and the war map's rules (`tests/`, 32 of
+      them, `ctest`), run on Windows, Linux and macOS by a GitHub workflow on every push (README "GitHub").
 - [x] **G3** (234) The release scripts tried from a clean checkout (README "Release"; the Linux programs now find
       SDL3 beside them); the docs brought level: TASKS.md's open boxes redrawn, WARMAP.md's and the README's
       road map brought up to date.

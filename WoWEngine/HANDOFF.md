@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 234
+# Handoff: WoWEngine after update 235
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -64,6 +64,8 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   - `=text` types letters.
   - Key names: `enter`, `escape`, `up`, `down`, `left`, `right`, `backspace`, `home`, `comma`, `period`.
 - **Without `--screenshot` the run doesn't exit.**
+- The unit tests: `ctest --test-dir build` (or `./build/wowtests`), no game files needed. Add tests to `tests/` with each
+  change that can be checked without the game's data; GitHub runs them on every push (README "GitHub").
 - A script draws the picture before each mouse step (update 231), so menus are placed for the view size as in a
   running game: clicks at 1920 x 1080 are the picture's own pixels. `--frames <folder>` saves every update's
   picture (docs/TRAILER.md).
@@ -142,7 +144,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 234
+## State after update 235
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -172,7 +174,8 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - **Delivery is a zip per update, not a push.** The owner merges the zips into the repository themselves. Make
   `WoWEngine-update-N.zip` of the files changed against `origin/main`:
   - CRLF line endings
-  - patches, tests and workflows left out
+  - patches left out; since update 235 the unit tests (`WoWEngine/tests/`) and the workflow
+    (`.github/workflows/wowengine.yml`) go in the zip like the rest (the owner asked for them)
   - binary files (`.ico`, `.spr`, `.dll`, `.ojd` and the like) copied as they are, not given CRLF
   - the parity frames are the same from run to run only because the random seed is the milliseconds since the
     engine started, which is the same few on an idle machine; on a busy one (just after a rebuild, or a
@@ -189,7 +192,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **235**.
+  - The next number is **236**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.

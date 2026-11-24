@@ -1,0 +1,89 @@
+# WoWEngine built and tested on Windows, Linux and macOS (WoWEngine/README.md, "Building").
+#
+# Runs on every push that touches WoWEngine/ (or this file), on pull requests, and by hand from the Actions tab.
+# A newer push to the same branch cancels the run still going for it and starts again on the new commit.
+# Each machine builds the Release configuration with the developer tools and runs the unit tests (ctest); Windows
+# and Linux also package the release (tools/make_release.py) and keep it as the run's artifact. No game files are
+# needed or used: the tests run on data made in the tests themselves.
+name: WoWEngine
+
+on:
+  push:
+    paths:
+      - 'WoWEngine/**'
+      - '.github/workflows/wowengine.yml'
+  pull_request:
+    paths:
+      - 'WoWEngine/**'
+      - '.github/workflows/wowengine.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: wowengine-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            preset: x64-Release
+            package: true
+          - name: Linux
+            os: ubuntu-latest
+            preset: release
+            package: true
+          - name: macOS
+            os: macos-latest
+            preset: release
+            package: false      # the programs are .app bundles, which make_release.py doesn't look inside yet
+    defaults:
+      run:
+        working-directory: WoWEngine
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Visual Studio's compiler on the PATH (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Ninja (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ninja --no-progress
+        shell: pwsh
+
+      - name: SDL3's build needs (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build libasound2-dev libpulse-dev \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev \
+            libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev
+
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }} -DWOW_BUILD_TOOLS=ON
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }} --parallel
+
+      - name: Unit tests
+        run: ctest --test-dir out/build/${{ matrix.preset }} --output-on-failure --no-tests=error
+
+      - name: Package the release
+        if: matrix.package
+        run: python tools/make_release.py
+
+      - name: Keep the release
+        if: matrix.package
+        uses: actions/upload-artifact@v4
+        with:
+          name: WoWEngine-${{ matrix.name }}
+          path: WoWEngine/out/WoWEngine-v*/
+          if-no-files-found: error

@@ -59,6 +59,23 @@ add_library(wowinstall STATIC
 target_link_libraries(wowinstall PUBLIC wowcore)
 # IniStore.h (shared with the patch DLLs): the installer writes the install's language into WoWRevived.ini
 target_include_directories(wowinstall PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../WoWPatches/Common)
+# The unit tests (tests/, `ctest`): the file formats, the save's round trip, the war map's rules and tables, and
+# WoWRevived.ini, on data made in the tests; no game files and no SDL. On unless -DWOW_BUILD_TESTS=OFF; not in a
+# release. The workflow (.github/workflows/wowengine.yml) runs them on Windows, Linux and macOS.
+option(WOW_BUILD_TESTS "Build the unit tests (wowtests, run by ctest)" ON)
+if(WOW_BUILD_TESTS)
+    enable_testing()
+    add_executable(wowtests
+        tests/TestMain.cpp
+        tests/CoreTests.cpp
+        tests/SaveTests.cpp
+        tests/WarMapTests.cpp
+        tests/IniTests.cpp
+    )
+    target_link_libraries(wowtests PRIVATE wowcore)
+    target_include_directories(wowtests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/../WoWPatches/Common)
+    add_test(NAME unit COMMAND wowtests)
+endif()
 # The two command line tools are for working on the engine, not for players: they aren't built unless asked for
 # (cmake -DWOW_BUILD_TOOLS=ON) and aren't in a release.
 #   wowinstall-cli: WoWLauncher's install from the discs, as a command with its steps printed

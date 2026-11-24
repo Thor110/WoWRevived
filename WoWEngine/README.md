@@ -32,6 +32,18 @@ Linux programs looking for SDL3 only in the folder they were built in; since 234
 first (`CMakeLists.txt`, BUILD_RPATH). Not tried here: Windows (the owner builds and runs each update there) and
 macOS, where the programs are built as `.app` bundles that the script doesn't yet look inside.
 
+**Unit tests** (`tests/`, update 235): the file formats (FFUH both ways, sprites, palettes, shade tables,
+TEXT.ojd, the byte reader), the game's random numbers (MSVC's `rand()` from `srand(1)`), the save written, read
+back and written again byte for byte (with new units, buildings and a Damage Layer), the war map's tables and
+rules (waypoints, borders, the calendar, arrival labels, route search) and WoWRevived.ini. They make their own
+data, so no game files are needed. Built with the rest (`wowtests`; `-DWOW_BUILD_TESTS=OFF` leaves them out),
+run with `ctest --test-dir <build folder>`, or `wowtests <part of a name>` for some of them. Not in a release.
+
+**GitHub** (`.github/workflows/wowengine.yml`, update 235): every push that touches `WoWEngine/` builds the
+Release configuration with the tools on Windows, Linux and macOS, runs the unit tests, and on Windows and Linux
+packages the release, kept as the run's artifact (Actions tab, the run, "Artifacts"). A newer push to the same
+branch cancels the run still going for it and starts again. It can also be started by hand from the Actions tab.
+
 Targets:
 
 | Target | What it is |

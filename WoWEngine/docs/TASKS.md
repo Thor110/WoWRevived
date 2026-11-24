@@ -27,6 +27,7 @@ that was still open or partly done and says here where each now stands.
 | The units' headlights; the scenery's and bridges' object scale | PLAN.md 2.5 |
 | `.mp4` movies | the owner, 218: they play at their own size (PLAN.md G1) |
 | Release scripts tried from a clean checkout | 234 (`make_release.py --build` from a fresh clone, on Linux; README "Release") |
+| Tests: unit tests for the decoders, the save, the war map's rules | 235 (`tests/`, and the GitHub workflow) |
 
 **Still open** (PLAN.md's letters):
 
@@ -37,7 +38,6 @@ that was still open or partly done and says here where each now stands.
 - **Battle AI**: the parts not yet traced (the planner, the specials and the groups' stance work are in).
 - **Bridges that break**, **the route finder spread over updates**, **the tree circles' lifetime** (PARITY.md
   Deferred, S6).
-- **Unit tests** (G2).
 - **Auto-resolving a battle** and the other modes; the editors (F1, F2).
 - **The two buildings the game names and never offers** (E1, E2).
 - **The settings**: every one the original reads is read where the engine has its system; there has been no
