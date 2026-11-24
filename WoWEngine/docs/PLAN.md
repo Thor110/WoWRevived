@@ -1,19 +1,22 @@
 # Plan after update 136
 
-## Where things stand (update 228) and what remains
+## Where things stand (update 249) and what remains
 
-Stages 1 to 3 are done but for the few items below. Stage 4 is half done. The game plays through: campaigns
-start, load and save (the owner's 24 saves read and write back true), the war map runs, battles are fought and
-settled. What follows is everything left, in the order to do it; the stages further down stay the full
-inventory with the history. Tick here and there as each is done.
+Stages 1 to 3 are done but for the few items below. The game plays through: campaigns start, load and save (the
+owner's 24 saves read and write back true), the war map runs, battles are fought and settled, building on the
+battle map, fences, breakable bridges and the stateful route finder are in, and every setting the original reads
+that changes play is read (docs/review/SETTINGS.md). Since update 236 the owner's ideas have added the civil wars,
+custom campaigns, the Modern Gameplay options, and modding in common formats (H, below). What follows is
+everything left; the stages further down stay the full inventory with the history. Tick here and there as each is
+done. What still needs seeing in play is listed in docs/TESTING.md.
 
 **Version 0.2.6** from update 247 (0.2.5 from update 238, 0.2.2 from update 224; 0.0.1 until then, which as of update 222 went to the testers on Discord).
 
-**The order suggested for what is left** (update 224): 1. whatever the testers report from 0.0.1 (A7), as it
-comes; 2. D4 the credits picture; 3. D3 Enhanced Assets, then D2's check of the owner's fixed files in play;
-4. C8 the engine's captions in TEXT.ojd; 5. A8 the developers' switches' battle halves; 6. A5 and A6 as the
-owner's frames arrive; 7. G2 the tests and G3 the docs redrawn; 8. E the two unused buildings; 9. A9 with A2,
-the network game; 10. F the modes and editors; 11. G4 the trailer.
+**The order suggested for what is left** (update 249): 1. whatever the owner's and testers' play turns up
+(TESTING.md, A7), first as it comes; 2. A5, A6 and A10's provisional points as frames of the original arrive;
+3. F1's last items (CivilWar.txt `add` / `remove` lines, the civil wars' balance and voice lines); 4. E1 / E2, the
+two unused buildings; 5. D5's last (AVFoundation for Macs without ffmpeg, full-colour textures lit by the engine);
+6. F2, the editors; 7. A9 with A2, the network game, last (agreed), as a menu option.
 
 ### A. The original, finished (parity first, as always)
 
@@ -56,12 +59,20 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
       BATTLEMAP.md "Building on the battle map"). In: Build / Suspend / Resume in the battle popup (0x47E1E0);
       the Build List opened in battle mode, its constructions placed with the footprint tool (green / red, the
       ground's outline) or the fence tool (two presses); the construction made at once where it was put,
-      unfinished with its markers; cancelling from the queue kills it. The war map's Build List was already
-      cancel-only for a constructor vehicle (its items greyed, 0x494). Force Fire: `BattleMap::Armed` lacked
-      several shot classes' types (the Handling Machine's 0x1AB, the Electric Machines'), fixed. Left:
-      - (243) a fence drawn as its line of posts: in (BATTLEMAP.md "Fences");
-      - a vehicle ordered from the battle map, made at the world's (0, 0) in the original when done (not followed);
-      - the specials each seen in play (they're in the popup and fire through the guns' modes).
+      unfinished with its markers, growing with the war map's clock; cancelling from the queue kills it; the war
+      map's Build List cancel-only for a constructor vehicle (0x494); fences laid as their line of posts (243);
+      vehicles ordered from the battle map finished on the war map (243, closed: the original makes them at the
+      world's (0, 0), not followed); Force Fire's armed test fixed (240). Everything the original does here is in;
+      what's left is checking it against the original and in play:
+      - *provisional, wants a frame of the original*: the placement outline and the fences' wires drawn over the
+        land's objects, where the game puts each piece in the view's list at its own depth; the posts' heading
+        (not set); the plasma fence's fourth wire (not read);
+      - *provisional, wants a trace*: whether the popup's Build is offered is asked of the battle's objects ("both
+        sides in the sector"), where the game asks the war map's sector lists (0x43D010);
+      - *not looked at*: the Build List and the information page on a large battle view (above 640 x 480);
+      - *in play* (TESTING.md): each kind of building, turret, mine and fence placed and finished; the specials
+        each seen working with enemies present (they're in the popup and fire through the guns' modes; begun
+        in 245).
 ### B. Modern fixes (Stage 6.1 to 6.6; on by default, each marked MODERN FIX)
 
 - [x] **B1** (191) The two sound fixes marked where they are (the sliders saved; Master reaching the music);
@@ -121,7 +132,7 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
 
 - [x] **D1** Loose files: DAT and MAPS are overridable, from the game's folder and from the engine's own `dat` /
       `maps` (209); the sounds since 247 (SFX and VOX, WAV or .snd, `[Sound]` Search Libraries First: MODERN.md
-      "Loose sound files"). Modern formats: PNG (240, 246), WAV (247); OGG and models are MODERN.md "Files".
+      "Loose sound files"). Modern formats: PNG (240, 246), WAV (247), OGG and unit models (248).
 - [x] **D2** The data folder layout (209): the engine's `dat` and `maps` are used where they lie and go into a
       release's DAT and MAPS; `dat/extra/<res>` by view size, `dat/warmap` by the view's width. The owner's
       fixed files in them (the Cotton Factory's smokestacks, the Airship model's name, sector 22's hole, the
@@ -135,12 +146,13 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
       edited later (WoWRevived / Thor110, Opus 5.5, Fable 5.2 to be added by the owner) works the same as long
       as the team's screen stays its last 480 rows and the new lines go above it.
 
-- [~] **D5** Overrides in common formats (the owner, updates 237-241). In: the battle map's model textures from a
-      texture pack of PNGs (240; docs/TEXTURES.md): every unit, building, turret, scenery and bridge model
-      (the bridges since 241), quantised to the game's colours; at 2, 4 or 8 times the size, averaged down (242). Left, in the long run: **any `.spr` overridable by
-      a PNG**, the HUD and menus included, and at a higher colour depth (a full-colour sprite drawn as it is,
-      not through the shade tables); full-colour model textures lit by the engine; models (OBJ) and sounds in
-      common formats. The HUD and menus stay ordinary game files until then (the owner, 241).
+- [~] **D5** Overrides in common formats (the owner, updates 237-249). In: the battle map's model textures from a
+      texture pack of PNGs (240; docs/TEXTURES.md), at 2, 4 or 8 times the size (242); any `.spr`'s frames as PNGs,
+      kept in full colour (246; docs/OVERRIDE.md); sounds as WAV (247) and OGG (248); units' models from OBJ, glTF
+      and GLB (248; docs/MODELS.md); the players' guides shipped as README-*.txt (247); the `.mp4` movies on Linux
+      and macOS through ffmpeg (249). Buildings stay as they are (pictures, not models; the owner, 248). Left:
+      AVFoundation for Macs without ffmpeg; full-colour model textures lit by the engine; removing the `.smk`s
+      where the `.mp4` is checked playable (later, the owner).
 
 ### E. Content the game names and never offers (after everything regular works)
 
@@ -158,10 +170,23 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
       (a first draft: to be evened out with the owner); (d) the computer player on its own faction, no pods; (e) the
       main menu's entries, the debriefing's texts, the engine's save form with its tag and file names; (f) 237:
       a unit table per side (the other side's armour from the Enemy modifiers), the start layout read from
-      dat\CivilWar.txt, no ending movies. Left: the balance (the owner trials layouts with the file), the voice
-      lines that name the other faction, a texture pack (`wowdump --textures`), the list in MODERN.md. Then network play (A9) on the
-      same ground. Also: auto-resolving a battle.
+      dat\CivilWar.txt, no ending movies; (g) 246-247: custom campaigns (docs/CUSTOM.md: a text file each in the
+      main folder's Campaigns, Custom.nnn saves). Left: the balance (the owner trials layouts with the file), the
+      voice lines that name the other faction, `add` / `remove` lines for CivilWar.txt and custom campaigns, the
+      list in MODERN.md. Then network play (A9) on the same ground. Also: auto-resolving a battle.
 - [ ] **F2** Level editor; war map creator and new campaigns; save editor.
+
+### H. The owner's later ideas (updates 245-249; all in, each behind its option)
+
+- [x] **H1** (246) Modern Gameplay menu: Upgraded buildings in battle, **Unlimited building**, **Full control on
+      bridges** (249: also new orders; `[Modern]` "Bridge control"), **Bridges stay broken** (249: kept beside the
+      save, rebuilt by idle construction vehicles).
+- [x] **H2** (246-247) Custom campaigns (F1 g).
+- [x] **H3** (248) The documented WoWRevived.ini: every setting's description and default, IniStore and the
+      launcher's GameSettings.cs keeping comments; WoWRevived.default.ini shipped.
+- [x] **H4** (248) WoWViewer's sound export at SFX.ojd's rates and channels (not built here: Windows).
+- [ ] **H5** Left of the owner's ideas, noted in MODERN.md: separate war map counters for a civil war's other side
+      (not needed, the owner, 246); bridges rebuilt during a battle as well as between them.
 
 ### G. Release
 
@@ -173,12 +198,17 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
       title cards (TRAILER.md, `tools/trailer`, the engine's footage recorded with `--frames`). Can be cut again
       when the engine changes.
 - [x] **G2** (235) Unit tests for the decoders, the save's round trip and the war map's rules (`tests/`, 32 of
-      them, `ctest`), run on Windows, Linux and macOS by a GitHub workflow on every push (README "GitHub").
+      them then, 66 at update 249 with the ini, the settings table, WAV / OGG, models, custom campaigns; `ctest`),
+      run on Windows, Linux and macOS by a GitHub workflow on every push (README "GitHub").
 - [x] **G3** (234) The release scripts tried from a clean checkout (README "Release"; the Linux programs now find
       SDL3 beside them); the docs brought level: TASKS.md's open boxes redrawn, WARMAP.md's and the README's
       road map brought up to date.
 
 ### Waiting on the owner
+
+- Play-testing what TESTING.md lists (updates 240-249: the overrides and packs, the Modern Gameplay options,
+  custom campaigns, the documented ini, the models, the movies through ffmpeg), and the C# changes built on
+  Windows (WoWViewer's sounds, GameSettings.cs keeping the ini's comments).
 
 - A frame of the original: a new Human campaign's first look at London, on the discs' start files, Enhanced
   Assets off (A5).
@@ -374,11 +404,11 @@ wrong name: what is left of it is what the war map's save keeps of a battle's ob
       nearly last (update 178). Their reading of what the network build needs to play a campaign: its timer
       taken out, network play itself, and the start files no longer saved over (the engine already doesn't,
       docs/ODDITIES.md). The retail network code doesn't work; WoWRevived ships another build for it.
-- [ ] 4.9 **The curtains cheat** (byte_4D1279, found used in 179; the engine set the flag and did nothing with
+- [x] 4.9 (closed with A8, 228) **The curtains cheat** (byte_4D1279, found used in 179; the engine set the flag and did nothing with
       it but the time of day): enemy units can be picked in a battle and Shift adds to the selection
       (0x497680, 0x4976F5), a sector that isn't the player's can be selected on the war map (0x41D24A,
       0x41D430), and the reinforcement points are made without a battle on (0x43D171).
-- [ ] 4.8 **The developers' aids** (optional; Charlie, Dave and Edit functionality are read out in
+- [x] 4.8 (closed with A8, 228: Dave as log lines; the overlays and `[Stats]` not built, ODDITIES.md) **The developers' aids** (optional; Charlie, Dave and Edit functionality are read out in
       docs/ODDITIES.md, update 180): the debug log (`[Debug]` Log Debug Output, 0x417C30; WoWEngine.log
       stands in), the overlays (Show Radii, Show Arrival, Show Orders, Show Accelerations), `[Stats]`.
 
@@ -418,30 +448,33 @@ does today:
 - [x] 6.3 (191) Display Settings without the colour radios (5) and the lights toggle (6); "Show lights" forced on when
       the settings load. FRONTEND.md's Display Settings row updated to say what the original has and what was
       taken out.
-- [ ] 6.4 First-start resolution (7): the desktop's size written to `[Screen] Size` when it's absent.
-- [ ] 6.5 The resolution applied (4). This is the large one, in three steps:
+- [x] 6.4 First-start resolution (7): the desktop's size written to `[Screen] Size` when it's absent (192, B4).
+- [x] 6.5 The resolution applied (4) (192-195, B5). This is the large one, in three steps:
       a. the window and the back buffer take `[Screen] Size`, the 640 x 480 screens (menus, Briefing, research)
          centred or scaled, changed at once by the slider;
       b. the war map's and battle map's views drawn at the chosen size (the original supports 512 x 384 to
          1280 x 1024, 0x409AD0; the view rectangles, edge scrolling, minimap and panel anchors all take the size);
       c. the larger sizes WoWRevived added (to 1920 x 1080 and the monitor's own), with the launcher's per-resolution
          values (the Build List's place, the sound's inner and outer borders).
-- [ ] 6.6 MODERN.md's "Modern fixes" section kept in step (it is written with this plan).
+- [x] 6.6 MODERN.md's "Modern fixes" section kept in step (it is written with this plan; kept since).
 
 The modern options, after the fixes:
 
-- [ ] 6.7 A "Modern Options" menu (where it hangs is to be decided), holding the `[Modern]` toggles already in
+- [x] 6.7 (196, C1) A "Modern Options" menu (where it hangs is to be decided), holding the `[Modern]` toggles already in
       (the war map status strip, sticky popup menus) and the ones to come.
-- [ ] 6.8 MODERN.md's options: HUD scaling, windowed mode, wheel zoom, key bindings.
-- [ ] 6.9 What WoWRevived fixed in the game's files (the readme's list: the text changes, the Cotton Factory's
+- [x] 6.8 MODERN.md's options: HUD scaling, windowed mode, wheel zoom, key bindings (202-209, C1-C4).
+- [x] 6.9 (209, 226; D2) What WoWRevived fixed in the game's files (the readme's list: the text changes, the Cotton Factory's
       smokestacks, the Airship model's name, the hole in sector 22, the restored sprite pixels), offered from
       the owner's edited files.
-- [ ] 6.10 Game modes, the editors, the players' ideas (MODERN.md).
-- [ ] 6.11 Files (MODERN.md "Files"): every data folder overridable by loose files, modern formats for them, the
-      owner's `dat` / `maps` fixes repacked by the installer, the war map background chosen by resolution.
+- [~] 6.10 Game modes, the editors, the players' ideas (MODERN.md): the civil wars and custom campaigns are in (F1,
+      H2); the editors (F2) and network play (A9) are left.
+- [~] 6.11 Files (MODERN.md "Files"): every data folder overridable by loose files (D1: DAT, MAPS, SFX, VOX), modern
+      formats for them (D5), the war map background chosen by resolution (209) are in; the owner's `dat` / `maps`
+      fixes repacked into the archives by the installer is left (they're loose files in a release's DAT and MAPS).
 
 ## Tooling
 
-- [ ] Unit tests for the decoders, the war map rules and the menus (TASKS "Tests"). They stay out of the update
-      zips by the owner's convention; say if they're wanted in the repository.
-- [ ] Release scripts tested from a clean checkout.
+- [x] Unit tests for the decoders, the war map rules and the menus (TASKS "Tests"): G2 (235), in the update zips
+      since 235 at the owner's asking, 66 at 249.
+- [x] Release scripts tested from a clean checkout: G3 (234); the release script run on Linux each update since
+      247 (the readmes, Campaigns, WoWRevived.default.ini, THIRD-PARTY.txt in the package).
