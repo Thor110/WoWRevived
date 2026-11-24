@@ -6,6 +6,7 @@
 // with a shade level for every sector map value. Not yet: the exact scroll rules, the HUD's own controls, the
 // units, the clock running, and everything the war map does.
 #pragma once
+#include "battlemap/BuildHost.h"
 #include "core/Deployment.h"
 #include "core/SaveFile.h"
 #include "core/SaveGame.h"
@@ -29,7 +30,7 @@
 
 namespace wow
 {
-    class WarMap : public Screen
+    class WarMap : public Screen, public BuildHost
     {
     public:
         static constexpr int Id = 0x8A; // the command that starts it
@@ -62,6 +63,21 @@ namespace wow
         const std::map<int, ObjOjd::UnitData>& Units(bool players) const { return players ? unitData : otherUnitData; }
         const DebriefingInfo& Debriefing() const { return debriefing; }
         void ReturnFromBattle();                   // 0x99 / 0x8017, then the view's 0x418980: 0x808D and 0x41E730
+
+        // Building on the battle map (battlemap/BuildHost.h): the factories, asked from the battle
+        Factory FactoryOf(int ref) const override;
+        void ToggleSuspend(int ref) override;
+        void OpenBattleWindow(int ref) override;
+        void CloseWindow() override { buildWindow.reset(); }
+        bool WindowOpen() const override { return buildWindow.has_value(); }
+        int WindowRef() const override { return buildWindow ? buildWindow->ref : -1; }
+        void DrawWindow(Canvas& canvas) const override { DrawBuildWindow(canvas); }
+        int WindowHit(int x, int y) const override { return BuildWindowHit(x, y); }
+        void WindowHover(int x, int y) override { if (buildWindow) buildWindow->hover = BuildWindowHit(x, y); }
+        std::string WindowTip(int hit) const override { return BuildWindowTip(hit); }
+        Click WindowClick(int x, int y, bool down) override { return BuildWindowAct(x, y, down); }
+        std::optional<BattleGroup> PlaceConstruction(int type, int x0, int y0, int x1, int y1) override;
+        float Progress(int ref) const override;
 
         // start: the save it begins from (its WMAP block gives the view and sector)
         // units: each unit type's counter frame (OBJ.ojd record 23) and war map speed (records 37/38)
@@ -336,17 +352,18 @@ namespace wow
         void ConstructionProgress(int ref, float hours);// 0x80AD
         void FinishConstruction(int ref);               // 0x80AC (0x42A980)
         bool AddType(int ref, int type);                // 0x4603B0
-        bool OrderConstruction(int ref, int type);      // 0x460240, war map mode
+        bool OrderConstruction(int ref, int type, int* made = nullptr); // 0x460240 (made: the construction's ref)
         void SetBusy(int ref, bool on);                 // 0x45FE60
         void RemoveEntry(int ref, int index);           // 0x460080
         void PromoteEntry(int ref, int index);          // 0x4605A0
-        void SlotClicked(int ref, int index);           // 0x4625B0
+        int SlotClicked(int ref, int index);            // 0x4625B0 (in battle mode, the construction to kill)
         bool ItemEnabled(int ref, int type, bool* battleMapOnly = nullptr) const; // 0x462DC0
         void SaveFactory(int ref);
         void RemoveObject(int counter, int ref);        // one object taken off the map
         // The Build List window (warmap/BuildWindow.cpp): the object it's for, the list's and queue's scroll
         // positions (+0x234, +0xA4), what the mouse is on and what it went down on
-        struct BuildWindowState { int ref = -1; int scroll = 0, queueScroll = 0, hover = -1, pressed = -1; };
+        // battle: opened from the battle map (the factory's +0x20 clear, 0x47DFA3), else the war map's (+0x20 set)
+        struct BuildWindowState { int ref = -1; int scroll = 0, queueScroll = 0, hover = -1, pressed = -1; bool battle = false; };
         std::optional<BuildWindowState> buildWindow;
         int popupObject = -1;                           // the object whose items the popup has
         int popupCounter = -1;                          // its counter (for Retreat)
@@ -429,7 +446,9 @@ namespace wow
         void DrawBuildWindow(Canvas& canvas) const;
         Rect PromoteRect(const Rect& slot) const;
         int BuildWindowHit(int x, int y) const;
-        bool BuildWindowClick(int x, int y, bool down);
+        bool BuildWindowClick(int x, int y, bool down) { return BuildWindowAct(x, y, down).taken; }
+        Click BuildWindowAct(int x, int y, bool down);
+        BattleGroup GroupOf(int ref, int previous) const;     // one object's battle group (BattleGroups)
         std::string BuildWindowTip(int hit) const;
         void CancelAll(int ref);                  // 0x460140, BuildList::CancelAll
         bool Working(int ref) const;              // 0x42A410: its factory has something queued

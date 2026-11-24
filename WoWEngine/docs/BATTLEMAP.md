@@ -719,7 +719,9 @@ The popup (0x485DE0) asks whoever answers 0x805C after its own Cancel and Return
 0x448500 builds a combined panel); the member's 0x47DF20 calls **0x47E1E0**, which adds (0x432E90: command, param,
 icon GType, tool tip text):
 - Build (0x813E 0x8065, 0x20, 0x470) and Suspend / Resume (0x813F, 0x22 / 0x23, 0x495 / 0x496) for a builder, only
-  while its sector is quiet (0x43D010), so never on a battle's map;
+  while its sector doesn't hold both sides (0x43D010), and for a construction only once it's finished; see
+  "Building on the battle map" (until update 239 the engine read 0x43D010 as "never on a battle's map" and left
+  them out);
 - the stances (0x80CE): Roam and Attack (3, 0x34F, 0x474) when armed and moving, Attack (2, 0x34E, 0x473) and
   Retaliate (1, 0x34D, 0x472) when armed, Avoid (0, 0x34C, 0x471) when moving, then Retreat (0x80B7, 0x2D, 0x479)
   when moving, a battle is on, the sector isn't quiet and there are reinforcement points (dword_4F76E8);
@@ -753,6 +755,57 @@ nothing in the game.
 
 *Provisional*: the stances and Abandon act (the stances are kept per group, for the AI and weapons to come); Force
 Fire and the specials set the group's mode ("The modes and specials", below); Retreat is listed with reinforcement points (below).
+
+## Building on the battle map (update 239; `battlemap/Building.cpp`, `battlemap/BuildHost.h`, `warmap/BuildWindow.cpp`)
+
+Building is done from the battle map; the war map's Build List only cancels (its items of a constructor vehicle
+are greyed, 0x462770 at 0x46289C with the factory's +0x20 set, the tip 0x494 "only on the BattleMap"), though a
+factory building's vehicles can be ordered there.
+
+- **The popup** (0x47E1E0): an object whose war map object (+0x48) has a factory (+0x54) gets **Build** when its
+  sector doesn't hold both sides (0x43D010 over the sector's lists +0x4C / +0x54 and +0x50 / +0x58) and it's a
+  vehicle (category 1) or a finished construction (0x42AA70); with something queued (+0x128), **Suspend** while
+  busy (+0x12C) or **Resume**. Then the stances, Abandon, Force Fire and the specials (Orders, above).
+  *Provisional*: "both sides" is asked of the battle's objects, not the war map's lists.
+- **Build** (0x47DF9D) clears the factory's +0x20 and opens its Build List (vt+0x14, 0x45FA80) as a child of the
+  battle's view; **Suspend / Resume** (0x47DF74) is 0x45FE60 with the opposite of 0x45FEF0. In battle mode the
+  window's background doesn't close it (0x460EF1). The engine's war map draws and runs it for the battle map
+  (`BuildHost`), the war map staying alive behind the battle.
+- **An item** (0x460D70): a vehicle is ordered at once (packet 0x17, no place; *not followed*: in the original it
+  is made at the world's (0, 0) when done in a live sector); a construction (category 2 or 3) starts a placement
+  tool, 0x42E790 with cursor mode 4 (a building, 0x4A13B0), 6 (the fences and walls 0x1C3-0x1C8, 0x4A03A0) or 5
+  (the military bridge 0x1BC, which nothing builds).
+- **The building tool** (0x4A13B0-0x4A1CBF): its footprint is ((2 x the type's +0x46) + 14) & ~15 world units
+  square; each frame (its draw, 0x4A14C0) the mouse's world point (x, and the ground's y under it, 0x47B3F0)
+  is taken, the centre going straight there the first time and half way from where it was after that (it eases
+  after the mouse); whether it can go there is 0x47B610 over the footprint in vertices ((v << 16) / the cell, half
+  the size ((size << 16) / the cell + 1) / 2 either way), the shipyards (0x27-0x29) at the water's edge. The
+  outline is the footprint's four edges in 16-unit pieces, each end on the ground (0x47B170), **green** where it
+  can go (dword_4DAF80, the palette's nearest to 6-bit (0, 0x30, 0)) and **red** where it can't (dword_4DAF7C,
+  (0x30, 0, 0)). The left button's release orders it there (0x4A1460) if it can go; otherwise nothing happens
+  and the tool stays. *Provisional*: the outline is drawn over the land's objects, where the game puts each piece
+  in the view's list at its depth.
+- **The line tool** (fences and walls; 0x4A03A0-0x4A1180): the first press anchors the line (where the far post's
+  box is); then the far post's box (0x47B610) and the run from the anchor (0x47B770, over water for the bridge)
+  must both pass, and the anchor's had to; the second press orders it from one end to the other (the release is
+  taken). The bridge's is pressed, dragged and let go. *Provisional*: the engine makes a fence one object at its
+  first end, as it draws the saved ones.
+- **The order**: 0x80A4 to the Build List, which sends packet 0x16 {type, the four place values, 0xDEADDEAD}
+  (0x4601C0); every placement ends the tool (the view's 0x80A4 / 0x8137: cursor mode 7). A right button let go
+  quickly drops the tool (0x42C6A0) as it does the selection; the mouse leaving the view only hides it.
+- **When it arrives** (0x460240): the entry (0x4603B0, the place in +0x1C-+0x28: a building's x and y, the
+  other two whatever was on the stack, 0 here; a fence's two ends), the construction made in the sector at once
+  (0x4620B0 -> 0x43CD10: its war map object, +0x78 1 and +0x7C 0, then 0x80AE with its whole hours) and, the
+  sector's battle being on, put where it was placed (0x80A7, a fence's second point 0x80A6) and started: unfinished,
+  health max(1, its full health x 0), the four build markers round it on the player's side ("Buildings").
+- **It grows** with its factory's hours (0x802D -> 0x80AD: +0x7C), and is finished at 0x80AC (+0x7C = +0x78, its
+  battle object's health its full). In the original the battle world passes the hours on (0x43B6C9 -> 0x446310);
+  *not in*: the engine's war map clock doesn't run during a battle, so a site placed in a battle starts growing
+  when the battle ends.
+- **Cancelled** from the window (0x462120 in battle mode): the construction is sent 0x80A0 and dies (with its
+  explosion and its markers; the engine's markers were left behind by any unfinished building's death until 239),
+  rather than being taken from the sector as on the war map.
+- Nothing about the constructor moves: there's no range and no drive to the site.
 
 ## Damage and death (0x48AB20, 0x48A5A0, 0x80A0 in 0x489FA0; WExplosion 0x488180 / 0x488350 / 0x488200; `battlemap/Combat.cpp`)
 

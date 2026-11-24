@@ -1515,6 +1515,7 @@ namespace wow
         s.loadScenery = ini.GetBool("Debug", "Load scenery", true);
         s.units = &map->Units();
         s.otherUnits = &map->Units(false);
+        s.build = map;          // building on the battle map: the war map's factories (it stays behind the battle)
         s.six = &wofTypes;
         s.lights = &lightTypes;
         s.moveCosts = &moveCosts;

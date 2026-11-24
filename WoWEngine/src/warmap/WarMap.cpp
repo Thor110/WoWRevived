@@ -2387,6 +2387,7 @@ namespace wow
     void WarMap::ReturnFromBattle()
     {
         Crumb("war map: back from a battle (the announcement and the queued events)");
+        if (buildWindow && buildWindow->battle) buildWindow.reset();   // (the battle's Build List goes with it)
         for (auto& r : research) if (r) r->UpdateTriggers(encountered); // the view's set-up, 0x418D17
         if (debriefing.fought || forfeited) AnnounceBattleResult();   // (0x808D comes either way; 0x41AED0 checks the forfeit first)
         battleSector = 0;

@@ -633,6 +633,9 @@ once the engine is complete.
 
 ## Ideas from the owner (noted at update 199; not planned in detail yet)
 
+- **Human units fire back from bridges** (the owner, update 238; not to work on yet): in the original a unit on a
+  bridge doesn't return fire.
+
 - **More save slots.** *In (updates 200 and 201), as pages*: the game has five slots; the Load and Save menus
   keep their five rows and get "Next Saves" and "Previous Saves" rows, up to slot 999 (the three digits of
   `Human.001`), so the menu is the same at every view size. The pages go by what there is, not by the slots'

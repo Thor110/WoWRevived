@@ -1382,7 +1382,13 @@ namespace wow
             objects.push_back(v);
         }
         else if (g->gclass == 0 && res.GetFrame(gtype, 0))
-            objects.push_back({ iy + 1, ix, land.ProjectY(iy, land.HeightAt(ix, iy)), nullptr, nullptr, g->paletteSlot, gtype });
+        {
+            // (a sprite child, such as a building's corner markers, goes with its unit too: until update 239 it
+            // was left behind when its building was destroyed unfinished)
+            ViewObject v{ iy + 1, ix, land.ProjectY(iy, land.HeightAt(ix, iy)), nullptr, nullptr, g->paletteSlot, gtype };
+            v.unit = unit;
+            objects.push_back(v);
+        }
     }
 
     // Each renderer's key is its +0x1E (the object's y, 0x47F516) + its +0x26, as the original's view list sorts them
@@ -2329,6 +2335,7 @@ namespace wow
             dragY1 = y;
             if (std::abs(dragX1 - dragX0) > 4 || std::abs(dragY1 - dragY0) > 4) boxActive = true;
         }
+        if (setup.build && setup.build->WindowOpen()) setup.build->WindowHover(hx, hy);
         // a WHotButton (0x434390): the mouse coming onto an item (0x20) plays 0x194
         const int was = popupHover;
         popupHover = PopupItemAt(hx, hy);
@@ -2394,6 +2401,7 @@ namespace wow
         if (infoPage && infoPage->speechIn > 0 && --infoPage->speechIn == 0 && setup.sound)
             if (const int id = res.Text().Extra(infoPage->textId)) infoPage->speech = setup.sound->Play(id);
         AiUpdate();
+        UpdatePlacing();
         for (size_t i = 0; i < units.size();)
             if (units[i].dieAt >= 0 && ticks >= units[i].dieAt) Die(i);
             else i++;
@@ -2621,13 +2629,17 @@ namespace wow
     }
 
     // +0x3C (0x47EF30): how many of its children are weapons (+0xB8 bit 11): the turrets (0x489820, types
-    // 0x2E6-0x313 and 0x389-0x38C) and the shot classes on 0x4949A0 (0x488930: 0x197-0x199, 0x2BF-0x2C4, 0x3AA,
-    // 0x3EB-0x3ED; 0x4887E0: 0x2B9-0x2BB, 0x320-0x322, 0x3B5-0x3B7; 0x488460: 0x3AB; 0x48DBE0: 0x19A-0x19C)
+    // 0x2E6-0x313 and 0x389-0x38C) and the shot classes on WProjectile 0x4949A0, as the object factory 0x446B30
+    // makes them (0x488930: 0x197-0x199, 0x1A3-0x1AA, 0x1B1-0x1B4, 0x1C9-0x1CB, 0x2BF-0x2C4, 0x3AA, 0x3EB-0x3ED;
+    // 0x4887E0: 0x19D-0x1A2, 0x1B8-0x1BB, 0x2B9-0x2BB, 0x320-0x322, 0x3B5-0x3B7; 0x488460: 0x1AB-0x1B0,
+    // 0x1B5-0x1B7, 0x3AB; 0x488410: 0x2BC-0x2BE; 0x48DBE0: 0x19A-0x19C). (Update 239 added the ranges that were
+    // missing, which left the Handling Machine (part 0x1AB) and the Electric Machines without Force Fire and the
+    // attack stances.)
     bool BattleMap::Armed(const ObjOjd::UnitData& unit)
     {
         auto weapon = [](int t) {
-            return (t >= 0x2E6 && t <= 0x313) || (t >= 0x389 && t <= 0x38C) || (t >= 0x197 && t <= 0x19C) ||
-                   (t >= 0x2B9 && t <= 0x2BB) || (t >= 0x2BF && t <= 0x2C4) || (t >= 0x320 && t <= 0x322) ||
+            return (t >= 0x2E6 && t <= 0x313) || (t >= 0x389 && t <= 0x38C) || (t >= 0x197 && t <= 0x1BB) ||
+                   (t >= 0x1C9 && t <= 0x1CB) || (t >= 0x2B9 && t <= 0x2C4) || (t >= 0x320 && t <= 0x322) ||
                    t == 0x3AA || t == 0x3AB || (t >= 0x3B5 && t <= 0x3B7) || (t >= 0x3EB && t <= 0x3ED);
         };
         for (const auto& part : unit.parts)
@@ -2693,6 +2705,24 @@ namespace wow
             if (r.w <= 0) r.w = r.h = 32;
             popup.push_back({ command, icon, text, r, param });
         };
+        // Build (0x47E1E0): its war map object (+0x48) has a factory (+0x54), the sector doesn't hold both sides
+        // (0x43D010, *provisional*: asked of the battle's objects, where the game asks the sector's lists), and it's
+        // a vehicle or a finished construction (0x42AA70); then, with something queued (+0x128), Suspend while
+        // it's busy (+0x12C) or Resume
+        popupBuildRef = -1;
+        if (setup.build && first.group >= 0 && size_t(first.group) < setup.groups.size())
+        {
+            const int ref = setup.groups[size_t(first.group)].ref;
+            const BuildHost::Factory f = setup.build->FactoryOf(ref);
+            bool ours = false, theirs = false;
+            for (const Unit& u : units) (u.players ? ours : theirs) = true;
+            if (f.exists && !(ours && theirs) && (t->second.category == 1 || double(Progress(first)) > 0.9999))
+            {
+                popupBuildRef = ref;
+                add(0x813E, 0x8065, 0x20, 0x470);
+                if (f.queued) add(0x813E, 0x813F, f.busy ? 0x22 : 0x23, f.busy ? 0x495 : 0x496);
+            }
+        }
         if (armed && !still) add(0x80CE, 3, 0x34F, 0x474);
         if (armed)
         {
@@ -2754,6 +2784,40 @@ namespace wow
             if (!down) return ActivatePopupItem(size_t(item));
             return std::nullopt;
         }
+        // the Build List (a child window, so it has the mouse before the view): a construction's item starts the
+        // placement, a cancelled construction dies
+        if (setup.build && setup.build->WindowOpen() && iconDown < 0 && !miniDrag && !dragging)
+        {
+            const BuildHost::Click c = setup.build->WindowClick(hx, hy, down);
+            if (c.taken)
+            {
+                if (c.placeType) StartPlacing(c.placeType);
+                if (c.killRef >= 0) KillGroupOf(c.killRef);
+                return std::nullopt;
+            }
+        }
+        // the placement tool (the view's +0x88) takes the land's clicks while it's there (0x485930): a building on
+        // the button's release where it can go (0x4A1460); a fence's anchor on the first press and the order on the
+        // second (0x4A0490, the release taken); the bridge's anchor on the press and the order on the release
+        if (tool && GroupIconAt(hx, hy) < 0 && !InMinimap(hx, hy))
+        {
+            PlaceTool& t = *tool;
+            if (t.mode == 4)
+            {
+                if (!down && t.ok && !t.fresh) PlaceNow(t.cx, t.cy, 0, 0);
+                return std::nullopt;
+            }
+            if (down)
+            {
+                if (t.presses % 2 == 0 && !t.ok) return std::nullopt;
+                t.presses++;
+                if (t.presses % 2 == 1) { t.ax = t.cx; t.ay = t.cy; t.anchorOk = t.endOk; t.lineOk = false; t.ok = false; }
+                else if (t.ok) PlaceNow(t.ax, t.ay, t.cx, t.cy);
+                return std::nullopt;
+            }
+            if (t.mode == 5 && t.presses % 2 == 1 && t.ok) PlaceNow(t.ax, t.ay, t.cx, t.cy);
+            return std::nullopt;
+        }
         if (!down)
         {
             const bool wasMini = miniDrag;
@@ -2799,6 +2863,14 @@ namespace wow
         sounds.push_back(0x195);    // the item's click (0x434390 on 0x202 / 0x205)
         ClosePopup(false);
         if (command == ReturnCommand) return Command{ ReturnCommand, setup.sector };
+        // 0x47DF20's 0x111 with 0x813E: Build opens the Build List in battle mode (0x47DF9D), 0x813F suspends or
+        // resumes (0x47DF74)
+        if (command == 0x813E && setup.build && popupBuildRef >= 0)
+        {
+            if (param == 0x8065) setup.build->OpenBattleWindow(popupBuildRef);
+            else if (param == 0x813F) setup.build->ToggleSuspend(popupBuildRef);
+            return std::nullopt;
+        }
         if (command == 0x808C)
         {
             // 0x4403A0: the page opened at the object (InfoPage)
@@ -2872,6 +2944,7 @@ namespace wow
             if (rightDownAt >= 0)
             {
                 dragging = boxActive = false;
+                tool.reset();      // (0x42C6A0: the placement tool released first)
                 ClearSelection();
             }
             rightDownAt = -1;
@@ -2882,6 +2955,8 @@ namespace wow
     int BattleMap::TipOwner(int x, int y) const
     {
         if (const int i = PopupItemAt(HudX(x), HudY(y)); i >= 0) return 100 + i;
+        if (setup.build && setup.build->WindowOpen())
+            if (const int hit = setup.build->WindowHit(HudX(x), HudY(y)); hit >= 200 && hit < 400) return 10000 + hit;
         return -1;
     }
 
@@ -2895,6 +2970,7 @@ namespace wow
     std::string BattleMap::TipText(int owner, int) const
     {
         if (owner >= 100 && size_t(owner - 100) < popup.size()) return res.String(popup[size_t(owner - 100)].text);
+        if (owner >= 10000 && setup.build && setup.build->WindowOpen()) return setup.build->WindowTip(owner - 10000);
         return {};
     }
 
@@ -3075,6 +3151,7 @@ namespace wow
         TerrainView::Render(land, tiles, table, levels, dither, t, -scrollX, -scrollY, fog.enabled ? &fogView : nullptr, between, &window);
         beamsTo(0x7FFFFFFF);
         DrawSelection(canvas);
+        DrawPlacing(canvas);
         DrawLabels(canvas);
     }
 
@@ -3098,6 +3175,8 @@ namespace wow
                 for (int x = x0; x <= x1; x++) { plot(x, y0, rectColour); plot(x, y1, rectColour); }
                 for (int y = y0; y <= y1; y++) { plot(x0, y, rectColour); plot(x1, y, rectColour); }
             }
+        // the Build List (a child of the view, 0x460B00)
+        if (setup.build && setup.build->WindowOpen()) setup.build->DrawWindow(canvas);
         // the popup over everything, each item's next frame under the mouse
         for (size_t i = 0; i < popup.size(); i++)
         {

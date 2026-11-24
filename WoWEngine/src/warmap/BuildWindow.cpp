@@ -172,35 +172,46 @@ namespace wow
     // 0x17 -> 0x4603B0, a construction with 0x16 -> 0x460240, the war map placing nothing); a slot takes a repeat
     // off or the entry out (0x4625B0, either button); its promote button moves it to the front (0x4605A0); the
     // window's own background closes it (0x201 / 0x204 in war map mode). Elsewhere the map has the mouse.
-    bool WarMap::BuildWindowClick(int x, int y, bool down)
+    // In battle mode (opened from the battle map, the factory's +0x20 clear) a construction's item starts the
+    // placement instead (0x460D70: 0x42E790 with cursor mode 4, or 6 for the fences and walls 0x1C3-0x1C8, 5 for
+    // the military bridge 0x1BC), the background doesn't close the window (0x460EF1), and a slot's cancel kills
+    // the construction on the battle map (0x462120: 0x80A0) rather than taking it from the sector.
+    BuildHost::Click WarMap::BuildWindowAct(int x, int y, bool down)
     {
+        Click result;
         const int hit = BuildWindowHit(x, y);
-        if (hit < 0) return false;
-        if (down && hit == 0) { buildWindow.reset(); return true; } // 0x201 / 0x204 on the window itself
-        if (down) { buildWindow->pressed = hit; return true; }
+        if (hit < 0) return result;
+        result.taken = true;
+        const bool battle = buildWindow->battle;
+        if (down && hit == 0) { if (!battle) buildWindow.reset(); return result; } // 0x201 / 0x204 on the window itself
+        if (down) { buildWindow->pressed = hit; return result; }
         const int was = std::exchange(buildWindow->pressed, -1);
-        if (was != hit) return true;
+        if (was != hit) return result;
         const int ref = buildWindow->ref;
         const auto options = BuildOptions(ref);
         auto f = factories.find(ref);
         const size_t queued = f == factories.end() ? 0 : f->second.queue.entries.size();
-        if (hit == 1) { if (buildWindow->scroll > 0) buildWindow->scroll--; return true; }
-        if (hit == 2) { if (size_t(buildWindow->scroll + 5) < options.size()) buildWindow->scroll++; return true; }
-        if (hit == 3) { if (buildWindow->queueScroll > 0) buildWindow->queueScroll--; return true; }
-        if (hit == 4) { if (size_t(buildWindow->queueScroll + 5) < queued) buildWindow->queueScroll++; return true; }
+        if (hit == 1) { if (buildWindow->scroll > 0) buildWindow->scroll--; return result; }
+        if (hit == 2) { if (size_t(buildWindow->scroll + 5) < options.size()) buildWindow->scroll++; return result; }
+        if (hit == 3) { if (buildWindow->queueScroll > 0) buildWindow->queueScroll--; return result; }
+        if (hit == 4) { if (size_t(buildWindow->queueScroll + 5) < queued) buildWindow->queueScroll++; return result; }
         const BuildLayout l = BuildWindowLayout();
         if (hit >= 200 && hit < 300)
         {
             const int type = l.items[size_t(hit - 200)].first;
-            if (!ItemEnabled(ref, type)) return true;
+            if (!ItemEnabled(ref, type)) return result;
             auto u = unitData.find(type);
             if (u != unitData.end() && u->second.category == 1) AddType(ref, type);
-            else if (u != unitData.end() && u->second.category <= 3) OrderConstruction(ref, type);
-            return true;
+            else if (u != unitData.end() && u->second.category <= 3)
+            {
+                if (battle) result.placeType = type;
+                else OrderConstruction(ref, type);
+            }
+            return result;
         }
-        if (hit >= 300 && hit < 400) { SlotClicked(ref, l.slots[size_t(hit - 300)].first); return true; }
-        if (hit >= 400) { PromoteEntry(ref, l.slots[size_t(hit - 400)].first); return true; }
-        return true;
+        if (hit >= 300 && hit < 400) { result.killRef = SlotClicked(ref, l.slots[size_t(hit - 300)].first); return result; }
+        if (hit >= 400) { PromoteEntry(ref, l.slots[size_t(hit - 400)].first); return result; }
+        return result;
     }
 
     // The tool tips (0x807C): an item's name, "Requires <building>" (0x51E) when it has a prerequisite, and

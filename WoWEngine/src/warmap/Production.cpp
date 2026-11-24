@@ -315,8 +315,9 @@ namespace wow
     // for anything but a vehicle, the construction made in the sector at once (0x4620B0 -> 0x43CD10) and told
     // 0x80AE with its whole time. Where its command building is to go and the order has no place, the game finds
     // one on the battle map (0x4411B0, not in); then 0x440EA0 for the sector (not traced).
-    bool WarMap::OrderConstruction(int ref, int type)
+    bool WarMap::OrderConstruction(int ref, int type, int* made)
     {
+        if (made) *made = -1;
         if (!AddType(ref, type)) return false;
         auto u = unitData.find(type);
         if (u == unitData.end() || u->second.category == 1) return true;
@@ -331,6 +332,7 @@ namespace wow
         {
             e.target = uint32_t(table[size_t(target)].Id());
             StartConstruction(target, e.hours);
+            if (made) *made = target;
             if (!players) AiPlaceAtSite(target); // 0x43CD10 -> 0x441420
         }
         else if (k >= 0) { counters[size_t(k)].unfinished = true; counters[size_t(k)].progress = 0.0f; }
@@ -415,23 +417,86 @@ namespace wow
     // A queue slot clicked (0x4625B0, either button): a repeat less (0x461EB0: for ever goes to 3); at none, an
     // entry working on a construction is cancelled (0x462120: on the war map the construction goes from the sector
     // and the entry with it; on the battle map the object hears 0x80A0), any other just goes.
-    void WarMap::SlotClicked(int ref, int index)
+    int WarMap::SlotClicked(int ref, int index)
     {
         auto it = factories.find(ref);
-        if (it == factories.end()) return;
+        if (it == factories.end()) return -1;
         auto& q = it->second.queue.entries;
-        if (index < 0 || size_t(index) >= q.size()) return;
+        if (index < 0 || size_t(index) >= q.size()) return -1;
         BuildEntry& e = q[size_t(index)];
         if (e.repeat == 4) e.repeat = 3;
         else if (e.repeat >= 1) e.repeat--;
-        if (e.repeat != 0) { SaveFactory(ref); return; }
+        if (e.repeat != 0) { SaveFactory(ref); return -1; }
+        int kill = -1;
         if (e.target != 0xDEADDEAD)
         {
+            // 0x462120 (+0x20 at 0x462159): on the war map the sector takes it out (its vt+0x2C); on the battle map
+            // the construction is sent 0x80A0, so it dies there and goes with the battle's losses
             const int target = RefOfId(e.target);
             if (target >= 0)
-                if (int k = CounterOf(target); k >= 0) RemoveObject(k, target);
+            {
+                if (buildWindow && buildWindow->battle) kill = target;
+                else if (int k = CounterOf(target); k >= 0) RemoveObject(k, target);
+            }
         }
         RemoveEntry(ref, index);
+        return kill;
+    }
+
+    // ---- Building on the battle map (battlemap/BuildHost.h) ----
+
+    BuildHost::Factory WarMap::FactoryOf(int ref) const
+    {
+        Factory f;
+        auto it = factories.find(ref);
+        if (it == factories.end()) return f;
+        f.exists = true;
+        f.queued = int(it->second.queue.entries.size());
+        f.busy = it->second.queue.busy;
+        return f;
+    }
+
+    // 0x47DF74: 0x45FE60 with the opposite of 0x45FEF0 (busy)
+    void WarMap::ToggleSuspend(int ref)
+    {
+        auto it = factories.find(ref);
+        if (it != factories.end()) SetBusy(ref, !it->second.queue.busy);
+    }
+
+    void WarMap::OpenBattleWindow(int ref)
+    {
+        if (factories.find(ref) == factories.end()) return;
+        buildWindow = BuildWindowState{ ref };
+        buildWindow->battle = true;
+    }
+
+    // Packet 0x16 from the placement (0x4A1460 / 0x4A0490 -> 0x80A4 -> 0x460EC1 -> 0x4601C0) to 0x460240: the entry
+    // (0x4603B0), its place's four values (0x461C80: +0x1C-+0x28; a building's third and fourth are whatever was on
+    // the stack in the original, kept 0 here), the construction made in the sector at once (0x4620B0 -> 0x43CD10)
+    // and put where it was placed (0x80A7, its second point 0x80A6). The engine keeps only the first point in the
+    // object (its battle position); a fence's second end is in the entry. *Provisional*: a fence is drawn as one
+    // object at its first end, as the engine draws the saved ones.
+    std::optional<BattleGroup> WarMap::PlaceConstruction(int type, int x0, int y0, int x1, int y1)
+    {
+        if (!buildWindow) return std::nullopt;
+        const int ref = buildWindow->ref;
+        if (!ItemEnabled(ref, type)) return std::nullopt;
+        int made = -1;
+        if (!OrderConstruction(ref, type, &made) || made < 0) return std::nullopt;
+        auto& q = factories[ref].queue.entries;
+        if (!q.empty()) q.back().place = { x0, y0, x1, y1 };
+        SaveFactory(ref);
+        table[size_t(made)].SetBattlePosition(float(x0), float(y0));
+        const int at = CounterOf(made);
+        return GroupOf(made, at >= 0 ? counters[size_t(at)].previous : 0);
+    }
+
+    float WarMap::Progress(int ref) const
+    {
+        if (ref < 0 || size_t(ref) >= table.size()) return 1.0f;
+        const SaveObject& o = table[size_t(ref)];
+        if (o.list >= 2 && o.Value(0) != 0.0f) return o.Value(1) / o.Value(0);
+        return 1.0f;
     }
 
     // 0x462DC0: an item in the window can be ordered when the sector allows another of it (0x43C7F0), it isn't
@@ -446,7 +511,9 @@ namespace wow
         if (it == factories.end() || u == unitData.end()) return false;
         const int at = CounterOf(ref);
         const int sector = at >= 0 ? counters[size_t(at)].sector : table[size_t(ref)].Sector();
-        const bool mapOnly = at >= 0 && counters[size_t(at)].kind == 0;
+        // (0x462770 at 0x46289C: only with the factory's +0x20 set, the war map's window; from the battle map the
+        // constructor's items can be ordered)
+        const bool mapOnly = at >= 0 && counters[size_t(at)].kind == 0 && !(buildWindow && buildWindow->battle && buildWindow->ref == ref);
         if (battleMapOnly) *battleMapOnly = mapOnly;
         if (mapOnly) return false;
         const int who = owner[size_t(sector)];

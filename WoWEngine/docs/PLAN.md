@@ -52,16 +52,18 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
       reading of what the network build needs: its timer out, network play itself, the start files not saved
       over (already so). In the long run (the owner, update 238) network play is another entry in the menus,
       not something the game has to be started with the network version enabled for (MODERN.md "Game modes").
-- [ ] **A10 Building on the battle map** (found missing in update 238, the owner's report). A battle object with
-      a factory (a constructor vehicle, a factory building: its war map object's +0x54) adds **Build** (0x813E
-      with 0x8065, icon 0x20, 0x470) and Suspend / Resume (0x813F, icons 0x22 / 0x23, 0x495 / 0x496) to the
-      battle map's popup, before its orders (0x47E1E0, the battle object's answer to 0x805C). Build sets the
-      factory's +0x20 to 0 (the battle map's mode, where the war map's sets it) and opens its Build List there
-      (0x47DF9D: the factory's vt+0x14 with the world's window). What follows isn't traced: picking a building
-      on the battle map gives a placement (the factory entry's four u32s, "where a construction goes", WARMAP.md
-      "Production"), the building made where it's put and growing as the war map's hours go by. The war map's
-      Build (the same object's war map popup) works. Next after 238.
-
+- [~] **A10 Building on the battle map** (found missing in update 238, the owner's report; built in 239,
+      BATTLEMAP.md "Building on the battle map"). In: Build / Suspend / Resume in the battle popup (0x47E1E0);
+      the Build List opened in battle mode, its constructions placed with the footprint tool (green / red, the
+      ground's outline) or the fence tool (two presses); the construction made at once where it was put,
+      unfinished with its markers; cancelling from the queue kills it. The war map's Build List was already
+      cancel-only for a constructor vehicle (its items greyed, 0x494). Force Fire: `BattleMap::Armed` lacked
+      several shot classes' types (the Handling Machine's 0x1AB, the Electric Machines'), fixed. Left:
+      - the hours passing during a battle (0x802D through the battle world, 0x43B6C9 -> 0x446310), so a site
+        grows while the battle's on (the engine's war map clock stops for battles: to look at as a whole);
+      - a fence drawn as its line of posts (the engine draws any fence as one object);
+      - a vehicle ordered from the battle map, made at the world's (0, 0) in the original when done (not followed);
+      - the specials each seen in play (they're in the popup and fire through the guns' modes).
 ### B. Modern fixes (Stage 6.1 to 6.6; on by default, each marked MODERN FIX)
 
 - [x] **B1** (191) The two sound fixes marked where they are (the sliders saved; Master reaching the music);

@@ -67,25 +67,32 @@ namespace wow
                 {
                     if (ref < 0 || size_t(ref) >= table.size()) continue;
                     if (std::find(destroyed.begin(), destroyed.end(), ref) != destroyed.end()) continue;
-                    const SaveObject& o = table[size_t(ref)];
-                    BattleGroup g;
-                    // the battle's objects are the object's own, with the type they were made with: an upgraded
-                    // building's is still its first level's (SaveObject::BattleType)
-                    g.type = FightType(o);      // (BattleType, or with the modern fix the level it was upgraded to)
+                    BattleGroup g = GroupOf(ref, k.previous);
                     g.list = list;
-                    g.previous = k.previous;
-                    g.ref = ref;
-                    if (auto w = aiWeights.find(o.Type()); w != aiWeights.end()) g.aiWeight = w->second;
-                    g.aiClass = AiClass(o.Type());
-                    g.places = o.BattlePositions();
-                    g.healths = o.BattleHealths();
-                    if (const float scale = FightHealthScale(o); scale != 1.0f)
-                        for (int& h : g.healths) h = int(float(h) * scale + 0.5f);
-                    if (list >= 2 && o.Value(0) != 0.0f) g.progress = o.Value(1) / o.Value(0);
                     out.push_back(std::move(g));
                 }
             }
         return out;
+    }
+
+    BattleGroup WarMap::GroupOf(int ref, int previous) const
+    {
+        const SaveObject& o = table[size_t(ref)];
+        BattleGroup g;
+        // the battle's objects are the object's own, with the type they were made with: an upgraded
+        // building's is still its first level's (SaveObject::BattleType)
+        g.type = FightType(o);      // (BattleType, or with the modern fix the level it was upgraded to)
+        g.list = o.list;
+        g.previous = previous;
+        g.ref = ref;
+        if (auto w = aiWeights.find(o.Type()); w != aiWeights.end()) g.aiWeight = w->second;
+        g.aiClass = AiClass(o.Type());
+        g.places = o.BattlePositions();
+        g.healths = o.BattleHealths();
+        if (const float scale = FightHealthScale(o); scale != 1.0f)
+            for (int& h : g.healths) h = int(float(h) * scale + 0.5f);
+        if (g.list >= 2 && o.Value(0) != 0.0f) g.progress = o.Value(1) / o.Value(0);
+        return g;
     }
 
     // EnterBattleMap 0x43981C-0x439864 (dword_4F7430): in a Human game the other side's constructions and resources

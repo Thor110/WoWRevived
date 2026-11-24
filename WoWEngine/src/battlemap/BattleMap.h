@@ -15,6 +15,7 @@
 #include "core/Scenery.h"
 #include "core/WofView.h"
 #include "core/Deployment.h"
+#include "battlemap/BuildHost.h"
 #include <algorithm>
 #include <map>
 #include <set>
@@ -49,6 +50,8 @@ namespace wow
             bool loadScenery = true;    // [Debug] "Load scenery" (0x4F73F1)
             bool pod = false;           // the sector's +0x64: a pod landed here since the last battle (0x41A3BC)
             const std::map<int, ObjOjd::UnitData>* units = nullptr;
+            // the war map's factories, for building on the battle map (BuildHost); none: no Build
+            BuildHost* build = nullptr;
             // MODERN (docs/MODERN.md "The civil wars"): the other side's copy of the table (ObjOjd::OtherSideUnits),
             // which its units' full health is read from; the one table when not given
             const std::map<int, ObjOjd::UnitData>* otherUnits = nullptr;
@@ -764,6 +767,30 @@ namespace wow
         void DrawInfoPage(Canvas& canvas) const;
         int popupHover = -1;
         int popupOpenRow = -1;
+        int popupBuildRef = -1;             // the war map object whose Build / Suspend / Resume the popup has
+        // Building on the battle map (docs/BATTLEMAP.md "Building on the battle map"): the placement tool the view
+        // holds (+0x88) while the cursor mode is 4 (a building, 0x4A13B0), 5 (the military bridge) or 6 (a fence or
+        // wall, 0x4A03A0), the type the Build List gave
+        struct PlaceTool
+        {
+            int type = 0, mode = 4;
+            int size = 16;          // the footprint (a post's, for a line): ((2 x the type's +0x46) + 14) & ~15
+            bool water = false;     // +0x41: the shipyards (0x27-0x29) stand at the water's edge
+            bool fresh = true;      // the first frame puts the centre at the mouse; after it, it's eased there
+            int cx = 0, cy = 0;     // the centre (a line's far end), world x and ground y
+            bool ok = false;        // +0x40 / +0x50: it can go there (green; red not)
+            int presses = 0;        // a line's: its first press sets the anchor
+            int ax = 0, ay = 0;
+            bool anchorOk = false, lineOk = false, endOk = false;
+        };
+        std::optional<PlaceTool> tool;
+        void StartPlacing(int type);                            // 0x42E790 -> the view's 0x20 (0x485F60)
+        void UpdatePlacing();                                   // the tool's draw (0x4A14C0 / 0x4A0630): where and whether
+        bool PostOk(int x, int y, int size, bool water) const;  // 0x47B610 over a footprint at a world point
+        void DrawPlacing(Canvas& canvas) const;
+        void PlaceNow(int x0, int y0, int x1, int y1);          // the order (0x80A4 -> packet 0x16)
+        void AddGroup(const BattleGroup& g);                    // a construction made in the sector during the battle (0x43CD10)
+        void KillGroupOf(int ref);                              // 0x80A0 to a construction cancelled from the Build List
         mutable int lastCursor = 0;         // the cursor last set (kept where the game sets none)              // the row opened out (0x433330 with the hovered item's command)
         bool PopupShown(size_t i) const { return popup[i].col == 0 || popup[i].row == popupOpenRow; }
         void LayOutPopup(int x, int y);
