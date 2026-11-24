@@ -56,6 +56,14 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## The crash after a battle (update 256)
+
+- A campaign played on past battles where the computer player's construction vehicles lose vehicles and then
+  build again (the tester's log: a Martian campaign, a battle in sector 12, the crash in the next hour). The
+  cause is covered by a unit test; the game itself not replayed.
+- Turrets, fences and mines built while others of the type stand in the sector: the new one goes up over its
+  time, the old ones stay finished.
+
 ## Resources (update 255)
 
 - A resource building (iron, coal, oil; the Martians' three) placed on the battle map with a construction vehicle,

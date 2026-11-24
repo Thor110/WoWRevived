@@ -96,8 +96,14 @@ namespace wow
             }
         }
         Put(out, tail.last);
+        // where the tail is now: the object's bytes may have changed since it was read (a vehicle lost in a battle
+        // takes 52 bytes out before it, SaveObject::RemoveBattleUnit), and the old place would be past the end
+        // (update 256, a tester's crash in the war map's production after a battle)
         std::vector<uint8_t>& b = object.bytes;
-        b.erase(b.begin() + std::ptrdiff_t(tail.at), b.begin() + std::ptrdiff_t(tail.end));
-        b.insert(b.begin() + std::ptrdiff_t(tail.at), out.begin(), out.end());
+        size_t at = tail.at, end = tail.end;
+        if (const auto now = ReadTail(object)) { at = now->at; end = now->end; }
+        if (at > end || end > b.size()) return;     // (nowhere it can go: left as it is)
+        b.erase(b.begin() + std::ptrdiff_t(at), b.begin() + std::ptrdiff_t(end));
+        b.insert(b.begin() + std::ptrdiff_t(at), out.begin(), out.end());
     }
 }

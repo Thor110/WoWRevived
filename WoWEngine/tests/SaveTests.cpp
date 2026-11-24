@@ -5,6 +5,7 @@
 #include "core/SaveGame.h"
 #include "core/CivilWar.h"
 #include "core/CustomCampaign.h"
+#include "core/BuildList.h"
 
 #include <filesystem>
 #include <fstream>
@@ -381,4 +382,27 @@ TEST("custom campaign: the definition's keys, a civil war's layout, and lines it
     warnings.clear();
     CustomCampaign::Parse("name = Nothing\nkind = venusian\n", "n.txt", warnings, ok);
     CHECK(!ok);
+}
+
+TEST("save: a factory's queue written after the object lost a vehicle goes where the tail is now")
+{
+    // (update 256, a tester's crash: the tail's place was kept from before a battle took a vehicle out)
+    SaveObject o = SaveObject::MakeUnit(17, 1, 12, 3, 100, true);
+    std::optional<ObjectTail> tail = ReadTail(o);
+    REQUIRE(tail && tail->hasFactory);
+    REQUIRE(o.RemoveBattleUnit(0));
+    CHECK(tail->end > o.bytes.size());                       // the old place is past the end now
+    BuildEntry e;
+    e.type = 35;
+    e.repeat = 1;
+    e.hours = 12.0f;
+    tail->queue.entries.push_back(e);
+    tail->queue.busy = true;
+    WriteTail(o, *tail);
+    const std::optional<ObjectTail> back = ReadTail(o);
+    REQUIRE(back && back->hasFactory);
+    REQUIRE(back->queue.entries.size() == 1);
+    CHECK_EQ(back->queue.entries[0].type, 35);
+    CHECK_EQ(o.BattleUnitCount(), size_t(2));
+    CHECK(back->end + 4 == o.bytes.size());                 // (the closing VEHU after it)
 }

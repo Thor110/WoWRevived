@@ -341,8 +341,11 @@ namespace wow
         const int at = CounterOf(ref);
         const int sector = at >= 0 ? counters[size_t(at)].sector : table[size_t(ref)].Sector();
         const bool players = at >= 0 ? counters[size_t(at)].players : table[size_t(ref)].list % 2 == 0;
+        const size_t before = table.size();
         const int k = AddObject(type, sector, players, u->second.category == 3 ? 4 : 2);
-        const int target = k >= 0 && !counters[size_t(k)].refs.empty() ? counters[size_t(k)].refs.front() : -1;
+        // the object just made (the table's newest): a defence joins its type's counter, whose first object is an
+        // older one (update 256; 253 took that one, starting it again and leaving the new one finished at once)
+        const int target = k >= 0 && table.size() > before ? int(table.size()) - 1 : -1;
         if (target >= 0)
         {
             e.target = uint32_t(table[size_t(target)].Id());

@@ -596,6 +596,15 @@ length and, if that isn't 0, u8 busy and each entry (0x461F00): u32 type, u32 th
 save with a queue turns up). Most objects' units end with BATP (VEHI for a vehicle), but some write more after it
 (type 451 four more u32s); those have no factory, so their tail is the last 8 bytes.
 
+The engine keeps each factory read from its object, and writes the queue back after each change (`WriteTail`). It
+finds the tail again in the object's bytes as it writes: a vehicle lost in a battle takes 52 bytes out before it
+(`SaveObject::RemoveBattleUnit`), so the place it was read from can be past the end. Before update 256 it wrote
+at that old place, and a construction vehicle that had lost a vehicle crashed the war map's next hour of
+production (a tester's log: "war map hour: sectors (repairs, production)", after a battle). A construction
+ordered on the war map is the table's newest object (`OrderConstruction`); update 253 took the first of its
+counter's objects, which for a defence sharing its type's counter is an older one: that one was started again
+and the new one finished at once.
+
 **What it can make** (0x45F970, the list the Build List window shows): types 1-1008 whose builders include the
 object's type and whose research (the unit table's +0x04) is done or obsolete, or which have none (0x442460).
 In a sector without its command building finished (0x43C990) only the command building is offered (58, 278 in
