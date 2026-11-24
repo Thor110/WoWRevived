@@ -1,5 +1,50 @@
 # WoWEngine task list
 
+**This list is no longer the one to work from.** `docs/PLAN.md` ("Where things stand") is, with the parity detail
+in `docs/review/PARITY.md`. The list below was kept from update 136 to about 228 and its boxes stopped being ticked
+when the parity review took over; it stays for its addresses and history. Update 234 went through every box
+that was still open or partly done and says here where each now stands.
+
+## Where the open boxes stand (update 234)
+
+**Done since the box was last ticked:**
+
+| Box | Done |
+|---|---|
+| Route progress (a unit on its way carries on after a load) | 137, 178 (PARITY.md Deferred, warmap 14) |
+| Sector flags kept (the battle and pod flags) | read and written as fields (PLAN.md 4.4) |
+| Repair (Mobile Repair Vehicles, workshops) | WARMAP.md "Repair" |
+| Construction, the Build List, CommandCentreBuilt, the context buttons | 153-156, 189, 190 (PLAN.md A1, A4) |
+| The popup's rows | PARITY.md (battle-ui D / warmap) |
+| Tool tips: the task lines, the resource facilities' and the Resource view's | 154, 155 (PARITY.md, WARMAP.md "Counter pips and task lines") |
+| Speech attached to text ids (0x414700) | in (WARMAP.md "Messages and events", BATTLEMAP.md) |
+| `[Sound]` Search Libraries First, Unload Limit | looked at in 181 and left: nothing a player hears changes (PLAN.md 4.3) |
+| CD player seek (transports 4 and 6) | in (`Music::Seek`); no button sends them, as in the game (FRONTEND.md) |
+| Animated cursors, the wait cursor | 177, 190 (PLAN.md A3) |
+| Display Settings | the resolution taken at once (191-195, PLAN.md B5) |
+| Playback recordings | 183, 197 (MODERN.md "Playback recordings") |
+| Debug log | WoWEngine.log, with Dave's lines (228, PLAN.md A8) |
+| The units' headlights; the scenery's and bridges' object scale | PLAN.md 2.5 |
+| `.mp4` movies | the owner, 218: they play at their own size (PLAN.md G1) |
+| Release scripts tried from a clean checkout | 234 (`make_release.py --build` from a fresh clone, on Linux; README "Release") |
+
+**Still open** (PLAN.md's letters):
+
+- **The players and their commands**, and the commands handled one queue pass later (A2, with the network game).
+- **The network game** (A9).
+- **Combat checked by eye** (A7): the owner's and the testers' reports.
+- **Deployment's leftovers** and **the provisional renderers** (A5, A6): waiting on frames of the original.
+- **Battle AI**: the parts not yet traced (the planner, the specials and the groups' stance work are in).
+- **Bridges that break**, **the route finder spread over updates**, **the tree circles' lifetime** (PARITY.md
+  Deferred, S6).
+- **Unit tests** (G2).
+- **Auto-resolving a battle** and the other modes; the editors (F1, F2).
+- **The two buildings the game names and never offers** (E1, E2).
+- **The settings**: every one the original reads is read where the engine has its system; there has been no
+  audit of all ~229 against part 14 of the survey.
+
+---
+
 Built from a survey of the whole game executable (0x401000-0x4A8A92) in 14 pieces; the detailed reports, with every
 function, structure, message and setting, are in [`docs/survey/`](survey/) (`partNN.md`; section 6 of each lists the
 tasks for that piece with the addresses needed). The aim is a 1:1 match with the original first.

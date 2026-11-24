@@ -171,6 +171,18 @@ if(TARGET SDL3::SDL3)
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources/discord-rpc-LICENSE.txt $<TARGET_FILE_DIR:WoWEngine>/discord-rpc-LICENSE.txt)
         endif()
     endif()
+    if(NOT WIN32)
+        # a release (tools/make_release.py) has the SDL3 library beside the programs, so they look for it in their own
+        # folder ($ORIGIN, @loader_path on macOS); BUILD_RPATH_USE_ORIGIN keeps the build's own path to _deps relative,
+        # so a build folder that is moved still works (update 234: the release found SDL3 only in the folder it was
+        # built in)
+        if(APPLE)
+            set(wow_origin "@loader_path")
+        else()
+            set(wow_origin "\$ORIGIN")
+        endif()
+        set_target_properties(WoWEngine WoWLauncher PROPERTIES BUILD_RPATH_USE_ORIGIN ON BUILD_RPATH "${wow_origin}")
+    endif()
 else()
     message(WARNING "SDL3 not available: only the libraries (and the tools, with WOW_BUILD_TOOLS) will be built")
 endif()

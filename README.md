@@ -231,7 +231,7 @@ The road map for this project.
 	- Modern options implemented.
 		- A Modern Options menu, opened from Game Options and the war map's Campaign Options.
 		- Battle zoom. ( +, -, mouse wheel, R to reset )
-		- HUD scale from 50% to 300% for the war map and battle map panels.
+		- HUD scale from 50% to 300% for the war map and battle map panels and their tool tips.
 		- Menu scale for the menus, up to 225% at 1920x1080 (as large as the resolution allows).
 		- Group keys ( Ctrl + digit to keep, digit to select ) and Shift to add to the selection in battle.
 		- More save slots, in pages of five, up to 999.
@@ -650,7 +650,7 @@ The Modern Options menu is opened from Game Options in the main menu, or from Ca
 | Group keys and Shift select | On | Ctrl + a digit keeps the selection, the digit selects it again, pressed twice it moves the view there, Shift adds to the selection |
 | More save slots | On | The Load and Save menus have pages of five, up to slot 999 |
 | Battle zoom | On | +, - or the mouse wheel to zoom the battle map, R to reset |
-| HUD scale | 100% | The size of the war map and battle map panels, from 50% to 300% |
+| HUD scale | 100% | The size of the war map and battle map panels and their tool tips, from 50% to 300% |
 | Menu scale | 100% | The size of the menus, up to 225% at 1920x1080 (the largest that fits the resolution) |
 | Fade between menus | Off | The original game's fade between menus |
 | Enhanced assets | Off | WoWRevived's Enhanced Assets, switched on or off without a restart |

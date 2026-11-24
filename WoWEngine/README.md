@@ -24,6 +24,14 @@ To use an installed copy, point `CMAKE_PREFIX_PATH` at it.
 
 **Release:** `tools\make_release.bat` (double-click it) runs `tools/make_release.py`, which takes the version from `CMakeLists.txt` and the programs from `out\build\x64-Release`, and makes `out\WoWEngine-v<version>\` and `out\WoWEngine-v<version>.zip`. If the Release build isn't there it builds it first, which needs CMake and the compiler on the PATH (the "x64 Native Tools Command Prompt"); otherwise build `x64-Release` in Visual Studio and run it again. Options: `--build` to rebuild first, `--debug` to package the Debug build, `--seven-zip` to also make a `.7z`, `--build-dir` to package another folder.
 
+**Tried from a clean checkout** (update 234, on Linux): a fresh clone, `python3 tools/make_release.py --build`, and
+nothing else, configures, builds and packages the release (the programs, SDL3, the five TEXT.ojd, DAT and MAPS with
+the fixed files and the backgrounds, the licence and this readme). The release, unpacked into an empty folder with
+the game's files added and the build folder out of the way, starts and uses its own files. That check found the
+Linux programs looking for SDL3 only in the folder they were built in; since 234 they look beside themselves
+first (`CMakeLists.txt`, BUILD_RPATH). Not tried here: Windows (the owner builds and runs each update there) and
+macOS, where the programs are built as `.app` bundles that the script doesn't yet look inside.
+
 Targets:
 
 | Target | What it is |
@@ -58,8 +66,11 @@ src/frontend/   Resources (graphics, strings, shade tables), Canvas (drawing), S
                 FrontEnd, Settings (WoWRevived.ini)
 src/install/    the installer: Disc (folders, .iso, .bin/.cue), DriveAudio (raw CD audio), Iso9660, Installer
 src/platform/   SDL3 code: window and true colour frame buffer (Video), music (Music), sound effects mixed in software
-                (Sound), starting the other program (Launch.h); later movies
-src/warmap/      the war map: WarMapData.h (sector table and borders from the exe), WarMap (the screen)
+                (Sound), the .mp4 movies on Windows, Discord, starting the other program (Launch.h)
+src/warmap/      the war map: WarMapData.h (sector table and borders from the exe), WarMap (the screen), production,
+                the economy, the computer player
+src/battlemap/  the battle map (its landscape is core/Landscape): the screen and its objects, driving and route
+                finding, combat, weapons and effects, fog, reinforcements, the computer player's battles
 src/launcher/   WoWLauncher: the installer and launcher, with its own Windows-style controls (Ui)
 src/main.cpp    start-up and the fixed-rate game loop
 tools/          command line tools
@@ -76,17 +87,24 @@ docs/           ENGINE-MAP.md (the exe mapped by subsystem), FRONTEND.md (how th
 
 ## Road map
 
-1. **Foundations** (started): CMake and SDL3, the archives, FFUH, game file lookup, window and frame buffer.
-2. **Formats** (in progress): archives, FFUH, palettes, SPR, FNT, shade tables, TEXT.ojd, the OBJ.ojd graphics table, SFX.ojd and the sound libraries, and AI.ojd are read the way the game reads them; WOF units, IOB buildings and CLS/ATM terrain are read as far as WoWViewer worked them out (every one on the English discs reads); saves are read as far as their name, game time and date. All of these have been checked against the English discs. Still to do: the unit-specific shade groups, the rest of OBJ.ojd (unit data), what follows the heights in CLS, the rest of the save format, and the WOF animation data.
-3. **Front end** (menus done): every menu is rebuilt: the menu framework, Main Menu, Single Player Options, Game Options, Display Settings, Sound Control, Critical event options, Load and Save Game, the new campaign menus (Select Campaign to Replace, Replace Existing Campaign?, Edit Campaign with its name field, Insert CD), the network menus (Select Service Provider, Network Host, Waiting for Player, the session list), Credits, Quit, and the CD Player with music (see `docs/FRONTEND.md`). The earlier menus match screenshots of the original for both sides; the new ones are built from the disassembly and haven't been compared yet. The menu sound (the looping "option" music, faded in), the credits music and the game's own mouse cursor are in. The movies play: RAGELOGO and TITLE at start-up and INTRO for a new campaign, WoWRevived's `.mp4` versions where they're installed (Windows, Media Foundation), otherwise the original Smacker files through the engine's own decoder; Escape skips one. Still to do: tooltips, and the network menus' lists, which wait for network play.
-4. **Audio** (started): sound effects from SFX.ojd and the sound libraries, mixed with the [Sound\\Volume] settings for each type (Ambient, Engine, Explosions, Weapons, Special, Speech) under Master, fades, and the music from the ripped `Music-Human` / `Music-Martian` tracks. Still to do: positional sound on the maps, which comes with them.
-5. **War map** (started): a new campaign or a saved one opens the war map: both sides' maps lit through the sector map, the 30 sectors with their names, borders coloured by who holds them, the starting view, the units, buildings and resources from the save as counters, the mini-map panel with its Unit / Construction / Resource views, the calendar with its speed slider, picking units and sending them to other sectors, and the war map menu (see `docs/WARMAP.md`). Still to do: the real route rules, event messages, construction, research, AI turns, battles and pods.
-6. **Battle map**: terrain, the 3D units (WOF/IOB with the shade tables), buildings, pathfinding, combat and fog of war.
-7. **Saves**: loading and writing the original save format, so old saves keep working.
-8. **Network**: multiplayer, based on the custom WoW_network.exe build.
-9. **Release**: packaging for all three platforms, then the Sieve of Potentia pass.
+Where the engine stands (update 234; `docs/PLAN.md` is the full list, and what to work on next):
 
-Each stage is checked against the original game running side by side, address by address, using `docs/ENGINE-MAP.md` and the IDA notes in `WoWDecomp/`.
+1. **Foundations, formats, the front end, audio**: done. Every file format the game reads is read as the game
+   reads it; every menu is rebuilt; sound effects, positional sound, music and the movies play.
+2. **War map**: done. Units, routes, construction, production, research, repair, the economy, the Martian pods, the
+   messages, the computer player, saving and loading (old saves load and write back exactly).
+3. **Battle map**: done but for the tracing still open. Terrain, units, buildings, scenery, driving and route
+   finding, combat, specials, the computer player's battles, reinforcements, the battle's end and its losses taken
+   back to the war map. Still open: bridges that break, the route finder spread over updates, parts of the
+   computer player's battle planning, the tree circles' lifetime; combat is to be checked by eye in play.
+4. **Modern fixes and options**: done. The Modern Options menu (docs/MODERN.md): battle zoom, HUD and menu scale,
+   group keys, more save slots, key bindings, windowed play, Enhanced Assets, Discord, recordings and more, with
+   every WoWRevived fix and file built in.
+5. **Network play**: not started (the last of the original; with the player and command objects it needs).
+6. **Modes and tools**: not started (Martian against Martian, Human against Human, auto-resolve; the editors).
+7. **Release**: `tools/make_release.py` packages it (below); unit tests to come.
+
+Each part is checked against the original game, address by address, using `docs/ENGINE-MAP.md` and the IDA notes in `WoWDecomp/`.
 
 ## Installing
 

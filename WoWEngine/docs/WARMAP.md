@@ -1012,9 +1012,9 @@ so up to 40 pixels a tick at the left or right edge at the default 40. (*Provisi
 
 ## Still to do
 
-The event messages (top left; the engine shows only the latest), the own sectors' shading,
-the arrows' exact curve and head, construction (the Build List window, and the construction's side of it, so command posts can be built), the AI's turns, saving, and the
-battle map.
+(Redrawn at update 234: construction and the Build List, the computer player, saving, the messages, the sector
+shading, the route arrows and the battle map are all in, each in its section above.) Left: the network game's side
+of the war map (with PLAN.md A9), and whatever the owner's frames and reports show (PLAN.md A7).
 
 ## Parity fixes in update 133
 
