@@ -1413,7 +1413,8 @@ namespace wow
         std::string text;
         for (; level >= 1 && text.empty(); level--) text = screen->TipText(owner, level);
         if (text.empty()) { tip.reset(); return; }
-        tip = Tip{ text, hoverX, hoverY };
+        if (auto at = screen->TipAnchor(owner)) tip = Tip{ text, at->first, at->second, true };
+        else tip = Tip{ text, hoverX, hoverY };
     }
 
     // The tip (0x49D470): boxed text in font 0x6F made with grey (dword_4DAF90, 6-bit 48, 48, 48) in Human games
@@ -1443,7 +1444,10 @@ namespace wow
         int th = font->Height() * lines + 2 * (lines - 1);
         int w = tw + 2, h = th + 2;
         int offset = ini.GetInt("Screen", "Tool Tip Offset", 16);
-        int cx = tipX + 32 + w / 2, cy = tipY - offset + 32 + h / 2;
+        // (0x49D4FD: a window that answers 0x80D0 gives the point itself, in place of where the hovering started
+        // less the offset, and the 32 isn't added to it)
+        const int add = tip->anchored ? 0 : 32;
+        int cx = tipX + add + w / 2, cy = tipY - (tip->anchored ? 0 : offset) + add + h / 2;
         if (cx + w / 2 > canvas.Width() - canvas.OriginX()) cx = canvas.Width() - canvas.OriginX() - w / 2 - 4;
         if (cy < 4 - canvas.OriginY()) cy = 4 - canvas.OriginY();
         Rect text{ cx - w / 2 + 1, cy - h / 2 + 1, tw, th };

@@ -101,7 +101,9 @@ namespace wow
         // tool tips: 0-2 the view buttons, 3 the Research button, 4 the calendar
         int TipOwner(int x, int y) const override;
         // the counters aren't controls: they don't answer 0x80CF (*provisional*: the calendar taken as one)
-        bool TipHidesOnPress(int owner) const override { return !(owner >= 1000 && owner < 10000); }
+        // (nor do the popup's items, WHotButton 0x434390)
+        bool TipHidesOnPress(int owner) const override { return !(owner >= 1000 && owner < 10000) && !(owner >= 100 && owner < 1000); }
+        std::optional<std::pair<int, int>> TipAnchor(int owner) const override;
         int CursorAt(int x, int y) const override;
         std::string CounterTip(int counter, int level) const;
         std::string TipText(int owner, int level) const override;

@@ -195,7 +195,7 @@ namespace wow
         void UpdateTooltip();
         void DrawTooltip(Canvas& canvas) const;
         void DrawTooltip(Canvas& canvas, int x, int y) const;   // at x, y of the canvas
-        struct Tip { std::string text; int x, y; };
+        struct Tip { std::string text; int x, y; bool anchored = false; };  // anchored: x, y its top left (0x80D0)
         std::optional<Tip> tip;
         int stillTicks = 0;        // updates since the mouse last moved
         int hoverOwner = -2;       // dword_4EA554: the part of the screen the mouse was last over

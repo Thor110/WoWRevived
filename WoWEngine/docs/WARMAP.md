@@ -312,7 +312,10 @@ selection at +0x430, filled by its recorded commands 4 clear, 5 select (Shift ad
   as a button is let go on it (`[Modern] "Sticky popup menus"` keeps it open instead, docs/MODERN.md). Each item
   (WHotButton's 0x434390) plays 0x194 as the mouse comes onto it (0x20) and 0x195 as it's clicked (0x202 / 0x205), so going into
   a battle by View map clicks (the engine plays the screen's sounds before a command can put the war map aside). The engine shows the items'
-  text as their tool tips and the icon's next frame under the mouse (*provisional*). After Cancel come the items of
+  text as their tool tips and the icon's next frame under the mouse (*provisional*). The items (0x434390) answer
+  0x80CF with 0, so their tips stay up while a button is held (the popup is open only while the right button is),
+  and 0x80D0 with their right edge less 4 and their top, where the tip's top left goes (0x434486, read by the
+  tip's constructor 0x49D4FD) (update 238; until then the engine hid them while the button was held). After Cancel come the items of
   whoever answers 0x805C: the active tool if it answers 0x8111, else the player's current object, else the own
   sector under the mouse (selected first); and when neither a tool nor that sector filled it, the world's selected
   sector (+0x60). A sector adds **View map** (0x43B9F0: command 0x8133 with 0x8019, icon 0x2E `RBHview`, text

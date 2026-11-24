@@ -7,7 +7,7 @@ start, load and save (the owner's 24 saves read and write back true), the war ma
 settled. What follows is everything left, in the order to do it; the stages further down stay the full
 inventory with the history. Tick here and there as each is done.
 
-**Version 0.2.2** from update 224 (0.0.1 until then; 0.0.1 as of update 222 went to the testers on Discord).
+**Version 0.2.5** from update 238 (0.2.2 from update 224; 0.0.1 until then, which as of update 222 went to the testers on Discord).
 
 **The order suggested for what is left** (update 224): 1. whatever the testers report from 0.0.1 (A7), as it
 comes; 2. D4 the credits picture; 3. D3 Enhanced Assets, then D2's check of the owner's fixed files in play;
@@ -50,7 +50,17 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
       battle half (it only serves the editor), the loose-sound flag (with D1).
 - [ ] **A9 The network game** (4.7), last of the original: the menus' lists, the lockstep packets. The owner's
       reading of what the network build needs: its timer out, network play itself, the start files not saved
-      over (already so).
+      over (already so). In the long run (the owner, update 238) network play is another entry in the menus,
+      not something the game has to be started with the network version enabled for (MODERN.md "Game modes").
+- [ ] **A10 Building on the battle map** (found missing in update 238, the owner's report). A battle object with
+      a factory (a constructor vehicle, a factory building: its war map object's +0x54) adds **Build** (0x813E
+      with 0x8065, icon 0x20, 0x470) and Suspend / Resume (0x813F, icons 0x22 / 0x23, 0x495 / 0x496) to the
+      battle map's popup, before its orders (0x47E1E0, the battle object's answer to 0x805C). Build sets the
+      factory's +0x20 to 0 (the battle map's mode, where the war map's sets it) and opens its Build List there
+      (0x47DF9D: the factory's vt+0x14 with the world's window). What follows isn't traced: picking a building
+      on the battle map gives a placement (the factory entry's four u32s, "where a construction goes", WARMAP.md
+      "Production"), the building made where it's put and growing as the war map's hours go by. The war map's
+      Build (the same object's war map popup) works. Next after 238.
 
 ### B. Modern fixes (Stage 6.1 to 6.6; on by default, each marked MODERN FIX)
 

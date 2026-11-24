@@ -154,6 +154,9 @@ namespace wow
         std::optional<Command> OnRightButton(int x, int y, bool down) override;
         int CursorAt(int x, int y) const override;
         int TipOwner(int x, int y) const override;
+        // the popup's items (WHotButton 0x434390) keep their tips while a button is held, beside the item
+        bool TipHidesOnPress(int owner) const override { return !(owner >= 100 && owner < 1000); }
+        std::optional<std::pair<int, int>> TipAnchor(int owner) const override;
         std::string TipText(int owner, int level) const override;
 
         int ScrollX() const { return scrollX; }

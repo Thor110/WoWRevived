@@ -44,7 +44,7 @@ namespace wow
         // the war map's numbers start from srand(1) each time (WWarMapWorld 0x417CD0)
         random::Seed(1);
         unitData = units;
-        otherUnitData = ObjOjd::OtherSideUnits(std::move(units));
+        otherUnitData = ObjOjd::OtherSideUnits(units);      // (a copy: units is read again below)
         this->objectClasses = objectClasses;
         // A counter for each object (0x42B2F0, made by 0x4205F0), except that objects of class 7 (AI.ojd's class,
         // 0x518B14: wire fences, mines) share one a type and sector (0x4282A0 / 0x428270), with how many there are
@@ -2023,6 +2023,13 @@ namespace wow
         if (level >= 2 && work != 0.0f)
             tip += kinds() + "\n" + res.String(0x51B) + figures(" %0.1f, %0.1f, %0.1f", u.activity[0], u.activity[1], u.activity[2]);
         return tip;
+    }
+
+    std::optional<std::pair<int, int>> WarMap::TipAnchor(int owner) const
+    {
+        if (owner < 100 || size_t(owner - 100) >= popup.size()) return std::nullopt;
+        const Rect& r = popup[size_t(owner - 100)].rect;      // in the panels' space
+        return std::make_pair(int(int64_t(r.x + r.w - 4) * viewW / hudW), int(int64_t(r.y) * viewH / hudH));
     }
 
     std::string WarMap::TipText(int owner, int level) const

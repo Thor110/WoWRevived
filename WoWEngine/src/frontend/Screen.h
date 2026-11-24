@@ -104,9 +104,13 @@ namespace wow
         // if it has none at that level.
         virtual int TipOwner(int x, int y) const { return HitTest(x, y); }
         // What the window under the mouse answers 0x80CF (0x4338E5): whether a held mouse button hides its tool
-        // tip. The controls answer 1 (the button base 0x42E2EC, the check / radio class 0x434465); a window that
-        // doesn't handle it answers 0 and keeps its tip while a button is held.
+        // tip. The button base answers 1 (0x42E2EC); the popup menus' items (WHotButton 0x434390, 0x434465) answer
+        // 0, as does a window that doesn't handle it, and keep their tips while a button is held.
         virtual bool TipHidesOnPress(int owner) const { (void)owner; return true; }
+        // What it answers 0x80D0 (the tip's constructor 0x49D470 asks): where the tip's top left goes, in the
+        // picture's pixels. A popup item answers its right edge less 4 and its top (0x434486); a window that
+        // doesn't answers nothing, and the tip goes by where the hovering started.
+        virtual std::optional<std::pair<int, int>> TipAnchor(int owner) const { (void)owner; return std::nullopt; }
         virtual std::string TipText(int owner, int level) const;
 
         // A command the screen sends by itself (from Update), picked up by the front end after each update.

@@ -20,7 +20,7 @@ cmake --build --preset x64-Release
 If SDL3 isn't installed it is downloaded and built automatically (`WOW_FETCH_SDL`, on by default).
 To use an installed copy, point `CMAKE_PREFIX_PATH` at it.
 
-**Version:** set it in one place, `project(WoWEngine VERSION 0.2.2 ...)` at the top of `CMakeLists.txt`. The build turns it into `Version.h` (`WOWENGINE_VERSION`), which the window title uses, and the release script reads it from there too.
+**Version:** set it in one place, `project(WoWEngine VERSION 0.2.5 ...)` at the top of `CMakeLists.txt`. The build turns it into `Version.h` (`WOWENGINE_VERSION`), which the window title uses, and the release script reads it from there too.
 
 **Release:** `tools\make_release.bat` (double-click it) runs `tools/make_release.py`, which takes the version from `CMakeLists.txt` and the programs from `out\build\x64-Release`, and makes `out\WoWEngine-v<version>\` and `out\WoWEngine-v<version>.zip`. If the Release build isn't there it builds it first, which needs CMake and the compiler on the PATH (the "x64 Native Tools Command Prompt"); otherwise build `x64-Release` in Visual Studio and run it again. Options: `--build` to rebuild first, `--debug` to package the Debug build, `--seven-zip` to also make a `.7z`, `--build-dir` to package another folder.
 
@@ -86,7 +86,8 @@ src/battlemap/  the battle map (its landscape is core/Landscape): the screen and
 src/launcher/   WoWLauncher: the installer and launcher, with its own Windows-style controls (Ui)
 src/main.cpp    start-up and the fixed-rate game loop
 tools/          command line tools
-docs/           ENGINE-MAP.md (the exe mapped by subsystem), FRONTEND.md (how the menus work), WARMAP.md, IDA index
+docs/           ENGINE-MAP.md (the exe mapped by subsystem), FRONTEND.md (how the menus work), WARMAP.md, TEXTURES.md
+                (where a texture pack's files go), IDA index
 ```
 
 ## How it works

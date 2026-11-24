@@ -495,7 +495,9 @@ To be restored as options once the rest is done. What the data holds:
 
 - **Campaign extras**: Martian against Martian, and Human against Human. *Designed with the owner (update 236)*:
   "The civil wars" below.
-- **Multiplayer** (the original's network game is in docs/TASKS.md; this would be a modern take on it).
+- **Multiplayer** (the original's network game is in docs/TASKS.md; this would be a modern take on it). The owner
+  (update 238): in the long run the network game should be just another menu option, not something that needs
+  the game started with the network version enabled (and the menus that changes, such as Single Player Options).
 - **Auto-resolve a battle**: settle a battle on the war map without playing it on the battle map (the engine
   already does this when a sector's map files are missing).
 
@@ -572,7 +574,10 @@ Two new campaigns, each one faction against itself (PLAN.md F1).
   on the battle map only by the hue turn, until a texture pack gives each side its own textures (below).
 - Voice lines that name the other faction ("Martians sighted" and the like) are the regular game's: to be reworked
   for the civil wars later (the owner).
-- The Single Player Options menu (with the network version enabled) has no civil war entry yet.
+- The Single Player Options menu (with the network version enabled) has no civil war entry yet (moot once network
+  play is a menu option, above).
+- `CivilWar.txt` says only which sectors' objects go where and where the player's copied base goes. It can't yet
+  set how many units or buildings a sector has, or add any: `add` / `remove` lines are the obvious next step.
 - `ReceiveSpecial`'s Martian research (items 132 / 133) is asked of the receiving unit's side: *provisional*.
 - A battle between the two sides hasn't been played through headless (their forces start far apart); the colours
   were checked on the regular pod battle made to count as a civil war.
@@ -583,7 +588,8 @@ Two new campaigns, each one faction against itself (PLAN.md F1).
 - **War map creator and new campaigns** (the owner's idea): with the level editor, a tool to make a war map
   (the map, its sectors, links and starting forces), so whole new campaigns can be built and played.
 - **Save editor**: the war map's objects, research and resources in a save.
-- **Texture packs** (the owner, update 237; planned): new textures for both sides' units and buildings, which would
+- **Texture packs** (the owner, update 237; planned; the folders and the rules for the files are in docs/TEXTURES.md,
+  update 238): new textures for both sides' units and buildings, which would
   also give the civil wars' two sides looks of their own (the other side's from its unit table, above). The first
   step is done: `wowdump --textures <game folder> <outdir> [level]` writes every unit's and building's texture as
   an 8-bit BMP into human/units, human/buildings, martian/units, martian/buildings and scenery, keeping the
@@ -599,8 +605,14 @@ Two new campaigns, each one faction against itself (PLAN.md F1).
     `<name>.patches.txt` beside it, with each patch's pixel bounds in the picture, so a reworked picture can be cut
     back into the same patches as long as the outline stays. Patches can overlap (the later drawn over the
     earlier), which is a likely reason building edits have gone wrong in other tools.
-  - Still to decide: whether a pack keeps to the game's indices and shade tables (it would then work in the
-    original too) or is full colour, which needs the engine to read full-colour textures and light them itself.
+  - For now (the owner, after 237): the pack is made in any colours and quantised back to the game's indices and
+    shade tables on the way in, so it works with the engine as it is (and the original). The export's palettes
+    are what to quantise against: each side's midday table at the level the export used.
+  - Later (the owner's plan): **overrides in common formats**. Game files overridden by loose files in ordinary
+    formats (PNG / BMP for sprites and textures, OBJ for models, and the like) read in place of the archive's,
+    so packs and mods need no conversion. Not designed yet; the engine's loose-file overlay (`GameFiles`,
+    "The engine's own files" above) is where it would hang. Full-colour textures lit by the engine would come
+    with it.
 
 ## From the earlier patched game
 

@@ -2885,6 +2885,13 @@ namespace wow
         return -1;
     }
 
+    std::optional<std::pair<int, int>> BattleMap::TipAnchor(int owner) const
+    {
+        if (owner < 100 || size_t(owner - 100) >= popup.size()) return std::nullopt;
+        const Rect& r = popup[size_t(owner - 100)].rect;      // in the panels' space
+        return std::make_pair(int(int64_t(r.x + r.w - 4) * picW / hudW), int(int64_t(r.y) * picH / hudH));
+    }
+
     std::string BattleMap::TipText(int owner, int) const
     {
         if (owner >= 100 && size_t(owner - 100) < popup.size()) return res.String(popup[size_t(owner - 100)].text);
