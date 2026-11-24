@@ -55,7 +55,11 @@ textures/
 ## The pictures
 
 - **PNG**, 8-bit (with a palette) or 24 / 32-bit full colour.
-- **The size stays the game's.**
+- **The size is the game's, or 2, 4 or 8 times it** (update 242; the same both ways). A larger picture is made
+  the game's size as it's read: each 2 x 2, 4 x 4 or 8 x 8 block becomes one pixel, see-through when half or more
+  of the block is, else the average colour of the rest, which is then matched to the game's colours as below.
+  So a pack can be painted at a comfortable size; what the game draws is still its own resolution (the models
+  and the renderer are the original's). Any other size is left out, and the log says so.
   - A unit's texture is an atlas 256 pixels wide whose height is the model's. Its faces map into it, so it is
     repainted in place: what's where stays where it is. A PNG of another size is left out (the log says so) and
     the game's is drawn.
@@ -78,6 +82,10 @@ textures/
     unchanged gives the game's texture byte for byte (checked for all 484 of the export's: `wowdump --texcheck
     <game folder> <pack folder>` reads a pack as the engine does and says which pictures differ from the game's),
     and the battle's pictures are the same to the pixel as without the pack.
+  - The tables repeat some colours at the export's level that part at other levels (a darker or brighter
+    shade). Where a pixel's nearest colour is also its game index's colour, the game's index is kept, so the parts
+    of a picture that weren't changed keep the game's shading in every light, at any of the sizes; checked with
+    the whole export, as it is and blown up 4 times in full colour (`wowdump --texcheck`: all 484 the same).
   - Colours far from any in the palette come out as the nearest one, as they would in any quantising. The
     colour groups are: Human buildings and scenery houses, Human vehicles, Martian vehicles, Martian buildings,
     nature (trees, red weed). A Human building can only use the Human buildings' colours, and so on.

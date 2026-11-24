@@ -442,7 +442,7 @@ namespace wow
         // MODERN (docs/TEXTURES.md): the texture pack's picture for a model, as the game's indices (w x h), if the
         // pack has one of that size; whether the other side in a civil war has a picture of its own for it; a WOF
         // file by its GType (and side), loaded once with the pack's atlas in
-        std::optional<std::vector<uint8_t>> PackPicture(int gtype, bool civilOther, int w, int h) const;
+        std::optional<std::vector<uint8_t>> PackPicture(int gtype, bool civilOther, int w, int h, const std::vector<uint8_t>& game) const;
         bool CivilOwnLook(int gtype, int unit) const;
         std::vector<uint8_t>& WofFile(int gtype, bool civilOther);
         void PackIob(IobModel& m, int gtype, bool civilOther) const;

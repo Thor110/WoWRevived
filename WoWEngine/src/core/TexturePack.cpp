@@ -74,7 +74,7 @@ namespace wow
             return out;
         }
 
-        std::vector<uint8_t> Indices(const PngImage& png, const uint32_t* palette)
+        std::vector<uint8_t> Indices(const PngImage& png, const uint32_t* palette, const std::vector<uint8_t>* game)
         {
             std::vector<uint8_t> out(png.rgba.size(), 0);
             // an 8-bit picture with the export's palette (entries 1-255 the same colours) is read by its indices
@@ -115,7 +115,38 @@ namespace wow
                     it = seen.emplace(rgb, uint8_t(best)).first;
                 }
                 out[i] = it->second;
+                if (game && i < game->size() && (*game)[i] != 0 && (palette[(*game)[i]] & 0xFFFFFFu) == (palette[out[i]] & 0xFFFFFFu))
+                    out[i] = (*game)[i];
             }
+            return out;
+        }
+
+        std::optional<PngImage> FitTo(const PngImage& png, int width, int height)
+        {
+            if (png.width == width && png.height == height) return png;
+            if (width <= 0 || height <= 0 || png.width % width || png.height % height) return std::nullopt;
+            const int k = png.width / width;
+            if (png.height / height != k || (k != 2 && k != 4 && k != 8)) return std::nullopt;
+            PngImage out;
+            out.width = width;
+            out.height = height;
+            out.rgba.resize(size_t(width) * size_t(height));
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                {
+                    int clear = 0, n = 0;
+                    uint32_t r = 0, g = 0, b = 0;
+                    for (int j = 0; j < k; j++)
+                        for (int i = 0; i < k; i++)
+                        {
+                            const uint32_t px = png.rgba[size_t(y * k + j) * size_t(png.width) + size_t(x * k + i)];
+                            if ((px >> 24) < 128 || (px & 0xFFFFFFu) == 0xFF00FFu) { clear++; continue; }
+                            r += (px >> 16) & 0xFF; g += (px >> 8) & 0xFF; b += px & 0xFF; n++;
+                        }
+                    uint32_t& o = out.rgba[size_t(y) * size_t(width) + size_t(x)];
+                    if (clear * 2 >= k * k || n == 0) o = 0;
+                    else o = 0xFF000000u | ((r + uint32_t(n) / 2) / uint32_t(n)) << 16 | ((g + uint32_t(n) / 2) / uint32_t(n)) << 8 | ((b + uint32_t(n) / 2) / uint32_t(n));
+                }
             return out;
         }
 

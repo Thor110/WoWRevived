@@ -697,11 +697,20 @@ int main(int argc, char** argv)
                     pal.assign(t.Level(wow::textures::ExportLevel), t.Level(wow::textures::ExportLevel) + 256);
                     for (auto& c : pal) c &= 0xFFFFFFu;
                 }
-                const auto png = wow::DecodePng(ReadFile(*path));
-                const auto indices = wow::textures::Indices(png, pal.data());
+                auto png = wow::DecodePng(ReadFile(*path));
                 auto entry = archive.Find(g.file.substr(g.file.find_last_of('\\') + 1));
                 if (!entry) continue;
                 auto data = archive.Read(*entry);
+                // a picture 2, 4 or 8 times the game's size is made the game's first (textures::FitTo)
+                {
+                    int w = 256, h = wow::textures::WofAtlasHeight(data);
+                    if (h <= 0) { const auto pic = wow::IobModel::Load(data).Picture(); w = pic.width; h = pic.height; }
+                    if (auto fitted = wow::textures::FitTo(png, w, h)) png = std::move(*fitted);
+                }
+                std::vector<uint8_t> game;
+                if (wow::textures::WofAtlasHeight(data) > 0) game = wow::WofModel::Load(data).texture;
+                else game = wow::IobModel::Load(data).Picture().pixels;
+                const auto indices = wow::textures::Indices(png, pal.data(), &game);
                 std::vector<uint8_t> was, now;
                 if (wow::textures::WofAtlasHeight(data) > 0)
                 {
@@ -739,9 +748,16 @@ int main(int argc, char** argv)
                     was = drawn(m);
                     now = drawn(m.Repainted(img));
                 }
-                size_t n = 0;
-                for (size_t i = 0; i < was.size() && i < now.size(); i++) n += was[i] != now[i];
-                if (n || was.size() != now.size()) { differ++; std::printf("%s/%s: %zu pixels differ\n", folder.c_str(), stem.c_str(), n); }
+                // (an index whose colour at the export's level is the same as the game's index's, but another number:
+                // the tables repeat some colours at one level that part at others, so the shading can differ)
+                size_t n = 0, sameColour = 0;
+                for (size_t i = 0; i < was.size() && i < now.size(); i++)
+                    if (was[i] != now[i]) { n++; if (pal[was[i]] == pal[now[i]]) sameColour++; }
+                if (n || was.size() != now.size())
+                {
+                    differ++;
+                    std::printf("%s/%s: %zu pixels differ (%zu of them the same colour at the level, another index)\n", folder.c_str(), stem.c_str(), n, sameColour);
+                }
                 else same++;
             }
             std::printf("%d the same, %d differ, %d refused\n", same, differ, refused);

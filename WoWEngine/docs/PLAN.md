@@ -136,7 +136,7 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
 
 - [~] **D5** Overrides in common formats (the owner, updates 237-241). In: the battle map's model textures from a
       texture pack of PNGs (240; docs/TEXTURES.md): every unit, building, turret, scenery and bridge model
-      (the bridges since 241), quantised to the game's colours. Left, in the long run: **any `.spr` overridable by
+      (the bridges since 241), quantised to the game's colours; at 2, 4 or 8 times the size, averaged down (242). Left, in the long run: **any `.spr` overridable by
       a PNG**, the HUD and menus included, and at a higher colour depth (a full-colour sprite drawn as it is,
       not through the shade tables); full-colour model textures lit by the engine; models (OBJ) and sounds in
       common formats. The HUD and menus stay ordinary game files until then (the owner, 241).

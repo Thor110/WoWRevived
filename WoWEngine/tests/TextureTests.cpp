@@ -164,3 +164,39 @@ TEST("texture pack: files found by folder and name, any case, the civil war's ap
     CHECK(!pack.Find("martian/units", "ar_lor_1", false));
     fs::remove_all(root, ec);
 }
+
+TEST("texture pack: a picture 2, 4 or 8 times the size made the game's")
+{
+    // 4 x 2 at twice 2 x 1: the left block red and one see-through pixel, the right block mostly see-through
+    PngImage big;
+    big.width = 4;
+    big.height = 2;
+    big.rgba = { 0xFFFF0000u, 0xFFFF0000u, 0x00000000u, 0xFF00FF00u,
+                 0xFFFF0000u, 0x00123456u, 0xFFFF00FFu, 0x00000000u };
+    auto small = textures::FitTo(big, 2, 1);
+    REQUIRE(small.has_value());
+    CHECK_EQ(small->width, 2);
+    CHECK_EQ(small->rgba[0], 0xFFFF0000u);
+    CHECK_EQ(small->rgba[1] >> 24, 0u);         // three of four see-through (magenta counts)
+    CHECK(textures::FitTo(big, 4, 2).has_value());              // its own size
+    CHECK(!textures::FitTo(big, 3, 1).has_value());             // not a multiple
+    PngImage odd = big;
+    odd.width = 6; odd.height = 2; odd.rgba.assign(12, 0xFF000000u);
+    CHECK(!textures::FitTo(odd, 2, 1).has_value());             // 3 x 2: not the same both ways
+    PngImage three = big;
+    three.width = 6; three.height = 3; three.rgba.assign(18, 0xFF000000u);
+    CHECK(!textures::FitTo(three, 2, 1).has_value());           // 3 times: not a power of two
+}
+
+TEST("texture pack: a colour the table repeats keeps the game's index")
+{
+    std::vector<uint32_t> palette = TestPalette();
+    palette[20] = 0xFF0000;                     // red twice: 10 and 20
+    PngImage img;
+    img.width = 2; img.height = 1;
+    img.rgba = { 0xFFFF0000u, 0xFFFF0000u };
+    const std::vector<uint8_t> game = { 20, 11 };
+    const std::vector<uint8_t> got = textures::Indices(img, palette.data(), &game);
+    CHECK_EQ(got[0], uint8_t(20));              // the game's own red
+    CHECK_EQ(got[1], uint8_t(10));              // painted red over green: the first red
+}

@@ -33,8 +33,16 @@ namespace wow
         std::map<int, std::string> Folders(const std::map<int, GType>& gtypes, const std::map<int, ObjOjd::UnitData>& units);
         // "dat\\AIRSHIP.WOF" -> "AIRSHIP"
         std::string Stem(const std::string& gameFile);
-        // The picture as colour indices for a 256-colour palette (0x00RRGGBB, entry 0 the see-through one).
-        std::vector<uint8_t> Indices(const PngImage& png, const uint32_t* palette);
+        // A picture larger than the game's by a power of two (2, 4 or 8 times both ways, the same both ways) made the
+        // game's size: each block's see-through pixels counted (see-through as Indices takes it), the block
+        // see-through if they're half or more, else the average of its other pixels' colours. Nothing for any
+        // other size; the picture itself when it's the game's size already.
+        std::optional<PngImage> FitTo(const PngImage& png, int width, int height);
+        // The picture as colour indices for a 256-colour palette (0x00RRGGBB, entry 0 the see-through one). Given
+        // the game's own indices for the same picture, a pixel whose nearest colour is its game index's colour keeps
+        // that index: the tables repeat some colours at the export's level that part at other levels, so an
+        // unchanged part keeps the game's shading in every light.
+        std::vector<uint8_t> Indices(const PngImage& png, const uint32_t* palette, const std::vector<uint8_t>* game = nullptr);
         // a WOF file's atlas (its 256 x height rows at header 0x28) replaced; false if the sizes don't agree
         bool ReplaceWofAtlas(std::vector<uint8_t>& file, const std::vector<uint8_t>& indices, int width, int height);
         // a WOF file's atlas size: 256 x the rows from header 0x28 to header 0x2C (Models.cpp); 0 if none
