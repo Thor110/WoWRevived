@@ -6,6 +6,8 @@
 #include "core/Random.h"
 #include "frontend/MovieScreen.h"
 #include "frontend/Splash.h"
+#include "frontend/PanelLayer.h"
+#include "frontend/Menu.h"
 #include "core/SaveGame.h"
 #include "frontend/ResearchScreen.h"
 #include "warmap/WarMap.h"
@@ -516,14 +518,24 @@ namespace wow
             [this](Button& b) { ini.SetInt("Modern", "HUD scale", 50 + b.value * 25); });
         m->WidenLast();
         m->SetLastTip(res.String(enginetext::HudScale + enginetext::TipOffset));
+        // MODERN (update 231): the menus' size, 100% to 300% a quarter a step; drawn as large as the picture allows
+        const std::string scale = res.String(enginetext::MenuScale);
+        m->AddSlider((std::clamp(ini.GetInt("Modern", "Menu scale", 100), 100, 300) - 100) / 25, 8,
+            [scale](int v) { return scale + ": " + std::to_string(100 + v * 25) + "%"; },
+            [this](Button& b) { ini.SetInt("Modern", "Menu scale", 100 + b.value * 25); });
+        m->WidenLast();
+        m->SetLastTip(res.String(enginetext::MenuScale + enginetext::TipOffset));
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         m->FocusLast();
         return m;
     }
 
-    // the switches that act on a map that is already up (the window's are taken by the main loop)
+    // the switches that act at once (the window's are taken by the main loop)
     void FrontEnd::ApplyModernOptions()
     {
+        // MODERN: Enhanced assets taken at once, the menu behind and the maps redrawn with the other sprites (until
+        // update 231 it waited for the next start)
+        res.SetEnhancedAssets(ini.GetBool("Modern", "Enhanced assets", false));
         if (WarMap* map = ActiveWarMap())
         {
             map->SetStickyPopup(ini.GetBool("Modern", "Sticky popup menus", false));
@@ -1681,9 +1693,29 @@ namespace wow
             const bool own = back && back->width <= 640 && back->height <= 480;
             canvas.DrawSprite(screen->Background(), 0, own ? ox : 0, own ? oy : 0);
         }
-        canvas.SetOrigin(ox, oy);
-        screen->Draw(canvas);
-        DrawTooltip(canvas);
+        int mx = 0, my = 0, mw = 0, mh = 0;
+        if (MenuArea(mx, my, mw, mh))
+        {
+            // MODERN ("Menu scale"): the part of the picture the menu covers, with the menu laid on it at 640 x 480
+            // and scaled up (frontend/PanelLayer.h), so its see-through parts mix with what is under them
+            const int pw = canvas.Width();
+            menuPart.resize(size_t(mw) * size_t(mh));
+            for (int y = 0; y < mh; y++)
+                std::copy_n(canvas.Pixels() + size_t(my + y) * size_t(pw) + size_t(mx), mw, menuPart.data() + size_t(y) * size_t(mw));
+            LayPanels(menuPart.data(), mw, mh, 640, 480, menuUnder, menuOver, [&](uint32_t* pixels, int w, int h) {
+                Canvas layer(pixels, w, h, res);
+                screen->Draw(layer);
+                DrawTooltip(layer);
+            });
+            for (int y = 0; y < mh; y++)
+                std::copy_n(menuPart.data() + size_t(y) * size_t(mw), mw, canvas.Pixels() + size_t(my + y) * size_t(pw) + size_t(mx));
+        }
+        else
+        {
+            canvas.SetOrigin(ox, oy);
+            screen->Draw(canvas);
+            DrawTooltip(canvas);
+        }
         canvas.SetOrigin(0, 0);
         // (bigBlack is 640 x 480: on a larger picture it is laid side by side until the picture is covered)
         if (overlay)
@@ -1691,9 +1723,42 @@ namespace wow
                 for (int y = 0; y < canvas.Height(); y += black->height)
                     for (int x = 0; x < canvas.Width(); x += black->width)
                         canvas.DrawSprite(0x5C, 0, x, y, 0, overlay == 1 ? Canvas::Blend::Translucent : Canvas::Blend::Opaque);
-        canvas.SetOrigin(ox, oy);
+        // the pointer at its own size where the mouse is on the picture (a scaled menu's screen point is elsewhere)
+        if (MenuArea(mx, my, mw, mh)) canvas.SetOrigin(pointerX - mouseX, pointerY - mouseY);
+        else canvas.SetOrigin(ox, oy);
         DrawCursor(canvas);
         canvas.SetOrigin(0, 0);
+    }
+
+    bool FrontEnd::MenuArea(int& x, int& y, int& w, int& h) const
+    {
+        if (!dynamic_cast<const Menu*>(screen.get())) return false;
+        const int percent = std::clamp(ini.GetInt("Modern", "Menu scale", 100), 100, 300);
+        // no larger than the picture
+        const int fit = std::min(pictureW * 100 / 640, pictureH * 100 / 480);
+        const int p = std::min(percent, fit);
+        if (p <= 100) return false;
+        w = 640 * p / 100;
+        h = 480 * p / 100;
+        x = (pictureW - w) / 2;
+        y = (pictureH - h) / 2;
+        return true;
+    }
+
+    void FrontEnd::ToScreen(int& x, int& y) const
+    {
+        int mx = 0, my = 0, mw = 0, mh = 0;
+        if (MenuArea(mx, my, mw, mh))
+        {
+            // the picture's pixel to the menu's, the middle of the one it was scaled from
+            x = int((int64_t(x - mx) * 640) / mw - (x < mx ? 1 : 0));
+            y = int((int64_t(y - my) * 480) / mh - (y < my ? 1 : 0));
+            return;
+        }
+        int ox = 0, oy = 0;
+        Origin(ox, oy);
+        x -= ox;
+        y -= oy;
     }
 
     namespace
@@ -1968,10 +2033,9 @@ namespace wow
 
     void FrontEnd::OnMouseMove(int x, int y)
     {
-        int ox = 0, oy = 0;
-        Origin(ox, oy);
-        x -= ox;
-        y -= oy;
+        pointerX = x;
+        pointerY = y;
+        ToScreen(x, y);
         if (x != mouseX || y != mouseY) stillTicks = 0; // dword_4D14A4: the UI time of the last move
         mouseX = x;
         mouseY = y;
@@ -1995,9 +2059,7 @@ namespace wow
     {
         rightHeld = down;
         if (!screen) return;
-        int ox = 0, oy = 0;
-        Origin(ox, oy);
-        if (x >= 0) { x -= ox; y -= oy; }    // (-1, -1 is a release off the picture)
+        if (x >= 0) ToScreen(x, y);    // (-1, -1 is a release off the picture)
         if (auto command = screen->OnRightButton(x, y, down)) Dispatch(*command, true);
     }
 
@@ -2005,9 +2067,7 @@ namespace wow
     {
         mouseHeld = down;
         if (!screen) return;
-        int ox = 0, oy = 0;
-        Origin(ox, oy);
-        if (x >= 0) { x -= ox; y -= oy; }
+        if (x >= 0) ToScreen(x, y);
         if (auto command = screen->OnMouseButton(x, y, down)) Dispatch(*command, true);
     }
 }

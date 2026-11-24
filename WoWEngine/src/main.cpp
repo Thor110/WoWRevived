@@ -441,7 +441,8 @@ int main(int argc, char** argv)
         }
         wow::Resources resources(vfs, human);
         // MODERN: WoWRevived's enhanced interface sprites, from the start (docs/MODERN.md "Enhanced assets")
-        resources.SetEnhancedAssets(!options.noLoose && ini.GetBool("Modern", "Enhanced assets", false));
+        resources.AllowEnhancedAssets(!options.noLoose);
+        resources.SetEnhancedAssets(ini.GetBool("Modern", "Enhanced assets", false));
         const wow::FrontEndSettings settings = ReadSettings(*files);
         TickNs = uint64_t(1000 / settings.gameFrequency) * 1'000'000ull;
         wow::FrontEnd frontEnd(resources, settings, ini, vfs.Files());
@@ -543,8 +544,13 @@ int main(int argc, char** argv)
                 std::snprintf(name, sizeof name, "%06d.bmp", frameNumber++);
                 wow::WriteBmp(options.frames / name, video.Pixels(), video.Width(), video.Height());
             };
+            // the front end learns the picture's size when it is drawn (the menus' place in it, a scaled menu's);
+            // a script draws nothing until its end, so it is drawn before each mouse step, as a running game would
+            // have drawn it, or a click at 1920 x 1080 would land where a 640 x 480 picture's controls are
+            auto sync = [&]() { if (options.frames.empty()) { fitPicture(); frontEnd.Draw(canvas); } };
             for (int key : options.keys)
             {
+                if (key < 0 && key > WaitKey) sync();
                 if (key == int(SDLK_LSHIFT)) { SDL_SetModState(SDL_KMOD_LSHIFT); continue; }
                 if (key == int(SDLK_LCTRL)) { SDL_SetModState(SDL_KMOD_LCTRL); continue; }
                 if (key == int(SDLK_LALT)) { SDL_SetModState(SDL_KMOD_NONE); continue; }

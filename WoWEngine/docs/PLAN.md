@@ -95,6 +95,9 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
       WoWEngine.previous.log, 199).
 - [x] **C7** (212) Discord rich presence, as WoWRevived's. The DLL and its licence are in `resources` and go beside
       the programs in a build and a release (217). The owner has it working (218).
+- [x] **C9** (231) Enhanced assets taken at once, without a restart (the owner's idea, 230; MODERN.md
+      "Enhanced assets").
+- [x] **C10** (231) A menu scale, a slider of its own (the owner's idea, 230; MODERN.md "Menu scale").
 - [x] **D5** (219, 220) WoWRevived's updated TEXT.ojd for the install's language copied in as the game's by
       WoWLauncher (the five files in `resources`).
 - [x] **C8** (226) The engine's own captions and tool tips (the Modern Options menu, the save menus' page rows)
@@ -138,8 +141,9 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
       yet reported on: the crash filter and watchdog doing their job, the release script's DAT / MAPS (209),
       the window's kept size (208). Reported working by the owner (218): the `.mp4`s at their own size, the
       icon, Discord.
-- [~] **G4** A trailer for the project: the very last thing (the owner, 199). A first cut made (230): TRAILER.md,
-      `tools/trailer`, the engine's footage recorded with `--frames`. To be cut again once the engine is finished.
+- [x] **G4** A trailer for the project (the owner, 199). Done (230, 231): the trailer, a Shorts version and the
+      title cards (TRAILER.md, `tools/trailer`, the engine's footage recorded with `--frames`). Can be cut again
+      when the engine changes.
 - [ ] **G2** Unit tests for the decoders, the save's round trip and the war map's rules.
 - [ ] **G3** The release scripts tried from a clean checkout; the docs brought level (TASKS.md is stale in
       places and should be redrawn from this list).

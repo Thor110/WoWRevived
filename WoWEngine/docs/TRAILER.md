@@ -1,5 +1,8 @@
 # The trailer
 
+*Done (the owner, update 231)*: the trailer (6:32) and a Shorts version (0:57, 1080 x 1920) are made, with title
+cards. The Shorts version's and the title cards' scripts are not in `tools/trailer` yet.
+
 The trailer is PLAN.md's G4. A first cut was made at update 230, entirely here: the engine's own footage
 recorded headless with `--frames`, WoWRevived's screenshots from the repository's `images` folder, and the cards
 and captions drawn by a small compositor. The tools are in `tools/trailer`, so the trailer can be cut again as the
@@ -69,9 +72,11 @@ Notes from making them:
 
 - The 640 x 480 side of each comparison is the engine with `--no-loose` (the game's files only), which is meant to
   match the original; real frames of the original would be better and can replace those clips.
-- At 1920 x 1080, a click on the war map's pod box ("Pod landed in enemy sector ... Attack") did nothing, though
-  the same click at 640 x 480 works; Enter works, and the pod shots use it. Not looked into: it may be the
-  script's click rather than the game. Worth trying by hand at 1080p.
+- At 1920 x 1080 the pod box's Attack button seemed not to answer a click; it was the script's coordinates (the
+  button is lower, at 898, 1030 and 80 x 18), not the game (update 231). Enter works as well, and the pod shots use it.
+  Since 231 a script also draws before each mouse step (main.cpp), so the menus are placed for the picture's size
+  as they are in a running game; before, a click on a menu at a large view size landed where a 640 x 480
+  picture's controls are.
 - The sticky popup is the war map's (a right click on a counter, the button let go, the popup stays); in battle a
   right click on a unit selects it.
 - The pod's battle has real fighting from about 20 seconds in (the walkers' heat rays and the Human vehicles); the

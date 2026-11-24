@@ -61,9 +61,10 @@ check boxes, and each box is a setting in WoWRevived.ini that can be set there a
 | More save slots | `[Modern]` "More save slots" | on | the next time the Load or Save menu opens |
 | Battle zoom (+, -, wheel, R) | `[Modern]` "Battle zoom" | on | at once |
 | HUD scale (a slider) | `[Modern]` "HUD scale" | 100 | at once |
+| Menu scale (a slider, 231) | `[Modern]` "Menu scale" | 100 | at once |
 | Fade between menus | `[Modern]` "Menu fade" | off | at once |
 | Discord rich presence | `[Modern]` "Discord rich presence" | on | the next start |
-| Enhanced assets | `[Modern]` "Enhanced assets" | off | the next start |
+| Enhanced assets | `[Modern]` "Enhanced assets" | off | at once (since 231; the next start before) |
 | Original display settings | `[Modern]` "Original Display Settings" | off | the next time Display Settings opens |
 | Play in a window | `[WoW Engine]` "Windowed" | off | at once |
 | Stretch the picture | `[WoW Engine]` "Stretch" | off | at once |
@@ -209,6 +210,24 @@ started ("Discord: ...").
 - Windows only. Not tried: there is no Discord here to try it against; the code builds and does nothing
   without the DLL.
 
+### Menu scale (update 231)
+
+The menus are 640 x 480 and the original never scales them: at 1920 x 1080 they sit small in the middle of the
+picture. `[Modern]` "Menu scale" (a percentage, 100 to 300 a quarter a step, a slider in Modern Options under the
+HUD scale's) draws them larger, as large as the picture allows (225% at 1920 x 1080; 200% doubles every pixel,
+the others mix the four pixels round each point, as the HUD scale does).
+
+- **What is scaled**: the menus (every `Menu`: the main menu and its sub-menus, Load and Save, the war map's and
+  the battle map's menus). Not the briefing, debriefing, research and CD player, which are laid out against
+  backgrounds made for each view size (MODERN.md "Resolution"), nor the movies.
+- **How** (`FrontEnd::Draw`, `FrontEnd::MenuArea`): the part of the picture the menu will cover is taken out, the
+  menu is laid on it at 640 x 480 with the HUD's `LayPanels` (frontend/PanelLayer.h: the picture under it scaled
+  down, the menu drawn on that so its see-through parts mix with what is under them, and only the pixels the menu
+  changed scaled back up), and it is put back. The background behind a menu (the main menu's room, the war map)
+  stays at the view size, unscaled.
+- **The mouse** (`FrontEnd::ToScreen`): a point on the picture is taken back into the menu's 640 x 480 for the
+  controls; the pointer itself is drawn where the mouse is, at its own size.
+
 ### The Modern Options menu's slider row (updates 210-214)
 
 The two-column menus' slider is two sprites, both 520 x 32: `hugeslda.spr` (the see-through backing, 2 frames:
@@ -234,7 +253,10 @@ brought back to their size and re-encoded, which gives them a little more colour
 file names and sizes and are in `dat/extra/HD`. With `[Modern]` "Enhanced assets" on (a box in Modern Options,
 WoWRevived's launcher's name and tool tip; off unless turned on, as WoWRevived ships), a sprite is read from
 `dat\extra\HD\<name>` when it is there (`Resources::FileFor`: a named override, the view size's folder,
-then this, then the game's). Read once, at the start. Not with `--no-loose`.
+then this, then the game's). Taken at once since update 231: the box calls `Resources::SetEnhancedAssets`, which
+lets go of each sprite whose file changes (`Refresh`), so it is read again from the other place on its next use;
+nothing that holds a sprite past a frame (the war map's picture and sector map, the battle's mini picture) is
+among the 129 files. Not with `--no-loose` (`Resources::AllowEnhancedAssets(false)`).
 
 WoWRevived's other asset option, **Larger Minimaps**, is not wanted in the engine (the owner, update 226): it
 was the only way to a bigger minimap in the original, and the HUD scale does that here. `WoWEngine/maps` has
@@ -521,6 +543,19 @@ once the engine is complete.
   stall (the watchdog's STALL line) isn't a crash at all and would leave nothing. It costs little: a few
   kilobytes, started afresh each run. Since update 199 the run before's log is kept as
   `WoWEngine.previous.log`, so starting the game again after a crash doesn't lose it.
+- **A separate UI scale for the menus** (noted at update 230). *In (update 231)*: "Menu scale" below.
+  The note as it was: The HUD scale slider sizes the two maps' panels;
+  the menus (and the other 640 x 480 screens) are drawn at their own size, centred in the view and never scaled
+  (MODERN.md "Resolution"), so at 1920 x 1080 they are small. A second slider in Modern Options would scale them
+  (say 100% to 225%, as the HUD's, or whole steps for sharp pixels), with the mouse turned into the menus' space as
+  the HUD's is. To settle: whether the menus' backgrounds scale with them or stay the view size's own.
+- **Enhanced assets without a restart** (noted at update 230). *In (update 231)*: "Enhanced assets" above.
+  The note as it was: The box takes effect at the next start now. The
+  pieces are mostly there: `Resources::SetEnhancedAssets` already empties the sprite cache (`Refresh`), so the
+  next frame reads each sprite again, from `dat\extra\HD` where a file of that name is there and the game's
+  otherwise (`Resources::FileFor` checks which files exist); only `main.cpp` reads the setting, once, at the
+  start. Calling it when the Modern Options box changes may be all it takes; to check, the sprites something holds
+  on to past a frame (the war map's and battle map's own copies, if any).
 
 ## Ideas from players
 

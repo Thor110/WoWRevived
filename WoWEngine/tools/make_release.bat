@@ -23,12 +23,4 @@ echo the "python.exe" App execution alias in Settings, Apps, Advanced app settin
 :done
 echo.
 
-rem then install the game with the new release's launcher, add WoWRevived's movies and run the engine
-set "RELEASE="
-for /f "delims=" %%d in ('dir /b /ad /o-d "%~dp0..\out\WoWEngine-v*" 2^>nul ^| findstr /v /i "debug"') do (
-    if not defined RELEASE set "RELEASE=%~dp0..\out\%%d"
-)
-if defined RELEASE start "" /wait "%RELEASE%\WoWLauncher.exe"
-call "%~dp0install-wowrevived.bat"
-
 pause

@@ -232,6 +232,7 @@ The road map for this project.
 		- A Modern Options menu, opened from Game Options and the war map's Campaign Options.
 		- Battle zoom. ( +, -, mouse wheel, R to reset )
 		- HUD scale from 50% to 300% for the war map and battle map panels.
+		- Menu scale up to 300% for the menus, as large as the screen allows.
 		- Group keys ( Ctrl + digit to keep, digit to select ) and Shift to add to the selection in battle.
 		- More save slots, in pages of five, up to 999.
 		- Key bindings for both maps in WoWRevived.ini.
@@ -650,8 +651,9 @@ The Modern Options menu is opened from Game Options in the main menu, or from Ca
 | More save slots | On | The Load and Save menus have pages of five, up to slot 999 |
 | Battle zoom | On | +, - or the mouse wheel to zoom the battle map, R to reset |
 | HUD scale | 100% | The size of the war map and battle map panels, from 50% to 300% |
+| Menu scale | 100% | The size of the menus, up to 300% or as large as the screen allows |
 | Fade between menus | Off | The original game's fade between menus |
-| Enhanced assets | Off | WoWRevived's Enhanced Assets |
+| Enhanced assets | Off | WoWRevived's Enhanced Assets, switched on or off without a restart |
 | Original display settings | Off | The original Display Settings menu |
 | Play in a window | Off | Windowed mode, the window's size is remembered |
 | Stretch the picture | Off | Fill the screen instead of keeping the picture's shape |

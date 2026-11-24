@@ -107,6 +107,7 @@ namespace wow
 
     void Resources::SetEnhancedAssets(bool on)
     {
+        on = on && enhancedAllowed;
         if (on == enhanced) return;
         enhanced = on;
         Refresh();

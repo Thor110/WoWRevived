@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 229
+# Handoff: WoWEngine after update 231
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -64,6 +64,9 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   - `=text` types letters.
   - Key names: `enter`, `escape`, `up`, `down`, `left`, `right`, `backspace`, `home`, `comma`, `period`.
 - **Without `--screenshot` the run doesn't exit.**
+- A script draws the picture before each mouse step (update 231), so menus are placed for the view size as in a
+  running game: clicks at 1920 x 1080 are the picture's own pixels. `--frames <folder>` saves every update's
+  picture (docs/TRAILER.md).
 - Screenshots are BMP; `convert x.bmp x.png` makes them viewable.
 - Two recipes used for every update:
   - **London battle:**
@@ -139,21 +142,24 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 229
+## State after update 231
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
   break, a stateful route finder, repair, editor cursor modes) or tracing not yet done (the save's route entry
   bytes, the game's global frame counter).
-- Big pieces still missing from the engine as a game:
-  - battle saving
-  - repair
-  - breakable bridges
-  - network play
-  - parts of the computer player
+- Big pieces still missing from the engine as a game (update 231; docs/PLAN.md "Where things stand" is the list
+  to work from, docs/TASKS.md is older):
+  - network play, with the player and command objects it needs (A9, A2)
+  - breakable bridges and the route finder spread over updates (PARITY.md, Deferred)
+  - parts of the computer player (TASKS.md, Battle AI)
   - the tree circles' lifetime (S6)
+  - the two buildings the game names and never offers (E1, E2); the modes and editors (F)
 
-  docs/TASKS.md has the longer list.
+  Repair is in (WARMAP.md "Repair"). A battle is never saved part way in the original (its menu has no save), so
+  there is no battle saving to add (PLAN.md, 4.4).
+- The trailer, a Shorts version and title cards were made (230, 231; TRAILER.md). A world map mod was drafted
+  outside the engine (`WoWEngine-Mods/WorldMap`, its README and DESIGN.md); nothing in the engine reads it.
 - Known open questions are in PARITY.md (S6's tree circles, the Deferred list) and under *Provisional* in the docs.
 - Things worth a look in play, because they were only checked by reading the disassembly:
   - combat after update 132 (quiet vanishing kills, damage rounding, the firer's sparing)
@@ -183,7 +189,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **231**.
+  - The next number is **232**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.

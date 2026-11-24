@@ -24,9 +24,10 @@ namespace wow::enginetext
         UpgradedBuildings, StickyPopups, StatusStrip, SelectionKeys, MoreSaves, BattleZoom, EnhancedAssets,
         OriginalDisplay, Windowed, Stretch, SystemPointer, MusicPlayback, MenuFade, DiscordPresence,     // 1401-1414
         RecordInput, PlayRecording, HudScale, NextSaves, PreviousSaves,                                   // 1415-1419
+        MenuScale,                                                                                        // 1420 (231)
         TipFirst = 1421,            // a row's tool tip is its id + 20
         TipOffset = 20,
-        Last = 1437,
+        Last = 1440,
     };
 
     struct Entry { int id; const char* text[Languages]; };
@@ -52,6 +53,7 @@ namespace wow::enginetext
         { HudScale, { "HUD scale", "Taille de l'interface", "HUD-Größe", "Scala interfaccia", "Escala de la interfaz" } },
         { NextSaves, { "Next Saves", "Sauvegardes suivantes", "Nächste Spielstände", "Salvataggi successivi", "Partidas siguientes" } },
         { PreviousSaves, { "Previous Saves", "Sauvegardes précédentes", "Vorherige Spielstände", "Salvataggi precedenti", "Partidas anteriores" } },
+        { MenuScale, { "Menu scale", "Taille des menus", "Menügröße", "Scala dei menu", "Escala de los menús" } },
 
         { UpgradedBuildings + TipOffset, {
             "Buildings upgraded on the war map fight as their new level in battle. The original game keeps them at the level they were built at.",
@@ -155,6 +157,12 @@ namespace wow::enginetext
             "Die Größe der Kartenanzeigen: Minikarte, Symbole, Menüs und Kalender.",
             "La dimensione dei pannelli delle mappe: la minimappa, le icone, i menu e il calendario.",
             "El tamaño de los paneles de los mapas: el minimapa, los iconos, los menús y el calendario." } },
+        { MenuScale + TipOffset, {
+            "The size of the menus, up to what fits the screen: 200% doubles every pixel.",
+            "La taille des menus, jusqu'à ce que permet l'écran : 200 % double chaque pixel.",
+            "Die Größe der Menüs, bis sie den Bildschirm füllen: 200 % verdoppelt jedes Pixel.",
+            "La dimensione dei menu, fin dove lo schermo lo permette: 200% raddoppia ogni pixel.",
+            "El tamaño de los menús, hasta lo que cabe en la pantalla: 200 % duplica cada píxel." } },
     };
 
     inline const char* Find(int id, Language language = English)

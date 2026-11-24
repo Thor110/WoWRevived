@@ -128,6 +128,12 @@ namespace wow
         int sizedW = 0, sizedH = 0;   // the view size the resources were last told
         void Origin(int& x, int& y) const;   // the showing screen's 0, 0 in the picture
         mutable int pictureW = 640, pictureH = 480;   // the picture's size, as last drawn
+        // MODERN ([Modern] "Menu scale", update 231): a menu's 640 x 480 drawn larger, in the middle of the picture.
+        // MenuArea gives where it lies on the picture (x, y, w, h); false when the showing screen isn't scaled.
+        bool MenuArea(int& x, int& y, int& w, int& h) const;
+        void ToScreen(int& x, int& y) const;     // a picture point to the showing screen's
+        mutable std::vector<uint32_t> menuUnder, menuOver, menuPart;
+        int pointerX = -1, pointerY = -1;        // the mouse on the picture, for the pointer of a scaled menu
         bool CorrectCdInserted() const;
 
         // what the game keeps in globals between menus
