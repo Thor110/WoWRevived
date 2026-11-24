@@ -776,6 +776,13 @@ factory building's vehicles can be ordered there.
   battle's view; **Suspend / Resume** (0x47DF74) is 0x45FE60 with the opposite of 0x45FEF0. In battle mode the
   window's background doesn't close it (0x460EF1). The engine's war map draws and runs it for the battle map
   (`BuildHost`), the war map staying alive behind the battle.
+- **Closed** once none of the builder's units is selected (update 253, a tester's report: it stayed open).
+  *Provisional*: the factory's vt+0x18 (0x45FB00) is the close that pairs with the open (vt+0x14); the original
+  call on deselecting wasn't traced (the war map object's 0x111 / 0xAD, 0x429E80, calls it on a move between
+  sectors). Not while a construction is being placed.
+- **Placed** at `[BuildList] Left` and `Top` in a 640 x 480 frame centred down the battle's panels: Top 70 gives
+  (height - 340) / 2, as WoWRevived's launcher wrote for each resolution (WoWLauncher `Form1.cs`). A Top that doesn't
+  fit 480 rows (a value that launcher wrote for a larger screen) is read as 70, on the war map too (update 253).
 - **An item** (0x460D70): a vehicle is ordered at once (packet 0x17, no place). It's finished by its factory's
   hours, which only pass with the war map's clock, and the clock can't run while a sector holds both sides
   (0x41AEA0 -> 0x43D010) or a battle map is open; so it's always finished on the war map, a unit of the sector like

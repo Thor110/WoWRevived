@@ -124,7 +124,9 @@ class is AI.ojd's, 0x441580 -> 0x518B14: gun emplacements, heat ray turrets, wir
 counter a type and sector (0x4282A0 / 0x428270) with a count in the counter font (GType 0x6E, right-aligned;
 0x42B790, updated by 0x8145): "%d" of them finished, or "%d/%d" finished / all while some aren't, always shown
 for such a counter, its bottom right on the counter's. Each view mode shows one kind: Unit View the units,
-Construction View the buildings, Resource View the resources.
+Construction View the buildings, Resource View the resources. A class 7 object built later (from the Build List or
+on the battle map) joins its type's counter in the sector, as at load (0x4205F0); before update 253 each had a
+counter of its own (a tester's report: some forty turret counters in the Grampians).
 
 **Making a counter draws from rand()** (update 165). A counter is its object's view (vtbl +0x14, 0x429F20 ->
 WWarMapObject 0x42B2F0), and its constructor sets the production icon's pause from now plus `rand() & 7`

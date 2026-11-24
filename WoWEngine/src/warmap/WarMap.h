@@ -67,7 +67,7 @@ namespace wow
         // Building on the battle map (battlemap/BuildHost.h): the factories, asked from the battle
         Factory FactoryOf(int ref) const override;
         void ToggleSuspend(int ref) override;
-        void OpenBattleWindow(int ref) override;
+        void OpenBattleWindow(int ref, int height = 480) override;
         void CloseWindow() override { buildWindow.reset(); }
         bool WindowOpen() const override { return buildWindow.has_value(); }
         int WindowRef() const override { return buildWindow ? buildWindow->ref : -1; }
@@ -380,7 +380,7 @@ namespace wow
         // The Build List window (warmap/BuildWindow.cpp): the object it's for, the list's and queue's scroll
         // positions (+0x234, +0xA4), what the mouse is on and what it went down on
         // battle: opened from the battle map (the factory's +0x20 clear, 0x47DFA3), else the war map's (+0x20 set)
-        struct BuildWindowState { int ref = -1; int scroll = 0, queueScroll = 0, hover = -1, pressed = -1; bool battle = false; };
+        struct BuildWindowState { int ref = -1; int scroll = 0, queueScroll = 0, hover = -1, pressed = -1; bool battle = false; int height = 480; };
         std::optional<BuildWindowState> buildWindow;
         int popupObject = -1;                           // the object whose items the popup has
         int popupCounter = -1;                          // its counter (for Retreat)

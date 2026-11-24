@@ -147,7 +147,11 @@ the current research (0x458A00).
 **The detail** (0x45D3F0 Human, 0x45DD50 Martian). The blueprint window (0x45F4B0) at (0x118, 0x16) Human or
 (0x143, 0x2F) Martian, the size of the page's picture (OBJ.ojd records 63 / 64: the page table 0x5888C0 gives each
 page a name, a picture GType and a speech text): res_det (0x8C, Human) and the picture, then its texts, font 0x72,
-each a window of its own placed inside it (w is the picture's width):
+each a window of its own placed inside it (w is the picture's width). The pictures (Human `dat\res_d*.spr` from
+GType 0x301, Martian `dat\rp_*.spr` from 0x321) have no class record of their own in OBJ.ojd, so they carry on the
+class 1 of the models before them. From update 181 the engine took class 1 for a model and loaded no picture: the
+texts were centred in a box of no width, the Martian ones at (0x143, 0x2F) over the folders (a tester, update 253).
+A `.spr` is now always read as a sprite (`Resources::GetSprite`; besides these, only the wait cursors at 0xC):
 
 | | Human | Martian |
 |---|---|---|

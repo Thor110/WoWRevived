@@ -45,7 +45,13 @@ namespace wow
         auto it = sprites.find(id);
         if (it != sprites.end()) return it->second.get();
         std::unique_ptr<Sprite> sprite;
-        if (const GType* g = FindGType(id); g && (g->gclass == 1 || g->gclass == 2 || g->gclass == 14))
+        // (a .spr always a sprite: OBJ.ojd's class record carries on to the entries after it, and the Martian research
+        // pictures, dat\\rp_*.spr from 0x321, have none of their own after the models' class 1; a tester, update 253)
+        const auto isSpr = [](const std::string& f) {
+            return f.size() > 4 && (f[f.size() - 4] == '.') && std::tolower(uint8_t(f[f.size() - 3])) == 's' &&
+                   std::tolower(uint8_t(f[f.size() - 2])) == 'p' && std::tolower(uint8_t(f[f.size() - 1])) == 'r';
+        };
+        if (const GType* g = FindGType(id); g && (g->gclass == 1 || g->gclass == 2 || g->gclass == 14) && !isSpr(g->file))
         {
             // an IOB or WOF model, or a shadow part's raw mask (class 14, dat\\b-shad01.raw), not a sprite: asked
             // of every type for its picture's size (the vehicles' "is it low enough to pass over"); nothing to

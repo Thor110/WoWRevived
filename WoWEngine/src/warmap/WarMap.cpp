@@ -1001,6 +1001,23 @@ namespace wow
 
     int WarMap::AddCounter(int type, int sector, bool players, int ref, int kind)
     {
+        // 0x4205F0 at 0x42061E: an object of AI.ojd's class 7 (the gun emplacements 50-57 and 111-118, the fences
+        // 451-456, the mines 627-630) shares its type's counter in the sector: the sector's list of such types
+        // (32 of them, 0x4282A0) has it already, and no counter is made; the object is one more of that counter's
+        // count. (Update 253, a tester's report: the engine did this only for the objects a save starts with, so
+        // each defence built after had a counter of its own.)
+        auto cls = objectClasses.find(type);
+        const bool shared = cls != objectClasses.end() && cls->second == 7;
+        if (shared)
+            for (size_t i = 0; i < counters.size(); i++)
+            {
+                Counter& c = counters[i];
+                if (!c.shared || c.type != type || c.sector != sector || c.players != players || c.kind != kind || c.Travelling() || c.count <= 0) continue;
+                c.count++;
+                c.finishedCount++;      // (as a counter of its own starts: StartConstruction takes it off a site)
+                if (ref >= 0) c.refs.push_back(ref);
+                return int(i);
+            }
         auto unit = unitData.find(type);
         Counter k;
         k.frame = unit == unitData.end() ? 0 : unit->second.counterFrame;
@@ -1011,6 +1028,8 @@ namespace wow
         k.players = players;
         k.kind = kind;
         k.sector = sector;
+        k.shared = shared;
+        k.finishedCount = 1;        // (a construction's is set by StartConstruction / FinishConstruction)
         if (kind != 0) k.speed = 0;
         if (ref >= 0) k.refs.push_back(ref);
         counters.push_back(k);

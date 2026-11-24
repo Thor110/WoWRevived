@@ -24,7 +24,8 @@ namespace wow
         virtual void ToggleSuspend(int ref) = 0;
 
         // The Build List window opened in battle mode (0x47DFA3: the factory's +0x20 cleared, then its vt+0x14).
-        virtual void OpenBattleWindow(int ref) = 0;
+        // height: the panels' space's (the Build List is centred in it as WoWRevived's launcher placed it)
+        virtual void OpenBattleWindow(int ref, int height = 480) = 0;
         virtual void CloseWindow() = 0;
         virtual bool WindowOpen() const = 0;
         virtual int WindowRef() const = 0;

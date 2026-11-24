@@ -46,6 +46,16 @@ Modern options are the only deliberate differences.
 - **Menus**: Modern Gameplay from Game Options and from the war map's menu; Custom Campaigns and its load menu; at
   the larger menu scales.
 
+## A tester's report (update 253)
+
+- **Defence counters** (WARMAP.md "Counters"): turrets, mines and fences built during a game share one counter a
+  type and sector with a number, as the ones the start file has do ("2/3" while one is going up).
+- **The Build List in a battle** (BATTLEMAP.md): it closes when the construction vehicle is deselected (a click on
+  open ground, another unit selected), not while placing; it opens centred down the screen at large resolutions.
+  Not tried headless (no scripted battle with a construction vehicle).
+- **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
+  headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
+
 ## The civil wars (updates 236-237)
 
 - The balance of the start layouts (the Human Civil War's draft gives London's side 17 sectors to the player's 3).

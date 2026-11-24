@@ -2437,6 +2437,20 @@ namespace wow
             if (const int id = res.Text().Extra(infoPage->textId)) infoPage->speech = setup.sound->Play(id);
         AiUpdate();
         UpdatePlacing();
+        // the Build List closed once its builder isn't selected (a tester, update 253; *provisional*: the original
+        // closes it through the factory's vt+0x18, 0x45FB00, whose call on deselecting wasn't traced)
+        if (setup.build && setup.build->WindowOpen() && !tool)
+        {
+            const int ref = setup.build->WindowRef();
+            bool held = false;
+            for (const Unit& u : units)
+            {
+                if (u.group < 0 || size_t(u.group) >= selected.size() || !selected[size_t(u.group)]) continue;
+                const int groupRef = size_t(u.group) < setup.groups.size() ? setup.groups[size_t(u.group)].ref : -1;
+                if (u.ref == ref || groupRef == ref) { held = true; break; }
+            }
+            if (!held) setup.build->CloseWindow();
+        }
         for (size_t i = 0; i < units.size();)
             if (units[i].dieAt >= 0 && ticks >= units[i].dieAt) Die(i, units[i].dieQuietly);
             else i++;
@@ -2917,7 +2931,7 @@ namespace wow
         // resumes (0x47DF74)
         if (command == 0x813E && setup.build && popupBuildRef >= 0)
         {
-            if (param == 0x8065) setup.build->OpenBattleWindow(popupBuildRef);
+            if (param == 0x8065) setup.build->OpenBattleWindow(popupBuildRef, hudH);
             else if (param == 0x813F) setup.build->ToggleSuspend(popupBuildRef);
             return std::nullopt;
         }

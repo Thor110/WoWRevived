@@ -232,7 +232,13 @@ namespace wow
         if (ref < 0 || size_t(ref) >= table.size()) return;
         table[size_t(ref)].SetValue(0, hours);
         table[size_t(ref)].SetValue(1, 0.0f);
-        if (int k = CounterOf(ref); k >= 0) { counters[size_t(k)].unfinished = true; counters[size_t(k)].progress = 0.0f; }
+        if (int k = CounterOf(ref); k >= 0)
+        {
+            Counter& c = counters[size_t(k)];
+            // (a shared counter, update 253: one more of its count unfinished; a counter of its own, unfinished)
+            if (c.shared) c.finishedCount = std::max(0, c.finishedCount - 1);
+            else { c.unfinished = true; c.progress = 0.0f; c.finishedCount = 0; }
+        }
     }
 
     void WarMap::ConstructionProgress(int ref, float hours)
@@ -259,7 +265,8 @@ namespace wow
         if (k >= 0)
         {
             Counter& c = counters[size_t(k)];
-            if (c.unfinished) { c.unfinished = false; c.finishedCount = std::min(c.count, c.finishedCount + 1); }
+            if (c.shared) c.finishedCount = std::min(c.count, c.finishedCount + 1);
+            else if (c.unfinished) { c.unfinished = false; c.finishedCount = std::min(c.count, c.finishedCount + 1); }
             c.progress = 1.0f;
         }
         const int type = o.Type();
@@ -466,11 +473,12 @@ namespace wow
         if (it != factories.end()) SetBusy(ref, !it->second.queue.busy);
     }
 
-    void WarMap::OpenBattleWindow(int ref)
+    void WarMap::OpenBattleWindow(int ref, int height)
     {
         if (factories.find(ref) == factories.end()) return;
         buildWindow = BuildWindowState{ ref };
         buildWindow->battle = true;
+        buildWindow->height = std::max(480, height);
     }
 
     // Packet 0x16 from the placement (0x4A1460 / 0x4A0490 -> 0x80A4 -> 0x460EC1 -> 0x4601C0) to 0x460240: the entry
