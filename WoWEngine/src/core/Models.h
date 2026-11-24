@@ -9,7 +9,7 @@
 //   The texture atlas is 256 pixels wide, from header 0x28 to 0x2C; materials (4 bytes each) from 0x24 to it.
 //   Animated models (header 0x1C the frame count) have per-piece keys from header 0x20: see core/WofView and
 //   docs/BATTLEMAP.md "Animation".
-// IOB (buildings): a 0x22 byte header (u16 view count, u32 face count, u32 lit triangle count, u32 animated,
+// IOB (buildings): a 0x22 byte header (u16 view count, u32 face count, u32 lit triangle count, u32 smooth (normals per corner),
 //   u32 width, u32 0x12, u32 height(?), u32 plane section size = faces x 6, u32 index table offset from 0x22),
 //   then s16 x/y/z points, s8 normals, and an 18 byte index entry per lit triangle placing an RLE patch of the
 //   pre-rendered building picture.
@@ -75,7 +75,10 @@ namespace wow
     struct IobModel
     {
         int views = 0, faceCount = 0, litTriangles = 0;
-        bool animated = false;
+        // header 0x0A (0x4111E1, 0x4113F0): set, each patch names a normal for each of its three corners (from the
+        // face list) and is lit smoothly across; clear, one normal a patch, lit flat. Nothing in a building's
+        // picture moves (until update 241 the engine called this "animated")
+        bool smooth = false;
         int width = 0, height = 0, field12 = 0, field16 = 0;
         std::vector<std::array<int16_t, 3>> points;
         std::vector<std::array<int8_t, 3>> normals;

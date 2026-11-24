@@ -398,7 +398,7 @@ int main(int argc, char** argv)
                     {
                         auto m = wow::IobModel::Load(data);
                         auto pic = m.Picture();
-                        std::printf("%-12s IOB  %5d points %5d patches %s  header %dx%d  picture %dx%d\n", name.c_str(), m.faceCount, m.litTriangles, m.animated ? "animated" : "static  ", m.width, m.height, pic.width, pic.height);
+                        std::printf("%-12s IOB  %5d points %5d patches %s  header %dx%d  picture %dx%d\n", name.c_str(), m.faceCount, m.litTriangles, m.smooth ? "smooth" : "flat  ", m.width, m.height, pic.width, pic.height);
                     }
                     else
                     {

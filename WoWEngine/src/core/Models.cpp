@@ -103,7 +103,7 @@ namespace wow
         m.views = U16(d, 0);
         m.faceCount = S32(d, 0x02);
         m.litTriangles = S32(d, 0x06);
-        m.animated = U32(d, 0x0A) != 0;
+        m.smooth = U32(d, 0x0A) != 0;
         m.width = S32(d, 0x0E);
         m.field12 = S32(d, 0x12);
         m.field16 = S32(d, 0x16);
@@ -112,7 +112,7 @@ namespace wow
         if (m.faceCount <= 0 || planeBytes != uint32_t(m.faceCount) * 6) throw FormatError("IOB: the point section doesn't match the face count");
         size_t pos = Header;
         for (int i = 0; i < m.faceCount; i++, pos += 6) m.points.push_back({ S16(d, pos), S16(d, pos + 2), S16(d, pos + 4) });
-        int normalCount = m.animated ? m.faceCount : m.litTriangles;
+        int normalCount = m.smooth ? m.faceCount : m.litTriangles;
         if (pos + size_t(normalCount) * 3 > d.size()) throw FormatError("IOB: normals run past the end");
         for (int i = 0; i < normalCount; i++, pos += 3) m.normals.push_back({ int8_t(d[pos]), int8_t(d[pos + 1]), int8_t(d[pos + 2]) });
         size_t index = Header + indexOffset;

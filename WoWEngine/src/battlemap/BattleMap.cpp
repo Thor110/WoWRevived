@@ -2172,8 +2172,8 @@ namespace wow
             if (pg && pg->gclass == 2) { segmentType = part.a; g = pg; gtype = pu->second.field28; objectScale = part.f * pu->second.scale; break; }
         }
         if (!g) return;
-        auto file = res.LoadFile(g->file);
-        if (!file) return;
+        const std::vector<uint8_t>* file = &WofFile(gtype, false);     // (MODERN: the texture pack's too)
+        if (file->empty()) return;
         float scale = 65536.0f;
         int follow = 0;
         if (setup.six)

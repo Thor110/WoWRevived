@@ -134,6 +134,13 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
       edited later (WoWRevived / Thor110, Opus 5.5, Fable 5.2 to be added by the owner) works the same as long
       as the team's screen stays its last 480 rows and the new lines go above it.
 
+- [~] **D5** Overrides in common formats (the owner, updates 237-241). In: the battle map's model textures from a
+      texture pack of PNGs (240; docs/TEXTURES.md): every unit, building, turret, scenery and bridge model
+      (the bridges since 241), quantised to the game's colours. Left, in the long run: **any `.spr` overridable by
+      a PNG**, the HUD and menus included, and at a higher colour depth (a full-colour sprite drawn as it is,
+      not through the shade tables); full-colour model textures lit by the engine; models (OBJ) and sounds in
+      common formats. The HUD and menus stay ordinary game files until then (the owner, 241).
+
 ### E. Content the game names and never offers (after everything regular works)
 
 - [ ] **E1 Matter Transfer Station** (Martian, type 122: model, counter, sound, spoken page, research strings; no

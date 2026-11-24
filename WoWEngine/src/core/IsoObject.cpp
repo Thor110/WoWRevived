@@ -30,7 +30,7 @@ namespace wow
         std::vector<uint8_t> out(m.patches.size() * 3, 8);
         for (size_t i = 0; i < m.patches.size(); i++)
         {
-            if (m.animated)
+            if (m.smooth)
             {
                 // a normal for each point: the patch names one for each corner
                 for (int k = 0; k < 3; k++)
@@ -71,7 +71,7 @@ namespace wow
         const float times = float(intensity);
         for (size_t i = 0; i < m.patches.size() && i * 3 + 2 < lights.size(); i++)
         {
-            if (m.animated)
+            if (m.smooth)
             {
                 for (int k = 0; k < 3; k++)
                 {

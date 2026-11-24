@@ -83,11 +83,13 @@ textures/
     nature (trees, red weed). A Human building can only use the Human buildings' colours, and so on.
   - Later (the owner's plan, MODERN.md "Tools"): full-colour textures lit by the engine, and the overrides in
     common formats for the rest of the game's files. Packs made now carry over: the same folders and names.
-- **Animated buildings** are read the same way: the picture as the export shows it. How their animation changes
-  the pieces isn't covered yet.
-- **Not read**: interlaced PNGs (save without interlacing). The bridges (`scenery/bridge_*`) aren't read yet: the
-  battle map builds them by their own route. A building's dither (the fine pattern of its shading) is kept as the
-  game's, whatever the picture.
+- **No building's picture moves.** The IOB header word that the engine once called "animated" (0x0A) only picks
+  how a building's pieces are lit (0x4111E1: a normal for each corner of a piece, so it shades smoothly, or one
+  for the piece, flat). What moves on a building is a separate model fixed to it: the turrets and guns (WOF
+  parts with atlases of their own, in the same folder as the building) and the effects (smoke, lights). So a
+  building's one picture is all there is to paint.
+- **Not read**: interlaced PNGs (save without interlacing). A building's dither (the fine pattern of its
+  shading) is kept as the game's, whatever the picture. The bridges are read since update 241.
 
 ## Not in this layout
 
