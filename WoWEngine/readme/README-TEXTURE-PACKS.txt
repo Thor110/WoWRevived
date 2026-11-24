@@ -1,7 +1,7 @@
 WoW Engine - texture packs for the battle map
 =============================================
 
-A texture pack gives the battle map's units, buildings and scenery new pictures. It's a folder of PNGs,
+A texture pack gives the battle map's units, buildings and scenery new pictures, and units new shapes (8). It's a folder of PNGs,
 laid out the same way the engine's texture export writes them, so an exported set can be reworked and
 dropped straight back in.
 
@@ -73,7 +73,8 @@ out (the log says so: see 7).
   in place: what's where must stay where it is.
 - A building's picture is the whole building as the game shows it. Only the pixels inside the game's own
   outline are used: paint outside it and it's cut off; leave a hole inside it and the game's own pixels
-  show through. A building can't change shape this way.
+  show through. A building can't change shape this way. (A building in the game isn't a 3D model but a
+  picture drawn beforehand and cut into pieces, so its picture is the only thing there is to change.)
 
 
 5. SEE-THROUGH PIXELS
@@ -110,3 +111,28 @@ WoWEngine.log (beside the program) says where the pack was found and names each 
 or why one wasn't used:
 
     ... is 256x40, not 256x48; the game's is used
+
+
+8. MODELS: NEW SHAPES FOR UNITS
+-------------------------------
+
+A unit's shape can be changed too, with a 3D model beside its picture in the pack:
+
+    TEXTURES\human\units\AIRSHIP.obj      (or AIRSHIP.gltf, or AIRSHIP.glb)
+
+OBJ, glTF and GLB are read (a .gltf must have its data inside it; Blender's "glTF Embedded" does that, or use
+.glb). Buildings can't be given new shapes: they aren't 3D models in the game.
+
+- Start from the game's own model: the engine's tool wowdump writes every unit as OBJ ("wowdump --obj"; like
+  --textures it's built from the source, so an exported set is usually passed around ready-made). Each part of
+  a unit (body, turret, legs, ...) is a group named as the game names it. Keep those names: the game moves and
+  turns the parts by them, and a part your model doesn't name keeps the game's shape.
+- Each part holds at most 255 points and 255 triangles. A part with more is left as the game's (the log says so).
+- Keep an exported part's points in their order and add new ones after them: the game finds some points by
+  number (where a gun fires from, a walker's feet).
+- The texture is the unit's picture (the same PNG as above, 256 wide): the model's texture coordinates place each
+  triangle on it. The materials are named material_0, material_1 ... as the export names them; keep each
+  triangle's.
+- The model is in the game's own units and the export's place: change the shape around where it is.
+
+The log names each model used ("Texture pack: model human/units/AIRSHIP.obj") and anything it couldn't use.

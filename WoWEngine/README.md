@@ -22,6 +22,11 @@ To use an installed copy, point `CMAKE_PREFIX_PATH` at it.
 
 **Version:** set it in one place, `project(WoWEngine VERSION 0.2.6 ...)` at the top of `CMakeLists.txt`. The build turns it into `Version.h` (`WOWENGINE_VERSION`), which the window title uses, and the release script reads it from there too.
 
+**Third-party code:** SDL3 (fetched by the build) and, since update 248, `third_party/stb_vorbis.c` (Sean Barrett's
+Ogg Vorbis decoder, v1.22, public domain or MIT as the file says) and `third_party/cgltf.h` (Johannes Kuhlmann's glTF
+reader, v1.14, MIT; `cgltf.c` compiles it), both unchanged, for the loose sound files and the unit models. Everything
+else (the PNG, inflate, WAV, OBJ, Smacker and archive readers) is the engine's own.
+
 **Release:** `tools\make_release.bat` (double-click it) runs `tools/make_release.py`, which takes the version from `CMakeLists.txt` and the programs from `out\build\x64-Release`, and makes `out\WoWEngine-v<version>\` and `out\WoWEngine-v<version>.zip`. If the Release build isn't there it builds it first, which needs CMake and the compiler on the PATH (the "x64 Native Tools Command Prompt"); otherwise build `x64-Release` in Visual Studio and run it again. Options: `--build` to rebuild first, `--debug` to package the Debug build, `--seven-zip` to also make a `.7z`, `--build-dir` to package another folder. Since update 247 the release also has the players' guides from `readme/` (README-OVERRIDE.txt, README-CUSTOM-CAMPAIGNS.txt, README-TEXTURE-PACKS.txt, README-SOUNDS.txt) beside the programs, and the example custom campaigns in `Campaigns/` (tried on Linux with `--build-dir ../build-rel`).
 
 **Tried from a clean checkout** (update 234, on Linux): a fresh clone, `python3 tools/make_release.py --build`, and

@@ -177,11 +177,28 @@ namespace wow
         {
             if (!it->is_regular_file(ec)) continue;
             const std::filesystem::path& p = it->path();
-            if (Lower(p.extension().string()) != ".png") continue;
+            const std::string ext = Lower(p.extension().string());
+            if (ext != ".png" && ext != ".obj" && ext != ".gltf" && ext != ".glb") continue;
             std::string rel = Lower(std::filesystem::relative(p, folder, ec).replace_extension().generic_string());
-            files[rel] = p;
+            if (ext == ".png") files[rel] = p;
+            else
+            {
+                // (an OBJ before a glTF before a GLB, where a model has more than one)
+                const int rank = ext == ".obj" ? 0 : ext == ".gltf" ? 1 : 2;
+                auto known = models.find(rel);
+                const int had = known == models.end() ? 3 : Lower(known->second.extension().string()) == ".obj" ? 0 : Lower(known->second.extension().string()) == ".gltf" ? 1 : 2;
+                if (rank < had) models[rel] = p;
+            }
         }
-        return !files.empty();
+        return !files.empty() || !models.empty();
+    }
+
+    std::optional<std::filesystem::path> TexturePack::FindModel(const std::string& folder, const std::string& stem, bool civilOther) const
+    {
+        const std::string key = Lower((civilOther ? "civilwar/" + folder : folder) + "/" + stem);
+        auto it = models.find(key);
+        if (it == models.end()) return std::nullopt;
+        return it->second;
     }
 
     std::optional<std::filesystem::path> TexturePack::Find(const std::string& folder, const std::string& stem, bool civilOther) const

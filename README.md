@@ -238,9 +238,29 @@ The road map for this project.
 		- Key bindings for both maps in WoWRevived.ini.
 		- Popup menus that stay open, a war map status strip, windowed mode, picture stretching and the system mouse pointer.
 		- Input recording and playback.
+		- A Modern Gameplay menu for changes to the rules of play. ( opened from Game Options and the war map's Campaign Options )
+			- Upgraded buildings in battle.
+			- Unlimited building: your factories and construction vehicles ignore the per-sector limits from OBJ.ojd ( turrets, mines, fences, buildings and units ), except one command building per sector.
+			- Units on bridges fire back: in the original a unit crossing a bridge can't aim until it's off it.
 	- Civil wars ( work in progress ): a Human Civil War and a Martian Civil War, each faction against itself, with no pods.
-		- A log file that records crashes and stalls, to make bug reports easier.
-	- Still to do: network play and parts of the computer player.
+		- The start layouts are a text file, DAT\CivilWar.txt, for balancing without rebuilding.
+		- The other side is told apart on the battle map by its colours, and on the war map by the side colours.
+	- Custom campaigns: a Custom Campaigns entry on the main menu, under the civil war.
+		- Each campaign is a text file in the Campaigns folder of the main folder: a Human or Martian campaign or either civil war, from the game's start or a start file of your own ( any save, e.g. one made with WoWViewer's save editor ), with or without pods.
+		- Saved as SaveGame\Custom.001 to Custom.999 with a Load menu of their own; a save carries its whole campaign, so saves can be shared without the files that made them.
+	- Modding without converting files to the game's formats. ( each with a guide shipped beside the programs )
+		- PNG pictures in place of any sprite, frame by frame, named as WoWViewer exports them, at 1x, 2x, 4x or 8x the size. ( README-OVERRIDE.txt )
+		- Texture packs for the battle map's units, buildings and scenery, including separate looks for a civil war's other side. ( README-TEXTURE-PACKS.txt )
+		- Loose sound files: WAV or OGG ( or the game's own .snd ) in SFX and VOX in place of any sound effect or voice line. ( README-SOUNDS.txt )
+		- Unit models from OBJ, glTF or GLB in a texture pack, part by part, keeping the game's animation. ( README-TEXTURE-PACKS.txt )
+	- A documented WoWRevived.ini: every setting with its description and default, written by the launcher and kept as the game saves settings; WoWRevived.default.ini ships beside the programs.
+		- Custom campaigns. ( README-CUSTOM-CAMPAIGNS.txt )
+		- Buildings stay as they are: they aren't 3D models but pictures rendered beforehand and cut into pieces, so they're reworked with texture packs and PNGs rather than replaced as models.
+	- Building on the battle map as in the original: construction vehicles place buildings, turrets, mines and fences, with the green and red placement outline; fences laid post by post and shot down post by post.
+	- Breakable bridges, and the route finder spread over the game's updates as in the original.
+	- A log file that records crashes and stalls, to make bug reports easier.
+	- WoWRevived's 1080p movies ship separately and play on Windows; playing them on macOS and Linux is still to do, so the original movies are kept.
+	- Still to do: network play ( last, as a menu option ), parts of the computer player, the 1080p movies on macOS and Linux, and testing everything in play.
 
 This might not all happen but I wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.
 

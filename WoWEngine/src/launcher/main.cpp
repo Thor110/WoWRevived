@@ -312,6 +312,8 @@ int main(int argc, char** argv)
         }
     }
     if (screenshot.empty() && Installed(state.target)) CopyLanguageText(state.target);
+    // (update 248) the install's WoWRevived.ini documented: each setting's description and default, once
+    if (screenshot.empty() && Installed(state.target)) DocumentSettings(state.target);
     state.phase = !installScreen && Installed(state.target) ? Phase::Ready : Phase::Waiting;
     const uint64_t startedAt = SDL_GetTicks();
     std::thread worker(Worker, std::ref(state));

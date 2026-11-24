@@ -182,13 +182,24 @@ namespace wow
         if (sample.vox) folders = { std::string("VOX\\") + (human ? "HUMAN\\" : "MARTIAN\\"), "VOX\\" };
         else folders = { "SFX\\" };
         for (const std::string& folder : folders)
-            for (const char* ext : { ".wav", ".snd" })
+            for (const char* ext : { ".wav", ".ogg", ".snd" })
             {
                 auto path = files.Resolve(folder + sample.name + ext);
                 if (!path) continue;
                 std::ifstream in(*path, std::ios::binary);
                 std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(in)), {});
                 if (bytes.empty()) continue;
+                if (ext[1] == 'o')
+                {
+                    std::string error;
+                    if (auto pcm = DecodeOgg(bytes, sample.rate, error, stereo ? 2 : 1))
+                    {
+                        if (log) log("Sound file: " + path->string());
+                        return pcm;
+                    }
+                    if (log) log("Sound file " + path->string() + ": " + error + "; not used");
+                    continue;
+                }
                 if (ext[1] == 's')
                 {
                     if (log) log("Sound file: " + path->string());

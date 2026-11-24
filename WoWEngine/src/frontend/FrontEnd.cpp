@@ -64,6 +64,7 @@ namespace wow
         constexpr int CmdCustomStart = 0x9006;      // the same: start the custom campaign param (its place in the list)
         constexpr int CmdCustomLoad = 0x9007;       // the same: the Load menu of the custom saves
         constexpr int CmdCustomPage = 0x9008;       // the same: the Custom Campaigns menu's page, param +1 or -1
+        constexpr int CmdBadSave = 0x9009;          // the engine's own (update 248): a save that can't be read
         constexpr int CmdNewCivilWar = 0x9003;    // the engine's own: Start New Campaign for the side's civil war
         constexpr int CmdSlotPage = 0x9002;       // the engine's own: the Load / Save menu's page, param +1 or -1
         constexpr int CmdSaveMenu = 0x6E;
@@ -960,7 +961,15 @@ namespace wow
         catch (const std::exception& e)
         {
             SDL_Log("Can't start the war map from %s: %s", gamePath.c_str(), e.what());
-            Show(NotRebuilt(CmdStartCampaign, CmdMainMenu));
+            // (update 248: a menu of its own; as NotRebuilt(0x8A) it had the war map's id, which ActiveWarMap took
+            // for the war map, and the next update crashed)
+            campaign = Campaign::Regular;
+            customCampaign = false;
+            playingSlot = 0;
+            auto m = NewMenu(CmdBadSave);
+            m->AddHeadingText(res.String(enginetext::SaveUnreadable));
+            m->AddBottomButton(CmdMainMenu, 0x530);
+            Show(std::move(m));
             return;
         }
         if (!name.empty()) info.name = name;
@@ -1689,7 +1698,7 @@ namespace wow
             for (const auto& place : places)
                 if (texturePack->Open(place))
                 {
-                    SDL_Log("Texture pack: %zu pictures in %s", texturePack->Count(), place.string().c_str());
+                    SDL_Log("Texture pack: %zu pictures and %zu models in %s", texturePack->Count(), texturePack->ModelCount(), place.string().c_str());
                     break;
                 }
         }

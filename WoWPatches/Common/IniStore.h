@@ -10,6 +10,12 @@
 // fall back to atoi/atof/sscanf for anything that isn't a DWORD), so numbers are simply stored in decimal.
 // Section and value names are case-insensitive like the registry. Bytes are stored as-is (Windows-1252).
 //
+// The file is kept as it was written (WoWEngine update 248): comments (; or #) and blank lines stay where they
+// are, a changed value is changed in its own line, and a new value takes the place of its commented example
+// ("; Name=value") in its section when there is one, else goes after the section's last value. So a documented
+// WoWRevived.ini (Document, WoWEngine core/SettingsTable.h) keeps its documentation as the game saves settings.
+// Comments go on lines of their own: a value is everything after its '=', so "1 ; note" is the value "1 ; note".
+//
 // Standard C++ only apart from the atomic file replace, so the logic can be tested off Windows.
 #pragma once
 #include <cstdio>
@@ -35,6 +41,7 @@ namespace wow
             std::lock_guard<std::mutex> lock(mutex);
             this->path = path;
             sections.clear();
+            preamble.clear();
             dirty = false;
             FILE* f = std::fopen(path.c_str(), "rb");
             if (!f) return false;
@@ -68,7 +75,12 @@ namespace wow
                 if (e->value == value) return;
                 e->value = value;
             }
-            else s.entries.push_back({ name, value });
+            else {
+                Entry added{ true, name, value, "" };
+                const size_t example = ExampleOf(s, name);
+                if (example != std::string::npos) s.items[example] = added;    // in place of its commented example
+                else s.items.insert(s.items.begin() + std::ptrdiff_t(InsertAt(s)), added);
+            }
             dirty = true;
         }
 
@@ -77,9 +89,9 @@ namespace wow
             std::lock_guard<std::mutex> lock(mutex);
             Section* s = FindSection(section);
             if (!s) return false;
-            for (size_t i = 0; i < s->entries.size(); i++) {
-                if (Equal(s->entries[i].name, name)) {
-                    s->entries.erase(s->entries.begin() + i);
+            for (size_t i = 0; i < s->items.size(); i++) {
+                if (s->items[i].isValue && Equal(s->items[i].name, name)) {
+                    s->items.erase(s->items.begin() + std::ptrdiff_t(i));
                     dirty = true;
                     return true;
                 }
@@ -136,54 +148,114 @@ namespace wow
 
         std::string Serialize() const
         {
-            std::string out =
-                "; WoW Revived settings, used instead of the registry key\r\n"
-                "; HKLM\\SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000 so the installation is portable.\r\n"
-                "; [Main] is that key itself, the other sections are its subkeys. Every value is plain text.\r\n";
+            std::string out;
+            bool blankLast = false;
+            auto line = [&](const std::string& text) {
+                out += text + "\r\n";
+                blankLast = text.find_first_not_of(" \t") == std::string::npos;
+            };
+            if (preamble.empty()) {
+                line("; WoW Revived settings, used instead of the registry key");
+                line("; HKLM\\SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000 so the installation is portable.");
+                line("; [Main] is that key itself, the other sections are its subkeys. Every value is plain text.");
+            }
+            else for (const std::string& p : preamble) line(p);
             for (const Section& s : sections) {
-                out += "\r\n[" + s.name + "]\r\n";
-                for (const Entry& e : s.entries) out += e.name + "=" + e.value + "\r\n";
+                if (!out.empty() && !blankLast) line("");
+                line("[" + s.name + "]");
+                for (const Entry& e : s.items) line(e.isValue ? e.name + "=" + e.value : e.text);
             }
             return out;
+        }
+
+        // Documentation for a value (WoWEngine's settings table): the comment lines above it (each written as
+        // "; " + the line) and, when the value isn't set, its commented example "; Name=example". A value already
+        // set keeps its value and gets the comment only if no comment is above it; nothing is added twice, so it
+        // can be run on every start. sectionComment goes at the top of a section that has no comment there.
+        // True if anything was added.
+        bool Document(const std::string& section, const std::vector<std::string>& sectionComment, const std::string& name,
+                      const std::string& example, const std::vector<std::string>& comment)
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            const bool existed = FindSection(section) != nullptr;
+            Section& s = EnsureSectionLocked(section);
+            bool changed = !existed;
+            if (!sectionComment.empty() && (s.items.empty() || !IsComment(s.items.front()))) {
+                std::vector<Entry> lines;
+                for (const std::string& c : sectionComment) lines.push_back(Comment(c));
+                lines.push_back(Entry{ false, "", "", "" });    // (a blank line: the section's comment isn't its first value's)
+                s.items.insert(s.items.begin(), lines.begin(), lines.end());
+                changed = true;
+            }
+            size_t at = std::string::npos;
+            for (size_t i = 0; i < s.items.size() && at == std::string::npos; i++)
+                if (s.items[i].isValue && Equal(s.items[i].name, name)) at = i;
+            if (at == std::string::npos) at = ExampleOf(s, name);
+            if (at != std::string::npos) {
+                // there already: its comment unless the line above is one (a blank line before it, for reading)
+                if (comment.empty() || (at > 0 && IsComment(s.items[at - 1]))) { if (changed) dirty = true; return changed; }
+                std::vector<Entry> lines;
+                if (at > 0 && !IsBlank(s.items[at - 1])) lines.push_back(Entry{ false, "", "", "" });
+                for (const std::string& c : comment) lines.push_back(Comment(c));
+                s.items.insert(s.items.begin() + std::ptrdiff_t(at), lines.begin(), lines.end());
+                dirty = true;
+                return true;
+            }
+            std::vector<Entry> lines;
+            const size_t where = InsertAt(s);
+            // (a value without a comment of its own goes straight under the one before, as a list)
+            if (!comment.empty() && where > 0 && !IsBlank(s.items[where - 1])) lines.push_back(Entry{ false, "", "", "" });
+            for (const std::string& c : comment) lines.push_back(Comment(c));
+            lines.push_back(Comment(name + "=" + example));
+            s.items.insert(s.items.begin() + std::ptrdiff_t(where), lines.begin(), lines.end());
+            dirty = true;
+            return true;
         }
 
         void Parse(const std::string& text)
         {
             sections.clear();
+            preamble.clear();
             Section* current = nullptr;
             size_t pos = 0;
-            while (pos <= text.size()) {
+            while (pos < text.size()) {      // (the newline after the last line doesn't start another)
                 size_t end = text.find('\n', pos);
                 if (end == std::string::npos) end = text.size();
                 std::string line = text.substr(pos, end - pos);
                 pos = end + 1;
                 if (!line.empty() && line.back() == '\r') line.pop_back();
-                if (sections.empty() && current == nullptr && line.size() >= 3 &&
+                if (sections.empty() && current == nullptr && preamble.empty() && line.size() >= 3 &&
                     (unsigned char)line[0] == 0xEF && (unsigned char)line[1] == 0xBB && (unsigned char)line[2] == 0xBF) line.erase(0, 3); // stray BOM
                 size_t first = line.find_first_not_of(" \t");
-                if (first == std::string::npos) continue; // blank
-                if (line[first] == ';' || line[first] == '#') continue; // comment
+                // blank lines, comments and anything else that isn't a value are kept where they are
+                auto keep = [&]() {
+                    if (current) current->items.push_back(Entry{ false, "", "", line });
+                    else preamble.push_back(line);
+                };
+                if (first == std::string::npos || line[first] == ';' || line[first] == '#') { keep(); continue; }
                 if (line[first] == '[') {
                     size_t close = line.rfind(']');
-                    if (close == std::string::npos || close <= first) continue;
+                    if (close == std::string::npos || close <= first) { keep(); continue; }
                     current = &EnsureSectionLocked(line.substr(first + 1, close - first - 1));
                     continue;
                 }
                 size_t eq = line.find('=');
-                if (eq == std::string::npos || current == nullptr) continue;
+                if (eq == std::string::npos || current == nullptr) { keep(); continue; }
                 std::string name = Trim(line.substr(0, eq));
-                if (name.empty()) continue;
+                if (name.empty()) { keep(); continue; }
                 std::string value = line.substr(eq + 1); // values are kept exactly as written
                 Entry* e = FindEntry(*current, name);
-                if (e) e->value = value; else current->entries.push_back({ name, value });
+                if (e) e->value = value; else current->items.push_back(Entry{ true, name, value, "" });
             }
         }
 
     private:
-        struct Entry { std::string name, value; };
-        struct Section { std::string name; std::vector<Entry> entries; };
+        // a section's lines in order: its values, and the comments and blank lines between them (text)
+        struct Entry { bool isValue; std::string name, value, text; };
+        struct Section { std::string name; std::vector<Entry> items; };
 
         std::vector<Section> sections;
+        std::vector<std::string> preamble;  // the lines before the first section
         std::string path;
         bool dirty = false;
         mutable std::mutex mutex;
@@ -220,13 +292,47 @@ namespace wow
         }
         static Entry* FindEntry(Section& s, const std::string& name)
         {
-            for (Entry& e : s.entries) if (Equal(e.name, name)) return &e;
+            for (Entry& e : s.items) if (e.isValue && Equal(e.name, name)) return &e;
             return nullptr;
         }
         static const Entry* FindEntry(const Section& s, const std::string& name)
         {
-            for (const Entry& e : s.entries) if (Equal(e.name, name)) return &e;
+            for (const Entry& e : s.items) if (e.isValue && Equal(e.name, name)) return &e;
             return nullptr;
+        }
+        static Entry Comment(const std::string& text) { return Entry{ false, "", "", text.empty() ? ";" : "; " + text }; }
+        static bool IsBlank(const Entry& e) { return !e.isValue && e.text.find_first_not_of(" \t") == std::string::npos; }
+        static bool IsComment(const Entry& e)
+        {
+            if (e.isValue) return false;
+            const size_t first = e.text.find_first_not_of(" \t");
+            return first != std::string::npos && (e.text[first] == ';' || e.text[first] == '#');
+        }
+        // the name of a commented example ("; Name=value"), or "" for any other line
+        static std::string ExampleName(const Entry& e)
+        {
+            if (!IsComment(e)) return "";
+            const size_t first = e.text.find_first_not_of(" \t");
+            const std::string rest = e.text.substr(first + 1);
+            const size_t eq = rest.find('=');
+            if (eq == std::string::npos) return "";
+            return Trim(rest.substr(0, eq));
+        }
+        static size_t ExampleOf(const Section& s, const std::string& name)
+        {
+            for (size_t i = 0; i < s.items.size(); i++) if (Equal(ExampleName(s.items[i]), name)) return i;
+            return std::string::npos;
+        }
+        // where a new value goes: after the section's last value or commented example, else after its leading
+        // comment (the section's own) and the blank lines after it, else first
+        static size_t InsertAt(const Section& s)
+        {
+            size_t at = std::string::npos;
+            for (size_t i = 0; i < s.items.size(); i++) if (s.items[i].isValue || !ExampleName(s.items[i]).empty()) at = i;
+            if (at != std::string::npos) return at + 1;
+            size_t lead = 0;
+            while (lead < s.items.size() && (IsComment(s.items[lead]) || IsBlank(s.items[lead]))) lead++;
+            return lead;
         }
         Section& EnsureSectionLocked(const std::string& name)
         {

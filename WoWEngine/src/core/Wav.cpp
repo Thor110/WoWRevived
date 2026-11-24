@@ -3,9 +3,58 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <cstdlib>
+#include <functional>
+
+// third_party/stb_vorbis.c (compiled on its own): its one function this needs
+extern "C" int stb_vorbis_decode_memory(const unsigned char* mem, int len, int* channels, int* sample_rate, short** output);
 
 namespace wow
 {
+    namespace
+    {
+        // the samples (value(frame, channel), -1..1) as the game keeps them: 16-bit at rate, mono (the channels
+        // mixed) or interleaved stereo (the first two; a mono source's one twice), by straight-line interpolation
+        std::vector<int16_t> Convert(const std::function<double(size_t, uint32_t)>& value, size_t frames, uint32_t channels,
+                                     uint32_t fileRate, int rate, int outChannels)
+        {
+            const int outs = outChannels == 2 ? 2 : 1;
+            // each output channel's frames, as -1..1: mono the channels mixed; stereo the first two (a mono file's one twice)
+            std::vector<std::vector<float>> chans(size_t(outs), std::vector<float>(frames, 0.0f));
+            for (size_t f = 0; f < frames; f++)
+            {
+                if (outs == 1)
+                {
+                    double sum = 0;
+                    for (uint32_t c = 0; c < channels; c++) sum += value(f, c);
+                    chans[0][f] = float(sum / channels);
+                }
+                else
+                {
+                    chans[0][f] = float(value(f, 0));
+                    chans[1][f] = float(value(f, channels > 1 ? 1 : 0));
+                }
+            }
+            // to the sample's rate
+            const double step = double(fileRate) / double(rate > 0 ? rate : int(fileRate));
+            const size_t outFrames = frames == 0 ? 0 : size_t(std::floor(double(frames - 1) / step)) + 1;
+            std::vector<int16_t> out(outFrames * size_t(outs));
+            for (size_t i = 0; i < outFrames; i++)
+            {
+                const double at = double(i) * step;
+                const size_t a = size_t(at);
+                const size_t b = std::min(a + 1, frames - 1);
+                const double t = at - double(a);
+                for (int c = 0; c < outs; c++)
+                {
+                    const double v = double(chans[size_t(c)][a]) * (1.0 - t) + double(chans[size_t(c)][b]) * t;
+                    out[i * size_t(outs) + size_t(c)] = int16_t(std::clamp(std::lround(v * 32768.0), -32768L, 32767L));
+                }
+            }
+            return out;
+        }
+    }
+
     std::optional<std::vector<int16_t>> DecodeWav(std::span<const uint8_t> d, int rate, std::string& error, int outChannels)
     {
         auto u16 = [&](size_t at) { return uint32_t(d[at] | d[at + 1] << 8); };
@@ -38,8 +87,10 @@ namespace wow
         const bool floats = format == 3 && bits == 32;
         if (!pcm && !floats) { error = "format " + std::to_string(format) + " at " + std::to_string(bits) + " bits isn't read (PCM 8, 16, 24 or 32-bit, or 32-bit float)"; return std::nullopt; }
         if (channels == 0 || fileRate == 0) { error = "no channels or rate"; return std::nullopt; }
+        // a stereo sound exported with a mono header at twice its rate (WoWViewer before update 248 wrote each entry
+        // that way: the data is the entry's own, interleaved stereo at the sample's rate), read as what it is
+        if (outChannels == 2 && channels == 1 && rate > 0 && fileRate == uint32_t(rate) * 2) { channels = 2; fileRate = uint32_t(rate); }
         const size_t width = bits / 8, frame = width * channels, frames = samples.size() / frame;
-        const int outs = outChannels == 2 ? 2 : 1;
         auto value = [&](size_t f, uint32_t c) {
             const uint8_t* p = samples.data() + f * frame + c * width;
             if (floats) { float x; std::memcpy(&x, p, 4); return double(x); }
@@ -48,38 +99,21 @@ namespace wow
             if (bits == 24) return double(int32_t(uint32_t(p[0]) << 8 | uint32_t(p[1]) << 16 | uint32_t(p[2]) << 24) >> 8) / 8388608.0;
             return double(int32_t(uint32_t(p[0]) | uint32_t(p[1]) << 8 | uint32_t(p[2]) << 16 | uint32_t(p[3]) << 24)) / 2147483648.0;
         };
-        // each output channel's frames, as -1..1: mono the channels mixed; stereo the first two (a mono file's one twice)
-        std::vector<std::vector<float>> chans(size_t(outs), std::vector<float>(frames, 0.0f));
-        for (size_t f = 0; f < frames; f++)
-        {
-            if (outs == 1)
-            {
-                double sum = 0;
-                for (uint32_t c = 0; c < channels; c++) sum += value(f, c);
-                chans[0][f] = float(sum / channels);
-            }
-            else
-            {
-                chans[0][f] = float(value(f, 0));
-                chans[1][f] = float(value(f, channels > 1 ? 1 : 0));
-            }
-        }
-        // to the sample's rate
-        const double step = double(fileRate) / double(rate > 0 ? rate : int(fileRate));
-        const size_t outFrames = frames == 0 ? 0 : size_t(std::floor(double(frames - 1) / step)) + 1;
-        std::vector<int16_t> out(outFrames * size_t(outs));
-        for (size_t i = 0; i < outFrames; i++)
-        {
-            const double at = double(i) * step;
-            const size_t a = size_t(at);
-            const size_t b = std::min(a + 1, frames - 1);
-            const double t = at - double(a);
-            for (int c = 0; c < outs; c++)
-            {
-                const double v = double(chans[size_t(c)][a]) * (1.0 - t) + double(chans[size_t(c)][b]) * t;
-                out[i * size_t(outs) + size_t(c)] = int16_t(std::clamp(std::lround(v * 32768.0), -32768L, 32767L));
-            }
-        }
+        return Convert(value, frames, channels, fileRate, rate, outChannels);
+    }
+
+    std::optional<std::vector<int16_t>> DecodeOgg(std::span<const uint8_t> d, int rate, std::string& error, int outChannels)
+    {
+        if (d.size() < 4 || std::memcmp(d.data(), "OggS", 4) != 0) { error = "not an Ogg file (no OggS)"; return std::nullopt; }
+        if (d.size() > size_t(0x7FFFFFFF)) { error = "too large"; return std::nullopt; }
+        int channels = 0, fileRate = 0;
+        short* decoded = nullptr;
+        const int frames = stb_vorbis_decode_memory(d.data(), int(d.size()), &channels, &fileRate, &decoded);
+        if (frames < 0 || !decoded) { error = "not an Ogg Vorbis file this reads"; std::free(decoded); return std::nullopt; }
+        if (channels <= 0 || fileRate <= 0) { std::free(decoded); error = "no channels or rate"; return std::nullopt; }
+        const auto value = [&](size_t f, uint32_t c) { return double(decoded[f * size_t(channels) + c]) / 32768.0; };
+        std::vector<int16_t> out = Convert(value, size_t(frames), uint32_t(channels), uint32_t(fileRate), rate, outChannels);
+        std::free(decoded);
         return out;
     }
 }

@@ -29,6 +29,14 @@ Modern options are the only deliberate differences.
   its own start file in the main folder's Campaigns; a Custom.nnn save copied to another install and loaded there;
   a Martian custom campaign beside a Human one (each listed only in its side's game, neither replacing the other's
   save).
+- **Unit models** (248; MODELS.md, README-TEXTURE-PACKS.txt "Models"): a model made in a 3D tool (Blender) as OBJ
+  and as glTF, with new shapes for some parts, in a battle; an animated unit (a walker) with a changed part; a gun's
+  part changed, checking it still fires from its muzzle.
+- **The documented WoWRevived.ini** (248; MODERN.md): WoWLauncher on an existing install (every setting documented,
+  nothing changed); the old WoWRevived launcher saving a setting after (the comments kept: its C# side wasn't built
+  here); an uncommented example taking effect.
+- **WoWViewer's sounds** (248): playing, exporting and replacing a stereo sound (a briefing) and a mono one; SFX.ojd
+  found beside the game's folder (not built here).
 - **Menus**: Modern Gameplay from Game Options and from the war map's menu; Custom Campaigns and its load menu; at
   the larger menu scales.
 

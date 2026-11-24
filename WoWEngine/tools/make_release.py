@@ -90,6 +90,10 @@ def main():
         (ROOT / 'readme' / 'README-CUSTOM-CAMPAIGNS.txt', True),
         (ROOT / 'readme' / 'README-TEXTURE-PACKS.txt', True),
         (ROOT / 'readme' / 'README-SOUNDS.txt', True),
+        # every setting with its description and default, nothing set (update 248): beside, not in place of, a
+        # player's WoWRevived.ini, which WoWLauncher documents the same way
+        (ROOT / 'readme' / 'WoWRevived.default.ini', True),
+        (ROOT / 'readme' / 'THIRD-PARTY.txt', True),          # the licences of SDL3, stb_vorbis and cgltf
         (REPO / 'LICENSE', False),
     ]
     if WINDOWS:

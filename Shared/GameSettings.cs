@@ -15,6 +15,11 @@ namespace WoWRevived.Shared
     /// bytes are kept as-is (Latin-1 maps every byte to one character and back).
     ///
     /// Changes are saved straight away unless a batch is open (see <see cref="Batch"/>).
+    ///
+    /// The file is kept as it was written, as IniStore.h keeps it (WoWEngine update 248): comments (; or #) and blank
+    /// lines stay where they are, a changed value is changed in its own line, and a new value takes the place of its
+    /// commented example ("; Name=value") in its section when there is one, else goes after the section's last value.
+    /// So the documented WoWRevived.ini WoWEngine writes keeps its documentation whichever program saves it.
     /// </summary>
     public sealed class GameSettings
     {
@@ -25,13 +30,23 @@ namespace WoWRevived.Shared
         /// <summary>The settings file next to the running program (the game folder).</summary>
         public static GameSettings Instance => instance ??= new GameSettings(Path.Combine(AppContext.BaseDirectory, FileName));
 
+        // a section's lines in order: its values, and the comments and blank lines between them (Text)
+        private sealed class Line
+        {
+            public bool IsValue;
+            public string Name = "", Value = "", Text = "";
+        }
+
         private sealed class Section
         {
             public string Name = "";
-            public List<KeyValuePair<string, string>> Entries = new List<KeyValuePair<string, string>>();
+            public List<Line> Items = new List<Line>();
+            public IEnumerable<Line> Values => Items.Where(i => i.IsValue);
+            public int IndexOf(string name) => Items.FindIndex(i => i.IsValue && Same(i.Name, name));
         }
 
         private readonly List<Section> sections = new List<Section>();
+        private readonly List<string> preamble = new List<string>(); // the lines before the first section
         private int batchDepth;
         public string FilePath { get; }
         /// <summary>True if the file already existed when it was loaded.</summary>
@@ -50,36 +65,42 @@ namespace WoWRevived.Shared
 
         public bool HasAnySection => sections.Count > 0;
         public IEnumerable<string> SectionNames => sections.Select(s => s.Name);
-        public IEnumerable<string> ValueNames(string section) => FindSection(section)?.Entries.Select(e => e.Key) ?? Enumerable.Empty<string>();
+        public IEnumerable<string> ValueNames(string section) => FindSection(section)?.Values.Select(e => e.Name) ?? Enumerable.Empty<string>();
 
         public string? Get(string section, string name)
         {
             Section? s = FindSection(section);
             if (s == null) { return null; }
-            int index = s.Entries.FindIndex(e => Same(e.Key, name));
-            return index >= 0 ? s.Entries[index].Value : null;
+            int index = s.IndexOf(name);
+            return index >= 0 ? s.Items[index].Value : null;
         }
 
         public void Set(string section, string name, string value)
         {
             if (value.Contains('\n') || value.Contains('\r')) { throw new ArgumentException("Setting values can't contain line breaks.", nameof(value)); }
             Section s = EnsureSection(section);
-            int index = s.Entries.FindIndex(e => Same(e.Key, name));
+            int index = s.IndexOf(name);
             if (index >= 0)
             {
-                if (s.Entries[index].Value == value) { return; }
-                s.Entries[index] = new KeyValuePair<string, string>(s.Entries[index].Key, value);
+                if (s.Items[index].Value == value) { return; }
+                s.Items[index].Value = value;
             }
-            else { s.Entries.Add(new KeyValuePair<string, string>(name, value)); }
+            else
+            {
+                var added = new Line { IsValue = true, Name = name, Value = value };
+                int example = ExampleOf(s, name);
+                if (example >= 0) { s.Items[example] = added; } // in place of its commented example
+                else { s.Items.Insert(InsertAt(s), added); }
+            }
             Changed();
         }
 
         public bool Delete(string section, string name)
         {
             Section? s = FindSection(section);
-            int index = s?.Entries.FindIndex(e => Same(e.Key, name)) ?? -1;
+            int index = s?.IndexOf(name) ?? -1;
             if (index < 0) { return false; }
-            s!.Entries.RemoveAt(index);
+            s!.Items.RemoveAt(index);
             Changed();
             return true;
         }
@@ -89,6 +110,7 @@ namespace WoWRevived.Shared
         {
             if (sections.Count == 0) { return; }
             sections.Clear();
+            preamble.Clear();
             Changed();
         }
 
@@ -131,42 +153,90 @@ namespace WoWRevived.Shared
         public string Serialize()
         {
             var text = new StringBuilder();
-            text.Append("; WoW Revived settings, used instead of the registry key\r\n");
-            text.Append("; HKLM\\SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000 so the installation is portable.\r\n");
-            text.Append("; [Main] is that key itself, the other sections are its subkeys. Every value is plain text.\r\n");
+            bool blankLast = false;
+            void Write(string line)
+            {
+                text.Append(line).Append("\r\n");
+                blankLast = line.Trim(' ', '\t').Length == 0;
+            }
+            if (preamble.Count == 0)
+            {
+                Write("; WoW Revived settings, used instead of the registry key");
+                Write("; HKLM\\SOFTWARE\\Rage\\Jeff Wayne's 'The War Of The Worlds'\\1.00.000 so the installation is portable.");
+                Write("; [Main] is that key itself, the other sections are its subkeys. Every value is plain text.");
+            }
+            else { foreach (string p in preamble) { Write(p); } }
             foreach (Section s in sections)
             {
-                text.Append("\r\n[").Append(s.Name).Append("]\r\n");
-                foreach (var entry in s.Entries) { text.Append(entry.Key).Append('=').Append(entry.Value).Append("\r\n"); }
+                if (text.Length > 0 && !blankLast) { Write(""); }
+                Write("[" + s.Name + "]");
+                foreach (Line item in s.Items) { Write(item.IsValue ? item.Name + "=" + item.Value : item.Text); }
             }
             return text.ToString();
+        }
+
+        private static bool IsBlank(Line l) => !l.IsValue && l.Text.Trim(' ', '\t').Length == 0;
+        private static bool IsComment(Line l)
+        {
+            if (l.IsValue) { return false; }
+            string t = l.Text.TrimStart(' ', '\t');
+            return t.Length > 0 && (t[0] == ';' || t[0] == '#');
+        }
+        // the name of a commented example ("; Name=value"), or "" for any other line
+        private static string ExampleName(Line l)
+        {
+            if (!IsComment(l)) { return ""; }
+            string rest = l.Text.TrimStart(' ', '\t')[1..];
+            int eq = rest.IndexOf('=');
+            return eq < 0 ? "" : rest[..eq].Trim(' ', '\t');
+        }
+        private static int ExampleOf(Section s, string name) => s.Items.FindIndex(i => Same(ExampleName(i), name));
+        // where a new value goes: after the section's last value or commented example, else after its leading
+        // comment (the section's own) and the blank lines after it, else first
+        private static int InsertAt(Section s)
+        {
+            int at = s.Items.FindLastIndex(i => i.IsValue || ExampleName(i).Length > 0);
+            if (at >= 0) { return at + 1; }
+            int lead = 0;
+            while (lead < s.Items.Count && (IsComment(s.Items[lead]) || IsBlank(s.Items[lead]))) { lead++; }
+            return lead;
         }
 
         // same rules as IniStore::Parse in WoWPatches/Common/IniStore.h
         private void Parse(string text)
         {
             Section? current = null;
-            foreach (string rawLine in text.Split('\n'))
+            string[] lines = text.Split('\n');
+            // (the newline after the last line doesn't start another)
+            int count = lines.Length > 0 && lines[^1].Length == 0 ? lines.Length - 1 : lines.Length;
+            for (int n = 0; n < count; n++)
             {
+                string rawLine = lines[n];
                 string line = rawLine.EndsWith('\r') ? rawLine[..^1] : rawLine;
-                if (current == null && sections.Count == 0 && line.StartsWith("ï»¿")) { line = line[3..]; } // stray UTF-8 BOM read as Latin-1
+                if (current == null && sections.Count == 0 && preamble.Count == 0 && line.StartsWith("ï»¿")) { line = line[3..]; } // stray UTF-8 BOM read as Latin-1
                 string trimmed = line.TrimStart(' ', '\t');
-                if (trimmed.Length == 0 || trimmed[0] == ';' || trimmed[0] == '#') { continue; }
+                // blank lines, comments and anything else that isn't a value are kept where they are
+                void Keep()
+                {
+                    if (current != null) { current.Items.Add(new Line { Text = line }); }
+                    else { preamble.Add(line); }
+                }
+                if (trimmed.Length == 0 || trimmed[0] == ';' || trimmed[0] == '#') { Keep(); continue; }
                 if (trimmed[0] == '[')
                 {
                     int close = trimmed.LastIndexOf(']');
-                    if (close <= 0) { continue; }
+                    if (close <= 0) { Keep(); continue; }
                     current = EnsureSection(trimmed[1..close]);
                     continue;
                 }
                 int equals = line.IndexOf('=');
-                if (equals < 0 || current == null) { continue; }
+                if (equals < 0 || current == null) { Keep(); continue; }
                 string name = line[..equals].Trim(' ', '\t');
-                if (name.Length == 0) { continue; }
+                if (name.Length == 0) { Keep(); continue; }
                 string value = line[(equals + 1)..]; // values are kept exactly as written
-                int index = current.Entries.FindIndex(e => Same(e.Key, name));
-                if (index >= 0) { current.Entries[index] = new KeyValuePair<string, string>(current.Entries[index].Key, value); }
-                else { current.Entries.Add(new KeyValuePair<string, string>(name, value)); }
+                int index = current.IndexOf(name);
+                if (index >= 0) { current.Items[index].Value = value; }
+                else { current.Items.Add(new Line { IsValue = true, Name = name, Value = value }); }
             }
             IsDirty = false;
         }

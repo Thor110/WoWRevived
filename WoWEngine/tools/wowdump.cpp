@@ -37,6 +37,9 @@
 #include "core/ShadeTable.h"
 #include "core/Sprite.h"
 #include "core/TextOjd.h"
+#include "core/SettingsTable.h"
+#include "core/WofMesh.h"
+#include "IniStore.h"
 
 #include <cstring>
 #include <algorithm>
@@ -67,6 +70,9 @@ static int Usage()
         "       wowdump --sfx <SFX.ojd> [martian]   print the sound table\n"
         "       wowdump --ai <AI.ojd>              print the AI table\n"
         "       wowdump --units <OBJ.ojd>          print each unit type's counter frame, class and war map speed\n"
+        "       wowdump --default-ini <out.ini>     write the documented WoWRevived.ini (every setting, nothing set)\n"
+        "       wowdump --obj <archive> <outdir>     every WOF model as OBJ + MTL (docs/MODELS.md)\n"
+        "       wowdump --objcheck <archive>        each WOF to OBJ and back, checked against the game's\n"
         "       wowdump --arrows <OBJ.ojd>         print the route arrow styles\n"
         "       wowdump --smk <movie.smk> <outdir> [every]  decode a Smacker movie: frames as BMPs, sound as a WAV\n"
         "       wowdump --save <save file>         print a save's name, date and sections\n"
@@ -300,6 +306,21 @@ int main(int argc, char** argv)
             return 0;
         }
 
+        // (update 248) the documented WoWRevived.ini with nothing set: every setting's description and default
+        // (core/SettingsTable.h), as WoWLauncher adds them to an install's; written to readme/WoWRevived.default.ini,
+        // which a unit test keeps the same as the table
+        if (first == "--default-ini" && argc == 3)
+        {
+            wow::IniStore ini;
+            wow::settingstable::Document(ini);
+            const std::string text = ini.Serialize();
+            FILE* f = std::fopen(argv[2], "wb");
+            if (!f) { std::fprintf(stderr, "can't write %s\n", argv[2]); return 1; }
+            std::fwrite(text.data(), 1, text.size(), f);
+            std::fclose(f);
+            std::printf("%s: %zu settings\n", argv[2], std::size(wow::settingstable::Settings));
+            return 0;
+        }
         if (first == "--units" && argc == 3)
         {
             for (const auto& [id, u] : wow::ObjOjd::LoadUnits(ReadFile(argv[2])))
@@ -439,6 +460,86 @@ int main(int argc, char** argv)
             }
             catch (const std::exception&) {}
             return 0;
+        }
+        // (update 248, docs/MODELS.md) every WOF in an archive as OBJ + MTL (--obj), or each one exported, read back
+        // and put into the game's file again, checked against the game's points and triangles (--objcheck)
+        if ((first == "--obj" && argc == 4) || (first == "--objcheck" && (argc == 3 || argc == 4)))
+        {
+            const bool check = first == "--objcheck";
+            // (--objcheck <archive> <dir>: each model from <dir>/<name>.obj, .gltf or .glb where there's one)
+            const std::string from = check && argc == 4 ? argv[3] : "";
+            wow::Archive archive(argv[2]);
+            int ok = 0, failed = 0;
+            for (size_t i = 0; i < archive.Entries().size(); i++)
+            {
+                const std::string& name = archive.Entries()[i].name;
+                if (name.size() < 4) continue;
+                std::string e = name.substr(name.size() - 4);
+                for (char& c : e) c = char(std::toupper(static_cast<unsigned char>(c)));
+                if (e != ".WOF") continue;
+                const std::string stem = name.substr(0, name.size() - 4);
+                std::vector<uint8_t> data = archive.Read(i);
+                std::string obj, mtl;
+                if (!wow::ExportObj(data, stem + ".mtl", stem + ".png", obj, mtl)) { std::printf("%-12s not read\n", name.c_str()); failed++; continue; }
+                if (!check)
+                {
+                    const std::string base = std::string(argv[3]) + "/" + stem;
+                    if (FILE* f = std::fopen((base + ".obj").c_str(), "wb")) { std::fwrite(obj.data(), 1, obj.size(), f); std::fclose(f); }
+                    if (FILE* f = std::fopen((base + ".mtl").c_str(), "wb")) { std::fwrite(mtl.data(), 1, mtl.size(), f); std::fclose(f); }
+                    ok++;
+                    continue;
+                }
+                std::vector<std::string> warnings;
+                std::vector<wow::MeshPiece> pieces;
+                bool given = false;
+                if (!from.empty())
+                    for (const char* x : { ".obj", ".gltf", ".glb" })
+                    {
+                        std::ifstream in(from + "/" + stem + x, std::ios::binary);
+                        if (!in) continue;
+                        const std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(in)), {});
+                        pieces = x[1] == 'o' ? wow::ParseObj(std::string(bytes.begin(), bytes.end()), warnings) : wow::ParseGltf(bytes, warnings);
+                        given = true;
+                        break;
+                    }
+                if (!from.empty() && !given) continue;
+                if (from.empty()) pieces = wow::ParseObj(obj, warnings);
+                std::vector<uint8_t> back = data;
+                wow::ApplyMeshes(back, pieces, warnings);
+                // the same points and triangles, piece by piece
+                bool same = warnings.empty();
+                try
+                {
+                    const auto a = wow::WofModel::Load(data), b = wow::WofModel::Load(back);
+                    same = same && a.pieces.size() == b.pieces.size();
+                    // (a glTF's points at the same place are one, so for it the shapes are compared: each triangle's
+                    // corners at the same places, with the same material and atlas places)
+                    const bool shape = !from.empty() && std::string(argv[3]).size() && pieces.size() && given &&
+                                       std::ifstream(from + "/" + stem + ".obj").fail();
+                    for (size_t p = 0; same && p < a.pieces.size(); p++)
+                    {
+                        const auto &pa = a.pieces[p], &pb = b.pieces[p];
+                        same = pa.faces.size() == pb.faces.size() && (shape || pa.vertices == pb.vertices);
+                        for (size_t f = 0; same && f < pa.faces.size(); f++)
+                        {
+                            if (!shape) { same = std::memcmp(&pa.faces[f], &pb.faces[f], sizeof(wow::WofFace)) == 0; continue; }
+                            const auto &fa = pa.faces[f], &fb = pb.faces[f];
+                            same = fa.material == fb.material && std::memcmp(fa.uv, fb.uv, sizeof(fa.uv)) == 0;
+                            for (int k = 0; same && k < 3; k++)
+                                same = fa.v[k] < pa.vertices.size() && fb.v[k] < pb.vertices.size() && pa.vertices[fa.v[k]] == pb.vertices[fb.v[k]];
+                        }
+                    }
+                }
+                catch (const std::exception& ex) { same = false; warnings.push_back(ex.what()); }
+                if (same) ok++;
+                else
+                {
+                    failed++;
+                    std::printf("%-12s differs%s\n", name.c_str(), warnings.empty() ? "" : (": " + warnings.front()).c_str());
+                }
+            }
+            std::printf("%d models %s, %d %s\n", ok, check ? "the same after OBJ and back" : "written", failed, check ? "differ" : "not read");
+            return failed ? 1 : 0;
         }
         if (first == "--models" && argc == 3)
         {

@@ -15,4 +15,6 @@ namespace wow
 {
     // Nothing (and why in error) when the data isn't a WAV this reads.
     std::optional<std::vector<int16_t>> DecodeWav(std::span<const uint8_t> data, int rate, std::string& error, int channels = 1);
+    // (update 248) an Ogg Vorbis file, the same way: decoded by stb_vorbis (third_party/stb_vorbis.c, public domain)
+    std::optional<std::vector<int16_t>> DecodeOgg(std::span<const uint8_t> data, int rate, std::string& error, int channels = 1);
 }

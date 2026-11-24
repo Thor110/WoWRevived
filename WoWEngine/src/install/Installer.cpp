@@ -8,6 +8,7 @@
 #endif
 #endif
 #include "IniStore.h"
+#include "core/SettingsTable.h"
 #include "install/Installer.h"
 #include "core/GameFiles.h"
 #include "core/EngineText.h"
@@ -224,6 +225,14 @@ namespace wow::install
         removeTextFolder = removeAfter;
     }
 
+    bool DocumentSettings(const fs::path& target)
+    {
+        IniStore ini;
+        ini.Load((target / IniStore::FileName()).string());
+        if (!settingstable::Document(ini)) return false;
+        return ini.Save();
+    }
+
     bool CopyLanguageText(const fs::path& target)
     {
         if (textFolder.empty()) return false;
@@ -292,6 +301,7 @@ namespace wow::install
     void Finish(const InstallOptions& options, InstallResult& result)
     {
         CopyLanguageText(options.target);
+        DocumentSettings(options.target);   // (update 248) every setting's description and default in WoWRevived.ini
         wow::GameFiles files(options.target);
         if (!result.humanDisc) result.warnings.push_back("The Human disc wasn't copied, so its music (Music-Human) is missing.");
         if (!result.martianDisc) result.warnings.push_back("The Martian disc wasn't copied, so its music (Music-Martian) is missing.");

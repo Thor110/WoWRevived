@@ -456,6 +456,7 @@ namespace wow
         bool CivilOwnLook(int gtype, int unit) const;
         std::vector<uint8_t>& WofFile(int gtype, bool civilOther);
         void PackIob(IobModel& m, int gtype, bool civilOther) const;
+        void PackModel(std::vector<uint8_t>& file, int gtype, bool civilOther);   // (update 248) a pack's OBJ / glTF shapes
         mutable std::map<int, std::array<uint32_t, 256>> packPalettes;   // by slot: the export's colours
         mutable std::set<std::string> packWarned;                     // an IOB model and its lights, loaded once
         void StopUnitSounds(Unit& u);

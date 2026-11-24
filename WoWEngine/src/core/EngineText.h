@@ -36,6 +36,7 @@ namespace wow::enginetext
         UnlimitedBuilding = 1456, BridgesFireBack, ModernGameplay,                                       // 1456-1458
         // custom campaigns (update 246, docs/CUSTOM.md): the main menu's entry and its menu's heading, its rows
         CustomCampaigns = 1460, ResumeCustom, NoCustomCampaigns, NextCampaigns, PreviousCampaigns,      // 1460-1464
+        SaveUnreadable,                                                                                   // 1465 (248)
         Last = 1478,
     };
 
@@ -177,6 +178,7 @@ namespace wow::enginetext
         { CustomCampaigns, { "Custom Campaigns", "Campagnes personnalisées", "Eigene Feldzüge", "Campagne personalizzate", "Campañas personalizadas" } },
         { ResumeCustom, { "Resume Custom Campaign", "Reprendre une campagne personnalisée", "Eigenen Feldzug fortsetzen", "Riprendi campagna personalizzata", "Reanudar campaña personalizada" } },
         { NoCustomCampaigns, { "No custom campaigns", "Aucune campagne personnalisée", "Keine eigenen Feldzüge", "Nessuna campagna personalizzata", "No hay campañas personalizadas" } },
+        { SaveUnreadable, { "This campaign couldn't be read", "Impossible de lire cette campagne", "Dieser Feldzug konnte nicht gelesen werden", "Impossibile leggere questa campagna", "No se pudo leer esta campaña" } },
         { NextCampaigns, { "Next Campaigns", "Campagnes suivantes", "Weitere Feldzüge", "Campagne successive", "Campañas siguientes" } },
         { PreviousCampaigns, { "Previous Campaigns", "Campagnes précédentes", "Vorherige Feldzüge", "Campagne precedenti", "Campañas anteriores" } },
         { ModernGameplay, { "Modern Gameplay", "Jeu moderne", "Modernes Spiel", "Gioco moderno", "Juego moderno" } },

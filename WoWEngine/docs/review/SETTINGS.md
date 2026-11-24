@@ -21,7 +21,7 @@ platform, the network game, the developers' switches and settings the game itsel
 | System | Game max time (ms), Game min time (ms) | frame time bounds; the engine runs a fixed 30 updates a second (Game Frequency, which it reads) |
 | System | Game Memory, Renderer Memory, Game Memory Handles, Renderer Memory Handles | the game's memory pools |
 | Debug | Show Mem Dump On Alloc Failure | memory |
-| Sound | Search Libraries First, Unload Limit | looked at in update 181: nothing a player hears changes (PLAN 4.3) |
+| Sound | Unload Limit | looked at in update 181: nothing a player hears changes (PLAN 4.3). Search Libraries First is read since update 247 (loose sound files) |
 
 ## Written, not read
 

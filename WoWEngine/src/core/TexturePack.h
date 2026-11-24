@@ -52,17 +52,20 @@ namespace wow
     class TexturePack
     {
     public:
-        // Every PNG under root, by its path in lower case without ".png" ("human/units/airship"). False if there
-        // are none.
+        // Every PNG under root, by its path in lower case without ".png" ("human/units/airship"), and (update 248,
+        // docs/MODELS.md) every model, .obj, .gltf or .glb, the same way. False if there are none.
         bool Open(const std::filesystem::path& root);
-        bool Empty() const { return files.empty(); }
+        bool Empty() const { return files.empty() && models.empty(); }
         const std::filesystem::path& Root() const { return root; }
         // the file for a model (its folder and stem), in the civil war's folder for the other side if asked
         std::optional<std::filesystem::path> Find(const std::string& folder, const std::string& stem, bool civilOther) const;
         size_t Count() const { return files.size(); }
+        // a model's shape in place of its WOF's (an OBJ, else a glTF, else a GLB)
+        std::optional<std::filesystem::path> FindModel(const std::string& folder, const std::string& stem, bool civilOther) const;
+        size_t ModelCount() const { return models.size(); }
 
     private:
         std::filesystem::path root;
-        std::map<std::string, std::filesystem::path> files;
+        std::map<std::string, std::filesystem::path> files, models;
     };
 }

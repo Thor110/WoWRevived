@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 247
+# Handoff: WoWEngine after update 248
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -157,7 +157,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 247
+## State after update 248
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -189,6 +189,17 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   moved). The parity battles didn't see it (a battle reads the table, not the counters). Fixed in 238. A new
   campaign's war map screenshot with the construction vehicles in sectors 12 and 24 is a quick look: their
   counters aren't the lorry's.
+- **Update 248** (still 0.2.6): the main README's section 15 brought up to date; the stereo sounds' round trip
+  (the engine reads WoWViewer's old mono-at-44100 export of a stereo sound as stereo; WoWViewer reads SFX.ojd,
+  `WoWViewer/SfxTable.cs`, and writes, plays and checks each entry at its rate and channels: *not built here*, no
+  .NET); buildings documented as staying as they are, and the `.mp4`s shipping separately until they play on
+  macOS and Linux; **the documented WoWRevived.ini** (MODERN.md: `IniStore.h` and `Shared/GameSettings.cs` keep
+  comments, `core/SettingsTable.h` has all 209 settings the engine reads, WoWLauncher documents an install's ini,
+  `readme/WoWRevived.default.ini` ships, `WOWENGINE_SETTINGS_LOG` records what's read); **OGG** sounds
+  (stb_vorbis); **unit models from OBJ / glTF / GLB** (docs/MODELS.md, `core/WofMesh`, `wowdump --obj` and
+  `--objcheck`: all 145 WOFs round-trip exactly, and in battle the exported OBJs draw the same to the pixel);
+  `readme/THIRD-PARTY.txt`. A fix found on the way: a save that can't be read crashed the engine (its error
+  screen had the war map's id, 0x8A, which `ActiveWarMap` took for the war map); it has its own message now.
 - **Update 247** (version 0.2.6): custom campaigns' `Campaigns` folder moved to the main folder (definitions and
   start files together; the engine's own examples in `WoWEngine/Campaigns`, a release's at its top level); the
   players' guides `readme/README-OVERRIDE.txt`, `README-CUSTOM-CAMPAIGNS.txt`, `README-TEXTURE-PACKS.txt` and
@@ -257,7 +268,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **248**.
+  - The next number is **249**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.

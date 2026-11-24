@@ -4,10 +4,12 @@
 // where there's a picture there, as separate copies of the models (their keys marked OtherKey), drawn without the
 // hue turn.
 #include "battlemap/BattleMap.h"
+#include "core/WofMesh.h"
 #include "core/ShadeTable.h"
 
 #include <SDL3/SDL_log.h>
 
+#include <cctype>
 #include <fstream>
 #include <iterator>
 
@@ -84,7 +86,34 @@ namespace wow
             const std::vector<uint8_t> atlas(file.begin() + std::ptrdiff_t(at), file.begin() + std::ptrdiff_t(at + size_t(256) * size_t(h)));
             if (auto pic = PackPicture(gtype, civilOther, 256, h, atlas)) textures::ReplaceWofAtlas(file, *pic, 256, h);
         }
+        PackModel(file, gtype, civilOther);
         return wofFiles.emplace(key, std::move(file)).first->second;
+    }
+
+    // MODERN (update 248, docs/MODELS.md): the pack's model for a unit, an OBJ, glTF or GLB beside its picture,
+    // its pieces' shapes put into the game's WOF (WofMesh), the tree, pivots, animation and materials kept
+    void BattleMap::PackModel(std::vector<uint8_t>& file, int gtype, bool civilOther)
+    {
+        if (!setup.textures || file.empty()) return;
+        auto folder = setup.textureFolders.find(gtype);
+        const GType* g = res.FindGType(gtype);
+        if (folder == setup.textureFolders.end() || !g) return;
+        const std::string stem = textures::Stem(g->file);
+        auto path = setup.textures->FindModel(folder->second, stem, civilOther);
+        if (!path) return;
+        const std::string name = (civilOther ? "civilwar/" : "") + folder->second + "/" + path->filename().string();
+        std::ifstream in(*path, std::ios::binary);
+        const std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(in)), {});
+        std::vector<std::string> warnings;
+        std::string ext = path->extension().string();
+        for (char& c : ext) c = char(std::tolower(static_cast<unsigned char>(c)));
+        const std::vector<MeshPiece> pieces = ext == ".obj" ? ParseObj(std::string(bytes.begin(), bytes.end()), warnings) : ParseGltf(bytes, warnings);
+        const bool used = ApplyMeshes(file, pieces, warnings);
+        if (packWarned.insert("model:" + name).second)
+        {
+            SDL_Log(used ? "Texture pack: model %s" : "Texture pack: model %s not used", name.c_str());
+            for (const std::string& w : warnings) SDL_Log("  %s", w.c_str());
+        }
     }
 
     void BattleMap::PackIob(IobModel& m, int gtype, bool civilOther) const

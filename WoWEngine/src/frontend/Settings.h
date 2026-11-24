@@ -5,6 +5,7 @@
 #pragma once
 #include "core/GameFiles.h"
 
+#include <map>
 #include <memory>
 #include <string>
 
@@ -30,5 +31,9 @@ namespace wow
 
     private:
         std::unique_ptr<IniStore> ini;
+        // (update 248, a developers' aid for the settings table, core/SettingsTable.h): with WOWENGINE_SETTINGS_LOG
+        // set to a file, every setting read and the default it was read with are written there at the end
+        void Note(const char* section, const char* name, const char* kind, const std::string& fallback) const;
+        mutable std::map<std::pair<std::string, std::string>, std::pair<std::string, std::string>> read;
     };
 }

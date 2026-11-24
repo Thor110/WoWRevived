@@ -229,6 +229,13 @@ namespace WoWViewer
                 return ms.ToArray();
             }
         }
+        // an entry's rate and channels: from SFX.ojd when it can be found (SfxTable), else guessed from its length as
+        // mono (the way this tool did before, which takes a long stereo entry for 44100 Hz mono)
+        private SfxTable.SampleFormat FormatOf(WowFileEntry entry, byte[] rawData)
+        {
+            var known = SfxTable.Find(filePath, Path.GetFileName(entry.Name));
+            return known ?? new SfxTable.SampleFormat(DetectSampleRate(rawData), 1);
+        }
         // detect sample rate
         private int DetectSampleRate(byte[] rawData)
         {
@@ -246,7 +253,11 @@ namespace WoWViewer
             byte[] rawData = entry.Data!;
             string safeName = Path.GetFileName(entry.Name); // archive names must never be able to point outside the output folder
             using var fs = new FileStream(Path.Combine(outputPath, (asWav ? $"{safeName}.wav" : safeName)), FileMode.Create);
-            if (asWav) { fs.Write(CreateWavHeader(rawData.Length, DetectSampleRate(rawData))); }
+            if (asWav)
+            {
+                var format = FormatOf(entry, rawData);
+                fs.Write(CreateWavHeader(rawData.Length, format.Rate, 16, (short)format.Channels));
+            }
             else if (checkBox2.Checked && rawData.Length >= 16 && FfuhDecoder.IsCompressed(rawData))
             {
                 rawData = FfuhDecoder.Decompress(rawData);
@@ -266,7 +277,8 @@ namespace WoWViewer
                 if (magic == "SfxL") // load and display the waveform image if browsing SfxL container
                 {
                     byte[] rawData = selected.Data!; // entry data is always raw PCM, edited or not
-                    pictureBox1.Image = DrawWaveform(rawData, 156, 137, DetectSampleRate(rawData));
+                    var format = FormatOf(selected, rawData);
+                    pictureBox1.Image = DrawWaveform(rawData, 156, 137, format.Rate * format.Channels); // (samples a second, both channels)
                     button5.Enabled = true; // enable play button
                     button6.Enabled = true; // enable stop button
                     button10.Enabled = true; // enable replace file button
@@ -282,7 +294,8 @@ namespace WoWViewer
         {
             if (entry == null || entry.Data == null) { return; }
             byte[] rawData = entry.Data; // entry data is always raw PCM, edited or not
-            byte[] wavHeader = CreateWavHeader(rawData.Length, DetectSampleRate(rawData));
+            var format = FormatOf(entry, rawData);
+            byte[] wavHeader = CreateWavHeader(rawData.Length, format.Rate, 16, (short)format.Channels);
             using var ms = new MemoryStream();
             ms.Write(wavHeader, 0, wavHeader.Length);
             ms.Write(rawData, 0, rawData.Length);
@@ -407,6 +420,8 @@ namespace WoWViewer
                 }
                 bool formatChecked = false;
                 int sampleRate = 0;
+                // what the game plays this entry as (SFX.ojd), so the file can be checked against it
+                var wanted = FormatOf(entries[selectedIndex], entries[selectedIndex].Data ?? Array.Empty<byte>());
                 // Walk the chunks, the 'fmt ' chunk must come before 'data'
                 while (br.BaseStream.Position + 8 <= br.BaseStream.Length)
                 {
@@ -421,13 +436,17 @@ namespace WoWViewer
                         br.ReadInt32(); // byte rate
                         br.ReadInt16(); // block align
                         short bitsPerSample = br.ReadInt16();
-                        // SfxL entries are raw PCM with no format information, the game expects 16-bit mono
-                        if (format != 1 || channels != 1 || bitsPerSample != 16)
+                        // SfxL entries are raw PCM with no format information: 16-bit, mono, or interleaved stereo for the
+                        // sounds SFX.ojd marks stereo (a mono file at twice the rate, as this tool once exported those,
+                        // is the same bytes)
+                        bool channelsRight = channels == wanted.Channels || (wanted.Channels == 2 && channels == 1 && sampleRate == wanted.Rate * 2);
+                        if (format != 1 || bitsPerSample != 16 || !channelsRight)
                         {
                             MessageBox.Show($"Unsupported WAV format ({(format == 1 ? "PCM" : $"format {format}")}, {channels} channel(s), {bitsPerSample}-bit).\n\n" +
-                                "Replacement sounds must be uncompressed 16-bit mono PCM.", "Unsupported WAV", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                $"This sound must be uncompressed 16-bit {(wanted.Channels == 2 ? "stereo" : "mono")} PCM.", "Unsupported WAV", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return;
                         }
+                        if (channels == 1 && wanted.Channels == 2) { sampleRate = wanted.Rate; } // (the old export's header)
                         formatChecked = true;
                         br.BaseStream.Position = chunkStart + chunkSize + (chunkSize % 2);
                     }
@@ -443,9 +462,9 @@ namespace WoWViewer
                             MessageBox.Show("Audio data chunk is larger than the file.");
                             return;
                         }
-                        if (sampleRate != 22050 && sampleRate != 44100)
+                        if (sampleRate != wanted.Rate)
                         {
-                            MessageBox.Show($"The sample rate is {sampleRate} Hz. The game's sounds are 22050 Hz or 44100 Hz, so this sound will play at the wrong speed.",
+                            MessageBox.Show($"The sample rate is {sampleRate} Hz. The game plays this sound at {wanted.Rate} Hz, so it will play at the wrong speed.",
                                 "Sample Rate Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         }
                         byte[] audioData = br.ReadBytes((int)chunkSize); // stored as raw PCM, the same as unedited entries
@@ -453,7 +472,7 @@ namespace WoWViewer
                         entries[selectedIndex].Length = audioData.Length;
                         entries[selectedIndex].Data = audioData;
                         button11.Enabled = true; // enable save button
-                        pictureBox1.Image = DrawWaveform(audioData, 156, 137, DetectSampleRate(audioData)); // redraw waveform and update labels
+                        pictureBox1.Image = DrawWaveform(audioData, 156, 137, wanted.Rate * wanted.Channels); // redraw waveform and update labels
                         label3.Text = $"File Size : {audioData.Length} bytes"; // update file size label
                         label4.Text = $"File Offset : Unknown (until saved)"; // update file offset label
                         listBox1.Invalidate(); // redraw so the entry shows as edited

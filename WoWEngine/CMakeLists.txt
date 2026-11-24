@@ -38,6 +38,9 @@ add_library(wowcore STATIC
     src/core/CivilWar.cpp
     src/core/CustomCampaign.cpp
     src/core/Wav.cpp
+    third_party/stb_vorbis.c
+    src/core/WofMesh.cpp
+    third_party/cgltf.c
     src/core/Png.cpp
     src/core/TexturePack.cpp
     src/core/SoundTable.cpp
@@ -52,6 +55,8 @@ add_library(wowcore STATIC
     src/core/AiTable.cpp
 )
 target_include_directories(wowcore PUBLIC src ${CMAKE_CURRENT_BINARY_DIR}/generated)
+# (update 248) the Ogg Vorbis decoder, Sean Barrett's public-domain stb_vorbis v1.22, as it comes; its warnings aren't ours
+set_source_files_properties(third_party/stb_vorbis.c third_party/cgltf.c PROPERTIES COMPILE_OPTIONS "$<IF:$<C_COMPILER_ID:MSVC>,/w,-w>")
 configure_file(src/Version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.h @ONLY)
 
 # --- installer: copies the game from the discs or their images and rips the music (no SDL) ---
@@ -93,6 +98,7 @@ if(WOW_BUILD_TOOLS)
     target_link_libraries(wowinstall-cli PRIVATE wowinstall)
     add_executable(wowdump tools/wowdump.cpp)
     target_link_libraries(wowdump PRIVATE wowcore)
+    target_include_directories(wowdump PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../WoWPatches/Common)   # IniStore.h, for --default-ini
 endif()
 
 # --- the engine itself ---

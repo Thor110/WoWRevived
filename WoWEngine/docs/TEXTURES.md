@@ -110,5 +110,7 @@ textures/
   engine's `dat` folder), or since update 246 frame by frame with PNGs (OVERRIDE.md). That changes both sides of a
   civil war. Separate pictures for the other side's counters aren't needed (the owner, update 246: the sides are
   told apart by their colours); an override for them could be added if wanted.
-- **The models' shapes** (WOF / IOB geometry): not covered.
+- **The models' shapes** (WOF / IOB geometry): not covered here. Units' models from OBJ and glTF are planned
+  (the owner, 248). Buildings stay as they are: an IOB is a picture cut into patches, not a model (MODERN.md
+  "Files", Modern formats), so a building is reworked with its picture and keeps its outline.
 - **Voices** naming the other faction ("Martians sighted"): to be reworked for the civil wars later.

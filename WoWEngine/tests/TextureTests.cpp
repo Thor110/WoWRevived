@@ -1,6 +1,9 @@
 // The texture packs (core/Png, core/TexturePack, IobModel::Repainted): the PNG reader, the colours turned into the
 // game's indices, a building's picture painted back into its patches, a unit's atlas replaced.
 #include "Test.h"
+#include <algorithm>
+#include <cstring>
+#include "core/WofMesh.h"
 #include "core/Models.h"
 #include "core/Bytes.h"
 #include "core/Png.h"
@@ -199,4 +202,85 @@ TEST("texture pack: a colour the table repeats keeps the game's index")
     const std::vector<uint8_t> got = textures::Indices(img, palette.data(), &game);
     CHECK_EQ(got[0], uint8_t(20));              // the game's own red
     CHECK_EQ(got[1], uint8_t(10));              // painted red over green: the first red
+}
+
+namespace
+{
+    // a WOF of one piece "body" (pivot 10, 20, 30), three points, one triangle in material 0, a 256 x 2 atlas, and
+    // the smooth pieces' table (the piece not smooth)
+    std::vector<uint8_t> TinyWof()
+    {
+        std::vector<uint8_t> w(0x30 + 0x61, 0);
+        auto put32 = [&](size_t o, uint32_t v) { for (int i = 0; i < 4; i++) w[o + size_t(i)] = uint8_t(v >> (8 * i)); };
+        auto put16 = [&](size_t o, int v) { w[o] = uint8_t(v); w[o + 1] = uint8_t(unsigned(v) >> 8); };
+        put16(0, 1);
+        const size_t r = 0x30;
+        std::memcpy(&w[r], "body", 4);
+        w[r + 0x11] = 3; w[r + 0x12] = 1;
+        put16(r + 0x13, 10); put16(r + 0x15, 20); put16(r + 0x17, 30);
+        for (int c = 0; c < 16; c++) put32(r + 0x21 + size_t(c) * 4, 0xFFFFFFFFu);
+        const size_t base = w.size();
+        put32(0x0C, uint32_t(base));
+        put32(r + 0x19, 0);
+        for (int v : { 0, 0, 0, 100, 0, 0, 0, 50, 0 }) { w.push_back(uint8_t(v)); w.push_back(uint8_t(unsigned(v) >> 8)); }
+        put32(r + 0x1D, uint32_t(w.size()));
+        for (int b : { 0, 1, 2, 0, 1, 1, 200, 1, 1, 0 }) w.push_back(uint8_t(b));
+        put32(0x24, uint32_t(w.size()));
+        for (int i = 0; i < 4; i++) w.push_back(0);             // material 0 at the atlas' start
+        put32(0x28, uint32_t(w.size()));
+        w.resize(w.size() + 512, 7);                          // the atlas
+        put32(0x2C, uint32_t(w.size()));
+        for (int i = 0; i < 4; i++) w.push_back(0);
+        return w;
+    }
+}
+
+TEST("models: a WOF to OBJ and back is the same model")
+{
+    const std::vector<uint8_t> wof = TinyWof();
+    std::string obj, mtl;
+    REQUIRE(wow::ExportObj(wof, "tiny.mtl", "tiny.png", obj, mtl));
+    CHECK(obj.find("o body") != std::string::npos);
+    CHECK(obj.find("v 110 -20 30") != std::string::npos);          // the root's pivot, y turned round
+    CHECK(mtl.find("map_Kd tiny.png") != std::string::npos);
+    std::vector<std::string> warnings;
+    const auto pieces = wow::ParseObj(obj, warnings);
+    CHECK(warnings.empty());
+    std::vector<uint8_t> back = wof;
+    CHECK(wow::ApplyMeshes(back, pieces, warnings));
+    const auto a = wow::WofModel::Load(wof), b = wow::WofModel::Load(back);
+    REQUIRE(b.pieces.size() == size_t(1));
+    CHECK(a.pieces[0].vertices == b.pieces[0].vertices);
+    REQUIRE(b.pieces[0].faces.size() == size_t(1));
+    CHECK(std::memcmp(&a.pieces[0].faces[0], &b.pieces[0].faces[0], sizeof(wow::WofFace)) == 0);
+    CHECK(std::equal(wof.begin(), wof.end(), back.begin()) == false);  // (the records point at the new data)
+    CHECK(std::equal(wof.begin() + 0x30 + 0x61, wof.end(), back.begin() + 0x30 + 0x61));   // everything else kept
+}
+
+TEST("models: an OBJ quad is two triangles; texture places; too many points or an unknown piece say so")
+{
+    std::vector<std::string> warnings;
+    const std::string quad =
+        "o BODY\nv 10 -20 30\nv 20 -20 30\nv 20 -10 30\nv 10 -10 30\n"
+        "vt 0 1\nvt 0.5 1\nvt 0.5 0\nvt 0 0\nusemtl material_0\nf 1/1 2/2 3/3 4/4\n";
+    auto pieces = wow::ParseObj(quad, warnings);
+    REQUIRE(pieces.size() == size_t(1));
+    CHECK(pieces[0].triangles.size() == size_t(2));
+    std::vector<uint8_t> w = TinyWof();
+    CHECK(wow::ApplyMeshes(w, pieces, warnings));
+    const auto m = wow::WofModel::Load(w);
+    REQUIRE(m.pieces[0].faces.size() == size_t(2));
+    CHECK(m.pieces[0].vertices[1] == (std::array<int16_t, 3>{ 10, 0, 0 }));   // less the piece's place
+    CHECK(int(m.pieces[0].faces[0].uv[1][0]) == 128);                       // u 0.5 across 256
+    CHECK(int(m.pieces[0].faces[0].uv[2][1]) == 1);                         // v 0: the atlas' last row
+    std::string many = "o body\n";
+    for (int i = 0; i < 300; i++) many += "v " + std::to_string(i) + " 0 0\n";
+    many += "f 1 2 3\n";
+    warnings.clear();
+    std::vector<uint8_t> w2 = TinyWof();
+    CHECK(!wow::ApplyMeshes(w2, wow::ParseObj(many, warnings), warnings));
+    CHECK(!warnings.empty());
+    warnings.clear();
+    CHECK(!wow::ApplyMeshes(w2, wow::ParseObj("o turret\nv 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n", warnings), warnings));
+    CHECK(warnings.size() == size_t(1));
 }

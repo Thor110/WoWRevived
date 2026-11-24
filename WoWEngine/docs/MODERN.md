@@ -402,6 +402,14 @@ engine's next start.
   shown in a picture of that size (updates 203 and 204), so it reaches the screen at its own shape and
   detail. Before, the decoder shrank it to fit 640 x 480 and it played as a small strip.
   `Mp4Movie` (the size it decodes to), `MovieScreen::PictureW` / `PictureH`.
+  - **Where the `.mp4`s come from** (the owner, update 248): they ship separately from the engine (about 1 GB),
+    and the game's `.smk` movies (about 384 MB: FMV 41, FMV-Human 152, FMV-Martian 191) are kept and installed as
+    now. The engine plays an `.mp4` where there is one and the `.smk` otherwise (`Movie::Open`).
+  - **To do: the `.mp4`s on macOS and Linux.** They play on Windows only, through Media Foundation
+    (`src/platform/Mp4Movie.cpp`, built for WIN32 only); on the other two the `.smk`s are the only movies. Once
+    they play everywhere (a decoder of the engine's own or a library, to be chosen with the owner), the launcher
+    could remove a `.smk` whose `.mp4` is there and opens, as WoWRevived's launcher does. Not before: with the
+    `.smk`s gone a Mac or Linux install would have no movies at all.
 - **The menus' fade** is off (MODERN FIX, update 204; `[Modern]` "Menu fade" = 1 puts it back). The game
   covers the view with bigBlack for a few ticks at each change of menu and holds a control's command for five
   ticks meanwhile (0x4065E0). bigBlack comes out dark red in the Human menus' palette and another colour in the
@@ -432,9 +440,40 @@ engine's next start.
   below.
 - **Modern formats** accepted for the overriding files (PNG for sprites, WAV / OGG for sounds, and so on), so a
   fix or a mod needn't be encoded in the game's own formats. *In*: PNG for sprites (246, OVERRIDE.md) and the
-  battle map's textures (240, TEXTURES.md), WAV for sounds (247). *Not yet*: OGG (it needs a decoder: stb_vorbis,
-  one public-domain file, is the obvious one, if the owner agrees to code from outside), models (units' WOF from
-  OBJ or glTF is practical; buildings' IOB are pictures cut into patches, not models, so they'd need rendering).
+  battle map's textures (240, TEXTURES.md), WAV for sounds (247), OGG (248, with stb_vorbis), units' models from
+  OBJ, glTF and GLB (248, docs/MODELS.md; glTF with cgltf). **Buildings stay as they are** (the owner, 248): an IOB isn't a model the game draws
+  but a picture rendered beforehand from the game's one view of the battle map, cut into run-length patches (one
+  for each lit triangle of a model the developers had) and lit by those triangles' normals. Replacing one with a
+  3D model would need the engine to render buildings, which the game never did; their look is reworked with
+  texture packs and PNGs instead (TEXTURES.md), whose pictures are cut back into the game's own patches, so a
+  building keeps its outline.
+
+### The documented WoWRevived.ini (update 248)
+
+The owner (247): the ini should document itself, with every option in it. Every setting the engine reads (209 of
+them: the original's it uses and the engine's own) has its default and a description in `core/SettingsTable.h`.
+
+- **What's written**: under each section a line on what the section is, and for each setting its description
+  (where one helps; a list such as `[Keys]` or `[Colours]` only has its section's) and, while it isn't set, its
+  default as a commented example: `; Battle zoom=1`. A commented example does nothing: the engine and the patched
+  original game read their own defaults, as before. Several defaults aren't fixed values but worked out at run
+  time (no `[Screen] Size` means the desktop's resolution on the first start; the sound borders scale with the
+  view; the window's size), so writing them as values would change things; as examples they can't.
+- **Who writes it**: WoWLauncher, at the end of an install and each time it starts on an installed game
+  (`DocumentSettings`, `settingstable::Document`). A setting already set keeps its value and gets its description
+  above it; nothing is added twice. The engine itself doesn't write the documentation (its screenshot runs leave
+  the ini as it is). The release has `WoWRevived.default.ini` beside the programs: the same with nothing set
+  (`wowdump --default-ini`, kept the same as the table by a unit test), not in place of a player's ini.
+- **Keeping it**: `IniStore.h` (WoWPatches/Common, shared by the engine, WoWLauncher and the patch DLLs) and
+  WoWRevived's C# launcher's `Shared/GameSettings.cs` now keep the file as written: comments and blank lines where
+  they are, a changed value changed in its own line, a new value in place of its commented example, or after its
+  section's last value. A file in the old form (no comments) is written back byte for byte (a unit test). Before,
+  every save rewrote the file without its comments. *The C# side wasn't built here* (no .NET in the container).
+- **The list** was made from what the engine reads in headless runs (`WOWENGINE_SETTINGS_LOG=<file>` writes every
+  setting read and its default as the program ends; `frontend/Settings.cpp`) and the reads outside `Settings`, and
+  checked against the source: every setting the engine reads is in the table and nothing else is. The original's
+  settings the engine doesn't read (docs/review/SETTINGS.md: the platform's, the network game's, the developers'
+  logging) aren't listed; a new setting the engine reads goes in the table too.
 
 ### Loose sound files (update 247; PLAN D1)
 
@@ -449,10 +488,15 @@ A sound sample can be replaced by a loose file, as a DAT file can (README-SOUNDS
 - **The name** is the sample's in SFX.ojd, as `wowdump --sfx` prints it (`[waroom1@22050]`) or WoWViewer lists
   the libraries' entries. `[Debug] Dave=1` puts "Dave: sound <name>" in the log as each is first used (0x466029),
   which is the easy way to find what a sound is called.
+- **OGG** (update 248): `<name>.ogg` in the same places, after the `.wav` and before the `.snd`; Ogg Vorbis,
+  decoded by stb_vorbis (`third_party/stb_vorbis.c`, public domain, unchanged; `DecodeOgg`) and then made the
+  sample's form as a WAV is. Seen used in a battle headless (every SFX entry as an OGG).
 - **WAV** (`core/Wav`): 8, 16, 24 or 32-bit PCM or 32-bit float, any channels and rate; made the sample's rate
   (every sample in the game is 22050 Hz) by straight-line interpolation, and mono, or interleaved stereo for the
-  nine sounds the table marks stereo (opcode 15: the war room's ambients and the like; 0x465D10 gives those a
-  two-channel buffer), a mono file doubled. A 16-bit WAV at 22050 Hz of the right channels is read exactly.
+  sounds the table marks stereo (opcode 15; 0x465D10 gives those a two-channel buffer: 18 samples, the war room's
+  ambients, the briefings, the title, victory and defeat music, the epilogues and OPTION), a mono file doubled.
+  For a stereo sound a mono WAV at exactly twice its rate is read as the interleaved stereo it is (248: how
+  WoWViewer exported the long ones). A 16-bit WAV at 22050 Hz of the right channels is read exactly.
   The log names each loose file as it's used ("Sound file: ...") or why one isn't.
 - **The order**: the loose file first, the library's entry when there's none, as the original does with its
   developers' flag on. `[Sound]` "Search Libraries First" (0x465EB0, byte_58FE78; off unless set) puts the library
@@ -462,10 +506,13 @@ A sound sample can be replaced by a loose file, as a DAT file can (README-SOUNDS
   `VOX\English\` and `VOX\English\HUMAN\` / `MARTIAN\`, each `<name>.snd`); not copied, as nothing ships in them.
 - *Seen working*: effects replaced in a battle headless (every SFX entry as a WAV, each logged as used). *Not yet
   seen*: a voice line (none played in the short test battle); it's the same code.
-- **WoWViewer's export** writes each entry as `NAME.wav` with a mono header and a rate it guesses (44100 for a
-  long entry), where the true rate is SFX.ojd's (22050 for all) and nine are stereo. Such a file put back is read
-  at the rate its header says, so a guessed 44100 plays at the wrong speed: export at 22050 (or fix the header)
-  before putting one back. A WoWViewer change to take the rate and channels from SFX.ojd would remove the trap.
+- **WoWViewer's export** (fixed in 248): it wrote each entry as `NAME.wav` with a mono header and a rate guessed
+  from the length (44100 for over 30 s at 22050). Every entry that long is one of the stereo samples, so those came
+  out the right length (stereo at 22050 is 44100 samples a second) and the engine reads them back exactly (above).
+  The short stereo ones (the briefings, victory and defeat, OPTION) came out as mono at 22050, half speed. Since
+  248 WoWViewer reads SFX.ojd (`WoWViewer/SfxTable.cs`, a port of `SoundTable::Load`'s opcodes) and writes, plays
+  and draws each entry at its own rate and channels, and its Replace checks a WAV against them. *Not built here*
+  (no .NET in the container): to be built and tried on Windows.
   *PNG for sprites is in (update 246)*: with Enhanced assets on, any `.spr` frame is replaced by a PNG beside it,
   named as WoWViewer exports the frames (`<name>_frame_NN.png`, or `<name>.png` for a one-frame sprite), at the
   frame's size or 2, 4 or 8 times it; drawn in full colour where the game draws the sprite as it is, and matched to
