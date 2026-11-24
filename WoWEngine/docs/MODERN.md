@@ -94,7 +94,8 @@ menu (command 0x9004, `FrontEnd::ModernGameplay`), laid out as Display Settings'
 |---|---|---|---|
 | Upgraded buildings in battle | `[Modern]` "Upgraded buildings in battle" | on | the next battle (also in Modern Options) |
 | Unlimited building | `[Modern]` "Unlimited building" | off | at once |
-| Units on bridges fire back | `[Modern]` "Bridges fire back" | off | the next battle |
+| Full control on bridges | `[Modern]` "Bridge control" (246-248: "Bridges fire back") | off | the next battle |
+| Bridges stay broken | `[Modern]` "Bridges stay broken" (249) | off | the next battle |
 
 **Unlimited building.** The game keeps a sector to so many of each type (OBJ.ojd record 52, "max per sector":
 20, the turret emplacements 12, the command buildings 1). An item is offered in a factory's or construction
@@ -115,14 +116,48 @@ units than that from its factories keeps them; others can't join it until there 
 factories keep every limit. (The setting is `WarMap::unlimitedBuilding`, read at the war map's start and when
 the box changes.)
 
-**Units on bridges fire back.** A unit's aim (vt+0xC8, 0x491110 for the vehicles) returns at once while the unit
-is on a bridge link (+0x18C set, 0x491123), so in the original a unit crossing a bridge neither returns fire nor
-takes Force Fire until it's off the bridge, whatever hits it (the owner noticed it with the Humans' units). The
-link is set for any unit whose route goes over a bridge (`SetWaypoint` / the route's node links). With the option on that test is left out (`BattleMap::Aim`,
-`BattleMap::Setup::bridgesFireBack`): the unit aims and fires from the deck as it would from the ground. The other test
-there, a unit under the ground (+0x84 under 0), stays; on a bridge the height is the deck's, never under 0 (the
-link's lift, `OnBridge`). *Provisional*: not yet seen in a battle with a bridge and an enemy in range; the code
-path is the same one every other unit's fire takes.
+**Full control on bridges** (`[Modern]` "Bridge control"; update 246 as "Bridges fire back", which is still read
+when "Bridge control" isn't set; the orders since 249, a player's report). A vehicle's bridge link (+0x18C) is set
+as soon as its route's next waypoint is a bridge's node (0x493374), so from heading for a bridge until it's off the
+other end. While it's set, the original:
+- doesn't aim: the aim (vt+0xC8, 0x491110 for the vehicles) returns at once (0x491123), so the unit neither returns
+  fire nor takes Force Fire, whatever hits it;
+- doesn't take a move order: the group's move (0x482E60) leaves out every member with the link (0x482F37: their
+  distance to the point isn't counted), and with all of them on it, as a group crossing is, nothing is counted and
+  the order is dropped (0x482F98).
+
+With the option on, both tests are left out (`BattleMap::Aim`, `OrderGroupMove`; `BattleMap::Setup::bridgeControl`):
+the unit aims and fires from the deck, and a new order is taken where it is. The other aim test, a unit under the
+ground (+0x84 under 0), stays; on a bridge the height is the deck's, never under 0 (`OnBridge`). *Seen (249)*: the
+London battle's lorries sent to the south bank over Westminster Bridge and ordered back to Big Ben's lawn while
+crossing: with the option off the second order is dropped and they go on south (one route found); with it on they
+turn back (a second route) and stop on the lawn. The firing hasn't been seen with an enemy in range.
+
+**Bridges stay broken** (update 249, the owner's idea). In the original a bridge destroyed in a battle is whole
+again at the sector's next battle: the bridges are the sector's scenery, loaded from `dat\<sector>.nsb` by each
+battle (EnterBattleMap, with `[Debug] Load scenery` on, the default), and the scenery isn't saved (the scorch is:
+the Damage Layer). Nothing in the original repairs on the battle map; the war map's repair is the Mobile Repair
+Vehicles' and workshops' (WARMAP.md "Repair": the most damaged unit, each hour, no rand()), and construction
+vehicles only build. With the option on:
+- **Kept**: a battle's end gives the war map the places of its sector's bridges down (`BattleMap::BrokenBridges`:
+  those not built because they were down, and those destroyed in it); the war map keeps them by sector
+  (`WarMap::SetBrokenBridges`), with the hours of rebuilding each has had.
+- **Rebuilt**: each hour of a sector (after its factories' production), every construction vehicle there (a unit
+  with a factory, either side's, not travelling) with nothing queued puts its hours into the sector's first broken
+  bridge (`RebuildBridges`); at 96 hours (the Military Bridge's, type 444, 4 days; *provisional*, the scenery
+  bridges have no build time of their own) it's taken off the list, so the next battle builds it. A vehicle with
+  anything to build does that first: the bridges are its last job.
+- **In battle**: a broken bridge isn't built at all (no segments, no route nodes: units go round, or can't cross);
+  one with rebuilding hours has the building site's corner flags (0x17B, the marker a construction shows) at its
+  two ends (`PlaceBridge`).
+- **Saved** beside the save, not in it: `SaveGame\<save>.bridges` (`Human.001.bridges`, `Custom.003.bridges`), one
+  line a bridge, `sector x y hours`, written with the save and removed when there are none, read as the campaign
+  loads; a new campaign in a slot removes the slot's. So the save stays the original's form, and the original game
+  (which doesn't read the file) simply has its bridges back.
+- *Seen (249)*: London's Westminster Bridge given as broken: not built, the flags at its north end when it has
+  hours (the one difference from no hours); a broken bridge in Oxford rebuilt by its construction vehicle on the
+  war map ("Bridge at ... rebuilt" in the log) and the `.bridges` file written again at the save without it.
+  *Not yet*: a bridge destroyed in a real battle and seen down at the next one.
 
 ### Group keys and Shift select (update 198)
 
@@ -405,11 +440,19 @@ engine's next start.
   - **Where the `.mp4`s come from** (the owner, update 248): they ship separately from the engine (about 1 GB),
     and the game's `.smk` movies (about 384 MB: FMV 41, FMV-Human 152, FMV-Martian 191) are kept and installed as
     now. The engine plays an `.mp4` where there is one and the `.smk` otherwise (`Movie::Open`).
-  - **To do: the `.mp4`s on macOS and Linux.** They play on Windows only, through Media Foundation
-    (`src/platform/Mp4Movie.cpp`, built for WIN32 only); on the other two the `.smk`s are the only movies. Once
-    they play everywhere (a decoder of the engine's own or a library, to be chosen with the owner), the launcher
-    could remove a `.smk` whose `.mp4` is there and opens, as WoWRevived's launcher does. Not before: with the
-    `.smk`s gone a Mac or Linux install would have no movies at all.
+  - **On macOS and Linux** (update 249; `src/platform/FfmpegMovie.cpp`): through the `ffmpeg` program where it's
+    installed (on the PATH, or in /opt/homebrew/bin, /usr/local/bin or /opt/local/bin, where a Mac app started from
+    the Finder doesn't look). `ffprobe` is asked first for the picture's size and frame rate and the sound's; if
+    it isn't there or can't read the file, the `.smk` is played (logged: "... ffprobe isn't installed or can't read
+    it; trying the .smk"). The picture comes from one ffmpeg process (decoded and scaled to the size shown, up to
+    1920 x 1080, as BGRA down a pipe) and the sound from another (16-bit, the file's rate and channels), read on
+    their own as Media Foundation's are. Nothing of FFmpeg is linked or shipped, so the engine starts without it.
+    *Seen*: a 1920 x 1080 H.264 / AAC test movie as `FMV\TITLE.mp4` played on Linux, colours right; without
+    ffprobe on the PATH, the `.smk` played instead. *Not yet*: the owner's own `.mp4`s, a Mac. AVFoundation (every
+    Mac has it, as Windows has Media Foundation) would serve Macs without ffmpeg: a later step, needing a Mac to
+    build on.
+  - **Removing the `.smk`s** (the owner, 248-249): later, and only where the engine checks first that it can play
+    the matching `.mp4` (on Windows, or with ffmpeg); until then the `.mp4`s ship separately and the `.smk`s stay.
 - **The menus' fade** is off (MODERN FIX, update 204; `[Modern]` "Menu fade" = 1 puts it back). The game
   covers the view with bigBlack for a few ticks at each change of menu and holds a control's command for five
   ticks meanwhile (0x4065E0). bigBlack comes out dark red in the Human menus' palette and another colour in the

@@ -680,6 +680,12 @@ namespace wow
         return m;
     }
 
+    // [Modern] "Bridge control" (update 249), or the key it had before, "Bridges fire back" (246), when it isn't set
+    bool FrontEnd::BridgeControl() const
+    {
+        return ini.GetBool("Modern", "Bridge control", ini.GetBool("Modern", "Bridges fire back", false));
+    }
+
     // MODERN (update 246): the rules of play the engine can change, in a menu of their own (docs/MODERN.md
     // "Modern Gameplay"), opened from Game Options and the war map's menu, under Modern Options; laid out as
     // Display Settings' boxes are. "Upgraded buildings in battle" is in Modern Options too.
@@ -689,13 +695,15 @@ namespace wow
         static const Option Options[] = {
             { "Upgraded buildings in battle", true, enginetext::UpgradedBuildings },
             { "Unlimited building", false, enginetext::UnlimitedBuilding },
-            { "Bridges fire back", false, enginetext::BridgesFireBack },
+            { "Bridge control", false, enginetext::BridgesFireBack },   // (update 249; "Bridges fire back" before)
+            { "Bridges stay broken", false, enginetext::BridgesStayBroken },   // (update 249)
         };
         auto m = MenuOver(CmdModernGameplay, previous, 1);
         m->AddHeadingText(res.String(enginetext::ModernGameplay));
         for (const Option& o : Options)
         {
-            m->AddCheck(0, ini.GetBool("Modern", o.name, o.on), [this, o](Button& b) {
+            const bool on = std::string(o.name) == "Bridge control" ? BridgeControl() : ini.GetBool("Modern", o.name, o.on);
+            m->AddCheck(0, on, [this, o](Button& b) {
                 ini.SetBool("Modern", o.name, b.value != 0);
                 ApplyModernOptions();
             });
@@ -719,6 +727,7 @@ namespace wow
             map->SetUpgradedInBattle(ini.GetBool("Modern", "Upgraded buildings in battle", true));
             map->SetStatusStrip(ini.GetBool("Modern", "War map status strip", false));
             map->SetUnlimitedBuilding(ini.GetBool("Modern", "Unlimited building", false));
+            map->SetBridgesStayBroken(ini.GetBool("Modern", "Bridges stay broken", false));
         }
     }
 
@@ -920,6 +929,11 @@ namespace wow
             return false;
         }
         std::filesystem::path path = SlotFile(slot);
+        {
+            // (update 249) a campaign replaced takes its broken bridges with it
+            std::error_code ec;
+            std::filesystem::remove(path.string() + ".bridges", ec);
+        }
         if (!WriteSaveFile(path, data)) { SDL_Log("New campaign: can't write %s", path.string().c_str()); return false; }
         SDL_Log("New campaign \"%s\" in %s", name.c_str(), path.string().c_str());
         return true;
@@ -937,6 +951,13 @@ namespace wow
         if (!data) { SDL_Log("The war map didn't come from a save it can write, so it isn't saved"); return; }
         bool ok = WriteSaveFile(SlotFile(playingSlot), *data);
         SDL_Log(ok ? "Saving game to slot %d" : "Saving game to slot %d failed", playingSlot);
+        // (MODERN, update 249: "Bridges stay broken") the broken bridges in a file of their own beside the save, so
+        // the save stays the original's; none, and the file goes
+        const std::filesystem::path bridges = SlotFile(playingSlot).string() + ".bridges";
+        const std::string text = map->BrokenBridgesText();
+        std::error_code ec;
+        if (text.empty()) std::filesystem::remove(bridges, ec);
+        else WriteSaveFile(bridges, std::vector<uint8_t>(text.begin(), text.end()));
     }
 
     void FrontEnd::StartWarMap(const std::string& gamePath, const std::string& name, int slot, bool loaded)
@@ -1070,6 +1091,7 @@ namespace wow
         }
         map->SetStatusStrip(ini.GetBool("Modern", "War map status strip", false)); // the same
         map->SetUnlimitedBuilding(ini.GetBool("Modern", "Unlimited building", false)); // the same (update 246)
+        map->SetBridgesStayBroken(ini.GetBool("Modern", "Bridges stay broken", false)); // the same (update 249)
         map->SetSoundLength([this](int id) { return sound.LengthTicks(id); });
         map->SetDeposits(std::move(deposits), ini.GetFloat("Tweak", "Resource Drop Off Rate", 3.0f));
         map->SetPodInterval(ini.GetInt("Tweak", "Pod Interval (hours)", 24));
@@ -1108,6 +1130,12 @@ namespace wow
         tweak("AI Movement Temperature", aiTweaks.temperature);
         map->SetAi(aiTweaks, std::move(weights), std::move(sites));
         if (exact) map->UseSave(std::move(*exact));
+        // (MODERN, update 249: "Bridges stay broken") the broken bridges kept beside the save, the save unchanged
+        if (auto kept = files.Resolve(gamePath + ".bridges"))
+        {
+            std::ifstream in(*kept, std::ios::binary);
+            map->ReadBrokenBridges(std::string((std::istreambuf_iterator<char>(in)), {}));
+        }
         ObjOjd::ResearchModifiers modifiers;
         modifiers.humanFriend = ini.GetFloat("Tweak", "HumanFriend Research Modifier", 0.75f);
         modifiers.humanEnemy = ini.GetFloat("Tweak", "HumanEnemy Research Modifier", 0.75f);
@@ -1394,6 +1422,8 @@ namespace wow
                         d.width = bm->ScorchWidth();
                         d.height = bm->ScorchHeight();
                         d.grid = bm->Scorch();
+                        // (MODERN, update 249: "Bridges stay broken") and the sector's bridges down now
+                        map->SetBrokenBridges(map->BattleSector(), bm->BrokenBridges());
                     }
                 }
             for (Screen* sc : { battleMap.get(), screen.get() })
@@ -1738,6 +1768,9 @@ namespace wow
         s.fogDropoff = ini.GetInt("BattleMap", "Fog vert dropoff", 3);
         s.fogDamageDelta = ini.GetInt("BattleMap", "Fog damage delta", 0);
         s.fogDamageRadius = ini.GetInt("BattleMap", "Fog vert damage radius", 16);
+        // (MODERN, update 249: "Bridges stay broken") the sector's bridges down from earlier battles
+        if (WarMap* map = ActiveWarMap())
+            for (const WarMap::BrokenBridge& b : map->BrokenBridges(map->BattleSector())) s.brokenBridges.push_back({ b.x, b.y, b.hours > 0 });
         s.hours = b.hours;
         // 0x40B030: with the curtains cheat on (byte_4D1279) and [Game] "Time Of Day" not 0, that hour lights the map
         int lightHour = int(b.hours) % 24;
@@ -1777,7 +1810,7 @@ namespace wow
         s.showSmoke = ini.GetBool("Options", "Show Smoke & particles", true);
         s.stickyPopup = ini.GetBool("Modern", "Sticky popup menus", false);   // a modern option (docs/MODERN.md)
         s.selectionKeys = ini.GetBool("Modern", "Selection keys", true);       // the same
-        s.bridgesFireBack = ini.GetBool("Modern", "Bridges fire back", false); // the same (update 246)
+        s.bridgeControl = BridgeControl();     // the same (update 246; 249 with the orders)
         s.mat = Mat();      // the developers' flag (docs/ODDITIES.md)
         s.groups = map->BattleGroups(b.sector);
         for (const WarMap::ReinforcementSource& r : map->ReinforcementSources()) s.sources.push_back({ r.sector, r.players, r.hq });

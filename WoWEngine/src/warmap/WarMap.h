@@ -193,6 +193,21 @@ namespace wow
         int battleDead[2] = { 0, 0 };    // vehicles destroyed in the battle just fought, the player's and the other side's
         void SetStatusStrip(bool on) { statusStrip = on; }   // [Modern] "War map status strip"
         void SetUnlimitedBuilding(bool on) { unlimitedBuilding = on; }   // [Modern] "Unlimited building"
+        // MODERN (update 249, docs/MODERN.md "Bridges stay broken"): with [Modern] "Bridges stay broken" on, the
+        // bridges destroyed in a sector's battles are kept (by their place on the battle map) until a construction
+        // vehicle in the sector with nothing to build has rebuilt them, the lowest of its jobs. The original builds
+        // every bridge again at each battle (they're the sector's scenery, dat\<sector>.nsb, which isn't saved).
+        struct BrokenBridge { int x = 0, y = 0, hours = 0; };
+        static constexpr int BridgeRebuildHours = 96;   // the Military Bridge's (type 444) 4 days; *provisional*
+        void SetBridgesStayBroken(bool on) { bridgesStayBroken = on; }
+        bool BridgesStayBroken() const { return bridgesStayBroken; }
+        const std::vector<BrokenBridge>& BrokenBridges(int sector) const;
+        // after a battle: the sector's bridges down now (those already down keep their hours)
+        void SetBrokenBridges(int sector, const std::vector<std::pair<int, int>>& places);
+        // kept beside the save (SaveGame\<save>.bridges), so the save stays the original's: one line a bridge,
+        // "sector x y hours"
+        std::string BrokenBridgesText() const;
+        void ReadBrokenBridges(const std::string& text);
         void SetDeposits(std::map<int, std::array<int, 6>> d, float dropOff) { deposits = std::move(d); resourceDropOff = dropOff; }
         // Both sides' research (0x417CD0: the local player's first, dword_4E9B88, then the other side's, 4E9B8C),
         // read from the save when there is one (HRSH, MRSH), and the war map view's trigger update (0x418D17)
@@ -624,6 +639,9 @@ namespace wow
         // room for the vehicles they make
         // ("Max units in sector" / "Max boats in sector"); moving into a sector still keeps to those
         bool unlimitedBuilding = false;
+        bool bridgesStayBroken = false;
+        std::map<int, std::vector<BrokenBridge>> brokenBridges;
+        void RebuildBridges(int sector, int hours);
         bool forfeited = false;     // byte_4E9B94: the battle map's key building lost with no battle on (0x48ACEF)
         struct QueuedEvent { int event, param; std::string text; };
         std::deque<QueuedEvent> eventQueue;

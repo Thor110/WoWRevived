@@ -853,6 +853,7 @@ namespace wow
                     if (sector == s && table[size_t(ref)].list == list && !(at >= 0 && counters[size_t(at)].Travelling())) refs.push_back(ref);
                 }
             for (int ref : refs) Produce(ref, hours);
+            RebuildBridges(s, hours);   // (MODERN: "Bridges stay broken", the construction vehicles' last job)
             sectorHours[size_t(s)] += hours;
             while (sectorHours[size_t(s)] >= 24)
             {

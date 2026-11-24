@@ -98,6 +98,7 @@ namespace wow
         std::unique_ptr<Screen> CriticalEvents(int previous);
         std::unique_ptr<Screen> ModernOptions(int previous);
         std::unique_ptr<Screen> ModernGameplay(int previous);
+        bool BridgeControl() const;
         bool recordWanted = false, playWanted = false;
         void ApplyModernOptions();  // 0x8117, 0x409DE0
         std::unique_ptr<Screen> LoadGame(int previous);     // 0x6F, 0x409560

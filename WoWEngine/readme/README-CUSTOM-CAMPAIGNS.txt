@@ -113,6 +113,8 @@ starts. So:
 - you can pass a Custom.nnn save to someone else and they can play it without the campaign file that
   made it: they put it in their SaveGame folder as Custom.nnn, with a number they aren't using;
 - changing or deleting a campaign file doesn't change campaigns already begun.
+- with the Modern Gameplay option "Bridges stay broken", the bridges destroyed so far are kept beside the save
+  as Custom.nnn.bridges: pass that on with the save to keep them down.
 
 Custom saves need this engine (version 0.2.5 from update 246, or later). The original game doesn't list
 them and leaves them alone.

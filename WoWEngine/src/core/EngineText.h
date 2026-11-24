@@ -37,7 +37,8 @@ namespace wow::enginetext
         // custom campaigns (update 246, docs/CUSTOM.md): the main menu's entry and its menu's heading, its rows
         CustomCampaigns = 1460, ResumeCustom, NoCustomCampaigns, NextCampaigns, PreviousCampaigns,      // 1460-1464
         SaveUnreadable,                                                                                   // 1465 (248)
-        Last = 1478,
+        BridgesStayBroken,                                                                                // 1466 (249); its tip 1486
+        Last = 1486,
     };
 
     struct Entry { int id; const char* text[Languages]; };
@@ -174,10 +175,17 @@ namespace wow::enginetext
             "La dimensione dei pannelli delle mappe: la minimappa, le icone, i menu e il calendario.",
             "El tamaño de los paneles de los mapas: el minimapa, los iconos, los menús y el calendario." } },
         { UnlimitedBuilding, { "Unlimited building", "Construction illimitée", "Unbegrenzter Bau", "Costruzione illimitata", "Construcción ilimitada" } },
-        { BridgesFireBack, { "Units on bridges fire back", "Tir depuis les ponts", "Feuer von Brücken", "Fuoco dai ponti", "Fuego desde los puentes" } },
+        { BridgesFireBack, { "Full control on bridges", "Contrôle total sur les ponts", "Volle Kontrolle auf Brücken", "Controllo totale sui ponti", "Control total en los puentes" } },
         { CustomCampaigns, { "Custom Campaigns", "Campagnes personnalisées", "Eigene Feldzüge", "Campagne personalizzate", "Campañas personalizadas" } },
         { ResumeCustom, { "Resume Custom Campaign", "Reprendre une campagne personnalisée", "Eigenen Feldzug fortsetzen", "Riprendi campagna personalizzata", "Reanudar campaña personalizada" } },
         { NoCustomCampaigns, { "No custom campaigns", "Aucune campagne personnalisée", "Keine eigenen Feldzüge", "Nessuna campagna personalizzata", "No hay campañas personalizadas" } },
+        { BridgesStayBroken, { "Bridges stay broken", "Les ponts restent détruits", "Brücken bleiben zerstört", "I ponti restano distrutti", "Los puentes siguen destruidos" } },
+        { BridgesStayBroken + TipOffset, {
+            "A destroyed bridge stays down until a construction vehicle in the sector, with nothing else to build, rebuilds it.",
+            "Un pont détruit le reste jusqu'à ce qu'un véhicule de construction du secteur, sans autre travail, le reconstruise.",
+            "Eine zerstörte Brücke bleibt zerstört, bis ein Baufahrzeug im Sektor ohne andere Arbeit sie wieder aufbaut.",
+            "Un ponte distrutto resta tale finché un veicolo da costruzione del settore, senza altro lavoro, non lo ricostruisce.",
+            "Un puente destruido sigue así hasta que un vehículo de construcción del sector, sin otro trabajo, lo reconstruye." } },
         { SaveUnreadable, { "This campaign couldn't be read", "Impossible de lire cette campagne", "Dieser Feldzug konnte nicht gelesen werden", "Impossibile leggere questa campagna", "No se pudo leer esta campaña" } },
         { NextCampaigns, { "Next Campaigns", "Campagnes suivantes", "Weitere Feldzüge", "Campagne successive", "Campañas siguientes" } },
         { PreviousCampaigns, { "Previous Campaigns", "Campagnes précédentes", "Vorherige Feldzüge", "Campagne precedenti", "Campañas anteriores" } },
@@ -195,11 +203,11 @@ namespace wow::enginetext
             "Le tue fabbriche e i veicoli da costruzione ignorano il limite di ogni oggetto per settore.",
             "Tus fábricas y vehículos de construcción ignoran el límite de cada objeto por sector." } },
         { BridgesFireBack + TipOffset, {
-            "Units crossing a bridge aim and return fire instead of holding it until they are off it.",
-            "Les unités humaines sur un pont ripostent au lieu de retenir leur tir.",
-            "Menschliche Einheiten auf einer Brücke erwidern das Feuer.",
-            "Le unità umane su un ponte rispondono al fuoco.",
-            "Las unidades humanas sobre un puente devuelven el fuego." } },
+            "Units crossing a bridge aim, return fire and take new orders, instead of waiting until they are off it.",
+            "Les unités sur un pont visent, ripostent et reçoivent de nouveaux ordres sans attendre d'en être sorties.",
+            "Einheiten auf einer Brücke zielen, erwidern das Feuer und nehmen neue Befehle an, statt zu warten.",
+            "Le unità su un ponte mirano, rispondono al fuoco e accettano nuovi ordini senza aspettare.",
+            "Las unidades sobre un puente apuntan, devuelven el fuego y aceptan órdenes nuevas sin esperar." } },
         { MenuScale + TipOffset, {
             "The size of the menus, up to what fits the screen: 200% doubles every pixel.",
             "La taille des menus, jusqu'à ce que permet l'écran : 200 % double chaque pixel.",

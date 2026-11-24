@@ -1,5 +1,7 @@
 // The war map's factories (WBuildList 0x45F770-0x462EE0): their hourly progress and what comes of it. See
 // docs/WARMAP.md "Production" and core/BuildList.h for the save format.
+#include <SDL3/SDL_log.h>
+#include <sstream>
 #include "warmap/WarMap.h"
 
 
@@ -551,5 +553,80 @@ namespace wow
         if (it == factories.end()) return;
         WriteTail(table[size_t(ref)], it->second);
         if (auto t = ReadTail(table[size_t(ref)])) it->second = *t;
+    }
+}
+
+namespace wow
+{
+    const std::vector<WarMap::BrokenBridge>& WarMap::BrokenBridges(int sector) const
+    {
+        static const std::vector<BrokenBridge> none;
+        auto it = brokenBridges.find(sector);
+        return it == brokenBridges.end() || !bridgesStayBroken ? none : it->second;
+    }
+
+    void WarMap::SetBrokenBridges(int sector, const std::vector<std::pair<int, int>>& places)
+    {
+        if (!bridgesStayBroken) return;
+        std::vector<BrokenBridge> now;
+        const std::vector<BrokenBridge>& before = brokenBridges[sector];
+        for (const auto& [x, y] : places)
+        {
+            BrokenBridge b{ x, y, 0 };
+            for (const BrokenBridge& o : before) if (o.x == x && o.y == y) b.hours = o.hours;
+            now.push_back(b);
+        }
+        if (now.empty()) brokenBridges.erase(sector);
+        else brokenBridges[sector] = std::move(now);
+    }
+
+    // Each hour of a sector: every construction vehicle there (a unit with a factory, either side's) with nothing
+    // queued puts its hours into the sector's first broken bridge; at BridgeRebuildHours it's whole again (the next
+    // battle builds it). After everything a vehicle can build: a queue with anything in it does that instead.
+    void WarMap::RebuildBridges(int sector, int hours)
+    {
+        if (!bridgesStayBroken || hours <= 0) return;
+        auto it = brokenBridges.find(sector);
+        if (it == brokenBridges.end() || it->second.empty()) return;
+        int workers = 0;
+        for (const auto& [ref, f] : factories)
+        {
+            const int at = CounterOf(ref);
+            if (at < 0 || counters[size_t(at)].kind != 0 || counters[size_t(at)].sector != sector || counters[size_t(at)].Travelling()) continue;
+            if (f.queue.entries.empty()) workers++;
+        }
+        if (!workers) return;
+        BrokenBridge& b = it->second.front();
+        b.hours += hours * workers;
+        if (b.hours >= BridgeRebuildHours)
+        {
+            SDL_Log("Bridge at %d,%d in sector %d rebuilt", b.x, b.y, sector);
+            it->second.erase(it->second.begin());
+            if (it->second.empty()) brokenBridges.erase(it);
+        }
+    }
+
+    std::string WarMap::BrokenBridgesText() const
+    {
+        std::string out;
+        for (const auto& [sector, list] : brokenBridges)
+            for (const BrokenBridge& b : list)
+                out += std::to_string(sector) + " " + std::to_string(b.x) + " " + std::to_string(b.y) + " " + std::to_string(b.hours) + "\n";
+        return out;
+    }
+
+    void WarMap::ReadBrokenBridges(const std::string& text)
+    {
+        brokenBridges.clear();
+        std::istringstream in(text);
+        std::string line;
+        while (std::getline(in, line))
+        {
+            if (line.empty() || line[0] == '#') continue;
+            std::istringstream words(line);
+            int sector = 0;
+            BrokenBridge b;
+            if (words >> sector >> b.x >> b.y >> b.hours && sector >= 1 && sector <= warmap::SectorCount) brokenBridges[sector].push_back(b);
+        }
     }
 }

@@ -56,7 +56,7 @@ namespace wow
         // the folders WoWRevived's wrapper uses (Smackw32.cpp SmackOpen): TITLE and RAGELOGO stay in FMV
         bool shared = name == "TITLE" || name == "RAGELOGO";
         std::string folder = shared ? "FMV" : human ? "FMV-Human" : "FMV-Martian";
-#ifdef _WIN32
+        // (Linux and macOS too since update 249: through ffmpeg, only when it's there and reads the file)
         if (auto mp4 = files.Resolve(folder + "\\" + name + ".mp4"))
         {
             SDL_Log("Movie %s: playing %s", name.c_str(), mp4->string().c_str());
@@ -64,7 +64,6 @@ namespace wow
             if (auto movie = OpenMp4(*mp4, why)) return movie;
             SDL_Log("%s: %s; trying the .smk", mp4->string().c_str(), why.c_str());
         }
-#endif
         auto smk = files.Resolve(folder + "\\" + name + ".smk");
         if (!smk && !shared) smk = files.Resolve("FMV\\" + name + ".smk");
         if (!smk)

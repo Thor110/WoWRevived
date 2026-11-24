@@ -48,7 +48,8 @@ namespace wow::settingstable
         // [Modern]
         { "Modern", "Upgraded buildings in battle", "1", "Buildings upgraded on the war map fight at their new level in battle (the original keeps the level they were built at)." },
         { "Modern", "Unlimited building", "0", "Your factories and construction vehicles ignore the per-sector limits (OBJ.ojd), except one command building per sector." },
-        { "Modern", "Bridges fire back", "0", "Units crossing a bridge aim and return fire (the original holds fire until they're off it)." },
+        { "Modern", "Bridges stay broken", "0", "A destroyed bridge stays down until a construction vehicle in its sector, with nothing else to build,\nrebuilds it (4 days' work); kept beside the save as <save>.bridges. The original builds every bridge again at\neach battle." },
+        { "Modern", "Bridge control", "0", "Units crossing a bridge aim, return fire and take new orders (the original makes them wait until they're\noff it). Before update 249 this was \"Bridges fire back\", which is still read when this isn't set." },
         { "Modern", "Sticky popup menus", "0", "Popup menus stay open once the right button is let go." },
         { "Modern", "War map status strip", "0", "A strip on the war map with the sector under the pointer." },
         { "Modern", "Selection keys", "1", "In battle: Ctrl + a digit keeps a selection, the digit brings it back, Shift adds to a selection." },

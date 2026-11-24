@@ -822,11 +822,11 @@ namespace wow
     // 0x496200: the goal kept and the children all aimed at one point jittered by up to the distance / 16 + 1 each
     // way (rand() % twice that, less it, for x, y and height, drawn once); a turret (a vehicle) does the same for its guns, whose vt+0xC8
     // (0x494D20) keeps the point and arms them (a gun in flight, state 2, goes to 3).
-    // MODERN ([Modern] "Bridges fire back", update 246, docs/MODERN.md "Modern Gameplay"): the bridge link's test
+    // MODERN ([Modern] "Bridge control", update 246, docs/MODERN.md "Modern Gameplay"): the bridge link's test
     // (+0x18C, 0x491123) left out, so a unit crossing a bridge aims, returns fire and takes Force Fire as off it.
     void BattleMap::Aim(Unit& u, int x, int y, int z)
     {
-        if (u.drive.lift < 0.0f || (u.drive.link && !setup.bridgesFireBack)) return;
+        if (u.drive.lift < 0.0f || (u.drive.link && !setup.bridgeControl)) return;
         x = std::clamp(x, 0, land.WorldWidth() - 1);
         y = std::clamp(y, 0, int((int64_t(land.Cell()) * land.Height()) >> 16) - 1);
         // each 0x496200 measures from its own object's point (the unit's, then the turret's for its guns)

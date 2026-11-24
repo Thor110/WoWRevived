@@ -241,7 +241,8 @@ The road map for this project.
 		- A Modern Gameplay menu for changes to the rules of play. ( opened from Game Options and the war map's Campaign Options )
 			- Upgraded buildings in battle.
 			- Unlimited building: your factories and construction vehicles ignore the per-sector limits from OBJ.ojd ( turrets, mines, fences, buildings and units ), except one command building per sector.
-			- Units on bridges fire back: in the original a unit crossing a bridge can't aim until it's off it.
+			- Full control on bridges: in the original a unit heading for or crossing a bridge can't aim or take a new order until it's off it.
+			- Bridges stay broken: a destroyed bridge stays down until a construction vehicle in the sector with nothing else to build rebuilds it; kept beside the save, so the save format is unchanged.
 	- Civil wars ( work in progress ): a Human Civil War and a Martian Civil War, each faction against itself, with no pods.
 		- The start layouts are a text file, DAT\CivilWar.txt, for balancing without rebuilding.
 		- The other side is told apart on the battle map by its colours, and on the war map by the side colours.
@@ -259,7 +260,7 @@ The road map for this project.
 	- Building on the battle map as in the original: construction vehicles place buildings, turrets, mines and fences, with the green and red placement outline; fences laid post by post and shot down post by post.
 	- Breakable bridges, and the route finder spread over the game's updates as in the original.
 	- A log file that records crashes and stalls, to make bug reports easier.
-	- WoWRevived's 1080p movies ship separately and play on Windows; playing them on macOS and Linux is still to do, so the original movies are kept.
+	- WoWRevived's 1080p movies ship separately: they play on Windows, and on macOS and Linux through ffmpeg when it's installed (the original movies otherwise), so the original movies are kept.
 	- Still to do: network play ( last, as a menu option ), parts of the computer player, the 1080p movies on macOS and Linux, and testing everything in play.
 
 This might not all happen but I wanted to create a more accessible guide for running the game on modern systems, while the information exists much of it is scattered across the internet.

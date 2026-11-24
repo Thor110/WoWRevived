@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 248
+# Handoff: WoWEngine after update 249
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -157,7 +157,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 248
+## State after update 249
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -189,6 +189,17 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   moved). The parity battles didn't see it (a battle reads the table, not the counters). Fixed in 238. A new
   campaign's war map screenshot with the construction vehicles in sectors 12 and 24 is a quick look: their
   counters aren't the lorry's.
+- **Update 249**: **Full control on bridges** (`[Modern]` "Bridge control", was "Bridges fire back"; a vehicle's
+  bridge link is set from heading for a bridge, 0x493374, and the group's move order leaves such members out,
+  0x482F37, dropping the order when all are, 0x482F98: the option counts them; seen with the London lorries ordered
+  back mid-crossing); **Bridges stay broken** (MODERN.md: destroyed bridges kept per sector in
+  `SaveGame\<save>.bridges`, rebuilt by idle construction vehicles over 96 hours as their last job, the building
+  site's flags at a rebuilding bridge's ends; the original rebuilds every bridge at each battle, the sector's scenery
+  being reloaded from `dat\<sector>.nsb`); the OBJ notes (keep the structure and order; Blender reorders OBJ unless
+  told not to); **the `.mp4`s on Linux and macOS through the ffmpeg program** when installed (`FfmpegMovie.cpp`),
+  the `.smk` otherwise. Headless test aids used: a temporary `SDL_Log` of the units' links (removed), a
+  `Human.000.bridges` beside the start file (read by `--open 0x8A` runs), a generated `FMV\TITLE.mp4` with
+  `--open 0x8038`.
 - **Update 248** (still 0.2.6): the main README's section 15 brought up to date; the stereo sounds' round trip
   (the engine reads WoWViewer's old mono-at-44100 export of a stereo sound as stereo; WoWViewer reads SFX.ojd,
   `WoWViewer/SfxTable.cs`, and writes, plays and checks each entry at its rate and channels: *not built here*, no
@@ -268,7 +279,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **249**.
+  - The next number is **250**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.

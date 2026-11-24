@@ -86,7 +86,13 @@ namespace wow
             // battle on, for every neighbouring sector
             bool mat = false;
             bool selectionKeys = true;  // [Modern] "Selection keys": Ctrl + digit keeps a selection, the digit brings it back, Shift adds to it
-            bool bridgesFireBack = false;   // [Modern] "Bridges fire back" (update 246): a unit on a bridge link aims and fires (Aim)
+            // [Modern] "Bridge control" ("Bridges fire back" in 246): a unit on a bridge link aims and fires (Aim) and a
+            // group's move order counts it (OrderGroupMove), as off a bridge
+            bool bridgeControl = false;
+            // MODERN ([Modern] "Bridges stay broken", update 249): the sector's bridges down from earlier battles, by
+            // their place; one being rebuilt has the building site's corner flags at its ends
+            struct BrokenBridge { int x = 0, y = 0; bool rebuilding = false; };
+            std::vector<BrokenBridge> brokenBridges;
             // 0x43AC40 on a sector: room there for `count` more of the player's land objects (else boats)
             std::function<bool(bool land, int sector, int count)> hasRoom;
             int noBuildBorder = 16;     // [Tweak] "No-build border width (vertices)" (dword_59D93C)
@@ -575,6 +581,7 @@ namespace wow
         void RemoveNode(int node);                                                      // 0x494370
         bool finderAbort = false;       // dword_59E41C: a node went since the search began
         std::vector<BridgeLink> bridgeLinks;
+        std::vector<std::pair<int, int>> bridgesLeftDown;   // (update 249) setup.brokenBridges' places, not built
         int InsertNode(int x, int y, int link);                                         // 0x494220
         void AddBridgeNodes(const Bridge& bridge);                                      // 0x4983D0
         bool OnBridge(Unit& u, int link);                                               // 0x4984E0
@@ -888,6 +895,9 @@ namespace wow
     public:
         // The war map objects whose battle units are all gone (each group stands for one), for the war map
         std::vector<int> LostRefs() const;
+        // (update 249) the places of the sector's bridges down at the battle's end: those down before it and those
+        // destroyed in it
+        std::vector<std::pair<int, int>> BrokenBridges() const;
         const std::vector<std::pair<int, int>>& DeadUnits() const { return deadUnits; }   // each unit destroyed: its war map object and slot
         // every battle unit still standing as the battle leaves it: its war map object, which of the object's
         // units it is, and its health, to go back into the object (+0xC4 is saved with each, 0x489F30)

@@ -1,8 +1,9 @@
 // The game's movies (0x44DE20 -> 0x44F2C0): RAGELOGO and TITLE at start-up, INTRO for a new campaign, VICTORY
 // and DEFEAT at the end. The original plays FMV\<name>.smk with SMACKW32.DLL; WoWRevived's Smackw32 wrapper plays
 // its own .mp4 versions instead, TITLE and RAGELOGO from FMV, the rest from FMV-Human or FMV-Martian by the side.
-// WoWEngine looks in the same places: the .mp4 first (Windows: Media Foundation), then the .smk there, then the
-// .smk in FMV (an install from before the movies were split by side).
+// WoWEngine looks in the same places: the .mp4 first (Windows: Media Foundation; Linux and macOS, since update 249,
+// the ffmpeg program where it's installed and can read it), then the .smk there, then the .smk in FMV (an install
+// from before the movies were split by side).
 #pragma once
 #include "core/GameFiles.h"
 
@@ -60,7 +61,6 @@ namespace wow
         uint64_t pushed = 0;     // sample frames
     };
 
-#ifdef _WIN32
-    std::unique_ptr<Movie> OpenMp4(const std::filesystem::path& path, std::string& error); // Mp4Movie.cpp
-#endif
+    // Mp4Movie.cpp on Windows, FfmpegMovie.cpp elsewhere; null (and why) when it can't be played
+    std::unique_ptr<Movie> OpenMp4(const std::filesystem::path& path, std::string& error);
 }

@@ -128,8 +128,15 @@ OBJ, glTF and GLB are read (a .gltf must have its data inside it; Blender's "glT
   a unit (body, turret, legs, ...) is a group named as the game names it. Keep those names: the game moves and
   turns the parts by them, and a part your model doesn't name keeps the game's shape.
 - Each part holds at most 255 points and 255 triangles. A part with more is left as the game's (the log says so).
-- Keep an exported part's points in their order and add new ones after them: the game finds some points by
-  number (where a gun fires from, a walker's feet).
+- OBJ files can't be reordered: they must keep their original structure (the parts, each part's points and
+  triangles in the order the export wrote them), or the parts' animation and the points the game finds by
+  number (where a gun fires from, a walker's feet) go wrong. New points go after a part's own.
+- Blender reorders OBJ files unless told not to: its import and export settings likely need adjusting to keep
+  the order (look for the options that keep the vertex order and split by object, and leave out anything that
+  cleans up, merges or validates the mesh). Don't use "Merge by Distance": the game's models have points at the
+  same place on purpose. Keep the axes and scale the same on import and export.
+- glTF is less fussy about order (points at the same place are joined up again), but export with normals so
+  sharp edges stay sharp, and use "glTF Embedded" or .glb.
 - The texture is the unit's picture (the same PNG as above, 256 wide): the model's texture coordinates place each
   triangle on it. The materials are named material_0, material_1 ... as the export names them; keep each
   triangle's.

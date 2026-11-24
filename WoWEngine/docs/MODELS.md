@@ -54,6 +54,17 @@ a glTF before a GLB. WoWEngine.log names it ("Texture pack: model human/units/AI
 - **Written** (`ApplyMeshes`): the new points and triangles (and groups) are added at the file's end and the piece's
   record pointed at them; nothing else in the file changes.
 
+## Making one in a 3D tool (the owner, update 249)
+
+**OBJ files can't be reordered: they must keep their original structure** (the groups, each group's points and
+triangles in the export's order), or the animation and the points found by number go wrong. **Blender reorders OBJ
+files unless an option is ticked to stop it** (the owner, from experience; which options and versions isn't
+recorded): its settings likely need adjusting on import and export to keep the order. Not verified here (Blender
+couldn't be installed in the build container). Also: no "Merge by Distance" (the models' coincident points are on
+purpose, a hard edge's two sides), no validating or cleaning up the mesh, the same axes and scale both ways, the
+groups' names kept, and materials kept as `material_N`. glTF is less fussy (coincident vertices with the same normal
+are joined), but needs normals for hard edges, and embedded data or `.glb`.
+
 ## Checked
 
 - `wowdump --objcheck <Dat.wow>`: all 145 of the game's WOFs exported, read back and put into the game's file give

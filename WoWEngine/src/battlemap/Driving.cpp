@@ -226,7 +226,9 @@ namespace wow
             // 0x482F17: vt+0x114 for every vehicle member (its own footprint off the ground it routes over), before
             // the link test
             if (u.vehicle) ClearFootprint(u);
-            if (u.drive.link) continue;
+            // (MODERN, [Modern] "Bridge control", update 249: a member on a bridge counted too, so a group crossing
+            // one takes a new order there; the game leaves it out, 0x482F37, and a group all on one drops the order)
+            if (u.drive.link && !setup.bridgeControl) continue;
             const int d = octagonal(int(u.x), int(u.y), x, y);
             u.drive.toPoint = d;
             if (d < nearest) nearest = d;

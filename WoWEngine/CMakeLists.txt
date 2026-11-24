@@ -158,6 +158,9 @@ if(TARGET SDL3::SDL3)
         # WoWRevived's .mp4 movies through Media Foundation
         target_sources(WoWEngine PRIVATE src/platform/Mp4Movie.cpp)
         target_link_libraries(WoWEngine PRIVATE mfplat mfreadwrite mfuuid ole32)
+    else()
+        # (update 249) and elsewhere through the ffmpeg program, where it's installed (nothing linked)
+        target_sources(WoWEngine PRIVATE src/platform/FfmpegMovie.cpp)
     endif()
     # IniStore.h is shared with the patch DLLs so the engine reads the same WoWRevived.ini
     target_include_directories(WoWEngine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../WoWPatches/Common)

@@ -2171,6 +2171,19 @@ namespace wow
     // redoes the joints every update; the ground under a bridge doesn't change yet, so here it's done once.
     void BattleMap::PlaceBridge(const PlacedObject& o)
     {
+        // MODERN ("Bridges stay broken", update 249): a bridge down from an earlier battle isn't built (no deck, no
+        // route over it); while it's being rebuilt the building site's flags (0x17B) stand at its two ends
+        for (const auto& b : setup.brokenBridges)
+            if (b.x == int(o.x) && b.y == int(o.y))
+            {
+                bridgesLeftDown.push_back({ b.x, b.y });
+                if (b.rebuilding)
+                {
+                    AddRenderer(0x17B, float(o.extra[0]), float(o.extra[1]), 0);
+                    AddRenderer(0x17B, float(o.extra[2]), float(o.extra[3]), 0);
+                }
+                return;
+            }
         auto u = setup.units->find(o.type);
         const GType* g = nullptr;
         int gtype = 0;
@@ -2230,6 +2243,14 @@ namespace wow
             if (i > 0) wofs[first + size_t(i) - 1]->Stitch(j, true);
             if (i < made) wofs[first + size_t(i)]->Stitch(j, false);
         }
+    }
+
+    std::vector<std::pair<int, int>> BattleMap::BrokenBridges() const
+    {
+        std::vector<std::pair<int, int>> out = bridgesLeftDown;
+        for (const BridgeLink& b : bridgeLinks)
+            if (b.gone) out.push_back({ b.x, b.y });
+        return out;
     }
 
     // The view's scroll (0x42F6F0 through the camera, 0x40E5A0): 0 to the world's size (the landscape's +0x1C and

@@ -23,8 +23,14 @@ Modern options are the only deliberate differences.
   unit type in a sector; a factory finishing vehicles in a sector that holds "Max units in sector" already; that
   moving a group into such a sector is still refused; that the computer player keeps the limits; one command
   building per sector.
-- **Units on bridges fire back** (the same): a Human vehicle attacked while crossing a bridge returns fire; Force
-  Fire given to one on a bridge; with the option off, neither (the original).
+- **The `.mp4` movies on Linux and macOS** (249; MODERN.md "The movies"): the owner's `.mp4`s with ffmpeg
+  installed, on Linux and on a Mac (started from the Finder too); without ffmpeg, the `.smk`s.
+- **Bridges stay broken** (249; MODERN.md): a bridge destroyed in a battle, the sector left and fought in again
+  (the bridge still down, units going round); a construction vehicle in the sector rebuilding it (the flags at its
+  ends) and the bridge back after; a save with a broken bridge passed on with its `.bridges` file.
+- **Full control on bridges** (the same, "Bridge control"): a Human vehicle attacked while crossing a bridge returns
+  fire; Force Fire given to one on a bridge; with the option off, neither (the original). The new orders were seen
+  working headless (249).
 - **Custom campaigns** (CUSTOM.md, README-CUSTOM-CAMPAIGNS.txt): each example played for a while; a definition with
   its own start file in the main folder's Campaigns; a Custom.nnn save copied to another install and loaded there;
   a Martian custom campaign beside a Human one (each listed only in its side's game, neither replacing the other's
