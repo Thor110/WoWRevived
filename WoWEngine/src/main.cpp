@@ -502,12 +502,30 @@ int main(int argc, char** argv)
         // the picture is the size the front end asks for (the view size for the menus, 640 x 480 for the maps and
         // movies until their views take the size too); it changes with the screen and with the setting, at once
         bool windowSetting = frontEnd.WindowedSetting(), cursorSetting = frontEnd.GameCursor();
+        std::string sizeSetting = ini.GetString("Screen", "Size", "");
         auto fitPicture = [&]() {
+            // a new resolution from Game Options: the window takes its size at once, as it would at the next start (the
+            // player's kept window size dropped; update 254, the owner's report: the window stayed as it was, the
+            // smaller picture stretched in it, until a restart). Filling the screen, it's sized when next windowed.
+            if (options.screenshot.empty())
+                if (std::string now = ini.GetString("Screen", "Size", ""); now != sizeSetting)
+                {
+                    sizeSetting = now;
+                    ini.SetString("WoW Engine", "Window Size", "");
+                    if (SDL_GetWindowFlags(video.Window()) & SDL_WINDOW_FULLSCREEN) windowSized = false;
+                    else
+                    {
+                        SDL_RestoreWindow(video.Window());
+                        sizeWindow();
+                        windowSized = true;
+                    }
+                }
             // the Modern Options menu's window switches, taken as they change
             if (options.screenshot.empty() && frontEnd.WindowedSetting() != windowSetting)
             {
                 windowSetting = frontEnd.WindowedSetting();
                 video.SetFullScreen(!windowSetting);
+                SDL_SyncWindow(video.Window());     // (the change made before the window is sized: some systems make it later)
                 wow::Screen::windowed = windowSetting;
                 if (windowSetting && !windowSized) { sizeWindow(); windowSized = true; }
             }
@@ -665,6 +683,7 @@ int main(int argc, char** argv)
                         if (!event.key.repeat)
                         {
                             video.ToggleFullScreen();
+                            SDL_SyncWindow(video.Window());
                             wow::Screen::windowed = !(SDL_GetWindowFlags(video.Window()) & SDL_WINDOW_FULLSCREEN);
                             if (wow::Screen::windowed && !windowSized) { sizeWindow(); windowSized = true; }
                         }

@@ -403,6 +403,9 @@ engine's next start.
   "Window Size", width,height, written as the window is resized, not while it is maximised or fills the
   screen). With none kept yet the window opens at the view size, or as much of it as the desktop has room
   for at the same shape, in the middle of the screen. The picture is scaled to whatever size the window has.
+  A new resolution chosen in Game Options while in a window (update 254, the owner's report) sizes the window
+  as a start would: the kept size is dropped and the window takes the new view size (`main.cpp` `fitPicture`);
+  while filling the screen, it's sized so the next time it goes into a window.
 - **Backgrounds are never scaled.** The main menu's and the legal screens' (`humanbd`, `martbd`, `legal1`,
   `legal2`) are read from `DAT\extra\<width>x<height>\` in the game folder when the size has them there
   (`Resources::SetViewSize`), and drawn from the top left at their own size. The briefing, research and CD

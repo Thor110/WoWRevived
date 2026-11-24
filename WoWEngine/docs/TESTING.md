@@ -56,6 +56,12 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## The window (update 254)
+
+- Play in window (Modern Options), then a smaller or larger resolution in Game Options: the window takes the
+  new size at once, the picture unstretched in it (before: only after a restart). The same full screen, then
+  Play in window. Alt + Enter both ways after it. Not tried headless (the test driver has no real window).
+
 ## The civil wars (updates 236-237)
 
 - The balance of the start layouts (the Human Civil War's draft gives London's side 17 sectors to the player's 3).
