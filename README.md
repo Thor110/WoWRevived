@@ -238,6 +238,7 @@ The road map for this project.
 		- Key bindings for both maps in WoWRevived.ini.
 		- Popup menus that stay open, a war map status strip, windowed mode, picture stretching and the system mouse pointer.
 		- Input recording and playback.
+	- Civil wars ( work in progress ): a Human Civil War and a Martian Civil War, each faction against itself, with no pods.
 		- A log file that records crashes and stalls, to make bug reports easier.
 	- Still to do: battle saving, repair, breakable bridges, network play and parts of the computer player.
 
@@ -687,6 +688,17 @@ A Martian pod landing in a Human sector at 1920x1080
 <div align="center">
   <img src="images/wowengine/engine-martian-landing.jpg" alt="Martian Pod Landing">
 </div>
+
+### Civil Wars ( work in progress )
+
+Two new campaigns, started from the main menu under Start New Campaign: **Human Civil War** when playing as the Humans, **Martian Civil War** when playing as the Martians.
+
+- The Human Civil War sets the Humans against each other, the player's side starting from Scotland against London.
+- The Martian Civil War is set after the Humans have lost the Earth, the player's Martians starting from London against Scotland.
+- There are no pods in either, the computer player plays the other side with its own faction's rules, and the other side's units are shown in different colours on the battle map.
+- Civil war campaigns are saved separately ( HumanCW.001, MartianCW.001 ) so the original game never sees them, and they are listed in the same Load menu with "(Human Civil War)" or "(Martian Civil War)" after their names.
+
+The starting layouts are a first draft and the two sides still need evening out.
 
 ### Bug Reports
 

@@ -1,5 +1,6 @@
 #include "core/SaveGame.h"
 #include "core/Bytes.h"
+#include "core/Campaign.h"
 
 #include <algorithm>
 #include <cstring>
@@ -9,22 +10,26 @@
 
 namespace wow
 {
-    std::string SaveSlot::GamePath(bool human, int slot)
+    std::string SaveSlot::GamePath(bool human, int slot, bool civilWar)
     {
         char path[48];
-        std::snprintf(path, sizeof(path), "SaveGame\\%s.%03d", human ? "Human" : "Martian", slot);
+        std::snprintf(path, sizeof(path), "SaveGame\\%s%s.%03d", human ? "Human" : "Martian", civilWar ? "CW" : "", slot);
         return path;
     }
 
-    bool SaveSlot::Exists(const GameFiles& files, bool human, int slot) { return files.Resolve(GamePath(human, slot)).has_value(); }
+    bool SaveSlot::Exists(const GameFiles& files, bool human, int slot, bool civilWar) { return files.Resolve(GamePath(human, slot, civilWar)).has_value(); }
 
-    std::optional<std::string> SaveSlot::Name(const GameFiles& files, bool human, int slot)
+    std::optional<std::string> SaveSlot::Name(const GameFiles& files, bool human, int slot, bool civilWar)
     {
-        auto path = files.Resolve(GamePath(human, slot));
+        auto path = files.Resolve(GamePath(human, slot, civilWar));
         if (!path) return std::nullopt;
         std::ifstream in(*path, std::ios::binary);
         char raw[NameLength] = {};
-        in.seekg(std::streamoff(NameOffset));
+        // (a civil war's save: the engine's tag, then the original's layout)
+        char head[4] = {};
+        const bool tagged = in.read(head, 4) && std::memcmp(head, EngineSaveTag, 4) == 0;
+        in.clear();
+        in.seekg(std::streamoff(NameOffset + (tagged ? EngineSaveHeader : 0)));
         if (!in.read(raw, std::streamsize(NameLength))) return std::nullopt;
         size_t length = 0;
         while (length < NameLength && raw[length] != 0) length++;
@@ -43,6 +48,7 @@ namespace wow
             pos += 4;
         };
         SaveInfo info;
+        if (d.size() >= EngineSaveHeader && std::memcmp(d.data(), EngineSaveTag, 4) == 0) pos = EngineSaveHeader;
         info.version = u32();
         tag("GAME");
         uint32_t length = u32();

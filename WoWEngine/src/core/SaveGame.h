@@ -20,10 +20,13 @@ namespace wow
         static constexpr int Max = 999, PerPage = 5;
         static constexpr size_t NameOffset = 0x0C, NameLength = 36;
 
-        static std::string GamePath(bool human, int slot); // "SaveGame\Human.001"
-        // The save's name, or nothing if the slot is empty or the file can't be read.
-        static std::optional<std::string> Name(const GameFiles& files, bool human, int slot);
-        static bool Exists(const GameFiles& files, bool human, int slot);
+        // MODERN: a civil war's saves have names of their own, so the original game never lists them:
+        // "SaveGame\HumanCW.001" / "SaveGame\MartianCW.001" (docs/MODERN.md "The civil wars")
+        static std::string GamePath(bool human, int slot, bool civilWar = false); // "SaveGame\Human.001"
+        // The save's name, or nothing if the slot is empty or the file can't be read. A civil war's save has the
+        // engine's tag before the original's layout, so its name is that much further on.
+        static std::optional<std::string> Name(const GameFiles& files, bool human, int slot, bool civilWar = false);
+        static bool Exists(const GameFiles& files, bool human, int slot, bool civilWar = false);
     };
 
     // The start of a save, which the game writes as a stream of objects (each object's writer puts its tag, then

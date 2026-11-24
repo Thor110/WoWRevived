@@ -493,10 +493,71 @@ To be restored as options once the rest is done. What the data holds:
 
 ## Game modes
 
-- **Campaign extras**: Martian against Martian, and Human against Human.
+- **Campaign extras**: Martian against Martian, and Human against Human. *Designed with the owner (update 236)*:
+  "The civil wars" below.
 - **Multiplayer** (the original's network game is in docs/TASKS.md; this would be a modern take on it).
 - **Auto-resolve a battle**: settle a battle on the war map without playing it on the battle map (the engine
   already does this when a sector's map files are missing).
+
+
+### The civil wars (designed with the owner, built in update 236)
+
+Two new campaigns, each one faction against itself (PLAN.md F1).
+
+- **Human Civil War**: the Humans divided, on the Human war map. **Martian Civil War**: set after the Humans have
+  lost the Earth, the Martians divided, on the Martian war map. **No pods** in either (`WarMap::DropPod`): both
+  sides grow by their own construction and production. Tried headless for a fortnight of game time each: the
+  Martian computer player builds a Communications Centre, makes units and invades its neighbours without pods.
+- **Where they are chosen**: the main menu has "Human Civil War" (under Start Human Game) or "Martian Civil War"
+  (under Start Martian Game) under Start New Campaign (command 0x9003), then the slots and the name as for a new
+  campaign, and straight to the war map (no intro: the faction's tells of the Martians' coming).
+- **The start** is made when a civil war begins, from the side's own start file (`core/CivilWar`,
+  `MakeCivilWarStart`), so no start files of the engine's are shipped. The split mirrors the regular game's, the
+  player starting from the opposite side to the regular game's. *A first draft, to be evened out with the owner*:
+  - Human Civil War, from Human.000: the Martians taken out; the Human objects and sectors in Scotland (sectors 1-4
+    and 6-9) stay the player's, every other one goes to the other side (London's: 17 sectors to the player's 3);
+    the player gets a copy of London's objects in the Grampian Mountains (3).
+  - Martian Civil War, from Martian.000: the Humans taken out; the Martians' base in the Grampians becomes the
+    other side's, and the player gets a copy of it in London. Every other sector is no one's.
+  - A copied HQ takes its new sector's form (London's Command Post 278 is a 58 elsewhere, the Grampians'
+    Communications Centre 830 a 120); `WarMap::HasCommandPost` takes either form in a civil war.
+- **Sides and factions** (`core/Campaign.h`): the save's H lists are always the player's side and the A lists the
+  other's, whatever their factions, so the engine already thought in sides. What changed is every place that took
+  the other side to be the other faction, which now asks the campaign (`WarMap::OtherIsHuman`): the other side's
+  research tree, command building, the computer player's rules (AI.ojd's sites for its faction), its facilities, the
+  Martian "infestation" count, the research and build times' Friend / Enemy modifiers (`WarMap::ModifierHuman`),
+  the battle's research (asked by side in a civil war: `BattleMap::ResearchDone` / `ResearchMultiplier`), and the
+  homes and endings (`WarMap::EndsCampaign`, `PlayerHome`, the battle's end box). In the regular game each gives
+  what it gave before; the two parity battles are unchanged.
+- **The economy**: each sector's six stock slots were the Humans' 0-2 and the Martians' 3-5. In a civil war the
+  player keeps its faction's slots and the other side has the other three (`WarMap::SlotBase`), while its facility
+  types and deposits stay its faction's (`FactionBase`, `FactionKind`), so the two sides never share a stock.
+- **Damage**: the game gives a hit the target's armour from the target's faction and the attacker's improvements
+  from the other faction's tree. In a civil war the attacker is the same faction, so there: the target's armour
+  from the target's side and the attacker's faction's improvement from the attacker's side.
+- **Colours**: the war map's borders and mini-map already go by side (the player's and the other's), so they tell
+  the two apart unchanged. On the battle map the other side's units are drawn through their shade tables with the
+  hue turned 150 degrees (`ShadeTable::HueRotated`, `BattleMap::OtherSideHue`): blue-violet against the player's.
+- **Saves**: `HumanCW.00n` / `MartianCW.00n` in SaveGame, with the engine's tag at the start (`WOWE`, the tag's
+  version, the campaign; core/Campaign.h) and then the original's layout, the research holding the player's side's
+  block and then the other's. The original game lists only `Human.00n` / `Martian.00n`, so it never meets one. The
+  Load menu lists the regular saves and then the civil war's, shown with "(Human Civil War)" / "(Martian Civil
+  War)" after the name (the stored name is the player's); Save and Select Campaign to Replace list the kind being
+  played or started.
+- **Texts**: the debriefing's "The Martians / Humans in this sector were eliminated" and "... are occupying this
+  sector" say "the enemy" in a civil war (engine strings 1454, 1455). The menu entries and tags are 1450-1453.
+  The French, German, Italian and Spanish are the engine's own wording.
+
+**Not done yet, or to decide with the owner:**
+- The start layouts' balance (the Human Civil War's draft gives London's side 17 sectors to the player's 3).
+- Armour is worked out per type, so the difficulty's armour modifiers are the player's "Friend" ones for both sides
+  in a civil war (the research and build times are per side).
+- The war map's counters look the same for both sides (the borders and mini-map show who holds what).
+- The ending movies are the faction's regular victory and defeat; the opening has none.
+- The Single Player Options menu (with the network version enabled) has no civil war entry yet.
+- `ReceiveSpecial`'s Martian research (items 132 / 133) is asked of the receiving unit's side: *provisional*.
+- A battle between the two sides hasn't been played through headless (their forces start far apart); the colours
+  were checked on the regular pod battle made to count as a civil war.
 
 ## Tools
 

@@ -96,7 +96,11 @@ namespace wow
     {
         int n = 0;
         for (const BattleGroup& g : BattleGroups(sector))
-            if (g.list / 2 >= 1 && ((g.list & 1) == 0) == !human) n++;
+        {
+            // the Martians' constructions: the list's side's faction (MODERN: in a civil war both sides', or none)
+            const bool players = (g.list & 1) == 0;
+            if (g.list / 2 >= 1 && (players ? !human : !OtherHuman(campaign, human))) n++;
+        }
         return n;
     }
 
@@ -323,7 +327,7 @@ namespace wow
         float average = float(sum);
         if (held) average = float(sum / double(held));
         if (average < aiTweaks.invasionThreshold) return;
-        const int base = res.Human() ? 3 : 0; // the AI's resource kinds
+        const int base = SlotBase(false);   // (MODERN: the AI side's stock slots) // the AI's resource kinds
         float bestScore = 0.0f, bestNeed = 0.0f;
         int bestSector = -1;
         for (int t = 1; t <= warmap::SectorCount; t++)
@@ -545,7 +549,7 @@ namespace wow
     float WarMap::AiEfficiency(int type, int sector) const
     {
         if (sector < 1 || sector > warmap::SectorCount) return 0;
-        const int base = res.Human() ? 3 : 0;
+        const int base = SlotBase(false);   // (MODERN: the AI side's stock slots)
         auto u = unitData.find(type);
         const SectorEconomy& e = economy[size_t(sector)];
         double product = 1.0;
@@ -618,7 +622,7 @@ namespace wow
         for (int s = 1; s <= warmap::SectorCount; s++) aiSectors[size_t(s)].use[0] = 1.0f;
         for (auto& p : aiPriority) p = { 0.0f, 0.0f, 0.0f };
         ai.groups.clear();
-        const int post = res.Human() ? 0x78 : 0x3A;
+        const int post = AiPost();
         for (int s = 1; s <= warmap::SectorCount; s++)
             for (int c : SectorObjects(s, false, 0))
             {
@@ -672,7 +676,7 @@ namespace wow
             for (int s = 1; s <= warmap::SectorCount; s++)
                 if (aiSectors[size_t(s)].use[0] == 2.0f)
                     for (int k = 0; k < 3; k++) aiSectors[size_t(s)].use[k] = use[k];
-            const int base = res.Human() ? 3 : 0;
+            const int base = SlotBase(false);   // (MODERN: the AI side's stock slots)
             for (int s = 1; s <= warmap::SectorCount; s++)
             {
                 if (!AiReachable(v, s)) continue;
@@ -719,8 +723,7 @@ namespace wow
         const auto done = [&] { return ai.cursor == ai.groups.size(); };
         const Counter& k = counters[size_t(g)];
         const int here = k.sector;
-        const int post = res.Human() ? 0x78 : 0x3A;
-        const int base = res.Human() ? 3 : 0;
+        const int post = AiPost();
         if (!aiSectors[size_t(here)].factoryBuilding)
         {
             float best = 0.0f;
@@ -756,7 +759,7 @@ namespace wow
         {
             AiSector& r = aiSectors[size_t(c.sector)];
             if (!(c.score > aiTweaks.minimumRr) || r.resfacBuilding || !(c.sector == here || r.constructors == 0)) continue;
-            const int type = Facility[base + c.k];
+            const int type = Facility[FactionBase(false) + c.k];   // (MODERN: the AI faction's facility)
             if (!AiFreeSite(c.sector, type)) continue;
             r.resfacBuilding = true;
             AiSendToBuild(g, c.sector, type);
@@ -799,7 +802,7 @@ namespace wow
                 if (aiFront[i].score < aiFront[i + 1].score) { std::swap(aiFront[i], aiFront[i + 1]); swapped = true; }
         }
         ai.groups.clear();
-        const int post = res.Human() ? 0x78 : 0x3A;
+        const int post = AiPost();
         for (int s = 1; s <= warmap::SectorCount; s++)
         {
             aiSectors[size_t(s)].constructors = 0;
@@ -824,7 +827,7 @@ namespace wow
         const int g = ai.groups[ai.cursor++];
         const auto done = [&] { return ai.cursor == ai.groups.size(); };
         const Counter& k = counters[size_t(g)];
-        if (AiCanBuild(k.type, res.Human() ? 0x78 : 0x3A)) return done();
+        if (AiCanBuild(k.type, AiPost())) return done();
         for (const AiCandidate& c : aiFront)
         {
             if (!(c.score > 0.0f)) break;

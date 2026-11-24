@@ -24,6 +24,9 @@ namespace wow
         int Levels() const { return levels; }
         // 256 XRGB8888 colours for a level, clamped to the levels the table has.
         const uint32_t* Level(int level) const;
+        // MODERN (docs/MODERN.md "The civil wars"): a copy with every colour's hue turned by degrees, its saturation
+        // and brightness kept (greys stay grey), for the other side's units when both sides are one faction
+        ShadeTable HueRotated(float degrees) const;
 
     private:
         int levels = 0;

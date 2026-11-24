@@ -98,6 +98,21 @@ namespace wow
         return f;
     }
     void SaveObject::SetPosition(int x, int y) { Put32(bytes, SeloAt() + 8, uint32_t(x)); Put32(bytes, SeloAt() + 12, uint32_t(y)); }
+    void SaveObject::Retype(int from, int to)
+    {
+        if (Type() == from) SetOwnType(to);
+        for (size_t i = 4; i + 4 <= bytes.size(); i++)
+            if (std::memcmp(&bytes[i], "SELO", 4) == 0 && Get32(bytes, i - 4) == uint32_t(from)) Put32(bytes, i - 4, uint32_t(to));
+    }
+    void SaveObject::Renumber(std::vector<bool>& used)
+    {
+        for (size_t i = 0; i + 8 <= bytes.size(); i++)
+            if (std::memcmp(&bytes[i], "SELO", 4) == 0)
+            {
+                const int id = SaveFile::TakeId(used);
+                if (id >= 0) Put32(bytes, i + 4, uint32_t(id));
+            }
+    }
     static size_t LastBatp(const std::vector<uint8_t>& b)
     {
         size_t at = std::string::npos;
@@ -366,10 +381,23 @@ namespace wow
         rest.insert(rest.begin() + 4, chunk.begin(), chunk.end());
     }
 
-    SaveFile SaveFile::Parse(std::span<const uint8_t> data)
+    SaveFile SaveFile::Parse(std::span<const uint8_t> whole)
     {
+        // MODERN: a civil war's save has the engine's tag, its version and the campaign before the original's layout
+        Campaign campaign = Campaign::Regular;
+        std::span<const uint8_t> data = whole;
+        if (whole.size() >= EngineSaveHeader && std::memcmp(whole.data(), EngineSaveTag, 4) == 0)
+        {
+            auto u32 = [&](size_t at) { return uint32_t(whole[at]) | uint32_t(whole[at + 1]) << 8 | uint32_t(whole[at + 2]) << 16 | uint32_t(whole[at + 3]) << 24; };
+            if (u32(4) != EngineSaveVersion) throw FormatError("save: the engine's save version " + std::to_string(u32(4)) + " isn't known");
+            const uint32_t c = u32(8);
+            if (c != uint32_t(Campaign::HumanCivilWar) && c != uint32_t(Campaign::MartianCivilWar)) throw FormatError("save: unknown campaign " + std::to_string(c));
+            campaign = Campaign(c);
+            data = whole.subspan(EngineSaveHeader);
+        }
         Reader r{ data };
         SaveFile s;
+        s.campaign = campaign;
         s.version = r.U32();
         r.Tag("GAME");
         uint32_t length = r.U32();
@@ -547,6 +575,12 @@ namespace wow
     std::vector<uint8_t> SaveFile::Write() const
     {
         Writer w;
+        if (IsCivilWar(campaign))
+        {
+            w.o.insert(w.o.end(), EngineSaveTag, EngineSaveTag + 4);
+            w.U32(EngineSaveVersion);
+            w.U32(uint32_t(campaign));
+        }
         w.U32(version);
         w.Tag("GAME");
         w.U32(uint32_t(game.size()));

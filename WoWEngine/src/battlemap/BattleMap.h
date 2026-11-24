@@ -117,6 +117,11 @@ namespace wow
             std::function<bool(bool human, int index)> researchDone;
             // a side's improvement multiplier by its enhancement's type (Research::Multiplier: 1.0 until it's done)
             std::function<float(bool human, int type)> researchMultiplier;
+            // MODERN (docs/MODERN.md "The civil wars"): in a civil war both sides are one faction, so research is
+            // asked by side (players: the player's side) instead (ResearchDone / ResearchMultiplier below)
+            bool civilWar = false;
+            std::function<bool(bool players, int index)> researchDoneBySide;
+            std::function<float(bool players, int type)> researchMultiplierBySide;
             int viewW = 640, viewH = 480;   // the view's size (the screen's in the original)
             // the sector's Damage Layer (width, height, a byte a vertex; 0 x 0 for none yet), and [BattleMap]
             // "Damage reduction divisor" (dword_4D259C, 500)
@@ -486,7 +491,18 @@ namespace wow
         void Surface(size_t unit);                              // vt+0x124, 0x499120
         void GoUnder(size_t unit);                              // 0x80EE / 0x80EF to a member, 0x498E90
         void Vanish(size_t unit);                               // vt+0x78, 0x495BB0
-        void Upgrade(Gun& g, int side) const;          // 0x494AF0's research upgrades
+        void Upgrade(Gun& g, int side, bool players) const;   // 0x494AF0's research upgrades
+        // MODERN: research asked by faction (human) in the game, by side (players) in a civil war
+        bool ResearchDone(bool human, bool players, int index) const
+        {
+            if (setup.civilWar) return setup.researchDoneBySide && setup.researchDoneBySide(players, index);
+            return setup.researchDone && setup.researchDone(human, index);
+        }
+        float ResearchMultiplier(bool human, bool players, int type) const
+        {
+            if (setup.civilWar) return setup.researchMultiplierBySide ? setup.researchMultiplierBySide(players, type) : 1.0f;
+            return setup.researchMultiplier ? setup.researchMultiplier(human, type) : 1.0f;
+        }
         void Hit(size_t unit, double amount, int attacker, int by, int weapon = 0); // vt+0xC0 (0x498EE0, 0x491020, 0x4958B0), then the damage
         void Retaliate(int group, size_t member, int attacker); // 0x8085 to the group, 0x483880                               // 0x4967E0's timer
         void SetStance(int group, int stance);                  // 0x80B2 to the group: it and each member (+0xD8)
@@ -749,7 +765,10 @@ namespace wow
         void ClosePopup(bool escape);
         // The selection's items (0x805C: the selection 0x4482D0 asks its first member, 0x47DF20 -> 0x47E1E0)
         void AddOrders(const Unit& first);
-        bool CanDo(int type, int command) const;     // 0x47DA80
+        bool CanDo(int type, int command, bool players) const;     // 0x47DA80 (MODERN: players, for a civil war's research)
+        // MODERN (the civil wars): the other side's units' shade tables, each slot's turned by OtherSideHue degrees
+        static constexpr float OtherSideHue = 150.0f;
+        mutable std::map<int, ShadeTable> otherSideTables;
         static bool Armed(const ObjOjd::UnitData& unit); // +0x3C: children with +0xB8 bit 11
         std::vector<int> groupStance;                // each group's +0x54 (WBMGroup 0x480190: 1)
         void EdgeScroll();

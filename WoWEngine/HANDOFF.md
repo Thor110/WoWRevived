@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 235
+# Handoff: WoWEngine after update 236
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -66,6 +66,10 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - **Without `--screenshot` the run doesn't exit.**
 - The unit tests: `ctest --test-dir build` (or `./build/wowtests`), no game files needed. Add tests to `tests/` with each
   change that can be checked without the game's data; GitHub runs them on every push (README "GitHub").
+- **A civil war** (update 236; docs/MODERN.md "The civil wars"), headless on an English install with no SaveGame folder:
+  `--human --open 0x90 --screenshot c.bmp "wait:20,click:320:236,wait:20,click:320:170,wait:20,=rebels,wait:5,click:320:266,wait:150"`
+  (the main menu's Human Civil War, the first slot, a name, Begin Campaign); `--martian` for the Martians'. It
+  writes `SaveGame\HumanCW.001`. Add `8,wait:6000` to let a fortnight run (a "no research" box stops the clock).
 - A script draws the picture before each mouse step (update 231), so menus are placed for the view size as in a
   running game: clicks at 1920 x 1080 are the picture's own pixels. `--frames <folder>` saves every update's
   picture (docs/TRAILER.md).
@@ -85,7 +89,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   `--human --load 1 --ticks 30 --screenshot w.bmp "wait:10,click:328:228,wait:5,move:120:270,wait:5,click:120:270,wait:10,move:450:420,5,wait:60,backspace,wait:5"`
   sends London's counter towards the next sector and runs the clock ten hours (a digit sets the speed, Backspace
   stops it; more than a day and a pod's event box takes the input). Add
-  `,escape,wait:20,click:320:330,wait:30,up,wait:3,enter,wait:30` to Save & Exit; `--load 1` again shows it where
+  `,escape,wait:20,click:320:362,wait:30,up,wait:3,enter,wait:30` to Save & Exit (362 since the Modern Options row went in at 196; 330 opens Modern Options); `--load 1` again shows it where
   it was. Don't click a destination on another counter: that selects the counter.
 - **Reference frames of the original** (the owner's, updates 143 and 144): a new Human game with London opened,
   the same with sector 28 opened, and a new Martian game's first battle; nothing moved, 640 x 480, 16-bit colour.
@@ -144,7 +148,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 235
+## State after update 236
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -156,7 +160,8 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   - breakable bridges and the route finder spread over updates (PARITY.md, Deferred)
   - parts of the computer player (TASKS.md, Battle AI)
   - the tree circles' lifetime (S6)
-  - the two buildings the game names and never offers (E1, E2); the modes and editors (F)
+  - the two buildings the game names and never offers (E1, E2); the editors (F2); the civil wars' balance and the
+    rest of their list (F1, MODERN.md "The civil wars")
 
   Repair is in (WARMAP.md "Repair"). A battle is never saved part way in the original (its menu has no save), so
   there is no battle saving to add (PLAN.md, 4.4).
@@ -192,7 +197,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **236**.
+  - The next number is **237**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.

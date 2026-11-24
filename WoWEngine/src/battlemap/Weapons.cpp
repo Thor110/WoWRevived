@@ -78,10 +78,10 @@ namespace wow
     // overriding the earlier. The Humans': Improved Powder Charge (item 78, 0x25A) then 79 (0x25B) the range, 82
     // (0x25E) the spread. The Martians': for the Heat-Rays (0x1AB-0x1B0) items 77 (0x27D) then 78 (0x27E) the range;
     // for all, 33 (0x289) the range and 80 (0x280) the spread.
-    void BattleMap::Upgrade(Gun& g, int side) const
+    void BattleMap::Upgrade(Gun& g, int side, bool players) const
     {
-        if (!setup.researchDone || !setup.researchMultiplier) return;
-        auto set = [&](float& v, bool human, int item, int type) { if (setup.researchDone(human, item)) v = setup.researchMultiplier(human, type); };
+        if (setup.civilWar ? !setup.researchDoneBySide || !setup.researchMultiplierBySide : !setup.researchDone || !setup.researchMultiplier) return;
+        auto set = [&](float& v, bool human, int item, int type) { if (ResearchDone(human, players, item)) v = ResearchMultiplier(human, players, type); };
         if (side == 0)
         {
             set(g.range, true, 78, 0x25A);
@@ -123,7 +123,7 @@ namespace wow
             g.ox = int16_t(part.b);
             g.oy = int16_t(part.c);
             g.oz = int16_t(part.d);
-            Upgrade(g, t->second.faction);
+            Upgrade(g, t->second.faction, u.players);
             u.guns.push_back(g);
         };
         for (const auto& part : t->second.parts)
@@ -305,7 +305,8 @@ namespace wow
     {
         Unit& u = units[index];
         const bool special = u.type >= 0x273 && u.type <= 0x276;
-        auto done = [&](int item) { return setup.researchDone && setup.researchDone(false, item); };
+        // (MODERN: in a civil war the receiving unit's side's; *provisional*, as which side's the game means isn't traced)
+        auto done = [&](int item) { return ResearchDone(false, u.players, item); };
         if (message == 0x80F8)
         {
             if (!special) return;
@@ -334,7 +335,7 @@ namespace wow
         if (!command) return;
         const Unit* first = nullptr;
         for (const Unit& u : units) if (u.group == g) { first = &u; break; }
-        if (first && CanDo(first->type, command)) GroupOrder(g, command);
+        if (first && CanDo(first->type, command, first->players)) GroupOrder(g, command);
     }
 
     BattleMap::Unit* BattleMap::UnitById(int id)
@@ -634,7 +635,36 @@ namespace wow
         const int side = ut == setup.units->end() ? 2 : ut->second.faction;
         if (side == 1 && weapon >= 0x393 && weapon <= 0x395) return;
         int amount = int(raw);
-        if (setup.researchMultiplier)
+        if (setup.civilWar && setup.researchMultiplierBySide)
+        {
+            // MODERN (the civil wars): one faction on both sides, so the target's armour from the target's side and
+            // the attacker's improvements from the attacker's side (the game's rule below gives the attacker's from
+            // the other faction's tree, which a civil war's attacker isn't)
+            const Unit* a = attacker ? UnitById(attacker) : nullptr;
+            const bool attackers = a ? a->players : !u.players;
+            double f = raw;
+            auto mine = [&](int type) { f *= setup.researchMultiplierBySide(u.players, type); };
+            auto theirs = [&](int type) { f *= setup.researchMultiplierBySide(attackers, type); };
+            const bool a1 = weapon >= 0x1AB && weapon <= 0x1B0, b1 = weapon >= 0x1B5 && weapon <= 0x1B7;
+            if (side == 0)
+            {
+                if (u.vehicle)
+                {
+                    if (a1) mine(0x256);
+                    if (a1 || b1) mine(0x257);
+                    if (weapon >= 915 && weapon <= 917) { mine(0x25C); mine(0x25D); }
+                    if (weapon >= 712 && weapon <= 714) mine(0x266);
+                }
+                theirs(0x259);                                  // the Humans' HighExplosiveRounds
+            }
+            else if (side == 1)
+            {
+                if (u.vehicle) { mine(0x27B); mine(0x27C); }
+                if (a1) theirs(0x27F);                          // the Martians' SecondaryBeamAmplifiers
+            }
+            amount = int(f);
+        }
+        else if (setup.researchMultiplier)
         {
             double f = raw;
             auto mulf = [&](bool human, int type) { f *= setup.researchMultiplier(human, type); };

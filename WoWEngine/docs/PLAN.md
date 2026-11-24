@@ -134,7 +134,13 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
 
 ### F. Modes and tools (Stage 6.10)
 
-- [ ] **F1** Campaign extras (Martian against Martian, Human against Human); auto-resolving a battle.
+- [~] **F1** Campaign extras: the civil wars (Human against Human, Martian against Martian; designed with the owner
+      and built in 236, MODERN.md "The civil wars"): (a) side and faction told apart, the regular game unchanged;
+      (b) the other side's units' colours on the battle map; (c) the starts, made from the side's own start file
+      (a first draft: to be evened out with the owner); (d) the computer player on its own faction, no pods; (e) the
+      main menu's entries, the debriefing's texts, the engine's save form with its tag and file names. Left: the
+      balance, armour per side, the war map counters' colours, the list in MODERN.md. Then network play (A9) on the
+      same ground. Also: auto-resolving a battle.
 - [ ] **F2** Level editor; war map creator and new campaigns; save editor.
 
 ### G. Release

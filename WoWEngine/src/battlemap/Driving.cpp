@@ -1243,8 +1243,8 @@ namespace wow
         if (t != setup.units->end() && u.type >= 7 && u.type <= 9 && u.under)
         {
             float by = 65.0f;
-            if (setup.researchDone && setup.researchDone(true, 34))
-                by = 65.0f / (setup.researchMultiplier ? setup.researchMultiplier(true, 0x265) : 1.0f);
+            if (ResearchDone(true, u.players, 34))
+                by = 65.0f / ResearchMultiplier(true, u.players, 0x265);
             top = float(int16_t(t->second.warMapSpeed)) / by;
         }
         {

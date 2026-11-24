@@ -9,6 +9,7 @@
 #include "frontend/PanelLayer.h"
 #include "frontend/Menu.h"
 #include "core/SaveGame.h"
+#include "core/CivilWar.h"
 #include "frontend/ResearchScreen.h"
 #include "warmap/WarMap.h"
 #include "battlemap/BattleMap.h"
@@ -22,6 +23,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <cstdlib>
 
 namespace wow
@@ -57,6 +59,7 @@ namespace wow
         constexpr int CmdDisplaySettings = 0x3EF;
         constexpr int CmdCriticalEvents = 0x8117;
         constexpr int CmdModernOptions = 0x9001;  // the engine's own menu (no such command in the game)
+        constexpr int CmdNewCivilWar = 0x9003;    // the engine's own: Start New Campaign for the side's civil war
         constexpr int CmdSlotPage = 0x9002;       // the engine's own: the Load / Save menu's page, param +1 or -1
         constexpr int CmdSaveMenu = 0x6E;
         constexpr int CmdLoadSlot = 0x80B3;  // + slot: load that save (starts the campaign)
@@ -221,20 +224,20 @@ namespace wow
 
     bool FrontEnd::AnySaveGame() const
     {
-        // the same check as the main menu's and load menu's constructors
-        return HighestSave() >= SaveSlot::First;
+        // the same check as the main menu's and load menu's constructors (MODERN: a civil war's saves count too)
+        return HighestSave() >= SaveSlot::First || !SavedSlots(true).empty();
     }
 
     // MODERN ([Modern] "More save slots", on unless turned off): the slots the menus reach. Off, the game's five.
     int FrontEnd::LastSlot() const { return ini.GetBool("Modern", "More save slots", true) ? SaveSlot::Max : SaveSlot::Last; }
 
     // the slots with a save in them, lowest first, by the SaveGame folder's files
-    std::vector<int> FrontEnd::SavedSlots() const
+    std::vector<int> FrontEnd::SavedSlots(bool civilWar) const
     {
         std::vector<int> slots;
         auto folder = files.Resolve("SaveGame");
         if (!folder) return slots;
-        const std::string side = res.Human() ? "human." : "martian.";
+        const std::string side = std::string(res.Human() ? "human" : "martian") + (civilWar ? "cw." : ".");
         std::error_code ec;
         for (const auto& entry : std::filesystem::directory_iterator(*folder, ec))
         {
@@ -262,8 +265,15 @@ namespace wow
     //         lowest free one past the five, so there is always room for one more campaign.
     std::vector<int> FrontEnd::MenuSlots(bool load) const
     {
-        const std::vector<int> saved = SavedSlots();
-        if (load) return saved;
+        // MODERN: Load lists the regular saves and then the civil war's (their numbers + CivilSlot); Save lists the
+        // kind of campaign being started or played
+        if (load)
+        {
+            std::vector<int> all = SavedSlots();
+            for (int slot : SavedSlots(true)) all.push_back(slot + CivilSlot);
+            return all;
+        }
+        const std::vector<int> saved = SavedSlots(IsCivilWar(campaign));
         std::vector<int> slots;
         for (int slot = SaveSlot::First; slot <= SaveSlot::Last; slot++) slots.push_back(slot);
         for (int slot : saved) if (slot > SaveSlot::Last) slots.push_back(slot);
@@ -288,7 +298,12 @@ namespace wow
         const std::vector<int> slots = MenuSlots(true);
         slotPage = std::clamp(slotPage, 0, slots.empty() ? 0 : int(slots.size() - 1) / SaveSlot::PerPage);
         for (size_t i = size_t(slotPage) * SaveSlot::PerPage; i < slots.size() && i < size_t(slotPage + 1) * SaveSlot::PerPage; i++)
-            if (auto name = SaveSlot::Name(files, res.Human(), slots[i])) m->AddButtonText(CmdLoadSlot, *name, slots[i]);
+        {
+            // MODERN: a civil war's name shown with "(Human Civil War)" or "(Martian Civil War)" after it
+            const bool civil = slots[i] >= CivilSlot;
+            if (auto name = SaveSlot::Name(files, res.Human(), slots[i] % CivilSlot, civil))
+                m->AddButtonText(CmdLoadSlot, civil ? *name + " " + res.String(res.Human() ? enginetext::HumanCivilWarTag : enginetext::MartianCivilWarTag) : *name, slots[i]);
+        }
         AddSlotPageButtons(*m, slots.size());
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         m->FocusLast();                               // 0x42EBE0 on the bottom button
@@ -303,7 +318,7 @@ namespace wow
         slotPage = std::clamp(slotPage, 0, int(slots.size() - 1) / SaveSlot::PerPage);
         for (size_t i = size_t(slotPage) * SaveSlot::PerPage; i < slots.size() && i < size_t(slotPage + 1) * SaveSlot::PerPage; i++)
         {
-            auto name = SaveSlot::Name(files, res.Human(), slots[i]);
+            auto name = SaveSlot::Name(files, res.Human(), slots[i], IsCivilWar(campaign));
             m->AddButtonText(CmdSaveSlot, name ? *name : res.String(0x408), slots[i]); // "Empty"
         }
         AddSlotPageButtons(*m, slots.size());
@@ -321,12 +336,13 @@ namespace wow
             m->AddButton(CmdSinglePlayer, 0x3FE);
             m->AddButton(CmdNetwork, res.Human() ? 0x3FF : 0x400);
         }
-        else if (AnySaveGame())
+        else
         {
-            m->AddButton(CmdLoadGame, 0x406);
+            if (AnySaveGame()) m->AddButton(CmdLoadGame, 0x406);
             m->AddButton(CmdNewCampaign, 0x40C);
+            // MODERN (docs/MODERN.md "The civil wars"): the side's civil war, under Start New Campaign
+            m->AddButtonText(CmdNewCivilWar, res.String(res.Human() ? enginetext::HumanCivilWar : enginetext::MartianCivilWar));
         }
-        else m->AddButton(CmdNewCampaign, 0x40C);
         m->AddButton(CmdOptions, 0x401);
         m->AddButton(CdPlayer::Id, 0x402);
         m->AddBottomButton(CmdQuitMenu, 0x403);
@@ -664,10 +680,10 @@ namespace wow
         return m;
     }
 
-    std::filesystem::path FrontEnd::SlotFile(int slot) const
+    std::filesystem::path FrontEnd::SlotFile(int slot, bool civilWar) const
     {
         char name[32];
-        std::snprintf(name, sizeof(name), "%s.%03d", res.Human() ? "Human" : "Martian", slot);
+        std::snprintf(name, sizeof(name), "%s%s.%03d", res.Human() ? "Human" : "Martian", civilWar ? "CW" : "", slot);
         // the SaveGame folder as it is on disk (any case), else a new one (WinMain makes it, 0x401940)
         std::filesystem::path folder = files.Root() / "SaveGame";
         if (auto existing = files.Resolve("SaveGame")) folder = *existing;
@@ -708,6 +724,8 @@ namespace wow
         {
             // a new GAME header with the name, then the start file's body as it is (0x44EBB0)
             SaveFile save = SaveFile::Parse(data);
+            // MODERN: a civil war's start is made from the side's start file (core/CivilWar.h)
+            if (IsCivilWar(campaign)) save = MakeCivilWarStart(save, campaign);
             save.SetName(name);
             data = save.Write();
         }
@@ -716,7 +734,7 @@ namespace wow
             SDL_Log("New campaign: %s: %s", start->string().c_str(), e.what());
             return false;
         }
-        std::filesystem::path path = SlotFile(slot);
+        std::filesystem::path path = SlotFile(slot, IsCivilWar(campaign));
         if (!WriteSaveFile(path, data)) { SDL_Log("New campaign: can't write %s", path.string().c_str()); return false; }
         SDL_Log("New campaign \"%s\" in %s", name.c_str(), path.string().c_str());
         return true;
@@ -732,7 +750,7 @@ namespace wow
         if (!map || playingSlot < SaveSlot::First || playingSlot > SaveSlot::Max) return;
         auto data = map->SaveData();
         if (!data) { SDL_Log("The war map didn't come from a save it can write, so it isn't saved"); return; }
-        bool ok = WriteSaveFile(SlotFile(playingSlot), *data);
+        bool ok = WriteSaveFile(SlotFile(playingSlot, IsCivilWar(campaign)), *data);
         SDL_Log(ok ? "Saving game to slot %d" : "Saving game to slot %d failed", playingSlot);
     }
 
@@ -745,6 +763,10 @@ namespace wow
             data.assign(std::istreambuf_iterator<char>(in), {});
         }
         SaveInfo info;
+        // MODERN: the kind of campaign from the save itself: a civil war's starts with the engine's tag (core/Campaign.h)
+        campaign = Campaign::Regular;
+        if (data.size() >= EngineSaveHeader && std::memcmp(data.data(), EngineSaveTag, 4) == 0)
+            campaign = Campaign(uint32_t(data[8]) | uint32_t(data[9]) << 8 | uint32_t(data[10]) << 16 | uint32_t(data[11]) << 24);
         try { info = SaveInfo::Read(data); }
         catch (const std::exception& e)
         {
@@ -799,7 +821,8 @@ namespace wow
         {
             std::ifstream in(*ai, std::ios::binary);
             std::vector<uint8_t> aiData((std::istreambuf_iterator<char>(in)), {});
-            // each weight times the side's multiplier as the file's read (0x441625: fild, fmul, ftol)
+            // each weight times the side's multiplier as the file's read (0x441625: fild, fmul, ftol). (The player's
+            // faction picks it, as in the game; in a civil war the computer plays the same faction.)
             const float mult = res.Human() ? ini.GetFloat("Tweak", "AI strength table Human multiplier", 1.0f)
                                            : ini.GetFloat("Tweak", "AI strength table Martian multiplier", 2.0f);
             try
@@ -810,8 +833,9 @@ namespace wow
                     classes[id] = e.value;
                     weights[id] = int(int16_t(int(double(e.weight) * double(mult))));
                 }
-                // the computer player's sites: the side not being played (0x518814)
-                for (const auto& [sector, rules] : table.rules[res.Human() ? 1 : 0])
+                // the computer player's sites: the side not being played (0x518814); MODERN: its faction's, which in a
+                // civil war is the player's own
+                for (const auto& [sector, rules] : table.rules[OtherHuman(campaign, res.Human()) ? 0 : 1])
                     for (const AiRule& r : rules)
                     {
                         WarMap::AiSite site{ int16_t(r.words[0]), int16_t(r.words[1]), int16_t(r.words[2]), 0, 0 };
@@ -987,8 +1011,14 @@ namespace wow
         // Start New Campaign (0x404230): pick the save slot it goes in, with the save menu's "Select Campaign to
         // Replace", returning to the menu it was chosen from
         case CmdNewCampaign:
+        case CmdNewCivilWar:
             // (the first page when it is come to afresh; the page it was on when Replace or the name step goes back)
-            if (!screen || (screen->Id() != CmdReplaceCampaign && screen->Id() != CmdEditCampaign)) slotPage = 0;
+            if (!screen || (screen->Id() != CmdReplaceCampaign && screen->Id() != CmdEditCampaign))
+            {
+                slotPage = 0;
+                // MODERN: which campaign is being started (going back from Replace or the name keeps it)
+                campaign = command.id == CmdNewCivilWar ? CivilWarHere() : Campaign::Regular;
+            }
             Show(SaveGame(topMenu));
             break;
         // MODERN: the Load or Save menu turned a page (the same menu made again, going back where it went)
@@ -1006,14 +1036,15 @@ namespace wow
         case CmdSaveSlot:
             // 0x4043D0: a slot that's in use asks first, an empty one goes straight to naming the campaign
             campaignSlot = command.param;
-            if (auto name = SaveSlot::Name(files, res.Human(), campaignSlot)) { campaignName = *name; Show(ReplaceCampaign(CmdNewCampaign)); }
+            if (auto name = SaveSlot::Name(files, res.Human(), campaignSlot, IsCivilWar(campaign))) { campaignName = *name; Show(ReplaceCampaign(CmdNewCampaign)); }
             else { campaignName.clear(); Execute({ CmdReplaceCampaign, 0 }); }
             break;
         case CmdReplaceCampaign: Show(EditCampaign(CmdNewCampaign)); break;
         case CmdEditCampaign:
             // 0x404660 sets up the new campaign in the slot, then on to the disc check and the intro
             if (!NewCampaignFile(campaignSlot, campaignName)) campaignSlot = 0;
-            Execute({ CmdInsertCd, CmdIntro });
+            // (MODERN: a civil war has no intro: the faction's tells of the Martians' coming)
+            Execute({ CmdInsertCd, IsCivilWar(campaign) ? CmdStartCampaign : CmdIntro });
             break;
         case CmdInsertCd:
             // the war map's own 0x8133 (0x41B210) starts the briefing first
@@ -1032,13 +1063,22 @@ namespace wow
         case CmdStartCampaign:
             // a new campaign plays from its slot, set up from Human.000 or Martian.000 (0x404660); if that
             // couldn't be written, from the start file itself, unsaved
-            if (campaignSlot >= SaveSlot::First && SaveSlot::Exists(files, res.Human(), campaignSlot))
-                StartWarMap(SaveSlot::GamePath(res.Human(), campaignSlot), {}, campaignSlot);
-            else StartWarMap(res.Human() ? "Human.000" : "Martian.000", campaignName);
+            if (campaignSlot >= SaveSlot::First && SaveSlot::Exists(files, res.Human(), campaignSlot, IsCivilWar(campaign)))
+                StartWarMap(SaveSlot::GamePath(res.Human(), campaignSlot, IsCivilWar(campaign)), {}, campaignSlot);
+            else
+            {
+                campaign = Campaign::Regular;   // (MODERN: a civil war needs its slot's file, made from the start file)
+                StartWarMap(res.Human() ? "Human.000" : "Martian.000", campaignName);
+            }
             break;
         case CmdLoadSlot:
-            StartWarMap(SaveSlot::GamePath(res.Human(), command.param), {}, command.param, true);
+        {
+            // MODERN: a civil war's slot comes as its number + CivilSlot
+            const bool civil = command.param >= CivilSlot;
+            campaign = civil ? CivilWarHere() : Campaign::Regular;
+            StartWarMap(SaveSlot::GamePath(res.Human(), command.param % CivilSlot, civil), {}, command.param % CivilSlot, true);
             break;
+        }
         case CmdWarMapMenu: Show(WarMapMenu()); break;
         case BattleMap::MenuCommand: Show(BattleMapMenu()); break;
         case WarMap::ResearchCommand:
@@ -1522,6 +1562,19 @@ namespace wow
         s.researchMultiplier = [this, human = res.Human()](bool side, int type) {
             WarMap* wm = ActiveWarMap();
             Research* r = wm ? (side == human ? wm->LocalResearch() : wm->OtherResearch()) : nullptr;
+            return r ? r->Multiplier(type) : 1.0f;
+        };
+        // MODERN (the civil wars): research by side, as both sides are one faction
+        s.civilWar = IsCivilWar(map->CampaignKind());
+        s.researchDoneBySide = [this](bool players, int index) {
+            WarMap* wm = ActiveWarMap();
+            Research* r = wm ? (players ? wm->LocalResearch() : wm->OtherResearch()) : nullptr;
+            if (!r || index < 0 || size_t(index) >= r->Items().size()) return false;
+            return r->Items()[size_t(index)].state == 2;
+        };
+        s.researchMultiplierBySide = [this](bool players, int type) {
+            WarMap* wm = ActiveWarMap();
+            Research* r = wm ? (players ? wm->LocalResearch() : wm->OtherResearch()) : nullptr;
             return r ? r->Multiplier(type) : 1.0f;
         };
         if (s.zMapRes < 1) s.zMapRes = 400;

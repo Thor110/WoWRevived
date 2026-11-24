@@ -350,8 +350,9 @@ namespace wow
     // What one more finished facility of a kind would add to a sector's output (0x424000): with B the sector's
     // deposit, n its finished facilities of the kind and r the drop-off rate, output(n) = n r B / (n + r - 1), and
     // the value is output(n + 1) - output(n); B with none yet.
-    float WarMap::ResourceGain(int sector, int kind) const
+    float WarMap::ResourceGain(int sector, int slot) const
     {
+        const int kind = FactionKind(slot);     // (MODERN: the slot's faction's kind; the same in the regular game)
         auto it = deposits.find(sector);
         float b = it == deposits.end() ? 0.0f : float(it->second[size_t(kind)]);
         int n = 0;
@@ -365,11 +366,13 @@ namespace wow
     // 0x803C by phase 0): a finished facility makes int(hp / maxHP) x r B / (n + r - 1), r the drop-off rate,
     // B the sector's deposit and n its finished facilities of the kind, and nothing while the sector has no
     // command building.
-    float WarMap::FacilityOutput(int sector, int kind) const
+    float WarMap::FacilityOutput(int sector, int slot) const
     {
         if (!HasCommandPost(sector)) return 0.0f;
-        bool human = (owner[size_t(sector)] == 0) == res.Human();
-        if ((kind < 3) != human) return 0.0f; // only the owner's constructions are asked
+        // only the owner's constructions are asked: the slot must be the owner's side's (MODERN: SlotBase, the
+        // owner's faction's in the regular game)
+        if (slot / 3 != SlotBase(owner[size_t(sector)] == 0) / 3) return 0.0f;
+        const int kind = FactionKind(slot);
         int n = 0;
         for (int type : Finished(sector)) if (type == FacilityType[kind]) n++;
         if (n == 0) return 0.0f;
@@ -509,16 +512,16 @@ namespace wow
                 const int at = k.Travelling() ? k.path[size_t(k.segment)] : k.sector;
                 auto unit = unitData.find(k.type);
                 if (unit == unitData.end()) continue;
-                const bool human = k.players == res.Human();
+                const int base = SlotBase(k.players);    // (MODERN: the side's slots; its faction's in the game)
                 // 0x42964F: the work, for each of its objects whose factory is busy
                 for (int ref : k.refs)
                     if (auto f = factories.find(ref); f != factories.end() && f->second.queue.busy)
                         for (int i = 0; i < 3; i++)
-                            economy[size_t(at)].demand[size_t((human ? 0 : 3) + i)] += unit->second.activity[i];
+                            economy[size_t(at)].demand[size_t(base + i)] += unit->second.activity[i];
                 if (unit->second.category != 1) continue;   // 0x4296AB: the upkeep is a vehicle's (+0x10, 1)
                 const float crew = float(CrewOf(k)), still = k.Travelling() ? 1.0f : 0.5f;
                 for (int i = 0; i < 3; i++)
-                    economy[size_t(at)].demand[size_t((human ? 0 : 3) + i)] += unit->second.upkeep[i] * still * crew;
+                    economy[size_t(at)].demand[size_t(base + i)] += unit->second.upkeep[i] * still * crew;
             }
             break;
         case 4:
@@ -909,6 +912,8 @@ namespace wow
     // not in yet). A Martian game switches to the Unit view first (0x41A730).
     void WarMap::DropPod(int hours)
     {
+        // MODERN (docs/MODERN.md "The civil wars"): no pods in a civil war, nor rand() drawn for them
+        if (IsCivilWar(campaign)) return;
         if (pods >= 8) return;
         podHours += hours;
         if (podHours < podInterval) return;
@@ -1044,16 +1049,18 @@ namespace wow
         Research::Listener other;
         other.otherSideCompleted = [this](int type) { AiApplyUpgrade(type); };
         research[0] = std::make_unique<Research>(human, true, unitData, res.Text(), modifiers, human, local);
-        research[1] = std::make_unique<Research>(!human, false, unitData, res.Text(), modifiers, human, other);
+        research[1] = std::make_unique<Research>(OtherIsHuman(), false, unitData, res.Text(), modifiers, ModifierHuman(false), other);
         if (save && !save->research.empty())
         {
             // 0x41AC40: HRSH then MRSH (0x45A160 reads the tag, then 0x4584C0)
             const std::vector<uint8_t>& blob = save->research;
             size_t pos = 0;
+            // (MODERN: a civil war's save has the player's side's block and then the other's, core/Campaign.h)
+            const bool civil = IsCivilWar(campaign);
             for (bool side : { true, false })
             {
-                Research& r = *research[side == human ? 0 : 1];
-                const char* tag = Research::Tag(side);
+                Research& r = civil ? *research[side ? 0 : 1] : *research[side == human ? 0 : 1];
+                const char* tag = civil ? Research::Tag(r.Human()) : Research::Tag(side);
                 if (pos + 4 > blob.size() || std::memcmp(&blob[pos], tag, 4) != 0 || !(pos += 4, r.Load(blob, pos)))
                 {
                     SDL_Log("War map: the save's %s research can't be read", tag);
@@ -1067,6 +1074,7 @@ namespace wow
 
     void WarMap::UseSave(SaveFile from)
     {
+        campaign = from.campaign;
         table.clear();
         for (int sector = 1; sector <= warmap::SectorCount; sector++)
             for (const auto& list : from.Sector(sector).lists)
@@ -1151,8 +1159,17 @@ namespace wow
         if (research[0] && research[1])
         {
             s.research.clear();
-            (research[0]->Human() ? research[0] : research[1])->Save(s.research);
-            (research[0]->Human() ? research[1] : research[0])->Save(s.research);
+            if (IsCivilWar(campaign))
+            {
+                // MODERN: a civil war's: the player's side's block, then the other's
+                research[0]->Save(s.research);
+                research[1]->Save(s.research);
+            }
+            else
+            {
+                (research[0]->Human() ? research[0] : research[1])->Save(s.research);
+                (research[0]->Human() ? research[1] : research[0])->Save(s.research);
+            }
         }
         // (the view's corner as the game's 640 x 480 screen would have it about the same middle)
         s.warMap[0] = uint32_t(cameraX + viewW / 2 - GameW / 2);
@@ -1618,7 +1635,7 @@ namespace wow
                             if (k.sector >= 1 && k.sector <= warmap::SectorCount)
                             {
                                 const auto& r = economy[size_t(k.sector)].ratio;
-                                const size_t at = k.players == res.Human() ? 0 : 3;
+                                const size_t at = size_t(SlotBase(k.players));
                                 m = r[at] * r[at + 1] * r[at + 2];
                             }
                             const float eff = m != 0.0f ? 1.0f / m : 1.0f;
@@ -2305,8 +2322,9 @@ namespace wow
             report.sector = s;
             report.winner = absolute(winner);
             report.loser = absolute(1 - winner);
-            report.gameOver = (s == 3 && report.winner == 0) || (s == 30 && report.winner == 1);
+            report.gameOver = EndsCampaign(s, report.winner);   // (MODERN: the homes by the campaign)
             debriefing.fought = true;
+            debriefing.civilWar = IsCivilWar(campaign);
             debriefing.survivors = left[0] != 0;
             debriefing.lostUnits = gone[0];
             // (0x4212F0) units: the objects gone from the lists; vehicles: the units' vehicles before less those
@@ -2340,8 +2358,9 @@ namespace wow
         report.sector = s;
         report.winner = absolute(winner);
         report.loser = absolute(1 - winner);
-        report.gameOver = (s == 3 && report.winner == 0) || (s == 30 && report.winner == 1);
+        report.gameOver = EndsCampaign(s, report.winner);   // (MODERN: the homes by the campaign)
         debriefing.fought = true;
+        debriefing.civilWar = IsCivilWar(campaign);
         debriefing.survivors = winner == 0;
         const int loser = 1 - winner;
         (loser == 0 ? debriefing.lostUnits : debriefing.killedUnits) = units[loser];
@@ -2387,7 +2406,7 @@ namespace wow
         // (30 Human, 3 Martian), the flag and the report's +0x54 cleared (0x41AED8-0x41AF01)
         if (forfeited)
         {
-            RaiseEvent(EndGameLost, res.Human() ? 30 : 3);
+            RaiseEvent(EndGameLost, PlayerHome());
             return;
         }
         const int player = res.Human() ? 0 : 1;
@@ -2395,12 +2414,12 @@ namespace wow
         {
             if (report.winner == player)
             {
-                if (report.gameOver) RaiseEvent(EndGameWon, res.Human() ? 3 : 30);
+                if (report.gameOver) RaiseEvent(EndGameWon, OtherHome());
                 else sounds.push_back(0x13C);
             }
             else
             {
-                if (report.gameOver) RaiseEvent(EndGameLost, res.Human() ? 30 : 3);
+                if (report.gameOver) RaiseEvent(EndGameLost, PlayerHome());
                 else sounds.push_back(0x140);
             }
         }
@@ -2414,6 +2433,12 @@ namespace wow
     {
         if (!report.gameOver) return 0;
         const bool human = res.Human();
+        // MODERN: a civil war ends in the player's faction's victory or defeat
+        if (IsCivilWar(campaign))
+        {
+            const bool won = report.winner == OwnerCode(human, 0);
+            return human ? (won ? 0x80FA : 0x80FB) : (won ? 0x80FC : 0x80FD);
+        }
         if (report.sector == 3 && report.winner == 0) return human ? 0x80FA : 0x80FD;
         if (report.sector == 30 && report.winner == 1) return human ? 0x80FB : 0x80FC;
         return 0;
@@ -3666,10 +3691,15 @@ namespace wow
         if (sector < 1 || sector > warmap::SectorCount) return false;
         int who = owner[size_t(sector)];
         if (who == 2) return false;
-        bool human = (who == 0) == res.Human();
+        bool human = who == 0 ? res.Human() : OtherIsHuman();      // (MODERN: the holder's faction)
         int type = human ? (sector == 30 ? 278 : 58) : (sector == 3 ? 830 : 120);
         const std::vector<int> here = Finished(sector);
-        return std::find(here.begin(), here.end(), type) != here.end();
+        if (std::find(here.begin(), here.end(), type) != here.end()) return true;
+        // MODERN (the civil wars): either form of the faction's command building, as each home's copy is the other
+        // form's (core/CivilWar.cpp); in the game London's and sector 3's only ever stand in their own sectors
+        if (!IsCivilWar(campaign)) return false;
+        const int other = human ? (type == 278 ? 58 : 278) : (type == 830 ? 120 : 830);
+        return std::find(here.begin(), here.end(), other) != here.end();
     }
 
     // The types of the finished constructions and resources in a sector, both sides', one per object, from the live lists each
@@ -3977,7 +4007,7 @@ namespace wow
     void WarMap::RevealAfterBattle(int sector, int level, bool byPlayer)
     {
         if (level <= 0) return;
-        const bool firerHuman = res.Human() ? byPlayer : !byPlayer;
+        const bool firerHuman = byPlayer ? res.Human() : OtherIsHuman();     // (MODERN: the firer's faction)
         const Research* r = byPlayer ? research[0].get() : research[1].get();
         auto done = [&](int item) { return r && item >= 0 && size_t(item) < r->Items().size() && r->Items()[size_t(item)].state == 2; };
         int n = level;

@@ -1,6 +1,7 @@
 // The front end: the screens and the command handling that moves between them (WGame's command handler, vanilla
 // 0x402B80). Commands are the ids the game's buttons send.
 #pragma once
+#include "core/Campaign.h"
 #include "battlemap/BattleMap.h"
 #include "frontend/Briefing.h"
 #include "frontend/CdPlayer.h"
@@ -116,7 +117,7 @@ namespace wow
         bool NewCampaignFile(int slot, const std::string& name);
         // 0x80B4 -> 0x4042D0: the war map written to its campaign's slot ("Saving game to slot %d")
         void SaveCampaign();
-        std::filesystem::path SlotFile(int slot) const;
+        std::filesystem::path SlotFile(int slot, bool civilWar = false) const;
         static bool WriteSaveFile(const std::filesystem::path& path, const std::vector<uint8_t>& data);
         int playingSlot = 0;       // the slot the war map's campaign is saved in (world +0x128)
         std::map<int, ObjOjd::ResearchPageInfo> researchPages; // OBJ.ojd records 63 / 64
@@ -139,6 +140,12 @@ namespace wow
         // what the game keeps in globals between menus
         int topMenu = 0x90;        // dword_4D2574: the menu "Start New Campaign" was chosen from
         int campaignSlot = 0;      // dword_4D2578: the save slot the new campaign goes in
+        // MODERN (docs/MODERN.md "The civil wars"): the kind of campaign being started or played. A civil war's
+        // saves are HumanCW.00n / MartianCW.00n; in the Load menu's commands a civil war's slot is its number +
+        // CivilSlot (the slots stop at 999).
+        Campaign campaign = Campaign::Regular;
+        static constexpr int CivilSlot = 1000;
+        Campaign CivilWarHere() const { return res.Human() ? Campaign::HumanCivilWar : Campaign::MartianCivilWar; }
         // MODERN: the page of five slots the Load and Save menus show, and the highest slot with a save
         int slotPage = 0;
         // MODERN: the battle's zoom in steps (0 none, more is closer): the land is drawn 1.25 times smaller or
@@ -150,7 +157,7 @@ namespace wow
         void ZoomBattle(int steps);
         int LastSlot() const;
         int HighestSave() const;
-        std::vector<int> SavedSlots() const;
+        std::vector<int> SavedSlots(bool civilWar = false) const;
         std::vector<int> MenuSlots(bool load) const;
         void AddSlotPageButtons(Menu& m, size_t listed);
         std::string campaignName;  // byte_4D1448: its name, up to 36 characters

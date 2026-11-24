@@ -256,6 +256,49 @@ namespace wow
         int AddObject(int type, int sector, bool players, int kind); // kind as a save list: 0, 2 or 4
         // the save it came from, and its objects (counters hold indices into it)
         std::optional<SaveFile> save;
+        // MODERN (docs/MODERN.md "The civil wars"): the kind of campaign, from the save. The other side is the other
+        // faction in the regular game and the player's own in a civil war: everything that wants the other side's
+        // faction (its research tree, command building, resource kinds, rules) asks OtherIsHuman().
+        Campaign campaign = Campaign::Regular;
+    public:
+        Campaign CampaignKind() const { return campaign; }
+        bool OtherIsHuman() const { return OtherHuman(campaign, res.Human()); }
+        // The economy's six resource kinds per sector are its stock slots: in the game 0-2 the Humans' and 3-5 the
+        // Martians'. SlotBase is where a side's three are (the player's side: players true): its faction's in the
+        // regular game; in a civil war the player keeps its faction's and the other side has the other three.
+        // FactionBase is the side's faction's (the facility types, the deposits, the names), and FactionKind turns
+        // a slot into its faction's kind. In the regular game the two are always the same.
+        int SlotBase(bool players) const
+        {
+            const int mine = res.Human() ? 0 : 3;
+            return players ? mine : 3 - mine;
+        }
+        int FactionBase(bool players) const { return (players ? res.Human() : OtherIsHuman()) ? 0 : 3; }
+        int FactionKind(int slot) const
+        {
+            const bool players = slot / 3 == SlotBase(true) / 3;
+            return FactionBase(players) + slot % 3;
+        }
+        // the two sides' homes: in the game the Humans' London (30) and the Martians' Grampians (3); in a civil war
+        // the player's is the other way round (core/CivilWar.h: Humans from the Grampians, Martians from London)
+        int PlayerHome() const { return (res.Human() != IsCivilWar(campaign)) ? 30 : 3; }
+        int OtherHome() const { return PlayerHome() == 30 ? 3 : 30; }
+        // a battle won by owner code winner (0 or 1) at sector s ends the campaign: a side taking the other's home.
+        // Owner code 0's home is London in the game and the Grampians in a civil war.
+        bool EndsCampaign(int s, int winner) const
+        {
+            const int home0 = IsCivilWar(campaign) ? 3 : 30;
+            return (winner == 0 && s == (home0 == 30 ? 3 : 30)) || (winner == 1 && s == home0);
+        }
+        // The research and build times' modifiers (ObjOjd::ResearchHours / BuildHours) are a type's faction's
+        // "Friend" or "Enemy" by the side played. In a civil war the other side's types are the player's faction, so
+        // they are given the playingHuman that makes them the "Enemy" ones: the other faction's. (Armour, worked
+        // out per type, stays the player's "Friend" for both sides: docs/MODERN.md "The civil wars".)
+        bool ModifierHuman(bool players) const { return players || !IsCivilWar(campaign) ? res.Human() : !res.Human(); }
+        bool RefPlayers(int ref) const;
+        // the computer player's command building: a Communications Centre (0x78) or a Command Post (0x3A)
+        int AiPost() const { return OtherIsHuman() ? 0x3A : 0x78; }
+    private:
         std::array<DamageLayer, warmap::SectorCount + 1> damage{};
         bool resourceCheat = false;     // byte_58913C: every product of supply ratios taken as 1 (0x41AA16, 0x45F82F, 0x460717)
         std::vector<SaveObject> table;

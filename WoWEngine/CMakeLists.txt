@@ -35,6 +35,7 @@ add_library(wowcore STATIC
     src/core/ShadeTable.cpp
     src/core/SaveGame.cpp
     src/core/SaveFile.cpp
+    src/core/CivilWar.cpp
     src/core/SoundTable.cpp
     src/core/Models.cpp
     src/core/Landscape.cpp

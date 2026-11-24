@@ -1,4 +1,5 @@
 #include "frontend/Briefing.h"
+#include "core/EngineText.h"
 #include "warmap/WarMapData.h"
 
 #include <cstdio>
@@ -136,7 +137,9 @@ namespace wow
         y += lineHeight + 16;
         if (info.fought)
         {
-            lines.push_back({ res.String(info.survivors ? 0x4AB : 0x4AC), left, y, 0, colours.detail, true });
+            // (MODERN: in a civil war "the enemy", as the other side is no other faction)
+            const int line = info.civilWar ? (info.survivors ? enginetext::EnemyEliminated : enginetext::EnemyOccupying) : (info.survivors ? 0x4AB : 0x4AC);
+            lines.push_back({ res.String(line), left, y, 0, colours.detail, true });
             y += lineHeight * 3;
             auto section = [&](int title, int units, int vehicles, int facilities)
             {

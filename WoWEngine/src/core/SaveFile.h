@@ -29,6 +29,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "core/Campaign.h"
 
 namespace wow
 {
@@ -50,6 +51,11 @@ namespace wow
         int Sector() const;
         float Value(int i) const;      // constructions and resources: the two floats after the type
         void SetPosition(int x, int y);
+        // MODERN (the civil wars): every SELO's id in the object, its own and its battle objects', given new ones
+        void Renumber(std::vector<bool>& used);
+        // MODERN (the civil wars): the object's type and its battle objects' (each written just before a SELO) from
+        // one type to another
+        void Retype(int from, int to);
         void SetValue(int i, float v);  // constructions and resources: the two floats after the type
         // A construction's or resource's place on the battle map (its battle object's +0x78 / +0x7C, read by the
         // AI's site matching 0x440F80): the two floats 16 and 12 bytes before its last BATP tag. False if it has none.
@@ -155,6 +161,8 @@ namespace wow
 
     struct SaveFile
     {
+        // MODERN: a civil war's save (core/Campaign.h): the engine's tag first, then the original's layout
+        Campaign campaign = Campaign::Regular;
         uint32_t version = 5;
         std::vector<uint8_t> game;     // the GAME block, 0x28 bytes
         uint32_t warMap[4] = {};       // view x, view y, selected sector, view mode

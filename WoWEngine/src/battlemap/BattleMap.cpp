@@ -2637,10 +2637,10 @@ namespace wow
 
     // 0x47DA80: which types may give a special order, some only once a research item is done (Martian items by
     // their place in the tree: 2 and 3 triggers, 32 / 37 / 44-47 / 54-56 units; Human 39, an enhancement)
-    bool BattleMap::CanDo(int t, int command) const
+    bool BattleMap::CanDo(int t, int command, bool players) const
     {
-        auto m = [&](int index) { return setup.researchDone && setup.researchDone(false, index); };
-        auto h = [&](int index) { return setup.researchDone && setup.researchDone(true, index); };
+        auto m = [&](int index) { return ResearchDone(false, players, index); };
+        auto h = [&](int index) { return ResearchDone(true, players, index); };
         auto in = [&](std::initializer_list<int> types) { return std::find(types.begin(), types.end(), t) != types.end(); };
         switch (command)
         {
@@ -2716,7 +2716,7 @@ namespace wow
             { 0x80EA, 0x356, 0x489 }, { 0x80EB, 0x356, 0x489 }, { 0x80EC, 0x356, 0x489 },
             { 0x80F0, 0x358, 0x48D } };
         for (const Special& sp : specials)
-            if (CanDo(first.type, sp.command)) add(0x80F3, sp.command, sp.icon, sp.text);
+            if (CanDo(first.type, sp.command, first.players)) add(0x80F3, sp.command, sp.icon, sp.text);
     }
 
     void BattleMap::ClosePopup(bool escape)
@@ -2953,6 +2953,14 @@ namespace wow
                 auto st = slotTables.find(slot);
                 const ShadeTable* shade = st != slotTables.end() ? &st->second : res.GetShade(slot);
                 if (!shade) continue;
+                // MODERN (the civil wars): the other side's units in their faction's colours turned, so the two sides
+                // can be told apart (a copy of each slot's table, made once)
+                if (setup.civilWar && o.unit >= 0 && size_t(o.unit) < units.size() && !units[size_t(o.unit)].players)
+                {
+                    auto ot = otherSideTables.find(slot);
+                    if (ot == otherSideTables.end()) ot = otherSideTables.emplace(slot, shade->HueRotated(OtherSideHue)).first;
+                    shade = &ot->second;
+                }
                 if (o.wof)
                 {
                     o.wof->Draw(sun, *shade, t, -scrollX, -scrollY, faceLights, setup.wofBrightness, float(o.bright) * (1.0f / 255.0f));
@@ -3206,7 +3214,9 @@ namespace wow
         }
         else
         {
-            const bool gameOver = (setup.sector == 3 && setup.human) || (setup.sector == 30 && !setup.human);
+            // the other side's home: the Martians' (3) for a Human player, London for a Martian one; MODERN: the
+            // other way round in a civil war (core/CivilWar.h)
+            const bool gameOver = setup.sector == (setup.human != setup.civilWar ? 3 : 30);
             box.text = res.String(held ? 0x49C : 0x49A);
             box.command = !held && gameOver ? ReturnCommand : 0x8024;
         }

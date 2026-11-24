@@ -68,6 +68,7 @@ namespace wow
         bool fought = false;         // +0x54
         bool forfeit = false;        // byte_4E9B94
         bool survivors = false;      // +0x28 + +0x48: the player has something left there
+        bool civilWar = false;       // MODERN: the lines naming the other faction say "the enemy" (EngineText)
         int lostUnits = 0, lostVehicles = 0, lostFacilities = 0;       // +0x58, +0x60, +0x18 - +0x28
         int killedUnits = 0, killedVehicles = 0, killedFacilities = 0; // +0x5C, +0x64, +0x1C - +0x2C
     };

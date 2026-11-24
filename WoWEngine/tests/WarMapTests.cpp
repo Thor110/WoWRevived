@@ -2,6 +2,7 @@
 // that they agree with each other, and the calendar and route search the war map uses.
 #include "Test.h"
 #include "core/AStar.h"
+#include "core/Campaign.h"
 #include "warmap/WarMapData.h"
 
 #include <set>
@@ -104,4 +105,21 @@ TEST("route search: every sector reaches London over its neighbours")
         if (AStarSearch(s, 30, cost, next, goal, 1000).empty()) islands.insert(s);
     // by land, only the sectors the sea cuts off can't: the islands (Landlocked() is false and they have no land way)
     for (int s : islands) CHECK(next(s).empty() || s == 30);
+}
+
+TEST("campaign: each side's faction")
+{
+    // the regular game: the other side the other faction
+    CHECK(FactionOf(Campaign::Regular, true, 0) == Faction::Human);
+    CHECK(FactionOf(Campaign::Regular, true, 1) == Faction::Martian);
+    CHECK(FactionOf(Campaign::Regular, false, 1) == Faction::Human);
+    // a civil war: both the player's
+    CHECK(OtherFaction(Campaign::HumanCivilWar, true) == Faction::Human);
+    CHECK(OtherFaction(Campaign::MartianCivilWar, false) == Faction::Martian);
+    // owner codes as the regular game keeps them
+    CHECK_EQ(OwnerCode(true, 0), 0);
+    CHECK_EQ(OwnerCode(true, 1), 1);
+    CHECK_EQ(OwnerCode(false, 0), 1);
+    CHECK_EQ(OwnerCode(false, 1), 0);
+    CHECK(!IsCivilWar(Campaign::Regular) && IsCivilWar(Campaign::HumanCivilWar));
 }

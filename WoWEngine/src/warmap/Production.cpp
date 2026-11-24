@@ -31,6 +31,14 @@ namespace wow
     // thing offered is that building (58, or 278 in sector 30; 120, or 830 in sector 3; both are tried whoever's
     // factory it is), and not even that while the object is working on something already (0x42A410); where it
     // has one, neither 58 nor 120 is. Type 39 isn't offered in the sectors of byte_4BD2E0.
+    // whose an object is: its counter's side, or its list's (the H lists the player's)
+    bool WarMap::RefPlayers(int ref) const
+    {
+        const int at = CounterOf(ref);
+        if (at >= 0) return counters[size_t(at)].players;
+        return ref >= 0 && size_t(ref) < table.size() ? table[size_t(ref)].list % 2 == 0 : true;
+    }
+
     std::vector<int> WarMap::BuildOptions(int ref) const
     {
         std::vector<int> out;
@@ -45,8 +53,11 @@ namespace wow
             if (type < 1 || type > 1008) continue;
             if (u.builders[0] != self && u.builders[1] != self && u.builders[2] != self) continue;
             bool researched = true;
-            for (const auto& r : research)
-                if (r)
+            // (MODERN: in a civil war both sides' trees have every type, so the builder side's own tree decides;
+            // in the game a type is in one tree only, which is the same thing)
+            const bool players = at >= 0 ? counters[size_t(at)].players : table[size_t(ref)].list % 2 == 0;
+            for (size_t t = 0; t < research.size(); t++)
+                if (const auto& r = research[t]; r && (!IsCivilWar(campaign) || t == (players ? 0u : 1u)))
                     if (const Research::Item* item = r->ItemFor(type))
                         researched = item->state == Research::Done || item->state == Research::Obsolete;
             if (!researched) continue;
@@ -116,7 +127,7 @@ namespace wow
         if (head.repeat != 0)
         {
             auto u = unitData.find(head.type);
-            head.hours = u == unitData.end() ? 0.0f : float(ObjOjd::BuildHours(u->second, res.Human(), manufacture));
+            head.hours = u == unitData.end() ? 0.0f : float(ObjOjd::BuildHours(u->second, ModifierHuman(players), manufacture));
             if (q.size() < 32) q.push_back(head);
             return !(isVehicle(q.front().type) && !HasRoomFor(q.front().type, sector));
         }
@@ -146,12 +157,11 @@ namespace wow
         int at = CounterOf(ref);
         const int sector = at >= 0 ? counters[size_t(at)].sector : table[size_t(ref)].Sector();
         const bool players = at >= 0 ? counters[size_t(at)].players : table[size_t(ref)].list % 2 == 0;
-        const bool martian = players != res.Human();
         float m = 1.0f;
         if (sector >= 1 && sector <= warmap::SectorCount)
         {
             const auto& r = economy[size_t(sector)].ratio;
-            const size_t k = martian ? 3 : 0;
+            const size_t k = size_t(SlotBase(players));     // (MODERN: the side's slots; its faction's in the game)
             m = r[k] * r[k + 1] * r[k + 2];
             if (resourceCheat) m = 1.0f;    // byte_58913C (0x4606D0)
         }
@@ -165,7 +175,7 @@ namespace wow
             auto u = unitData.find(e.type);
             const bool vehicle = u != unitData.end() && u->second.category == 1;
             if (e.hours == 0.0f)
-                e.hours = u == unitData.end() ? 0.0f : float(ObjOjd::BuildHours(u->second, res.Human(), manufacture));
+                e.hours = u == unitData.end() ? 0.0f : float(ObjOjd::BuildHours(u->second, ModifierHuman(players), manufacture));
             const int target = vehicle ? -1 : RefOfId(e.target);
             const bool done = dt >= e.hours;
             if (target >= 0) // 0x80AD with the time, or 0x80AC once it's done
@@ -293,7 +303,7 @@ namespace wow
         BuildEntry e;
         e.type = type;
         e.repeat = 1;
-        e.hours = float(ObjOjd::BuildHours(u->second, res.Human(), manufacture));
+        e.hours = float(ObjOjd::BuildHours(u->second, ModifierHuman(RefPlayers(ref)), manufacture));
         q.push_back(e);
         if (!f.queue.busy) { f.queue.busy = true; ShadeSectors(); }
         SaveFactory(ref);
@@ -441,7 +451,7 @@ namespace wow
         if (mapOnly) return false;
         const int who = owner[size_t(sector)];
         if (who == 2) return false;
-        const int side = (who == 0) == res.Human() ? 0 : 1;
+        const int side = (who == 0 ? res.Human() : OtherIsHuman()) ? 0 : 1;   // the holder's faction (MODERN)
         if (u->second.faction != side) return false;
         const int kind = u->second.category - 1;
         int n = 0;

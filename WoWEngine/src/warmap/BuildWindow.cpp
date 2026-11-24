@@ -84,12 +84,11 @@ namespace wow
         // its bottom right; one that can't be ordered shows the picture 0x96 frames on, and no time
         const int at = CounterOf(buildWindow->ref);
         const int sector = at >= 0 ? counters[size_t(at)].sector : 0;
-        const bool martian = at >= 0 && counters[size_t(at)].players != human;
         float m = 1.0f;
         if (sector >= 1 && sector <= warmap::SectorCount)
         {
             const auto& r = economy[size_t(sector)].ratio;
-            const size_t k = martian ? 3 : 0;
+            const size_t k = size_t(SlotBase(at < 0 || counters[size_t(at)].players));   // (MODERN: the side's slots)
             m = r[k] * r[k + 1] * r[k + 2];
         }
         for (size_t i = 0; i < l.items.size(); i++)

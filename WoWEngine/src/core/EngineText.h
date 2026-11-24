@@ -27,7 +27,12 @@ namespace wow::enginetext
         MenuScale,                                                                                        // 1420 (231)
         TipFirst = 1421,            // a row's tool tip is its id + 20
         TipOffset = 20,
-        Last = 1440,
+        // the civil wars (docs/MODERN.md "The civil wars", update 236): the main menu's entries, and what the
+        // Load menu shows after a civil war's name
+        HumanCivilWar = 1450, MartianCivilWar, HumanCivilWarTag, MartianCivilWarTag,                     // 1450-1453
+        // the debriefing's lines that name the other faction (0x4AB / 0x4AC), for a war within one
+        EnemyEliminated, EnemyOccupying,                                                                  // 1454-1455
+        Last = 1455,
     };
 
     struct Entry { int id; const char* text[Languages]; };
@@ -54,6 +59,12 @@ namespace wow::enginetext
         { NextSaves, { "Next Saves", "Sauvegardes suivantes", "Nächste Spielstände", "Salvataggi successivi", "Partidas siguientes" } },
         { PreviousSaves, { "Previous Saves", "Sauvegardes précédentes", "Vorherige Spielstände", "Salvataggi precedenti", "Partidas anteriores" } },
         { MenuScale, { "Menu scale", "Taille des menus", "Menügröße", "Scala dei menu", "Escala de los menús" } },
+        { HumanCivilWar, { "Human Civil War", "Guerre civile humaine", "Menschlicher Bürgerkrieg", "Guerra civile umana", "Guerra civil humana" } },
+        { MartianCivilWar, { "Martian Civil War", "Guerre civile martienne", "Marsianischer Bürgerkrieg", "Guerra civile marziana", "Guerra civil marciana" } },
+        { HumanCivilWarTag, { "(Human Civil War)", "(Guerre civile humaine)", "(Menschlicher Bürgerkrieg)", "(Guerra civile umana)", "(Guerra civil humana)" } },
+        { MartianCivilWarTag, { "(Martian Civil War)", "(Guerre civile martienne)", "(Marsianischer Bürgerkrieg)", "(Guerra civile marziana)", "(Guerra civil marciana)" } },
+        { EnemyEliminated, { "The enemy in this sector was eliminated.", "L'ennemi a été éliminé dans ce secteur.", "Der Feind in diesem Sektor wurde vernichtet.", "Il nemico in questo settore è stato eliminato.", "El enemigo de este sector ha sido eliminado." } },
+        { EnemyOccupying, { "The enemy is occupying this sector.", "L'ennemi occupe ce secteur.", "Der Feind hält diesen Sektor besetzt.", "Il nemico occupa questo settore.", "El enemigo ocupa este sector." } },
 
         { UpgradedBuildings + TipOffset, {
             "Buildings upgraded on the war map fight as their new level in battle. The original game keeps them at the level they were built at.",

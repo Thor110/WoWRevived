@@ -113,7 +113,8 @@ Where the engine stands (update 234; `docs/PLAN.md` is the full list, and what t
    group keys, more save slots, key bindings, windowed play, Enhanced Assets, Discord, recordings and more, with
    every WoWRevived fix and file built in.
 5. **Network play**: not started (the last of the original; with the player and command objects it needs).
-6. **Modes and tools**: not started (Martian against Martian, Human against Human, auto-resolve; the editors).
+6. **Modes and tools**: the civil wars (Human against Human, Martian against Martian) are in as a first draft
+   (update 236; docs/MODERN.md "The civil wars"); auto-resolve and the editors not started.
 7. **Release**: `tools/make_release.py` packages it (below); unit tests to come.
 
 Each part is checked against the original game, address by address, using `docs/ENGINE-MAP.md` and the IDA notes in `WoWDecomp/`.
