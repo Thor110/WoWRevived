@@ -61,8 +61,9 @@ two unused buildings; 5. D5's last (AVFoundation for Macs without ffmpeg, full-c
       ground's outline) or the fence tool (two presses); the construction made at once where it was put,
       unfinished with its markers, growing with the war map's clock; cancelling from the queue kills it; the war
       map's Build List cancel-only for a constructor vehicle (0x494); fences laid as their line of posts (243);
-      vehicles ordered from the battle map finished on the war map (243, closed: the original makes them at the
-      world's (0, 0), not followed); Force Fire's armed test fixed (240). Everything the original does here is in;
+      vehicles ordered from the battle map finished on the war map as in the original (the clock doesn't run
+      with a battle on, so they're always finished there and deployed with the sector's units next time; 251
+      corrected 243's note of a "(0, 0)" difference, which can't happen); Force Fire's armed test fixed (240). Everything the original does here is in;
       what's left is checking it against the original and in play:
       - *provisional, wants a frame of the original*: the placement outline and the fences' wires drawn over the
         land's objects, where the game puts each piece in the view's list at its own depth; the posts' heading

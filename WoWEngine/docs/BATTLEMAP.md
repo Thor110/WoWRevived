@@ -776,8 +776,12 @@ factory building's vehicles can be ordered there.
   battle's view; **Suspend / Resume** (0x47DF74) is 0x45FE60 with the opposite of 0x45FEF0. In battle mode the
   window's background doesn't close it (0x460EF1). The engine's war map draws and runs it for the battle map
   (`BuildHost`), the war map staying alive behind the battle.
-- **An item** (0x460D70): a vehicle is ordered at once (packet 0x17, no place; *not followed*: in the original it
-  is made at the world's (0, 0) when done in a live sector); a construction (category 2 or 3) starts a placement
+- **An item** (0x460D70): a vehicle is ordered at once (packet 0x17, no place). It's finished by its factory's
+  hours, which only pass with the war map's clock, and the clock can't run while a sector holds both sides
+  (0x41AEA0 -> 0x43D010) or a battle map is open; so it's always finished on the war map, a unit of the sector like
+  any other, and deployed with the rest when the sector's battle map next opens. (Update 243's note had it "made at
+  the world's (0, 0) when done in a live sector": that would only be if it were finished with a battle on, which
+  can't happen; corrected in 251, the owner having asked what it meant.) A construction (category 2 or 3) starts a placement
   tool, 0x42E790 with cursor mode 4 (a building, 0x4A13B0), 6 (the fences and walls 0x1C3-0x1C8, 0x4A03A0) or 5
   (the military bridge 0x1BC, which nothing builds).
 - **The building tool** (0x4A13B0-0x4A1CBF): its footprint is ((2 x the type's +0x46) + 14) & ~15 world units
