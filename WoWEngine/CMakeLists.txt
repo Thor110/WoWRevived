@@ -93,6 +93,10 @@ endif()
 #   wowinstall-cli: WoWLauncher's install from the discs, as a command with its steps printed
 #   wowdump:        lists and extracts the archives, prints the tables and saves, renders sprites and models
 option(WOW_BUILD_TOOLS "Build the developer command line tools (wowdump, wowinstall-cli)" OFF)
+# macOS: the programs as .app bundles, or (OFF) as plain programs in one folder with their files beside them, as on
+# Windows and Linux. A release is the folder (tools/make_release.py, the GitHub workflow): inside a bundle the
+# programs look for what's beside them in the bundle's Contents/Resources (SDL_GetBasePath).
+option(WOW_MACOS_BUNDLE "Build the macOS programs as .app bundles" ON)
 if(WOW_BUILD_TOOLS)
     add_executable(wowinstall-cli tools/WoWInstall.cpp)
     target_link_libraries(wowinstall-cli PRIVATE wowinstall)
@@ -218,6 +222,9 @@ if(TARGET SDL3::SDL3)
             set(wow_origin "\$ORIGIN")
         endif()
         set_target_properties(WoWEngine WoWLauncher PROPERTIES BUILD_RPATH_USE_ORIGIN ON BUILD_RPATH "${wow_origin}")
+    endif()
+    if(APPLE AND NOT WOW_MACOS_BUNDLE)
+        set_target_properties(WoWEngine WoWLauncher PROPERTIES MACOSX_BUNDLE OFF)
     endif()
 else()
     message(WARNING "SDL3 not available: only the libraries (and the tools, with WOW_BUILD_TOOLS) will be built")

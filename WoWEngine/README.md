@@ -35,7 +35,9 @@ the fixed files and the backgrounds, the licence and this readme). The release, 
 the game's files added and the build folder out of the way, starts and uses its own files. That check found the
 Linux programs looking for SDL3 only in the folder they were built in; since 234 they look beside themselves
 first (`CMakeLists.txt`, BUILD_RPATH). Not tried here: Windows (the owner builds and runs each update there) and
-macOS, where the programs are built as `.app` bundles that the script doesn't yet look inside.
+macOS. A macOS release is the plain programs in one folder, as on Linux: configure with `-DWOW_MACOS_BUNDLE=OFF`
+(the script does with `--build`), since inside an `.app` bundle the programs look for their files in the bundle's
+`Contents/Resources`. Its `README-MACOS.txt` says how to open programs Apple hasn't signed (update 257).
 
 **Unit tests** (`tests/`, update 235): the file formats (FFUH both ways, sprites, palettes, shade tables,
 TEXT.ojd, the byte reader), the game's random numbers (MSVC's `rand()` from `srand(1)`), the save written, read
@@ -45,8 +47,9 @@ data, so no game files are needed. Built with the rest (`wowtests`; `-DWOW_BUILD
 run with `ctest --test-dir <build folder>`, or `wowtests <part of a name>` for some of them. Not in a release.
 
 **GitHub** (`.github/workflows/wowengine.yml`, update 235): every push that touches `WoWEngine/` builds the
-Release configuration with the tools on Windows, Linux and macOS, runs the unit tests, and on Windows and Linux
-packages the release, kept as the run's artifact (Actions tab, the run, "Artifacts"). A newer push to the same
+Release configuration with the tools on Windows, Linux and macOS, runs the unit tests, and packages the release,
+kept as the run's artifact (Actions tab, the run, "Artifacts"). macOS's (since update 257) is the release's `.zip`
+inside the artifact's, so its programs stay runnable: an artifact keeps no file permissions. A newer push to the same
 branch cancels the run still going for it and starts again. It can also be started by hand from the Actions tab.
 
 Targets:

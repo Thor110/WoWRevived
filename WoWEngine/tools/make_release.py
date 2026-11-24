@@ -21,6 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent      # the WoWEngine folder
 REPO = ROOT.parent                                 # the WoWRevived repository, for its LICENSE
 WINDOWS = os.name == 'nt'
+MACOS = sys.platform == 'darwin'
 EXE = '.exe' if WINDOWS else ''
 
 
@@ -41,7 +42,7 @@ def build(preset):
     if not shutil.which('cmake'):
         sys.exit('CMake isn\'t on the PATH. Build the ' + preset + ' configuration in Visual Studio (open the WoWEngine '
                  'folder, pick ' + preset + ', Build All), or run this from the "x64 Native Tools Command Prompt".')
-    run(['cmake', '--preset', preset])
+    run(['cmake', '--preset', preset] + (['-DWOW_MACOS_BUNDLE=OFF'] if MACOS else []))
     run(['cmake', '--build', '--preset', preset])
 
 
@@ -69,6 +70,9 @@ def main():
     build_dir = Path(args.build_dir) if args.build_dir else ROOT / 'out' / 'build' / preset
     print(f'WoWEngine v{ver}, {preset} build in {build_dir}')
 
+    if MACOS and (build_dir / 'WoWEngine.app').exists() and not (build_dir / 'WoWEngine').exists():
+        sys.exit('The build has the programs as .app bundles; a release is the plain programs in one folder. Configure '
+                 'with -DWOW_MACOS_BUNDLE=OFF (cmake --preset release -DWOW_MACOS_BUNDLE=OFF), build, and run this again.')
     if args.build or not (build_dir / ('WoWEngine' + EXE)).exists():
         if args.build_dir:
             sys.exit(f'There\'s no WoWEngine{EXE} in {build_dir}')
@@ -96,6 +100,8 @@ def main():
         (ROOT / 'readme' / 'THIRD-PARTY.txt', True),          # the licences of SDL3, stb_vorbis and cgltf
         (REPO / 'LICENSE', False),
     ]
+    if MACOS:
+        files.append((ROOT / 'readme' / 'README-MACOS.txt', True))   # opening unsigned programs, ffmpeg
     if WINDOWS:
         files.append((build_dir / ('SDL3d.dll' if args.debug else 'SDL3.dll'), False))
         files.append((build_dir / 'SDL3.dll', False))
