@@ -101,6 +101,16 @@ The original has one Human side. A world campaign could have the empires of the 
   (Human, Martian, no one). More factions would need more levels in the war map's shade table, or the engine
   colouring the borders itself.
 
+## The Martians' weather, moving
+
+On the Martian side the war map is the view through a telescope, and its swirls are weather. They could move: the
+weather layer (`layers/martian-3-weather.png`, and the noise it's made from, `tools/worldtile.py`, whose fields are
+functions of world position and so can be drawn at any offset) drifting slowly across the sea behind the land,
+as the game's clock runs. Faster with the clock's speed, still when the clock is stopped. The land and the
+sector map stay put; only the sea's picture changes, so it costs a redraw of the sea in view and nothing else.
+The weather over the land (`martian-optional-weather-over-land.png`) could be a separate system on top, as
+noted for the layers.
+
 ## Smaller things noticed
 
 - The pods' landing scatter, the observatories and the empires would each want their own entries in the save; the

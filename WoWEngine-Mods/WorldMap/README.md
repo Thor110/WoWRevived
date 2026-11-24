@@ -56,6 +56,52 @@ about nine minutes. It needs the 12 ETOPO 2022 15" tiles N75/N60/N45 x W030/W015
 
 Sectors for the world at this scale are left until they can be worked out from maps of the time (DESIGN.md).
 
+## The whole world at the original's scale (`world/`)
+
+`tools/worldtile.py` builds the world at the original's scale, a tile at a time (8 x 6 tiles of 8192 x 8192, the last
+column and row smaller): **58,823 x 48,404 pixels, both poles, Antarctica included.** Every part of it is worked out
+from world positions, the texture's offsets and the noise of the Martian sea and weather included (hashed lattice
+noise that wraps round the world), and the colour scales are fixed once for the whole map, so the tiles join
+without seams. `tools/stitch.py` puts them together.
+
+What changed from the proof of concept (`scale-tile/`), after comparing with the original's Britain:
+
+- **The coastline is drawn into the art**, two pixels on the land side, in the original's own line colours, as the
+  original's art has it. Without it the land faded into the sea; it was most of what made the colours feel wrong.
+- **The bands are coherent and nested**, as the original's are (green lowland, tan round the hills, brown on top):
+  the relief is smoothed before it's cut, each band takes the majority of its neighbourhood, and specks of a band
+  smaller than about 1.5 km square are folded into the band below.
+- **Flat land is lowland**: below 58 m anywhere, and the great plains (within 15 m of their surroundings, under
+  350 m) whatever their height, so the plains of northern Europe and Russia are green as a map of the time has them.
+- **Calibrated on Britain**: the cuts are set among the land the rules leave open, so that Great Britain has the
+  original's shares: 42.5% lowland, 27.6% upland, 29.9% highland against the original's 43.4, 27.6 and 29.0
+  (`tools/consts.json`).
+- **Heights read against their region**, so every region shows its own lowlands, hills and mountains as the
+  original shows Britain's: a pixel's height against the mean and spread of the land round it (about 300 km, from
+  `tools/regional.npz`, a coarse grid of the whole world made by `tools/preview_bands.py --regional`, so every tile
+  reads the same values and they join), with the local relief added, and the great ranges and plateaux (above
+  1,500 m) raised whatever their region. Cutting by Britain's heights alone made the whole world highland brown.
+- **Rules before the cuts**: flat plains under 350 m are lowland, flat high plateaux upland, the polar ice sheets
+  upland (a pale tint) with their ranges highland.
+- **Texture offsets hashed for every 512 pixel square** from its place in the world, so the original's texture
+  doesn't repeat in a visible pattern over large areas of one band. **Still to fix:** the squares' edges show
+  faintly, most on the Martian land at full size (`places/new-york-martian.png`) and on Antarctica's ice at a
+  distance; blending each square's texture into its neighbours' over a few dozen pixels would hide them.
+- **The Martian weather systems are larger**, at the world's scale (a few hundred to a thousand kilometres).
+
+| | |
+|---|---|
+| `world/world-human-1-8.jpg`, `world/world-martian-1-8.jpg` | The whole world at an eighth of the original's scale, 7352 x 6050 |
+| `world/world-*-1-16.png` / `.jpg` | At a sixteenth, 3676 x 3025 |
+| `world/places/` | Full size crops, 1600 x 900: the Alps, the Nile delta, the Himalaya, Japan, New York, Cape Horn, the Cape of Good Hope, the Antarctic Peninsula |
+| `world/britain-original-and-ours.png` | The game's Britain beside the world's, the same scale |
+
+The full size tiles (96 PNGs, about 3.6 GB) are not in the package. `python3 tools/worldtile.py calibrate`, then
+`python3 tools/worldtile.py tile <col> <row>` for each of the 48 (about seven and a half minutes each, 4.8 GB of
+memory at the most, so two or three at once on 16 GB), then `python3 tools/stitch.py`, make them again; the 288
+ETOPO 2022 15" tiles (5.1 GB) go in `data/etopo15`. `python3 tools/preview_bands.py` draws the whole world's
+bands in flat colours at an eighth of the scale in two minutes, for trying the band rules.
+
 ## The questions
 
 ### Can the world be made to the original map's scale?
