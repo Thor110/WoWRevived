@@ -407,8 +407,9 @@ int main(int argc, char** argv)
         {
             std::error_code ec;
             if (fs::equivalent(place, files->Root(), ec)) break;      // the game is installed there: its DAT is the one
-            if (!fs::is_directory(place / "dat", ec) && !fs::is_directory(place / "maps", ec) &&
-                !fs::is_directory(place / "DAT", ec) && !fs::is_directory(place / "MAPS", ec)) continue;
+            bool any = false;
+            for (const char* folder : { "dat", "maps", "sfx", "vox", "DAT", "MAPS", "SFX", "VOX" }) any |= fs::is_directory(place / folder, ec);
+            if (!any) continue;
             files->AddOverlay(place);
             SDL_Log("Loose files: %s", place.string().c_str());
             break;

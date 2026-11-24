@@ -1,5 +1,7 @@
 // The file formats and the game's numbers (src/core), on data made here: no game files are needed.
 #include "Test.h"
+#include "core/Wav.h"
+#include <cstdlib>
 #include "core/Bytes.h"
 #include "core/EngineText.h"
 #include "core/Ffuh.h"
@@ -218,4 +220,69 @@ TEST("engine text: every string has all five languages, in Latin-1")
     CHECK_EQ(enginetext::Latin1("Größe"), std::string("Gr\xF6\xDF" "e"));
     CHECK(enginetext::Find(enginetext::MenuScale) != nullptr);
     CHECK(enginetext::Find(enginetext::MenuScale + enginetext::TipOffset) != nullptr);
+}
+
+namespace
+{
+    // a WAV: the fmt chunk, then the data
+    std::vector<uint8_t> MakeWav(uint16_t format, uint16_t channels, uint32_t rate, uint16_t bits, const std::vector<uint8_t>& samples)
+    {
+        std::vector<uint8_t> w;
+        auto tag = [&](const char* t) { w.insert(w.end(), t, t + 4); };
+        auto u32 = [&](uint32_t v) { for (int i = 0; i < 4; i++) w.push_back(uint8_t(v >> (8 * i))); };
+        auto u16 = [&](uint16_t v) { w.push_back(uint8_t(v)); w.push_back(uint8_t(v >> 8)); };
+        tag("RIFF"); u32(uint32_t(4 + 8 + 16 + 8 + samples.size())); tag("WAVE");
+        tag("LIST"); u32(4); tag("INFO");                      // a chunk to step over
+        tag("fmt "); u32(16); u16(format); u16(channels); u32(rate); u32(rate * channels * bits / 8); u16(uint16_t(channels * bits / 8)); u16(bits);
+        tag("data"); u32(uint32_t(samples.size()));
+        w.insert(w.end(), samples.begin(), samples.end());
+        return w;
+    }
+}
+
+TEST("wav: 16-bit mono at the sample's rate is read as it is")
+{
+    const std::vector<uint8_t> s = { 0x00, 0x10, 0x00, 0xF0, 0xFF, 0x7F };   // 4096, -4096, 32767
+    std::string error;
+    auto pcm = DecodeWav(MakeWav(1, 1, 22050, 16, s), 22050, error);
+    REQUIRE(pcm.has_value());
+    REQUIRE(pcm->size() == size_t(3));
+    CHECK_EQ(int((*pcm)[0]), 4096);
+    CHECK_EQ(int((*pcm)[1]), -4096);
+    CHECK_EQ(int((*pcm)[2]), 32767);
+}
+
+TEST("wav: stereo mixed down, 44100 made 22050, 8-bit read; a file that isn't one says why")
+{
+    // two frames of stereo 16-bit: (1000, 3000) and (-1000, -3000) at 44100 -> one frame of 2000 at 22050
+    const std::vector<uint8_t> s = { 0xE8, 0x03, 0xB8, 0x0B, 0x18, 0xFC, 0x48, 0xF4 };
+    std::string error;
+    auto pcm = DecodeWav(MakeWav(1, 2, 44100, 16, s), 22050, error);
+    REQUIRE(pcm.has_value());
+    REQUIRE(pcm->size() == size_t(1));
+    CHECK(std::abs(int((*pcm)[0]) - 2000) <= 1);
+    // 8-bit is unsigned: 128 is silence, 255 nearly the top
+    pcm = DecodeWav(MakeWav(1, 1, 22050, 8, { 128, 255 }), 22050, error);
+    REQUIRE(pcm.has_value());
+    CHECK_EQ(int((*pcm)[0]), 0);
+    CHECK((*pcm)[1] > 32000);
+    CHECK(!DecodeWav(std::vector<uint8_t>{ 'R', 'I', 'F', 'F' }, 22050, error).has_value());
+    CHECK(!error.empty());
+    CHECK(!DecodeWav(MakeWav(2, 1, 22050, 4, { 1, 2 }), 22050, error).has_value());   // ADPCM isn't read
+}
+
+TEST("wav: a stereo sound keeps its two channels, and a mono file is doubled for one")
+{
+    // one stereo frame (1000, -1000) at the same rate
+    std::string error;
+    auto pcm = DecodeWav(MakeWav(1, 2, 22050, 16, { 0xE8, 0x03, 0x18, 0xFC }), 22050, error, 2);
+    REQUIRE(pcm.has_value());
+    REQUIRE(pcm->size() == size_t(2));
+    CHECK_EQ(int((*pcm)[0]), 1000);
+    CHECK_EQ(int((*pcm)[1]), -1000);
+    pcm = DecodeWav(MakeWav(1, 1, 22050, 16, { 0xE8, 0x03 }), 22050, error, 2);
+    REQUIRE(pcm.has_value());
+    REQUIRE(pcm->size() == size_t(2));
+    CHECK_EQ(int((*pcm)[0]), 1000);
+    CHECK_EQ(int((*pcm)[1]), 1000);
 }

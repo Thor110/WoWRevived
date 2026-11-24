@@ -85,6 +85,11 @@ def main():
         (build_dir / ('WoWLauncher' + EXE), True),
         (build_dir / 'launcher.bmp', True),
         (ROOT / 'README.md', True),
+        # the players' and modders' guides (update 247): plain text, beside the programs
+        (ROOT / 'readme' / 'README-OVERRIDE.txt', True),
+        (ROOT / 'readme' / 'README-CUSTOM-CAMPAIGNS.txt', True),
+        (ROOT / 'readme' / 'README-TEXTURE-PACKS.txt', True),
+        (ROOT / 'readme' / 'README-SOUNDS.txt', True),
         (REPO / 'LICENSE', False),
     ]
     if WINDOWS:
@@ -125,10 +130,15 @@ def main():
 
     # the engine's loose files: into DAT and MAPS of the release folder, which is where the game is then installed
     # (WoWLauncher adds the game's own files beside them), so they are read as the game's loose files are
-    for source, target in (('dat', 'DAT'), ('maps', 'MAPS')):
+    for source, target in (('dat', 'DAT'), ('maps', 'MAPS'), ('sfx', 'SFX'), ('vox', 'VOX')):
         if (ROOT / source).is_dir():
             shutil.copytree(ROOT / source, out / target, dirs_exist_ok=True)
             print('  ' + target + '/')
+
+    # the custom campaigns' examples (docs/CUSTOM.md, update 247): Campaigns in the main folder, beside Human.000
+    if (ROOT / 'Campaigns').is_dir():
+        shutil.copytree(ROOT / 'Campaigns', out / 'Campaigns', dirs_exist_ok=True)
+        print('  Campaigns/')
 
     archive = ROOT / 'out' / (name + '.zip')
     if archive.exists():

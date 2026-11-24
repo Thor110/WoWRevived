@@ -11,7 +11,8 @@ used"). A change to the pack is seen at the next battle the program starts after
 looked through once).
 
 The interface's sprites (`.spr`: menus, buttons, panels, icons) are replaced another way, frame by frame with
-PNGs beside them: see OVERRIDE.md.
+PNGs beside them: see OVERRIDE.md. The players' version of this page ships with the release as
+`README-TEXTURE-PACKS.txt` (`readme/` in the source); a change to the rules goes in both.
 
 ## The folders
 
@@ -105,8 +106,9 @@ textures/
 ## Not in this layout
 
 - **The war map's counters and the Build List's pictures** (`HU-CNT24/32/48.SPR`, `MA-CNT...`) and the other
-  sprites are `.spr` files. They're replaced as the engine's own loose files are (MODERN.md "The engine's own
-  files" and "Enhanced assets"): a file of the same name in the engine's `dat` folder. That changes both sides
-  of a civil war; separate files for the other side would come later, as above (the owner, update 238).
+  sprites are `.spr` files. They're replaced as the engine's own loose files are (a file of the same name in the
+  engine's `dat` folder), or since update 246 frame by frame with PNGs (OVERRIDE.md). That changes both sides of a
+  civil war. Separate pictures for the other side's counters aren't needed (the owner, update 246: the sides are
+  told apart by their colours); an override for them could be added if wanted.
 - **The models' shapes** (WOF / IOB geometry): not covered.
 - **Voices** naming the other faction ("Martians sighted"): to be reworked for the civil wars later.

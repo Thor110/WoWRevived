@@ -53,7 +53,7 @@ namespace wow
             else if (key == "start")
             {
                 if (value.find_first_of("\\/:") != std::string::npos || value == "." || value == "..")
-                    warnings.push_back(where + "start is a file's name in dat\\Campaigns, without a folder");
+                    warnings.push_back(where + "start is a file's name in the Campaigns folder, without a folder");
                 else c.start = value;
             }
             else if (key == "pods")

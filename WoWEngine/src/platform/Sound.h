@@ -56,6 +56,8 @@ namespace wow
         // [Sound\Volume] Master and the per-type volumes, 0-1.
         void SetVolumes(float master, const float typeVolumes[6]);
         void SetMinimumAudible(float v) { minimumAudible = v; }
+        // [Sound] "Search Libraries First" (0x465EB0): the libraries' entries before loose sound files (SoundLibrary)
+        void SetSearchLibrariesFirst(bool on) { library.SetSearchLibrariesFirst(on); }
         // The developers' flag Dave (byte_4D1231, [Debug] "Dave"): the debug text. The game's goes to a debugger
         // (OutputDebugString) or to a printer that is empty in the retail build; the engine's goes to its log.
         void SetDebugText(bool on) { debugText = on; }
@@ -104,11 +106,11 @@ namespace wow
 
         static void SDLCALL Feed(void* self, SDL_AudioStream* stream, int additional, int total);
         void Mix(float* out, int frames);
-        std::shared_ptr<const std::vector<int16_t>> Sample(const SoundSample& sample);
+        std::shared_ptr<const std::vector<int16_t>> Sample(const SoundSample& sample, bool stereo);
 
         SoundTable table;
         SoundLibrary library;
-        std::map<std::string, std::shared_ptr<const std::vector<int16_t>>> cache;
+        std::map<std::pair<std::string, bool>, std::shared_ptr<const std::vector<int16_t>>> cache;   // by name and stereo
         SDL_AudioStream* stream = nullptr;
         mutable std::mutex lock;
         std::vector<Voice> voices;

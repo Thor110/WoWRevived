@@ -138,12 +138,13 @@ namespace wow
 }
 
 #include "core/Archive.h"
+#include "core/Wav.h"
 #include <fstream>
 #include <iterator>
 
 namespace wow
 {
-    SoundLibrary::SoundLibrary(const GameFiles& f) : files(f)
+    SoundLibrary::SoundLibrary(const GameFiles& f, bool h) : files(f), human(h)
     {
         const char* const Paths[] = { "SFX\\SFX.WoW", "VOX\\HUMAN.WoW", "VOX\\MARTIAN.WoW" };
         for (int i = 0; i < 3; i++)
@@ -156,25 +157,53 @@ namespace wow
 
     SoundLibrary::~SoundLibrary() = default;
 
-    std::optional<std::vector<int16_t>> SoundLibrary::Load(const SoundSample& sample)
+    std::optional<std::vector<int16_t>> SoundLibrary::Load(const SoundSample& sample, bool stereo)
     {
         auto toPcm = [](const std::vector<uint8_t>& bytes) {
             std::vector<int16_t> pcm(bytes.size() / 2);
             for (size_t i = 0; i < pcm.size(); i++) pcm[i] = int16_t(bytes[i * 2] | (bytes[i * 2 + 1] << 8));
             return pcm;
         };
-        // a loose replacement first
-        if (auto loose = files.Resolve(std::string(sample.vox ? "VOX\\" : "SFX\\") + sample.name + ".snd"))
-        {
-            std::ifstream in(*loose, std::ios::binary);
-            std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(in)), {});
-            if (!bytes.empty()) return toPcm(bytes);
-        }
+        // a loose replacement first, unless the libraries are searched first
+        if (!librariesFirst)
+            if (auto loose = LoadLoose(sample, stereo)) return loose;
         for (auto& library : libraries)
         {
             if (!library) continue;
             if (auto index = library->Find(sample.name)) return toPcm(library->Read(*index, true));
         }
+        if (librariesFirst) return LoadLoose(sample, stereo);
+        return std::nullopt;
+    }
+
+    std::optional<std::vector<int16_t>> SoundLibrary::LoadLoose(const SoundSample& sample, bool stereo)
+    {
+        std::vector<std::string> folders;
+        if (sample.vox) folders = { std::string("VOX\\") + (human ? "HUMAN\\" : "MARTIAN\\"), "VOX\\" };
+        else folders = { "SFX\\" };
+        for (const std::string& folder : folders)
+            for (const char* ext : { ".wav", ".snd" })
+            {
+                auto path = files.Resolve(folder + sample.name + ext);
+                if (!path) continue;
+                std::ifstream in(*path, std::ios::binary);
+                std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(in)), {});
+                if (bytes.empty()) continue;
+                if (ext[1] == 's')
+                {
+                    if (log) log("Sound file: " + path->string());
+                    std::vector<int16_t> pcm(bytes.size() / 2);
+                    for (size_t i = 0; i < pcm.size(); i++) pcm[i] = int16_t(bytes[i * 2] | (bytes[i * 2 + 1] << 8));
+                    return pcm;
+                }
+                std::string error;
+                if (auto pcm = DecodeWav(bytes, sample.rate, error, stereo ? 2 : 1))
+                {
+                    if (log) log("Sound file: " + path->string());
+                    return pcm;
+                }
+                if (log) log("Sound file " + path->string() + ": " + error + "; not used");
+            }
         return std::nullopt;
     }
 }

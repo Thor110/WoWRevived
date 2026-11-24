@@ -7,7 +7,7 @@ start, load and save (the owner's 24 saves read and write back true), the war ma
 settled. What follows is everything left, in the order to do it; the stages further down stay the full
 inventory with the history. Tick here and there as each is done.
 
-**Version 0.2.5** from update 238 (0.2.2 from update 224; 0.0.1 until then, which as of update 222 went to the testers on Discord).
+**Version 0.2.6** from update 247 (0.2.5 from update 238, 0.2.2 from update 224; 0.0.1 until then, which as of update 222 went to the testers on Discord).
 
 **The order suggested for what is left** (update 224): 1. whatever the testers report from 0.0.1 (A7), as it
 comes; 2. D4 the credits picture; 3. D3 Enhanced Assets, then D2's check of the owner's fixed files in play;
@@ -119,8 +119,9 @@ the network game; 10. F the modes and editors; 11. G4 the trailer.
 
 ### D. Files and assets (Stage 6.9, 6.11)
 
-- [~] **D1** Loose files: DAT and MAPS are overridable, from the game's folder and from the engine's own `dat` /
-      `maps` (209). Left: the sounds (`[Sound]` Search Libraries First), modern formats for loose files.
+- [x] **D1** Loose files: DAT and MAPS are overridable, from the game's folder and from the engine's own `dat` /
+      `maps` (209); the sounds since 247 (SFX and VOX, WAV or .snd, `[Sound]` Search Libraries First: MODERN.md
+      "Loose sound files"). Modern formats: PNG (240, 246), WAV (247); OGG and models are MODERN.md "Files".
 - [x] **D2** The data folder layout (209): the engine's `dat` and `maps` are used where they lie and go into a
       release's DAT and MAPS; `dat/extra/<res>` by view size, `dat/warmap` by the view's width. The owner's
       fixed files in them (the Cotton Factory's smokestacks, the Airship model's name, sector 22's hole, the

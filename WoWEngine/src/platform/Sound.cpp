@@ -24,9 +24,10 @@ namespace wow
         }
     }
 
-    Sound::Sound(const GameFiles& files, bool human) : table(LoadTable(files, human)), library(files)
+    Sound::Sound(const GameFiles& files, bool human) : table(LoadTable(files, human)), library(files, human)
     {
         // as the game's primary buffer (0x465C40): 22050 Hz, 16-bit stereo
+        library.log = [](const std::string& line) { SDL_Log("%s", line.c_str()); };
         SDL_AudioSpec spec{ SDL_AUDIO_F32, 2, OutputRate };
         stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, Feed, this);
         if (!stream) { SDL_Log("Sound effects are off, the audio device can't be opened: %s", SDL_GetError()); return; }
@@ -38,16 +39,16 @@ namespace wow
         if (stream) SDL_DestroyAudioStream(stream); // stops the callback before the voices go
     }
 
-    std::shared_ptr<const std::vector<int16_t>> Sound::Sample(const SoundSample& sample)
+    std::shared_ptr<const std::vector<int16_t>> Sound::Sample(const SoundSample& sample, bool stereo)
     {
-        auto it = cache.find(sample.name);
+        auto it = cache.find({ sample.name, stereo });
         if (it != cache.end()) return it->second;
         std::shared_ptr<const std::vector<int16_t>> pcm;
         // (0x466029, with Dave: each sound file as it is asked for)
         if (debugText) SDL_Log("Dave: sound %s", sample.name.c_str());
-        if (auto loaded = library.Load(sample)) pcm = std::make_shared<const std::vector<int16_t>>(std::move(*loaded));
+        if (auto loaded = library.Load(sample, stereo)) pcm = std::make_shared<const std::vector<int16_t>>(std::move(*loaded));
         else SDL_Log("Couldn't find Sfx %s in Library", sample.name.c_str()); // the game's own message
-        cache[sample.name] = pcm;
+        cache[{ sample.name, stereo }] = pcm;
         return pcm;
     }
 
@@ -134,7 +135,7 @@ namespace wow
         size_t& cursor = nextVariation[{ id, groupIndex }];
         cursor = cursor + 1 < group.size() ? cursor + 1 : 0;
         const SoundSample& sample = group[cursor];
-        auto pcm = Sample(sample);
+        auto pcm = Sample(sample, def->stereo);
         if (!pcm || pcm->empty()) return 0;
 
         Voice v;
@@ -212,7 +213,7 @@ namespace wow
         const auto& group = def->groups[0];
         const size_t cursor = nextVariation[{ id, 0 }];
         const SoundSample& sample = group[cursor + 1 < group.size() ? cursor + 1 : 0];
-        auto pcm = Sample(sample);
+        auto pcm = Sample(sample, def->stereo);
         if (!pcm || sample.rate <= 0) return 0;
         const double frames = double(pcm->size()) / (def->stereo ? 2 : 1);
         return int(frames * 30.0 / sample.rate + 0.5);

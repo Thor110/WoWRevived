@@ -1,5 +1,8 @@
 # Custom campaigns
 
+The players' version of this page ships with the release as `README-CUSTOM-CAMPAIGNS.txt`
+(`readme/README-CUSTOM-CAMPAIGNS.txt` in the source); a change to the rules goes in both.
+
 MODERN (the owner's idea at update 245, built in update 246). A custom campaign is a text file that says what kind
 of campaign it is and how it starts. The engine lists them on the main menu and plays them as it plays the regular
 campaign and the civil wars.
@@ -19,12 +22,12 @@ campaigns".
 
 ## The files
 
-Each custom campaign is a `.txt` file in `dat\Campaigns`:
+Each custom campaign is a `.txt` file in a **Campaigns** folder in the main folder (the game's folder, beside
+`Human.000` and `Martian.000`; since update 247, `dat\Campaigns` before). The engine also reads its own Campaigns
+folder, beside the program or, in a build run where it was made, the source folder's (the places its loose `dat`
+comes from, so not with `--no-loose`); a release ships its examples in the main folder's.
 
-- the engine's own `dat` folder (beside the program, or the source folder's in a build run where it was made);
-- the game's `DAT` folder.
-
-A file in the engine's folder hides one of the same name in the game's. The files are read each time the menu
+A file in the main folder's Campaigns hides one of the same name in the engine's. The files are read each time the menu
 opens, so a change is seen without starting the program again. Lines the engine can't read are noted in
 WoWEngine.log ("Custom campaign <file>: line n: ...") and left out. A file without a kind isn't offered.
 
@@ -34,7 +37,7 @@ Anything after a `#` is a comment. The keys:
 |---|---|---|
 | `name` | what the menu shows | the file's name without `.txt` |
 | `kind` | `human`, `martian`, `human civil war` or `martian civil war` | none: the file isn't offered |
-| `start` | a start file in `dat\Campaigns` (a name only, no folder) | the side's own: `Human.000` or `Martian.000` |
+| `start` | a start file in the same Campaigns folder (a name only, no folder; any extension: `Highlands.000`) | the side's own: `Human.000` or `Martian.000` |
 | `pods` | `on` or `off`: whether the Martians' pods land (the Human and Martian kinds) | `on` |
 
 A civil war (`human civil war`, `martian civil war`) also takes CivilWar.txt's layout lines, which say which of the
@@ -50,7 +53,7 @@ the file doesn't give is the civil war's draft (`CivilWarLayout::Default`), not 
   be the side's: a Human start file for a Human campaign or Human civil war. A civil war is made from it as from
   the side's own start file (`MakeCivilWarStart`), so its H lists must hold the player's faction.
 
-Examples are shipped in the engine's `dat\Campaigns`:
+Examples are shipped in the Campaigns folder (`WoWEngine/Campaigns` in the source):
 
 ```
 # Quiet Skies.txt: the Human campaign without the Martians' pods
@@ -79,6 +82,11 @@ campaign word, whose low byte is the kind (0 regular, 1 Human Civil War, 2 Marti
 are flags: 0x100 a custom campaign's, 0x200 no pods, 0x400 the player Martian (for the regular kind; a civil war's
 side is its own). The original's save follows. The kind and flags are all a save needs: the definition is read only
 when a campaign starts, so changing or deleting its file doesn't change a campaign already begun.
+
+**A save carries its campaign.** Everything a campaign is (the war map, the research, the kind and the pods) is in
+its save, so a `Custom.nnn` can be passed to another player and played without the definition or start file that
+made it: it goes in their `SaveGame` folder as `Custom.nnn` with a number they don't use, and needs the engine
+from update 246 on.
 
 Numbered from 001 as every save is (the menus' slots start at 1); `.000` is the game's name for its start files.
 

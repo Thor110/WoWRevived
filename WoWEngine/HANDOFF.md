@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 246
+# Handoff: WoWEngine after update 247
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -147,14 +147,17 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   exe. `docs/TASKS.md` and `docs/REVIEW.md` are the older task lists (PARITY.md takes precedence).
   `docs/review/range-*.md` are per-address-range routine reviews.
 - `docs/MODERN.md`: the `[Modern]` options, the only deliberate departures.
-- `docs/TEXTURES.md` (the battle map's texture packs), `docs/OVERRIDE.md` (PNGs in place of any sprite's frames)
-  and `docs/CUSTOM.md` (custom campaigns): the rules for the files players and modders make.
+- `docs/TEXTURES.md` (the battle map's texture packs), `docs/OVERRIDE.md` (PNGs in place of any sprite's frames),
+  `docs/CUSTOM.md` (custom campaigns) and MODERN.md "Loose sound files": the rules for the files players and
+  modders make. Their players' versions
+  are `readme/README-*.txt`, which ship with the release (247): a change to the rules goes in both.
+- `docs/TESTING.md` (247): what still needs seeing in play, and what helps a report.
 - `docs/TRAILER.md`: the trailer (first cut at update 230) and how to cut it again with `tools/trailer`; `--frames`
   records a scripted run's every update as pictures.
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 246
+## State after update 247
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -180,12 +183,20 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   BMPs into PNGs (or take the owner's zip), put them in `build/textures` (the program's folder), set `[Modern]
   "Enhanced assets"=1` in the test install's ini (restore it after) and run without `--no-loose`; `wowdump
   --texcheck <game> <pack>` checks a pack reads back as the game's. A frame with an unchanged pack is the same as
-  without. Next: the rest of A10. The version is 0.2.5 (238).
+  without. Next: the rest of A10. The version is 0.2.6 (247; 0.2.5 from 238).
 - **A lesson from 237**: the war map's constructor moved its `units` argument into the other side's copy and then
   read `units` again, so every counter had frame 0, speed 0 and move class 0 (all looked like lorries and none
   moved). The parity battles didn't see it (a battle reads the table, not the counters). Fixed in 238. A new
   campaign's war map screenshot with the construction vehicles in sectors 12 and 24 is a quick look: their
   counters aren't the lorry's.
+- **Update 247** (version 0.2.6): custom campaigns' `Campaigns` folder moved to the main folder (definitions and
+  start files together; the engine's own examples in `WoWEngine/Campaigns`, a release's at its top level); the
+  players' guides `readme/README-OVERRIDE.txt`, `README-CUSTOM-CAMPAIGNS.txt`, `README-TEXTURE-PACKS.txt` and
+  `README-SOUNDS.txt`, shipped beside the programs by `make_release.py` (tried on Linux); `docs/TESTING.md`; loose
+  sound files (D1, MODERN.md "Loose sound files": `SFX\<name>.wav` / `VOX\HUMAN\<name>.wav`, `core/Wav`,
+  `[Sound]` Search Libraries First). The owner's remaining list after this: models and sounds in common formats
+  (OGG needs a decoder, stb_vorbis proposed and not yet agreed; units' WOF from OBJ / glTF), then network play
+  (A2 / A9) last, as a menu option; and testing everything in TESTING.md.
 - **Update 246** did the owner's list from after 245, in their order:
   - **PNG sprite overrides** (docs/OVERRIDE.md): with Enhanced assets on, any `.spr` frame is replaced by a PNG
     beside it, named as WoWViewer exports frames (`<name>_frame_NN.png`, `<name>.png` for one frame), at the
@@ -196,7 +207,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     and the sector's room for new vehicles, not applied to the player's factories) and **Units on bridges fire
     back** (the aim's bridge link test, 0x491123, left out). Neither has been tried in a battle or on a full
     sector yet: worth a play-test.
-  - **Custom campaigns** (docs/CUSTOM.md): `dat\Campaigns\*.txt`, the main menu's "Custom Campaigns", saves
+  - **Custom campaigns** (docs/CUSTOM.md): `Campaigns\*.txt` in the main folder (247), the main menu's "Custom Campaigns", saves
     `SaveGame\Custom.nnn`. Tried headless on the English install: the Highlands Alone Human Civil War and the
     Martian Stranded started, saved, listed and loaded; the test saves were deleted after.
 - **Test units** (245): `wowdump --addunit <save> <out> <sector> <type> <list> <dx,dy>` adds a unit of a type (its
@@ -246,7 +257,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **247**.
+  - The next number is **248**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.

@@ -1,5 +1,11 @@
 # Replacing sprites with PNG pictures
 
+**Enhanced assets must be on** (Game Options > Modern Options, or `[Modern] Enhanced assets=1`); with it off the
+game's own sprites are drawn and the PNGs are ignored.
+
+The players' and modders' version of this page ships with the release as `README-OVERRIDE.txt`
+(`readme/README-OVERRIDE.txt` in the source); a change to the rules goes in both.
+
 MODERN. Any of the game's sprites (`.spr`) can be replaced, frame by frame, with PNG pictures. This is separate from
 the battle map's unit and building textures (the `.wof` and `.iob` models), which have their own folders: see
 TEXTURES.md.

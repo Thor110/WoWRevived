@@ -20,6 +20,12 @@ namespace wow
         return files;
     }
 
+    // the folders the overlays have: DAT and MAPS, and (MODERN, update 247: loose sound files) SFX and VOX
+    bool GameFiles::Overlaid(const std::string& first)
+    {
+        return EqualsNoCase(first, "dat") || EqualsNoCase(first, "maps") || EqualsNoCase(first, "sfx") || EqualsNoCase(first, "vox");
+    }
+
     std::optional<fs::path> GameFiles::Resolve(std::string_view gamePath) const
     {
         // the overlays' DAT and MAPS first (the first part of the path, whatever its case)
@@ -29,7 +35,7 @@ namespace wow
             const std::string_view rest = skip == std::string_view::npos ? std::string_view() : gamePath.substr(skip);
             const size_t end = rest.find_first_of("\\/");
             const std::string_view first = rest.substr(0, end);
-            if (end != std::string_view::npos && (EqualsNoCase(std::string(first), "dat") || EqualsNoCase(std::string(first), "maps")))
+            if (end != std::string_view::npos && Overlaid(std::string(first)))
                 for (const fs::path& folder : overlays)
                     if (auto found = ResolveIn(folder, gamePath)) return found;
         }
@@ -43,7 +49,7 @@ namespace wow
         const std::string_view rest = skip == std::string_view::npos ? std::string_view() : gamePath.substr(skip);
         const size_t end = rest.find_first_of("\\/");
         const std::string first(rest.substr(0, end));
-        if (end != std::string_view::npos && (EqualsNoCase(first, "dat") || EqualsNoCase(first, "maps")))
+        if (end != std::string_view::npos && Overlaid(first))
             for (const fs::path& folder : overlays)
                 if (auto found = ResolveIn(folder, gamePath)) all.push_back(*found);
         if (auto found = ResolveIn(root, gamePath)) all.push_back(*found);

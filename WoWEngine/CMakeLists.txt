@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 # The version, for the programs (Version.h) and the release (tools/make_release.py reads it from here).
 # Change it only here.
-project(WoWEngine VERSION 0.2.5 LANGUAGES C CXX)
+project(WoWEngine VERSION 0.2.6 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -37,6 +37,7 @@ add_library(wowcore STATIC
     src/core/SaveFile.cpp
     src/core/CivilWar.cpp
     src/core/CustomCampaign.cpp
+    src/core/Wav.cpp
     src/core/Png.cpp
     src/core/TexturePack.cpp
     src/core/SoundTable.cpp

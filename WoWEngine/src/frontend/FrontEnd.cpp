@@ -123,6 +123,7 @@ namespace wow
         float master = ini.GetFloat(SoundSection, "Master", 1.0f);
         sound.SetVolumes(master, types);
         sound.SetMinimumAudible(ini.GetFloat("Sound", "Minimum Audible Volume", 0.05f));   // 0x4646C0
+        sound.SetSearchLibrariesFirst(ini.GetBool("Sound", "Search Libraries First", false));   // 0x465EB0 (update 247)
         sound.SetDebugText(ini.GetBool("Debug", "Dave", false));                          // the developers' flag (docs/ODDITIES.md)
         // the four borders (the settings' text is "%d,%d,%d,%d", 0x411C7C; numbers left out keep the default, so
         // WoWRevived's launcher, which writes the left and top only, leaves the right and bottom as they were)
@@ -354,14 +355,25 @@ namespace wow
         return m;
     }
 
-    // MODERN (update 246, docs/CUSTOM.md): the custom campaigns this faction can play: every dat\Campaigns\*.txt
-    // (the engine's own dat folder first; a name there hides the game's), read now, those without a kind or of
-    // the other faction left out, in the order of their names
+    // MODERN (update 246, docs/CUSTOM.md): the custom campaigns this faction can play: every *.txt in the main
+    // folder's Campaigns (update 247; dat\Campaigns before), then in the engine's own Campaigns beside the program or
+    // in the source folder (the places its loose dat comes from, so none with --no-loose; a name the game's folder
+    // has hides it), read now, those without a kind or of the other faction left out, in the order of their names
     std::vector<CustomCampaign> FrontEnd::FindCustomCampaigns() const
     {
         std::vector<CustomCampaign> found;
         std::vector<std::string> seen;
-        for (const std::filesystem::path& folder : files.ResolveAll("dat\\Campaigns"))
+        std::vector<std::filesystem::path> folders;
+        for (const std::filesystem::path& place : [&] { std::vector<std::filesystem::path> p{ files.Root() }; for (const auto& o : files.Overlays()) p.push_back(o); return p; }())
+        {
+            auto folder = GameFiles::ResolveIn(place, "Campaigns");
+            std::error_code ec;
+            if (!folder || !std::filesystem::is_directory(*folder, ec)) continue;
+            bool same = false;
+            for (const auto& f : folders) if (std::filesystem::equivalent(f, *folder, ec)) same = true;
+            if (!same) folders.push_back(*folder);
+        }
+        for (const std::filesystem::path& folder : folders)
         {
             std::error_code ec;
             std::vector<std::filesystem::path> texts;
@@ -383,6 +395,7 @@ namespace wow
                 std::vector<std::string> warnings;
                 bool ok = false;
                 CustomCampaign c = CustomCampaign::Parse(body, path.filename().string(), warnings, ok);
+                c.folder = folder;
                 for (const std::string& w : warnings) SDL_Log("Custom campaign %s: %s", path.filename().string().c_str(), w.c_str());
                 if (ok && c.human == res.Human()) found.push_back(std::move(c));
             }
@@ -865,11 +878,12 @@ namespace wow
 
     bool FrontEnd::NewCampaignFile(int slot, const std::string& name)
     {
-        // (MODERN: a custom campaign's start file is in dat\Campaigns when it names one)
-        const std::string startPath = customCampaign && !customChosen.start.empty() ? "dat\\Campaigns\\" + customChosen.start
-                                                                                     : res.Human() ? "Human.000" : "Martian.000";
-        auto start = files.Resolve(startPath);
+        // (MODERN: a custom campaign's start file is in its Campaigns folder when it names one, update 247)
+        const bool ownStart = customCampaign && !customChosen.start.empty();
+        const std::string startPath = ownStart ? (customChosen.folder / customChosen.start).string() : res.Human() ? "Human.000" : "Martian.000";
+        auto start = ownStart ? GameFiles::ResolveIn(customChosen.folder, customChosen.start) : files.Resolve(startPath);
         if (!start) SDL_Log("New campaign: no %s", startPath.c_str());
+        else if (ownStart) SDL_Log("Custom campaign's start file: %s", start->string().c_str());
         if (!start || slot < SaveSlot::First || slot > SaveSlot::Max) return false;
         std::ifstream in(*start, std::ios::binary);
         std::vector<uint8_t> data((std::istreambuf_iterator<char>(in)), {});

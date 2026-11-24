@@ -21,7 +21,7 @@ namespace wow
 
         // MODERN (docs/MODERN.md "Files"): another folder whose DAT and MAPS files are used before the game's own:
         // the engine's folder, where its loose files (the fixed and enhanced ones, the backgrounds made for each
-        // view size, the wider war map) are shipped. Only paths that begin DAT or MAPS look there.
+        // view size, the wider war map) are shipped. Only paths that begin DAT or MAPS look there, and (update 247) SFX and VOX.
         void AddOverlay(std::filesystem::path folder) { overlays.push_back(std::move(folder)); }
         const std::vector<std::filesystem::path>& Overlays() const { return overlays; }
 
@@ -29,6 +29,8 @@ namespace wow
         std::optional<std::filesystem::path> Resolve(std::string_view gamePath) const;
         // Every real path the game path has: the overlays' (for DAT and MAPS paths), then the game folder's
         std::vector<std::filesystem::path> ResolveAll(std::string_view gamePath) const;
+        // A path in a folder, each part matched without regard to case (any folder, not only the game's)
+        static std::optional<std::filesystem::path> ResolveIn(const std::filesystem::path& folder, std::string_view gamePath);
 
         // The files the engine can't start without that are missing from Root().
         std::vector<std::string> Missing() const;
@@ -44,6 +46,6 @@ namespace wow
     private:
         std::filesystem::path root;
         std::vector<std::filesystem::path> overlays;
-        static std::optional<std::filesystem::path> ResolveIn(const std::filesystem::path& folder, std::string_view gamePath);
+        static bool Overlaid(const std::string& firstPart);
     };
 }

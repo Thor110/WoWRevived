@@ -428,10 +428,44 @@ engine's next start.
 - **Every data folder overridable**: a loose file in `DAT`, `MAPS`, `SFX` or `VOX` replacing the copy in that
   folder's archive. The original does this for `DAT` only (a loose `dat\<name>` replaces Dat.wow's entry,
   0x414DE0). For `MAPS` it looks in a folder `Map` that doesn't exist (0x414FAB), so loose map files are ignored;
-  the engine has that one fixed already (a modern fix, above). The sound libraries have no such rule; this
-  option would give `SFX` and `VOX` the same.
+  the engine has that one fixed already (a modern fix, above). *SFX and VOX in (update 247)*: "Loose sound files"
+  below.
 - **Modern formats** accepted for the overriding files (PNG for sprites, WAV / OGG for sounds, and so on), so a
-  fix or a mod needn't be encoded in the game's own formats.
+  fix or a mod needn't be encoded in the game's own formats. *In*: PNG for sprites (246, OVERRIDE.md) and the
+  battle map's textures (240, TEXTURES.md), WAV for sounds (247). *Not yet*: OGG (it needs a decoder: stb_vorbis,
+  one public-domain file, is the obvious one, if the owner agrees to code from outside), models (units' WOF from
+  OBJ or glTF is practical; buildings' IOB are pictures cut into patches, not models, so they'd need rendering).
+
+### Loose sound files (update 247; PLAN D1)
+
+A sound sample can be replaced by a loose file, as a DAT file can (README-SOUNDS.txt is the players' version):
+
+- **Where**: `SFX\<name>.wav` for an effect; `VOX\HUMAN\<name>.wav` (`VOX\MARTIAN\` in a Martian game), then
+  `VOX\<name>.wav`, for a voice. `.snd` is read too: the libraries' own form, 16-bit mono PCM at the sample's rate
+  (the engine read `SFX\<name>.snd` / `VOX\<name>.snd` before). In the game's folders and the engine's own `sfx` /
+  `vox` beside the program or in the source folder (`GameFiles` overlays, which now take SFX and VOX paths as
+  well as DAT and MAPS; a release copies them as `SFX` / `VOX`). No name is in more than one library (checked:
+  SFX.WoW's 202, HUMAN.WoW's 153 and MARTIAN.WoW's entries share none), so the name alone picks the sample.
+- **The name** is the sample's in SFX.ojd, as `wowdump --sfx` prints it (`[waroom1@22050]`) or WoWViewer lists
+  the libraries' entries. `[Debug] Dave=1` puts "Dave: sound <name>" in the log as each is first used (0x466029),
+  which is the easy way to find what a sound is called.
+- **WAV** (`core/Wav`): 8, 16, 24 or 32-bit PCM or 32-bit float, any channels and rate; made the sample's rate
+  (every sample in the game is 22050 Hz) by straight-line interpolation, and mono, or interleaved stereo for the
+  nine sounds the table marks stereo (opcode 15: the war room's ambients and the like; 0x465D10 gives those a
+  two-channel buffer), a mono file doubled. A 16-bit WAV at 22050 Hz of the right channels is read exactly.
+  The log names each loose file as it's used ("Sound file: ...") or why one isn't.
+- **The order**: the loose file first, the library's entry when there's none, as the original does with its
+  developers' flag on. `[Sound]` "Search Libraries First" (0x465EB0, byte_58FE78; off unless set) puts the library
+  first, the loose file only for a sample no library has (0x4660D4).
+- **The original's own loose sounds** (0x466910) are looked for only with a developers' command-line flag
+  (byte_4D12F4, from WinMain) and in other places (the name as given, `SFX\HUMAN\` / `SFX\MARTIAN\`,
+  `VOX\English\` and `VOX\English\HUMAN\` / `MARTIAN\`, each `<name>.snd`); not copied, as nothing ships in them.
+- *Seen working*: effects replaced in a battle headless (every SFX entry as a WAV, each logged as used). *Not yet
+  seen*: a voice line (none played in the short test battle); it's the same code.
+- **WoWViewer's export** writes each entry as `NAME.wav` with a mono header and a rate it guesses (44100 for a
+  long entry), where the true rate is SFX.ojd's (22050 for all) and nine are stereo. Such a file put back is read
+  at the rate its header says, so a guessed 44100 plays at the wrong speed: export at 22050 (or fix the header)
+  before putting one back. A WoWViewer change to take the rate and channels from SFX.ojd would remove the trap.
   *PNG for sprites is in (update 246)*: with Enhanced assets on, any `.spr` frame is replaced by a PNG beside it,
   named as WoWViewer exports the frames (`<name>_frame_NN.png`, or `<name>.png` for a one-frame sprite), at the
   frame's size or 2, 4 or 8 times it; drawn in full colour where the game draws the sprite as it is, and matched to
@@ -683,7 +717,7 @@ once the engine is complete.
 
 - **Unlimited building** (the owner, update 245). *In (update 246)*: "Modern Gameplay", below.
 - **Custom campaigns** (the owner, update 245). *In (update 246)*: docs/CUSTOM.md. A text file each in
-  `dat\Campaigns` (kind, name, start file, pods, a civil war's layout lines), the main menu's "Custom Campaigns"
+  `Campaigns` in the main folder (update 247; `dat\Campaigns` in 246) (kind, name, start file, pods, a civil war's layout lines), the main menu's "Custom Campaigns"
   under the civil war, saves `SaveGame\Custom.001` on with the engine's tag and its flags, and a Load menu of
   their own ("Resume Custom Campaign").
 - **Human units fire back from bridges** (the owner, update 238). *In (update 246)*: "Modern Gameplay", above

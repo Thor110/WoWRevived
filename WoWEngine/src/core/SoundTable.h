@@ -25,6 +25,7 @@
 // Samples are looked up by name in SFX\SFX.WoW, or for type 5 (speech and music) in the side's VOX\HUMAN.WoW
 // or VOX\MARTIAN.WoW. They're 16-bit mono PCM.
 #pragma once
+#include <functional>
 #include <cstdint>
 #include <map>
 #include <span>
@@ -87,14 +88,26 @@ namespace wow
     class SoundLibrary
     {
     public:
-        explicit SoundLibrary(const GameFiles& files);
+        explicit SoundLibrary(const GameFiles& files, bool human = true);
         ~SoundLibrary();
 
-        // 16-bit mono PCM, or nothing if no library has it.
-        std::optional<std::vector<int16_t>> Load(const SoundSample& sample);
+        // 16-bit mono PCM at the sample's rate, or nothing if no library or loose file has it.
+        // MODERN (update 247, docs/MODERN.md "Loose sound files"): a loose file of the sample's name is used in
+        // place of the library's entry: SFX\<name>.wav or .snd for an effect; VOX\HUMAN\ (VOX\MARTIAN\ in a
+        // Martian game), then VOX\, for a voice. In the game's folders and the engine's own (GameFiles overlays).
+        // A .snd is the library's own form (16-bit mono PCM at the sample's rate); a WAV is converted (core/Wav).
+        // (stereo: a sound the table marks stereo, whose sample is two channels interleaved)
+        std::optional<std::vector<int16_t>> Load(const SoundSample& sample, bool stereo = false);
+        // [Sound] "Search Libraries First" (0x465EB0; byte_58FE78, read at 0x4660D4): the library's entry before a
+        // loose file, which is then only used for a sample the libraries don't have
+        void SetSearchLibrariesFirst(bool on) { librariesFirst = on; }
+        // where the loose files it uses, or can't read, are noted (the log; core has no SDL)
+        std::function<void(const std::string&)> log;
 
     private:
         const GameFiles& files;
+        bool human = true, librariesFirst = false;
         std::unique_ptr<Archive> libraries[3];
+        std::optional<std::vector<int16_t>> LoadLoose(const SoundSample& sample, bool stereo);
     };
 }
