@@ -1,5 +1,0 @@
-# A custom campaign (WoWEngine, docs/CUSTOM.md): the Human campaign without the Martians' pods.
-# The Martians have only what they start with, so the war is won or lost on the ground.
-name = Quiet Skies (no pods)
-kind = human
-pods = off

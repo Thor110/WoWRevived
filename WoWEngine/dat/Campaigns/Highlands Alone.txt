@@ -1,8 +1,0 @@
-# A custom campaign (WoWEngine, docs/CUSTOM.md): a harder Human Civil War. Only the far north holds for the
-# player; London's side has the rest of Britain, Edinburgh and the Southern Uplands included.
-name = Human Civil War: The Highlands Alone
-kind = human civil war
-player  = 1 2 3 4                # North Western Highlands, Isle of Skye, Grampian Mountains, Strathmore
-other   = rest                   # London's: every other Human sector of the start file
-copy    = 30                     # London's base, copied to the Grampians
-copy at = 468 540                # where the Martians' base was
