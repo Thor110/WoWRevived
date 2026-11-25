@@ -80,6 +80,20 @@ namespace wow
         }
     }
 
+    std::unique_ptr<Movie> Movie::OpenFile(const std::filesystem::path& file, std::string& error)
+    {
+        std::string ext = file.extension().string();
+        for (char& c : ext) c = char(std::tolower(static_cast<unsigned char>(c)));
+        SDL_Log("Movie: playing %s", file.string().c_str());
+        if (ext == ".mp4") return OpenMp4(file, error);
+        try { return std::make_unique<SmackerMovie>(file); }
+        catch (const std::exception& e)
+        {
+            error = file.string() + ": " + e.what();
+            return nullptr;
+        }
+    }
+
     MovieAudio::MovieAudio(int r, int c) : rate(r), channels(c)
     {
         if (rate <= 0 || channels <= 0) return;

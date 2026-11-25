@@ -113,6 +113,7 @@ namespace wow
         std::unique_ptr<Screen> NetworkSessions(int previous); // 0xA4 (opened by 0xA6), 0x407110
         std::unique_ptr<Screen> NotRebuilt(int command, int previous);
         void PlayMovie(const std::string& name, Command next);
+        void PlayMovieFile(const std::filesystem::path& file, Command next);    // (update 264) a custom campaign's
         std::unique_ptr<Screen> WarMapMenu();                // 0x80B5, 0x49B980
         // slot: the campaign's save slot (1-5) it's saved to when left, 0 for none
         void StartWarMap(const std::string& gamePath, const std::string& name, int slot = 0, bool loaded = false);
@@ -156,6 +157,13 @@ namespace wow
         bool customCampaign = false;
         bool civilOtherSide = false;        // (update 261) the civil war being started is played as its second side
         CustomCampaign customChosen;
+        // (update 264) the custom campaign being played, for its own files (movies, briefing, reskins): the one
+        // started, or the one a Custom.nnn save names in Custom.nnn.campaign beside it; none for a save without it
+        std::optional<CustomCampaign> activeCustom;
+        std::vector<std::string> briefingPages;
+        int briefingPage = 0;
+        std::optional<TexturePack> campaignPack;            // its reskins, over TEXTURES
+        std::filesystem::path campaignPackRoot;
         std::vector<CustomCampaign> customList;
         int customPage = 0;
         bool customLoad = false;
@@ -166,6 +174,7 @@ namespace wow
         std::string SlotGamePath(int slot) const;           // "SaveGame\..." for the campaign being started or played
         std::unique_ptr<Screen> CustomCampaignsMenu(int previous);
         std::unique_ptr<Screen> ChooseSideMenu(int previous);   // (update 261) a civil war's two sides
+        std::unique_ptr<Screen> BriefingMenu();                 // (update 264) a custom campaign's briefing, a page
         Campaign CivilWarHere() const { return res.Human() ? Campaign::HumanCivilWar : Campaign::MartianCivilWar; }
         // MODERN: the page of five slots the Load and Save menus show, and the highest slot with a save
         int slotPage = 0;

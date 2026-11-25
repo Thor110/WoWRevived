@@ -40,6 +40,10 @@ namespace wow
         // the menu put in the middle of the screen, as a bottom button does (for a menu that ends without one)
         void Centre();
         void AddButtonText(int command, std::string text, int param = 0); // a caption that isn't a TEXT.ojd string
+        // MODERN (update 264): text wrapped to the menu's width (WrapBlock; up to 16 lines), drawn on no plate in the
+        // menus' static text colour, taking no part in input (a custom campaign's briefing)
+        std::string WrapBlock(std::string_view text) const;
+        void AddTextBlock(std::string wrapped);
         void AddBottomButton(int command, int textId); // also centres the menu
         // A text field (0x40A8C0) holding up to maxLength characters; Enter in it sends command. changed is
         // called with the text after every change.

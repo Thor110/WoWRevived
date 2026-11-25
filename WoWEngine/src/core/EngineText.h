@@ -40,6 +40,8 @@ namespace wow::enginetext
         BridgesStayBroken,                                                                                // 1466 (249); its tip 1486
         // a civil war's sides (update 261): the menu's heading, then each side, whose tip (+20) says where it starts
         ChooseSide = 1467, HumanRebels, HumanLoyalists, MartianResistance, MartianImperialists,          // 1467-1471; tips 1488-1491
+        // a custom campaign's briefing (update 264)
+        BeginCampaign = 1472, NextPage, PreviousPage,                                                     // 1472-1474
         Last = 1491,
     };
 
@@ -181,6 +183,9 @@ namespace wow::enginetext
         { CustomCampaigns, { "Custom Campaigns", "Campagnes personnalisées", "Eigene Feldzüge", "Campagne personalizzate", "Campañas personalizadas" } },
         { ResumeCustom, { "Resume Custom Campaign", "Reprendre une campagne personnalisée", "Eigenen Feldzug fortsetzen", "Riprendi campagna personalizzata", "Reanudar campaña personalizada" } },
         { NoCustomCampaigns, { "No custom campaigns", "Aucune campagne personnalisée", "Keine eigenen Feldzüge", "Nessuna campagna personalizzata", "No hay campañas personalizadas" } },
+        { BeginCampaign, { "Begin Campaign", "Commencer la campagne", "Feldzug beginnen", "Inizia la campagna", "Comenzar la campaña" } },
+        { NextPage, { "Next Page", "Page suivante", "Nächste Seite", "Pagina successiva", "Página siguiente" } },
+        { PreviousPage, { "Previous Page", "Page précédente", "Vorherige Seite", "Pagina precedente", "Página anterior" } },
         { ChooseSide, { "Choose Side", "Choisir son camp", "Seite wählen", "Scegli la fazione", "Elegir bando" } },
         { HumanRebels, { "The Rebels", "Les Rebelles", "Die Rebellen", "I Ribelli", "Los Rebeldes" } },
         { HumanLoyalists, { "The Loyalists", "Les Loyalistes", "Die Loyalisten", "I Lealisti", "Los Leales" } },

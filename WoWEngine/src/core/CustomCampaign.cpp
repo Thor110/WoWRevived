@@ -5,6 +5,46 @@
 
 namespace wow
 {
+    std::string CustomCampaign::Stem() const
+    {
+        std::string s = file;
+        if (s.size() > 4)
+        {
+            std::string tail = s.substr(s.size() - 4);
+            for (char& c : tail) c = char(std::tolower(static_cast<unsigned char>(c)));
+            if (tail == ".txt") s.erase(s.size() - 4);
+        }
+        return s;
+    }
+
+    namespace
+    {
+        // a file or folder in the folder by its name, any case
+        std::optional<std::filesystem::path> FindIn(const std::filesystem::path& folder, const std::string& name, bool directory)
+        {
+            std::string want = name;
+            for (char& c : want) c = char(std::tolower(static_cast<unsigned char>(c)));
+            std::error_code ec;
+            for (const auto& entry : std::filesystem::directory_iterator(folder, ec))
+            {
+                std::string have = entry.path().filename().string();
+                for (char& c : have) c = char(std::tolower(static_cast<unsigned char>(c)));
+                if (have == want && entry.is_directory(ec) == directory) return entry.path();
+            }
+            return std::nullopt;
+        }
+    }
+
+    std::optional<std::filesystem::path> CustomCampaign::Movie(const char* which) const
+    {
+        for (const char* ext : { ".mp4", ".smk" })
+            if (auto p = FindIn(folder, Stem() + "." + which + ext, false)) return p;
+        return std::nullopt;
+    }
+
+    std::optional<std::filesystem::path> CustomCampaign::Briefing() const { return FindIn(folder, Stem() + ".briefing.txt", false); }
+    std::optional<std::filesystem::path> CustomCampaign::Reskins() const { return FindIn(folder, Stem(), true); }
+
     uint32_t CustomCampaign::Flags() const
     {
         uint32_t f = CampaignFlags::Custom;

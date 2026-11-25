@@ -197,7 +197,7 @@ namespace wow
     {
         const std::string key = Lower((civilOther ? "civilwar/" + folder : folder) + "/" + stem);
         auto it = models.find(key);
-        if (it == models.end()) return std::nullopt;
+        if (it == models.end()) return fallback ? fallback->FindModel(folder, stem, civilOther) : std::nullopt;
         return it->second;
     }
 
@@ -205,7 +205,7 @@ namespace wow
     {
         const std::string key = Lower((civilOther ? "civilwar/" + folder : folder) + "/" + stem);
         auto it = files.find(key);
-        if (it == files.end()) return std::nullopt;
+        if (it == files.end()) return fallback ? fallback->Find(folder, stem, civilOther) : std::nullopt;
         return it->second;
     }
 }

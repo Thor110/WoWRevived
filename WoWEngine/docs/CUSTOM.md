@@ -88,10 +88,34 @@ its save, so a `Custom.nnn` can be passed to another player and played without t
 made it: it goes in their `SaveGame` folder as `Custom.nnn` with a number they don't use, and needs the engine
 from update 246 on.
 
+**A save without the tag** (update 264, the owner: one made by the original game or a save editor, renamed
+`Custom.nnn`) is listed too, its faction told from its objects (`PlayerHumanIn`: the owners are factions and the
+H lists the player's side); one that can't be read or told isn't. It plays as a regular campaign of that faction
+and is saved with the tag from then on. Before 264 it wasn't listed at all.
+
+**The campaign it's of** (update 264): `Custom.nnn.campaign` beside the save holds its definition's file name
+(written as it starts), so a resumed save finds the campaign's own files (below). Without it, or without that
+definition in Campaigns, the campaign plays without them.
+
 Numbered from 001 as every save is (the menus' slots start at 1); `.000` is the game's name for its start files.
 
 An engine from before update 246 refuses a save with flags ("unknown campaign"); the original game never lists
 `Custom.nnn`.
+
+## Its own files (update 264, the owner)
+
+Beside the definition in its Campaigns folder, named as it is (`My War.txt`'s are `My War...`, any case), each
+optional (`CustomCampaign::Movie`, `Briefing`, `Reskins`):
+
+- `My War.intro.mp4` or `.smk`: played as the campaign starts, after the name and the disc check (in place of the
+  game's INTRO, which a custom campaign never had).
+- `My War.briefing.txt`: shown next, over the main menu's background as the menus are (the game's own briefing
+  screen doesn't suit it): the campaign's name, the text wrapped and cut into pages of 14 lines, Next / Previous
+  Page and Begin Campaign (Escape begins it too). UTF-8 or Latin-1; the fonts are Latin-1.
+- `My War.outro.mp4` or `.smk`: played when the campaign is won, in place of VICTORY (a loss plays DEFEAT, a civil
+  war's none, as before).
+- a folder `My War`, laid out as TEXTURES (`human/units`, `martian/buildings`, ...: TEXTURES.md, MODELS.md): its
+  pictures and models used in its battles, over TEXTURES, whether Enhanced assets is on or not.
 
 ## In play
 
@@ -105,4 +129,5 @@ end). `WarMap::DropPod` asks `HasPods(campaign, flags)`.
   those (a save editor). `add` / `remove` lines for the layout are the obvious next step, as for CivilWar.txt.
 - The Single Player Options menu (with the network version enabled) has no Custom Campaigns entry, as it has no
   civil war entry.
-- The definition's name isn't kept in the save; the Load menu shows the campaign's own name.
+- The definition's name isn't kept in the save; the Load menu shows the campaign's own name (a save made by the
+  original game or a save editor often has its start file's path there).

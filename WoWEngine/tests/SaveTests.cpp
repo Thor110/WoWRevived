@@ -432,3 +432,43 @@ TEST("civil war: the second side chosen swaps the sides, and the save keeps the 
     CHECK_EQ(CivilWarPlayerHome(Campaign::HumanCivilWar, 0), 3);
     CHECK_EQ(CivilWarPlayerHome(Campaign::HumanCivilWar, CampaignFlags::OtherSide), 30);
 }
+
+TEST("custom campaign: a save without the engine's tag gives its faction from its objects")
+{
+    // (update 264) the owners are factions (0 Human, 1 Martian); the H lists the player's side
+    SaveFile s = MakeSave();
+    s.Sector(30).SetOwner(0);
+    s.Sector(30).lists[2].push_back(SaveObject::MakeBuilding(58, 2, 30, 200, false, SaveObject::BuildingClass::Plain));
+    s.Sector(3).SetOwner(1);
+    s.Sector(3).lists[3].push_back(SaveObject::MakeBuilding(120, 3, 3, 200, false, SaveObject::BuildingClass::Plain));
+    CHECK(PlayerHumanIn(s) == std::optional<bool>(true));          // a Human game: the Humans' London in the H lists
+    SaveFile m = MakeSave();
+    m.Sector(30).SetOwner(0);
+    m.Sector(30).lists[3].push_back(SaveObject::MakeBuilding(58, 3, 30, 200, false, SaveObject::BuildingClass::Plain));
+    m.Sector(3).SetOwner(1);
+    m.Sector(3).lists[2].push_back(SaveObject::MakeBuilding(120, 2, 3, 200, false, SaveObject::BuildingClass::Plain));
+    CHECK(PlayerHumanIn(m) == std::optional<bool>(false));         // a Martian game: the Martians' base in the H lists
+    CHECK(!PlayerHumanIn(MakeSave()).has_value());                  // nothing to tell by
+}
+
+TEST("custom campaign: its own files beside it, found whatever their case")
+{
+    namespace fs = std::filesystem;
+    const fs::path folder = fs::temp_directory_path() / "wowtests-custom-files";
+    fs::remove_all(folder);
+    fs::create_directories(folder / "my war" / "human" / "units");
+    for (const char* name : { "My War.txt", "my war.INTRO.smk", "My War.outro.mp4", "My War.Briefing.txt" }) std::ofstream(folder / name) << "x";
+    std::vector<std::string> warnings;
+    bool ok = false;
+    CustomCampaign c = CustomCampaign::Parse("kind = human\n", "My War.txt", warnings, ok);
+    c.folder = folder;
+    CHECK_EQ(c.Stem(), std::string("My War"));
+    CHECK(c.Movie("intro") && c.Movie("intro")->filename() == "my war.INTRO.smk");
+    CHECK(c.Movie("outro") && c.Movie("outro")->filename() == "My War.outro.mp4");
+    CHECK(c.Briefing().has_value());
+    CHECK(c.Reskins() && c.Reskins()->filename() == "my war");
+    CustomCampaign none = CustomCampaign::Parse("kind = human\n", "Other.txt", warnings, ok);
+    none.folder = folder;
+    CHECK(!none.Movie("intro") && !none.Briefing() && !none.Reskins());
+    fs::remove_all(folder);
+}

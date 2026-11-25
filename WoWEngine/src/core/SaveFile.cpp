@@ -718,4 +718,23 @@ namespace wow
             if (!used[i]) { used[i] = true; return int(i); }
         return -1;
     }
+
+    std::optional<bool> PlayerHumanIn(const SaveFile& save)
+    {
+        size_t human = 0, martian = 0;
+        for (int sector = 1; sector <= 30; sector++)
+        {
+            const SaveSector& sec = save.Sector(sector);
+            const int owner = sec.Owner();
+            if (owner != 0 && owner != 1) continue;
+            for (size_t list = 0; list < sec.lists.size(); list++)
+            {
+                const bool playersList = list % 2 == 0;
+                // the holder's objects: in the player's lists when the player is the holder's faction
+                ((owner == 0) == playersList ? human : martian) += sec.lists[list].size();
+            }
+        }
+        if (human == martian) return std::nullopt;
+        return human > martian;
+    }
 }

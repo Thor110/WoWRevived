@@ -23,6 +23,8 @@ namespace wow
 
         // Finds and opens the movie, or returns null (with the reason in error).
         static std::unique_ptr<Movie> Open(const GameFiles& files, const std::string& name, bool human, std::string& error);
+        // MODERN (update 264): a movie file named outright (a custom campaign's), .mp4 or .smk by its extension
+        static std::unique_ptr<Movie> OpenFile(const std::filesystem::path& file, std::string& error);
 
         virtual int Width() const = 0;      // the picture as shown
         virtual int Height() const = 0;

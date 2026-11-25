@@ -90,6 +90,22 @@ Sector numbers:
     28 Southampton               29 Dover                     30 London
 
 
+3b. ITS OWN MOVIES, BRIEFING AND LOOK
+-------------------------------------
+
+A campaign can bring its own files, put beside its .txt in the Campaigns folder and named as it is. All are
+optional. For a campaign file called "My War.txt":
+
+    My War.intro.mp4     (or .smk)   played as the campaign starts
+    My War.briefing.txt              its briefing: shown after the intro, before the war map, a page at a time
+    My War.outro.mp4     (or .smk)   played when the campaign is won, in place of the game's victory movie
+    My War\                          new looks for its units and buildings, laid out as the TEXTURES folder
+                                     (human\units, martian\buildings ...; see README-TEXTURE-PACKS.txt), used in
+                                     its battles whether or not Enhanced assets is on
+
+The briefing is plain text (UTF-8 or Latin-1). A blank line starts a new paragraph; long lines are wrapped.
+
+
 4. START FILES
 --------------
 
@@ -113,6 +129,10 @@ starts. So:
 
 - you can pass a Custom.nnn save to someone else and they can play it without the campaign file that
   made it: they put it in their SaveGame folder as Custom.nnn, with a number they aren't using;
+- a save made by the original game or a save editor can be played as a custom campaign the same way:
+  rename it Custom.nnn and put it in SaveGame. It's listed under Resume Custom Campaign for its side;
+- Custom.nnn.campaign beside a save names the campaign file it came from, so its movies, briefing and new
+  looks are found when it's resumed (when that campaign is in the Campaigns folder). Pass it on too;
 - changing or deleting a campaign file doesn't change campaigns already begun.
 - with the Modern Gameplay option "Bridges stay broken", the bridges destroyed so far are kept beside the save
   as Custom.nnn.bridges: pass that on with the save to keep them down.

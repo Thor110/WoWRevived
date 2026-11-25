@@ -63,8 +63,11 @@ namespace wow
         // a model's shape in place of its WOF's (an OBJ, else a glTF, else a GLB)
         std::optional<std::filesystem::path> FindModel(const std::string& folder, const std::string& stem, bool civilOther) const;
         size_t ModelCount() const { return models.size(); }
+        // MODERN (update 264): another pack looked in for what this one hasn't (a custom campaign's over TEXTURES)
+        void SetFallback(const TexturePack* pack) { fallback = pack; }
 
     private:
+        const TexturePack* fallback = nullptr;
         std::filesystem::path root;
         std::map<std::string, std::filesystem::path> files, models;
     };

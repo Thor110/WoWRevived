@@ -40,6 +40,47 @@ namespace wow
 
     void Menu::AddButton(int command, int textId, int param) { AddButtonText(command, res.String(textId), param); }
 
+    std::string Menu::WrapBlock(std::string_view text) const
+    {
+        const Font* font = res.GetFont(ButtonFont);
+        const int width = SpriteRect(style == 2 ? 0x3B : 0x38, 0, 0).w - 24;
+        if (!font || width <= 0) return std::string(text);
+        // each paragraph (between the text's own line breaks) wrapped on its own: the game's wrap measures on from
+        // the text's start across a break, so the lines after one came out short
+        std::string out;
+        size_t start = 0;
+        while (start <= text.size())
+        {
+            size_t end = text.find('\n', start);
+            if (end == std::string_view::npos) end = text.size();
+            if (start) out += '\n';
+            out += WrapText(*font, text.substr(start, end - start), width);
+            start = end + 1;
+        }
+        return out;
+    }
+
+    void Menu::AddTextBlock(std::string wrapped)
+    {
+        const Font* font = res.GetFont(ButtonFont);
+        int lines = 1;
+        for (char c : wrapped) if (c == '\n') lines++;
+        Button b;
+        b.font = ButtonFont;
+        b.level = colours.staticText;
+        b.text = std::move(wrapped);
+        b.textOffset = 12;      // (left-aligned, a margin in)
+        b.focusable = false;
+        if (column >= 0) nextY = std::max(nextY, columnBottom);
+        b.rect.y = FirstItemY + nextY;
+        const size_t index = Place(std::move(b));
+        Button& placed = buttons[index];
+        placed.rect.w = SpriteRect(style == 2 ? 0x3B : 0x38, 0, 0).w;
+        placed.rect.h = (font ? font->Height() + 2 : 12) * lines + 12;
+        if (style == 2) placed.rect.x = (ScreenW - placed.rect.w) / 2;
+        nextY += placed.rect.h;
+    }
+
     void Menu::AddButtonText(int command, std::string text, int param)
     {
         Button b;

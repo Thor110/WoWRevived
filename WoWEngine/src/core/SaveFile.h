@@ -26,6 +26,7 @@
 #include <array>
 #include <cstdint>
 #include <span>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -194,4 +195,10 @@ namespace wow
         static void MarkIds(const std::vector<uint8_t>& bytes, std::vector<bool>& used);
         static int TakeId(std::vector<bool>& used);
     };
+
+    // MODERN (update 264): the faction a save is played as, from its objects, for a save without the engine's tag
+    // (one made by the original game or a save editor and named Custom.nnn): the owners are factions (0 Human, 1
+    // Martian) and the H lists the player's side, so the objects in sectors one faction holds say which lists are
+    // whose. Nothing when it can't tell (no objects in a held sector).
+    std::optional<bool> PlayerHumanIn(const SaveFile& save);
 }

@@ -56,6 +56,14 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## Custom campaigns' own files (update 264)
+
+- A save made by the original game renamed Custom.nnn: listed under Resume Custom Campaign for its side only, and
+  played (seen headless with a copy of Martian.000). To try: saving it, and it loading again as a tagged save.
+- A campaign with an intro (.smk seen headless; an .mp4 to try), a briefing of two pages, and a reskin folder (39
+  recoloured Martian unit pictures used in a battle, Enhanced assets off, seen headless). To try: the outro movie
+  on winning; a resumed save finding them through Custom.nnn.campaign in play (seen headless in the log).
+
 ## Battle Options (update 262)
 
 - The battle map's menu (263: in the war map's order, Sound Control among them): Critical Event Options, Sound

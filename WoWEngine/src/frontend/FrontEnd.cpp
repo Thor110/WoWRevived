@@ -66,6 +66,8 @@ namespace wow
         constexpr int CmdCustomPage = 0x9008;       // the same: the Custom Campaigns menu's page, param +1 or -1
         constexpr int CmdBadSave = 0x9009;          // the engine's own (update 248): a save that can't be read
         constexpr int CmdCivilSide = 0x900A;        // the engine's own (update 261): a civil war's side chosen, param 1 the second
+        constexpr int CmdCustomIntro = 0x900B;      // the engine's own (update 264): a new custom campaign's intro movie
+        constexpr int CmdCustomBriefing = 0x900C;   // the same: its briefing, param 0 the first page, +1 / -1 a page on or back
         constexpr int CmdNewCivilWar = 0x9003;    // the engine's own: Start New Campaign for the side's civil war
         constexpr int CmdSlotPage = 0x9002;       // the engine's own: the Load / Save menu's page, param +1 or -1
         constexpr int CmdSaveMenu = 0x6E;
@@ -383,7 +385,9 @@ namespace wow
             {
                 std::string lower = entry.path().filename().string();
                 for (char& c : lower) c = char(std::tolower(static_cast<unsigned char>(c)));
-                if (entry.is_regular_file(ec) && lower.size() > 4 && lower.compare(lower.size() - 4, 4, ".txt") == 0 &&
+                // (update 264: a campaign's briefing, <name>.briefing.txt, isn't a campaign of its own)
+                const bool briefing = lower.size() > 13 && lower.compare(lower.size() - 13, 13, ".briefing.txt") == 0;
+                if (entry.is_regular_file(ec) && lower.size() > 4 && lower.compare(lower.size() - 4, 4, ".txt") == 0 && !briefing &&
                     std::find(seen.begin(), seen.end(), lower) == seen.end())
                 {
                     seen.push_back(lower);
@@ -425,9 +429,24 @@ namespace wow
             {
                 // (the faction from the tag's campaign word: a civil war's its own, else the Martian flag)
                 auto word = SaveSlot::CampaignWord(files, SaveSlot::CustomPath(slot));
-                if (!word) continue;
-                const Campaign kind = Campaign(*word & CampaignFlags::KindMask);
-                const bool human = IsCivilWar(kind) ? kind == Campaign::HumanCivilWar : !(*word & CampaignFlags::Martian);
+                bool human = res.Human();
+                if (word)
+                {
+                    const Campaign kind = Campaign(*word & CampaignFlags::KindMask);
+                    human = IsCivilWar(kind) ? kind == Campaign::HumanCivilWar : !(*word & CampaignFlags::Martian);
+                }
+                else
+                {
+                    // (update 264) a save without the engine's tag (the original game's or a save editor's, named
+                    // Custom.nnn): its faction from its objects; one that can't be read or told isn't listed
+                    std::ifstream in(entry.path(), std::ios::binary);
+                    const std::vector<uint8_t> data((std::istreambuf_iterator<char>(in)), {});
+                    std::optional<bool> guess;
+                    try { guess = PlayerHumanIn(SaveFile::Parse(data)); }
+                    catch (const std::exception&) {}
+                    if (!guess) continue;
+                    human = *guess;
+                }
                 if (human != res.Human()) continue;
             }
             slots.push_back(slot);
@@ -469,6 +488,23 @@ namespace wow
         m->SetLastTip(res.String(second + enginetext::TipOffset));
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         m->FocusLast();
+        return m;
+    }
+
+    // MODERN (update 264, the owner): a custom campaign's briefing, over the main menu's background as its menus are
+    // (the game's own briefing screen doesn't suit it): the campaign's name, a page of its text, the pages either side
+    // and Begin Campaign; Escape begins it too
+    std::unique_ptr<Screen> FrontEnd::BriefingMenu()
+    {
+        auto m = std::make_unique<Menu>(CmdCustomBriefing, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, 2);
+        m->AddHeadingText(customChosen.name);
+        if (size_t(briefingPage) < briefingPages.size()) m->AddTextBlock(briefingPages[size_t(briefingPage)]);
+        if (size_t(briefingPage + 1) < briefingPages.size()) m->AddButtonText(CmdCustomBriefing, res.String(enginetext::NextPage), 1);
+        if (briefingPage > 0) m->AddButtonText(CmdCustomBriefing, res.String(enginetext::PreviousPage), -1);
+        m->AddButtonText(CmdStartCampaign, res.String(enginetext::BeginCampaign));
+        m->FocusLast();
+        m->Centre();
+        m->SetPrevious(CmdStartCampaign);
         return m;
     }
 
@@ -956,6 +992,14 @@ namespace wow
             std::filesystem::remove(path.string() + ".bridges", ec);
         }
         if (!WriteSaveFile(path, data)) { SDL_Log("New campaign: can't write %s", path.string().c_str()); return false; }
+        {
+            // (update 264) a custom campaign's save names its campaign's file beside it (Custom.nnn.campaign), so its
+            // own files are found when it's resumed; another campaign in the slot takes it away
+            std::error_code ec;
+            const std::filesystem::path link = path.string() + ".campaign";
+            if (customCampaign) WriteSaveFile(link, std::vector<uint8_t>(customChosen.file.begin(), customChosen.file.end()));
+            else std::filesystem::remove(link, ec);
+        }
         SDL_Log("New campaign \"%s\" in %s", name.c_str(), path.string().c_str());
         return true;
     }
@@ -999,6 +1043,21 @@ namespace wow
             campaign = Campaign(word & CampaignFlags::KindMask);
             customCampaign = IsCustom(word);     // (MODERN, update 246: saved to SaveGame\Custom.nnn)
         }
+        // (update 264) a Custom.nnn without the tag is a custom campaign all the same, a regular one of this faction
+        else if (gamePath.rfind("SaveGame\\Custom.", 0) == 0) customCampaign = true;
+        // (update 264) the custom campaign it's of, for its own files: Custom.nnn.campaign beside it names its file
+        activeCustom.reset();
+        if (customCampaign)
+            if (auto link = files.Resolve(gamePath + ".campaign"))
+            {
+                std::ifstream in(*link, std::ios::binary);
+                std::string wanted((std::istreambuf_iterator<char>(in)), {});
+                while (!wanted.empty() && (wanted.back() == '\n' || wanted.back() == '\r' || wanted.back() == ' ')) wanted.pop_back();
+                auto lower = [](std::string s) { for (char& c : s) c = char(std::tolower(static_cast<unsigned char>(c))); return s; };
+                for (const CustomCampaign& c : FindCustomCampaigns())
+                    if (lower(c.file) == lower(wanted)) { activeCustom = c; break; }
+                SDL_Log(activeCustom ? "Custom campaign's files: %s" : "Custom campaign %s isn't in Campaigns: played without its own files", wanted.c_str());
+            }
         try { info = SaveInfo::Read(data); }
         catch (const std::exception& e)
         {
@@ -1089,6 +1148,9 @@ namespace wow
         std::optional<SaveFile> exact;
         try { exact = SaveFile::Parse(data); }
         catch (const std::exception& e) { SDL_Log("%s can't be read exactly (%s), so the campaign won't be saved", gamePath.c_str(), e.what()); }
+        // (update 264) an untagged custom save is saved with the tag from now on (a custom campaign of this faction)
+        if (exact && customCampaign && !IsCustom(exact->campaignFlags))
+            exact->campaignFlags |= CampaignFlags::Custom | (res.Human() ? 0u : CampaignFlags::Martian);
         std::vector<SaveInfo::WarMapObject> objects = exact ? WarMap::ObjectsOf(*exact) : SaveInfo::WarMapObjects(data);
         std::vector<int> owners = SaveInfo::SectorOwners(data);
         playingSlot = slot;
@@ -1181,6 +1243,21 @@ namespace wow
         sound.FadeOutAll(0);
         ambient = 0;
         // SMACKW32 is driven without SmackVolumePan: the movies' sound ignores [Sound\Volume] Master
+        Show(std::make_unique<MovieScreen>(res, std::move(movie), next, 1.0f));
+    }
+
+    void FrontEnd::PlayMovieFile(const std::filesystem::path& file, Command next)
+    {
+        std::string error;
+        auto movie = Movie::OpenFile(file, error);
+        if (!movie)
+        {
+            SDL_Log("%s: %s", file.string().c_str(), error.c_str());
+            Execute(next);
+            return;
+        }
+        sound.FadeOutAll(0);
+        ambient = 0;
         Show(std::make_unique<MovieScreen>(res, std::move(movie), next, 1.0f));
     }
 
@@ -1335,7 +1412,55 @@ namespace wow
             if (!NewCampaignFile(campaignSlot, campaignName)) campaignSlot = 0;
             // (MODERN: a civil war has no intro: the faction's tells of the Martians' coming)
             // (and a custom campaign none: it starts where its start file says, update 246)
-            Execute({ CmdInsertCd, IsCivilWar(campaign) || customCampaign ? CmdStartCampaign : CmdIntro });
+            // (update 264: a custom campaign's own intro and briefing, where it has them)
+            Execute({ CmdInsertCd, customCampaign ? CmdCustomIntro : IsCivilWar(campaign) ? CmdStartCampaign : CmdIntro });
+            break;
+        // MODERN (update 264, the owner): a new custom campaign's intro movie and briefing, each where it has one
+        case CmdCustomIntro:
+            if (auto movie = customChosen.Movie("intro")) PlayMovieFile(*movie, { CmdCustomBriefing, 0 });
+            else Execute({ CmdCustomBriefing, 0 });
+            break;
+        case CmdCustomBriefing:
+            if (command.param == 0)
+            {
+                briefingPages.clear();
+                briefingPage = 0;
+                if (auto path = customChosen.Briefing())
+                {
+                    std::ifstream in(*path, std::ios::binary);
+                    std::string text((std::istreambuf_iterator<char>(in)), {});
+                    // UTF-8 (with any byte past ASCII making a whole character) to the fonts' Latin-1; else as it is
+                    bool utf8 = false, valid = true;
+                    for (size_t i = 0; i < text.size(); i++)
+                    {
+                        const unsigned char c = static_cast<unsigned char>(text[i]);
+                        if (c < 0x80) continue;
+                        if ((c & 0xE0) == 0xC0 && i + 1 < text.size() && (static_cast<unsigned char>(text[i + 1]) & 0xC0) == 0x80) { utf8 = true; i++; }
+                        else { valid = false; break; }
+                    }
+                    if (utf8 && valid) text = enginetext::Latin1(text.c_str());
+                    std::erase(text, '\r');
+                    // wrapped as the menu does, then cut into pages of 14 lines
+                    Menu probe(CmdCustomBriefing, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, 2);
+                    const std::string wrapped = probe.WrapBlock(text);
+                    std::string page;
+                    int lines = 0;
+                    size_t start = 0;
+                    while (start <= wrapped.size())
+                    {
+                        size_t end = wrapped.find('\n', start);
+                        if (end == std::string::npos) end = wrapped.size();
+                        page += (lines ? "\n" : "") + wrapped.substr(start, end - start);
+                        if (++lines == 14) { briefingPages.push_back(page); page.clear(); lines = 0; }
+                        start = end + 1;
+                    }
+                    if (lines) briefingPages.push_back(page);
+                    while (!briefingPages.empty() && briefingPages.back().find_first_not_of(" \n") == std::string::npos) briefingPages.pop_back();
+                }
+                if (briefingPages.empty()) { Execute({ CmdStartCampaign, 0 }); break; }
+            }
+            else briefingPage = std::clamp(briefingPage + command.param, 0, int(briefingPages.size()) - 1);
+            Show(BriefingMenu());
             break;
         case CmdInsertCd:
             // the war map's own 0x8133 (0x41B210) starts the briefing first
@@ -1540,6 +1665,15 @@ namespace wow
             warMap.reset();
             playingSlot = 0;
             topMenu = CmdMainMenu;
+            // MODERN (update 264): a custom campaign won plays its own outro movie, where it has one
+            if (activeCustom && (command.param == 0x80FA || command.param == 0x80FC))
+                if (auto outro = activeCustom->Movie("outro"))
+                {
+                    activeCustom.reset();
+                    PlayMovieFile(*outro, { Credits::Id, CmdMainMenu });
+                    break;
+                }
+            activeCustom.reset();
             // MODERN (docs/MODERN.md "The civil wars"): the endings are the regular war's (London taken, or the
             // Martians driven from Scotland), so a civil war goes straight to the credits
             if (IsCivilWar(campaign)) { Execute({ Credits::Id, CmdMainMenu }); break; }
@@ -1841,7 +1975,26 @@ namespace wow
         s.otherUnits = &map->Units(false);
         s.build = map;          // building on the battle map: the war map's factories (it stays behind the battle)
         // MODERN (docs/TEXTURES.md): the texture pack, with Enhanced assets on (--no-loose keeps it off)
-        if (const TexturePack* pack = res.EnhancedAssets() ? Textures() : nullptr)
+        // (update 264) a custom campaign's reskins (its folder, laid out as TEXTURES) over the pack, Enhanced assets
+        // or not: they're the campaign's own look
+        const TexturePack* pack = res.EnhancedAssets() ? Textures() : nullptr;
+        if (activeCustom)
+            if (auto folder = activeCustom->Reskins())
+            {
+                if (!campaignPack || campaignPackRoot != *folder)
+                {
+                    campaignPack.emplace();
+                    campaignPackRoot = *folder;
+                    if (campaignPack->Open(*folder))
+                        SDL_Log("Custom campaign's reskins: %zu pictures and %zu models in %s", campaignPack->Count(), campaignPack->ModelCount(), folder->string().c_str());
+                }
+                if (!campaignPack->Empty())
+                {
+                    campaignPack->SetFallback(pack);
+                    pack = &*campaignPack;
+                }
+            }
+        if (pack)
         {
             s.textures = pack;
             s.textureFolders = textures::Folders(res.GTypes(), map->Units());

@@ -9,6 +9,7 @@
 #include "core/CivilWar.h"
 
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -28,6 +29,15 @@ namespace wow
 
         // the campaign word's flags for its saves (core/Campaign.h)
         uint32_t Flags() const;
+
+        // MODERN (update 264): its own files beside it in its Campaigns folder, named as it is (the .txt's name
+        // without .txt, any case), each optional: "<name>.intro.mp4" or ".smk" played as it starts, "<name>.outro"
+        // the same when it's won (in place of VICTORY), "<name>.briefing.txt" shown before the war map, and a folder
+        // "<name>" laid out as TEXTURES for its units' and buildings' new looks
+        std::string Stem() const;
+        std::optional<std::filesystem::path> Movie(const char* which) const;      // "intro" or "outro"
+        std::optional<std::filesystem::path> Briefing() const;
+        std::optional<std::filesystem::path> Reskins() const;
 
         // Throws nothing: lines it can't read are noted in warnings (and left out). `ok` is false without a kind.
         static CustomCampaign Parse(std::string_view text, std::string file, std::vector<std::string>& warnings, bool& ok);
