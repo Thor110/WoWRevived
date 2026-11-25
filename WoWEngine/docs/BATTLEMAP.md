@@ -126,6 +126,12 @@ side's units and constructions). It does so only after it has loaded the tables
 (0x439812), so the files a battle uses follow the count from the battle before; the first battle of a session uses
 0. The same count makes some scenery start out burnt (0x4890C0). `Landscape::ShadeClass`.
 
+MODERN FIX (update 261, the owner: "the red weed spawns in green"): the engine takes the digit from this battle's
+own sector. With the game's order, the first battle after starting, at the Martians' base full of buildings, has
+its trees turned to red weed (`red1.iob`-`red17.iob`, by this battle's count) but drawn through digit 0's tables,
+which make them green bushes on unspoilt land; and every sector has the last battle's tint. In the Martian Civil
+War a sector the Resistance holds takes digit 0 whatever its count (the green growth; MODERN.md "The civil wars").
+
 LightTheMap then, for every row but the first and last:
 
 1. lights each vertex by its slope to the next vertex across and down (0x40CA90): sqrt of the light direction

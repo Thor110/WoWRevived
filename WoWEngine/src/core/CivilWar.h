@@ -58,6 +58,11 @@ namespace wow
         static CivilWarLayout ParseLines(std::string_view text, Campaign campaign, const std::vector<std::string>& skip, std::vector<std::string>& warnings);
     };
 
+    // MODERN (update 261): a civil war's start made for its second side (CampaignFlags::OtherSide): the two sides
+    // change places (each sector's H and A lists, its owner, and the view on the new player's home), so the player
+    // takes the other side's sectors and home. Both sides' research is the same block at the start.
+    void PlayOtherSide(SaveFile& s);
+
     // Throws FormatError when the start file's research can't be split into its two blocks.
     SaveFile MakeCivilWarStart(const SaveFile& start, Campaign campaign, const CivilWarLayout& layout);
     inline SaveFile MakeCivilWarStart(const SaveFile& start, Campaign campaign) { return MakeCivilWarStart(start, campaign, CivilWarLayout::Default(campaign)); }

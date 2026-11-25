@@ -137,6 +137,7 @@ namespace wow
             // MODERN (docs/MODERN.md "The civil wars"): in a civil war both sides are one faction, so research is
             // asked by side (players: the player's side) instead (ResearchDone / ResearchMultiplier below)
             bool civilWar = false;
+            int otherHome = 0;          // the other side's home (WarMap::OtherHome; 0: the regular game's rule)
             std::function<bool(bool players, int index)> researchDoneBySide;
             std::function<float(bool players, int type)> researchMultiplierBySide;
             int viewW = 640, viewH = 480;   // the view's size (the screen's in the original)

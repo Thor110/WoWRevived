@@ -56,6 +56,18 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## Civil war sides and the weed (update 261)
+
+- Choose Side for each civil war: the Rebels and the Resistance start as before; the Loyalists in London, the
+  Imperialists in the Grampian Mountains. Seen headless: each starts in its home, and a saved second side loads as
+  it (unit test). Back from the slots returns to Choose Side. To play: a whole civil war on the second side,
+  including its end (losing the home, taking the other's).
+- The red weed: a battle at the Martians' base in the regular Martian game (and the Human one) has red land and red
+  weed, the first battle after starting included (it was green: the shade digit was the battle before's). Seen
+  headless at noon. At night a Martian game's battle map is green as a whole, units and buildings too: its night
+  tables (the Y set, LANDR?Y and the BM tables) are the Martians' night view, left as they are. In the Martian Civil War, the Resistance's sectors green, the Imperialists' red
+  (seen headless, from both sides).
+
 ## Music playback on the main menu (update 260)
 
 - With Music playback on (Modern Options), the main menu minimised or left for another window: its music goes on.

@@ -64,11 +64,22 @@ namespace wow
         inline constexpr uint32_t Custom = 0x100;       // a custom campaign's (docs/CUSTOM.md)
         inline constexpr uint32_t NoPods = 0x200;       // a custom campaign's "pods = off"
         inline constexpr uint32_t Martian = 0x400;      // the player's faction Martian (a regular kind's; a civil war's is its own)
-        inline constexpr uint32_t Known = Custom | NoPods | Martian;
+        // (update 261) a civil war played as its second side: the Human Civil War's Loyalists (London's) rather than
+        // the Rebels (Scotland's), the Martian Civil War's Imperialists (the Grampians' base) rather than the
+        // Resistance (London's)
+        inline constexpr uint32_t OtherSide = 0x800;
+        inline constexpr uint32_t Known = Custom | NoPods | Martian | OtherSide;
     }
     // Whether the Martians' pods land: in a custom campaign as it says, else in the regular game and not in a civil war
     inline bool HasPods(Campaign c, uint32_t flags) { return (flags & CampaignFlags::Custom) ? !(flags & CampaignFlags::NoPods) : !IsCivilWar(c); }
     inline bool IsCustom(uint32_t flags) { return (flags & CampaignFlags::Custom) != 0; }
+    // MODERN (update 261): a civil war's player's home, the Grampian Mountains (3) or London (30): the Rebels' 3 and
+    // the Loyalists' 30, the Resistance's 30 and the Imperialists' 3
+    inline int CivilWarPlayerHome(Campaign c, uint32_t flags)
+    {
+        const int home = c == Campaign::MartianCivilWar ? 30 : 3;
+        return (flags & CampaignFlags::OtherSide) ? 33 - home : home;
+    }
     // whether a save of the campaign has the engine's tag
     inline bool TaggedSave(Campaign c, uint32_t flags) { return IsCivilWar(c) || IsCustom(flags); }
 }

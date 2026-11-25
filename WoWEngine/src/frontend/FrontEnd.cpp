@@ -65,6 +65,7 @@ namespace wow
         constexpr int CmdCustomLoad = 0x9007;       // the same: the Load menu of the custom saves
         constexpr int CmdCustomPage = 0x9008;       // the same: the Custom Campaigns menu's page, param +1 or -1
         constexpr int CmdBadSave = 0x9009;          // the engine's own (update 248): a save that can't be read
+        constexpr int CmdCivilSide = 0x900A;        // the engine's own (update 261): a civil war's side chosen, param 1 the second
         constexpr int CmdNewCivilWar = 0x9003;    // the engine's own: Start New Campaign for the side's civil war
         constexpr int CmdSlotPage = 0x9002;       // the engine's own: the Load / Save menu's page, param +1 or -1
         constexpr int CmdSaveMenu = 0x6E;
@@ -448,6 +449,24 @@ namespace wow
             m->AddButtonText(CmdCustomStart, customList[i].name, int(i));
         if (size_t(customPage + 1) * SaveSlot::PerPage < customList.size()) m->AddButtonText(CmdCustomPage, res.String(enginetext::NextCampaigns), 1);
         if (customPage > 0) m->AddButtonText(CmdCustomPage, res.String(enginetext::PreviousCampaigns), -1);
+        m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
+        m->FocusLast();
+        return m;
+    }
+
+    // MODERN (update 261): a civil war's two sides, the first the one it was before there was a choice (its home
+    // the Grampian Mountains for the Humans, London for the Martians), each with a tip saying where it starts
+    std::unique_ptr<Screen> FrontEnd::ChooseSideMenu(int previous)
+    {
+        auto m = std::make_unique<Menu>(CmdNewCivilWar, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, 2);
+        m->AddHeadingText(res.String(enginetext::ChooseSide));
+        const bool martian = campaign == Campaign::MartianCivilWar;
+        const int first = martian ? enginetext::MartianResistance : enginetext::HumanRebels;
+        const int second = martian ? enginetext::MartianImperialists : enginetext::HumanLoyalists;
+        m->AddButtonText(CmdCivilSide, res.String(first), 0);
+        m->SetLastTip(res.String(first + enginetext::TipOffset));
+        m->AddButtonText(CmdCivilSide, res.String(second), 1);
+        m->SetLastTip(res.String(second + enginetext::TipOffset));
         m->AddBottomButton(previous, previous == CmdMainMenu ? 0x530 : 0x40F);
         m->FocusLast();
         return m;
@@ -918,6 +937,8 @@ namespace wow
                 }
                 save = MakeCivilWarStart(save, campaign, layout);
             }
+            // (update 261) the second side chosen: the sides change places (a custom civil war has no choice)
+            if (IsCivilWar(campaign) && !customCampaign && civilOtherSide) PlayOtherSide(save);
             // MODERN (update 246): a custom campaign's kind and flags, in the engine's tag
             if (customCampaign) { save.campaign = campaign; save.campaignFlags = customChosen.Flags(); }
             save.SetName(name);
@@ -1240,16 +1261,27 @@ namespace wow
         // Start New Campaign (0x404230): pick the save slot it goes in, with the save menu's "Select Campaign to
         // Replace", returning to the menu it was chosen from
         case CmdNewCampaign:
-        case CmdNewCivilWar:
             // (the first page when it is come to afresh; the page it was on when Replace or the name step goes back)
             if (!screen || (screen->Id() != CmdReplaceCampaign && screen->Id() != CmdEditCampaign))
             {
                 slotPage = 0;
                 // MODERN: which campaign is being started (going back from Replace or the name keeps it)
-                campaign = command.id == CmdNewCivilWar ? CivilWarHere() : Campaign::Regular;
+                campaign = Campaign::Regular;
                 customCampaign = false;
             }
-            Show(SaveGame(customCampaign ? CmdCustomCampaigns : topMenu));
+            // (MODERN: a civil war's slots go back to its sides, update 261)
+            Show(SaveGame(customCampaign ? CmdCustomCampaigns : IsCivilWar(campaign) ? CmdNewCivilWar : topMenu));
+            break;
+        // MODERN (update 261, the owner): a civil war: Choose Side, then the slot
+        case CmdNewCivilWar:
+            campaign = CivilWarHere();
+            customCampaign = false;
+            ShowMenu(ChooseSideMenu(topMenu), topMenu);
+            break;
+        case CmdCivilSide:
+            civilOtherSide = command.param != 0;
+            slotPage = 0;
+            Show(SaveGame(CmdNewCivilWar));
             break;
         // MODERN (update 246, docs/CUSTOM.md): the custom campaigns
         case CmdCustomCampaigns:
@@ -1776,7 +1808,22 @@ namespace wow
         int lightHour = int(b.hours) % 24;
         if (const int forced = ini.GetInt("Game", "Time Of Day", 0); Mat() && forced != 0) lightHour = forced;
         if (auto d = dayTimes.find(lightHour); d != dayTimes.end()) s.dayTime = &d->second;
-        s.shadeClass = Landscape::ShadeClass(lastEnemyCount);
+        // MODERN FIX (update 261, the owner): the land's and nature's shade digit from this sector's own Martian
+        // infestation. The game takes it from dword_4F7430 as the battle before left it (0x43981C sets it after the
+        // tables are chosen), so the first battle after starting, at a base full of Martian buildings, had the
+        // unspoilt land and its red weed drawn green, and every sector had the last battle's.
+        // The Martian Civil War's Resistance (update 261): in a sector it holds the weed still grows (the burnt roll
+        // goes by the count) but the land and the nature are drawn unspoilt: green growth, not red weed.
+        {
+            int infestation = map->MartianInfestation(b.sector, res.Human());
+            if (map->CampaignKind() == Campaign::MartianCivilWar)
+            {
+                const int holder = map->SectorOwner(b.sector);      // 0 the player's side, 1 the other's
+                const bool playerResistance = !(map->CampaignFlagsWord() & CampaignFlags::OtherSide);
+                if (holder != 2 && (holder == 0) == playerResistance) infestation = 0;
+            }
+            s.shadeClass = Landscape::ShadeClass(infestation);
+        }
         s.human = res.Human();
         s.quickCancelTimeout = ini.GetInt("Tweak", "Quick Cancel Timeout", 5);
         s.enemyCount = map->MartianInfestation(b.sector, res.Human());
@@ -1865,6 +1912,7 @@ namespace wow
         };
         // MODERN (the civil wars): research by side, as both sides are one faction
         s.civilWar = IsCivilWar(map->CampaignKind());
+        if (s.civilWar) s.otherHome = map->OtherHome();     // (update 261: the side the player chose)
         s.researchDoneBySide = [this](bool players, int index) {
             WarMap* wm = ActiveWarMap();
             Research* r = wm ? (players ? wm->LocalResearch() : wm->OtherResearch()) : nullptr;
@@ -1901,7 +1949,6 @@ namespace wow
         // 0x41B360 (from EnterBattleMap 0x439EB4): the briefing sound faded out over 120 ticks (0x464EB0, 0x78)
         sound.FadeOut(briefingSound, 120);
         briefingSound = 0;
-        lastEnemyCount = map->MartianInfestation(map->Briefing().sector, res.Human());
         battle->Begin();
         Show(std::move(battle));
         BattleMusicStep();      // 0x439DBE: 0x813C to the battle's view as the battle map is entered

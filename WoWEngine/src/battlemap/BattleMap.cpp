@@ -3367,7 +3367,7 @@ namespace wow
         {
             // the other side's home: the Martians' (3) for a Human player, London for a Martian one; MODERN: the
             // other way round in a civil war (core/CivilWar.h)
-            const bool gameOver = setup.sector == (setup.human != setup.civilWar ? 3 : 30);
+            const bool gameOver = setup.sector == (setup.otherHome ? setup.otherHome : setup.human != setup.civilWar ? 3 : 30);
             box.text = res.String(held ? 0x49C : 0x49A);
             box.command = !held && gameOver ? ReturnCommand : 0x8024;
         }

@@ -300,6 +300,7 @@ namespace wow
         uint32_t campaignFlags = 0;     // (update 246: a custom campaign's, core/Campaign.h)
     public:
         Campaign CampaignKind() const { return campaign; }
+        uint32_t CampaignFlagsWord() const { return campaignFlags; }
         bool OtherIsHuman() const { return OtherHuman(campaign, res.Human()); }
         // The economy's six resource kinds per sector are its stock slots: in the game 0-2 the Humans' and 3-5 the
         // Martians'. SlotBase is where a side's three are (the player's side: players true): its faction's in the
@@ -319,7 +320,7 @@ namespace wow
         }
         // the two sides' homes: in the game the Humans' London (30) and the Martians' Grampians (3); in a civil war
         // the player's is the other way round (core/CivilWar.h: Humans from the Grampians, Martians from London)
-        int PlayerHome() const { return (res.Human() != IsCivilWar(campaign)) ? 30 : 3; }
+        int PlayerHome() const { return IsCivilWar(campaign) ? CivilWarPlayerHome(campaign, campaignFlags) : res.Human() ? 30 : 3; }
         int OtherHome() const { return PlayerHome() == 30 ? 3 : 30; }
         // a battle won by owner code winner (0 or 1) at sector s ends the campaign: a side taking the other's home.
         // Owner code 0's home is London in the game and the Grampians in a civil war.

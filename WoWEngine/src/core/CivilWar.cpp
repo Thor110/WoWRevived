@@ -162,6 +162,29 @@ namespace wow
     }
     }
 
+    void PlayOtherSide(SaveFile& s)
+    {
+        const bool human = s.campaign == Campaign::HumanCivilWar;
+        const int playerCode = OwnerCode(human, 0), otherCode = OwnerCode(human, 1);
+        for (int sector = 1; sector <= 30; sector++)
+        {
+            SaveSector& sec = s.Sector(sector);
+            std::array<std::vector<SaveObject>, 6> lists;
+            for (auto& list : sec.lists)
+                for (SaveObject& o : list)
+                {
+                    o.list = ListFor(o.list, ListSide(o.list) ^ 1);
+                    lists[size_t(o.list)].push_back(o);
+                }
+            sec.lists = std::move(lists);
+            const int owner = sec.Owner();
+            if (owner == playerCode) sec.SetOwner(otherCode);
+            else if (owner == otherCode) sec.SetOwner(playerCode);
+        }
+        s.campaignFlags |= CampaignFlags::OtherSide;
+        s.warMap[2] = uint32_t(CivilWarPlayerHome(s.campaign, s.campaignFlags));
+    }
+
     SaveFile MakeCivilWarStart(const SaveFile& start, Campaign campaign, const CivilWarLayout& layout)
     {
         // the start file is the player's faction's: its H lists (even) the player's faction, its A lists (odd) the

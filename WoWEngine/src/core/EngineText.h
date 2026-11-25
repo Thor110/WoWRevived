@@ -38,7 +38,9 @@ namespace wow::enginetext
         CustomCampaigns = 1460, ResumeCustom, NoCustomCampaigns, NextCampaigns, PreviousCampaigns,      // 1460-1464
         SaveUnreadable,                                                                                   // 1465 (248)
         BridgesStayBroken,                                                                                // 1466 (249); its tip 1486
-        Last = 1486,
+        // a civil war's sides (update 261): the menu's heading, then each side, whose tip (+20) says where it starts
+        ChooseSide = 1467, HumanRebels, HumanLoyalists, MartianResistance, MartianImperialists,          // 1467-1471; tips 1488-1491
+        Last = 1491,
     };
 
     struct Entry { int id; const char* text[Languages]; };
@@ -179,6 +181,35 @@ namespace wow::enginetext
         { CustomCampaigns, { "Custom Campaigns", "Campagnes personnalisées", "Eigene Feldzüge", "Campagne personalizzate", "Campañas personalizadas" } },
         { ResumeCustom, { "Resume Custom Campaign", "Reprendre une campagne personnalisée", "Eigenen Feldzug fortsetzen", "Riprendi campagna personalizzata", "Reanudar campaña personalizada" } },
         { NoCustomCampaigns, { "No custom campaigns", "Aucune campagne personnalisée", "Keine eigenen Feldzüge", "Nessuna campagna personalizzata", "No hay campañas personalizadas" } },
+        { ChooseSide, { "Choose Side", "Choisir son camp", "Seite wählen", "Scegli la fazione", "Elegir bando" } },
+        { HumanRebels, { "The Rebels", "Les Rebelles", "Die Rebellen", "I Ribelli", "Los Rebeldes" } },
+        { HumanLoyalists, { "The Loyalists", "Les Loyalistes", "Die Loyalisten", "I Lealisti", "Los Leales" } },
+        { MartianResistance, { "Martian Resistance", "Résistance martienne", "Marsianischer Widerstand", "Resistenza marziana", "Resistencia marciana" } },
+        { MartianImperialists, { "Martian Imperialists", "Impérialistes martiens", "Marsianische Imperialisten", "Imperialisti marziani", "Imperialistas marcianos" } },
+        { HumanRebels + TipOffset, {
+            "Scotland's forces, from a new base in the Grampian Mountains, against London.",
+            "Les forces de l'Écosse, depuis une nouvelle base dans les monts Grampians, contre Londres.",
+            "Schottlands Truppen, von einer neuen Basis in den Grampian Mountains aus, gegen London.",
+            "Le forze della Scozia, da una nuova base nei monti Grampiani, contro Londra.",
+            "Las fuerzas de Escocia, desde una nueva base en los montes Grampianos, contra Londres." } },
+        { HumanLoyalists + TipOffset, {
+            "London's forces, holding the rest of Britain, against the rising in Scotland.",
+            "Les forces de Londres, qui tiennent le reste de la Grande-Bretagne, contre le soulèvement en Écosse.",
+            "Londons Truppen, die den Rest Britanniens halten, gegen den Aufstand in Schottland.",
+            "Le forze di Londra, che tengono il resto della Gran Bretagna, contro la rivolta in Scozia.",
+            "Las fuerzas de Londres, que dominan el resto de Gran Bretaña, contra el alzamiento en Escocia." } },
+        { MartianResistance + TipOffset, {
+            "The Martians who would spare the Earth, from London: their weed grows green.",
+            "Les Martiens qui épargneraient la Terre, depuis Londres : leur herbe pousse verte.",
+            "Die Marsianer, die die Erde verschonen wollen, von London aus: ihr Kraut wächst grün.",
+            "I marziani che vorrebbero risparmiare la Terra, da Londra: la loro erba cresce verde.",
+            "Los marcianos que quieren salvar la Tierra, desde Londres: su hierba crece verde." } },
+        { MartianImperialists + TipOffset, {
+            "The Martians who hold to the conquest, from their base in the Grampian Mountains: the red weed spreads.",
+            "Les Martiens fidèles à la conquête, depuis leur base des monts Grampians : l'herbe rouge se répand.",
+            "Die Marsianer, die an der Eroberung festhalten, von ihrer Basis in den Grampian Mountains aus: das rote Kraut breitet sich aus.",
+            "I marziani fedeli alla conquista, dalla loro base nei monti Grampiani: l'erba rossa si diffonde.",
+            "Los marcianos fieles a la conquista, desde su base en los montes Grampianos: la hierba roja se extiende." } },
         { BridgesStayBroken, { "Bridges stay broken", "Les ponts restent détruits", "Brücken bleiben zerstört", "I ponti restano distrutti", "Los puentes siguen destruidos" } },
         { BridgesStayBroken + TipOffset, {
             "A destroyed bridge stays down until a construction vehicle in the sector, with nothing else to build, rebuilds it.",

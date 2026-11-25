@@ -406,3 +406,29 @@ TEST("save: a factory's queue written after the object lost a vehicle goes where
     CHECK_EQ(o.BattleUnitCount(), size_t(2));
     CHECK(back->end + 4 == o.bytes.size());                 // (the closing VEHU after it)
 }
+
+TEST("civil war: the second side chosen swaps the sides, and the save keeps the choice")
+{
+    // (update 261) a Martian Civil War played as the Imperialists: the player's objects and sectors become the other
+    // side's and the other's the player's; the flag and the view on the new home are written and read back
+    SaveFile s = MakeSave();
+    s.campaign = Campaign::MartianCivilWar;
+    s.Sector(30).lists[2].push_back(SaveObject::MakeBuilding(120, 2, 30, 200, false, SaveObject::BuildingClass::Plain));
+    s.Sector(30).SetOwner(OwnerCode(false, 0));
+    s.Sector(3).lists[3].push_back(SaveObject::MakeBuilding(830, 3, 3, 200, false, SaveObject::BuildingClass::Plain));
+    s.Sector(3).SetOwner(OwnerCode(false, 1));
+    PlayOtherSide(s);
+    const SaveFile back = SaveFile::Parse(s.Write());
+    CHECK(back.campaignFlags & CampaignFlags::OtherSide);
+    CHECK_EQ(CivilWarPlayerHome(back.campaign, back.campaignFlags), 3);
+    CHECK_EQ(int(back.warMap[2]), 3);
+    REQUIRE(back.Sector(30).lists[3].size() == 1);      // London's base now the other side's
+    CHECK(back.Sector(30).lists[2].empty());
+    REQUIRE(back.Sector(3).lists[2].size() == 1);       // the Grampians' the player's
+    CHECK_EQ(back.Sector(30).Owner(), OwnerCode(false, 1));
+    CHECK_EQ(back.Sector(3).Owner(), OwnerCode(false, 0));
+    // the first side's homes, as before there was a choice
+    CHECK_EQ(CivilWarPlayerHome(Campaign::MartianCivilWar, 0), 30);
+    CHECK_EQ(CivilWarPlayerHome(Campaign::HumanCivilWar, 0), 3);
+    CHECK_EQ(CivilWarPlayerHome(Campaign::HumanCivilWar, CampaignFlags::OtherSide), 30);
+}

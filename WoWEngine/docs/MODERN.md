@@ -683,8 +683,20 @@ Two new campaigns, each one faction against itself (PLAN.md F1).
   sides grow by their own construction and production. Tried headless for a fortnight of game time each: the
   Martian computer player builds a Communications Centre, makes units and invades its neighbours without pods.
 - **Where they are chosen**: the main menu has "Human Civil War" (under Start Human Game) or "Martian Civil War"
-  (under Start Martian Game) under Start New Campaign (command 0x9003), then the slots and the name as for a new
-  campaign, and straight to the war map (no intro: the faction's tells of the Martians' coming).
+  (under Start Martian Game) under Start New Campaign (command 0x9003), then **Choose Side** (update 261, the
+  owner), then the slots and the name as for a new campaign, and straight to the war map (no intro: the faction's
+  tells of the Martians' coming).
+- **The sides** (update 261): the Human Civil War's **Rebels** (Scotland, home the Grampian Mountains; the side it
+  had before the choice) and **Loyalists** (London's); the Martian Civil War's **Resistance** (home London, the
+  Martians who would spare the Earth; the side before the choice) and **Imperialists** (the base in the
+  Grampians). The second side is the start with the two sides changed places (`PlayOtherSide`: each sector's H and
+  A lists and owner, the view on the new home), and the save's campaign word keeps it
+  (`CampaignFlags::OtherSide`, 0x800); the homes follow it (`CivilWarPlayerHome`, `WarMap::PlayerHome`, the battle
+  map's end check). A custom civil war has no choice (its file says which sectors are the player's). The names are
+  the owner's for the Martians; the Humans' were picked here (`enginetext` 1467-1471, tips 1488-1491).
+- **The weed** (update 261): in the Martian Civil War a battle in a sector the Resistance holds draws its land and
+  nature as unspoilt (shade digit 0): its weed grows green, like any plant. The Imperialists' sectors have the red
+  weed as the regular game has (BATTLEMAP.md, the digit).
 - **The start** is made when a civil war begins, from the side's own start file (`core/CivilWar`,
   `MakeCivilWarStart`), so no start files of the engine's are shipped. The split mirrors the regular game's, the
   player starting from the opposite side to the regular game's. *A first draft, to be evened out with the owner*:

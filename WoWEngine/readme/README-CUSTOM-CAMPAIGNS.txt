@@ -9,7 +9,8 @@ your own, with or without the Martians' pods.
 1. PLAYING ONE
 --------------
 
-Main Menu > Custom Campaigns (under the Civil War entry).
+Main Menu > Custom Campaigns (under the Civil War entry). (The Civil War entry itself asks which side to play;
+a custom civil war's file says which sectors are yours, so it doesn't ask.)
 
 The menu lists the custom campaigns for the side you started the game as: a Human game shows the Human
 campaigns and Human Civil Wars, a Martian game the Martian ones. Pick one, choose a slot and a name as for

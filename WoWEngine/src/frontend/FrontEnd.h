@@ -154,6 +154,7 @@ namespace wow
         // the one chosen to start, the definitions offered (this faction's) and their menu's page; the Load menu
         // listing the custom saves
         bool customCampaign = false;
+        bool civilOtherSide = false;        // (update 261) the civil war being started is played as its second side
         CustomCampaign customChosen;
         std::vector<CustomCampaign> customList;
         int customPage = 0;
@@ -164,6 +165,7 @@ namespace wow
         std::vector<int> CustomSlots(bool mine) const;
         std::string SlotGamePath(int slot) const;           // "SaveGame\..." for the campaign being started or played
         std::unique_ptr<Screen> CustomCampaignsMenu(int previous);
+        std::unique_ptr<Screen> ChooseSideMenu(int previous);   // (update 261) a civil war's two sides
         Campaign CivilWarHere() const { return res.Human() ? Campaign::HumanCivilWar : Campaign::MartianCivilWar; }
         // MODERN: the page of five slots the Load and Save menus show, and the highest slot with a save
         int slotPage = 0;
@@ -243,7 +245,6 @@ namespace wow
         std::map<int, std::array<int, 17>> moveCosts;             // OBJ.ojd record 10
         std::map<int, std::pair<int, float>> moveSlopes;          // OBJ.ojd record 11
         std::map<int, std::array<int, 8>> weaponData;             // OBJ.ojd record 12
-        int lastEnemyCount = 0;                                 // dword_4F7430 from the battle before
         bool StartBattleMap();
         // The battle map is built behind the Briefing (from its second update, once its first picture is up), so
         // leaving the Briefing goes straight to it; StartBattleMap builds it then if that hasn't happened.
