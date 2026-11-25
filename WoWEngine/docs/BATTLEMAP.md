@@ -36,7 +36,8 @@ is kept between 0 and the world's size less the view's less 1 (0x42F6F0 / 0x40E5
 - **Battle map menu** (0x49BD50, "Battlemap menu"): heading 0x3FD "Battle Options", Resume (0x8123, 0x405) and a
   bottom Sound Control (0x3ED, 0x411); no save, no quit. Drawn over the battle map, sound effects at a quarter and
   the world paused while it's open (0x484FB0). MODERN (update 262, the owner): the war map menu's other option
-  menus are in it too, under Resume: Critical Event Options (0x8117) and the engine's Modern Options and Modern
+  menus are in it too, in the war map menu's order under Resume: Critical Event Options (0x8117), Sound Control
+  (a button like the rest since update 263, not the bottom one), and the engine's Modern Options and Modern
   Gameplay, each drawn over the battle map and going back to this menu.
 - **Popup** (0x485DE0, the right button held for `[Tweak] "Quick Cancel Timeout"` updates): Cancel (0x73, icon
   0x1C) and, unless the player has a selection or both sides have objects on the map, Return to Warmap (0x76,

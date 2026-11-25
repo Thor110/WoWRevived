@@ -1214,10 +1214,13 @@ namespace wow
         m->AddHeading(0x3FD);                          // "Battle Options"
         m->AddButton(Commands::Back, 0x405);
         m->FocusLast();
+        // (in the war map menu's order, update 263, the owner; Sound Control a button like the rest, not the
+        // bottom one the game had)
         m->AddButton(CmdCriticalEvents, 0x412);
+        m->AddButton(CmdSoundControl, 0x411);
         m->AddButtonText(CmdModernOptions, res.String(enginetext::ModernOptions));
         m->AddButtonText(CmdModernGameplay, res.String(enginetext::ModernGameplay));
-        m->AddBottomButton(CmdSoundControl, 0x411);
+        m->Centre();
         m->SetPrevious(BattleMap::Id);
         return m;
     }

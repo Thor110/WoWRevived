@@ -58,7 +58,8 @@ Modern options are the only deliberate differences.
 
 ## Battle Options (update 262)
 
-- The battle map's menu: Critical Event Options, Modern Options, Modern Gameplay and Sound Control, each back to it
+- The battle map's menu (263: in the war map's order, Sound Control among them): Critical Event Options, Sound
+  Control, Modern Options and Modern Gameplay, each back to it
   and Resume to the battle. Seen headless (under AddressSanitizer, Enhanced assets toggled in a battle too). To
   try: settings changed in a battle taking effect there (the HUD and menu scales, the window, the cursor).
 

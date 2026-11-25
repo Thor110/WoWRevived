@@ -37,6 +37,8 @@ namespace wow
         void AddHeading(int textId) { AddHeadingText(res.String(textId)); }
         void AddHeadingText(std::string text);
         void AddButton(int command, int textId, int param = 0);
+        // the menu put in the middle of the screen, as a bottom button does (for a menu that ends without one)
+        void Centre();
         void AddButtonText(int command, std::string text, int param = 0); // a caption that isn't a TEXT.ojd string
         void AddBottomButton(int command, int textId); // also centres the menu
         // A text field (0x40A8C0) holding up to maxLength characters; Enter in it sends command. changed is
@@ -78,7 +80,6 @@ namespace wow
 
     private:
         void Stack(Button button);
-        void Centre();
 
         int style;
         MenuColours colours;
