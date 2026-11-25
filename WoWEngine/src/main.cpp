@@ -41,12 +41,14 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#include <dbghelp.h>
 #else
 #include <csignal>
 #endif
 
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <cstdlib>
 #include <atomic>
 #include <chrono>
@@ -236,6 +238,84 @@ namespace
     // nothing said. These put a line in WoWEngine.log first: what it was, where, and what the engine was doing
     // (wow::crumb), then let the fault go on as it would have.
 #ifdef _WIN32
+    // The calls that led to a fault (update 258), walked from the fault's registers: each as its module and the offset
+    // in it, and with WoWEngine.pdb beside the program (a release has it) the routine's name and its file and line,
+    // through DbgHelp (loaded here, not linked). An offset alone needs the same build's .pdb to be read.
+    void LogStack(const CONTEXT& start)
+    {
+#if defined(_M_X64) || defined(__x86_64__)
+        HMODULE help = LoadLibraryW(L"dbghelp.dll");
+        using InitFn = BOOL(WINAPI*)(HANDLE, PCSTR, BOOL);
+        using OptionsFn = DWORD(WINAPI*)(DWORD);
+        using FromAddrFn = BOOL(WINAPI*)(HANDLE, DWORD64, PDWORD64, PSYMBOL_INFO);
+        using LineFn = BOOL(WINAPI*)(HANDLE, DWORD64, PDWORD, PIMAGEHLP_LINE64);
+        const auto symInit = help ? reinterpret_cast<InitFn>(reinterpret_cast<void*>(GetProcAddress(help, "SymInitialize"))) : nullptr;
+        const auto symOptions = help ? reinterpret_cast<OptionsFn>(reinterpret_cast<void*>(GetProcAddress(help, "SymSetOptions"))) : nullptr;
+        const auto symFrom = help ? reinterpret_cast<FromAddrFn>(reinterpret_cast<void*>(GetProcAddress(help, "SymFromAddr"))) : nullptr;
+        const auto symLine = help ? reinterpret_cast<LineFn>(reinterpret_cast<void*>(GetProcAddress(help, "SymGetLineFromAddr64"))) : nullptr;
+        const HANDLE process = GetCurrentProcess();
+        // the .pdb is looked for beside the program
+        char folder[MAX_PATH] = "";
+        GetModuleFileNameA(nullptr, folder, MAX_PATH);
+        if (char* slash = std::strrchr(folder, '\\')) *slash = 0;
+        if (symOptions) symOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS | SYMOPT_LOAD_LINES | SYMOPT_FAIL_CRITICAL_ERRORS);
+        const bool names = symInit && symFrom && symInit(process, folder, TRUE);
+        std::fprintf(logFile, "CRASH: the calls%s:\n", names ? "" : " (no names: dbghelp.dll can't be used)");
+        CONTEXT c = start;
+        for (int frame = 0; frame < 40 && c.Rip; frame++)
+        {
+            const DWORD64 pc = c.Rip;
+            HMODULE module = nullptr;
+            char path[MAX_PATH] = "?";
+            if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                                   reinterpret_cast<LPCSTR>(pc), &module))
+                GetModuleFileNameA(module, path, MAX_PATH);
+            const char* file = std::strrchr(path, '\\');
+            file = file ? file + 1 : path;
+            std::fprintf(logFile, "CRASH:   %2d %s+0x%llX", frame, file, static_cast<unsigned long long>(pc - reinterpret_cast<DWORD64>(module)));
+            // (a return address is the instruction after the call: one back is in the calling line)
+            const DWORD64 look = frame ? pc - 1 : pc;
+            if (names)
+            {
+                alignas(SYMBOL_INFO) char buffer[sizeof(SYMBOL_INFO) + 256] = {};
+                SYMBOL_INFO* symbol = reinterpret_cast<SYMBOL_INFO*>(buffer);
+                symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+                symbol->MaxNameLen = 255;
+                DWORD64 displacement = 0;
+                if (symFrom(process, look, &displacement, symbol)) std::fprintf(logFile, " %s", symbol->Name);
+                IMAGEHLP_LINE64 line = {};
+                line.SizeOfStruct = sizeof(line);
+                DWORD column = 0;
+                if (symLine && symLine(process, look, &column, &line) && line.FileName)
+                {
+                    const char* source = std::strrchr(line.FileName, '\\');
+                    std::fprintf(logFile, " (%s:%lu)", source ? source + 1 : line.FileName, static_cast<unsigned long>(line.LineNumber));
+                }
+            }
+            std::fprintf(logFile, "\n");
+            std::fflush(logFile);
+            // the caller's registers: through the routine's unwind data, or for a leaf routine (none) its return
+            // address at the top of the stack
+            DWORD64 imageBase = 0;
+            PRUNTIME_FUNCTION function = RtlLookupFunctionEntry(pc, &imageBase, nullptr);
+            if (function)
+            {
+                void* handlerData = nullptr;
+                DWORD64 establisher = 0;
+                RtlVirtualUnwind(UNW_FLAG_NHANDLER, imageBase, pc, function, &c, &handlerData, &establisher, nullptr);
+            }
+            else
+            {
+                if (IsBadReadPtr(reinterpret_cast<const void*>(c.Rsp), sizeof(DWORD64))) break;
+                c.Rip = *reinterpret_cast<const DWORD64*>(c.Rsp);
+                c.Rsp += sizeof(DWORD64);
+            }
+        }
+#else
+        (void)start;
+#endif
+    }
+
     LONG WINAPI CrashFilter(EXCEPTION_POINTERS* e)
     {
         if (logFile && e && e->ExceptionRecord)
@@ -250,6 +330,10 @@ namespace
                              static_cast<unsigned long long>(r.ExceptionInformation[1]));
             if (r.ExceptionCode == EXCEPTION_STACK_OVERFLOW) std::fprintf(logFile, "CRASH: the stack ran out (a routine calling itself without end)\n");
             std::fflush(logFile);
+            // once: a fault while the stack is being walked (or a second fault after) only gets the lines above
+            static LONG walked = 0;
+            if (e->ContextRecord && r.ExceptionCode != EXCEPTION_STACK_OVERFLOW && InterlockedExchange(&walked, 1) == 0)
+                LogStack(*e->ContextRecord);
         }
         return EXCEPTION_CONTINUE_SEARCH;
     }

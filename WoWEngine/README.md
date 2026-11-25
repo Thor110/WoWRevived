@@ -39,6 +39,10 @@ macOS. A macOS release is the plain programs in one folder, as on Linux: configu
 (the script does with `--build`), since inside an `.app` bundle the programs look for their files in the bundle's
 `Contents/Resources`. Its `README-MACOS.txt` says how to open programs Apple hasn't signed (update 257).
 
+**Crash logs** (update 258): on Windows a crash writes the calls that led to it into `WoWEngine.log`, named from
+`WoWEngine.pdb` beside the program. A Release build makes the .pdb (`/Z7`, `/DEBUG`; `CMakeLists.txt`) and the
+release ships it; without it the lines still give each call's module and offset.
+
 **Unit tests** (`tests/`, update 235): the file formats (FFUH both ways, sprites, palettes, shade tables,
 TEXT.ojd, the byte reader), the game's random numbers (MSVC's `rand()` from `srand(1)`), the save written, read
 back and written again byte for byte (with new units, buildings and a Damage Layer), the war map's tables and

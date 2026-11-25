@@ -103,6 +103,9 @@ def main():
     if MACOS:
         files.append((ROOT / 'readme' / 'README-MACOS.txt', True))   # opening unsigned programs, ffmpeg
     if WINDOWS:
+        # the programs' debug information (update 258): a crash's lines in WoWEngine.log name the routines with it
+        files.append((build_dir / 'WoWEngine.pdb', False))
+        files.append((build_dir / 'WoWLauncher.pdb', False))
         files.append((build_dir / ('SDL3d.dll' if args.debug else 'SDL3.dll'), False))
         files.append((build_dir / 'SDL3.dll', False))
     if WINDOWS:

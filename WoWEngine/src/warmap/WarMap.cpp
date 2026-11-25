@@ -1465,6 +1465,8 @@ namespace wow
         Crumb("war map: update");
         if (infoPage && infoPage->speechIn > 0 && --infoPage->speechIn == 0) infoSpeechStart = res.Text().Extra(infoPage->textId);
         AgeLog();
+        // (MODERN: the pictures again when Resources has let go of frames, Enhanced assets toggled: the new ones)
+        if (resGeneration != res.Generation()) { resGeneration = res.Generation(); map = sectorMap = nullptr; }
         if (!map) map = res.GetFrame(warmap::MapGType);
         if (!sectorMap) sectorMap = res.GetFrame(warmap::SectorMapGType);
         ZoomTick();     // a world object of its own (dword_4D2538's list), whether the time runs or not

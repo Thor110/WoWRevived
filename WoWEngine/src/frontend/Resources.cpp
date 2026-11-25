@@ -91,15 +91,36 @@ namespace wow
         std::vector<int> stale;
         for (const auto& [id, file] : readFrom)
             if (const GType* g = FindGType(id); g && FileFor(*g) != file) stale.push_back(id);
-        for (int id : stale)
+        for (int id : stale) Retire(id);
+        if (!stale.empty()) generation++;
+    }
+
+    void Resources::Retire(int id)
+    {
+        if (auto s = sprites.find(id); s != sprites.end()) { if (s->second) retiredSprites.push_back(std::move(s->second)); sprites.erase(s); }
+        if (auto r = raws.find(id); r != raws.end()) { retiredRaws.push_back(std::move(r->second)); raws.erase(r); }
+        readFrom.erase(id);
+        for (auto it = frames.begin(); it != frames.end();)
         {
-            sprites.erase(id);
-            raws.erase(id);
-            readFrom.erase(id);
-            for (auto it = frames.begin(); it != frames.end();) it = it->first.first == id ? frames.erase(it) : std::next(it);
-            for (auto it = colourFrames.begin(); it != colourFrames.end();) it = it->first.first == id ? colourFrames.erase(it) : std::next(it);
-            for (auto it = pngChecked.begin(); it != pngChecked.end();) it = it->first == id ? pngChecked.erase(it) : std::next(it);
+            auto next = std::next(it);
+            if (it->first.first == id) retiredFrames.push_back(frames.extract(it));
+            it = next;
         }
+        for (auto it = colourFrames.begin(); it != colourFrames.end();)
+        {
+            auto next = std::next(it);
+            if (it->first.first == id) retiredColourFrames.push_back(colourFrames.extract(it));
+            it = next;
+        }
+        for (auto it = pngChecked.begin(); it != pngChecked.end();) it = it->first == id ? pngChecked.erase(it) : std::next(it);
+    }
+
+    void Resources::RetireFrames()
+    {
+        while (!frames.empty()) retiredFrames.push_back(frames.extract(frames.begin()));
+        while (!colourFrames.empty()) retiredColourFrames.push_back(colourFrames.extract(colourFrames.begin()));
+        pngChecked.clear();
+        generation++;
     }
 
     void Resources::SetViewSize(int width, int height)
@@ -121,10 +142,9 @@ namespace wow
         if (on == enhanced) return;
         enhanced = on;
         Refresh();
-        // (the PNG overrides come and go with it: every frame decoded again, looking for them or not)
-        frames.clear();
-        colourFrames.clear();
-        pngChecked.clear();
+        // (the PNG overrides come and go with it: every frame decoded again, looking for them or not; the old ones
+        // kept, as something may be drawing with them)
+        RetireFrames();
     }
 
     void Resources::SetFileOverrides(std::map<std::string, std::string> files)

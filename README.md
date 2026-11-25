@@ -759,6 +759,8 @@ Thanks to RetroKet for setting up and managing the Discord server as well as enc
 
 Thanks to yereverluvinunclebert for creating the front of the filing cabinet drawer, which will be used in a future version for the expanded backgrounds : https://www.deviantart.com/yereverluvinuncleber/gallery
 
+As well as providing 13 custom campaigns from their 2000's WotW Companion Application for me to convert and ship with WoWEngine.
+
 Thanks to Z-Fighter for help testing the project and providing a never-ending supply of screenshots for reference which have saved me a lot of time not needing to fire the game up to see how something should look, as well as for finding a crash in the original game that would occur when using infiltration if lights are disabled in the options.
 
 Thanks to Sulus for posting a video of the violent geometry tearing on the airship model when it turns around.

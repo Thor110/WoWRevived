@@ -257,6 +257,7 @@ namespace wow
         SaveInfo game;
         const IndexedImage* map = nullptr;
         const IndexedImage* sectorMap = nullptr;
+        int resGeneration = 0;                          // Resources::Generation when they were got
         std::array<int, 256> levels{};   // shade level for each sector map value (0x49BE70: 11 for all)
         int cameraX = 0, cameraY = 0;    // the view's top-left on the map
         int mouseX = -1, mouseY = -1;

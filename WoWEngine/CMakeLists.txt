@@ -13,6 +13,12 @@ set(WOW_SDL_TAG "release-3.2.30" CACHE STRING "SDL3 release used when downloadin
 
 if(MSVC)
     add_compile_options(/W4 /utf-8 /permissive-)
+    # (update 258) a Release build has its debug information too, in WoWEngine.pdb beside the program, which a
+    # release ships: a crash's lines in WoWEngine.log then name the routines (main.cpp, LogStack). /Z7 keeps it in
+    # the objects until the link (no shared .pdb for parallel compiles); /OPT:REF and /OPT:ICF keep the program as
+    # small as without it.
+    add_compile_options($<$<CONFIG:Release>:/Z7>)
+    add_link_options($<$<CONFIG:Release>:/DEBUG> $<$<CONFIG:Release>:/OPT:REF> $<$<CONFIG:Release>:/OPT:ICF>)
 else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()

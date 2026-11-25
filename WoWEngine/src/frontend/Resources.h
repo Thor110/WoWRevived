@@ -45,6 +45,9 @@ namespace wow
         // place of the game's of the same names. Taken at once: the sprites whose file changes are read again on
         // their next use (Refresh), the others are kept. AllowEnhancedAssets(false) (--no-loose) keeps it off.
         void SetEnhancedAssets(bool on);
+        // goes up each time frames or sprites are let go (Enhanced assets toggled, another file for an entry): what
+        // keeps a frame's pointer gets it again when this changes, to draw the new one (the old stays valid)
+        int Generation() const { return generation; }
         void AllowEnhancedAssets(bool allowed) { enhancedAllowed = allowed; if (!allowed) SetEnhancedAssets(false); }
         bool EnhancedAssets() const { return enhanced; }
         const std::map<int, GType>& GTypes() const { return gtypes; }
@@ -86,6 +89,16 @@ namespace wow
         std::map<std::pair<int, int>, ColourImage> colourFrames;   // MODERN: the PNG overrides found
         std::set<std::pair<int, int>> pngChecked;                  // frames already looked for
         void ApplyPngOverride(int id, int frame, IndexedImage& image);
+        // MODERN (update 259): what is let go isn't freed but kept here, as a frame or sprite handed out may still
+        // be held (the war map's map pictures): Enhanced assets toggled while playing freed them under it and
+        // the war map's next draw read freed memory (a tester's crash). A few MB a toggle.
+        std::vector<decltype(frames)::node_type> retiredFrames;
+        std::vector<decltype(colourFrames)::node_type> retiredColourFrames;
+        std::vector<std::unique_ptr<Sprite>> retiredSprites;
+        std::vector<std::optional<std::vector<uint8_t>>> retiredRaws;
+        int generation = 0;
+        void Retire(int id);                    // one entry's sprite, raw data and frames
+        void RetireFrames();                    // every frame
         std::map<int, std::unique_ptr<Font>> fonts;
         std::map<int, std::optional<std::vector<uint8_t>>> raws;
         std::map<std::string, std::optional<IndexedImage>> fileImages;

@@ -56,6 +56,19 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## Crash logs (update 258)
+
+A crash on Windows now lists the calls that led to it in WoWEngine.log ("CRASH: the calls:"), each with its
+module and offset, and with WoWEngine.pdb beside the program (a release since 258 has it) the routine's name, file
+and line. Keep the .pdb with WoWEngine.exe. Two reports are waiting on such a log:
+
+- **Modern Options opened from the war map's menu** (0.2.8, a tester: "war map: drawing", reading address 0xB418).
+  The owner found it: Enhanced assets toggled while playing (update 259). Resources let go of every decoded frame,
+  and the war map's map pictures, kept as pointers, were then read freed (AddressSanitizer: heap use after free in
+  `WarMap::DrawMap`). Now nothing handed out is freed (`Resources::Retire`), and the war map gets its pictures
+  again (`Resources::Generation`). Seen headless under AddressSanitizer: toggled three times from the war map's
+  menu, then the map and the research screen, clean. To try: toggling it in a battle, and the new look appearing.
+
 ## The crash after a battle (update 256)
 
 - A campaign played on past battles where the computer player's construction vehicles lose vehicles and then
