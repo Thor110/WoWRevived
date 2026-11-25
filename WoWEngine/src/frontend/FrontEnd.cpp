@@ -1207,11 +1207,16 @@ namespace wow
         // 0x49BD50, "Battlemap menu" (0x80B8 from the battle map's Escape, 0x484FB0): drawn over the battle map with
         // its palette group, sound effects at a quarter and the world paused (+0x44) while it's open. Resume (0x8123)
         // goes back; that's all but Sound Control: no save, no quit.
+        // MODERN (update 262, the owner): the war map menu's other option menus too, Critical Event Options and the
+        // engine's Modern Options and Modern Gameplay, each over the battle map and back here
         if (screen && screen->Id() == BattleMap::Id) battleMap = std::move(screen);
         auto m = std::make_unique<Menu>(BattleMap::MenuCommand, res, settings.colours, 0, 0x2F0);
         m->AddHeading(0x3FD);                          // "Battle Options"
         m->AddButton(Commands::Back, 0x405);
         m->FocusLast();
+        m->AddButton(CmdCriticalEvents, 0x412);
+        m->AddButtonText(CmdModernOptions, res.String(enginetext::ModernOptions));
+        m->AddButtonText(CmdModernGameplay, res.String(enginetext::ModernGameplay));
         m->AddBottomButton(CmdSoundControl, 0x411);
         m->SetPrevious(BattleMap::Id);
         return m;

@@ -56,6 +56,12 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## Battle Options (update 262)
+
+- The battle map's menu: Critical Event Options, Modern Options, Modern Gameplay and Sound Control, each back to it
+  and Resume to the battle. Seen headless (under AddressSanitizer, Enhanced assets toggled in a battle too). To
+  try: settings changed in a battle taking effect there (the HUD and menu scales, the window, the cursor).
+
 ## Civil war sides and the weed (update 261)
 
 - Choose Side for each civil war: the Rebels and the Resistance start as before; the Loyalists in London, the

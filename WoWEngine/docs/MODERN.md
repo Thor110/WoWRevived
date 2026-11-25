@@ -49,7 +49,7 @@ A **Modern Options** menu for the opt-in toggles below is planned (PLAN.md, Stag
 ### The Modern Options menu (update 196)
 
 The engine's own menu, command 0x9001 (no such command in the game), opened by a "Modern Options" button in
-Game Options and in the war map's Campaign Options. It is laid out as the critical event menu is, two columns of
+Game Options, in the war map's Campaign Options and (update 262) in the battle map's Battle Options. It is laid out as the critical event menu is, two columns of
 check boxes, and each box is a setting in WoWRevived.ini that can be set there as well:
 
 | Box | Setting | Default | Takes effect |
