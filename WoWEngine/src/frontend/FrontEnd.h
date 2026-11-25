@@ -225,6 +225,7 @@ namespace wow
         int hoverX = 0, hoverY = 0; // dword_4EA548 / 4EA54C: where the hovering started
         bool mouseHeld = false, rightHeld = false;
         bool musicWasPaused = false;
+        bool soundsLeftOn = false;          // the sounds weren't paused with the window (SetPaused: the menus' music)
         // The war map's music (0x41B070, command 0x813C): CD tracks 2 and 3 in turn, or without CD music one of
         // the ambient sounds 0xFD-0xFF every 10 seconds; and its clock sound (0x41F860)
         void WarMapSounds(WarMap& map);

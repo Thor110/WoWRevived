@@ -76,7 +76,9 @@ Two more boxes aren't settings: **Record input** and **Play a recording** switch
 
 **Music playback** (update 218) is WoWRevived's launcher's option of that name, with its setting and its tool
 tip: on, the music plays on while the window is out of focus or minimised (the game pauses it, and the engine
-does unless this is on). Until 218 the box in its place was "CD player music continues" (`[WoW Engine]` "CD
+does unless this is on). Since update 260 that takes in the menus' music too: the main menu's (and Game
+Options' and the menus' from them) is a sound, 0x18C, not a track, and the sounds pause with the window, so with
+this on they go on while it plays (`FrontEnd::SetPaused`); in the game they still stop. Until 218 the box in its place was "CD player music continues" (`[WoW Engine]` "CD
 Player Music Continues": the music carrying on after the CD player's menu is left), which is not what was
 asked for; that setting still works from the ini but has no box.
 

@@ -56,6 +56,11 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## Music playback on the main menu (update 260)
+
+- With Music playback on (Modern Options), the main menu minimised or left for another window: its music goes on.
+  Off, it stops and comes back with the focus. In the game (war map, battle) the sounds still stop with the window.
+
 ## Crash logs (update 258)
 
 A crash on Windows now lists the calls that led to it in WoWEngine.log ("CRASH: the calls:"), each with its

@@ -2426,7 +2426,12 @@ namespace wow
         if (paused && musicPlaysOn) musicWasPaused = true;          // (left alone now, and when the focus comes back)
         else if (paused) musicWasPaused = music.Paused();
         if (!musicWasPaused) music.SetPaused(paused);
-        sound.SetPaused(paused);
+        // the menus' own music (sound 0x18C, StartAmbient: the main menu, Game Options and the menus from them) is a
+        // sound, not a track: with the option on, the sounds go on too while it plays (update 260, the owner); in
+        // the game they stop as before
+        if (paused) soundsLeftOn = musicPlaysOn && sound.Active(ambient);
+        if (!soundsLeftOn) sound.SetPaused(paused);
+        if (!paused) soundsLeftOn = false;
         if (screen) screen->SetPaused(paused);
     }
 
