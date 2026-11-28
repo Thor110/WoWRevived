@@ -210,7 +210,9 @@ namespace wow
                             // each update by its object's vt+0x5C (0x48B3D0)
                             int bright = 255;
                             // MODERN: drawn from the civil war's own texture for the other side, so not hue-turned
-                            bool ownLook = false; };
+                            bool ownLook = false;
+                            int frame = 0;      // a plain sprite's frame (a reinforcement point's arrow)
+                            };
         // A scenery object (WScenery 0x4895E0 / 0x489380 on the damageable 0x489E20): its type, point and height
         // (+0x84), its health (+0xC4, the type's +0x4A to start with, bit 7 set), a 0x80A0 on its way, its light
         // updating: on the world's update list (dword_4D2550 +0x20), so its update (the smoulder, 0x48AEF0) runs
@@ -519,6 +521,7 @@ namespace wow
         void Begin();
     private:        // 0x439AE5 -> the pod's vt+0x14, 0x48F620
         static bool IsExplosion(int type);
+        void SpawnPart(int type, int x, int y, int z, int depth);    // an explosion's part and its own parts (0x47EF30)
         static bool IsAreaBlast(int type);
         void AreaDetonate(int type, int x, int y, int radius, int power, int firer, int attacker = 0, int weapon = 0);   // 0x487B50
         void SetStatus(size_t unit, int status, int level);     // 0x80F5-0x80F7 (0x495CB0)

@@ -63,6 +63,9 @@ namespace wow::install
     // if it is then empty (a release's "resources"; never the source's).
     void SetTextFolder(std::filesystem::path folder, bool removeAfter = false);
     bool CopyLanguageText(const std::filesystem::path& target);
+    // (update 265) the playlist (HumanMartianPlaylist.m3u8) and, for an English install, the English manual from
+    // the same folder into the main folder; Finish does it, and so must anything calling CopyLanguageText first
+    void CopyExtras(const std::filesystem::path& target);
     // MODERN (update 248, docs/MODERN.md "The documented WoWRevived.ini"): every setting the engine reads, with its
     // description and default (core/SettingsTable.h), added to the install's WoWRevived.ini where it isn't documented
     // yet; values already set are kept, and nothing is added twice. True if the file was written.

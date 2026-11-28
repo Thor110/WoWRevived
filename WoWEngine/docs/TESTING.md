@@ -56,6 +56,35 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## The testers' and the owner's reports (update 265)
+
+- **Installer**: an Italian and a French install from their discs (the manual copied as `wotw-man-italian-v1.pdf` /
+  `wotw-man-french-v1.pdf` beside TEXT.ojd); an English install (`wotw-man-english-v1.pdf` from resources); the
+  playlist `HumanMartianPlaylist.m3u8` in the main folder either way.
+- **Ground impacts**: a shell or rocket landing on open ground shows its impact (the crater, smoke and light parts).
+- **Firing effect**: rockets' and mortars' flashes at their record's length, not drawn out to the target.
+- **A builder lost**: a construction vehicle killed part way through a building, the building destroyed with it;
+  its Build List entries gone and the list closed if it was open.
+- **The computer's fences**: they run between their two points, not as a single post.
+- **Human research**: the lamp cord under the papers; the Martian picture and the proposals under it see-through.
+- **Cheats**: punyhumans takes the Humans, atchooo the Martians, whichever side is played; in a civil war the war's
+  own faction's cheat takes the other side and the other does nothing; no cheats in a network game.
+- **A new building**: placed and building, with no fire or smoke until it's damaged.
+- **The minimap**: no dots for the other side's units under the fog.
+- **Research speech**: stops on leaving the screen and changes with the page.
+- **Retreat arrows**: red (Human) or purple (Martian), each pointing off its nearest edge.
+- **Deployment**: attackers coming in from the side of the sector they came from, in the campaigns and in both civil
+  wars (where the sides used to be confused, putting one at the top left); a land unit from a sector whose pair has
+  only a boat point comes in near it.
+- **War map Build List**: centred at screen sizes over 480 rows; closed by a press on the map.
+- **Battle Options**: the last button (Modern Gameplay) on the rounded bottom plate.
+- **Saving after a battle**: quit (or end the program) just after a battle and load: the battle's result is there.
+- **The Human Civil War**: each side starts with two Construction Vehicles (the Rebels' in the Grampians).
+- **CD music**, war map and battle map: against the original, how often it plays. The engine now holds the music off
+  once a track has been stopped part way (a menu's Resume, or a step coming before a track's end) until the next
+  briefing or the war map's return (WARMAP.md "Music"). If it's now too quiet, say so: a Modern option could bring
+  back playing on.
+
 ## Custom campaigns' own files (update 264)
 
 - A save made by the original game renamed Custom.nnn: listed under Resume Custom Campaign for its side only, and

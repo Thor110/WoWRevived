@@ -425,7 +425,12 @@ and third, and BATP and its class's own tags (VEHI / VEHU for a vehicle). A fres
   pod for Martians, else the entry point if it came from somewhere, else the map's middle.
 - the entry point (0x436050): a hard-coded pair of points for each pair of neighbouring sectors (a switch on
   previous x 100 + sector, only for previous's neighbours in 0x4BD260), boats (+0x52 5 or 6) at the second;
-  (0, 0) when there's none (some pairs have one only for boats). The 158 pairs are in `core/Deployment.cpp`.
+  (0, 0) when there's none (some pairs have one only for boats). The 158 pairs are in `core/Deployment.cpp`. The
+  engine gives a pair with a point only for the other kind that point rather than (0, 0), the map's top left (update
+  265).
+- the engine compares the list's side, not its faction, with the owner (update 265): in a civil war both sides
+  are one faction, so by the faction the owner's units took the attackers' entry point or the attackers the
+  owner's HQ, and a side with no sector it came from stood at (0, 0).
 - the player's objects (+0x24 0) leave their centre in dword_4F742C / 4F7434, which the start view uses.
 
 The war map object's +0x58 is the sector a route last brought it from (0x4254A7) or the one an AI move took it out
@@ -845,8 +850,9 @@ type's +0x28 is 0) and one part (record 28): its post's type (451 695 WireF, 452
 - **Its two ends** are the fence's +0xE8 / +0xEC and +0xF0 / +0xF4 (the earlier notes had +0xC8-+0xD4): 0x80A5
   sets the first and 0x80A6 the second; 0x80A7 moves the object to its point (vt+0x3C) and then sets the first,
   as a placed fence's order does (0x43CD10: 0x80A7 then 0x80A6). They're saved as four values after its BATP
-  (0x498890; read back by 0x4987F0, which sends itself 0x80A5 and 0x80A6). A fence the computer ordered on the war
-  map has none (0, 0, 0, 0), and the game lays it in the map's corner as the engine does.
+  (0x498890; read back by 0x4987F0, which sends itself 0x80A5 and 0x80A6). A fence the computer orders on the war
+  map takes its AI.ojd site's (0x441420: 0x80D1 with the site's first point, 0x80D2 with its second; update 265:
+  the engine had given it none, so it was laid from the map's corner, a tester's report).
 - **Laying the posts** (vt+0x24, 0x48D800, when its group is started, 0x47D030): the ends put in order (the first
   the one with the lesser x), each on the vertex grid (0x498900: ((v << 16) + half a cell) / the cell x the cell
   >> 16); the heading and length between them (0x43FDA0, +0x40 and +0xF8); N = ftol(length x 1/64 - (-1.0))
@@ -1314,6 +1320,11 @@ Every gun class but the base's own update draws four atlas quads while it fires:
 - **Animated** (vt+0x4C, 0x495180), while the fire cycle (+0xD8) is 2 and the type has a GType: quad i shows cell
   (the type's +0x2C x 16 + i + the phase), the phase (+0xA8) going on by 4 each draw and back to 0 at 16 (0x49D7E0:
   the cell's offset is (f / 16) x 16 x 256 + (f % 16) x 16); then vt+0xE4.
+- **Their length** (update 265, a tester's report: the rockets' firing was stretched): 0x495280's last argument,
+  when not 0, takes the far end to that many pixels along the way from the gun. The base (0x495180) and the
+  shells' (0x4885F0) pass 0, so their quads reach the target; the rockets' and mortars' (0x488980) pass record 12's
+  word 7 (+0xE) plus 0-4 (the game's random table, 0x4025F0; here a draw-only number, so drawing doesn't move
+  the game's), 32 for most rockets, 8-64 for the mortars.
 - **Laid out** (vt+0xE4, 0x495280) from the gun's point (+0x78..+0x80) to its target (+0xBC..+0xC4), both
   projected (x; the iso y less the height's share, plus the top), the length optionally cut to a cap (0 here): in
   four steps of a quarter of the way, the half width along the screen normal (uy, -ux) going from record 12's +0xA

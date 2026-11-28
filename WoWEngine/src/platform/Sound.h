@@ -52,6 +52,7 @@ namespace wow
         // Fades every sound playing now out to silence over this many ticks and stops it (0x464AB0, "Fading out
         // all current sounds"); 0 stops them at once.
         void FadeOutAll(int ticks);
+        void FadeOutId(int id, int ticks);   // (update 265) by its sound id, queued speech too
 
         // [Sound\Volume] Master and the per-type volumes, 0-1.
         void SetVolumes(float master, const float typeVolumes[6]);
@@ -79,6 +80,7 @@ namespace wow
         struct Voice
         {
             int handle = 0;
+            int id = 0;               // the SFX.ojd sound it's playing
             bool placed = false;      // played at a point (not 0, 0)
             int x = 0, y = 0;
             float attenuation = 1;    // 0x464FF0 against the listener

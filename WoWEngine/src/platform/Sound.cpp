@@ -139,6 +139,7 @@ namespace wow
         if (!pcm || pcm->empty()) return 0;
 
         Voice v;
+        v.id = id;
         v.pcm = pcm;
         v.step = double(sample.rate) / OutputRate;
         v.channels = def->stereo ? 2 : 1; // each sample's buffer is mono or stereo by the flag (0x465D10)
@@ -247,6 +248,22 @@ namespace wow
         // 0x464EB0: the end is the earlier of the one set and now + ticks, the start the earlier too
         for (Voice& v : voices)
             if (v.handle == handle)
+            {
+                if (!v.fadeOutTicks) { v.fadeOutTicks = ticks; v.fadeOutDone = 0; }
+                else v.fadeOutTicks = std::min(v.fadeOutTicks, v.fadeOutDone + ticks);
+            }
+    }
+
+    // (update 265) a sound by its id: taken off the speech queue and faded out where it plays. Queued speech
+    // (opcode 6) has no handle to fade by: the research screen's page speech went on after the page changed or
+    // the screen closed (the owner's report)
+    void Sound::FadeOutId(int id, int ticks)
+    {
+        std::lock_guard<std::mutex> l(lock);
+        speechQueue.erase(std::remove_if(speechQueue.begin(), speechQueue.end(), [&](const Queued& q) { return q.id == id; }), speechQueue.end());
+        if (ticks <= 0) { voices.erase(std::remove_if(voices.begin(), voices.end(), [&](const Voice& v) { return v.id == id; }), voices.end()); return; }
+        for (Voice& v : voices)
+            if (v.id == id)
             {
                 if (!v.fadeOutTicks) { v.fadeOutTicks = ticks; v.fadeOutDone = 0; }
                 else v.fadeOutTicks = std::min(v.fadeOutTicks, v.fadeOutDone + ticks);

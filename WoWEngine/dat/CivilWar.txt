@@ -12,6 +12,8 @@
 #   copy    = sector      the player's home is given a copy of this sector's objects in the start file (its command
 #                         building becoming the right one for the home), or none
 #   copy at = x y         where on the war map the copy's middle goes
+#   mirror  = types       unit types the player's home is given one of for each the other side starts with
+#                         (at the copy's place), or none
 # Sectors the other faction held in the start file are always emptied and no one's. The homes can't be moved
 # here: the Humans' player's home is the Grampian Mountains (3), the Martians' London (30).
 #
@@ -33,6 +35,7 @@ other   = rest                   # London's: the rest of the start file's Human 
 neutral =
 copy    = 30                     # London's base, copied to the Grampians
 copy at = 468 540                # where the Martians' base was
+mirror  = 28                     # the Construction Vehicles: the start file's two are in the other side's sectors
 
 [Martian Civil War]
 player  =
@@ -40,3 +43,4 @@ other   = rest                   # every Martian sector of the start file the ot
 neutral =
 copy    = 3                      # the Grampians' base, copied to London
 copy at = 1111 2034              # London's route waypoint
+mirror  = none

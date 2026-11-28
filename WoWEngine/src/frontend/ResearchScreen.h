@@ -54,6 +54,8 @@ namespace wow
         // ticks when the page goes (0x45E4A0 -> 0x464EB0)
         int Speech() const { return speechSound; }
         void SetSpeech(int handle) { speechSound = handle; }
+        int SpeechId() const { return speechId; }                 // (update 265) the speech's sound id, queued or playing
+        void SetSpeechId(int id) { speechId = id; }
         int TakeSpeechStart() { return std::exchange(speechStart, 0); }
         bool TakeSpeechFade() { return std::exchange(speechFade, false); }
 
@@ -83,6 +85,7 @@ namespace wow
         std::vector<Line> detail;          // on the screen, wrapped and placed
         Rect blueprint, proposals;         // the blueprint window and the proposals list (empty without one)
         int speechSound = 0;
+        int speechId = 0;
         int speechStart = 0;               // a speech to start (an SFX id)
         bool speechFade = false;
         int speechDelay = -1;              // ticks until the page's speech starts

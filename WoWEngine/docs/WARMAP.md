@@ -681,7 +681,9 @@ finished in the sector (0x442420); and the queue has room.
 ## The Build List window
 
 The window (0x460B00: "Build List", class 0x804A, id 0x5DCA; `warmap/BuildWindow.cpp`) opens from Build. It has
-two panels at `[BuildList] Left` (0) and `Top` (70) (0x460A80 / 0x460AC0):
+two panels at `[BuildList] Left` (0) and `Top` (70) (0x460A80 / 0x460AC0). The engine centres them in screens
+taller than 480 rows, Top's offset from 70 kept, on the war map as in a battle, and closes the war map's window
+with a press on the map off it (update 265; the game's stays until its background is clicked):
   - **the list** (0x461500): backdrop 0x2FA (`hbuildb1` / `mbuildb1`), scroll buttons 0x2FD at (0x1B, 9) Human /
     (0x1F, 0x15) Martian and 0x2FE at (0x1A, 0x12C) / (0x1F, 0x12B), each one place at a time while there are more
     than five past it (0x4618E0); five items from the scroll position (0x4619A0, the list from 0x45F970), at x 32
@@ -994,9 +996,21 @@ records come together, so what shows is that turning time off stops the clock. A
 
 The war map stops the CD when it starts and takes its first music step 5 seconds later (0x4181BF, command 0x813C).
 A step (0x41B070) fades out the last ambient sound over 60 updates; then, with CD music on ([Sound\Volume] "CD"),
-if the disc is still playing (the CD player's music) it stops it and looks again in 10 seconds, otherwise it plays
-the next of tracks 2 and 3 in turn (from 2) and comes back when it ends (or in 10 seconds if the track is 10 seconds
-or shorter). Without CD music it plays ambient sound 0xFD + rand() % 3, faded in over 60, every 10 seconds.
+if the drive's position isn't at a track's start (0x413EB0: MCI_STATUS_POSITION's minutes and seconds) it stops
+the disc (0x412960: MCI_STOP) and looks again in 10 seconds, otherwise it plays the next of tracks 2 and 3 in turn
+(from 2) and comes back after its length + 1 seconds (0x413DF0, x "Game Frequency" updates); a track of 10 seconds
+or less posts nothing again. Without CD music it plays ambient sound 0xFD + rand() % 3, faded in over 60, every 10
+seconds. The step also runs on 0x8123, the menu's Resume (0x41A05A); the battle map's (0x4861E0, tracks 4 and 5)
+is the same, on its 0x813C and 0x8123 (0x48513B).
+
+The game's music seldom plays for long, and the engine keeps that (update 265; it had played the tracks one after
+another, 10 seconds apart, which the owner found far more often than the game's). A stop doesn't seek, so the
+position stays part way through the track, and every step after it stops the disc again: nothing plays until the
+position is reset (0x412C00 / 0x412940: as the briefing starts, 0x41B269, and as the war map or a battle map is set
+up or goes, 0x4182DE, 0x484C67). A step comes before its track has ended more often than not: the updates are
+1000 / 30 = 33 ms, 30.3 a second, so a track over 99 seconds is still playing when its length + 1 seconds of them
+have passed, and a Resume always finds it playing. So a track or so plays after each briefing and on coming back
+to the war map, then the music holds off (the engine's `FrontEnd::cdHeld`).
 
 ## The war map menu
 

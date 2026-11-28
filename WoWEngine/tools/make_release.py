@@ -140,6 +140,12 @@ def main():
         if source.exists():
             shutil.copy2(source, out / 'resources' / source.name)
             print('  resources/' + source.name)
+    # (update 265) WoWRevived's playlist and English manual: the install puts them in the main folder
+    for extra in ('HumanMartianPlaylist.m3u8', 'wotw-man-english-v1.pdf'):
+        source = ROOT / 'resources' / extra
+        if source.exists():
+            shutil.copy2(source, out / 'resources' / extra)
+            print('  resources/' + extra)
 
     # the engine's loose files: into DAT and MAPS of the release folder, which is where the game is then installed
     # (WoWLauncher adds the game's own files beside them), so they are read as the game's loose files are

@@ -250,6 +250,9 @@ namespace wow
         for (const Unit& u : units)
         {
             if (dots.size() >= 0x400) break;
+            // 0x47D480: only an object out of the fog (vt+0x9C false) sends its dot (vt+0x68, 0x480070). (Update 265,
+            // the owner: the engine had shown every object, the other side's under the fog included.)
+            if (u.fogged || u.hidden) continue;
             auto d = setup.units->find(u.type);
             const bool vehicle = d != setup.units->end() && d->second.category == 1;
             const uint32_t colour = !u.players ? enemyColour : vehicle ? vehicleColour : otherColour;
@@ -680,14 +683,13 @@ namespace wow
                     hqX = int(u.x);
                     hqY = int(u.y);
                 }
-            // the list's faction: its first object's
-            int faction = -1;
-            for (size_t gi = 0; gi < setup.groups.size(); gi++)
-                if (setup.groups[gi].list == list)
-                {
-                    if (const ObjOjd::UnitData* d = unit(setup.groups[gi].type)) faction = d->faction;
-                    break;
-                }
+            // the list's faction: its first object's (0x4406E0). Here as the side code ownerFaction is given in (the
+            // played faction for the player's lists, the even ones, the other for the rest), which is the same in the
+            // campaigns and keeps the two sides apart in a civil war, where both are one faction: by the faction
+            // alone the owner's side took the attackers' place, or the attackers the owner's, and a side with no
+            // sector it came from stood at (0, 0), the map's top left
+            const int played = setup.human ? 0 : 1;
+            const int faction = list % 2 == 0 ? played : 1 - played;
             for (size_t gi = 0; gi < setup.groups.size(); gi++)
             {
                 const BattleGroup& g = setup.groups[gi];
@@ -1180,8 +1182,22 @@ namespace wow
                 int x0, y0, x1, y1;
                 project(gx, gy, gz, x0, y0);
                 project(g.tx, g.ty, g.tz, x1, y1);
-                const double len = std::sqrt(double(x0 - x1) * (x0 - x1) + double(y0 - y1) * (y0 - y1));
+                double len = std::sqrt(double(x0 - x1) * (x0 - x1) + double(y0 - y1) * (y0 - y1));
                 if (!(len > 0.0)) continue;
+                // the rockets' and mortars' (0x488980, their vt+0xE4): the quads end record 12's +0xE (word 7) plus
+                // 0 to 4 from the gun, whatever the target's distance (0x495280's last argument: the far end taken to
+                // that length along the way); the shells' and WProjectile's (0x4885F0, 0x495180) pass 0 and reach the
+                // target. (Update 265, a tester's report: the rockets' firing was stretched to the target.)
+                // The game takes the 0-4 from its random table (0x4025F0) as it draws; here from the gun and the
+                // draw, so drawing never moves the game's random numbers
+                if ((g.cls == 1 || g.cls == 2) && w != setup.weapons->end())
+                    if (const int reach = int16_t(w->second[7]) + int((uint32_t(g.flashFrame) * 2654435761u + uint32_t(ticks) * 40503u + uint32_t(g.type)) >> 29) % 5; reach > 0)
+                    {
+                        x1 = int(double(x1 - x0) * reach / len + x0);
+                        y1 = int(double(y1 - y0) * reach / len + y0);
+                        len = std::sqrt(double(x0 - x1) * (x0 - x1) + double(y0 - y1) * (y0 - y1));
+                        if (!(len > 0.0)) continue;
+                    }
                 const float dx = float(x1 - x0), dy = float(y1 - y0);
                 const float ux = float(dx / len), uy = float(dy / len);
                 const float stepX = dx * 0.25f, stepY = dy * 0.25f;
@@ -3116,7 +3132,7 @@ namespace wow
                 if (o.sprite)
                 {
                     // 0x40EE10: the frame at the point less the hot spot, through the slot's table at level 0
-                    const int frame = o.effect >= 0 ? effects[size_t(o.effect)].counter >> 8 : 0;
+                    const int frame = o.effect >= 0 ? effects[size_t(o.effect)].counter >> 8 : o.frame;
                     const IndexedImage* image = res.GetFrame(o.sprite, frame);
                     const GType* g = res.FindGType(o.sprite);
                     // a flying object's sprite is at its type's +0xA1 / 4 (0x487846: its renderer's vt+0x18, the

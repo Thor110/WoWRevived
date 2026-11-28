@@ -608,6 +608,14 @@ namespace wow
             if (s.type == table[size_t(ref)].Type() && AiSiteObject(sector, s, ref) < 0)
             {
                 table[size_t(ref)].SetBattlePosition(float(s.x), float(s.y));
+                // 0x441420 sends the object the site's first point (0x80D1, its +4 / +6) and its second (0x80D2,
+                // +8 / +0xA): a fence's two ends. (Update 265, a tester's report: the computer's fences were laid
+                // from the map's corner, the engine having given them no ends.)
+                if (s.type >= 451 && s.type <= 456)
+                {
+                    const int line[4] = { s.x, s.y, s.x2, s.y2 };
+                    table[size_t(ref)].SetLinePoints(line);
+                }
                 return;
             }
     }

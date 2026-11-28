@@ -140,6 +140,16 @@ namespace wow
         for (size_t g = 0; g < groupTargets.size(); g++)
             if (u.id != 0 && groupTargets[g].target == u.id) TargetGone(int(g), u, last);
         if (groupEmpty) GroupGone(u.group);
+        // (update 265) a builder's last unit: its queue cancelled, the constructions it had under way sent 0x80A0
+        // (posted, dying at the next update's deaths as a fence's posts do)
+        if (last && setup.build && u.ref >= 0 && size_t(u.ref) < setup.groups.size() && setup.groups[size_t(u.ref)].ref >= 0)
+            for (const int dead : setup.build->BuilderLost(setup.groups[size_t(u.ref)].ref))
+                for (Unit& c : units)
+                    if (c.ref >= 0 && size_t(c.ref) < setup.groups.size() && setup.groups[size_t(c.ref)].ref == dead && (c.dieAt < 0 || c.dieAt > ticks))
+                    {
+                        c.dieAt = ticks;
+                        c.dieQuietly = false;
+                    }
         // a fence's post: its ground let go (vt+0xE8 0x48B6D0), and its fence told (vt+0x50, 0x48DAA0); a fence:
         // its posts go with it (0x48D9C0 hands its 0x80A0 on to each)
         if (u.fenceOf >= 0)
@@ -249,6 +259,25 @@ namespace wow
     // The area blasts (0x487B00 on WExplosion: the factory's 718-720, 788-790, 812-823)
     bool BattleMap::IsAreaBlast(int t) { return (t >= 718 && t <= 720) || (t >= 788 && t <= 790) || (t >= 812 && t <= 823); }
 
+    // A part made (0x47EF30), and its own parts as it starts (0x489000): the ground bursts' (381-390, 484-513) visible
+    // part is one more level down (348 T_1B has no picture; its part 347 is cracks16.spr), so with only the first
+    // level made a burst on the ground showed nothing (update 265, a tester's report: only the air bursts, whose
+    // part has the picture itself, were seen)
+    void BattleMap::SpawnPart(int type, int x, int y, int z, int depth)
+    {
+        SpawnEffect(type, float(x), float(y), float(z));
+        if (depth >= 4) return;
+        auto t = setup.units->find(type);
+        if (t == setup.units->end()) return;
+        for (const auto& part : t->second.parts)
+        {
+            const int px = x + int16_t(part.b), py = y + int16_t(part.c), pz = z + int16_t(part.d);
+            if (IsExplosion(part.a) || IsAreaBlast(part.a)) continue;   // (the explosions only come from Explode)
+            if (part.a >= 334 && part.a <= 346) AddLight(part.a, px, py, land.HeightAt(px, py) + pz);
+            else SpawnPart(part.a, px, py, pz, depth + 1);
+        }
+    }
+
     void BattleMap::Explode(int type, int x, int y, int z, int firer, int attacker, int weapon, int radiusAs, int powerAs)
     {
         auto t = setup.units->find(type);
@@ -276,7 +305,7 @@ namespace wow
             const int px = x + int16_t(part.b), py = y + int16_t(part.c), pz = z + int16_t(part.d);
             if (IsExplosion(part.a) || IsAreaBlast(part.a)) Explode(part.a, px, py, pz, firer, attacker, weapon);
             else if (part.a >= 334 && part.a <= 346) AddLight(part.a, px, py, land.HeightAt(px, py) + pz);
-            else SpawnEffect(part.a, float(px), float(py), float(pz));
+            else SpawnPart(part.a, px, py, pz, 0);
         }
         if (area)
         {

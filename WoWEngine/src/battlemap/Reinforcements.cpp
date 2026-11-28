@@ -38,10 +38,12 @@ namespace wow
                 deploy::EntryPoint(src.sector, setup.sector, kind == 5 ? 5 : 0, x, y);
                 if (x + y == 0) continue;
                 const int left = x, top = y, right = w - x, bottom = h - y;
-                if (left < top && left < right && left < bottom) x = 100;
-                if (top < left && top < right && top < bottom) y = 100;
-                if (right < left && right < top && right < bottom) x = w - 100;
-                if (bottom < left && bottom < top && bottom < right) y = h - 100;
+                // (the arrow points off the edge it's by: HEXITARR / MEXITARR's frames up, right, down, left)
+                int arrow = 0;
+                if (left < top && left < right && left < bottom) { x = 100; arrow = 3; }
+                if (top < left && top < right && top < bottom) { y = 100; arrow = 0; }
+                if (right < left && right < top && right < bottom) { x = w - 100; arrow = 1; }
+                if (bottom < left && bottom < top && bottom < right) { y = h - 100; arrow = 2; }
                 if (!src.players && !setup.mat) continue;      // ("or the debug flag")
                 if (setup.hasRoom)
                 {
@@ -55,7 +57,13 @@ namespace wow
                     if (const GType* g = res.FindGType(u->second.field28); g && g->gclass == 0 && res.GetFrame(u->second.field28, 0))
                     {
                         objects.push_back({ y + 1, x, land.ProjectY(y, land.HeightAt(x, y)), nullptr, nullptr, g->paletteSlot, u->second.field28 });
-                        objects.back().level = 255 >> 2;    // WScenery's 0x4897D0: ftol(255 x the fog level) out of the fog
+                        // (update 265, the owner: the arrows were black and all pointing up) through the interface
+                        // table (slot 5, BM{S}I) at level 0: red for the Humans, purple for the Martians, as the game
+                        // shows them; its 30 levels end before the 63 the engine had (a scenery object's out of the
+                        // fog), past which they're black. *Provisional*: the class's own frame choice isn't traced;
+                        // the arrow points off the edge the point is by.
+                        objects.back().level = 0;
+                        objects.back().frame = arrow;
                     }
             }
         }

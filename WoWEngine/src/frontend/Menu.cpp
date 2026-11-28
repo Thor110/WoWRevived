@@ -216,14 +216,16 @@ namespace wow
         if (handler != onText.end() && handler->second) handler->second(buttons[index].text);
     }
 
-    void Menu::AddBottomButton(int command, int textId)
+    void Menu::AddBottomButton(int command, int textId) { AddBottomButtonText(command, res.String(textId)); }
+
+    void Menu::AddBottomButtonText(int command, std::string text)
     {
         Button b;
         b.plate = style == 2 ? 0x3B : 0x38;
         b.glass = style == 2 ? 0x3D : 0x3A;
         b.font = ButtonFont;
         b.level = colours.items;
-        b.text = res.String(textId);
+        b.text = std::move(text);
         b.command = { command, 0 };
         Stack(std::move(b));
         Centre();

@@ -68,6 +68,7 @@ namespace wow
             l.player.assign(CivilWarScotland.begin(), CivilWarScotland.end());
             l.copyFrom = CivilWarSouthHome;
             l.copyX = 468; l.copyY = 540;       // the Martians' base in the Grampian Mountains (Human.000)
+            l.mirror = { 28 };                  // the Construction Vehicle
         }
         return l;
     }
@@ -148,6 +149,16 @@ namespace wow
                 if (words.size() == 1 && (words[0] == "none" || words[0] == "0")) l.copyFrom = 0;
                 else if (words.size() == 1 && number_(words[0], 1, 30, sector)) l.copyFrom = sector;
                 else if (words.size() != 1) warnings.push_back("line " + std::to_string(number) + ": copy takes one sector, or none");
+            }
+            else if (key == "mirror")
+            {
+                l.mirror.clear();
+                for (const std::string& w : words)
+                {
+                    int type = 0;
+                    if (w == "none") continue;
+                    if (number_(w, 1, 1008, type)) l.mirror.push_back(type);
+                }
             }
             else if (key == "copy at")
             {
@@ -246,6 +257,23 @@ namespace wow
                 SaveObject c = Moved(o, home, 0, tx - sx, ty - sy, used);
                 s.Sector(home).lists[size_t(c.list)].push_back(std::move(c));
             }
+        // the mirrored types: a copy at home of each of the other side's units of them
+        if (!layout.mirror.empty())
+        {
+            std::vector<SaveObject> copies;
+            for (int sector = 1; sector <= 30; sector++)
+                for (const auto& list : s.Sector(sector).lists)
+                    for (const SaveObject& o : list)
+                        if (ListSide(o.list) == 1 && o.list / 2 == 0 && std::find(layout.mirror.begin(), layout.mirror.end(), o.Type()) != layout.mirror.end())
+                            copies.push_back(o);
+            for (const SaveObject& o : copies)
+            {
+                SaveObject c = Moved(o, home, 0, 0, 0, used);
+                c.SetPosition(tx, ty);
+                c.Freshen([](int) { return 0; });   // (no place on the battle map yet: the deployment finds one)
+                s.Sector(home).lists[size_t(c.list)].push_back(std::move(c));
+            }
+        }
         s.Sector(home).SetOwner(playerCode);
         s.warMap[2] = uint32_t(home);       // the view starts on the player's home
         return s;

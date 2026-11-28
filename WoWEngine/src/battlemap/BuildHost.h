@@ -46,5 +46,8 @@ namespace wow
         virtual std::optional<BattleGroup> PlaceConstruction(int type, int x0, int y0, int x1, int y1) = 0;
         // a construction's state (+0x7C / +0x78) now, for the battle's object of it
         virtual float Progress(int ref) const = 0;
+        // (update 265) a builder's war map object gone in the battle (0x42A0B0 -> 0x460140, its queue cancelled):
+        // the objects of the constructions it had under way, which the battle map kills (0x462120: 0x80A0)
+        virtual std::vector<int> BuilderLost(int ref) = 0;
     };
 }

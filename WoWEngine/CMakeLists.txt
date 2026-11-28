@@ -209,6 +209,13 @@ if(TARGET SDL3::SDL3)
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources/TEXT-${text_language}.ojd $<TARGET_FILE_DIR:WoWLauncher>/resources/TEXT-${text_language}.ojd)
             endif()
         endforeach()
+        # (update 265) WoWRevived's playlist and English manual, which the install puts in the main folder
+        foreach(extra HumanMartianPlaylist.m3u8 wotw-man-english-v1.pdf)
+            if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/resources/${extra})
+                add_custom_command(TARGET WoWLauncher POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources/${extra} $<TARGET_FILE_DIR:WoWLauncher>/resources/${extra})
+            endif()
+        endforeach()
         # Discord's rich presence (src/platform/Discord.cpp): discord-rpc.dll and its licence next to the exe. The
         # DLL has to be built for the same processor as the engine (x64 for the x64 presets), or it won't load.
         if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/resources/discord-rpc.dll)

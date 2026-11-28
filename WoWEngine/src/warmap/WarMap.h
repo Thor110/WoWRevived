@@ -470,6 +470,7 @@ namespace wow
         BattleGroup GroupOf(int ref, int previous) const;     // one object's battle group (BattleGroups)
         std::string BuildWindowTip(int hit) const;
         void CancelAll(int ref);                  // 0x460140, BuildList::CancelAll
+        std::vector<int> BuilderLost(int ref) override;
         bool Working(int ref) const;              // 0x42A410: its factory has something queued
         std::vector<int> BuildOptions(int ref) const; // 0x45F970
         int RefOfId(uint32_t id) const;

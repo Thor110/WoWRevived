@@ -419,6 +419,30 @@ namespace wow
         }
     }
 
+    // (update 265, a tester's report) a constructor's last unit destroyed in a battle: in the game its war map object
+    // goes at once (0x495BE8 -> 0x42A0B0), which cancels its queue (0x460140); a construction under way is sent
+    // 0x80A0 on the battle map (0x462120 there) and dies. The engine takes the war map's objects out after the
+    // battle, so the queue is cancelled here, and the constructions handed back for the battle map to kill.
+    std::vector<int> WarMap::BuilderLost(int ref)
+    {
+        std::vector<int> kill;
+        auto it = factories.find(ref);
+        if (it == factories.end()) return kill;
+        const int k = CounterOf(ref);
+        if (k < 0) return kill;
+        auto unit = unitData.find(counters[size_t(k)].type);
+        if (unit == unitData.end() || unit->second.category != 1) return kill;
+        while (!factories[ref].queue.entries.empty())
+        {
+            const uint32_t target = factories[ref].queue.entries.front().target;
+            if (target != 0xDEADDEAD)
+                if (const int t = RefOfId(target); t >= 0) kill.push_back(t);
+            RemoveEntry(ref, 0);
+        }
+        if (buildWindow && buildWindow->ref == ref) buildWindow.reset();
+        return kill;
+    }
+
     // 0x4605A0, "promote" (a queue slot's 0x2FC button): the entry to the front, the factory made busy
     void WarMap::PromoteEntry(int ref, int index)
     {

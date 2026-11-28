@@ -3,6 +3,7 @@
 // docs/WARMAP.md "The Build List window".
 #include "warmap/WarMap.h"
 
+#include <algorithm>
 #include <cstdio>
 
 namespace wow
@@ -24,9 +25,11 @@ namespace wow
         const bool human = res.Human();
         // [BuildList] Top is for a 640 x 480 screen: WoWRevived's launcher wrote (height - 340) / 2 for larger ones
         // (WoWLauncher Form1.cs), 70 at 480 rows. A value that doesn't fit 480 rows is taken as one of those and read
-        // as 70; in a battle the list is then centred as WoWRevived had it, Top's offset kept (a tester, update 253)
+        // as 70; the list is then centred as WoWRevived had it, Top's offset kept: in a battle (a tester, update 253)
+        // and on the war map, in the panels' space (the owner, update 265)
         const int baseTop = buildTop + 340 > 480 ? 70 : buildTop;
-        const int left = buildLeft, top = baseTop + (buildWindow->battle ? (buildWindow->height - 480) / 2 : 0);
+        const int rows = buildWindow->battle ? buildWindow->height : std::max(480, hudH);
+        const int left = buildLeft, top = baseTop + (rows - 480) / 2;
         // the list panel (0x461500) at Left, Top: the backdrop, its width less 42 (Human) or 8, and its two
         // scroll buttons
         Rect back = SpriteRect(ListBack, left, top);

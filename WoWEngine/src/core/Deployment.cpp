@@ -177,6 +177,10 @@ namespace wow
                 const bool boat = moveClass >= 5 && moveClass <= 6;
                 x = boat ? e.boatX : e.x;
                 y = boat ? e.boatY : e.y;
+                // a pair with a point only for the other kind: the game gives (0, 0), the map's top left; here the
+                // other kind's point, so the units at least come in from the side they came from (the placing's
+                // rings then find them ground, or water, nearby)
+                if (x == 0 && y == 0) { x = boat ? e.x : e.boatX; y = boat ? e.y : e.boatY; }
                 return;
             }
     }

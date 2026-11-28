@@ -296,20 +296,24 @@ namespace wow
                         if (research.PageVisible(g) && pages[size_t(g)].height > 0) drawPage(g);
             }
         }
+        // the Human overlays over the tree (0x86 HU_RSCHT, 0x87 RES_LAMP, 0x88 RES_WIRE). The game draws them after
+        // its children (0x45E930); the page and proposals over them is how it looks in the game (the owner, update
+        // 265: the lamp's cord had been drawn over the papers' text)
+        if (human)
+            for (int overlay : { 0x86, 0x87, 0x88 }) canvas.DrawSprite(overlay, 0, 0, 0);
         // the page's detail
         const int g = research.ShownPage();
         if (g >= 0 && size_t(g) < pages.size())
         {
             auto info = pageInfo.find(pages[size_t(g)].number);
-            // 0x45F690: res_det, the picture, then its children (the texts); the proposals list's sprite
+            // 0x45F690: res_det, the picture, then its children (the texts); the proposals list's sprite. The
+            // Martians' picture and proposals are see-through, as the game shows them (the owner, update 265)
+            const Canvas::Blend look = human ? Canvas::Blend::Opaque : Canvas::Blend::Translucent;
             if (human) canvas.DrawSprite(0x8C, 0, blueprint.x, blueprint.y);
-            if (info != pageInfo.end() && info->second.picture) canvas.DrawSprite(info->second.picture, 0, blueprint.x, blueprint.y);
-            if (proposals.w) canvas.DrawSprite(0x90, 0, proposals.x, proposals.y);
+            if (info != pageInfo.end() && info->second.picture) canvas.DrawSprite(info->second.picture, 0, blueprint.x, blueprint.y, 0, look);
+            if (proposals.w) canvas.DrawSprite(0x90, 0, proposals.x, proposals.y, 0, look);
             for (const Line& l : detail) canvas.DrawString(TextFont, l.text, { l.x, l.y, 0, 0 }, 0, l.level);
         }
-        // the Human overlays over the tree, then the exit button
-        if (human)
-            for (int overlay : { 0x86, 0x87, 0x88 }) canvas.DrawSprite(overlay, 0, 0, 0);
         canvas.DrawSprite(ExitSprite, exitHeld ? 1 : 0, exitRect.x, exitRect.y);
     }
 

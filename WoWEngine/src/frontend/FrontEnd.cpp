@@ -600,7 +600,7 @@ namespace wow
         // every ten seconds or at a track's end), and a battle map's stop coming once the setting is off (0x4862B0).
         m->AddCheck(0x441, ini.GetBool(SoundSection, "CD", true), [this](Button& b) {
             ini.SetBool(SoundSection, "CD", b.value != 0);
-            if (!b.value) music.Stop();
+            if (!b.value) { music.Stop(); ResetCdPosition(); }
             if (battleMap || inBattle) battleMusicTimer = 1;
             else if (ActiveWarMap()) musicTimer = 1;
         });
@@ -1083,6 +1083,7 @@ namespace wow
         warMap.reset();
         StopWarMapSounds();
         music.Stop();
+        ResetCdPosition();      // (the war map set up, 0x4182DE / 0x4182E3)
         musicTimer = 5 * 30;
         std::map<int, ObjOjd::UnitData> units;
         std::map<int, ObjOjd::ArrowType> arrows;
@@ -1292,12 +1293,12 @@ namespace wow
         m->AddButton(Commands::Back, 0x405);
         m->FocusLast();
         // (in the war map menu's order, update 263, the owner; Sound Control a button like the rest, not the
-        // bottom one the game had)
+        // bottom one the game had; the last, Modern Gameplay, on the bottom button's rounded plate instead, so the
+        // menu ends as the game's did, update 265, the owner)
         m->AddButton(CmdCriticalEvents, 0x412);
         m->AddButton(CmdSoundControl, 0x411);
         m->AddButtonText(CmdModernOptions, res.String(enginetext::ModernOptions));
-        m->AddButtonText(CmdModernGameplay, res.String(enginetext::ModernGameplay));
-        m->Centre();
+        m->AddBottomButtonText(CmdModernGameplay, res.String(enginetext::ModernGameplay));
         m->SetPrevious(BattleMap::Id);
         return m;
     }
@@ -1531,7 +1532,7 @@ namespace wow
             {
                 if (WarMap* map = ActiveWarMap(); map && map->LocalResearch()) map->LocalResearch()->ShowPage(-1);
                 if (screen && screen->Id() == ResearchScreen::Id)
-                    if (int h = static_cast<ResearchScreen*>(screen.get())->Speech()) sound.FadeOut(h, 30); // 0x45E4A0
+                    if (int id = static_cast<ResearchScreen*>(screen.get())->SpeechId()) sound.FadeOutId(id, 30); // 0x45E4A0
                 sound.Play(0x19D);
                 Show(std::move(warMap));
             }
@@ -1620,6 +1621,7 @@ namespace wow
                 // (*provisional*: the battle's track is stopped here; where the game stops the CD on the way out
                 // isn't traced. The war map's music comes back 30 ticks after 0x8017.)
                 if (battleMusicTimer >= 0) music.Stop();
+                ResetCdPosition();      // (the battle map going, 0x484C67 / 0x484C6C)
                 battleMusicTimer = -1;
                 briefingSound = 0;
                 map->FightBattle(lost ? &*lost : nullptr, lost ? &retreated : nullptr, controlLevel, controlByPlayer, forfeit);
@@ -1645,6 +1647,10 @@ namespace wow
                 WarMap* map = static_cast<WarMap*>(warMap.get());
                 Show(std::move(warMap));
                 map->ReturnFromBattle();
+                // the campaign saved in its slot with the battle settled, as the game does on the way back (the
+                // owner, update 265: so a crash or a quit loses no battle; *provisional*: where the game writes it
+                // isn't traced, 0x4042D0's only caller being 0x80B4)
+                SaveCampaign();
             }
             break;
         case 0x79:
@@ -1683,8 +1689,9 @@ namespace wow
             // on the war map Escape opens its menu, and in that menu it (and Resume Campaign, which sends the same
             // 0x8123) goes back to the map
             if (current == WarMap::Id) { Execute({ CmdWarMapMenu, 0 }); break; }
-            if ((current == CmdWarMapMenu || current == WarMap::ResearchCommand) && warMap) { Show(std::move(warMap)); break; }
-            if (current == BattleMap::MenuCommand && battleMap) { Show(std::move(battleMap)); break; }
+            // (and the 0x8123 runs the map's music step at once, 0x41A05A / 0x48513B: a track playing is stopped)
+            if ((current == CmdWarMapMenu || current == WarMap::ResearchCommand) && warMap) { Show(std::move(warMap)); if (!inBattle) MusicStep(); break; }
+            if (current == BattleMap::MenuCommand && battleMap) { Show(std::move(battleMap)); BattleMusicStep(); break; }
             // Escape goes back to the menu this one was opened from; the main menu itself ignores it, and so does
             // the Insert CD menu (0x408AB0)
             if (current != CmdMainMenu && current != CmdInsertCd) Execute({ screen->Previous() ? screen->Previous() : CmdMainMenu, 0 });
@@ -1789,11 +1796,13 @@ namespace wow
         if (screen->Id() == ResearchScreen::Id)
         {
             auto* rs = static_cast<ResearchScreen*>(screen.get());
-            if (rs->TakeSpeechFade() && rs->Speech()) { sound.FadeOut(rs->Speech(), 30); rs->SetSpeech(0); }
+            // (the speech is queued speech, opcode 6: it has no handle, so it's stopped by its id, update 265)
+            if (rs->TakeSpeechFade() && rs->SpeechId()) { sound.FadeOutId(rs->SpeechId(), 30); rs->SetSpeech(0); rs->SetSpeechId(0); }
             if (int id = rs->TakeSpeechStart())
             {
-                if (rs->Speech()) sound.FadeOut(rs->Speech(), 30);
+                if (rs->SpeechId()) sound.FadeOutId(rs->SpeechId(), 30);
                 rs->SetSpeech(sound.Play(id));
+                rs->SetSpeechId(id);
             }
         }
         if (battleMusicTimer > 0 && screen->Id() == BattleMap::Id && --battleMusicTimer == 0) BattleMusicStep();
@@ -2127,19 +2136,22 @@ namespace wow
         Crumb("battle map: the music step (a track stopped or started)");
         battleMusicTimer = -1;
         if (!ini.GetBool(SoundSection, "CD", true)) return;
-        if (music.Playing() && !music.Finished()) { music.Stop(); battleMusicTimer = TenSeconds; return; }
+        // (the drive's position not at a track's start: a track playing, or one stopped part way, cdHeld)
+        if ((music.Playing() && !music.Finished()) || cdHeld) { music.Stop(); cdHeld = true; battleMusicTimer = TenSeconds; return; }
         static constexpr int Tracks[2] = { 4, 5 };
         battleTrack = (battleTrack + 1) % 2;
         const int track = Tracks[battleTrack];
         char name[64];
         std::snprintf(name, sizeof(name), "Music-%s\\%02d Track%02d.wav", res.Human() ? "Human" : "Martian", track, track);
         auto path = files.Resolve(name);
-        battleMusicTimer = TenSeconds;
+        // (a track of 10 seconds or less posts no step again, 0x4862..., as the war map's 0x41B11A)
+        battleMusicTimer = -1;
         if (path && music.Play(*path) && music.LengthMs() / 1000 > 10)
         {
             music.SetTrack(track);
             SDL_Log("Playing track %d for %u seconds", track, unsigned(music.LengthMs() / 1000));
-            battleMusicTimer = int(music.LengthMs() / 1000) * 30;
+            // the track's length as the drive gives it, minutes and seconds + 1 (0x413DF0), in updates
+            battleMusicTimer = (int(music.LengthMs() / 1000) + 1) * 30;
         }
     }
 
@@ -2185,7 +2197,8 @@ namespace wow
         if (ini.GetBool(SoundSection, "CD", true))
         {
             // still playing (the CD player's music, say): stop it and look again in 10 seconds
-            if (music.Playing() && !music.Finished()) { music.Stop(); musicTimer = TenSeconds; return; }
+            // (the drive's position not at a track's start: a track playing, or one stopped part way, cdHeld)
+            if ((music.Playing() && !music.Finished()) || cdHeld) { music.Stop(); cdHeld = true; musicTimer = TenSeconds; return; }
             static constexpr int Tracks[2] = { 2, 3 };  // ArgList 0x4B9DD8
             musicTrack = (musicTrack + 1) % 2;
             int track = Tracks[musicTrack];
@@ -2196,10 +2209,10 @@ namespace wow
             {
                 music.SetTrack(track);
                 SDL_Log("Playing track %d for %u seconds", track, unsigned(music.LengthMs() / 1000));
-                musicTimer = int(music.LengthMs() / 1000) * 30;
+                musicTimer = (int(music.LengthMs() / 1000) + 1) * 30;   // (0x413DF0's minutes and seconds + 1)
                 return;
             }
-            musicTimer = TenSeconds;
+            musicTimer = -1;    // (10 seconds or less, or none: no step is posted again, 0x41B11A)
             return;
         }
         warAmbient = sound.Play(0xFD + random::Rand() % 3);
@@ -2216,6 +2229,7 @@ namespace wow
         sound.FadeOutAll(30);
         warAmbient = clockSound = 0;
         music.Stop();
+        ResetCdPosition();      // (0x41B269 / 0x41B26E)
         inBattle = true;
         briefingSound = sound.Play(0x18E);
         sound.FadeIn(briefingSound, 60);
@@ -2543,7 +2557,9 @@ namespace wow
 
     void FrontEnd::OnKey(int key)
     {
-        if (key >= int(SDLK_A) && key <= int(SDLK_Z))
+        // (0x401000 isn't called in a network game, byte_4D256C: no cheats there; MODERN: networkGame, for when
+        // network play is in)
+        if (key >= int(SDLK_A) && key <= int(SDLK_Z) && !networkGame)
         {
             const char letter = char('a' + (key - int(SDLK_A)));
             if (cheatCode == 0)
@@ -2607,10 +2623,24 @@ namespace wow
         case 6: if (map) if (Research* r = map->LocalResearch()) r->CompleteAll(); break;   // 0x4013A0: 0x458460
         case 7:     // 0x401440 / 0x4014F0: 0x806C / 0x806D to the sector (dword_4D2550), with a war map
         case 8:
+        {
+            // 0x43B15C: punyhumans (0x806C) takes the Humans out and atchooo (0x806D) the Martians, whichever side
+            // the player is (the player's +0x24 against 0 / 1 picks its own lists or the other side's). (Update 265,
+            // a tester's report: the engine had taken atchooo as the player's own side, so it killed the player.)
+            // MODERN (the civil wars, both sides one faction): the cheat that names the war's faction takes the
+            // other side out; the other does nothing.
+            const bool humans = code == 7;
+            bool own = humans == res.Human();
+            if (IsCivilWar(campaign))
+            {
+                if (humans != (campaign == Campaign::HumanCivilWar)) break;
+                own = false;
+            }
             if (map)
                 for (Screen* sc : { battleMap.get(), screen.get() })
-                    if (auto* bm = dynamic_cast<BattleMap*>(sc)) { bm->CheatRemoveSide(code == 8); break; }
+                    if (auto* bm = dynamic_cast<BattleMap*>(sc)) { bm->CheatRemoveSide(own); break; }
             break;
+        }
         }
     }
 

@@ -127,7 +127,7 @@ screen is scaled down to fit.
   the first and, past the end, before the last (0x4313F0). Keys (0x431730): Up the control before, Down and Enter
   the one after, Delete the character after the caret, Backspace the one before, Home, End, Left and Right a
   character or with Ctrl a word.
-- Setting up the campaign (0x404660) writes the side's start file to the slot under the new name; loading a save (0x80B3) and starting the war map (0x8A) play the slot's file, and leaving the war map saves it (see WARMAP.md, Saving). Network games (0xA5, 0xAB) show a "not rebuilt yet" placeholder.
+- Setting up the campaign (0x404660) writes the side's start file to the slot under the new name; loading a save (0x80B3) and starting the war map (0x8A) play the slot's file, and leaving the war map saves it (see WARMAP.md, Saving), as does coming back to the war map from a battle (update 265, *provisional*: where the game does it isn't traced). Network games (0xA5, 0xAB) show a "not rebuilt yet" placeholder.
 - "Skip" (`[Main] Skip=1`, byte_4D1361): WGame::Start (0x402A30) goes straight to Start New Campaign instead of the legal screens and the movies.
 - There's no network play yet, so Select Service Provider lists no providers and the session menu always says it's waiting. The Network Host and Waiting for Player menus can be opened with `--open 0x9F` and `--open 0xA1`.
 
@@ -183,9 +183,12 @@ The menus use cursor 0; the text field (0x431500) asks for 0x11. Each side has i
   - `curtains`: byte_4D1279, the `[Debug] "Mat"` flag: `[Game] "Time Of Day"` lights the battle map (in, 179);
     enemy units and sectors can be picked and the reinforcement points made with no battle on (PLAN.md 4.9);
   - `icomeback`: the local player's research all done (0x458460 on dword_4E9B88);
-  - `punyhumans` / `atchooo`, with a war map: 0x806C / 0x806D to the sector (0x43B15C), the other side's (0x806C) or
-    the player's own (0x806D) units, constructions and resources each taking every battle object out (0x421F50 ->
-    0x47D4E0, vt+0x78).
+  - `punyhumans` / `atchooo`, with a war map: 0x806C / 0x806D to the sector (0x43B15C), the Humans' (0x806C) or the
+    Martians' (0x806D) units, constructions and resources each taking every battle object out (0x421F50 ->
+    0x47D4E0, vt+0x78), whichever side the player is (the player's +0x24, 0 Human / 1 Martian, picks its own lists or
+    the other side's). Until update 265 the engine took them as the other side's and the player's own, so atchooo
+    killed a Human player's units (a tester's report). In a civil war (MODERN) the one naming the war's faction takes
+    the other side out, the other does nothing.
 
   ResetCheats (0x4011D0, as a war map is made or loaded) clears them all, byte_4BAD38 back to 1.
 - **Tooltips.** Done for the front end's controls (the CD Player's transport buttons 0x4BC / 0x4B9 / 0x4BA / 0x4BD /

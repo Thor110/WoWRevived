@@ -311,7 +311,7 @@ int main(int argc, char** argv)
             break;
         }
     }
-    if (screenshot.empty() && Installed(state.target)) CopyLanguageText(state.target);
+    if (screenshot.empty() && Installed(state.target)) { CopyExtras(state.target); CopyLanguageText(state.target); }
     // (update 248) the install's WoWRevived.ini documented: each setting's description and default, once
     if (screenshot.empty() && Installed(state.target)) DocumentSettings(state.target);
     state.phase = !installScreen && Installed(state.target) ? Phase::Ready : Phase::Waiting;

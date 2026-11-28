@@ -45,6 +45,7 @@ namespace wow
         std::string WrapBlock(std::string_view text) const;
         void AddTextBlock(std::string wrapped);
         void AddBottomButton(int command, int textId); // also centres the menu
+        void AddBottomButtonText(int command, std::string text);   // the same with a caption of the engine's own
         // A text field (0x40A8C0) holding up to maxLength characters; Enter in it sends command. changed is
         // called with the text after every change.
         void AddTextEntry(std::string text, int maxLength, int command, std::function<void(const std::string&)> changed);

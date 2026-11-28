@@ -354,7 +354,17 @@ namespace wow
         if (u.fogged) return;   // 0x48AEF0: no smoke while vt+0x9C (in the fog)
         const int max = MaxHealth(u.type, u.players);
         if (max == 0) return;
-        const float fraction = float(u.health) / float(max);
+        float fraction = float(u.health) / float(max);
+        // MODERN FIX (update 265, the owner: a building going up was on fire): a construction starts with its
+        // progress's share of its health (0x48E9D0), which the fraction took for heavy damage; here the health is
+        // set against what's built so far, so only real damage smokes. *Provisional*: whether the game's buildings
+        // answer vt+0xF4 this way isn't traced.
+        if (IsBuilding(u))
+        {
+            const float built = Progress(u);
+            if (double(built) <= 0.0) return;
+            if (double(built) <= 0.9999) fraction = std::min(1.0f, float(u.health) / std::max(1.0f, float(max) * built));
+        }
         int level = int(double(fraction) * -5.0 + double(5.0f));
         if (level <= 0) return;
         level = std::min(level, 4);

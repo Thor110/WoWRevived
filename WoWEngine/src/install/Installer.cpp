@@ -78,6 +78,10 @@ namespace wow::install
             ownSide = true;
             return std::string(side == Side::Human ? "FMV-Human/" : "FMV-Martian/") + upper;
         }
+        // (update 265, the owner) the manual the French and Italian Human discs have, in the main folder beside
+        // TEXT.ojd and named for its language
+        if (lower == "extras/manual/wotw-man-f-v1.pdf") return "wotw-man-french-v1.pdf";
+        if (lower == "extras/manual/wotw-man-i-v1.pdf") return "wotw-man-italian-v1.pdf";
         return discPath;
     }
 
@@ -214,6 +218,8 @@ namespace wow::install
             if (!removeTextFolder || textFolder.empty()) return;
             std::error_code ec;
             for (const char* code : { "EN", "FR", "DE", "IT", "ES" }) fs::remove(textFolder / (std::string("TEXT-") + code + ".ojd"), ec);
+            // (and the playlist and English manual, moved to the main folder or not wanted: CopyExtras)
+            for (const char* name : { "HumanMartianPlaylist.m3u8", "wotw-man-english-v1.pdf" }) fs::remove(textFolder / name, ec);
             if (fs::is_empty(textFolder, ec)) fs::remove(textFolder, ec);
             textFolder.clear();
         }
@@ -223,6 +229,25 @@ namespace wow::install
     {
         textFolder = std::move(folder);
         removeTextFolder = removeAfter;
+    }
+
+    // (update 265, the owner) WoWRevived's music playlist into the main folder, and its English manual for an
+    // English install (the French and Italian discs bring their own, TargetPath), from the folder the updated texts
+    // come from; the release's copies go with that folder afterwards (RemoveTextFolder)
+    void CopyExtras(const fs::path& target)
+    {
+        if (textFolder.empty()) return;
+        IniStore ini;
+        ini.Load((target / IniStore::FileName()).string());
+        std::string language;
+        ini.Get("WoW Engine", "Language", language);
+        std::error_code ec;
+        auto copy = [&](const char* name) {
+            const fs::path from = textFolder / name;
+            if (fs::is_regular_file(from, ec)) fs::copy_file(from, target / name, fs::copy_options::overwrite_existing, ec);
+        };
+        copy("HumanMartianPlaylist.m3u8");
+        if (Lower(language).rfind("en", 0) == 0) copy("wotw-man-english-v1.pdf");
     }
 
     bool DocumentSettings(const fs::path& target)
@@ -300,6 +325,7 @@ namespace wow::install
 
     void Finish(const InstallOptions& options, InstallResult& result)
     {
+        CopyExtras(options.target);         // (before the text, which takes the folder away when it's done)
         CopyLanguageText(options.target);
         DocumentSettings(options.target);   // (update 248) every setting's description and default in WoWRevived.ini
         wow::GameFiles files(options.target);

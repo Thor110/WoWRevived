@@ -3243,6 +3243,9 @@ namespace wow
             // a counter of the player's takes the mouse (0x42BEB0 0x201); otherwise the band starts (0x201); either
             // way time stops (0x41A6C0(0))
             SetTimeRunning(false);
+            // the Build List closes with a press on the map off it, as the battle map's does when its building
+            // is no longer selected (the owner, update 265; the game's stays open until its background is clicked)
+            if (buildWindow && !buildWindow->battle) buildWindow.reset();
             leftHeld = true;
             rubberBand = false;
             dragX = x; dragY = y;

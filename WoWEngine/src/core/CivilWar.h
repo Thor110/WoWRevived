@@ -5,7 +5,8 @@
 // The layout is a first draft, to be evened out (the owner, update 236):
 //   Human Civil War, from Human.000: the Martians taken out; the Human objects and sectors in Scotland
 //     (CivilWarScotland) stay the player's, every other one goes to the other side (London's); the player gets a
-//     copy of London's objects (its HQ) in the Grampian Mountains (3), where the Martians were.
+//     copy of London's objects (its HQ) in the Grampian Mountains (3), where the Martians were, and a copy there of
+//     each Construction Vehicle the other side has (mirror, update 265).
 //   Martian Civil War, from Martian.000 (after the Humans have lost): the Humans taken out; the Martians' base in
 //     the Grampian Mountains becomes the other side's, and the player gets a copy of it in London (30). Every other
 //     sector is no one's.
@@ -46,6 +47,10 @@ namespace wow
         // the player's home is given a copy of this sector's objects in the start file (0: none), their middle put
         // at copyX, copyY on the war map
         int copyFrom = 0, copyX = 0, copyY = 0;
+        // MODERN (update 265, the owner): the unit types the player's home is given a copy of for each one the other
+        // side starts with, at copyX, copyY. The draft's Human Civil War gives its Construction Vehicles (28): the
+        // Human start file keeps its two in sectors 12 and 24, both the other side's, so the player had none.
+        std::vector<int> mirror;
 
         To Where(int sector) const;
         // the draft (update 236) for a civil war

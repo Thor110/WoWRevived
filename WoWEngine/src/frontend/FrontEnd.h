@@ -193,6 +193,7 @@ namespace wow
         std::string campaignName;  // byte_4D1448: its name, up to 36 characters
         int insertCdNext = 0;      // the command the Insert CD menu sends once the disc is there
         bool networkLoad = false;  // byte_4D256C: the load menu was opened for a network game
+        bool networkGame = false;  // a network game being played: no cheats (0x401000); none yet, network play isn't in
 
         Resources& res;
         FrontEndSettings settings;
@@ -266,6 +267,16 @@ namespace wow
         // the battle map's music (0x4861E0, its 0x813C): CD tracks 4 and 5 in turn (dword_4D0118), from 4
         int battleMusicTimer = -1; // ticks until its next step, -1 off the battle map
         int battleTrack = 1;       // dword_4D0124
+        // The CD's position left part way through a track (update 265). The steps (0x41B070, 0x4861E0) ask the
+        // drive for its position (0x413EB0: MCI_STATUS_POSITION, its minutes and seconds) and, with it not at a
+        // track's start, stop it (0x412960: MCI_STOP, no seek) and look again in 10 seconds. A stopped track stays
+        // where it stopped, so from then on every step stops it again and nothing plays until the position is
+        // reset (0x412C00 / 0x412940, as the briefing starts, as a battle map or the war map is set up or goes).
+        // The steps come early enough for that to be usual: a track's step is its length + 1 seconds of updates
+        // (0x413DF0), and the updates are 1000 / 30 = 33 ms, so 30.3 a second; and a resume (0x8123) runs the
+        // step at once, stopping the track. The game's music plays a track or so and then holds off.
+        bool cdHeld = false;
+        void ResetCdPosition() { cdHeld = false; }
         void BattleMusicStep();
         int warAmbient = 0;        // world +0x12C
         int infoSpeech = 0;         // the war map's information page's speech

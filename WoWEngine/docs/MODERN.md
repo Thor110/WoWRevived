@@ -702,7 +702,9 @@ Two new campaigns, each one faction against itself (PLAN.md F1).
   player starting from the opposite side to the regular game's. *A first draft, to be evened out with the owner*:
   - Human Civil War, from Human.000: the Martians taken out; the Human objects and sectors in Scotland (sectors 1-4
     and 6-9) stay the player's, every other one goes to the other side (London's: 17 sectors to the player's 3);
-    the player gets a copy of London's objects in the Grampian Mountains (3).
+    the player gets a copy of London's objects in the Grampian Mountains (3), and a Construction Vehicle (28)
+    there for each the other side starts with (update 265: Human.000 keeps its two in the Lake District and
+    Oxford, both London's, so the Rebels had none; `mirror` in CivilWar.txt).
   - Martian Civil War, from Martian.000: the Humans taken out; the Martians' base in the Grampians becomes the
     other side's, and the player gets a copy of it in London. Every other sector is no one's.
   - A copied HQ takes its new sector's form (London's Command Post 278 is a 58 elsewhere, the Grampians'
