@@ -1,5 +1,5 @@
 # The War in the Air.txt: a scenario from the WotW Companion's collection
 name = The War in the Air
-author = Dean Beedell (WotW Companion)
+author = Dean Beedell (yereverluvinunclebert)
 kind = human
 start = The War in the Air.wow

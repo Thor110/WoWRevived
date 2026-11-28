@@ -1,5 +1,5 @@
 # The Empire Fights Back.txt: a scenario from the WotW Companion's collection
 name = The Empire Fights Back
-author = WotW Companion
+author = yereverluvinunclebert
 kind = martian
 start = The Empire Fights Back.wow

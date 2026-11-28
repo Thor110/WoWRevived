@@ -1,5 +1,5 @@
 # Secondary Line Holds.txt: a scenario from the WotW Companion's collection
 name = Secondary Line Holds
-author = WotW Companion
+author = yereverluvinunclebert
 kind = human
 start = Secondary Line Holds.wow

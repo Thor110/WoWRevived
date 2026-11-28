@@ -61,8 +61,8 @@ folder into the main folder, `tools/make_release.py`):
 - **Advance Along the Coast**, **Dead London**, **Edinburgh Holds**, **Front Line Overrun**, **Good Defensive
   Position**, **Inland Advance**, **Last Ditch Defence**, **Secondary Line Holds**, **Secondary Line Overrun**, **The
   War in the Air**, **US to the Rescue** (Human), **Martian Onslaught Stalls** and **The Empire Fights Back**
-  (Martian): the WotW Companion's scenarios (Dean Beedell's among them), made custom campaigns in update 270, three
-  with a narrated briefing.
+  (Martian): yereverluvinunclebert's scenarios (Dean Beedell; from the WotW Companion), made custom campaigns in
+  update 270, three with a narrated briefing.
 - **Initial Incompetence** (Martian): Z-Fighter's campaign (update 270).
 
 Examples of the definitions:

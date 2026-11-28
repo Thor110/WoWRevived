@@ -1,5 +1,5 @@
 # Secondary Line Overrun.txt: a scenario from the WotW Companion's collection
 name = Secondary Line Overrun
-author = WotW Companion
+author = yereverluvinunclebert
 kind = human
 start = Secondary Line Overrun.wow

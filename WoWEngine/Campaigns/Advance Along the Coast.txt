@@ -1,5 +1,5 @@
 # Advance Along the Coast.txt: a scenario from the WotW Companion's collection
 name = Advance Along the Coast
-author = WotW Companion
+author = yereverluvinunclebert
 kind = human
 start = Advance Along the Coast.wow
