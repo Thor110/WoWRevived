@@ -17,6 +17,7 @@ code each is to be marked `MODERN FIX`. A parity pass must leave them alone. The
 | Volume sliders saved | The Sound Control sliders never write the registry, so the volumes are lost | **In** (marked, 191): Master as it moves, Ambient and Speech as the menu closes, written to `WoWRevived.ini` |
 | Music toggle | The Sound Control check box only saves the setting; the music steps read it when they next come round | **In** (191): off stops the track at once, and either way the music step of the map behind the menu is brought forward |
 | Master volume on the music | Master doesn't reach the music's playback | **In** (marked, 191): Master scales the music |
+| CD Music Volume | No control of the CD music's volume | **In** (268): Sound Control's slider under Master, `[Sound\Volume]` "CD Music"; the music plays at Master x it |
 | Resolution applied at once | The slider only takes effect after a restart | **In** (192-195): the menus, the other 640 x 480 screens and both maps take the view size at once; the movies are scaled up. See "Resolution" below |
 | Desktop resolution on the first start | (no such thing) | **In** (192): with no `[Screen] Size` yet, the view size is worked out from the desktop's and kept; afterwards the player's choice stands |
 | No 8 / 16-bit colour choice | Two radios in Display Settings; 8-bit doesn't work on modern systems | **In** (191): not offered; `[Modern]` "Original Display Settings" = 1 puts them and the lights toggle back |

@@ -767,4 +767,6 @@ Thanks to Sulus for posting a video of the violent geometry tearing on the airsh
 
 Thanks to FunkyFr3sh for cnc-ddraw, which provides the DirectDraw translation layer for modern systems. See ddraw-license.txt for the full MIT license.
 
+Thanks to Izzat for reminding me that "CD Music Volume" should be its own slider in the sound options menu.
+
 Thanks to the Discord community for supporting the project and helping out with testing.

@@ -157,7 +157,9 @@ namespace wow
             innerAmbient.top = int(innerAmbient.top * f); outerAmbient.bottom = int(outerAmbient.bottom * f);
         }
         sound.SetBorders(inner, outer, innerAmbient, outerAmbient);
-        music.SetVolume(master);
+        // MODERN (update 268, the owner): and under its own [Sound\Volume] "CD Music", Sound Control's slider; the
+        // game had no control of the CD's volume
+        music.SetVolume(master * std::clamp(ini.GetFloat(SoundSection, "CD Music", 1.0f), 0.0f, 1.0f));
     }
 
     void FrontEnd::StartAmbient(bool restart)
@@ -592,6 +594,7 @@ namespace wow
         };
         pendingAmbient = pendingSpeech = -1.0f;
         volume(0x43E, "Master", nullptr);
+        volume(enginetext::CdMusicVolume, "CD Music", nullptr);    // MODERN (update 268): at once, as Master
         volume(0x43F, "Ambient", &pendingAmbient);
         volume(0x440, "Speech", &pendingSpeech);
         // MODERN FIX: the in-game music check box acts at once. Off, the track stops; either way the music step of

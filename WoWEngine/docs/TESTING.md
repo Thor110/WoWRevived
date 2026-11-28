@@ -56,6 +56,11 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## CD Music Volume (update 268)
+
+- Sound Control's new slider under Master: the music (war map, battle map, menus, the CD player) quieter and louder
+  as it moves, at once; Master still over it; kept in the ini; its name in each language's install.
+
 ## Fences under construction (update 267)
 
 - A fence placed on the battle map (and one loaded unfinished): the first post standing and a flag at every other

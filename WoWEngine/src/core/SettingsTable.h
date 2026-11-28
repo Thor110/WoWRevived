@@ -107,6 +107,7 @@ namespace wow::settingstable
         { "Options", "Show lights", "1", "" },
         // [Sound\Volume]
         { "Sound\\Volume", "Master", "1.000000", "" },
+        { "Sound\\Volume", "CD Music", "1.000000", "The CD music's volume, under Master (the engine's own, update 268: the game had no control for it)." },
         { "Sound\\Volume", "Ambient", "1.000000", "" },
         { "Sound\\Volume", "Engine", "1.000000", "" },
         { "Sound\\Volume", "Explosions", "1.000000", "" },
