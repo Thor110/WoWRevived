@@ -2250,7 +2250,7 @@ namespace wow
     }
 
     void WarMap::FightBattle(const std::vector<int>* lost, const std::vector<std::pair<int, int>>* retreated,
-                             int controlLevel, bool controlByPlayer, bool forfeit)
+                             int controlLevel, bool controlByPlayer, bool forfeit, bool resolve)
     {
         if (forfeit) forfeited = true;
         for (auto& r : research) if (r) r->UpdateTriggers(encountered); // 0x41A094, on the way to the battle map
@@ -2350,6 +2350,24 @@ namespace wow
             int left[2] = { 0, 0 };
             for (const Counter& k : counters)
                 if (k.sector == s && !k.Travelling() && k.kind <= 1) left[k.players ? 0 : 1] += k.count;
+            // (MODERN, update 270, Auto Resolve Battle) what's left of both sides settled as an unfought battle is
+            if (resolve && left[0] && left[1])
+            {
+                int menLeft[2] = { 0, 0 }, unitsLeft[2] = { 0, 0 }, facilitiesLeft[2] = { 0, 0 };
+                for (const Counter& k : counters)
+                {
+                    if (k.sector != s || k.Travelling() || k.kind > 1) continue;
+                    const int side = k.players ? 0 : 1;
+                    if (k.kind == 0) { menLeft[side] += CrewOf(k); unitsLeft[side] += k.count; }
+                    else facilitiesLeft[side] += k.count;
+                }
+                const int w = menLeft[0] > menLeft[1] ? 0 : menLeft[1] > menLeft[0] ? 1 : holder;
+                const int l = 1 - w;
+                gone[l] += unitsLeft[l];
+                goneFacilities[l] += facilitiesLeft[l];
+                ClearSide(s, l == 0);
+                left[l] = 0;
+            }
             const int winner = left[0] && !left[1] ? 0 : left[1] && !left[0] ? 1 : holder;   // relative
             const bool human = res.Human();
             auto absolute = [&](int rel) { return human ? rel : 1 - rel; };

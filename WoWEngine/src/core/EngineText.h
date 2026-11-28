@@ -45,7 +45,8 @@ namespace wow::enginetext
         BeginCampaign = 1472, NextPage, PreviousPage,                                                     // 1472-1474
         SkipBriefings = 1475,                                                                             // 1475 (266); its tip 1495
         CdMusicVolume = 1496,                                                                             // 1496 (268): Sound Control's slider
-        Last = 1496,
+        AutoResolve = 1497,                                                                               // 1497 (270): Battle Options' bottom button
+        Last = 1497,
     };
 
     struct Entry { int id; const char* text[Languages]; };
@@ -225,6 +226,7 @@ namespace wow::enginetext
             "Wird das feindliche Kommandogebäude zerstört, bleiben seine anderen Gebäude und Einheiten stehen und müssen bekämpft werden, statt zu explodieren.",
             "Quando l'edificio di comando nemico è distrutto, gli altri edifici e le unità restano da combattere invece di esplodere.",
             "Cuando se destruye el edificio de mando enemigo, sus demás edificios y unidades siguen en pie para combatirlos, en vez de estallar." } },
+        { AutoResolve, { "Auto Resolve Battle", "Résolution automatique", "Schlacht automatisch entscheiden", "Risolvi automaticamente", "Resolver automáticamente" } },
         { CdMusicVolume, { "CD Music Volume", "Volume de la musique CD", "CD-Musiklautstärke", "Volume musica CD", "Volumen de la música del CD" } },
         { SkipBriefings, { "Skip briefings", "Passer les briefings", "Einsatzbesprechungen überspringen", "Salta i briefing", "Omitir las sesiones informativas" } },
         { SkipBriefings + TipOffset, {

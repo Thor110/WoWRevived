@@ -1,0 +1,4 @@
+# The War in the Air.txt: a scenario from the WotW Companion's collection
+name = The War in the Air
+kind = human
+start = The War in the Air.wow

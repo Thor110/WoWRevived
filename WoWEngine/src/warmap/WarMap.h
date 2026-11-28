@@ -43,7 +43,10 @@ namespace wow
         // 0x71 / 0x98 -> 0x97: the battle's end. With the battle map's losses (the war map objects whose battle units
         // all went), those objects go; without (no battle map), it's settled here (*provisional*)
         void FightBattle(const std::vector<int>* lost = nullptr, const std::vector<std::pair<int, int>>* retreated = nullptr,
-                         int controlLevel = 0, bool controlByPlayer = false, bool forfeit = false);
+                         int controlLevel = 0, bool controlByPlayer = false, bool forfeit = false, bool resolve = false);
+        // (MODERN, update 270, the owner: resolve, Auto Resolve Battle) the battle map's losses taken as above, then,
+        // with both sides still there, the rest settled as an unfought battle is: the side with more men left wins
+        // and the other's objects there go
         // Each sector as a reinforcement points' source for the battle map (0x43D150): whether the player holds it and
         // whether its holder's command building is there finished (0x43C990)
         struct ReinforcementSource { int sector = 0; bool players = false, hq = false; };

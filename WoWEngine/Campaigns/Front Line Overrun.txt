@@ -1,0 +1,4 @@
+# Front Line Overrun.txt: a scenario from the WotW Companion's collection
+name = Front Line Overrun
+kind = human
+start = Front Line Overrun.wow

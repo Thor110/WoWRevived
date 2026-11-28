@@ -1,4 +1,5 @@
 #include "frontend/FrontEnd.h"
+#include "core/Wav.h"
 #include "core/EngineText.h"
 
 #include "core/AiTable.h"
@@ -68,6 +69,7 @@ namespace wow
         constexpr int CmdCivilSide = 0x900A;        // the engine's own (update 261): a civil war's side chosen, param 1 the second
         constexpr int CmdCustomIntro = 0x900B;      // the engine's own (update 264): a new custom campaign's intro movie
         constexpr int CmdCustomBriefing = 0x900C;   // the same: its briefing, param 0 the first page, +1 / -1 a page on or back
+        constexpr int CmdAutoResolve = 0x900D;      // the engine's own (update 270): Battle Options' Auto Resolve Battle
         constexpr int CmdNewCivilWar = 0x9003;    // the engine's own: Start New Campaign for the side's civil war
         constexpr int CmdSlotPage = 0x9002;       // the engine's own: the Load / Save menu's page, param +1 or -1
         constexpr int CmdSaveMenu = 0x6E;
@@ -1299,11 +1301,14 @@ namespace wow
         m->FocusLast();
         // (in the war map menu's order, update 263, the owner; Sound Control a button like the rest, not the
         // bottom one the game had; the last, Modern Gameplay, on the bottom button's rounded plate instead, so the
-        // menu ends as the game's did, update 265, the owner)
+        // menu ends as the game's did, update 265, the owner; since 270 the bottom one is Auto Resolve Battle)
         m->AddButton(CmdCriticalEvents, 0x412);
         m->AddButton(CmdSoundControl, 0x411);
         m->AddButtonText(CmdModernOptions, res.String(enginetext::ModernOptions));
-        m->AddBottomButtonText(CmdModernGameplay, res.String(enginetext::ModernGameplay));
+        m->AddButtonText(CmdModernGameplay, res.String(enginetext::ModernGameplay));
+        // MODERN (update 270, the owner): Auto Resolve Battle, the rest of the fight settled on the war map (the
+        // battle map's losses kept, then the side with more men left takes the sector, WarMap::FightBattle)
+        m->AddBottomButtonText(CmdAutoResolve, res.String(enginetext::AutoResolve));
         m->SetPrevious(BattleMap::Id);
         return m;
     }
@@ -1464,6 +1469,17 @@ namespace wow
                     while (!briefingPages.empty() && briefingPages.back().find_first_not_of(" \n") == std::string::npos) briefingPages.pop_back();
                 }
                 if (briefingPages.empty()) { Execute({ CmdStartCampaign, 0 }); break; }
+                // (update 270, the owner) its narration, where it has one, read out from the first page at Master x
+                // Speech; it goes as the campaign begins
+                if (auto path = customChosen.Narration())
+                {
+                    std::ifstream in(*path, std::ios::binary);
+                    const std::vector<uint8_t> data((std::istreambuf_iterator<char>(in)), {});
+                    std::string error;
+                    if (auto pcm = DecodeAudio(data, 44100, error, 2))
+                        narration.Play(*pcm, 44100, 2, ini.GetFloat(SoundSection, "Master", 1.0f) * ini.GetFloat(SoundSection, "Speech", 1.0f));
+                    else SDL_Log("Custom campaign narration %s: %s", path->string().c_str(), error.c_str());
+                }
             }
             else briefingPage = std::clamp(briefingPage + command.param, 0, int(briefingPages.size()) - 1);
             Show(BriefingMenu());
@@ -1483,6 +1499,7 @@ namespace wow
         case CmdTitle: PlayMovie("TITLE", { CmdMainMenu, 0 }); break;
         case CmdIntro: PlayMovie("INTRO", { CmdStartCampaign, 0 }); break;
         case CmdStartCampaign:
+            narration.Stop();       // (update 270: the briefing's narration ends with it)
             // a new campaign plays from its slot, set up from Human.000 or Martian.000 (0x404660); if that
             // couldn't be written, from the start file itself, unsaved
             if (campaignSlot >= SaveSlot::First && files.Resolve(SlotGamePath(campaignSlot)))
@@ -1577,7 +1594,9 @@ namespace wow
             [[fallthrough]];
         case BattleMap::ReturnCommand:  // Return to Warmap: 0x76 to the world flushes the queues and sends 0x97
         case BattleMap::EndCommand:
+        case CmdAutoResolve:            // (MODERN, update 270: the same, the rest of the fight settled on the war map)
         {
+            const bool resolve = command.id == CmdAutoResolve;
             // what the battle map's fight left (the war map objects whose units all went), when there was one
             std::optional<std::vector<int>> lost;
             std::vector<std::pair<int, int>> retreated;
@@ -1631,7 +1650,7 @@ namespace wow
                 ResetCdPosition();      // (the battle map going, 0x484C67 / 0x484C6C)
                 battleMusicTimer = -1;
                 briefingSound = 0;
-                map->FightBattle(lost ? &*lost : nullptr, lost ? &retreated : nullptr, controlLevel, controlByPlayer, forfeit);
+                map->FightBattle(lost ? &*lost : nullptr, lost ? &retreated : nullptr, controlLevel, controlByPlayer, forfeit, resolve);
                 // (MODERN, update 266, "Skip briefings": no Debriefing, straight back to the war map, its 0x99)
                 if (ini.GetBool("Modern", "Skip briefings", false)) { Execute({ 0x99, 0 }); break; }
                 auto d = std::make_unique<Debriefing>(res, BattleColoursFromIni(), map->Debriefing(), ini.GetInt("Debriefing", "Delay", 300));

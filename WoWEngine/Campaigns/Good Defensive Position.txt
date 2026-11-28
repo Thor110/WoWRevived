@@ -1,0 +1,4 @@
+# Good Defensive Position.txt: a scenario from the WotW Companion's collection
+name = Good Defensive Position
+kind = human
+start = Good Defensive Position.wow

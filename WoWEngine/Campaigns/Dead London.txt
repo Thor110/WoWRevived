@@ -1,0 +1,4 @@
+# Dead London.txt: a scenario from the WotW Companion's collection
+name = Dead London
+kind = human
+start = Dead London.wow

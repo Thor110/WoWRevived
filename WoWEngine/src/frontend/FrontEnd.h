@@ -11,6 +11,7 @@
 #include "frontend/Menu.h"
 #include "frontend/Settings.h"
 #include "platform/Music.h"
+#include "platform/Narration.h"
 #include "platform/Sound.h"
 
 #include <map>
@@ -204,6 +205,7 @@ namespace wow
         std::optional<TexturePack> texturePack;
         const TexturePack* Textures();
         Music music;
+        Narration narration;       // (update 270) a custom campaign's briefing read out
         Sound sound;
         int ambient = 0;           // dword_4D25D0: the menus' ambient sound 0x18C
         float pendingAmbient = -1.0f, pendingSpeech = -1.0f; // Sound Control's, applied when it closes

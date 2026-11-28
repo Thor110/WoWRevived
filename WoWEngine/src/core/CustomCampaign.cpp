@@ -43,6 +43,12 @@ namespace wow
     }
 
     std::optional<std::filesystem::path> CustomCampaign::Briefing() const { return FindIn(folder, Stem() + ".briefing.txt", false); }
+    std::optional<std::filesystem::path> CustomCampaign::Narration() const
+    {
+        for (const char* ext : { ".mp3", ".ogg", ".wav" })
+            if (auto p = FindIn(folder, Stem() + ".briefing" + ext, false)) return p;
+        return std::nullopt;
+    }
     std::optional<std::filesystem::path> CustomCampaign::Reskins() const { return FindIn(folder, Stem(), true); }
 
     uint32_t CustomCampaign::Flags() const

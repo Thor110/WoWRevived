@@ -28,6 +28,12 @@ This software is available under 2 licenses: public domain (www.unlicense.org) o
 used here as public domain.
 
 
+dr_mp3 - public domain (David Reid), used for MP3 briefing narration
+--------------------------------------------------------------------
+Version 0.7.4. Available under 2 licenses: public domain (www.unlicense.org) or MIT No Attribution, at your
+choice; it's used here as public domain.
+
+
 cgltf - MIT licence, used for glTF unit models
 ----------------------------------------------
 Copyright (c) 2018-2021 Johannes Kuhlmann

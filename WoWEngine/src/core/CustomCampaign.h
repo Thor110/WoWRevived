@@ -37,6 +37,8 @@ namespace wow
         std::string Stem() const;
         std::optional<std::filesystem::path> Movie(const char* which) const;      // "intro" or "outro"
         std::optional<std::filesystem::path> Briefing() const;
+        // (update 270) "<name>.briefing.mp3", ".ogg" or ".wav": the briefing read out while it's shown
+        std::optional<std::filesystem::path> Narration() const;
         std::optional<std::filesystem::path> Reskins() const;
 
         // Throws nothing: lines it can't read are noted in warnings (and left out). `ok` is false without a kind.

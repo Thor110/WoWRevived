@@ -45,6 +45,7 @@ add_library(wowcore STATIC
     src/core/CustomCampaign.cpp
     src/core/Wav.cpp
     third_party/stb_vorbis.c
+    third_party/dr_mp3.c
     src/core/WofMesh.cpp
     third_party/cgltf.c
     src/core/Png.cpp
@@ -62,7 +63,8 @@ add_library(wowcore STATIC
 )
 target_include_directories(wowcore PUBLIC src ${CMAKE_CURRENT_BINARY_DIR}/generated)
 # (update 248) the Ogg Vorbis decoder, Sean Barrett's public-domain stb_vorbis v1.22, as it comes; its warnings aren't ours
-set_source_files_properties(third_party/stb_vorbis.c third_party/cgltf.c PROPERTIES COMPILE_OPTIONS "$<IF:$<C_COMPILER_ID:MSVC>,/w,-w>")
+# (update 270) and dr_mp3 v0.7.4 (public domain or MIT-0) for a custom campaign's briefing narration, as it comes
+set_source_files_properties(third_party/stb_vorbis.c third_party/cgltf.c third_party/dr_mp3.c PROPERTIES COMPILE_OPTIONS "$<IF:$<C_COMPILER_ID:MSVC>,/w,-w>")
 configure_file(src/Version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.h @ONLY)
 
 # --- installer: copies the game from the discs or their images and rips the music (no SDL) ---
@@ -131,6 +133,7 @@ if(TARGET SDL3::SDL3)
         src/main.cpp
         src/platform/Video.cpp
         src/platform/Music.cpp
+        src/platform/Narration.cpp
         src/platform/Sound.cpp
         src/platform/Discord.cpp
         src/frontend/ResearchScreen.cpp

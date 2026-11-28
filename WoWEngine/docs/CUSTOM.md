@@ -91,7 +91,10 @@ from update 246 on.
 **A save without the tag** (update 264, the owner: one made by the original game or a save editor, renamed
 `Custom.nnn`) is listed too, its faction told from its objects (`PlayerHumanIn`: the owners are factions and the
 H lists the player's side); one that can't be read or told isn't. It plays as a regular campaign of that faction
-and is saved with the tag from then on. Before 264 it wasn't listed at all.
+and is saved with the tag from then on. Before 264 it wasn't listed at all. It's under Custom Campaigns > Resume Custom
+Campaign, not Load Game (the owner looked there in 269). A save that went through a text-mode copy (every 0x0A byte
+made 0x0D 0x0A; one of the WotW Companion scenarios had) doesn't read ("save: ends early"); undoing it restores it
+exactly.
 
 **The campaign it's of** (update 264): `Custom.nnn.campaign` beside the save holds its definition's file name
 (written as it starts), so a resumed save finds the campaign's own files (below). Without it, or without that
@@ -112,6 +115,10 @@ optional (`CustomCampaign::Movie`, `Briefing`, `Reskins`):
 - `My War.briefing.txt`: shown next, over the main menu's background as the menus are (the game's own briefing
   screen doesn't suit it): the campaign's name, the text wrapped and cut into pages of 14 lines, Next / Previous
   Page and Begin Campaign (Escape begins it too). UTF-8 or Latin-1; the fonts are Latin-1.
+- `My War.briefing.mp3`, `.ogg` or `.wav` (update 270, the owner; `CustomCampaign::Narration`): the briefing read
+  out while it's shown, from its first page, at Master x Speech, on a stream of its own (`platform/Narration`) so the
+  menus' music goes on under it; it stops as the campaign begins. MP3 is decoded by dr_mp3 0.7.4 (public domain,
+  `third_party/dr_mp3.h`), Ogg and WAV as the loose sounds are (`DecodeAudio` tells them apart by their first bytes).
 - `My War.outro.mp4` or `.smk`: played when the campaign is won, in place of VICTORY (a loss plays DEFEAT, a civil
   war's none, as before).
 - a folder `My War`, laid out as TEXTURES (`human/units`, `martian/buildings`, ...: TEXTURES.md, MODELS.md): its

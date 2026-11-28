@@ -17,4 +17,8 @@ namespace wow
     std::optional<std::vector<int16_t>> DecodeWav(std::span<const uint8_t> data, int rate, std::string& error, int channels = 1);
     // (update 248) an Ogg Vorbis file, the same way: decoded by stb_vorbis (third_party/stb_vorbis.c, public domain)
     std::optional<std::vector<int16_t>> DecodeOgg(std::span<const uint8_t> data, int rate, std::string& error, int channels = 1);
+    // (update 270) an MP3 file, the same way: decoded by dr_mp3 (third_party/dr_mp3.h, public domain)
+    std::optional<std::vector<int16_t>> DecodeMp3(std::span<const uint8_t> data, int rate, std::string& error, int channels = 1);
+    // a WAV, Ogg Vorbis or MP3 file, told from its first bytes (an MP3 from its ID3 tag or a frame's sync)
+    std::optional<std::vector<int16_t>> DecodeAudio(std::span<const uint8_t> data, int rate, std::string& error, int channels = 1);
 }

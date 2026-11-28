@@ -145,6 +145,12 @@ computer's side keeps them, so they have to be fought; the player's side is as i
 computer's until they're gone (a sector holding both sides is its holder's, 0x43CA40), and a home sector's battle
 still ends the campaign when the war map settles it.
 
+**Auto Resolve Battle** (update 270, the owner's idea): the battle map's Battle Options end with it, as their bottom
+button (Modern Gameplay a row like the others again). It leaves the battle as Return to Warmap does, with the losses
+so far, and then, with both sides still in the sector, settles the rest as the engine settles a battle that isn't
+fought on the battle map: the side with more men left (`CrewOf`) wins, the holder on a tie, and the other side's
+objects there go (`WarMap::FightBattle`'s `resolve`). The debriefing counts them as lost or killed.
+
 **Skip briefings** (update 266, the owner's idea). The war map goes straight to the battle map (0x8019's Briefing
 skipped, 0x71 at once), and after the battle straight back (the Debriefing skipped, its 0x99 at once): the battle's
 result is still announced on the war map.

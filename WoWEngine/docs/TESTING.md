@@ -56,6 +56,16 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## Custom campaigns from the WotW Companion, narration, Auto Resolve (update 270)
+
+- The 14 campaigns (the separate zip's Campaigns folder in the main folder): each listed for its side, started,
+  its briefing read, and its war map as the scenario says. "Secondary Line Holds" is a repaired copy (it had been
+  through a text-mode copy).
+- Narration: the three with an `.mp3` read their briefing out as it's shown, at Master x Speech, and stop on Begin
+  Campaign. Not heard headless (no sound device there).
+- Auto Resolve Battle, Battle Options' bottom button: in a battle with both sides, the side with more men left takes
+  the sector, the debriefing counting the other's objects; with only one side, as Return to Warmap.
+
 ## CD Music Volume (update 268)
 
 - Sound Control's new slider under Master: the music (war map, battle map, menus, the CD player) quieter and louder

@@ -1,0 +1,17 @@
+Summary:
+
+This is a test of technologies. Man has advanced his technologies but perhaps not in the right direction. 
+
+The date is 1905
+
+Use the machines at your disposal and see whether you can defeat the Martian forces. The Human airships are more deadly than you expect. You are on your honour to manufacture and use only airship technologies!
+
+Difficulty:
+
+For the humans, this scenario will be a challenge. 
+
+For the Martians, this scenario is very easy due to the poor state of the human military.
+
+Note: There is a bug in the game with the MkIII powered observation balloon which comes to light when the balloon is rotating. It causes a redraw error which distorts the shape of the balloon in some planes. It does not crash the game it just looks a little strange. 
+
+Dean Beedell 2005

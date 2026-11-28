@@ -8,6 +8,9 @@
 
 // third_party/stb_vorbis.c (compiled on its own): its one function this needs
 extern "C" int stb_vorbis_decode_memory(const unsigned char* mem, int len, int* channels, int* sample_rate, short** output);
+// third_party/dr_mp3.c (compiled on its own): its one function this needs
+#define DR_MP3_NO_STDIO
+#include "../../third_party/dr_mp3.h"
 
 namespace wow
 {
@@ -115,5 +118,29 @@ namespace wow
         std::vector<int16_t> out = Convert(value, size_t(frames), uint32_t(channels), uint32_t(fileRate), rate, outChannels);
         std::free(decoded);
         return out;
+    }
+
+    std::optional<std::vector<int16_t>> DecodeMp3(std::span<const uint8_t> d, int rate, std::string& error, int outChannels)
+    {
+        drmp3_config config{};
+        drmp3_uint64 frames = 0;
+        drmp3_int16* decoded = drmp3_open_memory_and_read_pcm_frames_s16(d.data(), d.size(), &config, &frames, nullptr);
+        if (!decoded || frames == 0) { error = "not an MP3 file this reads"; drmp3_free(decoded, nullptr); return std::nullopt; }
+        if (config.channels == 0 || config.sampleRate == 0) { drmp3_free(decoded, nullptr); error = "no channels or rate"; return std::nullopt; }
+        const uint32_t channels = config.channels;
+        const auto value = [&](size_t f, uint32_t c) { return double(decoded[f * size_t(channels) + c]) / 32768.0; };
+        std::vector<int16_t> out = Convert(value, size_t(frames), channels, config.sampleRate, rate, outChannels);
+        drmp3_free(decoded, nullptr);
+        return out;
+    }
+
+    std::optional<std::vector<int16_t>> DecodeAudio(std::span<const uint8_t> d, int rate, std::string& error, int channels)
+    {
+        if (d.size() >= 4 && std::memcmp(d.data(), "RIFF", 4) == 0) return DecodeWav(d, rate, error, channels);
+        if (d.size() >= 4 && std::memcmp(d.data(), "OggS", 4) == 0) return DecodeOgg(d, rate, error, channels);
+        if ((d.size() >= 3 && std::memcmp(d.data(), "ID3", 3) == 0) || (d.size() >= 2 && d[0] == 0xFF && (d[1] & 0xE0) == 0xE0))
+            return DecodeMp3(d, rate, error, channels);
+        error = "not a WAV, Ogg or MP3 file";
+        return std::nullopt;
     }
 }

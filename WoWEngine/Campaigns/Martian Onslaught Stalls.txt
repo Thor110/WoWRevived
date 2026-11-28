@@ -1,0 +1,4 @@
+# Martian Onslaught Stalls.txt: a scenario from the WotW Companion's collection
+name = Martian Onslaught Stalls
+kind = martian
+start = Martian Onslaught Stalls.wow
