@@ -67,6 +67,11 @@ namespace wow
         const int group = f.group, ref = f.ref;
         const bool finished = double(Progress(f)) > 0.9999;
         const int full = std::max(1, MaxHealth(f.type, f.players));
+        // an unfinished fence's health is its full x the construction's progress, at least 1 (0x4989F0, as
+        // 0x4865A0 does for the other constructions): so the posts not yet built are flags, not posts (update 266,
+        // the owner's screenshots: the engine had taken a new fence's full health, every post laid as an unbuilt
+        // post, an object in the way like a building's, and no flags)
+        if (!finished) f.health = std::max(1, int(double(full) * double(Progress(f))));
         const int missing = std::clamp(n - int(double(n + 1) * double(f.health) / double(full)), 0, n);
         const float sx = float(x1 - x0) / float(n), sy = float(y1 - y0) / float(n);
         float px = float(x0), py = float(y0);
@@ -94,7 +99,7 @@ namespace wow
             units.push_back(p);
             StartUnit(units.size() - 1);
         }
-        f.postsLeft = n - missing;
+        units[index].postsLeft = n - missing;     // (by index: the posts pushed may have moved the units)
         // the unbuilt part's build markers (0x47EB10 with 0x17B), with the fence (they go as it does)
         for (const auto& [mx, my] : markers)
         {

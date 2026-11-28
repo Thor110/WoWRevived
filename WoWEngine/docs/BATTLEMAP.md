@@ -862,7 +862,10 @@ type's +0x28 is 0) and one part (record 28): its post's type (451 695 WireF, 452
 - **Its start** (0x4989F0): its health from its war map object's progress if under 0.9999 (at least 1, +0xC0 bit 0
   clear); then k = 0x48A7D0 = N - ftol((N + 1) x health / its full) posts from the far end aren't there: a finished
   fence goes (each one's vt+0x78), so a fence saved damaged comes back shorter; an unfinished one's are turned into
-  the build marker 0x17B (bld_mark.spr). The engine lays the posts this way at the fence's start (`LayFence`), puts
+  the build marker 0x17B (bld_mark.spr), which isn't put in the world's grid (0x498B11: only the posts that aren't
+  0x17B are, 0x47D1E0), so a flag is in nobody's way. Until update 267 the engine skipped the health from the
+  progress, so a fence placed in battle (at full health) had every post laid, unbuilt, in the way like a
+  building's parts, and no flags (the owner's screenshots). The engine lays the posts this way at the fence's start (`LayFence`), puts
   the fence object at its first end (*provisional* for a loaded one, which the deployment places in the game; it
   has no model or footprint, so nothing sees where it is).
 - **The posts' ground**: a finished post marks round it (vt+0xE4 0x48B690: 0x47C280, radius 32, bit 8) and lets it

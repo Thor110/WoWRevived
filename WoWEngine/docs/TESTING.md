@@ -56,6 +56,12 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## Fences under construction (update 267)
+
+- A fence placed on the battle map (and one loaded unfinished): the first post standing and a flag at every other
+  post's place along the line, as in the original; units walk through the flags; once finished (on the war map),
+  the next battle has the whole fence. Not tried headless: a new game's construction vehicle has no fences yet.
+
 ## After the owner's first look at 265 (update 266)
 
 - **Heat rays on the Human HQ**: Martian rays aimed at the HQ drawn over its corner sandbags, as in the original.
