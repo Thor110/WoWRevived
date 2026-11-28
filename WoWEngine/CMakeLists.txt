@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 # The version, for the programs (Version.h) and the release (tools/make_release.py reads it from here).
 # Change it only here.
-project(WoWEngine VERSION 0.2.9 LANGUAGES C CXX)
+project(WoWEngine VERSION 0.3.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

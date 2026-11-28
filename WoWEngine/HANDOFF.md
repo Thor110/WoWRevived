@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 268
+# Handoff: WoWEngine after update 269
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -157,7 +157,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 268
+## State after update 269
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -183,7 +183,8 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   BMPs into PNGs (or take the owner's zip), put them in `build/textures` (the program's folder), set `[Modern]
   "Enhanced assets"=1` in the test install's ini (restore it after) and run without `--no-loose`; `wowdump
   --texcheck <game> <pack>` checks a pack reads back as the game's. A frame with an unchanged pack is the same as
-  without. Next: the rest of A10. The version is 0.2.6 (247; 0.2.5 from 238).
+  without. Next: the rest of A10. The version is 0.3.0 (269; 0.2.9 before, 0.2.6 from 247).
+- **Update 269**: version 0.3.0.
 - **Update 268**: CD Music Volume in Sound Control (`[Sound\Volume]` "CD Music", string 1496).
 - **Updates 265-267**: the testers' and the owner's bug list (docs/TESTING.md has each). The heat rays (the beam
   quads' +0x26 0x40, missed in the sort) and building after a battle (a lost HQ's base counted gone once its deaths
@@ -300,7 +301,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **269**.
+  - The next number is **270**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.

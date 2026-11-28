@@ -20,7 +20,7 @@ cmake --build --preset x64-Release
 If SDL3 isn't installed it is downloaded and built automatically (`WOW_FETCH_SDL`, on by default).
 To use an installed copy, point `CMAKE_PREFIX_PATH` at it.
 
-**Version:** set it in one place, `project(WoWEngine VERSION 0.2.6 ...)` at the top of `CMakeLists.txt`. The build turns it into `Version.h` (`WOWENGINE_VERSION`), which the window title uses, and the release script reads it from there too.
+**Version:** set it in one place, `project(WoWEngine VERSION 0.3.0 ...)` at the top of `CMakeLists.txt`. The build turns it into `Version.h` (`WOWENGINE_VERSION`), which the window title uses, and the release script reads it from there too.
 
 **Third-party code:** SDL3 (fetched by the build) and, since update 248, `third_party/stb_vorbis.c` (Sean Barrett's
 Ogg Vorbis decoder, v1.22, public domain or MIT as the file says) and `third_party/cgltf.h` (Johannes Kuhlmann's glTF
