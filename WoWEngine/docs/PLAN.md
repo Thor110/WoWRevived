@@ -51,7 +51,8 @@ two unused buildings; 5. D5's last (AVFoundation for Macs without ffmpeg, full-c
       reinforcement points with no battle on); Mat's time of day (179); Edit functionality's war map half
       (190); Dave as lines in the log (228). Not built, with the reasons in ODDITIES.md: Edit functionality's
       battle half (it only serves the editor), the loose-sound flag (with D1).
-- [ ] **A9 The network game** (4.7), last of the original: the menus' lists, the lockstep packets. The owner's
+- [ ] **A9 The network game** (4.7), last of the original (planned in update 277: docs/NETWORK.md, with what the
+      original does in docs/network/; A2 is its Phase 1): the menus' lists, the lockstep packets. The owner's
       reading of what the network build needs: its timer out, network play itself, the start files not saved
       over (already so). In the long run (the owner, update 238) network play is another entry in the menus,
       not something the game has to be started with the network version enabled for (MODERN.md "Game modes").
