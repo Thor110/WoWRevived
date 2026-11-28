@@ -1093,7 +1093,7 @@ namespace wow
             }
         }
         // the view's set-up (0x418D17): both sides' triggers and multipliers
-        for (auto& r : research) r->UpdateTriggers(encountered);
+        for (auto& r : research) r->UpdateTriggers(encountered, IsCivilWar(campaign));
     }
 
     void WarMap::UseSave(SaveFile from)
@@ -2253,7 +2253,7 @@ namespace wow
                              int controlLevel, bool controlByPlayer, bool forfeit, bool resolve)
     {
         if (forfeit) forfeited = true;
-        for (auto& r : research) if (r) r->UpdateTriggers(encountered); // 0x41A094, on the way to the battle map
+        for (auto& r : research) if (r) r->UpdateTriggers(encountered, IsCivilWar(campaign)); // 0x41A094, on the way to the battle map
         const int s = battleSector;
         const bool hadPost = s >= 1 && s <= warmap::SectorCount && HasCommandPost(s);   // 0x43A0AD, before 0x43CA40
         debriefing = DebriefingInfo{};
@@ -2430,7 +2430,7 @@ namespace wow
     {
         Crumb("war map: back from a battle (the announcement and the queued events)");
         if (buildWindow && buildWindow->battle) buildWindow.reset();   // (the battle's Build List goes with it)
-        for (auto& r : research) if (r) r->UpdateTriggers(encountered); // the view's set-up, 0x418D17
+        for (auto& r : research) if (r) r->UpdateTriggers(encountered, IsCivilWar(campaign)); // the view's set-up, 0x418D17
         if (debriefing.fought || forfeited) AnnounceBattleResult();   // (0x808D comes either way; 0x41AED0 checks the forfeit first)
         battleSector = 0;
         NextEvent();

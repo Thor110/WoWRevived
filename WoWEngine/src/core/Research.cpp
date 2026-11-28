@@ -399,11 +399,14 @@ namespace wow
         }
     }
 
-    void Research::UpdateTriggers(const std::set<int>& encountered)
+    void Research::UpdateTriggers(const std::set<int>& encountered, bool allMet)
     {
         for (const TriggerRule& rule : TriggerRules(human))
+        {
+            if (allMet) { CompleteTrigger(items[size_t(rule.trigger)]); continue; }
             for (int type : rule.types)
                 if (encountered.count(type)) { CompleteTrigger(items[size_t(rule.trigger)]); break; }
+        }
         UnlockPass();
         for (const Improvement& imp : Improvements(human))
         {

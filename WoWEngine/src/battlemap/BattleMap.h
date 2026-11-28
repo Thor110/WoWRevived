@@ -454,7 +454,7 @@ namespace wow
         float Progress(const Unit& u) const;                    // its war map object's +0x7C / +0x78 (1 for none)
         void BuildingSound(Unit& u);                            // its own sound (+0xA2) at its point, 0x4883E0
         void BuildingTick(Unit& u);                             // 0x48F130
-        void LoseParts(size_t unit);
+        void LoseParts(size_t unit, bool quietly = false);   // quietly: the start's, no destruction effects
         void Stop8031(Unit& u);
         void ShotDone(Unit& u);                                 // vt+0xD0 from a gun (0x494F4D): 0x4910C0 / 0x496BC0
         void MoveFlag(int x, int y);                            // 0x483590's flag, type 0x17C at level 0                                 // 0x8031 to a vehicle: 0x4910C0 -> 0x496BC0

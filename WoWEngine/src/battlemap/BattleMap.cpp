@@ -764,6 +764,13 @@ namespace wow
         }
         AddRenderer(u.type, u.x, u.y, u.heading, int(index));
         AddPartRenderers(index);
+        // 0x48E9D0 at 0x48EB0D: then the parts its health doesn't stretch to are taken off from the last (0x48A7D0
+        // with the part count less 1: the parts less 1, less ftol(the part count x the health / its most); each
+        // started and given vt+0x78), so a building going up has only its first parts, more as its progress (its
+        // health, above) rises, and one saved damaged comes back without the parts it had lost; their ground is
+        // let go with them (update 276, the owner and a tester: every building had stood whole from the start, and
+        // the unbuilt parts' ground had kept other buildings off spots the game allows)
+        if (IsBuilding(units[index])) LoseParts(index, true);
         // the look round's count (+0xDA) rand() % 30 (0x4957A2), so the units don't all look on one update: drawn
         // after the base start (0x495785 -> 0x48A8B0) has started the parts, the light parts' rolls among them
         units[index].scanCount = random::Rand() % 30;

@@ -60,7 +60,7 @@ namespace wow
     // has more than one child, the last child (+0x70's tail), if its health is over 0, is sent 0x80A0, which takes
     // it off the list at once: a big hit takes several, the last made first (the Factory's chimneys).
     // A part's 0x80A0 (0x489FA0) makes its type's destruction effect (+0x98) at its point, its parent the firer.
-    void BattleMap::LoseParts(size_t index)
+    void BattleMap::LoseParts(size_t index, bool quietly)
     {
         Unit& u = units[index];
         auto t = setup.units->find(u.type);
@@ -108,8 +108,9 @@ namespace wow
             // vt+0xE8 (0x48A9A0): its footprint taken off
             if (modelFootprint.count(type)) land.ClearOccupied(int(u.x) + ox, int(u.y) + oy, Radius46(type), 2);
             const int z = int(double(oz) - double(pt->second.size41) * -1.414);
-            // 0x489FA0: the part's parent is its explosion's firer (+0xCC its id, the group spared by 0x488200)
-            Explode(pt->second.field98, int(u.x) + ox, int(u.y) + oy, z, u.group, u.id);
+            // 0x489FA0: the part's parent is its explosion's firer (+0xCC its id, the group spared by 0x488200); at the
+            // start (0x48EB0D) the parts not there are taken off with vt+0x78 alone, no effect
+            if (!quietly) Explode(pt->second.field98, int(u.x) + ox, int(u.y) + oy, z, u.group, u.id);
         }
     }
 

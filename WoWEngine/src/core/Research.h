@@ -137,7 +137,9 @@ namespace wow
         int ChooseFromPlan();
         // 0x45A1C0 / 0x45B320: the triggers from the types met in battle (the unit table's +0xAC, set by the
         // battle map), an unlock pass, then the improvement multipliers of the finished enhancements
-        void UpdateTriggers(const std::set<int>& encountered);
+        // MODERN (update 276, a tester and the owner): every trigger counts as met (the civil wars: neither side
+        // meets the other faction's machines that unlock the encounter-gated research, Hover Bombs among them)
+        void UpdateTriggers(const std::set<int>& encountered, bool allMet = false);
         // 0x458460, the cheat: everything made available and done, with notifications off
         void CompleteAll();
 

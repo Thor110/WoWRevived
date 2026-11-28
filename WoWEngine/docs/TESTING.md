@@ -56,6 +56,15 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## Buildings going up; civil war research (update 276)
+
+- A building placed on the battle map, and one under construction in a saved sector: its model, its first parts
+  only and the four flags; more of its parts in later battles as its construction goes on; whole once finished. A
+  damaged building saved and fought again: without the parts it had lost.
+- Z-Fighter's report: building close beside a building that's going up, where the original allows it.
+- Civil wars, both sides: the encounter-gated research (Hover Bombs after Bombarding Machines, and the like) open
+  once its own prerequisites are done, with no encounter needed.
+
 ## Campaign authors (update 272)
 
 - Each shipped campaign's briefing headed "Designed by ..." in the game's language; Highlands Alone, Quiet Skies and

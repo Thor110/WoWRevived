@@ -1301,6 +1301,13 @@ war map's construction progress, `BattleGroup::progress`). At most 0.9999 it isn
 starts with ftol(its most health x that), at least 1, and on the player's side (+0x24 0) gets four type 0x17B
 children (the plain WEffect, GType 17 `bld_mark.spr`) at (-h, -h), (h, -h), (-h, h), (h, h) from it, h its type's
 +0x46 word, after its parts, so they're the first a hit takes. Finished, type 0x77 adds one to dword_59E174.
+Before the markers (0x48EB0D), whatever its state, the parts its health doesn't stretch to are taken off from the last:
+k = 0x48A7D0 with the part count less 1 (the parts less 1, less ftol(the part count x health / its most)), each
+started and given vt+0x78, no effect. So a building going up stands as its model and its first parts, more of them as
+its progress (its health) rises from battle to battle, and one saved damaged comes back without the parts it had
+lost. Their ground goes with them. The engine did this only on damage until update 276 (`LoseParts(index, true)` at
+the start): every building had stood whole, and its unbuilt parts' ground kept other buildings off spots the game
+allows (a tester's report).
 *Provisional*: a resource object's two save floats are taken as the same +0x78 / +0x7C as a construction's.
 
 **Gun emplacements** (types 0x32-0x39 and 0x6F-0x76, WEmplacement 0x48F750 on the vehicles' 0x490820, +0xB8 bit 0

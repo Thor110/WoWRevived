@@ -706,6 +706,10 @@ Two new campaigns, each one faction against itself (PLAN.md F1).
   (under Start Martian Game) under Start New Campaign (command 0x9003), then **Choose Side** (update 261, the
   owner), then the slots and the name as for a new campaign, and straight to the war map (no intro: the faction's
   tells of the Martians' coming).
+- **Research** (update 276, a tester and the owner): every research trigger counts as met for both sides
+  (`Research::UpdateTriggers` with `allMet`). In the campaigns some items wait on meeting the other faction's machines
+  (Hover Bombs on the Ironclads); in a war within one faction those are never met, so the items opened only by
+  encounters are open from the start, each still after its own prerequisites.
 - **The sides** (update 261): the Human Civil War's **Rebels** (Scotland, home the Grampian Mountains; the side it
   had before the choice) and **Loyalists** (London's); the Martian Civil War's **Resistance** (home London, the
   Martians who would spare the Earth; the side before the choice) and **Imperialists** (the base in the

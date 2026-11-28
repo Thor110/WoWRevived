@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 275
+# Handoff: WoWEngine after update 276
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -157,7 +157,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 275
+## State after update 276
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -184,6 +184,8 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   "Enhanced assets"=1` in the test install's ini (restore it after) and run without `--no-loose`; `wowdump
   --texcheck <game> <pack>` checks a pack reads back as the game's. A frame with an unchanged pack is the same as
   without. Next: the rest of A10. The version is 0.3.0 (269; 0.2.9 before, 0.2.6 from 247).
+- **Update 276**: a building's parts beyond its health taken off at its start (0x48EB0D: buildings go up part by
+  part, their unbuilt parts' ground free); civil wars: every research trigger met.
 - **Update 275**: the 13 scenarios' author now yereverluvinunclebert.
 - **Update 274**: Begin Campaign on the bottom button's plate.
 - **Update 273**: the custom briefing's text on the rows' backing (0x3C, stretched with `DrawSpriteTaller`).
@@ -310,7 +312,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **276**.
+  - The next number is **277**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.

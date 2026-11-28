@@ -763,6 +763,8 @@ As well as providing 13 custom campaigns from their 2000's WotW Companion Applic
 
 Thanks to Z-Fighter for help testing the project and providing a never-ending supply of screenshots for reference which have saved me a lot of time not needing to fire the game up to see how something should look, as well as for finding a crash in the original game that would occur when using infiltration if lights are disabled in the options.
 
+As well as providing a custom campaign and numerous ideas for improving the new version of the game engine.
+
 Thanks to Sulus for posting a video of the violent geometry tearing on the airship model when it turns around.
 
 Thanks to FunkyFr3sh for cnc-ddraw, which provides the DirectDraw translation layer for modern systems. See ddraw-license.txt for the full MIT license.
