@@ -56,6 +56,16 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## After the owner's first look at 265 (update 266)
+
+- **Heat rays on the Human HQ**: Martian rays aimed at the HQ drawn over its corner sandbags, as in the original.
+- **Building after a battle**: destroy an enemy HQ and leave the battle at once, before the rest of its base has
+  finished exploding: the sector is yours on the war map and you can build there.
+- **Enemy bases outlast their HQ** (Modern Gameplay): with it ticked, the enemy's other buildings stay after its HQ
+  goes; the sector stays theirs until they're destroyed. Without it, the original.
+- **Skip briefings** (Modern Gameplay): no Briefing on the way into a battle, no Debriefing on the way out; the
+  result still announced on the war map, and the campaign saved.
+
 ## The testers' and the owner's reports (update 265)
 
 - **Installer**: an Italian and a French install from their discs (the manual copied as `wotw-man-italian-v1.pdf` /

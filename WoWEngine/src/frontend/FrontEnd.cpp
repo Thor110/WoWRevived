@@ -752,6 +752,8 @@ namespace wow
             { "Unlimited building", false, enginetext::UnlimitedBuilding },
             { "Bridge control", false, enginetext::BridgesFireBack },   // (update 249; "Bridges fire back" before)
             { "Bridges stay broken", false, enginetext::BridgesStayBroken },   // (update 249)
+            { "Enemy bases outlast their HQ", false, enginetext::KeepBuildings }, // (update 266)
+            { "Skip briefings", false, enginetext::SkipBriefings },              // (update 266)
         };
         auto m = MenuOver(CmdModernGameplay, previous, 1);
         m->AddHeadingText(res.String(enginetext::ModernGameplay));
@@ -1558,6 +1560,8 @@ namespace wow
                 if (screen && screen->Id() == WarMap::Id) warMap.reset(screen.release());
                 pendingBattle.reset();
                 briefingTicks = 0;
+                // (MODERN, update 266, "Skip briefings": on to the battle map at once, 0x71)
+                if (ini.GetBool("Modern", "Skip briefings", false)) { Execute({ 0x71, 0 }); break; }
                 Show(std::make_unique<Briefing>(res, BattleColoursFromIni(), map->Briefing(), ini.GetInt("Briefing", "Delay", 30)));
             }
             break;
@@ -1625,6 +1629,8 @@ namespace wow
                 battleMusicTimer = -1;
                 briefingSound = 0;
                 map->FightBattle(lost ? &*lost : nullptr, lost ? &retreated : nullptr, controlLevel, controlByPlayer, forfeit);
+                // (MODERN, update 266, "Skip briefings": no Debriefing, straight back to the war map, its 0x99)
+                if (ini.GetBool("Modern", "Skip briefings", false)) { Execute({ 0x99, 0 }); break; }
                 auto d = std::make_unique<Debriefing>(res, BattleColoursFromIni(), map->Debriefing(), ini.GetInt("Debriefing", "Delay", 300));
                 const int h = sound.Play(d->Sound());   // +0x98, faded in over 60 ticks (0x464E60)
                 sound.FadeIn(h, 60);
@@ -2028,6 +2034,7 @@ namespace wow
         s.stickyPopup = ini.GetBool("Modern", "Sticky popup menus", false);   // a modern option (docs/MODERN.md)
         s.selectionKeys = ini.GetBool("Modern", "Selection keys", true);       // the same
         s.bridgeControl = BridgeControl();     // the same (update 246; 249 with the orders)
+        s.keepBases = ini.GetBool("Modern", "Enemy bases outlast their HQ", false);   // the same (update 266)
         s.mat = Mat();      // the developers' flag (docs/ODDITIES.md)
         s.groups = map->BattleGroups(b.sector);
         for (const WarMap::ReinforcementSource& r : map->ReinforcementSources()) s.sources.push_back({ r.sector, r.players, r.hq });

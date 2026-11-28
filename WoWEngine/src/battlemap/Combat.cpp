@@ -219,6 +219,9 @@ namespace wow
     // *Provisional*: the kind is taken as the sector.
     void BattleMap::KeyBuildingLost(bool players)
     {
+        // (MODERN, update 266, "Enemy bases outlast their HQ": the computer's side's base stands, to be fought; a
+        // home sector's battle still ends the campaign when the war map settles it)
+        if (setup.keepBases && !players) return;
         auto wipe = [&](int kind) {
             for (size_t g = 0; g < setup.groups.size(); g++)
                 if (setup.groups[g].Players() == players && setup.groups[g].list / 2 == kind) StaggerDeaths(int(g), ticks + 1);

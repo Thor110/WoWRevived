@@ -1330,7 +1330,7 @@ Every gun class but the base's own update draws four atlas quads while it fires:
   four steps of a quarter of the way, the half width along the screen normal (uy, -ux) going from record 12's +0xA
   to +0xC a quarter of the difference a step. Quad i's corners (0x49D820) are (X' - p', Y' - q'), (X' + p',
   Y' + q'), (X + p, Y + q), (X - p, Y - q), X / Y the near end, X' / Y' the far; each put in the view a quarter
-  further back (+0x1E from the gun's y + 40).
+  further back (+0x1E from the gun's y + 40), each with +0x26 0x40 (0x495162), which the view's sort adds (0x40D993: +0x1E + +0x26; the engine had left it out until update 265, so the Human HQ's corner sandbags covered rays aimed at it).
 - **Drawn** (0x49D930 -> 0x410090): two triangles (q0 q2 q1, q0 q3 q2), the cell's (size-1, size-1) corner at q0,
   (size-1, 0) at q1, (0, 0) at q2, (0, size-1) at q3, so the cell's far edge is at the target; masked and flat
   (flags 6, | 8 with +0x14 bit 0), through the GType's slot table at the quad's level.

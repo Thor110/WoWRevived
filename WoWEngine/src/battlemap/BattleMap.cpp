@@ -1131,7 +1131,7 @@ namespace wow
     // in four steps of a quarter of the way, each one's half width (along the screen normal) going from the type's
     // record 12 +0xA to +0xC by a quarter of the difference a step; a quad's near corners are (X +- p, Y +- q) and
     // its far ones (X' +- p', Y' +- q'), the texture's far end at the target. Each is put in the view a quarter of
-    // the way further back (its +0x1E from the gun's y + 40).
+    // the way further back (its +0x1E from the gun's y + 40), and its +0x26 0x40 (0x495162) added for the sort.
     // Drawn with the view's objects by their places (BeamItem keys), the shells' class's sprite at the target too.
     // *Provisional*: a gun not held to a point is taken at its unit's place and height. The sprite's flag (+0x14 bit
     // 0) draws it at 50% (update 170; the engine had taken the blend for the 8-bit screen's only).
@@ -1204,8 +1204,11 @@ namespace wow
                 float px = uy * float(w1), py = -ux * float(w1);
                 const float pxg = uy * float(w2 - w1) * 0.25f, pyg = -ux * float(w2 - w1) * 0.25f;
                 float X = float(x0), Y = float(y0);
-                // each quad's place in the view (+0x1E): the gun's y + 40, a quarter of the way on each
-                int key = gy + 40;
+                // each quad's place in the view (+0x1E): the gun's y + 40, a quarter of the way on each; the view
+                // sorts by +0x1E + +0x26 (0x40D993), and the gun's start gives each quad +0x26 0x40 (0x495162), so
+                // a ray is drawn over what stands within 64 in front of its target, as the HQ's corner sandbags
+                // (update 265: without it the corners covered rays aimed at the HQ)
+                int key = gy + 40 + 0x40;
                 const int keyStep = (g.ty - gy) / 4;
                 for (int i = 0; i < 4; i++)
                 {
@@ -3418,8 +3421,12 @@ namespace wow
         {
             if (setup.groups[g].places.empty() || setup.groups[g].ref < 0) continue;
             if (g < groupLeft.size() && groupLeft[g]) continue;     // it left by a reinforcement point
+            // (an object whose every unit left has its death posted counts as gone: the buildings a lost command
+            // building takes with it (KeyBuildingLost) die 30-60 updates apart, and a battle left before the last
+            // had gone kept them on the war map, the sector then held by both sides and still the other side's, so
+            // the winner couldn't build there; the owner, update 266)
             bool left = false;
-            for (const Unit& u : units) if (u.ref == int(g)) { left = true; break; }
+            for (const Unit& u : units) if (u.ref == int(g) && u.dieAt < 0) { left = true; break; }
             if (!left) out.push_back(setup.groups[g].ref);
         }
         return out;

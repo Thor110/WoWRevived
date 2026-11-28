@@ -34,6 +34,7 @@ namespace wow::enginetext
         EnemyEliminated, EnemyOccupying,                                                                  // 1454-1455
         // the Modern Gameplay menu (update 246): its rows and title; their tips are their ids + 20 (1476-1478)
         UnlimitedBuilding = 1456, BridgesFireBack, ModernGameplay,                                       // 1456-1458
+        KeepBuildings = 1459,                                                                             // 1459 (266); its tip 1479
         // custom campaigns (update 246, docs/CUSTOM.md): the main menu's entry and its menu's heading, its rows
         CustomCampaigns = 1460, ResumeCustom, NoCustomCampaigns, NextCampaigns, PreviousCampaigns,      // 1460-1464
         SaveUnreadable,                                                                                   // 1465 (248)
@@ -42,7 +43,8 @@ namespace wow::enginetext
         ChooseSide = 1467, HumanRebels, HumanLoyalists, MartianResistance, MartianImperialists,          // 1467-1471; tips 1488-1491
         // a custom campaign's briefing (update 264)
         BeginCampaign = 1472, NextPage, PreviousPage,                                                     // 1472-1474
-        Last = 1491,
+        SkipBriefings = 1475,                                                                             // 1475 (266); its tip 1495
+        Last = 1495,
     };
 
     struct Entry { int id; const char* text[Languages]; };
@@ -215,6 +217,20 @@ namespace wow::enginetext
             "Die Marsianer, die an der Eroberung festhalten, von ihrer Basis in den Grampian Mountains aus: das rote Kraut breitet sich aus.",
             "I marziani fedeli alla conquista, dalla loro base nei monti Grampiani: l'erba rossa si diffonde.",
             "Los marcianos fieles a la conquista, desde su base en los montes Grampianos: la hierba roja se extiende." } },
+        { KeepBuildings, { "Enemy bases outlast their HQ", "Les bases ennemies survivent à leur QG", "Feindliche Basen überdauern ihr HQ", "Le basi nemiche sopravvivono al loro QG", "Las bases enemigas sobreviven a su cuartel" } },
+        { KeepBuildings + TipOffset, {
+            "When the enemy's command building is destroyed, its other buildings and its units stay to be fought, instead of exploding.",
+            "Quand le bâtiment de commandement ennemi est détruit, ses autres bâtiments et ses unités restent à combattre au lieu d'exploser.",
+            "Wird das feindliche Kommandogebäude zerstört, bleiben seine anderen Gebäude und Einheiten stehen und müssen bekämpft werden, statt zu explodieren.",
+            "Quando l'edificio di comando nemico è distrutto, gli altri edifici e le unità restano da combattere invece di esplodere.",
+            "Cuando se destruye el edificio de mando enemigo, sus demás edificios y unidades siguen en pie para combatirlos, en vez de estallar." } },
+        { SkipBriefings, { "Skip briefings", "Passer les briefings", "Einsatzbesprechungen überspringen", "Salta i briefing", "Omitir las sesiones informativas" } },
+        { SkipBriefings + TipOffset, {
+            "Goes straight from the war map into a battle and straight back afterwards, without the briefing and debriefing screens.",
+            "Passe directement de la carte de guerre à la bataille et revient directement ensuite, sans les écrans de briefing et de débriefing.",
+            "Wechselt direkt von der Kriegskarte in die Schlacht und danach direkt zurück, ohne Einsatz- und Nachbesprechung.",
+            "Passa direttamente dalla mappa di guerra alla battaglia e poi torna subito indietro, senza le schermate di briefing e debriefing.",
+            "Pasa directamente del mapa de guerra a la batalla y vuelve directamente después, sin las pantallas de información previa y posterior." } },
         { BridgesStayBroken, { "Bridges stay broken", "Les ponts restent détruits", "Brücken bleiben zerstört", "I ponti restano distrutti", "Los puentes siguen destruidos" } },
         { BridgesStayBroken + TipOffset, {
             "A destroyed bridge stays down until a construction vehicle in the sector, with nothing else to build, rebuilds it.",

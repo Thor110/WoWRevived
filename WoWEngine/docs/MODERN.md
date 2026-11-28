@@ -98,6 +98,8 @@ menu (command 0x9004, `FrontEnd::ModernGameplay`), laid out as Display Settings'
 | Unlimited building | `[Modern]` "Unlimited building" | off | at once |
 | Full control on bridges | `[Modern]` "Bridge control" (246-248: "Bridges fire back") | off | the next battle |
 | Bridges stay broken | `[Modern]` "Bridges stay broken" (249) | off | the next battle |
+| Enemy bases outlast their HQ | `[Modern]` "Enemy bases outlast their HQ" (266) | off | the next battle |
+| Skip briefings | `[Modern]` "Skip briefings" (266) | off | the next battle |
 
 **Unlimited building.** The game keeps a sector to so many of each type (OBJ.ojd record 52, "max per sector":
 20, the turret emplacements 12, the command buildings 1). An item is offered in a factory's or construction
@@ -134,6 +136,17 @@ ground (+0x84 under 0), stays; on a bridge the height is the deck's, never under
 London battle's lorries sent to the south bank over Westminster Bridge and ordered back to Big Ben's lawn while
 crossing: with the option off the second order is dropped and they go on south (one route found); with it on they
 turn back (a second route) and stop on the lawn. The firing hasn't been seen with an enemy in range.
+
+**Enemy bases outlast their HQ** (update 266, the owner's idea). In the original a side whose command building
+is destroyed loses its other buildings and resources there too, each exploding 30-60 updates after the last
+(KeyBuildingLost, 0x48AC50 -> 0x80AA), and in a home sector its units as well (0x8136). With the box ticked the
+computer's side keeps them, so they have to be fought; the player's side is as in the game. The sector stays the
+computer's until they're gone (a sector holding both sides is its holder's, 0x43CA40), and a home sector's battle
+still ends the campaign when the war map settles it.
+
+**Skip briefings** (update 266, the owner's idea). The war map goes straight to the battle map (0x8019's Briefing
+skipped, 0x71 at once), and after the battle straight back (the Debriefing skipped, its 0x99 at once): the battle's
+result is still announced on the war map.
 
 **Bridges stay broken** (update 249, the owner's idea). In the original a bridge destroyed in a battle is whole
 again at the sector's next battle: the bridges are the sector's scenery, loaded from `dat\<sector>.nsb` by each

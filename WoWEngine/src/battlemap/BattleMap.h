@@ -89,6 +89,9 @@ namespace wow
             // [Modern] "Bridge control" ("Bridges fire back" in 246): a unit on a bridge link aims and fires (Aim) and a
             // group's move order counts it (OrderGroupMove), as off a bridge
             bool bridgeControl = false;
+            // MODERN (update 266, [Modern] "Enemy bases outlast their HQ"): the computer's side losing its command
+            // building keeps its other buildings, resources and (in a home sector) units, rather than KeyBuildingLost
+            bool keepBases = false;
             // MODERN ([Modern] "Bridges stay broken", update 249): the sector's bridges down from earlier battles, by
             // their place; one being rebuilt has the building site's corner flags at its ends
             struct BrokenBridge { int x = 0, y = 0; bool rebuilding = false; };

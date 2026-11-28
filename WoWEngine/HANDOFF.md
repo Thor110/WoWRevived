@@ -1,4 +1,4 @@
-# Handoff: WoWEngine after update 265
+# Handoff: WoWEngine after update 266
 
 A new session starts here. This file says what the project is, where things are, how it is built and tested, what
 state it is in, and how the owner likes work delivered.
@@ -157,7 +157,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
 - Code comments follow the same convention: each routine names the original's address it ports, and says
   *Provisional* where it guesses.
 
-## State after update 265
+## State after update 266
 
 - **Phase 1 (structure), Phase 2 (high-severity behaviour) and Phase 3 (the rest) of PARITY.md are done.** The
   exceptions are the items listed under "Deferred" there. Each of those needs a missing engine piece (bridges that
@@ -184,13 +184,12 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
   "Enhanced assets"=1` in the test install's ini (restore it after) and run without `--no-loose`; `wowdump
   --texcheck <game> <pack>` checks a pack reads back as the game's. A frame with an unchanged pack is the same as
   without. Next: the rest of A10. The version is 0.2.6 (247; 0.2.5 from 238).
-- **Update 265**: the testers' and the owner's bug list (docs/TESTING.md has each). Still open: heat rays drawn
-  behind the Human HQ's corner sandbags (the beams keyed as the game does, from the gun's y + 40, and the HQ's IOB
-  parts by y + offset + depth: needs an original-vs-engine screenshot pair); "can't build in a sector after a
-  battle" (likely the other side's buildings left standing keep the sector mixed until KeyBuildingLost's staggered
-  deaths and the undefended check clear it: needs the owner's save); the player's fences "acting as a building" (what
-  the owner sees needs describing). Next: the two Modern Gameplay options (the other side's units and buildings
-  staying after their HQ goes; no briefing or debriefing).
+- **Updates 265-266**: the testers' and the owner's bug list (docs/TESTING.md has each). The heat rays (the beam
+  quads' +0x26 0x40, missed in the sort) and building after a battle (a lost HQ's base counted gone once its deaths
+  are posted) were done in 266, with the two Modern Gameplay options (Enemy bases outlast their HQ, Skip briefings).
+  Still open: the player's fences "acting as a building", a user's report nobody has described further. Not
+  checked: two other +0x26 writers (0x4984C0 adds 0x30 to +0x1E and 0x40 to +0x26 for some class through its
+  vtable; 0x489AE0 adds 4 or copies a parent's), whether the engine keys those objects the same.
 - **A lesson from 237**: the war map's constructor moved its `units` argument into the other side's copy and then
   read `units` again, so every counter had frame 0, speed 0 and move class 0 (all looked like lorries and none
   moved). The parity battles didn't see it (a battle reads the table, not the counters). Fixed in 238. A new
@@ -299,7 +298,7 @@ SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy ./build/WoWEngine <game folder> [o
     (`WoWEngine-update-136.zip/WoWEngine/src/...`)
 
   Send it over and describe what changed. No patches, no pushing.
-  - The next number is **266**.
+  - The next number is **267**.
   - The start files are the same on every release's disc. The owner's testing folder had a day-old pair (the
     game's slot 0 save overwrites them, docs/ODDITIES.md): frames from updates 157 to 159 were taken from that
     state, kept in the scratch notes as the owner's pair. The test install uses the discs'.

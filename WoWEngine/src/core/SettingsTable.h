@@ -50,6 +50,8 @@ namespace wow::settingstable
         { "Modern", "Unlimited building", "0", "Your factories and construction vehicles ignore the per-sector limits (OBJ.ojd), except one command building per sector." },
         { "Modern", "Bridges stay broken", "0", "A destroyed bridge stays down until a construction vehicle in its sector, with nothing else to build,\nrebuilds it (4 days' work); kept beside the save as <save>.bridges. The original builds every bridge again at\neach battle." },
         { "Modern", "Bridge control", "0", "Units crossing a bridge aim, return fire and take new orders (the original makes them wait until they're\noff it). Before update 249 this was \"Bridges fire back\", which is still read when this isn't set." },
+        { "Modern", "Enemy bases outlast their HQ", "0", "When the enemy's command building is destroyed, its other buildings (and, in the home sectors, its units)\nstay to be fought instead of exploding. The sector is yours once they're gone." },
+        { "Modern", "Skip briefings", "0", "Straight from the war map into a battle and straight back, with no briefing or debriefing screen." },
         { "Modern", "Sticky popup menus", "0", "Popup menus stay open once the right button is let go." },
         { "Modern", "War map status strip", "0", "A strip on the war map with the sector under the pointer." },
         { "Modern", "Selection keys", "1", "In battle: Ctrl + a digit keeps a selection, the digit brings it back, Shift adds to a selection." },
