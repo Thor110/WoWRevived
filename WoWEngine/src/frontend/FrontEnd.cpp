@@ -505,7 +505,8 @@ namespace wow
         if (size_t(briefingPage) < briefingPages.size()) m->AddTextBlock(briefingPages[size_t(briefingPage)]);
         if (size_t(briefingPage + 1) < briefingPages.size()) m->AddButtonText(CmdCustomBriefing, res.String(enginetext::NextPage), 1);
         if (briefingPage > 0) m->AddButtonText(CmdCustomBriefing, res.String(enginetext::PreviousPage), -1);
-        m->AddButtonText(CmdStartCampaign, res.String(enginetext::BeginCampaign));
+        // (on the bottom button's rounded plate, as the menus end, update 274, the owner)
+        m->AddBottomButtonText(CmdStartCampaign, res.String(enginetext::BeginCampaign));
         m->FocusLast();
         m->Centre();
         m->SetPrevious(CmdStartCampaign);
