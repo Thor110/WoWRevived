@@ -1,4 +1,5 @@
 # Edinburgh Holds.txt: a scenario from the WotW Companion's collection
 name = Edinburgh Holds
+author = WotW Companion
 kind = human
 start = Edinburgh Holds.wow

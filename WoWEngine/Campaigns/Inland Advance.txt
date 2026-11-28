@@ -1,4 +1,5 @@
 # Inland Advance.txt: a scenario from the WotW Companion's collection
 name = Inland Advance
+author = WotW Companion
 kind = human
 start = Inland Advance.wow

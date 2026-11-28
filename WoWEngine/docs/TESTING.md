@@ -56,6 +56,11 @@ Modern options are the only deliberate differences.
 - **The research screens**: each page's picture behind its texts, on both sides (missing since update 181; seen
   headless, Martian at 640 x 480 and 1920 x 1080, Human at 640 x 480).
 
+## Campaign authors (update 272)
+
+- Each shipped campaign's briefing headed "Designed by ..." in the game's language; Highlands Alone, Quiet Skies and
+  Stranded (no briefing text) show a briefing of that line and Begin Campaign.
+
 ## Custom campaigns from the WotW Companion, narration, Auto Resolve (update 270)
 
 - The 14 campaigns (the separate zip's Campaigns folder in the main folder): each listed for its side, started,

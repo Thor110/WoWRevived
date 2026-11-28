@@ -24,6 +24,7 @@ namespace wow
         Campaign kind = Campaign::Regular;
         bool human = true;          // the player's faction (a civil war's is its own)
         std::string start;          // "start =": a start file in its Campaigns folder, else empty (Human.000 / Martian.000)
+        std::string author;         // (update 272) "author =": who made it, shown on its briefing's first page
         bool pods = true;           // "pods =": on unless off; never in a civil war
         CivilWarLayout layout;      // a civil war's start (as CivilWar.txt's section)
 

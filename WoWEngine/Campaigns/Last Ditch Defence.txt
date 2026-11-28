@@ -1,4 +1,5 @@
 # Last Ditch Defence.txt: a scenario from the WotW Companion's collection
 name = Last Ditch Defence
+author = WotW Companion
 kind = human
 start = Last Ditch Defence.wow

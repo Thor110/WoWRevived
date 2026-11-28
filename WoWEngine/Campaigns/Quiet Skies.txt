@@ -2,5 +2,6 @@
 # The Martians have only what they start with, so the war is won or lost on the ground.
 # Designed by Claude Opus 5.5 (Anthropic), update 246.
 name = Quiet Skies (no pods)
+author = Claude Opus 5.5
 kind = human
 pods = off

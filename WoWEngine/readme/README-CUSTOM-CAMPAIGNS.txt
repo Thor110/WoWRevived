@@ -51,6 +51,8 @@ A campaign file is plain text, one setting per line, as "key = value". Anything 
 The settings:
 
     name    What the menu shows. Without it, the file's name (without .txt).
+    author  Who made it: "Designed by <author>" heads its briefing (a campaign with an author and no
+            briefing text gets a briefing of that line alone). Optional.
 
     kind    One of:   human   martian   human civil war   martian civil war
             Required: a file without a kind isn't shown.

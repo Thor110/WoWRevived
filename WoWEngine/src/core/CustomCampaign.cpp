@@ -86,6 +86,7 @@ namespace wow
             const std::string value = trim(line.substr(eq + 1));
             const std::string where = "line " + std::to_string(number) + ": ";
             if (key == "name") { if (!value.empty()) c.name = value; }
+            else if (key == "author") c.author = value;
             else if (key == "kind")
             {
                 const std::string v = lower(value);
@@ -119,7 +120,7 @@ namespace wow
             // (the pods are the Martians' against the Humans: never in a civil war, WarMap::DropPod)
             if (podsGiven && c.pods) warnings.push_back("a civil war has no pods: pods = on left out");
             c.pods = false;
-            c.layout = CivilWarLayout::ParseLines(text, c.kind, { "name", "kind", "start", "pods" }, warnings);
+            c.layout = CivilWarLayout::ParseLines(text, c.kind, { "name", "author", "kind", "start", "pods" }, warnings);
         }
         else if (layoutLines)
             warnings.push_back("the layout's lines (player, other, neutral, copy) are for a civil war: left out");

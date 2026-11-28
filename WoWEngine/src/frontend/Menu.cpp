@@ -71,6 +71,10 @@ namespace wow
         b.text = std::move(wrapped);
         b.textOffset = 12;      // (left-aligned, a margin in)
         b.focusable = false;
+        // (update 273, the owner) on the rows' see-through backing, made as tall as the text, so it reads as the
+        // menu's other rows do over the background
+        b.glass = style == 0 ? 0x39 : style == 1 ? 0x44 : 0x3C;
+        b.tallGlass = true;
         if (column >= 0) nextY = std::max(nextY, columnBottom);
         b.rect.y = FirstItemY + nextY;
         const size_t index = Place(std::move(b));

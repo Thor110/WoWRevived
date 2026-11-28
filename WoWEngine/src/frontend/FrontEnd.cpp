@@ -1436,10 +1436,24 @@ namespace wow
             {
                 briefingPages.clear();
                 briefingPage = 0;
-                if (auto path = customChosen.Briefing())
+                // (update 272, the owner) "Designed by <author>" heads the first page, where the definition names
+                // one; with no briefing text the page is that line alone
+                std::string credit;
+                if (!customChosen.author.empty())
                 {
-                    std::ifstream in(*path, std::ios::binary);
-                    std::string text((std::istreambuf_iterator<char>(in)), {});
+                    std::string format = res.String(enginetext::DesignedBy);
+                    if (const size_t at = format.find("%s"); at != std::string::npos) format.replace(at, 2, customChosen.author);
+                    credit = format + "\n\n";
+                }
+                const auto path = customChosen.Briefing();
+                if (path || !credit.empty())
+                {
+                    std::string text;
+                    if (path)
+                    {
+                        std::ifstream in(*path, std::ios::binary);
+                        text.assign((std::istreambuf_iterator<char>(in)), {});
+                    }
                     // UTF-8 (with any byte past ASCII making a whole character) to the fonts' Latin-1; else as it is
                     bool utf8 = false, valid = true;
                     for (size_t i = 0; i < text.size(); i++)
@@ -1451,6 +1465,7 @@ namespace wow
                     }
                     if (utf8 && valid) text = enginetext::Latin1(text.c_str());
                     std::erase(text, '\r');
+                    text = credit + text;   // (after: the credit is the fonts' Latin-1 already)
                     // wrapped as the menu does, then cut into pages of 14 lines
                     Menu probe(CmdCustomBriefing, res, settings.colours, MenuBackdrop, res.Human() ? 0x2F6 : 0x2F7, 2);
                     const std::string wrapped = probe.WrapBlock(text);

@@ -2,5 +2,6 @@
 # what landed at the start and what they build.
 # Designed by Claude Opus 5.5 (Anthropic), update 246.
 name = Stranded (no pods)
+author = Claude Opus 5.5
 kind = martian
 pods = off

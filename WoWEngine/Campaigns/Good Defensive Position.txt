@@ -1,4 +1,5 @@
 # Good Defensive Position.txt: a scenario from the WotW Companion's collection
 name = Good Defensive Position
+author = WotW Companion
 kind = human
 start = Good Defensive Position.wow

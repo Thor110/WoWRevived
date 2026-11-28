@@ -142,6 +142,26 @@ namespace wow
         DrawImage(wide, shade->Level(0), x - g->hotX, y - g->hotY, blend);
     }
 
+    void Canvas::DrawSpriteTaller(int gtype, int frame, int x, int y, int toHeight, Blend blend)
+    {
+        const IndexedImage* image = res.GetFrame(gtype, frame);
+        const ShadeTable* shade = res.ShadeFor(gtype);
+        const GType* g = res.FindGType(gtype);
+        if (!image || !shade || !g || image->height < 2) return;
+        if (toHeight <= image->height) { DrawImage(*image, shade->Level(0), x - g->hotX, y - g->hotY, blend); return; }
+        const int w = image->width, h = image->height, middle = h / 2;
+        IndexedImage tall;
+        tall.width = w;
+        tall.height = toHeight;
+        tall.pixels.resize(size_t(w) * size_t(toHeight));
+        for (int r = 0; r < toHeight; r++)
+        {
+            const int from = r < middle ? r : r >= toHeight - (h - middle) ? r - (toHeight - h) : middle;
+            std::copy_n(image->pixels.data() + size_t(from) * size_t(w), size_t(w), tall.pixels.data() + size_t(r) * size_t(w));
+        }
+        DrawImage(tall, shade->Level(0), x - g->hotX, y - g->hotY, blend);
+    }
+
     void Canvas::DrawSpriteRows(int gtype, int frame, int x, int y, int firstRow, int rows, int level)
     {
         const IndexedImage* image = res.GetFrame(gtype, frame);

@@ -1,4 +1,5 @@
 # US to the Rescue.txt: a scenario from the WotW Companion's collection
 name = US to the Rescue
+author = WotW Companion
 kind = human
 start = US to the Rescue.wow

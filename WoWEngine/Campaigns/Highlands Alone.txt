@@ -2,6 +2,7 @@
 # player; London's side has the rest of Britain, Edinburgh and the Southern Uplands included.
 # Designed by Claude Opus 5.5 (Anthropic), update 246.
 name = Human Civil War: The Highlands Alone
+author = Claude Opus 5.5
 kind = human civil war
 player  = 1 2 3 4                # North Western Highlands, Isle of Skye, Grampian Mountains, Strathmore
 other   = rest                   # London's: every other Human sector of the start file

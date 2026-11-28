@@ -58,6 +58,9 @@ namespace wow
         // MODERN: a sprite made wider: its left and right halves at the ends, the columns about its middle repeated
         // between them (a row's see-through backing stretched to a wider row, its ends and seams kept)
         void DrawSpriteWidened(int gtype, int frame, int x, int y, int toWidth, Blend blend = Blend::Opaque);
+        // MODERN (update 273): the same up and down: its top and bottom halves at the ends, its middle row repeated
+        // between them (a row's backing made the height of a block of text)
+        void DrawSpriteTaller(int gtype, int frame, int x, int y, int toHeight, Blend blend = Blend::Opaque);
         // A triangle filled from an 8-bit texture (texW x texH, index 0 left clear), its corners at x/y on screen
         // and u/v in the texture, mapped straight across (affine), as the arrows' textured polygons
         // (0x410090 quads, 0x410190 triangles)

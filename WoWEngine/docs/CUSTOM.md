@@ -36,6 +36,7 @@ Anything after a `#` is a comment. The keys:
 | Key | Value | Default |
 |---|---|---|
 | `name` | what the menu shows | the file's name without `.txt` |
+| `author` | who made it (update 272): "Designed by ..." (string 1498) heads the briefing's first page; with no briefing text, that line is the briefing | none |
 | `kind` | `human`, `martian`, `human civil war` or `martian civil war` | none: the file isn't offered |
 | `start` | a start file in the same Campaigns folder (a name only, no folder; any extension: `Highlands.000`) | the side's own: `Human.000` or `Martian.000` |
 | `pods` | `on` or `off`: whether the Martians' pods land (the Human and Martian kinds) | `on` |
@@ -124,7 +125,8 @@ optional (`CustomCampaign::Movie`, `Briefing`, `Reskins`):
 - `My War.intro.mp4` or `.smk`: played as the campaign starts, after the name and the disc check (in place of the
   game's INTRO, which a custom campaign never had).
 - `My War.briefing.txt`: shown next, over the main menu's background as the menus are (the game's own briefing
-  screen doesn't suit it): the campaign's name, the text wrapped and cut into pages of 14 lines, Next / Previous
+  screen doesn't suit it; since update 273 the text on the rows' see-through backing, 0x3C, made as tall as the
+  text, `Canvas::DrawSpriteTaller`): the campaign's name, the text wrapped and cut into pages of 14 lines, Next / Previous
   Page and Begin Campaign (Escape begins it too). UTF-8 or Latin-1; the fonts are Latin-1.
 - `My War.briefing.mp3`, `.ogg` or `.wav` (update 270, the owner; `CustomCampaign::Narration`): the briefing read
   out while it's shown, from its first page, at Master x Speech, on a stream of its own (`platform/Narration`) so the

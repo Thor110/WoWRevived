@@ -61,7 +61,8 @@ namespace wow
         if (b.glass)
         {
             const Rect glass = SpriteRect(b.glass, 0, 0);
-            if (glass.w > b.rect.w) canvas.DrawSprite(b.glass, glassFrame, b.rect.x - (glass.w - b.rect.w) / 2, b.rect.y, 0, Canvas::Blend::Translucent);
+            if (b.tallGlass && b.rect.h > glass.h) canvas.DrawSpriteTaller(b.glass, glassFrame, b.rect.x, b.rect.y, b.rect.h, Canvas::Blend::Translucent);
+            else if (glass.w > b.rect.w) canvas.DrawSprite(b.glass, glassFrame, b.rect.x - (glass.w - b.rect.w) / 2, b.rect.y, 0, Canvas::Blend::Translucent);
             else if (b.widen > b.rect.w)
                 canvas.DrawSpriteWidened(b.glass, glassFrame, b.rect.x - (b.widen - b.rect.w) / 2, b.rect.y, b.widen, Canvas::Blend::Translucent);
             else canvas.DrawSprite(b.glass, glassFrame, b.rect.x, b.rect.y, 0, Canvas::Blend::Translucent);

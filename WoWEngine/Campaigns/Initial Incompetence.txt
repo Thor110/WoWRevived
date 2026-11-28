@@ -1,4 +1,5 @@
 # Initial Incompetence.txt: Z-Fighter's campaign
 name = Initial Incompetence
+author = Z-Fighter
 kind = martian
 start = Initial Incompetence.wow

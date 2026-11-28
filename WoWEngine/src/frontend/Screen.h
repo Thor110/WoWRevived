@@ -58,6 +58,7 @@ namespace wow
         int tooltip = 0;        // its tool tip's text id (the control's answer to 0x807C), 0 for none
         std::string tipText;    // MODERN: a tool tip that isn't a TEXT.ojd string (the engine's own rows)
         int widen = 0;          // MODERN: the width its glass is drawn at, centred on the row (0: its own)
+        bool tallGlass = false; // MODERN (update 273): its glass made as tall as the row (a text block's backing)
     };
 
     class Screen
