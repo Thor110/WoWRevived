@@ -53,7 +53,18 @@ the file doesn't give is the civil war's draft (`CivilWarLayout::Default`), not 
   be the side's: a Human start file for a Human campaign or Human civil war. A civil war is made from it as from
   the side's own start file (`MakeCivilWarStart`), so its H lists must hold the player's faction.
 
-Examples are shipped in the Campaigns folder (`WoWEngine/Campaigns` in the source):
+The campaigns shipped in the Campaigns folder (`WoWEngine/Campaigns` in the source; a release copies the whole
+folder into the main folder, `tools/make_release.py`):
+
+- **Highlands Alone**, **Quiet Skies** and **Stranded**: the first examples (update 246), designed by Claude Opus 5.5.
+- **Advance Along the Coast**, **Dead London**, **Edinburgh Holds**, **Front Line Overrun**, **Good Defensive
+  Position**, **Inland Advance**, **Last Ditch Defence**, **Secondary Line Holds**, **Secondary Line Overrun**, **The
+  War in the Air**, **US to the Rescue** (Human), **Martian Onslaught Stalls** and **The Empire Fights Back**
+  (Martian): the WotW Companion's scenarios (Dean Beedell's among them), made custom campaigns in update 270, three
+  with a narrated briefing.
+- **Initial Incompetence** (Martian): Z-Fighter's campaign (update 270).
+
+Examples of the definitions:
 
 ```
 # Quiet Skies.txt: the Human campaign without the Martians' pods

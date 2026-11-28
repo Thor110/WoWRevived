@@ -1,5 +1,6 @@
 # A custom campaign (WoWEngine, docs/CUSTOM.md): a harder Human Civil War. Only the far north holds for the
 # player; London's side has the rest of Britain, Edinburgh and the Southern Uplands included.
+# Designed by Claude Opus 5.5 (Anthropic), update 246.
 name = Human Civil War: The Highlands Alone
 kind = human civil war
 player  = 1 2 3 4                # North Western Highlands, Isle of Skye, Grampian Mountains, Strathmore

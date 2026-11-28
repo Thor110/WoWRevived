@@ -1,5 +1,6 @@
 # A custom campaign (WoWEngine, docs/CUSTOM.md): the Martian campaign without the pods. The Martians fight with
 # what landed at the start and what they build.
+# Designed by Claude Opus 5.5 (Anthropic), update 246.
 name = Stranded (no pods)
 kind = martian
 pods = off
